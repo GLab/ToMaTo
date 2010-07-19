@@ -15,4 +15,5 @@ ResourceStore.host_ports["host4"] = ResourceStore ( 5000, 1000 )
 
 top = Topology("example.xml") 
 top.output()
+top.take_resources()
 top.deploy()

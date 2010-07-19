@@ -12,7 +12,7 @@ class Device:
 		
 	def add_if ( self, attributes ):
 		iface = Interface(self, attributes)
-		self.interfaces[iface.id] = iface 
+		self.interfaces[iface.id] = iface
 		
 	def del_if ( self, if_id ):
 		del self.interfaces[if_id]

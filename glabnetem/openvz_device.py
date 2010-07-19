@@ -24,13 +24,15 @@ class OpenVZDevice(Device):
 			OpenVZDevice.openvz_ids[self.host].free(self.id)
 			self.id = None
 
+	def bridge_name(self, interface):
+		return "openvz_"+self.id+"."+interface.id
+
 	def write_deploy_script(self, dir):
-		id = self.id
 		print "# deploying openvz %s ..." % self.id
-		print "vzctl create %d --ostemplate debian" % id
-		print "vzctl set %d --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save" % id
+		print "vzctl create %s --ostemplate debian" % self.id
+		print "vzctl set %s --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save" % self.id
 		for iface in self.interfaces.values():
-			print "vzctl set %d --netif_add %s,,,,br_%d_%s --save" % ( id, iface.id, id, iface.id )
+			print "vzctl set %s --netif_add %s,,,,br_%s_%s --save" % ( self.id, iface.id, self.id, iface.id )
 			ip4 = iface.attributes.get("ip4_address",None)
 			netmask = iface.attributes.get("ip4_netmask",None)
 			if ip4:

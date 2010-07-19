@@ -4,9 +4,7 @@ from xml.dom import minidom
 
 from openvz_device import *
 from dhcpd_device import *
-from hub_connector import *
-from switch_connector import *
-from router_connector import *
+from tinc_connector import *
 from config import *
 
 class Topology:
@@ -32,11 +30,22 @@ class Topology:
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
 			self.add_device ( Type ( self, x_dev ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
-			Type = { "hub": HubConnector, "switch": SwitchConnector, "router": RouterConnector }[x_con.getAttribute("type")]
-			self.add_connector ( Type ( self, x_con ) )
+			self.add_connector ( TincConnector ( self, x_con ) )
 			
 	def save_to ( self, file ):
 		pass
+
+	def take_resources ( self ):
+		for dev in self.devices.values():
+			dev.take_resources()
+		for con in self.connectors.values():
+			con.take_resources()
+
+	def free_resources ( self ):
+		for dev in self.devices.values():
+			dev.free_resources()
+		for con in self.connectors.values():
+			con.free_resources()
 
 	def deploy(self):
 		self.write_deploy_scripts()

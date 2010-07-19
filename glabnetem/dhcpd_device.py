@@ -12,7 +12,16 @@ class DhcpdDevice(Device):
 		self.range = dhcpd.getAttribute("range")
 		self.gateway = dhcpd.getAttribute("gateway")
 		self.nameserver = dhcpd.getAttribute("nameserver")
-		
+
+	def take_resources(self):
+		pass
+
+	def free_resources(self):
+		pass
+
+	def bridge_name(self, interface):
+		return "dhcpd_"+self.id+"."+interface.id
+
 	def write_deploy_script(self, dir):
 		print "# deploying dhcpd %s ..." % self.id
 		print "# -------- dhcpd.conf -------------"
