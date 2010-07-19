@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<xs:element name="topology">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="device" maxOccurs="unbounded"/>
+      <xs:element ref="connector" maxOccurs="unbounded"/>
+      <xs:any minOccurs="0"  maxOccurs="unbounded"/>
+    </xs:sequence>  
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:anyAttribute/>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="device">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="interface" maxOccurs="unbounded"/>
+      <xs:any minOccurs="0"  maxOccurs="unbounded"/>
+    </xs:sequence>  
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:attribute name="type" type="deviceType" use="required"/>
+    <xs:attribute name="host" type="xs:string" use="required"/>
+    <xs:anyAttribute/>
+  </xs:complexType>
+</xs:element>
+
+<xs:simpleType name="deviceType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="openvz"/>
+    <xs:enumeration value="dhcpd"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:element name="connector">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="connection" minOccurs="2"  maxOccurs="unbounded"/>
+      <xs:any minOccurs="0"  maxOccurs="unbounded"/>
+    </xs:sequence>  
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:attribute name="type" type="connectorType" use="required"/>
+    <xs:anyAttribute/>
+  </xs:complexType>
+</xs:element>
+
+<xs:simpleType name="connectorType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="router"/>
+    <xs:enumeration value="switch"/>
+    <xs:enumeration value="hub"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:element name="interface">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:any minOccurs="0"  maxOccurs="unbounded"/>
+    </xs:sequence>  
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:anyAttribute/>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="connection">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:any minOccurs="0"  maxOccurs="unbounded"/>
+    </xs:sequence>  
+    <xs:attribute name="device" type="xs:IDREF" use="required"/>
+    <xs:attribute name="interface" type="xs:IDREF" use="required"/>
+    <xs:anyAttribute/>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>
