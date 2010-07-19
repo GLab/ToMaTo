@@ -3,6 +3,8 @@
 from device import *
 from util import *
 
+import os
+
 class OpenVZDevice(Device):
   
 	openvz_ids = {}
@@ -29,11 +31,15 @@ class OpenVZDevice(Device):
 
 	def write_deploy_script(self, dir):
 		print "# deploying openvz %s ..." % self.id
-		print "vzctl create %s --ostemplate debian" % self.id
-		print "vzctl set %s --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save" % self.id
+		if not os.path.exists(dir+"/"+self.host):
+			os.makedirs(dir+"/"+self.host)
+		startup_fd=open(dir+"/%s/startup.sh" % self.host, "a")
+		startup_fd.write("vzctl create %s --ostemplate debian\n" % self.id)
+		startup_fd.write("vzctl set %s --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save\n" % self.id)
 		for iface in self.interfaces.values():
-			print "vzctl set %s --netif_add %s,,,,br_%s_%s --save" % ( self.id, iface.id, self.id, iface.id )
+			startup_fd.write("vzctl set %s --netif_add %s,,,,%s --save\n" % ( self.id, iface.id, self.bridge_name(iface) ) )
 			ip4 = iface.attributes.get("ip4_address",None)
 			netmask = iface.attributes.get("ip4_netmask",None)
 			if ip4:
-				print "vzctl exec ifconfig %s %s %s up" % ( iface.id, ip4, netmask ) 
+				startup_fd.write("vzctl exec ifconfig %s %s %s up\n" % ( iface.id, ip4, netmask ) ) 
+		startup_fd.close()

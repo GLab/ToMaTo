@@ -25,7 +25,10 @@ class Topology:
 	def load_from ( self, file ):
 		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
-		self.id = x_top.getAttribute("id")
+		if x_top.hasAttribute("id"):
+			self.id = x_top.getAttribute("id")
+		else:
+			self.id = str(ResourceStore.topology_ids.take())
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
 			self.add_device ( Type ( self, x_dev ) )
@@ -35,7 +38,7 @@ class Topology:
 	def save_to ( self, file ):
 		dom = minidom.Document()
 		x_top = dom.createElement ( "topology" )
-		x_top.setAttribute("id", self.id)
+		x_top.setAttribute("id", str(self.id))
 		dom.appendChild ( x_top )
 		for dev in self.devices.values():
 			x_dev = dom.createElement ( "device" )

@@ -27,7 +27,8 @@ class TincConnector(Connector):
 			del con.attributes["port_number"]
 
 	def write_deploy_script(self, dir):
-		tincname = self.topology.id + "." + self.id
+		print "# deploying tinc %s %s ..." % ( self.type, self.id )
+		tincname = "tinc_" + self.topology.id + "." + self.id
 		for con in self.connections:
 			host = con.interface.device.host
 			path = dir + "/" + host + "/" + tincname
