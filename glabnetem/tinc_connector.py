@@ -29,6 +29,7 @@ class TincConnector:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % host2 )
 			tinc_conf_fd.close()
 			startup_fd=open(dir+"/%s/startup.sh" % host, "a")
+			startup_fd.write ( "ln -s $(pwd)/net%s /etc/tincd/net%s\n" % (id, id) )
 			startup_fd.write ( "tincd --net=net%s --chroot\n" % id )
 			startup_fd.write ( "brctl addif hostnet%s net%s\n" % (id, id ) )
 			startup_fd.write ( "ip link set net%s up\n" % id )
