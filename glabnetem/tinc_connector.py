@@ -36,7 +36,7 @@ class TincConnector(Connector):
 				os.makedirs(path+"/hosts")
 			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"])
 			self_host_fd = open(path+"/hosts/"+host, "w")
-			self_host_fd.write("Address=%s\n" % host)
+			self_host_fd.write("Address=%s %s\n" % ( host, con.port_number ) )
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + host + ".pub"])
 			self_host_pub_fd = open(path+"/hosts/"+host+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
