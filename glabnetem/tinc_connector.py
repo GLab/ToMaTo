@@ -5,7 +5,7 @@ import os, subprocess, shutil
 
 class TincConnector:
   
-	def deploy(self, connector, dir):
+	def write_deploy_script(self, connector, dir):
 		id = connector.topology.id
 		for con in connector.connections:
 			host = con.device.host

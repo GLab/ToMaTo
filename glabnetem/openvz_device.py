@@ -4,7 +4,7 @@ from device import *
 
 class OpenVZDevice(Device):
   
-	def deploy(self, dir):
+	def write_deploy_script(self, dir):
 		print "# deploying openvz %s ..." % self.id
 		id = int(self.topology.id)+1000
 		print "vzctl create %d --ostemplate debian" % id

@@ -5,6 +5,6 @@ from tinc_connector import *
 
 class SwitchConnector(Connector):
   
-	def deploy(self, dir):
+	def write_deploy_script(self, dir):
 		print "# deploying switch %s ..." % self.id
-		TincConnector().deploy(self, dir)
+		TincConnector().write_deploy_script(self, dir)

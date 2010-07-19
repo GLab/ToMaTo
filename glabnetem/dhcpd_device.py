@@ -13,7 +13,7 @@ class DhcpdDevice(Device):
 		self.gateway = dhcpd.getAttribute("gateway")
 		self.nameserver = dhcpd.getAttribute("nameserver")
 		
-	def deploy(self, dir):
+	def write_deploy_script(self, dir):
 		print "# deploying dhcpd %s ..." % self.id
 		print "# -------- dhcpd.conf -------------"
 		print "subnet %s netmask %s {" % ( self.subnet, self.netmask )

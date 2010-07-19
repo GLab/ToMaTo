@@ -5,6 +5,6 @@ from tinc_connector import *
 
 class HubConnector(Connector):
   
-	def deploy(self, dir):
+	def write_deploy_script(self, dir):
 		print "# deploying hub %s ..." % self.id
-		TincConnector().deploy(self, dir)
+		TincConnector().write_deploy_script(self, dir)

@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 
+from xml.dom import minidom
+
 from openvz_device import *
 from dhcpd_device import *
 from hub_connector import *
 from switch_connector import *
 from router_connector import *
+from config import *
 
 class Topology:
   
-	def __init__ (self, dom):
+	def __init__ (self, file):
 		self.devices={}
 		self.connectors={}
-		self.decode_xml(dom)
+		self.load_from(file)
 		
 	def add_device ( self, device ):
 		device.topology = self
@@ -21,7 +24,8 @@ class Topology:
 		connector.topology = self
 		self.connectors[connector.id] = connector
 		
-	def decode_xml ( self, dom ):
+	def load_from ( self, file ):
+		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
 		self.id = x_top.getAttribute("id")
 		for x_dev in x_top.getElementsByTagName ( "device" ):
@@ -31,12 +35,22 @@ class Topology:
 			Type = { "hub": HubConnector, "switch": SwitchConnector, "router": RouterConnector }[x_con.getAttribute("type")]
 			self.add_connector ( Type ( self, x_con ) )
 			
-	def deploy(self, dir):
+	def save_to ( self, file ):
+		pass
+
+	def deploy(self):
+		self.write_deploy_scripts()
+		self.upload_deploy_scripts()
+	
+	def write_deploy_scripts(self):
 		for dev in self.devices.values():
-			dev.deploy(dir)
+			dev.write_deploy_script(Config.deploy_dir)
 		for con in self.connectors.values():
-			con.deploy(dir)
-				
+			con.write_deploy_script(Config.deploy_dir)
+	
+	def upload_deploy_scripts(self):
+		pass
+	
 	def output(self):
 		for device in self.devices.values():
 			print "Device %s on host %s type %s" % ( device.id, device.host, device.type )
