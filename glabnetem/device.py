@@ -29,3 +29,16 @@ class Device:
 		self.host = dom.getAttribute('host')
 		for interface in dom.getElementsByTagName ( "interface" ):
 			self.add_if ( interface.attributes )
+
+	def encode_xml ( self, dom, doc ):
+		for key in self.attributes.keys():
+			dom.setAttribute (key, self.attributes[key])
+		dom.setAttribute("id", self.id)
+		dom.setAttribute("type", self.type)
+		dom.setAttribute("host", self.host)
+		for ikey in self.interfaces.keys():
+			iface = doc.createElement("interface")
+			for key in self.interfaces[ikey].attributes.keys():
+				iface.setAttribute(key, self.interfaces[ikey].attributes[key])
+			iface.setAttribute("id", self.interfaces[ikey].id)
+			dom.appendChild(iface)

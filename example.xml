@@ -1,4 +1,4 @@
-<topology id="124">
+<topology>
   <device id="node01" type="openvz" host="host1">
     <interface id="eth0"/>
     <interface id="eth1"/>

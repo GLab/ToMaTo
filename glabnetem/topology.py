@@ -33,7 +33,21 @@ class Topology:
 			self.add_connector ( TincConnector ( self, x_con ) )
 			
 	def save_to ( self, file ):
-		pass
+		dom = minidom.Document()
+		x_top = dom.createElement ( "topology" )
+		x_top.setAttribute("id", self.id)
+		dom.appendChild ( x_top )
+		for dev in self.devices.values():
+			x_dev = dom.createElement ( "device" )
+			dev.encode_xml ( x_dev, dom )
+			x_top.appendChild ( x_dev )
+		for con in self.connectors.values():
+			x_con = dom.createElement ( "connector" )
+			con.encode_xml ( x_con, dom )
+			x_top.appendChild ( x_con )
+		fd = open ( file, "w" )
+		dom.writexml(fd, indent="", addindent="\t", newl="\n", encoding="")
+		fd.close()
 
 	def take_resources ( self ):
 		for dev in self.devices.values():
@@ -67,5 +81,5 @@ class Topology:
 				print "\t Interface %s" % interface.id
 		for connector in self.connectors.values():
 			print "Connector %s type %s" % ( connector.id, connector.type )
-			for interface in connector.connections:
-				print "\t Interface %s.%s" % ( interface.device.id, interface.id )
+			for connection in connector.connections:
+				print "\t Interface %s.%s" % ( connection.interface.device.id, connection.interface.id )

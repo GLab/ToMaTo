@@ -4,6 +4,7 @@ from glabnetem.topology import *
 from glabnetem.openvz_device import *
 from glabnetem.resource_store import *
 
+ResourceStore.topology_ids = ResourceStore ( 1, 10000 )
 OpenVZDevice.set_openvz_ids ( "host1", ResourceStore ( 1000, 100 ) )
 OpenVZDevice.set_openvz_ids ( "host2", ResourceStore ( 1000, 100 ) )
 OpenVZDevice.set_openvz_ids ( "host3", ResourceStore ( 1000, 100 ) )
@@ -16,4 +17,5 @@ ResourceStore.host_ports["host4"] = ResourceStore ( 5000, 1000 )
 top = Topology("example.xml") 
 top.output()
 top.take_resources()
+top.save_to("example2.xml") 
 top.deploy()
