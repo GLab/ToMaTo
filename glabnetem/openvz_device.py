@@ -15,9 +15,18 @@ class OpenVZDevice(Device):
 		return OpenVZDevice.openvz_ids[host]
 	get_openvz_ids = Callable(get_openvz_ids)
 	
+	def take_resources(self):
+		if not self.id:
+			self.id = OpenVZDevice.openvz_ids[self.host].take()
+
+	def free_resources(self):
+		if self.id:
+			OpenVZDevice.openvz_ids[self.host].free(self.id)
+			self.id = None
+
 	def write_deploy_script(self, dir):
+		id = self.id
 		print "# deploying openvz %s ..." % self.id
-		id = OpenVZDevice.openvz_ids[self.host].take()
 		print "vzctl create %d --ostemplate debian" % id
 		print "vzctl set %d --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save" % id
 		for iface in self.interfaces.values():

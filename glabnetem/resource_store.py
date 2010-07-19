@@ -2,6 +2,8 @@
 
 class ResourceStore:
 	
+	host_ports = {}
+	
 	def __init__ (self, res):
 		self.resources = res
 		
