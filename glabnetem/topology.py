@@ -7,6 +7,8 @@ from dhcpd_device import *
 from tinc_connector import *
 from config import *
 
+import shutil
+
 class Topology(object):
   
 	def __init__ (self, file):
@@ -64,23 +66,57 @@ class Topology(object):
 		for con in self.connectors.values():
 			con.free_resources()
 
+	def affected_hosts (self):
+		hosts=set()
+		for dev in self.devices.values():
+			hosts.add(HostStore.get(dev.host))
+		return hosts
+
+	def get_deploy_dir(self,host_name):
+		return Config.local_deploy_dir+"/"+host_name
+
+	def get_deploy_script(self,host_name,script):
+		return self.get_deploy_dir(host_name)+"/"+script+".sh"
+
 	def deploy(self):
 		self.write_deploy_scripts()
 		self.upload_deploy_scripts()
 	
 	def write_deploy_scripts(self):
+		if Config.local_deploy_dir:
+			shutil.rmtree(Config.local_deploy_dir)
+		for host in self.affected_hosts():
+			dir=self.get_deploy_dir(host.name)
+			if not os.path.exists(dir):
+				os.makedirs(dir)
 		for dev in self.devices.values():
-			dev.write_deploy_script(Config.local_deploy_dir)
+			dev.write_deploy_script()
 		for con in self.connectors.values():
-			con.write_deploy_script(Config.local_deploy_dir)
-	
+			con.write_deploy_script()
+
 	def upload_deploy_scripts(self):
-		for host in HostStore.hosts.values():
-			src = Config.local_deploy_dir+"/"+host.name
-			dst = "root@%s:%s" % ( host.name, Config.remote_deploy_dir )
-			if os.path.exists(src):
-				subprocess.check_call (["rsync",  "-Pav",  src, dst])
+		for host in affected_hosts():
+			src = self.get_deploy_dir(host.name)
+			dst = "root@%s:%s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
+			subprocess.check_call (["rsync",  "-Pav",  src, dst])
 	
+	def exec_script(self, script):
+		script = "%s/%s/%s.sh" % ( Config.remote_deploy_dir, self.id, script )
+		for host in affected_hosts():
+			subprocess.check_call (["ssh",  "root@%s" % host.name, script ])
+
+	def start(self):
+		self.exec_script("start")
+
+	def stop(self):
+		self.exec_script("stop")
+
+	def create(self):
+		self.exec_script("create")
+
+	def destroy(self):
+		self.exec_script("destroy")
+
 	def output(self):
 		for device in self.devices.values():
 			print "Device %s on host %s type %s" % ( device.id, device.host, device.type )

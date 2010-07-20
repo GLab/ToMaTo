@@ -22,12 +22,12 @@ class TincConnector(Connector):
 			HostStore.get(con.interface.device.host).ports.free(con.port_number)
 			con.port_number = None
 
-	def write_deploy_script(self, dir):
+	def write_deploy_script(self):
 		print "# deploying tinc %s %s ..." % ( self.type, self.id )
 		tincname = "tinc_" + self.topology.id + "." + self.id
 		for con in self.connections:
 			host = con.interface.device.host
-			path = dir + "/" + host + "/" + tincname
+			path = self.topology.get_deploy_dir(host) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
 			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"])
@@ -46,18 +46,26 @@ class TincConnector(Connector):
 				if not host == host2:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % host2 )
 			tinc_conf_fd.close()
-			startup_fd=open(dir+"/%s/startup.sh" % host, "a")
-			startup_fd.write ( "ln -s $(pwd)/%s /etc/tincd/%s\n" % (tincname, tincname) )
-			startup_fd.write ( "tincd --net=%s --chroot\n" % tincname )
 			bridge_name=con.interface.device.bridge_name(con.interface)
-			startup_fd.write ( "brctl addif %s %s\n" % (bridge_name, tincname ) )
-			startup_fd.write ( "ip link set %s up\n" %  tincname )
-			startup_fd.close ()
+			create_fd=open(self.topology.get_deploy_script(host,"create"), "a")
+			create_fd.write ( "ln -s $(pwd)/%s /etc/tincd/%s\n" % (tincname, tincname) )
+			create_fd.close ()
+			destroy_fd=open(self.topology.get_deploy_script(host,"destroy"), "a")
+			destroy_fd.write ( "rm /etc/tincd/%s\n" % tincname )
+			destroy_fd.close ()
+			start_fd=open(self.topology.get_deploy_script(host,"start"), "a")
+			start_fd.write ( "tincd --net=%s --chroot --pidfile=%s.pid\n" % (tincname, tincname) )
+			start_fd.write ( "brctl addif %s %s\n" % (bridge_name, tincname ) )
+			start_fd.write ( "ip link set %s up\n" %  tincname )
+			start_fd.close ()
+			stop_fd=open(self.topology.get_deploy_script(host,"stop"), "a")
+			stop_fd.write ( "cat %s.pid | xargs kill\n" % tincname )
+			stop_fd.close ()
 		for con in self.connections:
 			host = con.interface.device.host
-			path = dir + "/" + host + "/" + tincname
+			path = self.topology.get_deploy_dir(host) + "/" + tincname
 			for con2 in self.connections:
 				host2 = con2.interface.device.host
-				path2 = dir + "/" + host2 + "/" + tincname
+				path2 = self.topology.get_deploy_dir(host2) + "/" + tincname
 				if not host == host2:
 					shutil.copy(path+"/hosts/"+host, path2+"/hosts/"+host)
