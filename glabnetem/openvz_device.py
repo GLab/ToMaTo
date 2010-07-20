@@ -25,7 +25,7 @@ class OpenVZDevice(Device):
 	def write_deploy_script(self):
 		create_fd=open(self.topology.get_deploy_script(self.host,"create"), "a")
 		create_fd.write("vzctl create %s --ostemplate debian\n" % self.openvz_id)
-		create_fd.write("vzctl set %s --applyconfig virconel.basic --hostname myhost1  --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
+		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 		destroy_fd=open(self.topology.get_deploy_script(self.host,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
 		start_fd=open(self.topology.get_deploy_script(self.host,"start"), "a")
