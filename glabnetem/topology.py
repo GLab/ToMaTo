@@ -40,7 +40,7 @@ class Topology(XmlObject):
 			Type = { "hub": TincConnector, "switch": TincConnector, "router": TincConnector, "real": RealNetworkConnector }[x_con.getAttribute("type")]
 			self.add_connector ( Type ( self, x_con ) )
 			
-	def save_to ( self, file ):
+	def create_dom ( self ):
 		dom = minidom.Document()
 		x_top = dom.createElement ( "topology" )
 		XmlObject.encode_xml(self,x_top)
@@ -53,9 +53,17 @@ class Topology(XmlObject):
 			x_con = dom.createElement ( "connector" )
 			con.encode_xml ( x_con, dom )
 			x_top.appendChild ( x_con )
+		return dom
+
+	def save_to (self, file):
+		dom = self.create_dom()
 		fd = open ( file, "w" )
 		dom.writexml(fd, indent="", addindent="\t", newl="\n")
 		fd.close()
+
+	def output (self):
+		dom = self.create_dom()
+		print dom.toprettyxml(indent="\t", newl="\n")
 
 	def take_resources ( self ):
 		for dev in self.devices.values():
@@ -142,13 +150,3 @@ class Topology(XmlObject):
 
 	def destroy(self):
 		self.exec_script("destroy")
-
-	def output(self):
-		for device in self.devices.values():
-			print "Device %s on host %s type %s" % ( device.id, device.host_id, device.type )
-			for interface in device.interfaces.values():
-				print "\t Interface %s" % interface.id
-		for connector in self.connectors.values():
-			print "Connector %s type %s" % ( connector.id, connector.type )
-			for connection in connector.connections:
-				print "\t Interface %s.%s" % ( connection.interface.device.id, connection.interface.id )

@@ -22,8 +22,8 @@
 		<connection device="node02" interface="eth0" port_number="5000"/>
 	</connector>
 	<connector id="router01" type="router">
+		<connection device="node04" interface="eth0" port_number="5000"/>
 		<connection device="node03" interface="eth0" port_number="5001"/>
 		<connection device="node01" interface="eth1" port_number="5001"/>
-		<connection device="node04" interface="eth0" port_number="5000"/>
 	</connector>
 </topology>
