@@ -2,6 +2,7 @@
 
 from connector import *
 from resource_store import *
+from host_store import *
 from util import *
 import os, subprocess, shutil
 
@@ -14,11 +15,11 @@ class TincConnector(Connector):
 	def take_resources(self):
 		for con in self.connections:
 			if not con.port_number:
-				con.port_number = str(ResourceStore.host_ports[con.interface.device.host].take())
+				con.port_number = str(HostStore.get(con.interface.device.host).ports.take())
 
 	def free_resources(self):
 		for con in self.connections:
-			ResourceStore.host_ports[con.interface.device.host].free(con.port_number)
+			HostStore.get(con.interface.device.host).ports.free(con.port_number)
 			con.port_number = None
 
 	def write_deploy_script(self, dir):
