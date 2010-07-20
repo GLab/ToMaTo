@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class TopologyStore:
+class TopologyStore(object):
 
 	topologies = {}
 

@@ -7,7 +7,7 @@ from dhcpd_device import *
 from tinc_connector import *
 from config import *
 
-class Topology:
+class Topology(object):
   
 	def __init__ (self, file):
 		self.devices={}

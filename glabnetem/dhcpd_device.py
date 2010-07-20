@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from device import *
+from util import *
 
 import os
 
 class DhcpdDevice(Device):
   
-	def __init__(self,topology,dom):
-		Device.__init__(self,topology,dom)
-		dhcpd = dom.getElementsByTagName("dhcpd-options")[0]
-		self.subnet = dhcpd.getAttribute("subnet")
-		self.netmask = dhcpd.getAttribute("netmask")
-		self.range = dhcpd.getAttribute("range")
-		self.gateway = dhcpd.getAttribute("gateway")
-		self.nameserver = dhcpd.getAttribute("nameserver")
+	subnet=property(curry(Device.get_attr,"subnet"),curry(Device.set_attr,"subnet"))
+	netmask=property(curry(Device.get_attr,"netmask"),curry(Device.set_attr,"netmask"))
+	range=property(curry(Device.get_attr,"range"),curry(Device.set_attr,"range"))
+	gateway=property(curry(Device.get_attr,"gateway"),curry(Device.set_attr,"gateway"))
+	nameserver=property(curry(Device.get_attr,"nameserver"),curry(Device.set_attr,"nameserver"))
 
 	def take_resources(self):
 		pass

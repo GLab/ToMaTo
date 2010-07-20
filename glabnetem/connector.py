@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from connection import *
+from util import *
 
-class Connector:
+class Connector(object):
   
 	def __init__ ( self, topology, dom ):
 		self.connections=set()
@@ -15,12 +16,21 @@ class Connector:
 	def del_con ( self, con ):
 		self.connections.remove ( con )
 		
+	def get_attr(self, name):
+		if name in self.attributes:
+			return self.attributes[name]
+		else:
+			return None	
+	def set_attr(self, name, value):
+		self.attributes[name]=value
+
+	id=property(curry(get_attr, "id"), curry(set_attr, "id"))
+	type=property(curry(get_attr, "type"), curry(set_attr, "type"))
+	
 	def decode_xml ( self, dom ):
 		self.attributes = {}
 		for key in dom.attributes.keys():
 			self.attributes[key] = dom.attributes[key].value
-		self.id = dom.getAttribute('id')
-		self.type = dom.getAttribute('type')
 		for connection in dom.getElementsByTagName ( "connection" ):
 			device = connection.getAttribute('device')
 			interface = connection.getAttribute('interface')
@@ -29,8 +39,6 @@ class Connector:
 	def encode_xml ( self, dom, doc ):
 		for key in self.attributes.keys():
 			dom.setAttribute (key, self.attributes[key])
-		dom.setAttribute("id", self.id)
-		dom.setAttribute("type", self.type)
 		for con in self.connections:
 			x_con = doc.createElement("connection")
 			for key in con.attributes.keys():

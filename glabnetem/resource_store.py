@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class ResourceStore:
+class ResourceStore(object):
 		
 	def __init__ (self, res):
 		self.resources = res

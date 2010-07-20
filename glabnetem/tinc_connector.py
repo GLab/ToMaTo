@@ -9,22 +9,17 @@ class TincConnector(Connector):
 
 	def __init__(self, topology, dom ):
 		Connector.__init__(self, topology, dom)
-		for con in self.connections:
-			con.port_number = None
-			if "port_number" in con.attributes:
-				con.port_number = con.attributes["port_number"]
+		Connection.port_number = property(curry(Connection.get_attr, "port_number"), curry(Connection.set_attr, "port_number"))
 
 	def take_resources(self):
 		for con in self.connections:
 			if not con.port_number:
-				con.port_number = ResourceStore.host_ports[con.interface.device.host].take()
-				con.attributes["port_number"] = str(con.port_number)
+				con.port_number = str(ResourceStore.host_ports[con.interface.device.host].take())
 
 	def free_resources(self):
 		for con in self.connections:
 			ResourceStore.host_ports[con.interface.device.host].free(con.port_number)
 			con.port_number = None
-			del con.attributes["port_number"]
 
 	def write_deploy_script(self, dir):
 		print "# deploying tinc %s %s ..." % ( self.type, self.id )
