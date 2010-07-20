@@ -17,6 +17,8 @@ class Config(object):
 	get = static(get)
 	
 	local_deploy_dir = get("local","deploy_dir","/tmp/glabnetem")
-	topology_dir = get("local","topology_dir","topologies")
+	topology_dir = get("local","topology_dir","config/topologies")
+	topology_ids_shelve = get("local","topology_ids_shelve","config/topology_ids.shelve")
+	hosts_shelve = get("local","hosts_shelve","config/hosts.shelve")
 	default_template = get("openvz","default_template","debian")
 	remote_deploy_dir = get("remote","deploy_dir","/root/glabnetem")

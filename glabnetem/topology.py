@@ -7,16 +7,20 @@ from dhcpd_device import *
 from tinc_connector import *
 from real_network_connector import *
 from config import *
+from resource_store import *
 
 import shutil
 
-class Topology(object):
+class Topology(XmlObject):
   
 	def __init__ (self, file):
 		self.devices={}
 		self.connectors={}
 		self.load_from(file)
 		
+	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
+	is_deployed=property(curry(XmlObject.get_attr, "is_deployed", res_type=bool, default=False), curry(XmlObject.set_attr, "is_deployed"))
+
 	def add_device ( self, device ):
 		device.topology = self
 		self.devices[device.id] = device
@@ -28,10 +32,7 @@ class Topology(object):
 	def load_from ( self, file ):
 		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
-		if x_top.hasAttribute("id"):
-			self.id = x_top.getAttribute("id")
-		else:
-			self.id = str(ResourceStore.topology_ids.take())
+		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
 			self.add_device ( Type ( self, x_dev ) )
@@ -42,7 +43,7 @@ class Topology(object):
 	def save_to ( self, file ):
 		dom = minidom.Document()
 		x_top = dom.createElement ( "topology" )
-		x_top.setAttribute("id", str(self.id))
+		XmlObject.encode_xml(self,x_top)
 		dom.appendChild ( x_top )
 		for dev in self.devices.values():
 			x_dev = dom.createElement ( "device" )
@@ -53,7 +54,7 @@ class Topology(object):
 			con.encode_xml ( x_con, dom )
 			x_top.appendChild ( x_con )
 		fd = open ( file, "w" )
-		dom.writexml(fd, indent="", addindent="\t", newl="\n", encoding="")
+		dom.writexml(fd, indent="", addindent="\t", newl="\n")
 		fd.close()
 
 	def take_resources ( self ):
@@ -81,10 +82,16 @@ class Topology(object):
 		return self.get_deploy_dir(host_name)+"/"+script+".sh"
 
 	def deploy(self):
+		if not self.id:
+			raise Exception("not registered")
+		self.take_resources()
 		self.write_deploy_scripts()
 		self.upload_deploy_scripts()
+		self.is_deployed = True
 	
 	def write_deploy_scripts(self):
+		if not self.id:
+			raise Exception("not registered")
 		if Config.local_deploy_dir and os.path.exists(Config.local_deploy_dir):
 			shutil.rmtree(Config.local_deploy_dir)
 		for host in self.affected_hosts():
@@ -97,14 +104,20 @@ class Topology(object):
 			con.write_deploy_script()
 
 	def upload_deploy_scripts(self):
-		for host in affected_hosts():
+		if not self.id:
+			raise Exception("not registered")
+		for host in self.affected_hosts():
 			src = self.get_deploy_dir(host.name)
 			dst = "root@%s:%s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
-			subprocess.check_call (["rsync",  "-Pav",  src, dst])
+			#subprocess.check_call (["rsync",  "-Pav",  src, dst])
 	
 	def exec_script(self, script):
+		if not self.id:
+			raise Exception("not registered")
+		if not self.is_deployed:
+			raise Exception("not delpoyed")
 		script = "%s/%s/%s.sh" % ( Config.remote_deploy_dir, self.id, script )
-		for host in affected_hosts():
+		for host in self.affected_hosts():
 			subprocess.check_call (["ssh",  "root@%s" % host.name, script ])
 
 	def start(self):

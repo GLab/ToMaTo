@@ -23,11 +23,15 @@ class XmlObject(object):
 	def __init__ ( self, dom ):
 		self.decode_xml ( dom )
 
-	def get_attr(self, name, default=None):
+	def get_attr(self, name, default=None, res_type=None):
 		if name in self.attributes:
-			return self.attributes[name]
+			val = self.attributes[name]
 		else:
-			return default	
+			val = default
+		if res_type:
+			return res_type(val)
+		else:
+			return val
 	def set_attr(self, name, value):
 		self.attributes[name]=value
 

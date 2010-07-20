@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<topology id="1" is_deployed="True">
+	<device host="host2" id="node02" openvz_id="1000" type="openvz">
+		<interface id="eth0"/>
+	</device>
+	<device host="host3" id="node03" openvz_id="1000" type="openvz">
+		<interface id="eth0"/>
+	</device>
+	<device host="host1" id="node01" openvz_id="1000" type="openvz">
+		<interface id="eth1"/>
+		<interface id="eth0"/>
+	</device>
+	<device host="host3" id="dhcpd01" type="dhcpd">
+		<interface id="eth0"/>
+	</device>
+	<device host="host4" id="node04" openvz_id="1000" type="openvz">
+		<interface id="eth0"/>
+	</device>
+	<connector id="switch01" type="switch">
+		<connection device="node01" interface="eth0" port_number="5000"/>
+		<connection device="dhcpd01" interface="eth0" port_number="5000"/>
+		<connection device="node02" interface="eth0" port_number="5000"/>
+	</connector>
+	<connector id="router01" type="router">
+		<connection device="node01" interface="eth1" port_number="5001"/>
+		<connection device="node03" interface="eth0" port_number="5001"/>
+		<connection device="node04" interface="eth0" port_number="5000"/>
+	</connector>
+</topology>

@@ -8,12 +8,14 @@ class ResourceStore(object):
 	def __init__ (self, start_id, num):
 		self.resources = range(start_id, start_id+num-1)
 	
-	topology_ids = None
-
 	def take (self):
 		obj = self.resources[0]
 		self.resources.remove(obj)
 		return obj
 		
+	def take_specific (self,obj):
+		self.resources.remove(obj)
+		return obj
+
 	def free (self, obj):
 		self.resources.add(obj)

@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from glabnetem.topology import *
+from glabnetem.topology_store import *
 from glabnetem.openvz_device import *
 from glabnetem.resource_store import *
 from glabnetem.host_store import *
 from glabnetem.host import *
 
-ResourceStore.topology_ids = ResourceStore ( 1, 10000 )
-HostStore.add ( Host("host1") )
-HostStore.add ( Host("host2") )
-HostStore.add ( Host("host3") )
-HostStore.add ( Host("host4") )
-
-top = Topology("example.xml") 
-top.take_resources()
-top.save_to("example2.xml") 
-top.write_deploy_scripts()
+top = TopologyStore.get(1)
+top.deploy()

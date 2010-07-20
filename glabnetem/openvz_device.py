@@ -31,7 +31,7 @@ class OpenVZDevice(Device):
 		destroy_fd=open(self.topology.get_deploy_script(self.host_name,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
 		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
-		start_fd.write("vzctl start --wait%s\n" % self.openvz_id)
+		start_fd.write("vzctl start --wait %s\n" % self.openvz_id)
 		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
 		stop_fd.write("vzctl stop %s\n" % self.openvz_id)
 		for iface in self.interfaces.values():
