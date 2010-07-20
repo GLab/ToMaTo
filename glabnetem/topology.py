@@ -70,12 +70,16 @@ class Topology(object):
 	
 	def write_deploy_scripts(self):
 		for dev in self.devices.values():
-			dev.write_deploy_script(Config.deploy_dir)
+			dev.write_deploy_script(Config.local_deploy_dir)
 		for con in self.connectors.values():
-			con.write_deploy_script(Config.deploy_dir)
+			con.write_deploy_script(Config.local_deploy_dir)
 	
 	def upload_deploy_scripts(self):
-		pass
+		for host in HostStore.hosts.values():
+			src = Config.local_deploy_dir+"/"+host.name
+			dst = "root@%s:%s" % ( host.name, Config.remote_deploy_dir )
+			if os.path.exists(src):
+				subprocess.check_call (["rsync",  "-Pav",  src, dst])
 	
 	def output(self):
 		for device in self.devices.values():
