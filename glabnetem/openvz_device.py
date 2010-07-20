@@ -25,6 +25,7 @@ class OpenVZDevice(Device):
 		return "openvz_"+str(self.openvz_id)+"."+interface.id
 
 	def write_deploy_script(self):
+		print "\tcreating scripts for openvz %s ..." % self.id
 		create_fd=open(self.topology.get_deploy_script(self.host_name,"create"), "a")
 		create_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
 		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)

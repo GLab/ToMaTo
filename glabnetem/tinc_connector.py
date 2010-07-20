@@ -23,17 +23,17 @@ class TincConnector(Connector):
 			con.port_number = None
 
 	def write_deploy_script(self):
-		print "# deploying tinc %s %s ..." % ( self.type, self.id )
+		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
 		tincname = "tinc_" + self.topology.id + "." + self.id
 		for con in self.connections:
 			host = con.interface.device.host
 			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
-			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"])
+			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			self_host_fd = open(path+"/hosts/"+host.name, "w")
 			self_host_fd.write("Address=%s %s\n" % ( host.name, con.port_number ) )
-			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + host.name + ".pub"])
+			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + host.name + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+host.name+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
 			self_host_fd.close()

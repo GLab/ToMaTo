@@ -22,3 +22,5 @@ class Config(object):
 	hosts_shelve = get("local","hosts_shelve","config/hosts.shelve")
 	default_template = get("openvz","default_template","debian")
 	remote_deploy_dir = get("remote","deploy_dir","/root/glabnetem")
+	remote_dry_run = get("remote","dry_run","True")
+

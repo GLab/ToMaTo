@@ -92,6 +92,7 @@ class Topology(XmlObject):
 	def write_deploy_scripts(self):
 		if not self.id:
 			raise Exception("not registered")
+		print "creating scripts ..."
 		if Config.local_deploy_dir and os.path.exists(Config.local_deploy_dir):
 			shutil.rmtree(Config.local_deploy_dir)
 		for host in self.affected_hosts():
@@ -106,19 +107,29 @@ class Topology(XmlObject):
 	def upload_deploy_scripts(self):
 		if not self.id:
 			raise Exception("not registered")
+		print "uploading scripts ..."
 		for host in self.affected_hosts():
+			print "\t%s ..." % host.name
 			src = self.get_deploy_dir(host.name)
 			dst = "root@%s:%s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
-			#subprocess.check_call (["rsync",  "-Pav",  src, dst])
+			if bool(Config.remote_dry_run):
+				print "DRY RUN: rsync -PAV %s %s" % ( src, dst )
+			else:
+				subprocess.check_call (["rsync",  "-Pav",  src, dst])
 	
 	def exec_script(self, script):
 		if not self.id:
 			raise Exception("not registered")
 		if not self.is_deployed:
 			raise Exception("not delpoyed")
+		print "executing %s ..." % script
 		script = "%s/%s/%s.sh" % ( Config.remote_deploy_dir, self.id, script )
 		for host in self.affected_hosts():
-			subprocess.check_call (["ssh",  "root@%s" % host.name, script ])
+			print "\t%s ..." % host.name
+			if bool(Config.remote_dry_run):
+				print "DRY RUN: ssh root@%s %s" % ( host.name, script )
+			else:
+				subprocess.check_call (["ssh",  "root@%s" % host.name, script ])
 
 	def start(self):
 		self.exec_script("start")

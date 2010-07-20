@@ -23,6 +23,7 @@ class DhcpdDevice(Device):
 		return "dhcpd_"+self.id+"."+interface.id
 
 	def write_deploy_script(self):
+		print "\tcreating scripts for dhcpd %s ..." % self.id
 		dhcpd_fd=open(self.topology.get_deploy_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
 		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
