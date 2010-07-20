@@ -2,20 +2,13 @@
 
 from util import *
 
-class Interface(object):
+class Interface(XmlObject):
   
-	def __init__ ( self, device, attributes ):
+	def __init__ ( self, device, dom ):
 		self.device = device
-		self.attributes = {}
-		for key in attributes.keys():
-			self.attributes[key] = attributes[key].value
+		XmlObject.decode_xml(self, dom)
 
-	def get_attr(self, name):
-		if name in self.attributes:
-			return self.attributes[name]
-		else:
-			return None	
-	def set_attr(self, name, value):
-		self.attributes[name]=value
-
-	id=property(curry(get_attr, "id"), curry(set_attr, "id"))
+	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
+	
+	def encode_xml(self, dom, doc):
+		XmlObject.encode_xml(self, dom)

@@ -5,6 +5,7 @@ from xml.dom import minidom
 from openvz_device import *
 from dhcpd_device import *
 from tinc_connector import *
+from real_network_connector import *
 from config import *
 
 import shutil
@@ -35,7 +36,8 @@ class Topology(object):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
 			self.add_device ( Type ( self, x_dev ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
-			self.add_connector ( TincConnector ( self, x_con ) )
+			Type = { "hub": TincConnector, "switch": TincConnector, "router": TincConnector, "real": RealNetworkConnector }[x_con.getAttribute("type")]
+			self.add_connector ( Type ( self, x_con ) )
 			
 	def save_to ( self, file ):
 		dom = minidom.Document()
@@ -69,7 +71,7 @@ class Topology(object):
 	def affected_hosts (self):
 		hosts=set()
 		for dev in self.devices.values():
-			hosts.add(HostStore.get(dev.host))
+			hosts.add(dev.host)
 		return hosts
 
 	def get_deploy_dir(self,host_name):
@@ -83,7 +85,7 @@ class Topology(object):
 		self.upload_deploy_scripts()
 	
 	def write_deploy_scripts(self):
-		if Config.local_deploy_dir:
+		if Config.local_deploy_dir and os.path.exists(Config.local_deploy_dir):
 			shutil.rmtree(Config.local_deploy_dir)
 		for host in self.affected_hosts():
 			dir=self.get_deploy_dir(host.name)
@@ -119,7 +121,7 @@ class Topology(object):
 
 	def output(self):
 		for device in self.devices.values():
-			print "Device %s on host %s type %s" % ( device.id, device.host, device.type )
+			print "Device %s on host %s type %s" % ( device.id, device.host_id, device.type )
 			for interface in device.interfaces.values():
 				print "\t Interface %s" % interface.id
 		for connector in self.connectors.values():

@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-class Connection(object):
+from util import *
+
+class Connection(XmlObject):
   
-	def __init__ ( self, connector, iface, attributes ):
+	def __init__ ( self, connector, dom ):
 		self.connector = connector
-		self.interface = iface
-		self.attributes = {}
-		for key in attributes.keys():
-			self.attributes[key] = attributes[key].value
-			
-	def get_attr(self, name):
-		if name in self.attributes:
-			return self.attributes[name]
-		else:
-			return None	
-	def set_attr(self, name, value):
-		self.attributes[name]=value
+		XmlObject.decode_xml(self,dom)
+		self.device = connector.topology.devices[self.device_id]
+		self.interface = self.device.interfaces[self.interface_id]
+
+	def encode_xml (self, dom, doc):
+		XmlObject.encode_xml(self, dom)
+		
+	device_id=property(curry(XmlObject.get_attr, "device"), curry(XmlObject.set_attr, "device"))
+	interface_id=property(curry(XmlObject.get_attr, "interface"), curry(XmlObject.set_attr, "interface"))
