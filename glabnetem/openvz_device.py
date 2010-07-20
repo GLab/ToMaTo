@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
 
 from device import *
+from host_store import *
 from util import *
 
 import os
 
 class OpenVZDevice(Device):
   
-	openvz_ids = {}
-	
-	def set_openvz_ids(host, res):
-		OpenVZDevice.openvz_ids[host] = res
-	set_openvz_ids = static(set_openvz_ids)
-	
-	def get_openvz_ids(host):
-		return OpenVZDevice.openvz_ids[host]
-	get_openvz_ids = static(get_openvz_ids)
-	
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	
 	def take_resources(self):
 		if not self.openvz_id:
-			self.openvz_id=str(OpenVZDevice.openvz_ids[self.host].take())
+			self.openvz_id=str(HostStore.get(self.host).openvz_ids.take())
 
 	def free_resources(self):
 		if self.openvz_id:
-			OpenVZDevice.openvz_ids[self.host].free(self.openvz_id)
+			HostStore.get(self.host).openvz_ids.free(self.openvz_id)
 			self.openvz_id=None
 
 	def bridge_name(self, interface):
