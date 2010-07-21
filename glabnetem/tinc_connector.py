@@ -8,30 +8,39 @@ import os, subprocess, shutil
 
 class TincConnector(Connector):
 
+	tinc_ids = ResourceStore(1,10000)
+
 	def __init__(self, topology, dom ):
 		Connector.__init__(self, topology, dom)
 		Connection.port_number = property(curry(Connection.get_attr, "port_number"), curry(Connection.set_attr, "port_number"))
+		Connection.tinc_id = property(curry(Connection.get_attr, "tinc_id"), curry(Connection.set_attr, "tinc_id"))
 
 	def retake_resources(self):
 		for con in self.connections:
 			con.retake_resources()
 			if con.port_number:
 				con.interface.device.host.ports.take_specific(con.port_number)
+			if con.tinc_id:
+				TincConnector.tinc_ids.take_specific(con.tinc_id)
 
 	def take_resources(self):
 		for con in self.connections:
 			con.take_resources()
 			if not con.port_number:
 				con.port_number = str(con.interface.device.host.ports.take())
+			if not con.tinc_id:
+				con.tinc_id = TincConnector.tinc_ids.take()
 
 	def free_resources(self):
 		for con in self.connections:
 			con.free_resources()
 			con.interface.device.host.ports.free(con.port_number)
 			con.port_number = None
+			TincConnector.tinc_ids.free(con.tinc_id)
+			con.tinc_id = None
 
 	def tincname(self, con):
-		return self.topology.id + "_" + self.id + "_" + con.interface.device.id + "_" + con.interface.id
+		return "tinc_" + con.tinc_id
 				
 
 	def write_deploy_script(self):

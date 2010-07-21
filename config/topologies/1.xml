@@ -17,13 +17,13 @@
 		<interface id="eth0"/>
 	</device>
 	<connector id="switch01" type="switch">
-		<connection bridge="gbr1000" bridge_id="1000" device="dhcpd01" interface="eth0" port_number="7000"/>
-		<connection bridge="gbr1000" bridge_id="1000" device="node01" interface="eth0" port_number="7000"/>
-		<connection bridge="gbr1000" bridge_id="1000" device="node02" interface="eth0" port_number="7000"/>
+		<connection bridge="gbr1000" bridge_id="1000" device="node01" interface="eth0" port_number="7000" tinc_id="1"/>
+		<connection bridge="gbr1000" bridge_id="1000" device="dhcpd01" interface="eth0" port_number="7000" tinc_id="2"/>
+		<connection bridge="gbr1000" bridge_id="1000" device="node02" interface="eth0" port_number="7000" tinc_id="3"/>
 	</connector>
 	<connector id="router01" type="router">
-		<connection bridge="gbr1000" bridge_id="1000" device="node04" interface="eth0" port_number="7000"/>
-		<connection bridge="gbr1001" bridge_id="1001" device="node03" interface="eth0" port_number="7001"/>
-		<connection bridge="gbr1001" bridge_id="1001" device="node01" interface="eth1" port_number="7001"/>
+		<connection bridge="gbr1001" bridge_id="1001" device="node03" interface="eth0" port_number="7001" tinc_id="5"/>
+		<connection bridge="gbr1000" bridge_id="1000" device="node04" interface="eth0" port_number="7000" tinc_id="4"/>
+		<connection bridge="gbr1001" bridge_id="1001" device="node01" interface="eth1" port_number="7001" tinc_id="6"/>
 	</connector>
 </topology>
