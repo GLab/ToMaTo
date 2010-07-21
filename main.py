@@ -2,6 +2,7 @@
 
 from glabnetem.topology_store import *
 from glabnetem.topology import *
+from glabnetem.host import *
 
 import sys
 
@@ -112,7 +113,7 @@ def host_add(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	HostStore.add(argv[0])
+	HostStore.add(Host(argv[0]))
 
 def host_remove(argv):
 	if not len(argv) == 1:
