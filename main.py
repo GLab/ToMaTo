@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import sys
+
 from glabnetem.topology_store import *
 from glabnetem.topology import *
+from glabnetem.host_store import *
 from glabnetem.host import *
 
-import sys
 
 def usage(argv):
 	print """Glab NetEm control tool

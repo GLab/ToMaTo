@@ -22,7 +22,8 @@ class OpenVZDevice(Device):
 			self.openvz_id=None
 
 	def bridge_name(self, interface):
-		return "openvz_"+str(self.openvz_id)+"."+interface.id
+		# must be 16 chars or less
+		return "ovz_"+str(self.openvz_id)+"_"+interface.id
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for openvz %s ..." % self.id
@@ -31,16 +32,21 @@ class OpenVZDevice(Device):
 		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 		destroy_fd=open(self.topology.get_deploy_script(self.host_name,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
-		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
-		start_fd.write("vzctl start --wait %s\n" % self.openvz_id)
 		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
 		stop_fd.write("vzctl stop %s\n" % self.openvz_id)
+		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
 		for iface in self.interfaces.values():
-			create_fd.write("vzctl set %s --netif_add %s,,,,%s --save\n" % ( self.openvz_id, iface.id, self.bridge_name(iface) ) )
+			create_fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
+			create_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, self.bridge_name(iface) ) )
+			start_fd.write("brctl addbr %s\n" % self.bridge_name(iface) )
+			start_fd.write("ip link set %s up\n" % self.bridge_name(iface) )
+			stop_fd.write("ip link set %s down\n" % self.bridge_name(iface) )
+			stop_fd.write("brctl delbr %s\n" % self.bridge_name(iface) )
 			ip4 = iface.attributes.get("ip4_address",None)
 			netmask = iface.attributes.get("ip4_netmask",None)
 			if ip4:
 				start_fd.write("vzctl exec ifconfig %s %s %s up\n" % ( iface.id, ip4, netmask ) ) 
+		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
 		create_fd.close()
 		destroy_fd.close()
 		start_fd.close()

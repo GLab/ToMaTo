@@ -20,7 +20,8 @@ class DhcpdDevice(Device):
 		pass
 
 	def bridge_name(self, interface):
-		return "dhcpd_"+self.id+"."+interface.id
+		# must be 16 chars or less
+		return "dhcp_"+self.id+"."+interface.id
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for dhcpd %s ..." % self.id

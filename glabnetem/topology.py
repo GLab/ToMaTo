@@ -86,6 +86,9 @@ class Topology(XmlObject):
 	def get_deploy_dir(self,host_name):
 		return Config.local_deploy_dir+"/"+host_name
 
+	def get_remote_deploy_dir(self):
+		return Config.remote_deploy_dir+"/"+str(self.id)
+
 	def get_deploy_script(self,host_name,script):
 		return self.get_deploy_dir(host_name)+"/"+script+".sh"
 
@@ -109,7 +112,7 @@ class Topology(XmlObject):
 				os.makedirs(dir)
 			for script in ("create", "destroy", "start", "stop"):
 				script_fd = open(self.get_deploy_script(host.name,script), "w")
-				script_fd.write("#!/bin/bash\n\n")
+				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_deploy_dir())
 				script_fd.close()
 				os.chmod(self.get_deploy_script(host.name,script), stat.S_IRWXU)
 		for dev in self.devices.values():
@@ -124,11 +127,13 @@ class Topology(XmlObject):
 		for host in self.affected_hosts():
 			print "\t%s ..." % host.name
 			src = self.get_deploy_dir(host.name)
-			dst = "root@%s:%s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
+			dst = "root@%s:%s" % ( host.name, self.get_remote_deploy_dir() )
 			if bool(Config.remote_dry_run):
-				print "DRY RUN: rsync -PAV %s %s" % ( src, dst )
+				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
+				print "DRY RUN: rsync -Pav %s/ %s" % ( src, dst )
 			else:
-				subprocess.check_call (["rsync",  "-Pav",  src, dst])
+				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
+				subprocess.check_call (["rsync",  "-Pav",  "%s/" % src, dst])
 	
 	def exec_script(self, script):
 		if not self.id:
