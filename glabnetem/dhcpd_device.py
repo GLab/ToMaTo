@@ -13,6 +13,9 @@ class DhcpdDevice(Device):
 	gateway=property(curry(Device.get_attr,"gateway"),curry(Device.set_attr,"gateway"))
 	nameserver=property(curry(Device.get_attr,"nameserver"),curry(Device.set_attr,"nameserver"))
 
+	def retake_resources(self):
+		pass
+
 	def take_resources(self):
 		pass
 
@@ -21,7 +24,10 @@ class DhcpdDevice(Device):
 
 	def bridge_name(self, interface):
 		# must be 16 chars or less
-		return "dhcp_"+self.id+"."+interface.id
+		if interface.connection:
+			return interface.connection.bridge_name
+		else:
+			return None
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for dhcpd %s ..." % self.id

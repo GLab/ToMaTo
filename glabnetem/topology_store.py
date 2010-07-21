@@ -18,6 +18,7 @@ class TopologyStore(object):
 	
 	def add_id (topology):
 		TopologyStore.ids.take_specific(int(topology.id))
+		topology.retake_resources()
 		TopologyStore.topologies[int(topology.id)] = topology
 		return topology.id
 	add_id = static(add_id)
@@ -41,6 +42,8 @@ class TopologyStore(object):
 			return
 		for file in os.listdir(Config.topology_dir):
 			TopologyStore.add_id ( Topology(Config.topology_dir+"/"+file) )
+		for top in TopologyStore.topologies.values():
+			top.take_resources()
 	load = static(load)
 		
 	def save():

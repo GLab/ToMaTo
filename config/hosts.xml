@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<hosts>
+	<host name="glab040.e4.ukl.german-lab.de"/>
+	<host name="host4"/>
+	<host name="host3"/>
+	<host name="host2"/>
+	<host name="host1"/>
+	<host name="glab041.e4.ukl.german-lab.de"/>
+</hosts>

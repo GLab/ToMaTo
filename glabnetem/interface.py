@@ -6,6 +6,7 @@ class Interface(XmlObject):
   
 	def __init__ ( self, device, dom ):
 		self.device = device
+		self.connection = None
 		XmlObject.decode_xml(self, dom)
 
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))

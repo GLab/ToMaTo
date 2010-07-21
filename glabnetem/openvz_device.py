@@ -12,6 +12,10 @@ class OpenVZDevice(Device):
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	template=property(curry(Device.get_attr, "template", default=Config.default_template), curry(Device.set_attr, "template"))
 	
+	def retake_resources(self):
+		if self.openvz_id:
+			self.host.openvz_ids.take_specific(self.openvz_id)
+	
 	def take_resources(self):
 		if not self.openvz_id:
 			self.openvz_id=self.host.openvz_ids.take()
@@ -23,7 +27,10 @@ class OpenVZDevice(Device):
 
 	def bridge_name(self, interface):
 		# must be 16 chars or less
-		return "ovz_"+str(self.openvz_id)+"_"+interface.id
+		if interface.connection:
+			return interface.connection.bridge_name
+		else:
+			return None
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for openvz %s ..." % self.id
@@ -36,12 +43,13 @@ class OpenVZDevice(Device):
 		stop_fd.write("vzctl stop %s\n" % self.openvz_id)
 		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
 		for iface in self.interfaces.values():
+			bridge = self.bridge_name(iface)
 			create_fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
-			create_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, self.bridge_name(iface) ) )
-			start_fd.write("brctl addbr %s\n" % self.bridge_name(iface) )
-			start_fd.write("ip link set %s up\n" % self.bridge_name(iface) )
-			stop_fd.write("ip link set %s down\n" % self.bridge_name(iface) )
-			stop_fd.write("brctl delbr %s\n" % self.bridge_name(iface) )
+			create_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+			start_fd.write("brctl addbr %s\n" % bridge )
+			start_fd.write("ip link set %s up\n" % bridge )
+			stop_fd.write("ip link set %s down\n" % bridge )
+			stop_fd.write("brctl delbr %s\n" % bridge )
 		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
 		for iface in self.interfaces.values():
 			ip4 = iface.attributes.get("ip4_address",None)

@@ -65,6 +65,12 @@ class Topology(XmlObject):
 		dom = self.create_dom()
 		print dom.toprettyxml(indent="\t", newl="\n")
 
+	def retake_resources ( self ):
+		for dev in self.devices.values():
+			dev.retake_resources()
+		for con in self.connectors.values():
+			con.retake_resources()
+
 	def take_resources ( self ):
 		for dev in self.devices.values():
 			dev.take_resources()
@@ -131,11 +137,11 @@ class Topology(XmlObject):
 			if bool(Config.remote_dry_run):
 				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
 				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
-				print "DRY RUN: rsync -Pav %s/ %s" % ( src, dst )
+				print "DRY RUN: rsync -a %s/ %s" % ( src, dst )
 			else:
 				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
 				subprocess.check_call (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
-				subprocess.check_call (["rsync",  "-Pav",  "%s/" % src, dst])
+				subprocess.check_call (["rsync",  "-a",  "%s/" % src, dst])
 	
 	def exec_script(self, script):
 		if not self.id:

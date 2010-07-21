@@ -2,17 +2,35 @@
 
 from util import *
 from config import *
+from host import *
 
-import shelve, atexit
+from xml.dom import minidom
+import atexit, os
 
 class HostStore(object):
 		
-	def load():
-		HostStore.hosts=shelve.open(Config.hosts_shelve,writeback=True)
+	hosts = {}
+	
+	def load ():
+		if not os.path.exists ( Config.hosts ):
+			return
+		dom = minidom.parse ( Config.hosts )
+		x_hosts = dom.getElementsByTagName ( "hosts" )[0]
+		for x_host in x_hosts.getElementsByTagName ( "host" ):
+			HostStore.add ( Host ( x_host.getAttribute("name") ) )
 	load = static(load)
-		
-	def save():
-		HostStore.hosts.sync()
+			
+	def save ():
+		doc = minidom.Document()
+		x_hosts = doc.createElement ( "hosts" )
+		doc.appendChild ( x_hosts )
+		for host in HostStore.hosts.values():
+			x_host = doc.createElement ( "host" )
+			x_host.setAttribute("name", host.name)
+			x_hosts.appendChild ( x_host )
+		fd = open ( Config.hosts, "w" )
+		doc.writexml(fd, indent="", addindent="\t", newl="\n")
+		fd.close()
 	save = static(save)
 
 	def add(host):

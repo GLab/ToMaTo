@@ -7,5 +7,8 @@ from glabnetem.resource_store import *
 from glabnetem.host_store import *
 from glabnetem.host import *
 
-top = TopologyStore.get(1)
-top.deploy()
+for host in HostStore.hosts.values():
+	print host.name
+	print host.ports.resources
+	print host.openvz_ids.resources
+	print host.bridge_ids.resources

@@ -11,11 +11,11 @@ class ResourceStore(object):
 	def take (self):
 		obj = self.resources[0]
 		self.resources.remove(obj)
-		return obj
+		return str(obj)
 		
 	def take_specific (self,obj):
-		self.resources.remove(obj)
-		return obj
+		self.resources.remove(int(obj))
+		return str(obj)
 
 	def free (self, obj):
-		self.resources.append(obj)
+		self.resources.append(int(obj))
