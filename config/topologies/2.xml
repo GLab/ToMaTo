@@ -25,9 +25,9 @@
 		<connection bridge="gbr1001" bridge_id="1001" device="node3" interface="eth0" port_number="7006"/>
 	</connector>
 	<connector id="router1" type="switch">
-		<connection bridge="gbr1002" bridge_id="1002" device="node1" interface="eth1" port_number="7007"/>
-		<connection bridge="gbr1003" bridge_id="1003" device="node4" interface="eth1" port_number="7007"/>
 		<connection bridge="gbr1003" bridge_id="1003" device="node2" interface="eth1" port_number="7008"/>
+		<connection bridge="gbr1003" bridge_id="1003" device="node4" interface="eth1" port_number="7007"/>
 		<connection bridge="gbr1002" bridge_id="1002" device="node3" interface="eth1" port_number="7008"/>
+		<connection bridge="gbr1002" bridge_id="1002" device="node1" interface="eth1" port_number="7007"/>
 	</connector>
 </topology>

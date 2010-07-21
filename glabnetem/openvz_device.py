@@ -12,6 +12,7 @@ class OpenVZDevice(Device):
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	template=property(curry(Device.get_attr, "template", default=Config.default_template), curry(Device.set_attr, "template"))
 	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
+	hostname=property(curry(Device.get_attr, "hostname"), curry(Device.set_attr, "hostname"))
 	
 	def retake_resources(self):
 		if self.openvz_id:
@@ -40,6 +41,11 @@ class OpenVZDevice(Device):
 		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 		if self.root_password:
 			create_fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+		if self.hostname:
+			create_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
+		else:
+			create_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+
 		destroy_fd=open(self.topology.get_deploy_script(self.host_name,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
 		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
