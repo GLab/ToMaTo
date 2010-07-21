@@ -28,8 +28,6 @@ class RealNetworkConnector(Connector):
 			host = con.interface.device.host
 			bridge_name=con.bridge_name
 			start_fd=open(self.topology.get_deploy_script(host.name,"start"), "a")
-			start_fd.write ( "brctl addif %s %s\n" % (bridge_name, self.physical_device) )
 			start_fd.close ()
 			stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
-			stop_fd.write ( "brctl delif %s %s\n" % (bridge_name, self.physical_device) )
 			stop_fd.close ()

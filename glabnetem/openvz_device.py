@@ -11,6 +11,7 @@ class OpenVZDevice(Device):
   
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	template=property(curry(Device.get_attr, "template", default=Config.default_template), curry(Device.set_attr, "template"))
+	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
 	
 	def retake_resources(self):
 		if self.openvz_id:
@@ -37,6 +38,8 @@ class OpenVZDevice(Device):
 		create_fd=open(self.topology.get_deploy_script(self.host_name,"create"), "a")
 		create_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
 		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
+		if self.root_password:
+			create_fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
 		destroy_fd=open(self.topology.get_deploy_script(self.host_name,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
 		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
@@ -48,14 +51,16 @@ class OpenVZDevice(Device):
 			create_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
 			start_fd.write("brctl addbr %s\n" % bridge )
 			start_fd.write("ip link set %s up\n" % bridge )
-			stop_fd.write("ip link set %s down\n" % bridge )
-			stop_fd.write("brctl delbr %s\n" % bridge )
 		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
 		for iface in self.interfaces.values():
 			ip4 = iface.attributes.get("ip4_address",None)
 			netmask = iface.attributes.get("ip4_netmask",None)
+			dhcp = parse_bool(iface.attributes.get("use_dhcp",False))
 			if ip4:
 				start_fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
+			if dhcp:
+				start_fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
+				start_fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )
 		create_fd.close()
 		destroy_fd.write ( "true\n" )
 		destroy_fd.close()

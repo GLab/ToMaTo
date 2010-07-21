@@ -134,7 +134,7 @@ class Topology(XmlObject):
 			print "\t%s ..." % host.name
 			src = self.get_deploy_dir(host.name)
 			dst = "root@%s:%s" % ( host.name, self.get_remote_deploy_dir() )
-			if bool(Config.remote_dry_run):
+			if parse_bool(Config.remote_dry_run):
 				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
 				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
 				print "DRY RUN: rsync -a %s/ %s" % ( src, dst )

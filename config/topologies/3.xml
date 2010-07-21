@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<topology id="3" is_deployed="True">
+	<device host="glab040.e4.ukl.german-lab.de" id="node1" openvz_id="1000" root_password="test" type="openvz">
+		<interface id="eth0" ip4_address="10.1.1.2" ip4_netmask="255.255.255.0"/>
+	</device>
+	<device host="glab040.e4.ukl.german-lab.de" id="entry" openvz_id="1001" root_password="secure" type="openvz">
+		<interface id="eth1" use_dhcp="True"/>
+		<interface id="eth0" ip4_address="10.1.1.1" ip4_netmask="255.255.255.0"/>
+	</device>
+	<device host="glab041.e4.ukl.german-lab.de" id="node3" openvz_id="1000" root_password="test" type="openvz">
+		<interface id="eth0" ip4_address="10.1.1.4" ip4_netmask="255.255.255.0"/>
+	</device>
+	<device host="glab041.e4.ukl.german-lab.de" id="node2" openvz_id="1001" root_password="test" type="openvz">
+		<interface id="eth0" ip4_address="10.1.1.3" ip4_netmask="255.255.255.0"/>
+	</device>
+	<connector id="switch1" type="switch">
+		<connection bridge="gbr1004" bridge_id="1004" device="node2" interface="eth0" port_number="7000"/>
+		<connection bridge="gbr1005" bridge_id="1005" device="entry" interface="eth0" port_number="7001"/>
+		<connection bridge="gbr1005" bridge_id="1005" device="node3" interface="eth0" port_number="7001"/>
+		<connection bridge="gbr1004" bridge_id="1004" device="node1" interface="eth0" port_number="7000"/>
+	</connector>
+	<connector bridge_name="vmbr0" id="internet" type="real">
+		<connection bridge="vmbr0" device="entry" interface="eth1"/>
+	</connector>
+</topology>

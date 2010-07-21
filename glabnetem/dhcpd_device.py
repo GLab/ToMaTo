@@ -39,15 +39,11 @@ class DhcpdDevice(Device):
 		dhcpd_fd.write("  range %s;\n" % self.range )
 		dhcpd_fd.write("}\n" )
 		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
-		for iface in self.interfaces.values():
-			start_fd.write("brctl addbr %s\n" % self.bridge_name(iface) )
 		start_fd.write("dhcpd -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
 		for iface in self.interfaces.values():
 			start_fd.write(" %s" % self.bridge_name(iface))
 		start_fd.write(" &\n")
 		start_fd.close()
 		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
-		for iface in self.interfaces.values():
-			stop_fd.write("brctl delbr %s\n" % self.bridge_name(iface) )
 		stop_fd.write ( "cat %s.pid | xargs kill\n" % self.id )
 		stop_fd.close()

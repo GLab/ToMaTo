@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+def parse_bool(x):
+	if x == False or x == True:
+		return x
+	return {"true": True, "false": False}.get(x.lower())
+
 class static:  
     def __init__(self, anycallable):
         self.__call__ = anycallable
