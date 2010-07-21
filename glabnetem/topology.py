@@ -9,7 +9,7 @@ from real_network_connector import *
 from config import *
 from resource_store import *
 
-import shutil
+import shutil, os, stat
 
 class Topology(XmlObject):
   
@@ -107,6 +107,11 @@ class Topology(XmlObject):
 			dir=self.get_deploy_dir(host.name)
 			if not os.path.exists(dir):
 				os.makedirs(dir)
+			for script in ("create", "destroy", "start", "stop"):
+				script_fd = open(self.get_deploy_script(host.name,script), "w")
+				script_fd.write("#!/bin/bash\n\n")
+				script_fd.close()
+				os.chmod(self.get_deploy_script(host.name,script), stat.S_IRWXU)
 		for dev in self.devices.values():
 			dev.write_deploy_script()
 		for con in self.connectors.values():
