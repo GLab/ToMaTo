@@ -130,9 +130,11 @@ class Topology(XmlObject):
 			dst = "root@%s:%s" % ( host.name, self.get_remote_deploy_dir() )
 			if bool(Config.remote_dry_run):
 				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
+				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
 				print "DRY RUN: rsync -Pav %s/ %s" % ( src, dst )
 			else:
 				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
+				subprocess.check_call (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
 				subprocess.check_call (["rsync",  "-Pav",  "%s/" % src, dst])
 	
 	def exec_script(self, script):

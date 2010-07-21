@@ -27,35 +27,37 @@ class TincConnector(Connector):
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
-		tincname = "tinc_" + self.topology.id + "_" + self.id
 		for con in self.connections:
 			host = con.interface.device.host
+			tincname = self.topology.id + "_" + self.id + "_" + con.interface.device.id + "_" + con.interface.id
 			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
 			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			self_host_fd = open(path+"/hosts/"+tincify(host.name), "w")
+			self_host_fd = open(path+"/hosts/"+tincname, "w")
 			self_host_fd.write("Address=%s\n" % host.name)
 			self_host_fd.write("Port=%s\n" % con.port_number )
-			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + host.name + ".pub"], stderr=subprocess.PIPE)
-			self_host_pub_fd = open(path+"/hosts/"+host.name+".pub", "r")
+			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
+			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
 			self_host_fd.close()
 			self_host_pub_fd.close()
 			tinc_conf_fd = open(path+"/tinc.conf", "w")
 			tinc_conf_fd.write ( "Mode=%s\n" % self.type )
-			tinc_conf_fd.write ( "Name=%s\n" % tincify(host.name) )
+			tinc_conf_fd.write ( "Name=%s\n" % tincname )
 			for con2 in self.connections:
 				host2 = con2.interface.device.host
-				if not host.name == host2.name:
-					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincify(host2.name) )
+				tincname2 = self.topology.id + "_" + self.id + "_" + con2.interface.device.id + "_" + con2.interface.id
+				if not tincname == tincname2:
+					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 			tinc_conf_fd.close()
 			bridge_name=con.interface.device.bridge_name(con.interface)
 			create_fd=open(self.topology.get_deploy_script(host.name,"create"), "a")
-			create_fd.write ( "ln -s %s/%s /etc/tinc/%s\n" % (self.topology.get_remote_deploy_dir(), tincname, tincname) )
+			create_fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_deploy_dir(), tincname, tincname) )
 			create_fd.close ()
 			destroy_fd=open(self.topology.get_deploy_script(host.name,"destroy"), "a")
 			destroy_fd.write ( "rm /etc/tinc/%s\n" % tincname )
+			destroy_fd.write ( "true\n" )
 			destroy_fd.close ()
 			start_fd=open(self.topology.get_deploy_script(host.name,"start"), "a")
 			start_fd.write ( "tincd --net=%s\n" % tincname )
@@ -64,12 +66,16 @@ class TincConnector(Connector):
 			start_fd.close ()
 			stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
 			stop_fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
+			stop_fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
+			stop_fd.write ( "true\n" )
 			stop_fd.close ()
 		for con in self.connections:
 			host = con.interface.device.host
+			tincname = self.topology.id + "_" + self.id + "_" + con.interface.device.id + "_" + con.interface.id
 			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
 			for con2 in self.connections:
 				host2 = con2.interface.device.host
-				path2 = self.topology.get_deploy_dir(host2.name) + "/" + tincname
-				if not host.name == host2.name:
-					shutil.copy(path+"/hosts/"+tincify(host.name), path2+"/hosts/"+tincify(host.name))
+				tincname2 = self.topology.id + "_" + self.id + "_" + con2.interface.device.id + "_" + con2.interface.id
+				path2 = self.topology.get_deploy_dir(host2.name) + "/" + tincname2
+				if not tincname == tincname2:
+					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)

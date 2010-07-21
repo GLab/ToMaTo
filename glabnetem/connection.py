@@ -12,6 +12,6 @@ class Connection(XmlObject):
 
 	def encode_xml (self, dom, doc):
 		XmlObject.encode_xml(self, dom)
-		
+
 	device_id=property(curry(XmlObject.get_attr, "device"), curry(XmlObject.set_attr, "device"))
 	interface_id=property(curry(XmlObject.get_attr, "interface"), curry(XmlObject.set_attr, "interface"))

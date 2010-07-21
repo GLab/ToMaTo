@@ -42,12 +42,15 @@ class OpenVZDevice(Device):
 			start_fd.write("ip link set %s up\n" % self.bridge_name(iface) )
 			stop_fd.write("ip link set %s down\n" % self.bridge_name(iface) )
 			stop_fd.write("brctl delbr %s\n" % self.bridge_name(iface) )
+		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
+		for iface in self.interfaces.values():
 			ip4 = iface.attributes.get("ip4_address",None)
 			netmask = iface.attributes.get("ip4_netmask",None)
 			if ip4:
-				start_fd.write("vzctl exec ifconfig %s %s %s up\n" % ( iface.id, ip4, netmask ) ) 
-		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
+				start_fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
 		create_fd.close()
+		destroy_fd.write ( "true\n" )
 		destroy_fd.close()
 		start_fd.close()
+		stop_fd.write ( "true\n" )
 		stop_fd.close()
