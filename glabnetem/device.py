@@ -10,7 +10,10 @@ class Device(XmlObject):
 		self.interfaces={}
 		self.topology = topology
 		self.decode_xml ( dom )
-		self.host = HostStore.get(self.host_name)
+		try:
+			self.host = HostStore.get(self.host_name)
+		except KeyError:
+			raise Exception("Unknown host: %s" % self.host_name)
 		
 	def add_if ( self, iface ):
 		self.interfaces[iface.id] = iface

@@ -5,7 +5,7 @@ from config import *
 from resource_store import *
 from topology import *
 
-import atexit
+import atexit, os
 
 class TopologyStore(object):
 
@@ -32,7 +32,8 @@ class TopologyStore(object):
 		top = TopologyStore.topologies[id]
 		top.id = None
 		top.free_resources()
-		del TopologyStore.topologies[id] 
+		del TopologyStore.topologies[id]
+		os.remove(Config.topology_dir+"/"+str(id)+".xml")
 	remove = static(remove)
 		
 	def load():

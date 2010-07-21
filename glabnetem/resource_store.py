@@ -18,4 +18,4 @@ class ResourceStore(object):
 		return obj
 
 	def free (self, obj):
-		self.resources.add(obj)
+		self.resources.append(obj)

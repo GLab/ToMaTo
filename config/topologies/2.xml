@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<topology id="2" is_deployed="True">
+	<device host="glab040.e4.ukl.german-lab.de" id="node1" openvz_id="1002" type="openvz">
+		<interface id="eth1"/>
+		<interface id="eth0"/>
+	</device>
+	<device host="glab041.e4.ukl.german-lab.de" id="node2" openvz_id="1000" type="openvz">
+		<interface id="eth0"/>
+	</device>
+	<connector id="switch1" type="switch">
+		<connection device="node1" interface="eth0" port_number="5002"/>
+		<connection device="node2" interface="eth0" port_number="5000"/>
+	</connector>
+	<connector id="internet" physical_device="eth0" type="real">
+		<connection device="node1" interface="eth1"/>
+	</connector>
+</topology>

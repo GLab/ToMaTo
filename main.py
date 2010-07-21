@@ -128,4 +128,7 @@ def main(argv):
 	{"topology": topology, "host": host}.get(argv[0],usage)(argv[1:])
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+	#try:
+	main(sys.argv[1:])
+	#except Exception as ex:
+	#	print ex
