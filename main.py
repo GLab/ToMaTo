@@ -102,7 +102,8 @@ def host(argv):
 	if len(argv) == 0:
 		usage(None)
 		return
-	{"list": host_list, "add": host_add, "remove": host_remove}.get(argv[0],usage)(argv[1:])
+	{"list": host_list, "add": host_add, "remove": host_remove, 
+	"check": host_check}.get(argv[0],usage)(argv[1:])
 
 def host_list(argv):
 	if not len(argv) == 0:
@@ -122,6 +123,12 @@ def host_remove(argv):
 		usage(None)
 		return
 	HostStore.remove(argv[0])
+
+def host_check(argv):
+	if not len(argv) == 1:
+		usage(None)
+		return
+	Host(argv[0]).check()
 
 def main(argv):
 	if len(argv) == 0:
