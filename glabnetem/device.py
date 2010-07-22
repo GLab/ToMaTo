@@ -6,10 +6,10 @@ from host_store import *
 
 class Device(XmlObject):
   
-	def __init__ ( self, topology, dom ):
+	def __init__ ( self, topology, dom, load_ids ):
 		self.interfaces={}
 		self.topology = topology
-		self.decode_xml ( dom )
+		Device.decode_xml ( self, dom, load_ids )
 		try:
 			self.host = HostStore.get(self.host_name)
 		except KeyError:
@@ -28,14 +28,14 @@ class Device(XmlObject):
 	type=property(curry(XmlObject.get_attr, "type"), curry(XmlObject.set_attr, "type"))
 	host_name=property(curry(XmlObject.get_attr, "host"), curry(XmlObject.set_attr, "host"))
 
-	def decode_xml ( self, dom ):
+	def decode_xml ( self, dom, load_ids ):
 		XmlObject.decode_xml(self,dom)
 		for interface in dom.getElementsByTagName ( "interface" ):
-			self.add_if ( Interface(self,interface) )
+			self.add_if ( Interface(self,interface, load_ids) )
 
-	def encode_xml ( self, dom, doc ):
+	def encode_xml ( self, dom, doc, print_ids ):
 		XmlObject.encode_xml(self,dom)
 		for interface in self.interfaces.values():
 			iface = doc.createElement("interface")
-			interface.encode_xml(iface,doc)
+			interface.encode_xml(iface,doc, print_ids)
 			dom.appendChild(iface)

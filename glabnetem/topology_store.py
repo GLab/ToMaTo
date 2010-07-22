@@ -41,7 +41,7 @@ class TopologyStore(object):
 		if not os.path.exists(Config.topology_dir):
 			return
 		for file in os.listdir(Config.topology_dir):
-			TopologyStore.add_id ( Topology(Config.topology_dir+"/"+file) )
+			TopologyStore.add_id ( Topology(Config.topology_dir+"/"+file, True) )
 		for top in TopologyStore.topologies.values():
 			top.take_resources()
 	load = static(load)
@@ -50,7 +50,7 @@ class TopologyStore(object):
 		if not os.path.exists(Config.topology_dir):
 			os.makedirs(Config.topology_dir)
 		for top in TopologyStore.topologies.values():
-			top.save_to(Config.topology_dir+"/"+top.id+".xml")
+			top.save_to(Config.topology_dir+"/"+top.id+".xml",True)
 	save = static(save)
 
 TopologyStore.load()

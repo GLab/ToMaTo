@@ -4,15 +4,28 @@ from util import *
 
 class Connection(XmlObject):
   
-	def __init__ ( self, connector, dom ):
+	def __init__ ( self, connector, dom, load_ids ):
 		self.connector = connector
-		XmlObject.decode_xml(self,dom)
+		self.decode_xml ( dom, load_ids )
 		self.device = connector.topology.devices[self.device_id]
 		self.interface = self.device.interfaces[self.interface_id]
 		self.interface.connection = self
 
-	def encode_xml (self, dom, doc):
+	def encode_xml (self, dom, doc, print_ids):
 		XmlObject.encode_xml(self, dom)
+		if not print_ids:
+			if dom.hasAttribute("bridge_id"):
+				dom.removeAttribute("bridge_id")
+				if dom.hasAttribute("bridge_name"):
+					dom.removeAttribute("bridge_name")
+
+	def decode_xml (self, dom, load_ids):
+		if not load_ids:
+			if dom.hasAttribute("bridge_id"):
+				dom.removeAttribute("bridge_id")
+				if dom.hasAttribute("bridge_name"):
+					dom.removeAttribute("bridge_name")
+		XmlObject.decode_xml(self,dom)
 
 	bridge_name=property(curry(XmlObject.get_attr, "bridge"), curry(XmlObject.set_attr, "bridge"))
 	bridge_id=property(curry(XmlObject.get_attr, "bridge_id"), curry(XmlObject.set_attr, "bridge_id"))
@@ -30,6 +43,7 @@ class Connection(XmlObject):
 		if self.bridge_id:
 			pipe_id = self.bridge_id * 10
 			pipe_config=""
+			start_fd.write("modprobe ipfw_mod\n")
 			start_fd.write("ipfw add %s pipe %s via %s out\n" % ( pipe_id, pipe_id, self.bridge_name ) )
 			if self.delay:
 				pipe_config = pipe_config + " " + "delay %s" % self.delay

@@ -15,9 +15,9 @@
 	</device>
 	<connector id="switch1" type="switch">
 		<connection bridge="gbr1004" bridge_id="1004" device="node2" interface="eth0" port_number="7000" tinc_id="16"/>
-		<connection bridge="gbr1004" bridge_id="1004" device="node1" interface="eth0" port_number="7000" tinc_id="17"/>
 		<connection bridge="gbr1005" bridge_id="1005" device="entry" interface="eth0" port_number="7001" tinc_id="18"/>
 		<connection bridge="gbr1005" bridge_id="1005" device="node3" interface="eth0" port_number="7001" tinc_id="15"/>
+		<connection bridge="gbr1004" bridge_id="1004" device="node1" interface="eth0" port_number="7000" tinc_id="17"/>
 	</connector>
 	<connector bridge_name="vmbr0" id="internet" type="real">
 		<connection bridge="vmbr0" device="entry" interface="eth1"/>

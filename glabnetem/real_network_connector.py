@@ -5,8 +5,8 @@ from util import *
 
 class RealNetworkConnector(Connector):
 
-	def __init__(self, topology, dom):
-		Connector.__init__(self, topology, dom)
+	def __init__(self, topology, dom, load_ids):
+		Connector.__init__(self, topology, dom, load_ids)
 		if not self.bridge_name:
 			self.bridge_name = "vmbr0"
 		for con in self.connections:

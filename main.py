@@ -2,10 +2,10 @@
 
 import sys
 
-from glabnetem.topology_store import *
-from glabnetem.topology import *
 from glabnetem.host_store import *
 from glabnetem.host import *
+from glabnetem.topology_store import *
+from glabnetem.topology import *
 
 
 def usage(argv):
@@ -48,13 +48,13 @@ def topology_import(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	print "Created ID %s " % TopologyStore.add(Topology(argv[0]))
+	print "Created ID %s " % TopologyStore.add(Topology(argv[0], False))
 
 def topology_export(argv):
 	if not len(argv) == 2:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).save_to(argv[1])
+	TopologyStore.get(int(argv[0])).save_to(argv[1], False)
 
 def topology_print(argv):
 	if not len(argv) == 1:

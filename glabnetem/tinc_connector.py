@@ -10,8 +10,9 @@ class TincConnector(Connector):
 
 	tinc_ids = ResourceStore(1,10000)
 
-	def __init__(self, topology, dom ):
-		Connector.__init__(self, topology, dom)
+	def __init__(self, topology, dom, load_ids):
+		Connector.__init__(self, topology, dom, load_ids)
+		self.decode_xml(dom, load_ids)
 		Connection.port_number = property(curry(Connection.get_attr, "port_number"), curry(Connection.set_attr, "port_number"))
 		Connection.tinc_id = property(curry(Connection.get_attr, "tinc_id"), curry(Connection.set_attr, "tinc_id"))
 
@@ -38,6 +39,21 @@ class TincConnector(Connector):
 			con.port_number = None
 			TincConnector.tinc_ids.free(con.tinc_id)
 			con.tinc_id = None
+
+	def decode_xml ( self, dom, load_ids ):
+		if not load_ids:
+			for con in connections:
+				con.port_number = None
+				con.tinc_id = None
+
+	def encode_xml ( self, dom, doc, print_ids ):
+		Connector.encode_xml(self,dom,doc,print_ids)
+		if not print_ids:
+			for con in dom.getElementsByTagName ( "connection" ):
+				if con.hasAttribute("port_number"):
+					con.removeAttribute("port_number")
+				if con.hasAttribute("tinc_id"):
+					con.removeAttribute("tinc_id")
 
 	def tincname(self, con):
 		return "tinc_" + con.tinc_id

@@ -13,10 +13,10 @@ import shutil, os, stat
 
 class Topology(XmlObject):
   
-	def __init__ (self, file):
+	def __init__ (self, file, load_ids):
 		self.devices={}
 		self.connectors={}
-		self.load_from(file)
+		self.load_from(file, load_ids)
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	is_deployed=property(curry(XmlObject.get_attr, "is_deployed", res_type=bool, default=False), curry(XmlObject.set_attr, "is_deployed"))
@@ -29,40 +29,46 @@ class Topology(XmlObject):
 		connector.topology = self
 		self.connectors[connector.id] = connector
 		
-	def load_from ( self, file ):
+	def load_from ( self, file, load_ids ):
 		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
+		if not load_ids:
+			if x_top.hasAttribute("id"):
+				x_top.removeAttribute("id")
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
-			self.add_device ( Type ( self, x_dev ) )
+			self.add_device ( Type ( self, x_dev, load_ids ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
 			Type = { "hub": TincConnector, "switch": TincConnector, "router": TincConnector, "real": RealNetworkConnector }[x_con.getAttribute("type")]
-			self.add_connector ( Type ( self, x_con ) )
+			self.add_connector ( Type ( self, x_con, load_ids ) )
 			
-	def create_dom ( self ):
+	def create_dom ( self, print_ids ):
 		dom = minidom.Document()
 		x_top = dom.createElement ( "topology" )
 		XmlObject.encode_xml(self,x_top)
+		if not print_ids:
+			if x_top.hasAttribute("id"):
+				x_top.removeAttribute("id")
 		dom.appendChild ( x_top )
 		for dev in self.devices.values():
 			x_dev = dom.createElement ( "device" )
-			dev.encode_xml ( x_dev, dom )
+			dev.encode_xml ( x_dev, dom, print_ids )
 			x_top.appendChild ( x_dev )
 		for con in self.connectors.values():
 			x_con = dom.createElement ( "connector" )
-			con.encode_xml ( x_con, dom )
+			con.encode_xml ( x_con, dom, print_ids )
 			x_top.appendChild ( x_con )
 		return dom
 
-	def save_to (self, file):
-		dom = self.create_dom()
+	def save_to (self, file, print_ids):
+		dom = self.create_dom(print_ids)
 		fd = open ( file, "w" )
 		dom.writexml(fd, indent="", addindent="\t", newl="\n")
 		fd.close()
 
 	def output (self):
-		dom = self.create_dom()
+		dom = self.create_dom(False)
 		print dom.toprettyxml(indent="\t", newl="\n")
 
 	def retake_resources ( self ):

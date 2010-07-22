@@ -9,11 +9,26 @@ import os
 
 class OpenVZDevice(Device):
   
+	def __init__(self, topology, dom, load_ids):
+		Device.__init__(self, topology, dom, load_ids)
+		self.decode_xml(dom, load_ids)
+
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	template=property(curry(Device.get_attr, "template", default=Config.default_template), curry(Device.set_attr, "template"))
 	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
 	hostname=property(curry(Device.get_attr, "hostname"), curry(Device.set_attr, "hostname"))
 	
+	def decode_xml ( self, dom, load_ids ):
+		if not load_ids:
+			if dom.hasAttribute("openvz_id"):
+				dom.removeAttribute("openvz_id")
+
+	def encode_xml ( self, dom, doc, print_ids ):
+		Device.encode_xml(self,dom,doc,print_ids)
+		if not print_ids:
+			if dom.hasAttribute("openvz_id"):
+				dom.removeAttribute("openvz_id")
+
 	def retake_resources(self):
 		if self.openvz_id:
 			self.host.openvz_ids.take_specific(self.openvz_id)
