@@ -19,8 +19,8 @@ class Topology(XmlObject):
 		self.load_from(file, load_ids)
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
-	is_deployed=property(curry(XmlObject.get_attr, "is_deployed", res_type=bool, default=False), curry(XmlObject.set_attr, "is_deployed"))
-
+	state=property(curry(XmlObject.get_attr, "state"), curry(XmlObject.set_attr, "state"))
+	
 	def add_device ( self, device ):
 		device.topology = self
 		self.devices[device.id] = device
@@ -35,6 +35,8 @@ class Topology(XmlObject):
 		if not load_ids:
 			if x_top.hasAttribute("id"):
 				x_top.removeAttribute("id")
+			if x_top.hasAttribute("state"):
+				x_top.removeAttribute("state")
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
@@ -50,6 +52,8 @@ class Topology(XmlObject):
 		if not print_ids:
 			if x_top.hasAttribute("id"):
 				x_top.removeAttribute("id")
+			if x_top.hasAttribute("state"):
+				x_top.removeAttribute("state")
 		dom.appendChild ( x_top )
 		for dev in self.devices.values():
 			x_dev = dom.createElement ( "device" )
@@ -110,7 +114,8 @@ class Topology(XmlObject):
 		self.take_resources()
 		self.write_deploy_scripts()
 		self.upload_deploy_scripts()
-		self.is_deployed = True
+		if self.state == None:
+			self.state = "deployed"
 	
 	def write_deploy_scripts(self):
 		if not self.id:
@@ -153,8 +158,6 @@ class Topology(XmlObject):
 	def exec_script(self, script):
 		if not self.id:
 			raise Exception("not registered")
-		if not self.is_deployed:
-			raise Exception("not delpoyed")
 		print "executing %s ..." % script
 		script = "%s/%s/%s.sh" % ( Config.remote_deploy_dir, self.id, script )
 		for host in self.affected_hosts():
@@ -166,13 +169,49 @@ class Topology(XmlObject):
 			print
 
 	def start(self):
+		if self.state == None:
+			raise Exception ("not deployed")
+		if self.state == "deployed":
+			raise Exception ("not created")
+		if self.state == "created":
+			pass
+		if self.state == "started":
+			raise Exception ("already started")
 		self.exec_script("start")
+		self.state = "started"
 
 	def stop(self):
+		if self.state == None:
+			raise Exception ("not deployed")
+		if self.state == "deployed":
+			raise Exception ("not created")
+		if self.state == "created":
+			pass
+		if self.state == "started":
+			pass
 		self.exec_script("stop")
+		self.state = "created"
 
 	def create(self):
+		if self.state == None:
+			raise Exception ("not deployed")
+		if self.state == "deployed":
+			pass
+		if self.state == "created":
+			raise Exception ("already created")
+		if self.state == "started":
+			raise Exception ("already started")
 		self.exec_script("create")
+		self.state = "created"
 
 	def destroy(self):
+		if self.state == None:
+			raise Exception ("not deployed")
+		if self.state == "deployed":
+			pass
+		if self.state == "created":
+			pass
+		if self.state == "started":
+			raise Exception ("already started")
 		self.exec_script("destroy")
+		self.state = "deployed"

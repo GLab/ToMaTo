@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<topology id="3" is_deployed="True">
+<topology id="3" state="started">
 	<device host="glab040.e4.ukl.german-lab.de" id="node1" openvz_id="1000" root_password="test" type="openvz">
 		<interface id="eth0" ip4_address="10.1.1.2" ip4_netmask="255.255.255.0"/>
 	</device>

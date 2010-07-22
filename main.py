@@ -16,6 +16,7 @@ topology SUBCOMMAND [options]
 	print ID
 	import FILE
 	export ID FILE
+	status ID
 	remove ID
 	deploy ID
 	create ID
@@ -26,6 +27,7 @@ host SUBCOMMAND [options]
 	list
 	add NAME
 	remove NAME
+	check NAME
 """
 
 def topology(argv):
@@ -34,15 +36,15 @@ def topology(argv):
 		return
 	{"import": topology_import, "export": topology_export, "print": topology_print,
 	"remove": topology_remove, "deploy": topology_deploy, "create": topology_create,
-	"destroy": topology_destroy, "start": topology_start, 
-	"stop": topology_stop, "list": topology_list}.get(argv[0],usage)(argv[1:])
+	"destroy": topology_destroy, "start": topology_start, "stop": topology_stop,
+	"list": topology_list, "status": topology_status}.get(argv[0],usage)(argv[1:])
 
 def topology_list(argv):
 	if not len(argv) == 0:
 		usage(None)
 		return
 	for top in TopologyStore.topologies.values():
-		print top.id
+		print top.id, top.state
 
 def topology_import(argv):
 	if not len(argv) == 1:
@@ -61,6 +63,12 @@ def topology_print(argv):
 		usage(None)
 		return
 	TopologyStore.get(int(argv[0])).output()
+
+def topology_status(argv):
+	if not len(argv) == 1:
+		usage(None)
+		return
+	print TopologyStore.get(int(argv[0])).state
 
 def topology_remove(argv):
 	if not len(argv) == 1:
