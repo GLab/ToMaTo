@@ -24,6 +24,7 @@ class RealNetworkConnector(Connector):
 
 	def write_deploy_script(self):
 		print "\tcreating scripts for real network %s ..." % ( self.id )
+		# not invoking con.write_deploy_script()
 		for con in self.connections:
 			host = con.interface.device.host
 			bridge_name=con.bridge_name

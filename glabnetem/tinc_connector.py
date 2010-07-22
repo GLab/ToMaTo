@@ -46,6 +46,8 @@ class TincConnector(Connector):
 	def write_deploy_script(self):
 		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
 		for con in self.connections:
+			con.write_deploy_script()
+		for con in self.connections:
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
@@ -79,16 +81,12 @@ class TincConnector(Connector):
 			start_fd=open(self.topology.get_deploy_script(host.name,"start"), "a")
 			start_fd.write ( "tincd --net=%s\n" % tincname )
 			#FIXME: brctl does not work for routing
-			start_fd.write("brctl addbr %s\n" % con.bridge_name )
-			start_fd.write("ip link set %s up\n" % con.bridge_name )
 			start_fd.write ( "brctl addif %s %s\n" % (con.bridge_name, tincname ) )
 			start_fd.write ( "ip link set %s up\n" %  tincname )
 			start_fd.close ()
 			stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
 			stop_fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
 			stop_fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
-			stop_fd.write("ip link set %s down\n" % con.bridge_name )
-			stop_fd.write("brctl delbr %s\n" % con.bridge_name )
 			stop_fd.write ( "true\n" )
 			stop_fd.close ()
 		for con in self.connections:
