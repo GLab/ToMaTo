@@ -11,6 +11,9 @@ class RealNetworkConnector(Connector):
 			self.bridge_name = "vmbr0"
 		for con in self.connections:
 			con.bridge_name = self.bridge_name
+			if con.delay or con.bandwidth or con.lossratio:
+				raise Exception("ipfw not supported on real network")
+
 	bridge_name=property(curry(Connector.get_attr,"bridge_name"),curry(Connector.set_attr,"bridge_name"))
 
 	def retake_resources(self):

@@ -17,17 +17,17 @@
 		<interface id="eth0" ip4_address="10.1.1.4" ip4_netmask="255.255.255.0"/>
 	</device>
 	<connector id="switch2" type="switch">
-		<connection bridge="gbr1000" bridge_id="1000" device="node2" interface="eth0" port_number="7005" tinc_id="8"/>
 		<connection bridge="gbr1000" bridge_id="1000" device="node4" interface="eth0" port_number="7005" tinc_id="7"/>
+		<connection bridge="gbr1000" bridge_id="1000" device="node2" interface="eth0" port_number="7005" tinc_id="8"/>
 	</connector>
 	<connector id="switch1" type="switch">
-		<connection bridge="gbr1001" bridge_id="1001" device="node1" interface="eth0" port_number="7006" tinc_id="10"/>
 		<connection bridge="gbr1001" bridge_id="1001" device="node3" interface="eth0" port_number="7006" tinc_id="9"/>
+		<connection bridge="gbr1001" bridge_id="1001" device="node1" interface="eth0" port_number="7006" tinc_id="10"/>
 	</connector>
 	<connector id="router1" type="switch">
+		<connection bridge="gbr1003" bridge_id="1003" device="node2" interface="eth1" port_number="7008" tinc_id="14"/>
 		<connection bridge="gbr1002" bridge_id="1002" device="node1" interface="eth1" port_number="7007" tinc_id="13"/>
 		<connection bridge="gbr1003" bridge_id="1003" device="node4" interface="eth1" port_number="7007" tinc_id="11"/>
 		<connection bridge="gbr1002" bridge_id="1002" device="node3" interface="eth1" port_number="7008" tinc_id="12"/>
-		<connection bridge="gbr1003" bridge_id="1003" device="node2" interface="eth1" port_number="7008" tinc_id="14"/>
 	</connector>
 </topology>
