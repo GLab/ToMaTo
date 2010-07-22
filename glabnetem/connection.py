@@ -37,6 +37,7 @@ class Connection(XmlObject):
 	lossrate=property(curry(XmlObject.get_attr, "lossrate"), curry(XmlObject.set_attr, "lossrate"))
 	
 	def write_deploy_script(self):
+		host = self.device.host
 		start_fd=open(self.connector.topology.get_deploy_script(host.name,"start"), "a")
 		start_fd.write("brctl addbr %s\n" % self.bridge_name )
 		start_fd.write("ip link set %s up\n" % self.bridge_name )
@@ -55,7 +56,7 @@ class Connection(XmlObject):
 				start_fd.write("ipfw add %s prob %s via %s out drop\n" % ( pipe_id+1, self.lossrate, self.bridge_name ) )
 				
 		start_fd.close()
-		stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
+		stop_fd=open(self.connector.topology.get_deploy_script(host.name,"stop"), "a")
 		stop_fd.write("ip link set %s down\n" % self.bridge_name )
 		stop_fd.write("brctl delbr %s\n" % self.bridge_name )
 		if self.bridge_id:
