@@ -15,15 +15,6 @@ class Device(XmlObject):
 		except KeyError:
 			raise Exception("Unknown host: %s" % self.host_name)
 		
-	def add_if ( self, iface ):
-		self.interfaces[iface.id] = iface
-		
-	def del_if ( self, if_id ):
-		del self.interfaces[if_id]
-		
-	def get_if ( self, if_id ):
-		return self.interfaces[if_id]
-	
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	type=property(curry(XmlObject.get_attr, "type"), curry(XmlObject.set_attr, "type"))
 	host_name=property(curry(XmlObject.get_attr, "host"), curry(XmlObject.set_attr, "host"))
@@ -31,7 +22,8 @@ class Device(XmlObject):
 	def decode_xml ( self, dom, load_ids ):
 		XmlObject.decode_xml(self,dom)
 		for interface in dom.getElementsByTagName ( "interface" ):
-			self.add_if ( Interface(self,interface, load_ids) )
+			iface = Interface(self,interface, load_ids)
+			self.interfaces[iface.id] = iface
 
 	def encode_xml ( self, dom, doc, print_ids ):
 		XmlObject.encode_xml(self,dom)

@@ -125,7 +125,9 @@ def host_add(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	HostStore.add(Host(argv[0]))
+	host = Host(argv[0])
+	host.check()
+	HostStore.add(host)
 
 def host_remove(argv):
 	if not len(argv) == 1:
