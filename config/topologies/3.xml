@@ -14,8 +14,8 @@
 		<interface id="eth0" ip4_address="10.1.1.3" ip4_netmask="255.255.255.0"/>
 	</device>
 	<connector id="switch1" type="switch">
-		<connection bridge="gbr1005" bridge_id="1005" delay="50ms" device="entry" interface="eth0" lossratio="0.05" port_number="7001" tinc_id="18"/>
 		<connection bridge="gbr1004" bridge_id="1004" device="node2" interface="eth0" port_number="7000" tinc_id="16"/>
+		<connection bridge="gbr1005" bridge_id="1005" delay="50ms" device="entry" interface="eth0" lossratio="0.05" port_number="7001" tinc_id="18"/>
 		<connection bridge="gbr1005" bridge_id="1005" device="node3" interface="eth0" port_number="7001" tinc_id="15"/>
 		<connection bridge="gbr1004" bridge_id="1004" device="node1" interface="eth0" port_number="7000" tinc_id="17"/>
 	</connector>

@@ -1,11 +1,12 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import sys
 
-from glabnetem.host_store import *
-from glabnetem.host import *
-from glabnetem.topology_store import *
-from glabnetem.topology import *
+from glabnetman.host_store import *
+from glabnetman.host import *
+from glabnetman.topology_store import *
+from glabnetman.topology import *
 
 
 def usage(argv):
