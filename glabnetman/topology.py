@@ -12,24 +12,55 @@ from resource_store import *
 import shutil, os, stat
 
 class Topology(XmlObject):
-  
+	"""
+	This class represents a whole topology and offers methods to work with it
+	"""
+
 	def __init__ (self, file, load_ids):
+		"""
+		Creates a new topology
+		@param file the xml file to load the topology definition from
+		@param load_ids whether to load or ignore assigned ids from that file
+		"""
 		self.devices={}
 		self.connectors={}
 		self.load_from(file, load_ids)
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
+	"""
+	The id of the topology, this is an assigned value
+	"""
+	
 	state=property(curry(XmlObject.get_attr, "state"), curry(XmlObject.set_attr, "state"))
+	"""
+	The state of the topology, this is an assigned value. The states are considered to be in order:
+	None -> deployed -> created -> started
+	None		the topology has not been delpoyed
+	delpoyed	the topology has been deployed to the hosts but has not been created yet
+	created		the topology has been deployed and all devices have been created
+	started		the topology has been deployed, created and is currently up and running
+	"""
 	
 	def add_device ( self, device ):
+		"""
+		Adds a device to the device map and sets the topology of the device
+		"""
 		device.topology = self
 		self.devices[device.id] = device
 		
 	def add_connector ( self, connector ):
+		"""
+		Adds a connector to the connector map and sets the topology of the connector
+		"""
 		connector.topology = self
 		self.connectors[connector.id] = connector
 		
 	def load_from ( self, file, load_ids ):
+		"""
+		Loads this topology from a file
+		@param file the xml file to load the topology definition from
+		@param load_ids whether to load or ignore assigned ids from that file
+		"""
 		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
 		if not load_ids:
@@ -46,6 +77,10 @@ class Topology(XmlObject):
 			self.add_connector ( Type ( self, x_con, load_ids ) )
 			
 	def create_dom ( self, print_ids ):
+		"""
+		Creates an xml dom object containing the xml representation of this topology
+		@param print_ids whether to store or ignore assigned ids int the dom
+		"""
 		dom = minidom.Document()
 		x_top = dom.createElement ( "topology" )
 		XmlObject.encode_xml(self,x_top)
@@ -66,49 +101,88 @@ class Topology(XmlObject):
 		return dom
 
 	def save_to (self, file, print_ids):
+		"""
+		Saves the xml representation of this topology in a file
+		@param file the file to save to
+		@param print_ids whether to store or ignore assigned ids int the file
+		"""
 		dom = self.create_dom(print_ids)
 		fd = open ( file, "w" )
 		dom.writexml(fd, indent="", addindent="\t", newl="\n")
 		fd.close()
 
 	def output (self):
+		"""
+		Prints the xml representation of this topology to stdout
+		"""
 		dom = self.create_dom(False)
 		print dom.toprettyxml(indent="\t", newl="\n")
 
 	def retake_resources ( self ):
+		"""
+		Take all resources that this topology once had. Fields containing the ids of assigned resources control which resources will be taken.
+		"""
 		for dev in self.devices.values():
 			dev.retake_resources()
 		for con in self.connectors.values():
 			con.retake_resources()
 
 	def take_resources ( self ):
+		"""
+		Take free resources for all unassigned resource slots. The number of the resources will be stored in internal fields.
+		"""
 		for dev in self.devices.values():
 			dev.take_resources()
 		for con in self.connectors.values():
 			con.take_resources()
 
 	def free_resources ( self ):
+		"""
+		Free all resources for all resource slots.
+		"""
 		for dev in self.devices.values():
 			dev.free_resources()
 		for con in self.connectors.values():
 			con.free_resources()
 
 	def affected_hosts (self):
+		"""
+		The set of all hosts that this topology has devices on.
+		"""
 		hosts=set()
 		for dev in self.devices.values():
 			hosts.add(dev.host)
 		return hosts
 
 	def get_deploy_dir(self,host_name):
+		"""
+		The local directory where all control scripts and files are stored.
+		@param host_name the name of the host for the deployment
+		"""
 		return Config.local_deploy_dir+"/"+host_name
 
 	def get_remote_deploy_dir(self):
+		"""
+		The remote directory where all control scripts and files will be copied to.
+		"""
 		return Config.remote_deploy_dir+"/"+str(self.id)
 
 	def get_deploy_script(self,host_name,script):
+		"""
+		The local path of a specific control script.
+		@param host_name the name of the host for the deployment
+		@param script the name of the script without .sh
+		"""
 		return self.get_deploy_dir(host_name)+"/"+script+".sh"
 
 	def deploy(self):
+		"""
+		This will deploy the topology to the testbed in thwe following steps:
+		1. Fill all unassigned resource slots
+		2. Create the control scripts
+		3. Upload the control scripts
+		Note: this can be done even if the topology is already deployed or even running
+		"""
 		if not self.id:
 			raise Exception("not registered")
 		self.take_resources()
@@ -118,6 +192,9 @@ class Topology(XmlObject):
 			self.state = "deployed"
 	
 	def write_deploy_scripts(self):
+		"""
+		Creates all control scripts and stores them in a local directory.
+		"""
 		if not self.id:
 			raise Exception("not registered")
 		print "creating scripts ..."
@@ -138,6 +215,9 @@ class Topology(XmlObject):
 			con.write_deploy_script()
 
 	def upload_deploy_scripts(self):
+		"""
+		Uploads all control scripts stored in a local directory.
+		"""
 		if not self.id:
 			raise Exception("not registered")
 		print "uploading scripts ..."
@@ -156,6 +236,10 @@ class Topology(XmlObject):
 			print
 	
 	def exec_script(self, script):
+		"""
+		Executes a control script.
+		@param script the script to execute
+		"""
 		if not self.id:
 			raise Exception("not registered")
 		print "executing %s ..." % script
@@ -169,6 +253,10 @@ class Topology(XmlObject):
 			print
 
 	def start(self):
+		"""
+		Starts the topology.
+		This will fail if the topology has not been deployed or created yet or is already started.
+		"""
 		if self.state == None:
 			raise Exception ("not deployed")
 		if self.state == "deployed":
@@ -181,6 +269,10 @@ class Topology(XmlObject):
 		self.state = "started"
 
 	def stop(self):
+		"""
+		Stops the topology.
+		This will fail if the topology has not been deployed or created yet.
+		"""
 		if self.state == None:
 			raise Exception ("not deployed")
 		if self.state == "deployed":
@@ -193,6 +285,10 @@ class Topology(XmlObject):
 		self.state = "created"
 
 	def create(self):
+		"""
+		Creates the topology.
+		This will fail if the topology has not been deployed yet or is already created or started.
+		"""
 		if self.state == None:
 			raise Exception ("not deployed")
 		if self.state == "deployed":
@@ -205,6 +301,10 @@ class Topology(XmlObject):
 		self.state = "created"
 
 	def destroy(self):
+		"""
+		Destroys the topology.
+		This will fail if the topology has not been deployed yet or is already started.
+		"""
 		if self.state == None:
 			raise Exception ("not deployed")
 		if self.state == "deployed":

@@ -7,16 +7,28 @@ from util import *
 import os, subprocess, shutil
 
 class TincConnector(Connector):
+	"""
+	This class represents a tinc connector
+	"""
 
 	tinc_ids = ResourceStore(1,10000)
 
 	def __init__(self, topology, dom, load_ids):
+		"""
+		Creates a tinc connector object
+		@param topology the parent topology object
+		@param dom the xml dom object of the connector
+		@param load_ids whether to lod or ignore assigned ids
+		"""
 		Connector.__init__(self, topology, dom, load_ids)
 		self.decode_xml(dom, load_ids)
 		Connection.port_number = property(curry(Connection.get_attr, "port_number"), curry(Connection.set_attr, "port_number"))
 		Connection.tinc_id = property(curry(Connection.get_attr, "tinc_id"), curry(Connection.set_attr, "tinc_id"))
 
 	def retake_resources(self):
+		"""
+		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
+		"""
 		for con in self.connections:
 			con.retake_resources()
 			if con.port_number:
@@ -25,6 +37,9 @@ class TincConnector(Connector):
 				TincConnector.tinc_ids.take_specific(con.tinc_id)
 
 	def take_resources(self):
+		"""
+		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		"""
 		for con in self.connections:
 			con.take_resources()
 			if not con.port_number:
@@ -33,6 +48,9 @@ class TincConnector(Connector):
 				con.tinc_id = TincConnector.tinc_ids.take()
 
 	def free_resources(self):
+		"""
+		Free all resources for all resource slots of this object and its child objects.
+		"""
 		for con in self.connections:
 			con.free_resources()
 			con.interface.device.host.ports.free(con.port_number)
@@ -41,12 +59,23 @@ class TincConnector(Connector):
 			con.tinc_id = None
 
 	def decode_xml ( self, dom, load_ids ):
+		"""
+		Read the attributes from the xml dom object
+		@param dom the xml dom object to read the data from
+		@load_ids whether to load or ignore assigned ids
+		"""
 		if not load_ids:
 			for con in connections:
 				con.port_number = None
 				con.tinc_id = None
 
 	def encode_xml ( self, dom, doc, print_ids ):
+		"""
+		Encode the object to an xml dom object
+		@param dom the xml dom object to write the data to
+		@param doc the xml document needed to create child elements
+		@print_ids whether to include or ignore assigned ids
+		"""
 		Connector.encode_xml(self,dom,doc,print_ids)
 		if not print_ids:
 			for con in dom.getElementsByTagName ( "connection" ):
@@ -60,6 +89,9 @@ class TincConnector(Connector):
 				
 
 	def write_deploy_script(self):
+		"""
+		Write the control scrips for this object and its child objects
+		"""
 		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
 		for con in self.connections:
 			con.write_deploy_script()

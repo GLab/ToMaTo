@@ -6,6 +6,9 @@ from util import *
 import os
 
 class DhcpdDevice(Device):
+	"""
+	This class represents a dhcpd device 
+	"""
   
 	subnet=property(curry(Device.get_attr,"subnet"),curry(Device.set_attr,"subnet"))
 	netmask=property(curry(Device.get_attr,"netmask"),curry(Device.set_attr,"netmask"))
@@ -14,22 +17,38 @@ class DhcpdDevice(Device):
 	nameserver=property(curry(Device.get_attr,"nameserver"),curry(Device.set_attr,"nameserver"))
 
 	def retake_resources(self):
+		"""
+		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
+		"""
 		pass
 
 	def take_resources(self):
+		"""
+		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		"""
 		pass
 
 	def free_resources(self):
+		"""
+		Free all resources for all resource slots of this object and its child objects.
+		"""
 		pass
 
 	def bridge_name(self, interface):
-		# must be 16 chars or less
+		"""
+		Returns the name of the bridge for the connection of the given interface
+		Note: This must be 16 characters or less for brctl to work
+		@param interface the interface
+		"""
 		if interface.connection:
 			return interface.connection.bridge_name
 		else:
 			return None
 
 	def write_deploy_script(self):
+		"""
+		Write the control scrips for this object and its child objects
+		"""
 		print "\tcreating scripts for dhcpd %s ..." % self.id
 		dhcpd_fd=open(self.topology.get_deploy_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )

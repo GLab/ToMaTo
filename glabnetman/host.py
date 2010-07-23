@@ -7,14 +7,24 @@ from config import *
 import subprocess
 
 class Host(object):
+	"""
+	This class represents a host
+	"""
 
 	def __init__(self, name):
+		"""
+		Creates a new host object
+		@param name the hostname (must be reachable by this name)
+		"""
 		self.name = name
 		self.ports = ResourceStore(7000,1000)
 		self.bridge_ids = ResourceStore(1000,1000)
 		self.openvz_ids = ResourceStore(1000,100)
 	
 	def check(self):
+		"""
+		Checks if the host is reachable, login works and the needed software is installed
+		"""
 		if parse_bool(Config.remote_dry_run):
 			print "DRY RUN: ssh root@%s vzctl --version" % self.name
 			print "DRY RUN: ssh root@%s brctl show" % self.name

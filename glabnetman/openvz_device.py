@@ -8,8 +8,17 @@ from config import *
 import os
 
 class OpenVZDevice(Device):
-  
+	"""
+	This class represents an openvz device
+	"""
+
 	def __init__(self, topology, dom, load_ids):
+		"""
+		Creates an openvz device object
+		@param topology the parent topology object
+		@param dom the xml dom object of the device
+		@param load_ids whether to lod or ignore assigned ids
+		"""
 		Device.__init__(self, topology, dom, load_ids)
 		self.decode_xml(dom, load_ids)
 
@@ -19,37 +28,64 @@ class OpenVZDevice(Device):
 	hostname=property(curry(Device.get_attr, "hostname"), curry(Device.set_attr, "hostname"))
 	
 	def decode_xml ( self, dom, load_ids ):
+		"""
+		Read the attributes from the xml dom object
+		@param dom the xml dom object to read the data from
+		@load_ids whether to load or ignore assigned ids
+		"""
 		if not load_ids:
 			if dom.hasAttribute("openvz_id"):
 				dom.removeAttribute("openvz_id")
 
 	def encode_xml ( self, dom, doc, print_ids ):
+		"""
+		Encode the object to an xml dom object
+		@param dom the xml dom object to write the data to
+		@param doc the xml document needed to create child elements
+		@print_ids whether to include or ignore assigned ids
+		"""
 		Device.encode_xml(self,dom,doc,print_ids)
 		if not print_ids:
 			if dom.hasAttribute("openvz_id"):
 				dom.removeAttribute("openvz_id")
 
 	def retake_resources(self):
+		"""
+		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
+		"""
 		if self.openvz_id:
 			self.host.openvz_ids.take_specific(self.openvz_id)
 	
 	def take_resources(self):
+		"""
+		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		"""
 		if not self.openvz_id:
 			self.openvz_id=self.host.openvz_ids.take()
 
 	def free_resources(self):
+		"""
+		Free all resources for all resource slots of this object and its child objects.
+		"""
 		if self.openvz_id:
 			self.host.openvz_ids.free(self.openvz_id)
 			self.openvz_id=None
 
 	def bridge_name(self, interface):
-		# must be 16 chars or less
+		"""
+		Returns the name of the bridge for the connection of the given interface
+		Note: This must be 16 characters or less for brctl to work
+		@param interface the interface
+		"""
 		if interface.connection:
 			return interface.connection.bridge_name
 		else:
 			return None
 
 	def write_deploy_script(self):
+		"""
+		Write the control scrips for this object and its child objects
+		"""
 		print "\tcreating scripts for openvz %s ..." % self.id
 		create_fd=open(self.topology.get_deploy_script(self.host_name,"create"), "a")
 		create_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
