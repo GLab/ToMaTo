@@ -1,13 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
+import sys, xmlrpclib
 
-from glabnetman.host_store import *
-from glabnetman.host import *
-from glabnetman.topology_store import *
-from glabnetman.topology import *
-
+api=xmlrpclib.ServerProxy('http://localhost:8000')
 
 def usage(argv):
 	print """Glab NetEm control tool
@@ -44,102 +40,98 @@ def topology_list(argv):
 	if not len(argv) == 0:
 		usage(None)
 		return
-	for top in TopologyStore.topologies.values():
-		print top.id, top.state
+	for top in api.top_list():
+		print top['id'], top['state']
 
 def topology_import(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	print "Created ID %s " % TopologyStore.add(Topology(argv[0], False))
+	xml="".join(open(argv[0],"r").readlines())
+	id=api.top_import(xml)
+	print "Created ID %s " % id
 
 def topology_export(argv):
 	if not len(argv) == 2:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).save_to(argv[1], False)
+	xml=api.top_get(int(argv[0]))
+	fd=open ( argv[1], "w" )
+	fd.write(xml)
+	fd.close()
 
 def topology_print(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).output()
+	print api.top_get(int(argv[0]))
 
 def topology_status(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	print TopologyStore.get(int(argv[0])).state
+	print api.top_info(int(argv[0])).state
 
 def topology_remove(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.remove(int(argv[0]))
+	print api.top_remove(int(argv[0]))
 
 def topology_deploy(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).deploy()
+	api.top_deploy(int(argv[0]))
 
 def topology_create(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).create()
+	api.top_create(int(argv[0]))
 
 def topology_destroy(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).destroy()
+	api.top_destroy(int(argv[0]))
 
 def topology_start(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).start()
+	api.top_start(int(argv[0]))
 
 def topology_stop(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	TopologyStore.get(int(argv[0])).stop()
+	api.top_stop(int(argv[0]))
 
 def host(argv):
 	if len(argv) == 0:
 		usage(None)
 		return
-	{"list": host_list, "add": host_add, "remove": host_remove, 
-	"check": host_check}.get(argv[0],usage)(argv[1:])
+	{"list": host_list, "add": host_add, "remove": host_remove}.get(argv[0],usage)(argv[1:])
 
 def host_list(argv):
 	if not len(argv) == 0:
 		usage(None)
 		return
-	for host in HostStore.hosts.values():
-		print host.name
+	for host in api.host_list():
+		print host['name']
 
 def host_add(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	host = Host(argv[0])
-	host.check()
-	HostStore.add(host)
+	api.host_add(argv[0])
 
 def host_remove(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	HostStore.remove(argv[0])
-
-def host_check(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	Host(argv[0]).check()
+	api.host_remove(argv[0])
 
 def main(argv):
 	if len(argv) == 0:

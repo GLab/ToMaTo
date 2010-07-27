@@ -5,6 +5,8 @@ from config import *
 from resource_store import *
 from topology import *
 
+from xml.dom import minidom
+
 import atexit, os
 
 class TopologyStore(object):
@@ -42,6 +44,7 @@ class TopologyStore(object):
 		@param topology the topology to add
 		"""
 		topology.id = str(TopologyStore.ids.take())
+		topology.take_resources()
 		TopologyStore.topologies[int(topology.id)] = topology
 		return topology.id
 	add = static(add)
@@ -65,7 +68,7 @@ class TopologyStore(object):
 		if not os.path.exists(Config.topology_dir):
 			return
 		for file in os.listdir(Config.topology_dir):
-			TopologyStore.add_id ( Topology(Config.topology_dir+"/"+file, True) )
+			TopologyStore.add_id ( Topology(minidom.parse(Config.topology_dir+"/"+file), True) )
 		for top in TopologyStore.topologies.values():
 			top.take_resources()
 	load = static(load)

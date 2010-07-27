@@ -65,7 +65,7 @@ class TincConnector(Connector):
 		@load_ids whether to load or ignore assigned ids
 		"""
 		if not load_ids:
-			for con in connections:
+			for con in self.connections:
 				con.port_number = None
 				con.tinc_id = None
 

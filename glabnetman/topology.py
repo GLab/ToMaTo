@@ -16,7 +16,7 @@ class Topology(XmlObject):
 	This class represents a whole topology and offers methods to work with it
 	"""
 
-	def __init__ (self, file, load_ids):
+	def __init__ (self, dom, load_ids):
 		"""
 		Creates a new topology
 		@param file the xml file to load the topology definition from
@@ -24,7 +24,7 @@ class Topology(XmlObject):
 		"""
 		self.devices={}
 		self.connectors={}
-		self.load_from(file, load_ids)
+		self.load_from(dom, load_ids)
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	"""
@@ -55,13 +55,12 @@ class Topology(XmlObject):
 		connector.topology = self
 		self.connectors[connector.id] = connector
 		
-	def load_from ( self, file, load_ids ):
+	def load_from ( self, dom, load_ids ):
 		"""
 		Loads this topology from a file
-		@param file the xml file to load the topology definition from
+		@param dom the xml dom to load the topology definition from
 		@param load_ids whether to load or ignore assigned ids from that file
 		"""
-		dom = minidom.parse ( file )
 		x_top = dom.getElementsByTagName ( "topology" )[0]
 		if not load_ids:
 			if x_top.hasAttribute("id"):
@@ -110,13 +109,6 @@ class Topology(XmlObject):
 		fd = open ( file, "w" )
 		dom.writexml(fd, indent="", addindent="\t", newl="\n")
 		fd.close()
-
-	def output (self):
-		"""
-		Prints the xml representation of this topology to stdout
-		"""
-		dom = self.create_dom(False)
-		print dom.toprettyxml(indent="\t", newl="\n")
 
 	def retake_resources ( self ):
 		"""
