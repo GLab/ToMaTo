@@ -1,0 +1,13 @@
+<html>
+<body>
+
+<h1>List of topologies</h1>
+
+<ul>
+{% for top in top_list %}
+  <li><a href="/top/{{top.id}}/">{{top.id}}: {{top.state}}</a></li>
+{% endfor %}
+</ul>
+
+</body>
+</html>
