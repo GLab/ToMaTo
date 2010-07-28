@@ -9,7 +9,7 @@ class Config(object):
 	This class represents the copnfiguration
 	"""
 	config=ConfigParser.SafeConfigParser()
-	config.read(['glabnetem.conf', '/etc/glabnetem.conf', os.path.expanduser('~/.glabnetem.conf')])
+	config.read(['glabnetman.conf', '/etc/glabnetman.conf', os.path.expanduser('~/.glabnetman.conf')])
 
 	"""
 	Retrieve a configuration value. If the configuration entry does not exist the default will be returned
