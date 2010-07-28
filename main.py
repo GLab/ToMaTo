@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, xmlrpclib
+import sys, xmlrpclib, getpass
 
-api=xmlrpclib.ServerProxy('http://admin:test@localhost:8000')
+user=raw_input("Username: ")
+password=getpass.getpass("Password: ")
+api=xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (user, password) )
 
 def usage(argv):
 	print """Glab NetEm control tool

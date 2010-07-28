@@ -15,7 +15,6 @@ def ldap_conn():
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION3)
     ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, Config.auth_ldap_server_cert)
-
     try:
         conn = ldap.initialize(uri=Config.auth_ldap_server_uri)
         conn.simple_bind(who=Config.auth_ldap_binddn,
