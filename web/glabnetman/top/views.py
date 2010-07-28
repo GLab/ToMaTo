@@ -37,7 +37,7 @@ def index(request):
 	if not getapi(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
-	return render_to_response("topologymanager/index.html", {'top_list': api.top_list()})
+	return render_to_response("top/index.html", {'top_list': api.top_list()})
     
 def detail(request, top_id):
 	if not getapi(request):
@@ -47,7 +47,7 @@ def detail(request, top_id):
 	if not top:
 		raise Http404
 	else:
-		return render_to_response("topologymanager/detail.html", {'top': top})
+		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
 		
 def showxml(request, top_id):
 	if not getapi(request):
@@ -60,7 +60,7 @@ def showxml(request, top_id):
 		if request.REQUEST.has_key("plain"):
 			return HttpResponse(xml, mimetype="text/plain")
 		else:
-			return render_to_response("topologymanager/showxml.html", {'xml': xml, 'top_id': top_id})
+			return render_to_response("top/showxml.html", {'top_id': top_id, 'xml': xml})
 		
 def remove(request, top_id):
 	if not getapi(request):

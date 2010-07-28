@@ -1,6 +1,6 @@
-<html>
-<body>
+{% extends "top/base.html" %}
 
+{% block content %}
 <h1>List of topologies</h1>
 
 <ul>
@@ -8,6 +8,4 @@
   <li><a href="/top/{{top.id}}/">{{top.id}}: {{top.state}}</a></li>
 {% endfor %}
 </ul>
-
-</body>
-</html>
+{% endblock %}

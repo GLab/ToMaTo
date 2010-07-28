@@ -1,0 +1,43 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"> 
+<html> 
+<head> 
+ 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+
+<title>German Lab</title> 
+<meta name="DESCRIPTION" content="German Lab Webpage" /> 
+ 
+<link href="/static/style/style.css" rel="stylesheet" type="text/css" /> 
+<title>German Lab::Home</title>
+
+</head>
+<body>
+
+<div id="border_top"></div> 
+<div id="page"> 
+	<div id="header"> 
+		<div id="minimenu_top" class="smallmenu"></div> 
+		<br class="clearer" /> 
+		<div id="logo"><a href="http://www.german-lab.de"><img border="0" src="/static/style/glablogo.jpg" alt="glablogo" /></a></div> 
+		<div id="menu_top">
+		{% block menu_top %}{% endblock %}
+		</div> 
+	</div> 
+ 
+	<div id="left"> 
+		{% block left %}{% endblock %}
+	</div> 
+ 
+	<div id="content">
+		{% block content %}{% endblock %}
+	</div> 
+	<br class="clearer" /> 
+</div> 
+<div id="footer"> 
+    <div id="legal">Copyright © 2008 University of Würzburg, on behalf of the German Lab</div> 
+</div>
+<div id="border_bottom"></div> 
+
+</body> 
+</html>

@@ -1,0 +1,30 @@
+{% extends "top/base.html" %}
+
+{% block content %}
+<h1>Detail view of topology {{top.id}}</h1>
+
+ID: {{top.id}}<br/>
+State: {{top.state}}<br/>
+{% endblock %}
+
+{% block left %}
+<div id="sidemenu">
+	<h2>Topology</h2>
+	<ul>
+		<li><a href="/top/{{top_id}}/remove">remove</a></li>
+		<li><a href="/top/{{top_id}}/showxml">show</a></li>
+		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
+	</ul>
+</div>
+
+<div id="sidemenu">
+	<h2>Deployment</h2>
+	<ul>
+		<li><a href="/top/{{top_id}}/deploy">deploy</a></li>
+		<li><a href="/top/{{top_id}}/create">create</a></li>
+		<li><a href="/top/{{top_id}}/destroy">destroy</a></li>
+		<li><a href="/top/{{top_id}}/start">start</a></li>
+		<li><a href="/top/{{top_id}}/stop">stop</a></li>
+	</ul>
+</div>
+{% endblock %}

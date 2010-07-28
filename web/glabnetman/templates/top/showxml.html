@@ -1,10 +1,10 @@
-<html>
-<body>
+{% extends "top/detail.html" %}
+
+{% block content %}
 <h1>Definition of topology {{top_id}}</h1>
 <pre>
 {{xml}}
 </pre>
 <br/><br/>
 <a href="/top/{{top_id}}">back to detail view</a>
-</body>
-</html>
+{% endblock %}
