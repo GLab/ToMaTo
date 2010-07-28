@@ -64,6 +64,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
+AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.RemoteUserAuthBackend',)
+
 ROOT_URLCONF = 'glabnetman.urls'
 
 TEMPLATE_DIRS = (
