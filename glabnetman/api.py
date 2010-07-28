@@ -35,21 +35,27 @@ class PublicAPI():
 	
 	def top_remove(self, top_id):
 		TopologyStore.remove(top_id)
+		return True
 	
 	def top_create(self, top_id):
 		TopologyStore.get(top_id).create()
+		return True
 	
 	def top_destroy(self, top_id):
 		TopologyStore.get(top_id).destroy()
+		return True
 	
 	def top_deploy(self, top_id):
 		TopologyStore.get(top_id).deploy()
+		return True
 	
 	def top_start(self, top_id):
 		TopologyStore.get(top_id).start()
+		return True
 	
 	def top_stop(self, top_id):
 		TopologyStore.get(top_id).stop()
+		return True
 	
 	def top_get(self, top_id, include_ids=False):
 		top=TopologyStore.get(top_id)
@@ -66,6 +72,8 @@ class PublicAPI():
 		host=Host(host_name)
 		host.check()
 		HostStore.add(host)
+		return True
 
 	def host_remove(self, host_name):
 		HostStore.remove(host_name)
+		return True
