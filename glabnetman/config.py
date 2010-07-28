@@ -25,6 +25,14 @@ class Config(object):
 	get = static(get)
 	
 
+Config.auth_ldap_server_uri = Config.get("auth","ldap_server_uri","ldaps://glab-ldap.german-lab.de:636")
+Config.auth_ldap_server_cert = Config.get("auth","ldap_server_cert",'/etc/ldap/certs/cacert.pem')
+Config.auth_ldap_binddn = Config.get("auth","ldap_binddn",'cn=ukl.bim,ou=system,dc=german-lab,dc=de')
+Config.auth_ldap_bindpw = Config.get("auth","ldap_bindpw",'somepw')
+Config.auth_ldap_identity_base = Config.get("auth","ldap_identity_base",'ou=identities,dc=german-lab,dc=de')
+Config.auth_ldap_user_group = Config.get("auth","ldap_user_group",'cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de')
+Config.auth_ldap_admin_group = Config.get("auth","ldap_admin_group",'cn=admin,ou=management,ou=groups,dc=german-lab,dc=de')
+
 Config.local_deploy_dir = Config.get("local","deploy_dir","/tmp/glabnetem")
 """
 The local directory to use for preparing control scripts before they are uploaded to the hosts.

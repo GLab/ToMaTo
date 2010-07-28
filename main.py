@@ -3,7 +3,7 @@
 
 import sys, xmlrpclib
 
-api=xmlrpclib.ServerProxy('http://localhost:8000')
+api=xmlrpclib.ServerProxy('http://admin:test@localhost:8000')
 
 def usage(argv):
 	print """Glab NetEm control tool

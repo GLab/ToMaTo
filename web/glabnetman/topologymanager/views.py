@@ -5,8 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.http import Http404
 
-API_URL="http://localhost:8000"
-api=xmlrpclib.ServerProxy('http://localhost:8000')
+api=xmlrpclib.ServerProxy('http://admin:test@localhost:8000')
 
 def index(request):
 	return render_to_response("topologymanager/index.html", {'top_list': api.top_list()})
