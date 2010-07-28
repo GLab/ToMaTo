@@ -9,11 +9,12 @@ State: {{top.state}}<br/>
 
 {% block left %}
 <div id="sidemenu">
-	<h2>Topology</h2>
+	<h2>Topology {{top_id}}</h2>
 	<ul>
-		<li><a href="/top/{{top_id}}/remove">remove</a></li>
+		<li><a href="/top/{{top_id}}">details</a></li>
 		<li><a href="/top/{{top_id}}/showxml">show</a></li>
 		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
+		<li><a href="/top/{{top_id}}/remove">remove</a></li>
 	</ul>
 </div>
 
