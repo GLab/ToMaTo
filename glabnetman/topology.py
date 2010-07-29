@@ -11,6 +11,20 @@ from resource_store import *
 
 import shutil, os, stat
 
+class TopologyState():
+	"""
+	The state of the topology, this is an assigned value. The states are considered to be in order:
+	created -> uploaded -> prepared -> started
+	created		the topology has been created but not uploaded
+	uploaded	the topology has been uploaded to the hosts but has not been prepared yet
+	prepared	the topology has been uploaded and all devices have been prepared
+	started		the topology has been uploaded and prepared and is currently up and running
+	"""
+	CREATED="created"
+	UPLOADED="uploaded"
+	PREPARED="prepared"
+	STARTED="started"
+
 class Topology(XmlObject):
 	"""
 	This class represents a whole topology and offers methods to work with it
@@ -25,6 +39,8 @@ class Topology(XmlObject):
 		self.devices={}
 		self.connectors={}
 		self.load_from(dom, load_ids)
+		if not self.state:
+			self.state=TopologyState.CREATED
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	"""
@@ -33,12 +49,7 @@ class Topology(XmlObject):
 	
 	state=property(curry(XmlObject.get_attr, "state"), curry(XmlObject.set_attr, "state"))
 	"""
-	The state of the topology, this is an assigned value. The states are considered to be in order:
-	None -> deployed -> created -> started
-	None		the topology has not been delpoyed
-	delpoyed	the topology has been deployed to the hosts but has not been created yet
-	created		the topology has been deployed and all devices have been created
-	started		the topology has been deployed, created and is currently up and running
+	@see TopologyState
 	"""
 	
 	def add_device ( self, device ):
@@ -146,67 +157,67 @@ class Topology(XmlObject):
 			hosts.add(dev.host)
 		return hosts
 
-	def get_deploy_dir(self,host_name):
+	def get_control_dir(self,host_name):
 		"""
 		The local directory where all control scripts and files are stored.
 		@param host_name the name of the host for the deployment
 		"""
-		return Config.local_deploy_dir+"/"+host_name
+		return Config.local_control_dir+"/"+host_name
 
-	def get_remote_deploy_dir(self):
+	def get_remote_control_dir(self):
 		"""
 		The remote directory where all control scripts and files will be copied to.
 		"""
-		return Config.remote_deploy_dir+"/"+str(self.id)
+		return Config.remote_control_dir+"/"+str(self.id)
 
-	def get_deploy_script(self,host_name,script):
+	def get_control_script(self,host_name,script):
 		"""
 		The local path of a specific control script.
 		@param host_name the name of the host for the deployment
 		@param script the name of the script without .sh
 		"""
-		return self.get_deploy_dir(host_name)+"/"+script+".sh"
+		return self.get_control_dir(host_name)+"/"+script+".sh"
 
-	def deploy(self):
+	def upload(self):
 		"""
-		This will deploy the topology to the testbed in thwe following steps:
+		This will upload the topology to the testbed in thwe following steps:
 		1. Fill all unassigned resource slots
 		2. Create the control scripts
 		3. Upload the control scripts
-		Note: this can be done even if the topology is already deployed or even running
+		Note: this can be done even if the topology is already uploaded or even running
 		"""
 		if not self.id:
 			raise Exception("not registered")
 		self.take_resources()
-		self.write_deploy_scripts()
-		self.upload_deploy_scripts()
-		if self.state == None:
-			self.state = "deployed"
+		self.write_control_scripts()
+		self.upload_control_scripts()
+		if self.state == TopologyState.CREATED:
+			self.state = TopologyState.UPLOADED
 	
-	def write_deploy_scripts(self):
+	def write_control_scripts(self):
 		"""
 		Creates all control scripts and stores them in a local directory.
 		"""
 		if not self.id:
 			raise Exception("not registered")
 		print "creating scripts ..."
-		if Config.local_deploy_dir and os.path.exists(Config.local_deploy_dir):
-			shutil.rmtree(Config.local_deploy_dir)
+		if Config.local_control_dir and os.path.exists(Config.local_control_dir):
+			shutil.rmtree(Config.local_control_dir)
 		for host in self.affected_hosts():
-			dir=self.get_deploy_dir(host.name)
+			dir=self.get_control_dir(host.name)
 			if not os.path.exists(dir):
 				os.makedirs(dir)
-			for script in ("create", "destroy", "start", "stop"):
-				script_fd = open(self.get_deploy_script(host.name,script), "w")
-				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_deploy_dir())
+			for script in ("prepare", "destroy", "start", "stop"):
+				script_fd = open(self.get_control_script(host.name,script), "w")
+				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
 				script_fd.close()
-				os.chmod(self.get_deploy_script(host.name,script), stat.S_IRWXU)
+				os.chmod(self.get_control_script(host.name,script), stat.S_IRWXU)
 		for dev in self.devices.values():
-			dev.write_deploy_script()
+			dev.write_control_scripts()
 		for con in self.connectors.values():
-			con.write_deploy_script()
+			con.write_control_scripts()
 
-	def upload_deploy_scripts(self):
+	def upload_control_scripts(self):
 		"""
 		Uploads all control scripts stored in a local directory.
 		"""
@@ -215,15 +226,15 @@ class Topology(XmlObject):
 		print "uploading scripts ..."
 		for host in self.affected_hosts():
 			print "%s ..." % host.name
-			src = self.get_deploy_dir(host.name)
-			dst = "root@%s:%s" % ( host.name, self.get_remote_deploy_dir() )
+			src = self.get_control_dir(host.name)
+			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
 			if parse_bool(Config.remote_dry_run):
-				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
-				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_deploy_dir, self.id )
+				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_control_dir, self.id )
+				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_control_dir, self.id )
 				print "DRY RUN: rsync -a %s/ %s" % ( src, dst )
 			else:
-				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
-				subprocess.check_call (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_deploy_dir, self.id ) ])
+				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_control_dir, self.id ) ])
+				subprocess.check_call (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_control_dir, self.id ) ])
 				subprocess.check_call (["rsync",  "-a",  "%s/" % src, dst])
 			print
 	
@@ -235,7 +246,7 @@ class Topology(XmlObject):
 		if not self.id:
 			raise Exception("not registered")
 		print "executing %s ..." % script
-		script = "%s/%s/%s.sh" % ( Config.remote_deploy_dir, self.id, script )
+		script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
 		for host in self.affected_hosts():
 			print "%s ..." % host.name
 			if bool(Config.remote_dry_run):
@@ -247,63 +258,63 @@ class Topology(XmlObject):
 	def start(self):
 		"""
 		Starts the topology.
-		This will fail if the topology has not been deployed or created yet or is already started.
+		This will fail if the topology has not been uploaded or prepared yet or is already started.
 		"""
-		if self.state == None:
-			raise Exception ("not deployed")
-		if self.state == "deployed":
-			raise Exception ("not created")
-		if self.state == "created":
+		if self.state == TopologyState.CREATED:
+			raise Exception ("not uploaded")
+		if self.state == TopologyState.UPLOADED:
+			raise Exception ("not prepared")
+		if self.state == TopologyState.PREPARED:
 			pass
-		if self.state == "started":
+		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
 		self.exec_script("start")
-		self.state = "started"
+		self.state = TopologyState.STARTED
 
 	def stop(self):
 		"""
 		Stops the topology.
-		This will fail if the topology has not been deployed or created yet.
+		This will fail if the topology has not been uploaded or prepared yet.
 		"""
-		if self.state == None:
-			raise Exception ("not deployed")
-		if self.state == "deployed":
-			raise Exception ("not created")
-		if self.state == "created":
+		if self.state == TopologyState.CREATED:
+			raise Exception ("not uploaded")
+		if self.state == TopologyState.UPLOADED:
+			raise Exception ("not prepared")
+		if self.state == TopologyState.PREPARED:
 			pass
-		if self.state == "started":
+		if self.state == TopologyState.STARTED:
 			pass
 		self.exec_script("stop")
-		self.state = "created"
+		self.state = TopologyState.PREPARED
 
-	def create(self):
+	def prepare(self):
 		"""
-		Creates the topology.
-		This will fail if the topology has not been deployed yet or is already created or started.
+		Prepares the topology.
+		This will fail if the topology has not been uploaded yet or is already prepared or started.
 		"""
-		if self.state == None:
-			raise Exception ("not deployed")
-		if self.state == "deployed":
+		if self.state == TopologyState.CREATED:
+			raise Exception ("not uploaded")
+		if self.state == TopologyState.UPLOADED:
 			pass
-		if self.state == "created":
-			raise Exception ("already created")
-		if self.state == "started":
+		if self.state == TopologyState.PREPARED:
+			raise Exception ("already prepared")
+		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
-		self.exec_script("create")
-		self.state = "created"
+		self.exec_script("prepare")
+		self.state = TopologyState.PREPARED
 
 	def destroy(self):
 		"""
 		Destroys the topology.
-		This will fail if the topology has not been deployed yet or is already started.
+		This will fail if the topology has not been uploaded yet or is already started.
 		"""
-		if self.state == None:
-			raise Exception ("not deployed")
-		if self.state == "deployed":
+		if self.state == TopologyState.CREATED:
+			raise Exception ("not uploaded")
+		if self.state == TopologyState.UPLOADED:
 			pass
-		if self.state == "created":
+		if self.state == TopologyState.PREPARED:
 			pass
-		if self.state == "started":
+		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
 		self.exec_script("destroy")
-		self.state = "deployed"
+		self.state = TopologyState.UPLOADED

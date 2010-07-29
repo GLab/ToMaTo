@@ -83,12 +83,12 @@ class Connection(XmlObject):
 	Packet loss rate.  Argument packet-loss-rate is a floating-point number between 0 and 1, with 0 meaning no loss, 1 meaning 100% loss.  The loss rate is internally represented on 31 bits. [ipfw.8]
 	"""
 	
-	def write_deploy_script(self):
+	def write_control_scripts(self):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
 		host = self.device.host
-		start_fd=open(self.connector.topology.get_deploy_script(host.name,"start"), "a")
+		start_fd=open(self.connector.topology.get_control_script(host.name,"start"), "a")
 		start_fd.write("brctl addbr %s\n" % self.bridge_name )
 		start_fd.write("ip link set %s up\n" % self.bridge_name )
 		if self.bridge_id:
@@ -105,7 +105,7 @@ class Connection(XmlObject):
 			if self.lossratio:
 				start_fd.write("ipfw add %d prob %s drop via %s out\n" % ( pipe_id, self.lossratio, self.bridge_name ) )
 		start_fd.close()
-		stop_fd=open(self.connector.topology.get_deploy_script(host.name,"stop"), "a")
+		stop_fd=open(self.connector.topology.get_control_script(host.name,"stop"), "a")
 		stop_fd.write("ip link set %s down\n" % self.bridge_name )
 		stop_fd.write("brctl delbr %s\n" % self.bridge_name )
 		if self.bridge_id:

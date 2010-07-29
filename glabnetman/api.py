@@ -37,16 +37,16 @@ class PublicAPI():
 		TopologyStore.remove(top_id)
 		return True
 	
-	def top_create(self, top_id, username=None):
-		TopologyStore.get(top_id).create()
+	def top_prepare(self, top_id, username=None):
+		TopologyStore.get(top_id).prepare()
 		return True
 	
 	def top_destroy(self, top_id, username=None):
 		TopologyStore.get(top_id).destroy()
 		return True
 	
-	def top_deploy(self, top_id, username=None):
-		TopologyStore.get(top_id).deploy()
+	def top_upload(self, top_id, username=None):
+		TopologyStore.get(top_id).upload()
 		return True
 	
 	def top_start(self, top_id, username=None):

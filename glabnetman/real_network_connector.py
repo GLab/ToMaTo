@@ -43,16 +43,16 @@ class RealNetworkConnector(Connector):
 		"""
 		pass
 
-	def write_deploy_script(self):
+	def write_control_scripts(self):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
 		print "\tcreating scripts for real network %s ..." % ( self.id )
-		# not invoking con.write_deploy_script()
+		# not invoking con.write_control_scripts()
 		for con in self.connections:
 			host = con.interface.device.host
 			bridge_name=con.bridge_name
-			start_fd=open(self.topology.get_deploy_script(host.name,"start"), "a")
+			start_fd=open(self.topology.get_control_script(host.name,"start"), "a")
 			start_fd.close ()
-			stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
+			stop_fd=open(self.topology.get_control_script(host.name,"stop"), "a")
 			stop_fd.close ()

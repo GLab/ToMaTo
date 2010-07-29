@@ -88,17 +88,17 @@ class TincConnector(Connector):
 		return "tinc_" + con.tinc_id
 				
 
-	def write_deploy_script(self):
+	def write_control_scripts(self):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
 		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
 		for con in self.connections:
-			con.write_deploy_script()
+			con.write_control_scripts()
 		for con in self.connections:
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
+			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
 			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -119,20 +119,20 @@ class TincConnector(Connector):
 				if not tincname == tincname2:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 			tinc_conf_fd.close()
-			create_fd=open(self.topology.get_deploy_script(host.name,"create"), "a")
-			create_fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_deploy_dir(), tincname, tincname) )
-			create_fd.close ()
-			destroy_fd=open(self.topology.get_deploy_script(host.name,"destroy"), "a")
+			prepare_fd=open(self.topology.get_control_script(host.name,"prepare"), "a")
+			prepare_fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
+			prepare_fd.close ()
+			destroy_fd=open(self.topology.get_control_script(host.name,"destroy"), "a")
 			destroy_fd.write ( "rm /etc/tinc/%s\n" % tincname )
 			destroy_fd.write ( "true\n" )
 			destroy_fd.close ()
-			start_fd=open(self.topology.get_deploy_script(host.name,"start"), "a")
+			start_fd=open(self.topology.get_control_script(host.name,"start"), "a")
 			start_fd.write ( "tincd --net=%s\n" % tincname )
 			#FIXME: brctl does not work for routing
 			start_fd.write ( "brctl addif %s %s\n" % (con.bridge_name, tincname ) )
 			start_fd.write ( "ip link set %s up\n" %  tincname )
 			start_fd.close ()
-			stop_fd=open(self.topology.get_deploy_script(host.name,"stop"), "a")
+			stop_fd=open(self.topology.get_control_script(host.name,"stop"), "a")
 			stop_fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
 			stop_fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
 			stop_fd.write ( "true\n" )
@@ -140,10 +140,10 @@ class TincConnector(Connector):
 		for con in self.connections:
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			path = self.topology.get_deploy_dir(host.name) + "/" + tincname
+			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			for con2 in self.connections:
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
-				path2 = self.topology.get_deploy_dir(host2.name) + "/" + tincname2
+				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
 				if not tincname == tincname2:
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)

@@ -82,30 +82,30 @@ class OpenVZDevice(Device):
 		else:
 			return None
 
-	def write_deploy_script(self):
+	def write_control_scripts(self):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
 		print "\tcreating scripts for openvz %s ..." % self.id
-		create_fd=open(self.topology.get_deploy_script(self.host_name,"create"), "a")
-		create_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
-		create_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
+		prepare_fd=open(self.topology.get_control_script(self.host_name,"prepare"), "a")
+		prepare_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
+		prepare_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 		if self.root_password:
-			create_fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+			prepare_fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
 		if self.hostname:
-			create_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
+			prepare_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
 		else:
-			create_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+			prepare_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
 
-		destroy_fd=open(self.topology.get_deploy_script(self.host_name,"destroy"), "a")
+		destroy_fd=open(self.topology.get_control_script(self.host_name,"destroy"), "a")
 		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
-		stop_fd=open(self.topology.get_deploy_script(self.host_name,"stop"), "a")
+		stop_fd=open(self.topology.get_control_script(self.host_name,"stop"), "a")
 		stop_fd.write("vzctl stop %s\n" % self.openvz_id)
-		start_fd=open(self.topology.get_deploy_script(self.host_name,"start"), "a")
+		start_fd=open(self.topology.get_control_script(self.host_name,"start"), "a")
 		for iface in self.interfaces.values():
 			bridge = self.bridge_name(iface)
-			create_fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
-			create_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+			prepare_fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
+			prepare_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
 			start_fd.write("brctl addbr %s\n" % bridge )
 			start_fd.write("ip link set %s up\n" % bridge )
 		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
@@ -118,7 +118,7 @@ class OpenVZDevice(Device):
 			if dhcp:
 				start_fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
 				start_fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )
-		create_fd.close()
+		prepare_fd.close()
 		destroy_fd.write ( "true\n" )
 		destroy_fd.close()
 		start_fd.close()

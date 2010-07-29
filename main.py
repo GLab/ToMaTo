@@ -17,8 +17,8 @@ topology SUBCOMMAND [options]
 	export ID FILE
 	status ID
 	remove ID
-	deploy ID
-	create ID
+	upload ID
+	prepare ID
 	destroy ID
 	start ID
 	stop ID
@@ -34,7 +34,7 @@ def topology(argv):
 		usage(None)
 		return
 	{"import": topology_import, "export": topology_export, "print": topology_print,
-	"remove": topology_remove, "deploy": topology_deploy, "create": topology_create,
+	"remove": topology_remove, "upload": topology_upload, "prepare": topology_prepare,
 	"destroy": topology_destroy, "start": topology_start, "stop": topology_stop,
 	"list": topology_list, "status": topology_status}.get(argv[0],usage)(argv[1:])
 
@@ -80,17 +80,17 @@ def topology_remove(argv):
 		return
 	print api.top_remove(int(argv[0]))
 
-def topology_deploy(argv):
+def topology_upload(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	api.top_deploy(int(argv[0]))
+	api.top_upload(int(argv[0]))
 
-def topology_create(argv):
+def topology_prepare(argv):
 	if not len(argv) == 1:
 		usage(None)
 		return
-	api.top_create(int(argv[0]))
+	api.top_prepare(int(argv[0]))
 
 def topology_destroy(argv):
 	if not len(argv) == 1:

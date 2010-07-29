@@ -69,18 +69,18 @@ def remove(request, top_id):
 	api.top_remove(int(top_id))
 	return index(request)
 
-def deploy(request, top_id):
+def upload(request, top_id):
 	if not getapi(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
-	api.top_deploy(int(top_id))
+	api.top_upload(int(top_id))
 	return detail(request, top_id)
 	
-def create(request, top_id):
+def prepare(request, top_id):
 	if not getapi(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
-	api.top_create(int(top_id))
+	api.top_prepare(int(top_id))
 	return detail(request, top_id)
 	
 def destroy(request, top_id):

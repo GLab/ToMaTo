@@ -33,7 +33,7 @@ Config.auth_ldap_identity_base = Config.get("auth_ldap","identity_base",'ou=iden
 Config.auth_ldap_user_group = Config.get("auth_ldap","user_group",'cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de')
 Config.auth_ldap_admin_group = Config.get("auth_ldap","admin_group",'cn=admin,ou=management,ou=groups,dc=german-lab,dc=de')
 
-Config.local_deploy_dir = Config.get("local","deploy_dir","/tmp/glabnetem")
+Config.local_control_dir = Config.get("local","control_dir","/tmp/glabnetem")
 """
 The local directory to use for preparing control scripts before they are uploaded to the hosts.
 """
@@ -53,7 +53,7 @@ Config.default_template = Config.get("openvz","default_template","debian-6.0-sta
 The default openvz template to use when no template is specified.
 """
 
-Config.remote_deploy_dir = Config.get("remote","deploy_dir","/root/glabnetem")
+Config.remote_control_dir = Config.get("remote","control_dir","/root/glabnetman")
 """
 The remote directory to use for control scripts
 """
