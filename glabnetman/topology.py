@@ -52,6 +52,11 @@ class Topology(XmlObject):
 	@see TopologyState
 	"""
 	
+	owner=property(curry(XmlObject.get_attr, "owner"), curry(XmlObject.set_attr, "owner"))
+	"""
+	@see TopologyState
+	"""
+
 	def add_device ( self, device ):
 		"""
 		Adds a device to the device map and sets the topology of the device
@@ -78,6 +83,8 @@ class Topology(XmlObject):
 				x_top.removeAttribute("id")
 			if x_top.hasAttribute("state"):
 				x_top.removeAttribute("state")
+			if x_top.hasAttribute("owner"):
+				x_top.removeAttribute("owner")
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
@@ -99,6 +106,8 @@ class Topology(XmlObject):
 				x_top.removeAttribute("id")
 			if x_top.hasAttribute("state"):
 				x_top.removeAttribute("state")
+			if x_top.hasAttribute("owner"):
+				x_top.removeAttribute("owner")
 		dom.appendChild ( x_top )
 		for dev in self.devices.values():
 			x_dev = dom.createElement ( "device" )

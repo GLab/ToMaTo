@@ -38,68 +38,42 @@ def index(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
 	return render_to_response("top/index.html", {'top_list': api.top_list()})
-    
-def detail(request, top_id):
+
+def create(request):
+	if not request.REQUEST.has_key("xml"):
+		return render_to_response("top/create.html")
+	xml=request.REQUEST["xml"]
 	if not getapi(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
+	top_id=api.top_import(xml)
 	top=api.top_info(int(top_id))
-	if not top:
-		raise Http404
-	else:
-		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
-		
-def showxml(request, top_id):
+	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
+	
+def action(request, top_id, action=None):
 	if not getapi(request):
 		return HttpResponseNotAuthorized("Authorization required!")
 	api = request.session.api
-	xml=api.top_get(int(top_id))
-	if not xml:
-		raise Http404
-	else:
+	if action=="showxml":
+		xml=api.top_get(int(top_id))
 		if request.REQUEST.has_key("plain"):
 			return HttpResponse(xml, mimetype="text/plain")
 		else:
 			return render_to_response("top/showxml.html", {'top_id': top_id, 'xml': xml})
-		
-def remove(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_remove(int(top_id))
-	return index(request)
-
-def upload(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_upload(int(top_id))
-	return detail(request, top_id)
-	
-def prepare(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_prepare(int(top_id))
-	return detail(request, top_id)
-	
-def destroy(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_destroy(int(top_id))
-	return detail(request, top_id)
-	
-def start(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_start(int(top_id))
-	return detail(request, top_id)
-	
-def stop(request, top_id):
-	if not getapi(request):
-		return HttpResponseNotAuthorized("Authorization required!")
-	api = request.session.api
-	api.top_stop(int(top_id))
-	return detail(request, top_id)
+	if action=="remove":
+		api.top_remove(int(top_id))
+		return index(request)
+	top=api.top_info(int(top_id))
+	if not top:
+		raise Http404
+	if action=="upload":
+		api.top_upload(int(top_id))
+	elif action=="prepare":
+		api.top_prepare(int(top_id))
+	elif action=="destroy":
+		api.top_destroy(int(top_id))
+	elif action=="start":
+		api.top_start(int(top_id))
+	elif action=="stop":
+		api.top_stop(int(top_id))
+	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
