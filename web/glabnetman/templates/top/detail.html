@@ -6,6 +6,14 @@
 ID: {{top.id}}<br/>
 Owner: {{top.owner}}<br/>
 State: {{top.state}}<br/>
+
+{% if action %}
+<h2>Output of {{action}}</h2>
+<pre>
+{{output}}
+</pre>
+{% endif %}
+
 {% endblock %}
 
 {% block left %}

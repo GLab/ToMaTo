@@ -66,14 +66,15 @@ def action(request, top_id, action=None):
 	top=api.top_info(int(top_id))
 	if not top:
 		raise Http404
+	output=None
 	if action=="upload":
-		api.top_upload(int(top_id))
+		output=api.top_upload(int(top_id))
 	elif action=="prepare":
-		api.top_prepare(int(top_id))
+		output=api.top_prepare(int(top_id))
 	elif action=="destroy":
-		api.top_destroy(int(top_id))
+		output=api.top_destroy(int(top_id))
 	elif action=="start":
-		api.top_start(int(top_id))
+		output=api.top_start(int(top_id))
 	elif action=="stop":
-		api.top_stop(int(top_id))
-	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
+		output=api.top_stop(int(top_id))
+	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'output' : output })

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xml.dom import minidom
+from cStringIO import StringIO
 
 from openvz_device import *
 from dhcpd_device import *
@@ -9,7 +10,7 @@ from real_network_connector import *
 from config import *
 from resource_store import *
 
-import shutil, os, stat
+import shutil, os, stat, sys
 
 class TopologyState():
 	"""
@@ -197,11 +198,16 @@ class Topology(XmlObject):
 		"""
 		if not self.id:
 			raise Exception("not registered")
+		output=StringIO()
+		stdout=sys.stdout
+		sys.stdout=output
 		self.take_resources()
 		self.write_control_scripts()
 		self.upload_control_scripts()
 		if self.state == TopologyState.CREATED:
 			self.state = TopologyState.UPLOADED
+		sys.stdout=stdout
+		return output.getvalue()
 	
 	def write_control_scripts(self):
 		"""
@@ -254,15 +260,22 @@ class Topology(XmlObject):
 		"""
 		if not self.id:
 			raise Exception("not registered")
+		output=StringIO()
+		stdout=sys.stdout
+		sys.stdout=output
 		print "executing %s ..." % script
 		script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
 		for host in self.affected_hosts():
 			print "%s ..." % host.name
-			if bool(Config.remote_dry_run):
+			if parse_bool(Config.remote_dry_run):
 				print "DRY RUN: ssh root@%s %s" % ( host.name, script )
 			else:
-				subprocess.check_call (["ssh",  "root@%s" % host.name, script ])
+				proc=subprocess.Popen(["ssh",  "root@%s" % host.name, script ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+				res=proc.communicate()
+				print res[0]
 			print
+		sys.stdout=stdout
+		return output.getvalue()
 
 	def start(self):
 		"""
@@ -277,8 +290,9 @@ class Topology(XmlObject):
 			pass
 		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
-		self.exec_script("start")
+		output=self.exec_script("start")
 		self.state = TopologyState.STARTED
+		return output
 
 	def stop(self):
 		"""
@@ -293,8 +307,9 @@ class Topology(XmlObject):
 			pass
 		if self.state == TopologyState.STARTED:
 			pass
-		self.exec_script("stop")
+		output=self.exec_script("stop")
 		self.state = TopologyState.PREPARED
+		return output
 
 	def prepare(self):
 		"""
@@ -309,8 +324,9 @@ class Topology(XmlObject):
 			raise Exception ("already prepared")
 		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
-		self.exec_script("prepare")
+		output=self.exec_script("prepare")
 		self.state = TopologyState.PREPARED
+		return output
 
 	def destroy(self):
 		"""
@@ -325,5 +341,6 @@ class Topology(XmlObject):
 			pass
 		if self.state == TopologyState.STARTED:
 			raise Exception ("already started")
-		self.exec_script("destroy")
+		output=self.exec_script("destroy")
 		self.state = TopologyState.UPLOADED
+		return output

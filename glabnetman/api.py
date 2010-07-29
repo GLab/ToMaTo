@@ -25,7 +25,7 @@ class PublicAPI():
 	def top_list(self, filter_owner=None, filter_state=None, username=None):
 		tops=[]
 		for t in TopologyStore.topologies.values():
-			if filter_state==None or t.state==filter_state:
+			if (filter_state==None or t.state==filter_state) and (filter_owner==None or t.owner==filter_owner):
 				tops.append(TopologyInfo(t))
 		return tops
 	
@@ -41,24 +41,19 @@ class PublicAPI():
 		return True
 	
 	def top_prepare(self, top_id, username=None):
-		TopologyStore.get(top_id).prepare()
-		return True
+		return TopologyStore.get(top_id).prepare()
 	
 	def top_destroy(self, top_id, username=None):
-		TopologyStore.get(top_id).destroy()
-		return True
+		return TopologyStore.get(top_id).destroy()
 	
 	def top_upload(self, top_id, username=None):
-		TopologyStore.get(top_id).upload()
-		return True
+		return TopologyStore.get(top_id).upload()
 	
 	def top_start(self, top_id, username=None):
-		TopologyStore.get(top_id).start()
-		return True
+		return TopologyStore.get(top_id).start()
 	
 	def top_stop(self, top_id, username=None):
-		TopologyStore.get(top_id).stop()
-		return True
+		return TopologyStore.get(top_id).stop()
 	
 	def top_get(self, top_id, include_ids=False, username=None):
 		top=TopologyStore.get(top_id)
