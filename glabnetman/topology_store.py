@@ -46,6 +46,7 @@ class TopologyStore(object):
 		topology.id = str(TopologyStore.ids.take())
 		topology.take_resources()
 		TopologyStore.topologies[int(topology.id)] = topology
+		TopologyStore.save()
 		return topology.id
 	add = static(add)
 	
@@ -59,6 +60,7 @@ class TopologyStore(object):
 		top.free_resources()
 		del TopologyStore.topologies[id]
 		os.remove(Config.topology_dir+"/"+str(id)+".xml")
+		TopologyStore.save()
 	remove = static(remove)
 		
 	def load():

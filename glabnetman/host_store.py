@@ -54,6 +54,7 @@ class HostStore(object):
 		@param host to store
 		"""
 		HostStore.hosts[str(host.name)] = host
+		HostStore.save()
 	add = static(add)
 		
 	def get(host_name):
@@ -70,6 +71,7 @@ class HostStore(object):
 		@param host_name name of the host to remove
 		"""
 		del HostStore.hosts[str(host_name)]
+		HostStore.save()
 	remove = static(remove)
 
 HostStore.load()
