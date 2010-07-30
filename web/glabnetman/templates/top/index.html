@@ -3,9 +3,18 @@
 {% block content %}
 <h1>List of topologies</h1>
 
-<ul>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>State</th>
+    <th>Owner</rh>
+  </tr>
 {% for top in top_list %}
-  <li><a href="/top/{{top.id}}/">{{top.id}}: {{top.state}}</a></li>
+  <tr>
+    <td><a href="/top/{{top.id}}/">{{top.id}}</td>
+    <td>{{top.state}}</td>
+    <td>{{top.owner}}</td>
+  </tr>
 {% endfor %}
-</ul>
+</table>
 {% endblock %}
