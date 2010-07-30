@@ -139,3 +139,6 @@ class Connection(XmlObject):
 			self.device.host.bridge_ids.free(self.bridge_id)
 			self.bridge_id = None
 			self.bridge_name = None
+			
+	def __repr__(self):
+		return self.connector.id + "<->" + repr(self.interface)
