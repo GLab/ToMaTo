@@ -12,23 +12,41 @@ import xmlrpclib
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, protocol, reactor
 
-
 Fault = xmlrpclib.Fault
+
+class User():
+	valid_users={}
+	def __init__(self,user,password):
+		self.username=user
+		self.password=password
+		ldap=LdapUser(user)
+		self.is_valid=ldap.authenticate(password)
+		if self.is_valid:
+			self.id_user=ldap.is_user()
+			self.id_admin=ldap.is_admin()
 
 class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, api):
 		self.api = api
 		xmlrpc.XMLRPC.__init__(self)
         
-        def authenticate(self, user, passwd):
-		return LdapUser(user).authenticate(passwd) 
+        def authenticate(self, username, password):
+		if User.valid_users.has_key(username):
+			user = User.valid_users[username]
+			if user.password == password:
+				return user
+		user = User(username, password)
+		if user.is_valid:
+			User.valid_users[username]=user
+		return user
         
 	def render(self, request):
-		user = request.getUser()
+		username = request.getUser()
 		passwd = request.getPassword()
-		if not self.authenticate(user, passwd):
+		user = self.authenticate(username, passwd)
+		if not user.is_valid:
 			request.setResponseCode(http.UNAUTHORIZED)
-			if user=='' and passwd=='':
+			if username=='' and passwd=='':
 				return 'Authorization required!'
 			else:
 				return 'Authorization Failed!'
@@ -40,7 +58,7 @@ class APIServer(xmlrpc.XMLRPC):
 			self._cbRender(f, request)
 		else:
 			request.setHeader("content-type", "text/xml")
-			defer.maybeDeferred(function, *args, username=user).addErrback(self._ebRender).addCallback(self._cbRender,request)
+			defer.maybeDeferred(function, *args, user=user).addErrback(self._ebRender).addCallback(self._cbRender,request)
 			return server.NOT_DONE_YET
 
 def run_server():
