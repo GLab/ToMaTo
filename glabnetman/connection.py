@@ -100,8 +100,7 @@ class Connection(XmlObject):
 				pipe_config = pipe_config + " " + "delay %s" % self.delay
 			if self.bandwidth:
 				pipe_config = pipe_config + " " + "bw %s" % self.bandwidth
-			if pipe_config:
-				start_fd.write("ipfw pipe %d config %s\n" % ( pipe_id, pipe_config ) )
+			start_fd.write("ipfw pipe %d config %s\n" % ( pipe_id, pipe_config ) )
 			if self.lossratio:
 				start_fd.write("ipfw add %d prob %s drop via %s out\n" % ( pipe_id, self.lossratio, self.bridge_name ) )
 		start_fd.close()
