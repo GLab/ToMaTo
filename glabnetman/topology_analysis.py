@@ -104,11 +104,11 @@ class TopologyAnalysis():
 			for connection in connector.connections:
 				if connection.lossratio:
 					r=connection.lossratio
-					if r<0 or r>1:
+					if r<0.0 or r>1.0:
 						self.problems.append("Loss ratio for %s must be in [0..1]" % repr(connection))
 					if r==1:
 						self.warning.append("Loss ratio for %s set to 1, that means no connection" % repr(connection))
 				if connection.delay:
 					d=connection.delay
-					if not re.match(d,"[0-9]+ms"):
+					if not re.match("\d+ms",d):
 						self.problems.append("Delay for %s must be in the form [0-9]+ms" % repr(connection))
