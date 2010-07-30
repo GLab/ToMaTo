@@ -243,14 +243,9 @@ class Topology(XmlObject):
 			print "%s ..." % host.name
 			src = self.get_control_dir(host.name)
 			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			if Config.remote_dry_run:
-				print "DRY RUN: ssh root@%s mkdir -p %s/%s" % ( host.name, Config.remote_control_dir, self.id )
-				print "DRY RUN: ssh root@%s rm -r %s/%s" % ( host.name, Config.remote_control_dir, self.id )
-				print "DRY RUN: rsync -a %s/ %s" % ( src, dst )
-			else:
-				subprocess.check_call (["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_control_dir, self.id ) ])
-				subprocess.check_call (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_control_dir, self.id ) ])
-				subprocess.check_call (["rsync",  "-a",  "%s/" % src, dst])
+			run_shell ( ["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_control_dir, self.id ) ], Config.remote_dry_run )
+			run_shell (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_control_dir, self.id ) ], Config.remote_dry_run )
+			run_shell (["rsync",  "-a",  "%s/" % src, dst], Config.remote_dry_run)
 			print
 	
 	def exec_script(self, script):
@@ -267,12 +262,7 @@ class Topology(XmlObject):
 		script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
 		for host in self.affected_hosts():
 			print "%s ..." % host.name
-			if Config.remote_dry_run:
-				print "DRY RUN: ssh root@%s %s" % ( host.name, script )
-			else:
-				proc=subprocess.Popen(["ssh",  "root@%s" % host.name, script ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-				res=proc.communicate()
-				print res[0]
+			print run_shell(["ssh",  "root@%s" % host.name, script ], Config.remote_dry_run )
 			print
 		sys.stdout=stdout
 		return output.getvalue()

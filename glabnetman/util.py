@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import subprocess
+
+def run_shell(cmd, pretend=False):
+	if pretend:
+		cmd.insert(0,"echo")
+	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	res=proc.communicate()
+	return res[0]
+
 def parse_bool(x):
 	"""
 	Parses a boolean from a string. The values "True" "true" "False" "false" are recognized, all others result in an exception.
