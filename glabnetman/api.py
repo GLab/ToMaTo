@@ -10,6 +10,7 @@ class TopologyInfo():
 		self.id = topology.id
 		self.state = str(topology.state)
 		self.owner = str(topology.owner)
+		self.analysis = topology.analysis
 
 class HostInfo():
 	def __init__(self, host):
@@ -36,6 +37,11 @@ class PublicAPI():
 		id=TopologyStore.add(top)
 		return id
 	
+	def top_analyze(self, xml, username=None):
+		dom=minidom.parseString(xml)
+		top=Topology(dom,False)
+		return top.analyis
+
 	def top_remove(self, top_id, username=None):
 		TopologyStore.remove(top_id)
 		return True

@@ -28,3 +28,6 @@ class Interface(XmlObject):
 		@print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self, dom)
+	
+	def __repr__(self):
+		return self.device.id + "." + self.id

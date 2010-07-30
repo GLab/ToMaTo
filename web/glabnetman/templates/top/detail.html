@@ -7,6 +7,20 @@ ID: {{top.id}}<br/>
 Owner: {{top.owner}}<br/>
 State: {{top.state}}<br/>
 
+<br/>
+
+{% for p in top.analysis.problems %}
+Problem: {{p}}<br/>
+{% endfor %}
+
+{% for w in top.analysis.warnings %}
+Warning: {{w}}<br/>
+{% endfor %}
+
+{% for w in top.analysis.hints %}
+Hint: {{h}}<br/>
+{% endfor %}
+
 {% if action %}
 <h2>Output of {{action}}</h2>
 <pre>

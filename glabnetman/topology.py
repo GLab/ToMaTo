@@ -9,6 +9,7 @@ from tinc_connector import *
 from real_network_connector import *
 from config import *
 from resource_store import *
+from topology_analysis import *
 
 import shutil, os, stat, sys
 
@@ -40,6 +41,7 @@ class Topology(XmlObject):
 		self.devices={}
 		self.connectors={}
 		self.load_from(dom, load_ids)
+		self.analysis=TopologyAnalysis(self)
 		if not self.state:
 			self.state=TopologyState.CREATED
 		
