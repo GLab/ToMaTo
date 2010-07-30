@@ -31,8 +31,8 @@ class Connection(XmlObject):
 		if not print_ids:
 			if dom.hasAttribute("bridge_id"):
 				dom.removeAttribute("bridge_id")
-				if dom.hasAttribute("bridge_name"):
-					dom.removeAttribute("bridge_name")
+				if dom.hasAttribute("bridge"):
+					dom.removeAttribute("bridge")
 
 	def decode_xml (self, dom, load_ids):
 		"""
@@ -43,8 +43,8 @@ class Connection(XmlObject):
 		if not load_ids:
 			if dom.hasAttribute("bridge_id"):
 				dom.removeAttribute("bridge_id")
-				if dom.hasAttribute("bridge_name"):
-					dom.removeAttribute("bridge_name")
+				if dom.hasAttribute("bridge"):
+					dom.removeAttribute("bridge")
 		XmlObject.decode_xml(self,dom)
 
 	bridge_name=property(curry(XmlObject.get_attr, "bridge"), curry(XmlObject.set_attr, "bridge"))
