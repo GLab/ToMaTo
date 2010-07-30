@@ -103,8 +103,8 @@ class TopologyAnalysis():
 		for connector in top.connectors.values():
 			for connection in connector.connections:
 				if connection.lossratio:
-					r=connection.lossratio
-					if r<0.0 or r>1.0:
+					r=float(connection.lossratio)
+					if (r<0.0) or (r>1.0):
 						self.problems.append("Loss ratio for %s must be in [0..1]" % repr(connection))
 					if r==1:
 						self.warning.append("Loss ratio for %s set to 1, that means no connection" % repr(connection))
