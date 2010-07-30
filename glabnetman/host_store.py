@@ -70,8 +70,12 @@ class HostStore(object):
 		Remove a host from the host store
 		@param host_name name of the host to remove
 		"""
-		del HostStore.hosts[str(host_name)]
-		HostStore.save()
+		host_name=str(host_name)
+		if HostStore.hosts.has_key(host_name):
+			del HostStore.hosts[host_name]
+			HostStore.save()
+		else:
+			raise Exception("no such host: %s" % host_name)
 	remove = static(remove)
 
 HostStore.load()

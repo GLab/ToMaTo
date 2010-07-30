@@ -40,6 +40,12 @@ class APIServer(xmlrpc.XMLRPC):
 			User.valid_users[username]=user
 		return user
         
+        def execute(self, function, args, user):
+		try:
+			function(args, user=user)
+		except Exception, exc:
+			raise xmlrpclib.Fault(-1, '%s:%s' % (exc.__class__.__name__, exc) )
+        
 	def render(self, request):
 		username = request.getUser()
 		passwd = request.getPassword()
@@ -52,15 +58,12 @@ class APIServer(xmlrpc.XMLRPC):
 				return 'Authorization Failed!'
 		request.content.seek(0, 0)
 		args, functionPath = xmlrpclib.loads(request.content.read())
-		try:
+		if hasattr(self.api,functionPath):
 			function = getattr(self.api,functionPath)
-		except Fault, f:
-			self._cbRender(f, request)
-		else:
 			request.setHeader("content-type", "text/xml")
-			defer.maybeDeferred(function, *args, user=user).addErrback(self._ebRender).addCallback(self._cbRender,request)
+			defer.maybeDeferred(self.execute, function, *args, user=user).addErrback(self._ebRender).addCallback(self._cbRender,request)
 			return server.NOT_DONE_YET
-
+		
 def run_server():
 	api_server = APIServer(PublicAPI())
 	reactor.listenTCP(8000, server.Site(api_server))
