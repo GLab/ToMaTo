@@ -113,6 +113,7 @@ class TincConnector(Connector):
 			tinc_conf_fd = open(path+"/tinc.conf", "w")
 			tinc_conf_fd.write ( "Mode=%s\n" % self.type )
 			tinc_conf_fd.write ( "Name=%s\n" % tincname )
+			tinc_conf_fd.write ( "AddressFamily=ipv4\n" )
 			for con2 in self.connections:
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
