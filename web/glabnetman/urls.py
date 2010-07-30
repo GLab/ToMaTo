@@ -14,4 +14,7 @@ urlpatterns = patterns('',
 	(r'^top/create$', 'glabnetman.top.views.create'),
 	(r'^top/(?P<top_id>\d+)/$', 'glabnetman.top.views.action'),
 	(r'^top/(?P<top_id>\d+)/(?P<action>[a-z]+)$', 'glabnetman.top.views.action'),
+	(r'^host/$', 'glabnetman.host.views.index'),
+	(r'^host/add$', 'glabnetman.host.views.add'),
+	(r'^host/remove$', 'glabnetman.host.views.remove'),
 )

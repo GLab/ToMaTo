@@ -1,0 +1,11 @@
+{% extends "host/base.html" %}
+
+{% block content %}
+<h1>List of hosts</h1>
+
+<ul>
+{% for host in host_list %}
+	<li>{{host.name}} <a href="/host/remove?hostname={{host.name}}">[remove]</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
