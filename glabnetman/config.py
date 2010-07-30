@@ -58,7 +58,7 @@ Config.remote_control_dir = Config.get("remote","control_dir","/root/glabnetman"
 The remote directory to use for control scripts
 """
 
-Config.remote_dry_run = Config.get("remote","dry_run",False)
+Config.remote_dry_run = parse_bool(Config.get("remote","dry_run",False))
 """
 If this is true all remote commands are just printed but not executed
 """
