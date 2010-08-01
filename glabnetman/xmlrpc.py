@@ -42,7 +42,7 @@ class APIServer(xmlrpc.XMLRPC):
         
         def execute(self, function, args, user):
 		try:
-			function(args, user=user)
+			return function(*args, user=user)
 		except Exception, exc:
 			raise xmlrpclib.Fault(-1, '%s:%s' % (exc.__class__.__name__, exc) )
         
@@ -61,7 +61,7 @@ class APIServer(xmlrpc.XMLRPC):
 		if hasattr(self.api,functionPath):
 			function = getattr(self.api,functionPath)
 			request.setHeader("content-type", "text/xml")
-			defer.maybeDeferred(self.execute, function, *args, user=user).addErrback(self._ebRender).addCallback(self._cbRender,request)
+			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender,request)
 			return server.NOT_DONE_YET
 		
 def run_server():
