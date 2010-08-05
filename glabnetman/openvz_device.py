@@ -82,47 +82,50 @@ class OpenVZDevice(Device):
 		else:
 			return None
 
-	def write_control_scripts(self):
+	def write_aux_files(self):
 		"""
-		Write the control scrips for this object and its child objects
+		Write the aux files for this object and its child objects
 		"""
-		prepare_fd=open(self.topology.get_control_script(self.host_name,"prepare"), "a")
-		prepare_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
-		prepare_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
-		if self.root_password:
-			prepare_fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-		if self.hostname:
-			prepare_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
-		else:
-			prepare_fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+		pass
 
-		destroy_fd=open(self.topology.get_control_script(self.host_name,"destroy"), "a")
-		destroy_fd.write("vzctl destroy %s\n" % self.openvz_id)
-		stop_fd=open(self.topology.get_control_script(self.host_name,"stop"), "a")
-		stop_fd.write("vzctl stop %s\n" % self.openvz_id)
-		start_fd=open(self.topology.get_control_script(self.host_name,"start"), "a")
-		for iface in self.interfaces.values():
-			bridge = self.bridge_name(iface)
-			prepare_fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
-			prepare_fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
-			start_fd.write("brctl addbr %s\n" % bridge )
-			start_fd.write("ip link set %s up\n" % bridge )
-		start_fd.write("vzctl start %s --wait\n" % self.openvz_id)
-		for iface in self.interfaces.values():
-			ip4 = iface.attributes.get("ip4_address",None)
-			netmask = iface.attributes.get("ip4_netmask",None)
-			dhcp = parse_bool(iface.attributes.get("use_dhcp",False))
-			if ip4:
-				start_fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
-			if dhcp:
-				start_fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
-				start_fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )
-		prepare_fd.close()
-		destroy_fd.write ( "true\n" )
-		destroy_fd.close()
-		start_fd.close()
-		stop_fd.write ( "true\n" )
-		stop_fd.close()
+	def write_control_script(self, host, script, fd):
+		"""
+		Write the control script for this object and its child objects
+		"""
+		if script == "prepare":
+			fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
+			fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
+			if self.root_password:
+				fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+			if self.hostname:
+				fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
+			else:
+				fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+			for iface in self.interfaces.values():
+				bridge = self.bridge_name(iface)
+				fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
+				fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+		if script == "destroy":
+			fd.write("vzctl destroy %s\n" % self.openvz_id)
+			fd.write ( "true\n" )
+		if script == "start":
+			for iface in self.interfaces.values():
+				bridge = self.bridge_name(iface)
+				fd.write("brctl addbr %s\n" % bridge )
+				fd.write("ip link set %s up\n" % bridge )
+			fd.write("vzctl start %s --wait\n" % self.openvz_id)
+			for iface in self.interfaces.values():
+				ip4 = iface.attributes.get("ip4_address",None)
+				netmask = iface.attributes.get("ip4_netmask",None)
+				dhcp = parse_bool(iface.attributes.get("use_dhcp",False))
+				if ip4:
+					fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
+				if dhcp:
+					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
+					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )
+		if script == "stop":
+			fd.write("vzctl stop %s\n" % self.openvz_id)
+			fd.write ( "true\n" )
 
 	def __str__(self):
 		return "openvz %s" % self.id

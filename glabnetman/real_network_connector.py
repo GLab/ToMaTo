@@ -39,18 +39,18 @@ class RealNetworkConnector(Connector):
 		"""
 		pass
 
-	def write_control_scripts(self):
+	def write_aux_files(self):
 		"""
-		Write the control scrips for this object and its child objects
+		Write the aux files for this object and its child objects
 		"""
-		# not invoking con.write_control_scripts()
-		for con in self.connections:
-			host = con.interface.device.host
-			bridge_name=con.bridge_name
-			start_fd=open(self.topology.get_control_script(host.name,"start"), "a")
-			start_fd.close ()
-			stop_fd=open(self.topology.get_control_script(host.name,"stop"), "a")
-			stop_fd.close ()
+		pass
+
+	def write_control_script(self, host, script, fd):
+		"""
+		Write the control script for this object and its child objects
+		"""
+		# not invoking con.write_control_script()
+		pass
 
 	def __str__(self):
 		return "real network %s" % self.id

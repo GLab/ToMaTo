@@ -88,12 +88,7 @@ class TincConnector(Connector):
 		return "tinc_" + con.tinc_id
 				
 
-	def write_control_scripts(self):
-		"""
-		Write the control scrips for this object and its child objects
-		"""
-		for con in self.connections:
-			con.write_control_scripts()
+	def write_aux_files(self):
 		for con in self.connections:
 			host = con.interface.device.host
 			tincname = self.tincname(con)
@@ -121,24 +116,6 @@ class TincConnector(Connector):
 				if not tincname == tincname2:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 			tinc_conf_fd.close()
-			prepare_fd=open(self.topology.get_control_script(host.name,"prepare"), "a")
-			prepare_fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
-			prepare_fd.close ()
-			destroy_fd=open(self.topology.get_control_script(host.name,"destroy"), "a")
-			destroy_fd.write ( "rm /etc/tinc/%s\n" % tincname )
-			destroy_fd.write ( "true\n" )
-			destroy_fd.close ()
-			start_fd=open(self.topology.get_control_script(host.name,"start"), "a")
-			start_fd.write ( "tincd --net=%s\n" % tincname )
-			#FIXME: brctl does not work for routing
-			start_fd.write ( "brctl addif %s %s\n" % (con.bridge_name, tincname ) )
-			start_fd.write ( "ip link set %s up\n" %  tincname )
-			start_fd.close ()
-			stop_fd=open(self.topology.get_control_script(host.name,"stop"), "a")
-			stop_fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
-			stop_fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
-			stop_fd.write ( "true\n" )
-			stop_fd.close ()
 		for con in self.connections:
 			host = con.interface.device.host
 			tincname = self.tincname(con)
@@ -149,6 +126,30 @@ class TincConnector(Connector):
 				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
 				if not tincname == tincname2:
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
-					
+
+	def write_control_script(self, host, script, fd):
+		"""
+		Write the control scrips for this object and its child objects
+		"""
+		for con in self.connections:
+			if con.interface.device.host_name == host.name:
+				con.write_control_script(host, script, fd)
+		for con in self.connections:
+			tincname = self.tincname(con)
+			if script == "prepare":
+				fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
+			if script == "destroy":
+				fd.write ( "rm /etc/tinc/%s\n" % tincname )
+				fd.write ( "true\n" )
+			if script == "start":
+				fd.write ( "tincd --net=%s\n" % tincname )
+				#FIXME: brctl does not work for routing
+				fd.write ( "brctl addif %s %s\n" % (con.bridge_name, tincname ) )
+				fd.write ( "ip link set %s up\n" %  tincname )
+			if script == "stop":
+				fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
+				fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
+				fd.write ( "true\n" )
+
 	def __str__(self):
 		return "tinc %s %s" % ( self.type, self.id )

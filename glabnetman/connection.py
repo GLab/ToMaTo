@@ -83,35 +83,32 @@ class Connection(XmlObject):
 	Packet loss rate.  Argument packet-loss-rate is a floating-point number between 0 and 1, with 0 meaning no loss, 1 meaning 100% loss.  The loss rate is internally represented on 31 bits. [ipfw.8]
 	"""
 	
-	def write_control_scripts(self):
+	def write_control_script(self, host, script, fd):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		host = self.device.host
-		start_fd=open(self.connector.topology.get_control_script(host.name,"start"), "a")
-		start_fd.write("brctl addbr %s\n" % self.bridge_name )
-		start_fd.write("ip link set %s up\n" % self.bridge_name )
-		if self.bridge_id:
-			pipe_id = int(self.bridge_id) * 10
-			pipe_config=""
-			start_fd.write("modprobe ipfw_mod\n")
-			start_fd.write("ipfw add %d pipe %d via %s out\n" % ( pipe_id+1, pipe_id, self.bridge_name ) )
-			if self.delay:
-				pipe_config = pipe_config + " " + "delay %s" % self.delay
-			if self.bandwidth:
-				pipe_config = pipe_config + " " + "bw %s" % self.bandwidth
-			start_fd.write("ipfw pipe %d config %s\n" % ( pipe_id, pipe_config ) )
-			if self.lossratio:
-				start_fd.write("ipfw add %d prob %s drop via %s out\n" % ( pipe_id, self.lossratio, self.bridge_name ) )
-		start_fd.close()
-		stop_fd=open(self.connector.topology.get_control_script(host.name,"stop"), "a")
-		stop_fd.write("ip link set %s down\n" % self.bridge_name )
-		stop_fd.write("brctl delbr %s\n" % self.bridge_name )
-		if self.bridge_id:
-			pipe_id = int(self.bridge_id) * 10
-			stop_fd.write("ipfw delete %d\n" % pipe_id )
-			stop_fd.write("ipfw delete %d\n" % ( pipe_id + 1 ) )
-		stop_fd.close()
+		if script == "start":
+			fd.write("brctl addbr %s\n" % self.bridge_name )
+			fd.write("ip link set %s up\n" % self.bridge_name )
+			if self.bridge_id:
+				pipe_id = int(self.bridge_id) * 10
+				pipe_config=""
+				fd.write("modprobe ipfw_mod\n")
+				fd.write("ipfw add %d pipe %d via %s out\n" % ( pipe_id+1, pipe_id, self.bridge_name ) )
+				if self.delay:
+					pipe_config = pipe_config + " " + "delay %s" % self.delay
+				if self.bandwidth:
+					pipe_config = pipe_config + " " + "bw %s" % self.bandwidth
+				fd.write("ipfw pipe %d config %s\n" % ( pipe_id, pipe_config ) )
+				if self.lossratio:
+					fd.write("ipfw add %d prob %s drop via %s out\n" % ( pipe_id, self.lossratio, self.bridge_name ) )
+		if script == "stop":
+			fd.write("ip link set %s down\n" % self.bridge_name )
+			fd.write("brctl delbr %s\n" % self.bridge_name )
+			if self.bridge_id:
+				pipe_id = int(self.bridge_id) * 10
+				fd.write("ipfw delete %d\n" % pipe_id )
+				fd.write("ipfw delete %d\n" % ( pipe_id + 1 ) )
 		
 	
 	def retake_resources(self):

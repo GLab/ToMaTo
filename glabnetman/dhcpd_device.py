@@ -66,9 +66,9 @@ class DhcpdDevice(Device):
 		else:
 			return None
 
-	def write_control_scripts(self):
+	def write_aux_files(self):
 		"""
-		Write the control scrips for this object and its child objects
+		Write the aux files for this object and its child objects
 		"""
 		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
@@ -77,15 +77,18 @@ class DhcpdDevice(Device):
 		dhcpd_fd.write("  max-lease-time 300;\n" )
 		dhcpd_fd.write("  range %s;\n" % self.range )
 		dhcpd_fd.write("}\n" )
-		start_fd=open(self.topology.get_control_script(self.host_name,"start"), "a")
-		start_fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
-		for iface in self.interfaces.values():
-			start_fd.write(" %s" % self.bridge_name(iface))
-		start_fd.write(" &\n")
-		start_fd.close()
-		stop_fd=open(self.topology.get_control_script(self.host_name,"stop"), "a")
-		stop_fd.write ( "cat %s.pid | xargs kill\n" % self.id )
-		stop_fd.close()
+
+	def write_control_script(self, host, script, fd):
+		"""
+		Write the control script for this object and its child objects
+		"""
+		if script == "start":
+			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
+			for iface in self.interfaces.values():
+				fd.write(" %s" % self.bridge_name(iface))
+			fd.write(" &\n")
+		if script == "stop":
+			fd.write ( "cat %s.pid | xargs kill\n" % self.id )
 
 	def __str__(self):
 		return "dhcpd %s" % self.id

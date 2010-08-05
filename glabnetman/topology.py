@@ -233,6 +233,14 @@ class Topology(XmlObject):
 		task.output.write("creating scripts ...\n")
 		if Config.local_control_dir and os.path.exists(Config.local_control_dir):
 			shutil.rmtree(Config.local_control_dir)
+		for dev in self.devices.values():
+			task.output.write("\tcreating aux files for %s ...\n" % dev)
+			dev.write_aux_files()
+			task.subtasks_done = task.subtasks_done+1
+		for con in self.connectors.values():
+			task.output.write("\tcreating aux files for %s ...\n" % con)
+			con.write_aux_files()
+			task.subtasks_done = task.subtasks_done+1
 		for host in self.affected_hosts():
 			dir=self.get_control_dir(host.name)
 			if not os.path.exists(dir):
@@ -240,16 +248,14 @@ class Topology(XmlObject):
 			for script in ("prepare", "destroy", "start", "stop"):
 				script_fd = open(self.get_control_script(host.name,script), "w")
 				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
+				for dev in self.devices.values():
+					script_fd.write("\n# commands for %s\n" % dev)
+					dev.write_control_script(host, script, script_fd)
+				for con in self.connectors.values():
+					script_fd.write("\n# commands for %s\n" % con)
+					con.write_control_script(host, script, script_fd)
 				script_fd.close()
 				os.chmod(self.get_control_script(host.name,script), stat.S_IRWXU)
-		for dev in self.devices.values():
-			task.output.write("\tcreating scripts for %s ...\n" % dev)
-			dev.write_control_scripts()
-			task.subtasks_done = task.subtasks_done+1
-		for con in self.connectors.values():
-			task.output.write("\tcreating scripts for %s ...\n" % con)
-			con.write_control_scripts()
-			task.subtasks_done = task.subtasks_done+1
 
 	def upload_control_scripts(self, task):
 		"""
