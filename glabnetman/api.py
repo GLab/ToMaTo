@@ -20,6 +20,10 @@ class TopologyInfo():
 	def __init__(self, topology):
 		self.id = topology.id
 		self.state = str(topology.state)
+		self.is_created = self.state == TopologyState.CREATED
+		self.is_uploaded = self.state == TopologyState.UPLOADED
+		self.is_prepared = self.state == TopologyState.PREPARED
+		self.is_started = self.state == TopologyState.STARTED
 		self.owner = str(topology.owner)
 
 class HostInfo():

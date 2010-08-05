@@ -44,11 +44,19 @@ Hint: {{h}}<br/>
 <div id="sidemenu">
 	<h2>Deployment</h2>
 	<ul>
-		<li><a href="/top/{{top_id}}/upload">upload</a></li>
-		<li><a href="/top/{{top_id}}/prepare">prepare</a></li>
-		<li><a href="/top/{{top_id}}/destroy">destroy</a></li>
+{% if top.is_prepared %} 
 		<li><a href="/top/{{top_id}}/start">start</a></li>
+{% endif %}
+{% if top.is_prepared or top.is_started %} 
 		<li><a href="/top/{{top_id}}/stop">stop</a></li>
+{% endif %}
+{% if top.is_uploaded %} 
+		<li><a href="/top/{{top_id}}/prepare">prepare</a></li>
+{% endif %}
+		<li><a href="/top/{{top_id}}/upload">upload</a></li>
+{% if top.is_uploaded or top.is_prepared %} 
+		<li><a href="/top/{{top_id}}/destroy">destroy</a></li>
+{% endif %}
 	</ul>
 </div>
 {% endblock %}

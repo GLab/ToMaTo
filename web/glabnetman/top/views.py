@@ -40,13 +40,11 @@ def action(request, top_id, action=None):
 			if request.REQUEST.has_key("plain"):
 				return HttpResponse(xml, mimetype="text/plain")
 			else:
-				return render_to_response("top/showxml.html", {'top_id': top_id, 'xml': xml})
+				top=api.top_info(int(top_id))
+				return render_to_response("top/showxml.html", {'top_id': top_id, 'top': top, 'xml': xml})
 		if action=="remove":
 			api.top_remove(int(top_id))
 			return index(request)
-		top=api.top_info(int(top_id))
-		if not top:
-			raise Http404
 		output=None
 		if action=="upload":
 			output=api.top_upload(int(top_id))
@@ -58,6 +56,9 @@ def action(request, top_id, action=None):
 			output=api.top_start(int(top_id))
 		elif action=="stop":
 			output=api.top_stop(int(top_id))
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
 		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'output' : output })
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
