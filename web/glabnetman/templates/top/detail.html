@@ -36,7 +36,7 @@ Hint: {{h}}<br/>
 		<li><a href="/top/{{top_id}}/showxml">show</a></li>
 		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
 {% if top.is_created %}
-		<li><a href="/top/{{top_id}}/remove">remove</a></li>
+		<li><a href="/top/{{top_id}}/remove" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 {% endif %}
 	</ul>
 </div>
@@ -55,7 +55,7 @@ Hint: {{h}}<br/>
 {% endif %}
 		<li><a href="/top/{{top_id}}/upload">upload</a></li>
 {% if top.is_uploaded or top.is_prepared %} 
-		<li><a href="/top/{{top_id}}/destroy">destroy</a></li>
+		<li><a href="/top/{{top_id}}/destroy" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
 {% endif %}
 	</ul>
 </div>
