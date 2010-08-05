@@ -3,8 +3,9 @@
 {% block content %}
 <h1>Add new host</h1>
 <form action="/host/add" method="POST">
-	<input name="hostname"/>
-	<br/>
+	Hostname: <input name="hostname"/><br/>
+	Group: <input name="group"/><br/>
+	public bridge: <input name="public_bridge" value="vmbr0"/><br/>
 	<input type="submit"/>
 </form>
 {% endblock %}

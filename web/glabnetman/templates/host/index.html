@@ -3,9 +3,18 @@
 {% block content %}
 <h1>List of hosts</h1>
 
-<ul>
+<table>
+	<tr>
+		<th>host</th>
+		<th>group</th>
+		<th>actions</th>
+	</tr>
 {% for host in host_list %}
-	<li>{{host.name}} <a href="/host/remove?hostname={{host.name}}">[remove]</a></li>
+	<tr>
+		<td>{{host.name}}</td>
+		<td>{{host.group}}</td>
+		<td><a href="/host/remove?hostname={{host.name}}">[remove]</a></td>
+	</tr>
 {% endfor %}
-</ul>
+</table>
 {% endblock %}

@@ -16,14 +16,10 @@ class RealNetworkConnector(Connector):
 		@param load_ids whether to lod or ignore assigned ids
 		"""
 		Connector.__init__(self, topology, dom, load_ids)
-		if not self.bridge_name:
-			self.bridge_name = "vmbr0"
 		for con in self.connections:
-			con.bridge_name = self.bridge_name
+			con.bridge_name = con.interface.host.public_bridge
 			if con.delay or con.bandwidth or con.lossratio:
 				raise Exception("ipfw not supported on real network")
-
-	bridge_name=property(curry(Connector.get_attr,"bridge_name"),curry(Connector.set_attr,"bridge_name"))
 
 	def retake_resources(self):
 		"""

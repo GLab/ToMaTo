@@ -21,6 +21,7 @@ class HostStore(object):
 	</hosts>
 	"""
 	hosts = {}
+	groups = {}
 	
 	def load ():
 		"""
@@ -31,7 +32,9 @@ class HostStore(object):
 		dom = minidom.parse ( Config.hosts )
 		x_hosts = dom.getElementsByTagName ( "hosts" )[0]
 		for x_host in x_hosts.getElementsByTagName ( "host" ):
-			HostStore.add ( Host ( x_host.getAttribute("name") ) )
+			host = Host ()
+			host.decode_xml(x_host)
+			HostStore.add ( host )
 	load = static(load)
 			
 	def save ():
@@ -43,7 +46,7 @@ class HostStore(object):
 		doc.appendChild ( x_hosts )
 		for host in HostStore.hosts.values():
 			x_host = doc.createElement ( "host" )
-			x_host.setAttribute("name", host.name)
+			host.encode_xml(x_host)
 			x_hosts.appendChild ( x_host )
 		fd = open ( Config.hosts, "w" )
 		doc.writexml(fd, indent="", addindent="\t", newl="\n")
@@ -55,7 +58,13 @@ class HostStore(object):
 		Add a host to the host store
 		@param host to store
 		"""
+		if HostStore.exists(host.name):
+			from api import Fault
+			raise Fault(Fault.HOST_EXISTS, "host exists: %s" % host.name)
 		HostStore.hosts[str(host.name)] = host
+		if not HostStore.groups.has_key(host.group):
+			HostStore.groups[host.group] = set()
+		HostStore.groups[host.group].add(host)
 		HostStore.save()
 	add = static(add)
 		
@@ -66,6 +75,14 @@ class HostStore(object):
 		"""
 		return HostStore.hosts.has_key(str(host_name))
 	exists = static(exists)
+
+	def group_exists(group_name):
+		"""
+		Check whether a host group exists
+		@param group_name name of the group to find
+		"""
+		return HostStore.groups.has_key(str(group_name))
+	group_exists = static(group_exists)
 
 	def get(host_name):
 		"""
@@ -78,6 +95,24 @@ class HostStore(object):
 		return HostStore.hosts[str(host_name)]
 	get = static(get)
 		
+	def get_group(group_name):
+		"""
+		Retrieve all hosts of a group
+		@param host_group name of the host group
+		"""
+		if not HostStore.group_exists(group_name):
+			from api import Fault
+			raise Fault(Fault.NO_SUCH_HOST_GROUP, "no such host group: %s" % group_name)
+		return HostStore.groups[str(group_name)]
+	get_group = static(get_group)
+
+	def group_list():
+		"""
+		Retrieve all host groups
+		"""
+		return HostStore.groups.key_set()
+	group_list = static(group_list)
+
 	def remove(host_name):
 		"""
 		Remove a host from the host store
@@ -86,7 +121,11 @@ class HostStore(object):
 		if not HostStore.exists(host_name):
 			from api import Fault
 			raise Fault(Fault.NO_SUCH_HOST, "no such host: %s" % host_name)
+		host = HostStore.hosts[host_name]
 		del HostStore.hosts[host_name]
+		HostStore.groups[host.group].remove(host)
+		if HostStore.groups[host.group] == set():
+			del HostStore.groups[host.group]
 		HostStore.save()
 	remove = static(remove)
 

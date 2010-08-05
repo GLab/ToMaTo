@@ -14,7 +14,9 @@ class Fault(xmlrpclib.Fault):
 	NOT_A_REGULAR_USER = 102
 	INVALID_TOPOLOGY_STATE_TRANSITION = 103
 	NO_SUCH_HOST = 200
-	ACCESS_TO_HOST_DENIED = 201
+	NO_SUCH_HOST_GROUP = 201
+	ACCESS_TO_HOST_DENIED = 202
+	HOST_EXISTS = 203
 
 class TopologyInfo():
 	def __init__(self, topology):
@@ -28,7 +30,9 @@ class TopologyInfo():
 
 class HostInfo():
 	def __init__(self, host):
-		self.name = host.name
+		self.name = str(host.name)
+		self.group = str(host.group)
+		self.public_bridge = str(host.public_bridge)
 
 class PublicAPI():
 	def __init__(self):
@@ -95,15 +99,19 @@ class PublicAPI():
 		dom=top.create_dom(include_ids)
 		return dom.toprettyxml(indent="\t", newl="\n")
 		
-	def host_list(self, user=None):
+	def host_list(self, group_filter=None, user=None):
 		hosts=[]
 		for h in HostStore.hosts.values():
-			hosts.append(HostInfo(h))
+			if group_filter==None or h.group == group_filter:
+				hosts.append(HostInfo(h))
 		return hosts
 
-	def host_add(self, host_name, user=None):
+	def host_add(self, host_name, group_name, public_bridge, user=None):
 		self._host_access(host_name,user)
-		host=Host(host_name)
+		host=Host()
+		host.name = host_name
+		host.group = group_name
+		host.public_bridge = public_bridge
 		host.check()
 		HostStore.add(host)
 		return True

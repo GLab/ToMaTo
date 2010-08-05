@@ -6,36 +6,38 @@ from config import *
 
 import subprocess
 
-class Host(object):
+class Host(XmlObject):
 	"""
 	This class represents a host
 	"""
 
-	def __init__(self, name):
+	name=property(curry(XmlObject.get_attr, "name"), curry(XmlObject.set_attr, "name"))
+	group=property(curry(XmlObject.get_attr, "group"), curry(XmlObject.set_attr, "group"))
+	public_bridge=property(curry(XmlObject.get_attr, "public_bridge"), curry(XmlObject.set_attr, "public_bridge"))
+
+	def __init__(self):
 		"""
 		Creates a new host object
-		@param name the hostname (must be reachable by this name)
 		"""
-		self.name = name
+		self.attributes={}
 		self.ports = ResourceStore(7000,1000)
 		self.bridge_ids = ResourceStore(1000,1000)
 		self.openvz_ids = ResourceStore(1000,100)
-	
+		
+	def decode_xml(self,dom):
+		XmlObject.decode_xml(self,dom)
+		if not self.public_bridge:
+			self.public_bridge = "vmbr0"
+
 	def check(self):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		"""
-		if parse_bool(Config.remote_dry_run):
-			print "DRY RUN: ssh root@%s vzctl --version" % self.name
-			print "DRY RUN: ssh root@%s brctl show" % self.name
-			print "DRY RUN: ssh root@%s ipfw -h" % self.name
-			print "DRY RUN: ssh root@%s tincd --version" % self.name
-		else:
-			print "checking for openvz..."
-			subprocess.check_call (["ssh",  "root@%s" % self.name, "vzctl --version" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			print "checking for bridge utils..."
-			subprocess.check_call (["ssh",  "root@%s" % self.name, "brctl show" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			print "checking for dummynet..."
-			subprocess.check_call (["ssh",  "root@%s" % self.name, "ipfw -h" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			print "checking for tinc..."
-			subprocess.check_call (["ssh",  "root@%s" % self.name, "tincd --version" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		print "checking for openvz..."
+		run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], Config.remote_dry_run)
+		print "checking for bridge utils..."
+		run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], Config.remote_dry_run)
+		print "checking for dummynet..."
+		run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], Config.remote_dry_run)
+		print "checking for tinc..."
+		run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], Config.remote_dry_run)
