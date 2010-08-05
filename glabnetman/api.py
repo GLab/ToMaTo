@@ -28,6 +28,7 @@ class TopologyInfo():
 		self.is_prepared = self.state == TopologyState.PREPARED
 		self.is_started = self.state == TopologyState.STARTED
 		self.owner = str(topology.owner)
+		self.resource_usage = topology.resource_usage()
 
 class HostInfo():
 	def __init__(self, host):
@@ -66,10 +67,10 @@ class PublicAPI():
 	def top_info(self, id, user=None):
 		return TopologyInfo(TopologyStore.get(id))
 
-	def top_list(self, filter_owner=None, filter_state=None, user=None):
+	def top_list(self, filter_owner=None, filter_state=None, filter_host=None, user=None):
 		tops=[]
 		for t in TopologyStore.topologies.values():
-			if (filter_state==None or t.state==filter_state) and (filter_owner==None or t.owner==filter_owner):
+			if (filter_state==None or t.state==filter_state) and (filter_owner==None or t.owner==filter_owner) and (filter_host==None or filter_host in t.affected_hosts()):
 				tops.append(TopologyInfo(t))
 		return tops
 	

@@ -8,12 +8,14 @@
     <th>ID</th>
     <th>State</th>
     <th>Owner</rh>
+    <th>Resource usage</rh>
   </tr>
 {% for top in top_list %}
   <tr>
     <td><a href="/top/{{top.id}}/">{{top.id}}</td>
     <td>{{top.state}}</td>
     <td>{{top.owner}}</td>
+    <td>{{top.resource_usage}}</td>
   </tr>
 {% endfor %}
 </table>

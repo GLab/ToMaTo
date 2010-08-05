@@ -171,6 +171,9 @@ class Topology(XmlObject):
 			hosts.add(dev.host)
 		return hosts
 
+	def resource_usage(self):
+		return len(self.devices) + len(self.connectors)
+
 	def get_control_dir(self,host_name):
 		"""
 		The local directory where all control scripts and files are stored.
