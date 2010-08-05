@@ -90,6 +90,9 @@ class DhcpdDevice(Device):
 		if script == "stop":
 			fd.write ( "cat %s.pid | xargs kill\n" % self.id )
 
+	def check_change_possible(self, newdev):
+		pass
+
 	def change(self, newdev, fd):
 		"""
 		Adapt this device to the new device

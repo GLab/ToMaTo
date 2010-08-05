@@ -127,6 +127,11 @@ class OpenVZDevice(Device):
 			fd.write("vzctl stop %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
 
+	def check_change_possible(self, newdev):
+		from api import Fault
+		if not self.template == newdev.template:
+			raise Fault(Fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.id)
+
 	def change(self, newdev, fd):
 		"""
 		Adapt this device to the new device

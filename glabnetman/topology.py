@@ -387,7 +387,8 @@ class Topology(XmlObject):
 		removeddevs=set()
 		for dev in self.devices.values():
 			if dev.id in newtop.devices.keys():
-				changeddevs[dev]=newtop.devices[dev.id]
+				newdev=newtop.devices[dev.id]
+				changeddevs[dev]=newdev
 			else:
 				removeddevs.add(dev)
 		for dev in newtop.devices.values():
@@ -442,6 +443,12 @@ class Topology(XmlObject):
 		self.upload_control_scripts(task)
 		task.done()
 
+	def check_change_possible(self, newtop):
+		for dev in self.devices.values():
+			if dev.id in newtop.devices.keys():
+				newdev=newtop.devices[dev.id]
+				dev.check_change_possible(newdev)
+				
 	def change(self, newtop):
 		from api import Fault
 		if self.state == TopologyState.UPLOADED:
@@ -451,6 +458,7 @@ class Topology(XmlObject):
 			thread.start_new_thread(self._change_created,(newtop, task))
 			return task.id
 		if self.state == TopologyState.PREPARED:
+			self.check_change_possible(newtop)
 			task = api.TaskStatus()
 			thread.start_new_thread(self._change_prepared,(newtop, task))
 			return task.id
