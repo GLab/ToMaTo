@@ -4,6 +4,7 @@ from util import *
 from config import *
 from resource_store import *
 from topology import *
+from api import *
 
 from xml.dom import minidom
 
@@ -19,11 +20,22 @@ class TopologyStore(object):
 	topologies = {}
 	ids = ResourceStore ( 1, 10000 )
 
+	def exists (id):
+		"""
+		Returns whether a topology exists
+		@param id id of the topology
+		"""
+		return TopologyStore.topologies.has_key(id)
+	exists = static(exists)
+
 	def get (id):
 		"""
 		Returns a topology by its id
 		@param id id of the topology
 		"""
+		if not TopologyStore.exists(id):
+			from api import Fault
+			raise Fault(Fault.NO_SUCH_TOPOLOGY, "no such topology: %s" % id) 
 		return TopologyStore.topologies[id]
 	get = static(get)
 	
@@ -55,6 +67,9 @@ class TopologyStore(object):
 		Removes a topology by its id
 		@param id id of the topology
 		"""
+		if not TopologyStore.exists(id):
+			from api import Fault
+			raise Fault(Fault.NO_SUCH_TOPOLOGY, "no such topology: %s" % id) 
 		top = TopologyStore.topologies[id]
 		top.id = None
 		top.free_resources()

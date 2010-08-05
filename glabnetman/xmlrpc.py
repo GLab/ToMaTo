@@ -12,8 +12,6 @@ import xmlrpclib
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, protocol, reactor
 
-Fault = xmlrpclib.Fault
-
 class User():
 	valid_users={}
 	def __init__(self,user,password):
@@ -22,8 +20,8 @@ class User():
 		ldap=LdapUser(user)
 		self.is_valid=ldap.authenticate(password)
 		if self.is_valid:
-			self.id_user=ldap.is_user()
-			self.id_admin=ldap.is_admin()
+			self.is_user=ldap.is_user()
+			self.is_admin=ldap.is_admin()
 
 class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, api):
@@ -43,8 +41,10 @@ class APIServer(xmlrpc.XMLRPC):
         def execute(self, function, args, user):
 		try:
 			return function(*args, user=user)
+		except xmlrpclib.Fault, f:
+			raise f
 		except Exception, exc:
-			raise xmlrpclib.Fault(-1, '%s:%s' % (exc.__class__.__name__, exc) )
+			raise xmlrpclib.Fault(Fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
         
 	def render(self, request):
 		username = request.getUser()

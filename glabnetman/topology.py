@@ -10,6 +10,7 @@ from real_network_connector import *
 from config import *
 from resource_store import *
 from topology_analysis import *
+from api import *
 
 import shutil, os, stat, sys
 
@@ -199,7 +200,8 @@ class Topology(XmlObject):
 		Note: this can be done even if the topology is already uploaded or even running
 		"""
 		if not self.id:
-			raise Exception("not registered")
+			from api import Fault
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		output=StringIO()
 		stdout=sys.stdout
 		sys.stdout=output
@@ -216,7 +218,8 @@ class Topology(XmlObject):
 		Creates all control scripts and stores them in a local directory.
 		"""
 		if not self.id:
-			raise Exception("not registered")
+			from api import Fault
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		print "creating scripts ..."
 		if Config.local_control_dir and os.path.exists(Config.local_control_dir):
 			shutil.rmtree(Config.local_control_dir)
@@ -239,7 +242,8 @@ class Topology(XmlObject):
 		Uploads all control scripts stored in a local directory.
 		"""
 		if not self.id:
-			raise Exception("not registered")
+			from api import Fault
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		print "uploading scripts ..."
 		for host in self.affected_hosts():
 			print "%s ..." % host.name
@@ -256,7 +260,8 @@ class Topology(XmlObject):
 		@param script the script to execute
 		"""
 		if not self.id:
-			raise Exception("not registered")
+			from api import Fault
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		output=StringIO()
 		stdout=sys.stdout
 		sys.stdout=output
@@ -274,14 +279,15 @@ class Topology(XmlObject):
 		Starts the topology.
 		This will fail if the topology has not been uploaded or prepared yet or is already started.
 		"""
+		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Exception ("not uploaded")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
-			raise Exception ("not prepared")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
-			raise Exception ("already started")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		output=self.exec_script("start")
 		self.state = TopologyState.STARTED
 		return output
@@ -291,10 +297,11 @@ class Topology(XmlObject):
 		Stops the topology.
 		This will fail if the topology has not been uploaded or prepared yet.
 		"""
+		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Exception ("not uploaded")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
-			raise Exception ("not prepared")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
@@ -308,14 +315,15 @@ class Topology(XmlObject):
 		Prepares the topology.
 		This will fail if the topology has not been uploaded yet or is already prepared or started.
 		"""
+		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Exception ("not uploaded")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
 			pass
 		if self.state == TopologyState.PREPARED:
-			raise Exception ("already prepared")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already prepared")
 		if self.state == TopologyState.STARTED:
-			raise Exception ("already started")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		output=self.exec_script("prepare")
 		self.state = TopologyState.PREPARED
 		return output
@@ -325,14 +333,15 @@ class Topology(XmlObject):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
+		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Exception ("not uploaded")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
 			pass
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
-			raise Exception ("already started")
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		output=self.exec_script("destroy")
 		self.state = TopologyState.UPLOADED
 		return output

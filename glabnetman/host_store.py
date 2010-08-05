@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from xml.dom import minidom
+
 from util import *
 from config import *
 from host import *
+from api import *
 
-from xml.dom import minidom
 import atexit, os
 
 class HostStore(object):
@@ -57,11 +59,22 @@ class HostStore(object):
 		HostStore.save()
 	add = static(add)
 		
+	def exists(host_name):
+		"""
+		Check whether a host exists
+		@param host_name name of the host to find
+		"""
+		return HostStore.hosts.has_key(str(host_name))
+	exists = static(exists)
+
 	def get(host_name):
 		"""
 		Retrieve a host by its name
 		@param host_name name of the host to find
 		"""
+		if not HostStore.exists(host_name):
+			from api import Fault
+			raise Fault(Fault.NO_SUCH_HOST, "no such host: %s" % host_name)
 		return HostStore.hosts[str(host_name)]
 	get = static(get)
 		
@@ -70,12 +83,11 @@ class HostStore(object):
 		Remove a host from the host store
 		@param host_name name of the host to remove
 		"""
-		host_name=str(host_name)
-		if HostStore.hosts.has_key(host_name):
-			del HostStore.hosts[host_name]
-			HostStore.save()
-		else:
-			raise Exception("no such host: %s" % host_name)
+		if not HostStore.exists(host_name):
+			from api import Fault
+			raise Fault(Fault.NO_SUCH_HOST, "no such host: %s" % host_name)
+		del HostStore.hosts[host_name]
+		HostStore.save()
 	remove = static(remove)
 
 HostStore.load()
