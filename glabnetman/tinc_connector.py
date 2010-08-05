@@ -105,6 +105,8 @@ class TincConnector(Connector):
 			self_host_fd = open(path+"/hosts/"+tincname, "w")
 			self_host_fd.write("Address=%s\n" % host.name)
 			self_host_fd.write("Port=%s\n" % con.port_number )
+			self_host_fd.write("Cipher=none\n" )
+			self_host_fd.write("Digest=none\n" )
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
