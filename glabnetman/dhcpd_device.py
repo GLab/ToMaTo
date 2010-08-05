@@ -70,7 +70,6 @@ class DhcpdDevice(Device):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		print "\tcreating scripts for dhcpd %s ..." % self.id
 		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
 		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
@@ -87,3 +86,6 @@ class DhcpdDevice(Device):
 		stop_fd=open(self.topology.get_control_script(self.host_name,"stop"), "a")
 		stop_fd.write ( "cat %s.pid | xargs kill\n" % self.id )
 		stop_fd.close()
+
+	def __str__(self):
+		return "dhcpd %s" % self.id

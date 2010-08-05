@@ -22,10 +22,8 @@ Hint: {{h}}<br/>
 {% endfor %}
 
 {% if action %}
-<h2>Output of {{action}}</h2>
-<pre>
-{{output}}
-</pre>
+<h2>Executing {{action}} ...</h2>
+<iframe width="80%" height="60%" frameborder="0" src="/task/{{task_id}}"></iframe>
 {% endif %}
 
 {% endblock %}

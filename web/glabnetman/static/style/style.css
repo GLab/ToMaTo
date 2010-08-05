@@ -2,13 +2,12 @@ body
 {
  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.85em;
  background-color:#ffffff;
- text-align:center;
  margin:0px;
 }
 
-h1 {font-size:1.1em;color:#000000;margin-bottom:0px;}
-h2 {font-size:0.9em;color:#000000;}
-h3 {font-size:0.85em;color:#000000;}
+h1 {font-size:1.5em;color:#000000;margin-bottom:0px;}
+h2 {font-size:1.1em;color:#000000;}
+h3 {font-size:1.0em;color:#000000;}
 
 code {font-size:0.9px;color:#0000ff;}
 pre
@@ -35,32 +34,33 @@ a:active, a:hover
   color:#f00;
 }
 
+#content {
+        margin-left: 200px;
+        /*margin-bottom: 1cm;*/
+}
+
+#page {
+        min-width: 780px;
+        max-width: 1260px;
+        clear:both;
+        display: block;
+        overflow: hidden;
+}
+
+#left {
+        float: left;
+        width: 180px;
+}
+
 #header {
 	height:120px;
 	margin: 0 auto 30px auto;
 	background:url(images/spacer_hor.gif) repeat-x left bottom;
 }
 
-#page{
-	width:980px;
-	margin:0px auto;
-	text-align:left;
-}
-
-#left {
-	width:180px;
-/*	height:600px;*/
-	float:left;
-}
-
-#content {
-	width:738px;
-	float:right;
-	padding:0px 10px;
-}
-
 
 #footer{
+	text-align:center;
 	margin:10px auto 0 auto;
 	padding-top:1px;
 	height:72px;
@@ -74,13 +74,6 @@ a:active, a:hover
 	background-repeat:repeat-x;
 	background-image: url(images/border_top.png);
 }
-
-/*#border_bottom{
-	width:100%;
-	height:28px;
-	background-repeat:repeat-x;
-	background-image: url(images/border_bottom.png);
-}*/
 
 #logo{
 	float:left;

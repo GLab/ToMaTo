@@ -45,20 +45,20 @@ def action(request, top_id, action=None):
 		if action=="remove":
 			api.top_remove(int(top_id))
 			return index(request)
-		output=None
+		task_id=None
 		if action=="upload":
-			output=api.top_upload(int(top_id))
+			task_id=api.top_upload(int(top_id))
 		elif action=="prepare":
-			output=api.top_prepare(int(top_id))
+			task_id=api.top_prepare(int(top_id))
 		elif action=="destroy":
-			output=api.top_destroy(int(top_id))
+			task_id=api.top_destroy(int(top_id))
 		elif action=="start":
-			output=api.top_start(int(top_id))
+			task_id=api.top_start(int(top_id))
 		elif action=="stop":
-			output=api.top_stop(int(top_id))
+			task_id=api.top_stop(int(top_id))
 		top=api.top_info(int(top_id))
 		if not top:
 			raise Http404
-		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'output' : output })
+		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})

@@ -86,7 +86,6 @@ class OpenVZDevice(Device):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		print "\tcreating scripts for openvz %s ..." % self.id
 		prepare_fd=open(self.topology.get_control_script(self.host_name,"prepare"), "a")
 		prepare_fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
 		prepare_fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
@@ -124,3 +123,6 @@ class OpenVZDevice(Device):
 		start_fd.close()
 		stop_fd.write ( "true\n" )
 		stop_fd.close()
+
+	def __str__(self):
+		return "openvz %s" % self.id

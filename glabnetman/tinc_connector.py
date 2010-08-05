@@ -92,7 +92,6 @@ class TincConnector(Connector):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		print "\tcreating scripts for tinc %s %s ..." % ( self.type, self.id )
 		for con in self.connections:
 			con.write_control_scripts()
 		for con in self.connections:
@@ -150,3 +149,6 @@ class TincConnector(Connector):
 				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
 				if not tincname == tincname2:
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
+					
+	def __str__(self):
+		return "tinc %s %s" % ( self.type, self.id )

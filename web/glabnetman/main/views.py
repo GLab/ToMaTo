@@ -3,16 +3,21 @@
 from django.http import HttpResponse, Http404
 from django.shortcuts import render_to_response
 
-httprealm="Glab Network Manager"
-
-class HttpResponseNotAuthorized(HttpResponse):
-	status_code = 401
-	def __init__(self, redirect_to):
-		HttpResponse.__init__(self)
-		self['WWW-Authenticate'] = 'Basic realm="%s"' % httprealm
+from lib import *
+import xmlrpclib
 
 def index(request):
 	return render_to_response("main/base.html")
+
+def task_status(request, task_id):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		task = api.task_status(task_id)
+		return render_to_response("main/task.html", {'task': task})
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
 
 def logout(request):
 	return HttpResponseNotAuthorized("/")

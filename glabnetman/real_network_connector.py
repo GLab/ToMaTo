@@ -17,7 +17,7 @@ class RealNetworkConnector(Connector):
 		"""
 		Connector.__init__(self, topology, dom, load_ids)
 		for con in self.connections:
-			con.bridge_name = con.interface.host.public_bridge
+			con.bridge_name = con.interface.device.host.public_bridge
 			if con.delay or con.bandwidth or con.lossratio:
 				raise Exception("ipfw not supported on real network")
 
@@ -43,7 +43,6 @@ class RealNetworkConnector(Connector):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		print "\tcreating scripts for real network %s ..." % ( self.id )
 		# not invoking con.write_control_scripts()
 		for con in self.connections:
 			host = con.interface.device.host
@@ -52,3 +51,6 @@ class RealNetworkConnector(Connector):
 			start_fd.close ()
 			stop_fd=open(self.topology.get_control_script(host.name,"stop"), "a")
 			stop_fd.close ()
+
+	def __str__(self):
+		return "real network %s" % self.id

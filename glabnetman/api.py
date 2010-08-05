@@ -5,7 +5,8 @@ from host import *
 from topology_store import *
 from topology import *
 
-import xmlrpclib
+import xmlrpclib, uuid
+from cStringIO import StringIO
 
 class Fault(xmlrpclib.Fault):
 	UNKNOWN = -1
@@ -33,6 +34,19 @@ class HostInfo():
 		self.name = str(host.name)
 		self.group = str(host.group)
 		self.public_bridge = str(host.public_bridge)
+
+class TaskStatus():
+	tasks={}
+	def __init__(self):
+		self.id = str(uuid.uuid1())
+		TaskStatus.tasks[self.id]=self
+		self.output = StringIO()
+		self.subtasks_total = 0
+		self.subtasks_done = 0
+	def done(self):
+		self.subtasks_done = self.subtasks_total
+	def dict(self):
+		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total}
 
 class PublicAPI():
 	def __init__(self):
@@ -123,3 +137,6 @@ class PublicAPI():
 		
 	def account(self, user=None):
 		return user
+
+	def task_status(self, id, user=None):
+		return TaskStatus.tasks[id].dict()
