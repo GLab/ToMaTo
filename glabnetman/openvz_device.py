@@ -127,5 +127,25 @@ class OpenVZDevice(Device):
 			fd.write("vzctl stop %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
 
+	def change(self, newdev, fd):
+		"""
+		Adapt this device to the new device
+		"""
+		self.root_password = newdev.root_password
+		self.hostname = newdev.hostname
+		if self.root_password:
+			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+		if self.hostname:
+			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.hostname ) )
+		else:
+			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+		for iface in self.interfaces.values():
+			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.id ) )
+		self.interfaces = newdev.interfaces
+		for iface in self.interfaces.values():
+			bridge = self.bridge_name(iface)
+			fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
+			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+
 	def __str__(self):
 		return "openvz %s" % self.id

@@ -90,5 +90,14 @@ class DhcpdDevice(Device):
 		if script == "stop":
 			fd.write ( "cat %s.pid | xargs kill\n" % self.id )
 
+	def change(self, newdev, fd):
+		"""
+		Adapt this device to the new device
+		"""
+		self.netmask=newdev.netmask
+		self.range=newdev.range
+		self.gateway=newdev.gateway
+		self.nameserver=newdev.nameserver
+
 	def __str__(self):
 		return "dhcpd %s" % self.id

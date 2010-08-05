@@ -83,6 +83,13 @@ class PublicAPI():
 		id=TopologyStore.add(top)
 		return id
 	
+	def top_change(self, top_id, xml, user=None):
+		self._top_access(top_id, user)
+		dom=minidom.parseString(xml)
+		newtop=Topology(dom,False)
+		top = TopologyStore.get(top_id)
+		return top.change(newtop)
+
 	def top_remove(self, top_id, user=None):
 		self._top_access(top_id, user)
 		TopologyStore.remove(top_id)

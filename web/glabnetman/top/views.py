@@ -30,6 +30,22 @@ def create(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 	
+def edit(request):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		top_id=request.REQUEST["top_id"]
+		if not request.REQUEST.has_key("xml"):
+			xml=api.top_get(int(top_id))
+			return render_to_response("top/edit.html", {'top_id': top_id, 'xml': xml} )
+		xml=request.REQUEST["xml"]
+		task_id=api.top_change(int(top_id), xml)
+		top=api.top_info(int(top_id))
+		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action': 'change', 'task_id': task_id})
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
 def action(request, top_id, action=None):
 	try:
 		if not getapi(request):

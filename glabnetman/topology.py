@@ -13,7 +13,7 @@ from topology_analysis import *
 
 import api
 
-import shutil, os, stat, sys, thread
+import shutil, os, stat, sys, thread, uuid
 
 class TopologyState():
 	"""
@@ -365,3 +365,94 @@ class Topology(XmlObject):
 		task = api.TaskStatus()
 		thread.start_new_thread(self.exec_script,("destroy", task, TopologyState.UPLOADED))
 		return task.id
+	
+	def _change_created(self, newtop, task):
+		# easy case: simply exchange definition, no change to deployed components needed
+		self.free_resources()
+		self.devices = {}
+		self.connectors = {}
+		for dev in newtop.devices.values():
+			self.add_device(dev)
+		for con in newtop.connectors.values():
+			self.add_connector(con)
+		self.take_resources()
+		task.done()
+
+	def _change_prepared(self, newtop, task):
+		# difficult case: deployed components already exist
+		changeid=str(uuid.uuid1())
+		task.subtasks_total = 1 + len(self.affected_hosts())*2 + len(self.devices) + len(self.connectors)
+		newdevs=set()
+		changeddevs={}
+		removeddevs=set()
+		for dev in self.devices.values():
+			if dev.id in newtop.devices.keys():
+				changeddevs[dev]=newtop.devices[dev.id]
+			else:
+				removeddevs.add(dev)
+		for dev in newtop.devices.values():
+			if not dev.id in self.devices.keys():
+				newdevs.add(dev)
+		#delete removed devices
+		for dev in removeddevs:
+			dev.free_resources()
+			del self.devices[dev.id]
+		#add new devices
+		for dev in newdevs:
+			self.add_device(dev)
+			dev.take_resources()
+		for host in self.affected_hosts():
+			script = "change_%s" % changeid
+			src = self.get_control_script(host.name,script)
+			script_fd = open(src, "w")
+			for dev in removeddevs:
+				if dev.host_name == host.name:
+					dev.write_control_script(host,"destroy",script_fd)
+			for dev in newdevs:
+				if dev.host_name == host.name:
+					dev.write_control_script(host,"prepare",script_fd)
+			for dev in changeddevs.keys():
+				if dev.host_name == host.name:
+					dev.change(changeddevs[dev],script_fd)
+			script_fd.close()
+			os.chmod(src, stat.S_IRWXU)
+			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
+			remote_script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
+			task.output.write(run_shell(["rsync",  "-a", src, dst], Config.remote_dry_run))
+			task.output.write(run_shell(["ssh",  "root@%s" % host.name, remote_script ], Config.remote_dry_run))
+			task.subtasks_done = task.subtasks_done + 1
+		newcons=set()
+		removedcons=set()
+		for con in self.connectors.values():
+			removedcons.add(con)
+			if con.id in newtop.connectors.keys():
+				newcons.add(newtop.connectors[con.id])
+		for con in newtop.connectors.values():
+			if not con.id in self.connectors.keys():
+				newcons.add(con)
+		#delete removed connectors
+		for con in removedcons:
+			con.free_resources()
+			del self.connectors[con.id]
+		#add new connectors
+		for con in newcons:
+			self.add_connector(con)
+			con.take_resources()
+		self.write_control_scripts(task)
+		self.upload_control_scripts(task)
+		task.done()
+
+	def change(self, newtop):
+		from api import Fault
+		if self.state == TopologyState.UPLOADED:
+			self.state = TopologyState.CREATED
+		if self.state == TopologyState.CREATED:
+			task = api.TaskStatus()
+			thread.start_new_thread(self._change_created,(newtop, task))
+			return task.id
+		if self.state == TopologyState.PREPARED:
+			task = api.TaskStatus()
+			thread.start_new_thread(self._change_prepared,(newtop, task))
+			return task.id
+		if self.state == TopologyState.STARTED:
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")

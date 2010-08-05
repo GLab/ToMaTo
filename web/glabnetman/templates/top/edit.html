@@ -1,0 +1,11 @@
+{% extends "top/base.html" %}
+
+{% block content %}
+<h1>Edit topology {{top_id}}</h1>
+<form action="/top/edit" method="POST">
+	<textarea name="xml" cols="80" rows="25">{{xml|safe}}</textarea>
+	<input type="hidden" name="top_id" value="{{top_id}}"/>
+	<br/>
+	<input type="submit"/>
+</form>
+{% endblock %}
