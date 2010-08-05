@@ -37,7 +37,9 @@ Hint: {{h}}<br/>
 		<li><a href="/top/{{top_id}}">details</a></li>
 		<li><a href="/top/{{top_id}}/showxml">show</a></li>
 		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
+{% if top.is_created %}
 		<li><a href="/top/{{top_id}}/remove">remove</a></li>
+{% endif %}
 	</ul>
 </div>
 

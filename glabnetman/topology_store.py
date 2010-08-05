@@ -71,6 +71,9 @@ class TopologyStore(object):
 			from api import Fault
 			raise Fault(Fault.NO_SUCH_TOPOLOGY, "no such topology: %s" % id) 
 		top = TopologyStore.topologies[id]
+		if not top.state == TopologyState.CREATED:
+			from api import Fault
+			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "must be stopped and destroyed")
 		top.id = None
 		top.free_resources()
 		del TopologyStore.topologies[id]
