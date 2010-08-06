@@ -1,0 +1,13 @@
+<Location "/">
+    SetHandler python-program
+    PythonHandler django.core.handlers.modpython
+    SetEnv DJANGO_SETTINGS_MODULE glabnetman.settings
+    PythonOption django.root ''
+    PythonDebug On
+    PythonPath "['/glabnetman/web', '/glabnetman/web/glabnetman'] + sys.path"
+</Location>
+
+Alias /static /glabnetman/web/glabnetman/static
+<Location "/static">
+    SetHandler none
+</Location>
