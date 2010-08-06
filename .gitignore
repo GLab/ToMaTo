@@ -1,4 +1,4 @@
-config
-logs
+backend/config
+backend/logs
 *.pyc
 web/apache.conf
