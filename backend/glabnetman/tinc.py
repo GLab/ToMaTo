@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from connector import *
-from resource_store import *
 from util import *
+import resource
 import os, subprocess, shutil
 
 class TincConnector(Connector):
@@ -10,7 +10,7 @@ class TincConnector(Connector):
 	This class represents a tinc connector
 	"""
 
-	tinc_ids = ResourceStore(1,10000)
+	tinc_ids = resource.Store(1,10000)
 
 	def __init__(self, topology, dom, load_ids):
 		"""

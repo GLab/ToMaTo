@@ -5,10 +5,9 @@ from xml.dom import minidom
 from task import TaskStatus
 
 from util import *
-from resource_store import ResourceStore
 from log import Logger
 
-import api, config, openvz, dhcp, tinc, real_network, topology_analysis
+import api, config, openvz, dhcp, tinc, real_network, topology_analysis, resource
 
 import shutil, os, stat, sys, thread, uuid
 

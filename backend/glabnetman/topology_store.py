@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from util import *
-import config, api
-from resource_store import *
+import config, api, resource
 from topology import *
 
 from xml.dom import minidom
@@ -16,7 +15,7 @@ The topologies are stored in individual xml files in a configures directory.
 """
 	
 topologies = {}
-ids = ResourceStore ( 1, 10000 )
+ids = resource.Store ( 1, 10000 )
 
 def exists (id):
 	"""

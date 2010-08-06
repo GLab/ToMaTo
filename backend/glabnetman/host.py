@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from resource_store import *
 from util import *
 
-import config
+import config, resource
 
 import subprocess
 
@@ -21,9 +20,9 @@ class Host(XmlObject):
 		Creates a new host object
 		"""
 		self.attributes={}
-		self.ports = ResourceStore(7000,1000)
-		self.bridge_ids = ResourceStore(1000,1000)
-		self.openvz_ids = ResourceStore(1000,100)
+		self.ports = resource.Store(7000,1000)
+		self.bridge_ids = resource.Store(1000,1000)
+		self.openvz_ids = resource.Store(1000,100)
 		
 	def decode_xml(self,dom):
 		XmlObject.decode_xml(self,dom)

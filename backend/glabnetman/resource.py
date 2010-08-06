@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class ResourceStore(object):
+class Store(object):
 	"""
 	A resource store manages a set of resource ids
 	"""
