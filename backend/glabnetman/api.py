@@ -21,23 +21,16 @@ class Fault(xmlrpclib.Fault):
 	ACCESS_TO_HOST_DENIED = 202
 	HOST_EXISTS = 203
 
-class TopologyInfo():
-	def __init__(self, topology):
-		self.id = topology.id
-		self.state = str(topology.state)
-		self.is_created = self.state == TopologyState.CREATED
-		self.is_uploaded = self.state == TopologyState.UPLOADED
-		self.is_prepared = self.state == TopologyState.PREPARED
-		self.is_started = self.state == TopologyState.STARTED
-		self.owner = str(topology.owner)
-		self.resource_usage = topology.resource_usage()
-		self.analysis = topology.analysis
+def _topology_info(top):
+	state = str(top.state)
+	return {"id": top.id, "state": str(top.state), "is_created": state == TopologyState.CREATED,
+		"is_uploaded": state == TopologyState.UPLOADED, 
+		"is_prepared": state == TopologyState.PREPARED,
+		"is_started": state == TopologyState.STARTED,
+		"owner": str(top.owner), "resource_usage": top.resource_usage(), "analysis": top.analysis}
 
-class HostInfo():
-	def __init__(self, host):
-		self.name = str(host.name)
-		self.group = str(host.group)
-		self.public_bridge = str(host.public_bridge)
+def _host_info(host):
+	return {"name": str(host.name), "group": str(host.group), "public_bridge": str(host.public_bridge)}
 
 logger = Logger(config.log_dir + "/api.log")
 
@@ -54,14 +47,14 @@ def _host_access(host_name, user=None):
 	
 def top_info(id, user=None):
 	logger.log("top_info(%s)" % id, user=user.username)
-	return TopologyInfo(topology_store.get(id))
+	return _topology_info(topology_store.get(id))
 
 def top_list(filter_owner=None, filter_state=None, filter_host=None, user=None):
 	logger.log("top_list(filter_owner=%s, filter_state=%s, filter_host=%s)" % (filter_owner, filter_state, filter_host), user=user.username)
 	tops=[]
 	for t in topology_store.topologies.values():
 		if (filter_state==None or t.state==filter_state) and (filter_owner==None or t.owner==filter_owner) and (filter_host==None or filter_host in t.affected_hosts()):
-			tops.append(TopologyInfo(t))
+			tops.append(_topology_info(t))
 	return tops
 	
 def top_import(xml, user=None):
@@ -127,7 +120,7 @@ def host_list(group_filter=None, user=None):
 	hosts=[]
 	for h in host_store.hosts.values():
 		if group_filter==None or h.group == group_filter:
-			hosts.append(HostInfo(h))
+			hosts.append(_host_info(h))
 	return hosts
 
 def host_add(host_name, group_name, public_bridge, user=None):
