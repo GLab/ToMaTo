@@ -202,13 +202,13 @@ class Topology(XmlObject):
 		"""
 		if not self.id:
 			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+		if len(self.analysis.problems) > 0:
+			raise api.Fault (api.Fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = api.TaskStatus()
 		thread.start_new_thread(self.upload_run,tuple([task]))
 		return task.id
 	
 	def upload_run(self, task):
-		if not self.id:
-			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.subtasks_total = 1 + len(self.affected_hosts()) + len(self.devices) + len(self.connectors)
 		self.take_resources()
 		task.subtasks_done = 1
@@ -223,8 +223,6 @@ class Topology(XmlObject):
 		"""
 		Creates all control scripts and stores them in a local directory.
 		"""
-		if not self.id:
-			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.output.write("creating scripts ...\n")
 		if config.local_control_dir and os.path.exists(config.local_control_dir):
 			shutil.rmtree(config.local_control_dir)
@@ -256,8 +254,6 @@ class Topology(XmlObject):
 		"""
 		Uploads all control scripts stored in a local directory.
 		"""
-		if not self.id:
-			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.output.write("uploading scripts ...\n")
 		for host in self.affected_hosts():
 			task.output.write("%s ...\n" % host.name)
@@ -293,6 +289,8 @@ class Topology(XmlObject):
 		Starts the topology.
 		This will fail if the topology has not been uploaded or prepared yet or is already started.
 		"""
+		if len(self.analysis.problems) > 0:
+			raise api.Fault (api.Fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == TopologyState.CREATED:
 			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
@@ -327,6 +325,8 @@ class Topology(XmlObject):
 		Prepares the topology.
 		This will fail if the topology has not been uploaded yet or is already prepared or started.
 		"""
+		if len(self.analysis.problems) > 0:
+			raise api.Fault (api.Fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == TopologyState.CREATED:
 			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
@@ -366,6 +366,7 @@ class Topology(XmlObject):
 		for con in newtop.connectors.values():
 			self.add_connector(con)
 		self.take_resources()
+		self.analysis = topology_analysis.analyze(self)
 		task.done()
 
 	def _change_prepared(self, newtop, task):
@@ -431,6 +432,7 @@ class Topology(XmlObject):
 			con.take_resources()
 		self.write_control_scripts(task)
 		self.upload_control_scripts(task)
+		self.analysis = topology_analysis.analyze(self)
 		self._log("change", task.output.getvalue())
 		task.done()
 

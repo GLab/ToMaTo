@@ -2,7 +2,7 @@
 
 import config, host_store, topology_store
 from host import Host
-from topology import Topology
+from topology import *
 from log import Logger
 from task import TaskStatus
 
@@ -15,6 +15,7 @@ class Fault(xmlrpclib.Fault):
 	NOT_A_REGULAR_USER = 102
 	INVALID_TOPOLOGY_STATE_TRANSITION = 103
 	IMPOSSIBLE_TOPOLOGY_CHANGE = 104
+	TOPOLOGY_HAS_PROBLEMS = 105
 	NO_SUCH_HOST = 200
 	NO_SUCH_HOST_GROUP = 201
 	ACCESS_TO_HOST_DENIED = 202
@@ -30,6 +31,7 @@ class TopologyInfo():
 		self.is_started = self.state == TopologyState.STARTED
 		self.owner = str(topology.owner)
 		self.resource_usage = topology.resource_usage()
+		self.analysis = topology.analysis
 
 class HostInfo():
 	def __init__(self, host):

@@ -4,6 +4,7 @@ from xml.dom import minidom
 
 from util import *
 from host import *
+from topology import TopologyState
 
 import topology_store, config, api
 
@@ -119,8 +120,7 @@ def update_host_usage():
 	for host in hosts.values():
 		host.devices_total=0
 		host.devices_started=0
-	from topology import TopologyState
-	for top in topologies.values():
+	for top in topology_store.topologies.values():
 		for dev in top.devices.values():
 			dev.host.devices_total = dev.host.devices_total + 1
 			if top.state == TopologyState.STARTED:

@@ -44,9 +44,9 @@ class APIServer(xmlrpc.XMLRPC):
 		except xmlrpclib.Fault, f:
 			api.logger.log("Error: %s" % f, user=user.username)
 			raise f
-		except Exception, exc:
-			api.logger.log("Exception: %s" % exc, user=user.username)
-			raise xmlrpclib.Fault(Fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
+		#except Exception, exc:
+		#	api.logger.log("Exception: %s" % exc, user=user.username)
+		#	raise xmlrpclib.Fault(api.Fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
         
 	def render(self, request):
 		username = request.getUser()
