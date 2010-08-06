@@ -2,7 +2,7 @@
 
 from interface import *
 from util import *
-from host_store import *
+import host_store
 
 class Device(XmlObject):
 	"""
@@ -21,9 +21,9 @@ class Device(XmlObject):
 		Device.decode_xml ( self, dom, load_ids )
 		try:
 			if self.host_name:
-				self.host = HostStore.get(self.host_name)
+				self.host = host_store.get(self.host_name)
 			else:
-				self.host = HostStore.select_host(self.host_group)
+				self.host = host_store.select_host(self.host_group)
 				self.host.devices_total = self.host.devices_total + 1
 				self.host_name = self.host.name
 		except KeyError:

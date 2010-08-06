@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from connector import *
-from util import *
+from connector import Connector
 
 class RealNetworkConnector(Connector):
 	"""

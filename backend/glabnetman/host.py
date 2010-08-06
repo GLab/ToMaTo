@@ -2,7 +2,8 @@
 
 from resource_store import *
 from util import *
-from config import *
+
+import config
 
 import subprocess
 
@@ -34,10 +35,10 @@ class Host(XmlObject):
 		Checks if the host is reachable, login works and the needed software is installed
 		"""
 		print "checking for openvz..."
-		run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], Config.remote_dry_run)
+		run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], config.remote_dry_run)
 		print "checking for bridge utils..."
-		run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], Config.remote_dry_run)
+		run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], config.remote_dry_run)
 		print "checking for dummynet..."
-		run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], Config.remote_dry_run)
+		run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], config.remote_dry_run)
 		print "checking for tinc..."
-		run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], Config.remote_dry_run)
+		run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from device import *
+from device import Device
 from util import *
 
 import os

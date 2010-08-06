@@ -3,7 +3,7 @@
 import ldap
 import syslog
 
-from config import *
+import config
 
 def log(msg):
     #syslog.openlog('glweb', 0, settings.GLBIMGMT_LOG_FACILITY)
@@ -14,15 +14,15 @@ def log(msg):
 def ldap_conn():
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION3)
-    ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, Config.auth_ldap_server_cert)
+    ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, config.auth_ldap_server_cert)
     try:
-        conn = ldap.initialize(uri=Config.auth_ldap_server_uri)
-        conn.simple_bind(who=Config.auth_ldap_binddn,
-                         cred=Config.auth_ldap_bindpw)
+        conn = ldap.initialize(uri=config.auth_ldap_server_uri)
+        conn.simple_bind(who=config.auth_ldap_binddn,
+                         cred=config.auth_ldap_bindpw)
     except ldap.LDAPError, error_message:
         raise Exception('Error binding to %s as %s: %s' % \
-                        (Config.auth_ldap_server_uri,
-                         Config.auth_ldap_binddn, str(error_message)))
+                        (config.auth_ldap_server_uri,
+                         config.auth_ldap_binddn, str(error_message)))
     return conn
 
 class LdapUser(object):
@@ -41,7 +41,7 @@ class LdapUser(object):
             return False
 
         try:
-            user = conn.search_s(Config.auth_ldap_identity_base,
+            user = conn.search_s(config.auth_ldap_identity_base,
                                  ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
         except Exception, e:
             log('LDAP search for user %s failed: %s' % (self.username, e))
@@ -72,7 +72,7 @@ class LdapUser(object):
                 return False
 
             try:
-                conn = ldap.initialize(uri=Config.auth_ldap_server_uri)
+                conn = ldap.initialize(uri=config.auth_ldap_server_uri)
                 conn.simple_bind_s(who=self.userdn, cred=password)
             except ldap.LDAPError, error_message:
                 log('Authenticating user %s failed: %s' % (self.username,
@@ -100,7 +100,7 @@ class LdapUser(object):
             return False
 
         try:
-            user = conn.search_s(Config.auth_ldap_identity_base,
+            user = conn.search_s(config.auth_ldap_identity_base,
                                  ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
         except Exception, e:
             log('LDAP search for user %s failed: %s' % (self.username, e))
@@ -120,9 +120,9 @@ class LdapUser(object):
 
     def is_in_group(self, group):
         if group == 'admins':
-            dn = Config.auth_ldap_admin_group
+            dn = config.auth_ldap_admin_group
         elif group == 'users':
-            dn = Config.auth_ldap_user_group
+            dn = config.auth_ldap_user_group
         else:
             return False
 

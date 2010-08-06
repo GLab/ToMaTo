@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from xml.dom import minidom
-from cStringIO import StringIO
 
-from openvz_device import *
-from dhcpd_device import *
-from tinc_connector import *
-from real_network_connector import *
-from config import *
-from resource_store import *
-from topology_analysis import *
-from log import *
+from task import TaskStatus
 
-import api
+from util import *
+from resource_store import ResourceStore
+from log import Logger
+
+import api, config, openvz, dhcp, tinc, real_network, topology_analysis
 
 import shutil, os, stat, sys, thread, uuid
 
@@ -44,7 +40,7 @@ class Topology(XmlObject):
 		self.devices={}
 		self.connectors={}
 		self.load_from(dom, load_ids)
-		self.analysis=TopologyAnalysis(self)
+		self.analysis=topology_analysis.analyze(self)
 		if not self.state:
 			self.state=TopologyState.CREATED
 		
@@ -93,10 +89,10 @@ class Topology(XmlObject):
 				x_top.removeAttribute("owner")
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
-			Type = { "openvz": OpenVZDevice, "dhcpd": DhcpdDevice }[x_dev.getAttribute("type")]
+			Type = { "openvz": openvz.OpenVZDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
 			self.add_device ( Type ( self, x_dev, load_ids ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
-			Type = { "hub": TincConnector, "switch": TincConnector, "router": TincConnector, "real": RealNetworkConnector }[x_con.getAttribute("type")]
+			Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": real_network.RealNetworkConnector }[x_con.getAttribute("type")]
 			self.add_connector ( Type ( self, x_con, load_ids ) )
 			
 	def create_dom ( self, print_ids ):
@@ -180,13 +176,13 @@ class Topology(XmlObject):
 		The local directory where all control scripts and files are stored.
 		@param host_name the name of the host for the deployment
 		"""
-		return Config.local_control_dir+"/"+host_name
+		return config.local_control_dir+"/"+host_name
 
 	def get_remote_control_dir(self):
 		"""
 		The remote directory where all control scripts and files will be copied to.
 		"""
-		return Config.remote_control_dir+"/"+str(self.id)
+		return config.remote_control_dir+"/"+str(self.id)
 
 	def get_control_script(self,host_name,script):
 		"""
@@ -205,16 +201,14 @@ class Topology(XmlObject):
 		Note: this can be done even if the topology is already uploaded or even running
 		"""
 		if not self.id:
-			from api import Fault
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task = api.TaskStatus()
 		thread.start_new_thread(self.upload_run,tuple([task]))
 		return task.id
 	
 	def upload_run(self, task):
 		if not self.id:
-			from api import Fault
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.subtasks_total = 1 + len(self.affected_hosts()) + len(self.devices) + len(self.connectors)
 		self.take_resources()
 		task.subtasks_done = 1
@@ -230,11 +224,10 @@ class Topology(XmlObject):
 		Creates all control scripts and stores them in a local directory.
 		"""
 		if not self.id:
-			from api import Fault
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.output.write("creating scripts ...\n")
-		if Config.local_control_dir and os.path.exists(Config.local_control_dir):
-			shutil.rmtree(Config.local_control_dir)
+		if config.local_control_dir and os.path.exists(config.local_control_dir):
+			shutil.rmtree(config.local_control_dir)
 		for dev in self.devices.values():
 			task.output.write("\tcreating aux files for %s ...\n" % dev)
 			dev.write_aux_files()
@@ -264,16 +257,15 @@ class Topology(XmlObject):
 		Uploads all control scripts stored in a local directory.
 		"""
 		if not self.id:
-			from api import Fault
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.output.write("uploading scripts ...\n")
 		for host in self.affected_hosts():
 			task.output.write("%s ...\n" % host.name)
 			src = self.get_control_dir(host.name)
 			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			task.output.write(run_shell ( ["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( Config.remote_control_dir, self.id ) ], Config.remote_dry_run ))
-			task.output.write(run_shell (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( Config.remote_control_dir, self.id ) ], Config.remote_dry_run ))
-			task.output.write(run_shell (["rsync",  "-a",  "%s/" % src, dst], Config.remote_dry_run))
+			task.output.write(run_shell ( ["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( config.remote_control_dir, self.id ) ], config.remote_dry_run ))
+			task.output.write(run_shell (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( config.remote_control_dir, self.id ) ], config.remote_dry_run ))
+			task.output.write(run_shell (["rsync",  "-a",  "%s/" % src, dst], config.remote_dry_run))
 			task.output.write("\n")
 			task.subtasks_done = task.subtasks_done+1
 			
@@ -283,14 +275,13 @@ class Topology(XmlObject):
 		@param script the script to execute
 		"""
 		if not self.id:
-			from api import Fault
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
 		task.subtasks_total = len(self.affected_hosts())
 		task.output.write("executing %s ...\n" % script)
-		script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
+		script = "%s/%s/%s.sh" % ( config.remote_control_dir, self.id, script )
 		for host in self.affected_hosts():
 			task.output.write("%s ...\n" % host.name)
-			task.output.write(run_shell(["ssh",  "root@%s" % host.name, script ], Config.remote_dry_run ))
+			task.output.write(run_shell(["ssh",  "root@%s" % host.name, script ], config.remote_dry_run ))
 			task.output.write("\n")
 			task.subtasks_done = task.subtasks_done + 1
 		self.state=newstate
@@ -302,15 +293,14 @@ class Topology(XmlObject):
 		Starts the topology.
 		This will fail if the topology has not been uploaded or prepared yet or is already started.
 		"""
-		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = api.TaskStatus()
 		thread.start_new_thread(self.exec_script,("start", task, TopologyState.STARTED))
 		return task.id
@@ -320,11 +310,10 @@ class Topology(XmlObject):
 		Stops the topology.
 		This will fail if the topology has not been uploaded or prepared yet.
 		"""
-		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
@@ -338,15 +327,14 @@ class Topology(XmlObject):
 		Prepares the topology.
 		This will fail if the topology has not been uploaded yet or is already prepared or started.
 		"""
-		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
 			pass
 		if self.state == TopologyState.PREPARED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already prepared")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already prepared")
 		if self.state == TopologyState.STARTED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = api.TaskStatus()
 		thread.start_new_thread(self.exec_script,("prepare", task, TopologyState.PREPARED))
 		return task.id
@@ -356,15 +344,14 @@ class Topology(XmlObject):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
-		from api import Fault
 		if self.state == TopologyState.CREATED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
 		if self.state == TopologyState.UPLOADED:
 			pass
 		if self.state == TopologyState.PREPARED:
 			pass
 		if self.state == TopologyState.STARTED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = api.TaskStatus()
 		thread.start_new_thread(self.exec_script,("destroy", task, TopologyState.UPLOADED))
 		return task.id
@@ -421,9 +408,9 @@ class Topology(XmlObject):
 			script_fd.close()
 			os.chmod(src, stat.S_IRWXU)
 			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			remote_script = "%s/%s/%s.sh" % ( Config.remote_control_dir, self.id, script )
-			task.output.write(run_shell(["rsync",  "-a", src, dst], Config.remote_dry_run))
-			task.output.write(run_shell(["ssh",  "root@%s" % host.name, remote_script ], Config.remote_dry_run))
+			remote_script = "%s/%s/%s.sh" % ( config.remote_control_dir, self.id, script )
+			task.output.write(run_shell(["rsync",  "-a", src, dst], config.remote_dry_run))
+			task.output.write(run_shell(["ssh",  "root@%s" % host.name, remote_script ], config.remote_dry_run))
 			task.subtasks_done = task.subtasks_done + 1
 		newcons=set()
 		removedcons=set()
@@ -454,7 +441,6 @@ class Topology(XmlObject):
 				dev.check_change_possible(newdev)
 				
 	def change(self, newtop):
-		from api import Fault
 		if self.state == TopologyState.UPLOADED:
 			self.state = TopologyState.CREATED
 		if self.state == TopologyState.CREATED:
@@ -467,8 +453,8 @@ class Topology(XmlObject):
 			thread.start_new_thread(self._change_prepared,(newtop, task))
 			return task.id
 		if self.state == TopologyState.STARTED:
-			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		
 	def _log(self, task, output):
-		logger = Logger(Config.log_dir+"/top_%s.log" % self.id)
+		logger = Logger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)

@@ -5,7 +5,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from base64 import b64decode
 
 from util import *
-from api import *
+import api
 from ldapauth import *
 
 import xmlrpclib
@@ -42,10 +42,10 @@ class APIServer(xmlrpc.XMLRPC):
 		try:
 			return function(*args, user=user)
 		except xmlrpclib.Fault, f:
-			PublicAPI.logger.log("Error: %s" % f, user=user.username)
+			api.logger.log("Error: %s" % f, user=user.username)
 			raise f
 		except Exception, exc:
-			PublicAPI.logger.log("Exception: %s" % exc, user=user.username)
+			api.logger.log("Exception: %s" % exc, user=user.username)
 			raise xmlrpclib.Fault(Fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
         
 	def render(self, request):
@@ -67,6 +67,6 @@ class APIServer(xmlrpc.XMLRPC):
 			return server.NOT_DONE_YET
 		
 def run_server():
-	api_server = APIServer(PublicAPI())
+	api_server = APIServer(api)
 	reactor.listenTCP(8000, server.Site(api_server))
 	reactor.run()

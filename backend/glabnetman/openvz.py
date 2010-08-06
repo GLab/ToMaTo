@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from device import *
-from host_store import *
 from util import *
-from config import *
+
+import config, api
 
 import os
 
@@ -23,7 +23,7 @@ class OpenVZDevice(Device):
 		self.decode_xml(dom, load_ids)
 
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
-	template=property(curry(Device.get_attr, "template", default=Config.default_template), curry(Device.set_attr, "template"))
+	template=property(curry(Device.get_attr, "template", default=config.default_template), curry(Device.set_attr, "template"))
 	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
 	
 	def decode_xml ( self, dom, load_ids ):
@@ -127,11 +127,10 @@ class OpenVZDevice(Device):
 			fd.write ( "true\n" )
 
 	def check_change_possible(self, newdev):
-		from api import Fault
 		if not self.template == newdev.template:
-			raise Fault(Fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.id)
+			raise api.Fault(api.Fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.id)
 		if not self.host_name == newdev.host_name or not self.host_group == newdev.host_group:
-			raise Fault(Fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of openvz vm %s cannot be changed" % self.id)
+			raise api.Fault(api.Fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of openvz vm %s cannot be changed" % self.id)
 
 	def change(self, newdev, fd):
 		"""

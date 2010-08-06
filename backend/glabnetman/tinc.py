@@ -2,7 +2,6 @@
 
 from connector import *
 from resource_store import *
-from host_store import *
 from util import *
 import os, subprocess, shutil
 
