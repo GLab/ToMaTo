@@ -85,6 +85,7 @@ class PublicAPI():
 		if not user.is_user:
 			raise Fault(Fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
 		dom=minidom.parseString(xml)
+		HostStore.update_host_usage()
 		top=Topology(dom,False)
 		top.owner=user.username
 		id=TopologyStore.add(top)
@@ -94,6 +95,7 @@ class PublicAPI():
 		PublicAPI.logger.log("top_change(%s)" % top_id, user=user.username, bigmessage=xml)
 		self._top_access(top_id, user)
 		dom=minidom.parseString(xml)
+		HostStore.update_host_usage()
 		newtop=Topology(dom,False)
 		top = TopologyStore.get(top_id)
 		return top.change(newtop)

@@ -128,6 +128,33 @@ class HostStore(object):
 			del HostStore.groups[host.group]
 		HostStore.save()
 	remove = static(remove)
+	
+	def update_host_usage():
+		for host in HostStore.hosts.values():
+			host.devices_total=0
+			host.devices_started=0
+		from topology_store import TopologyStore
+		from topology import TopologyState
+		for top in TopologyStore.topologies.values():
+			for dev in top.devices.values():
+				dev.host.devices_total = dev.host.devices_total + 1
+				if top.state == TopologyState.STARTED:
+					dev.host.devices_started = dev.host.devices_started + 1
+	update_host_usage = static(update_host_usage)
+
+	def select_host(group=None):
+		best = None
+		if group:
+			hosts = HostStore.get_group(group)
+		else:
+			hosts = HostStore.hosts.values()
+		for host in hosts:
+			if not best:
+				best = host
+			if best.devices_total > host.devices_total or ( best.devices_total == host.devices_total and best.devices_started > host.devices_started ):
+				best = host
+		return best
+	select_host = static(select_host)
 
 HostStore.load()
 atexit.register(HostStore.save)

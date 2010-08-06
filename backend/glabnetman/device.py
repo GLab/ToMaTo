@@ -20,7 +20,12 @@ class Device(XmlObject):
 		self.topology = topology
 		Device.decode_xml ( self, dom, load_ids )
 		try:
-			self.host = HostStore.get(self.host_name)
+			if self.host_name:
+				self.host = HostStore.get(self.host_name)
+			else:
+				self.host = HostStore.select_host(self.host_group)
+				self.host.devices_total = self.host.devices_total + 1
+				self.host_name = self.host.name
 		except KeyError:
 			raise Exception("Unknown host: %s" % self.host_name)
 		
@@ -39,12 +44,20 @@ class Device(XmlObject):
 	The name of the host of this device
 	"""
 
+	host_group=property(curry(XmlObject.get_attr, "hostgroup"), curry(XmlObject.set_attr, "hostgroup"))
+	"""
+	The name of the host of this device
+	"""
+
 	def decode_xml ( self, dom, load_ids ):
 		"""
 		Read the attributes from the xml dom object
 		@param dom the xml dom object to read the data from
 		@load_ids whether to load or ignore assigned ids
 		"""
+		if not load_ids:
+			if dom.hasAttribute("host"):
+				dom.removeAttribute("host")
 		XmlObject.decode_xml(self,dom)
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = Interface(self,interface, load_ids)
@@ -58,6 +71,9 @@ class Device(XmlObject):
 		@print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self,dom)
+		if not print_ids:
+			if dom.hasAttribute("host"):
+				dom.removeAttribute("host")
 		for interface in self.interfaces.values():
 			iface = doc.createElement("interface")
 			interface.encode_xml(iface,doc, print_ids)
