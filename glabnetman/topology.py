@@ -10,6 +10,7 @@ from real_network_connector import *
 from config import *
 from resource_store import *
 from topology_analysis import *
+from log import *
 
 import api
 
@@ -221,6 +222,7 @@ class Topology(XmlObject):
 		self.upload_control_scripts(task)
 		if self.state == TopologyState.CREATED:
 			self.state = TopologyState.UPLOADED
+		self._log("upload", task.output.getvalue())
 		task.done()
 	
 	def write_control_scripts(self, task):
@@ -292,6 +294,7 @@ class Topology(XmlObject):
 			task.output.write("\n")
 			task.subtasks_done = task.subtasks_done + 1
 		self.state=newstate
+		self._log("execute %s" % script, task.output.getvalue())
 		task.done()
 
 	def start(self):
@@ -441,6 +444,7 @@ class Topology(XmlObject):
 			con.take_resources()
 		self.write_control_scripts(task)
 		self.upload_control_scripts(task)
+		self._log("change", task.output.getvalue())
 		task.done()
 
 	def check_change_possible(self, newtop):
@@ -464,3 +468,7 @@ class Topology(XmlObject):
 			return task.id
 		if self.state == TopologyState.STARTED:
 			raise Fault (Fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+		
+	def _log(self, task, output):
+		logger = Logger(Config.log_dir+"/top_%s.log" % self.id)
+		logger.log(task, bigmessage=output)

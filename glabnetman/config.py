@@ -43,6 +43,8 @@ Config.topology_dir = Config.get("local","topology_dir","config/topologies")
 The local directory to use for storing the topology files in.
 """
 
+Config.log_dir = Config.get("local","log_dir","logs")
+
 Config.hosts = Config.get("local","hosts","config/hosts.xml")
 """
 The local config file to use for storing the hosts in.
