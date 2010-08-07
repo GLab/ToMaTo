@@ -51,11 +51,16 @@ def top_info(id, user=None):
 	logger.log("top_info(%s)" % id, user=user.username)
 	return _topology_info(topology_store.get(id))
 
-def top_list(filter_owner=None, filter_state=None, filter_host=None, user=None):
-	logger.log("top_list(filter_owner=%s, filter_state=%s, filter_host=%s)" % (filter_owner, filter_state, filter_host), user=user.username)
+def top_list(state_filter, owner_filter, host_filter, user=None):
+	logger.log("top_list(state_filter=%s, owner_filter=%s, host_filter=%s)" % (state_filter, owner_filter, host_filter), user=user.username)
 	tops=[]
 	for t in topology_store.topologies.values():
-		if (filter_state==None or t.state==filter_state) and (filter_owner==None or t.owner==filter_owner) and (filter_host==None or filter_host in t.affected_hosts()):
+		host_filter_matches=False
+		if not host_filter=="*":
+			for host in t.affected_hosts():
+				if host.name == host_filter:
+					host_filter_matches=True
+		if (state_filter=="*" or t.state==state_filter) and (owner_filter=="*" or t.owner==owner_filter) and (host_filter=="*" or host_filter_matches):
 			tops.append(_topology_info(t))
 	return tops
 	

@@ -12,7 +12,17 @@ def index(request):
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
-		return render_to_response("top/index.html", {'top_list': api.top_list()})
+		host_filter = "*"
+		if request.REQUEST.has_key("host_filter"):
+			host_filter=request.REQUEST["host_filter"]
+		owner_filter = "*"
+		if request.REQUEST.has_key("owner_filter"):
+			owner_filter=request.REQUEST["owner_filter"]
+		state_filter = "*"
+		if request.REQUEST.has_key("state_filter"):
+			state_filter=request.REQUEST["state_filter"]
+		toplist=api.top_list(state_filter, owner_filter, host_filter)
+		return render_to_response("top/index.html", {'top_list': toplist})
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 

@@ -15,7 +15,7 @@
 		<td>{{host.name}}</td>
 		<td>{{host.group}}</td>
 		<td>{{host.device_count}}</td>
-		<td><a href="/host/remove?hostname={{host.name}}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')">[remove]</a></td>
+		<td><a href="/host/remove?hostname={{host.name}}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')">[remove]</a> <a href="/top?host_filter={{host.name}}">[all topologies]</a></td>
 	</tr>
 {% endfor %}
 </table>
