@@ -6,6 +6,7 @@
 <table>
   <tr>
     <th>ID</th>
+    <th>Name</th>
     <th>State</th>
     <th>Owner</rh>
     <th>Devices</rh>
@@ -13,7 +14,8 @@
   </tr>
 {% for top in top_list %}
   <tr>
-    <td><a href="/top/{{top.id}}/">{{top.id}}</a></td>
+    <td>{{top.id}}</td>
+    <td><a href="/top/{{top.id}}/">{{top.name}}</a></td>
     <td>{{top.state}}</td>
     <td>{{top.owner}}</td>
     <td>{{top.device_count}}</td>

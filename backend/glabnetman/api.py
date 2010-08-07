@@ -25,7 +25,8 @@ class Fault(xmlrpclib.Fault):
 
 def _topology_info(top):
 	state = str(top.state)
-	return {"id": top.id, "state": str(top.state), "is_created": state == TopologyState.CREATED,
+	return {"id": top.id, "state": str(top.state), "name": top.name,
+		"is_created": state == TopologyState.CREATED,
 		"is_uploaded": state == TopologyState.UPLOADED, 
 		"is_prepared": state == TopologyState.PREPARED,
 		"is_started": state == TopologyState.STARTED,

@@ -16,13 +16,13 @@ class Connection(XmlObject):
 		"""
 		self.connector = connector
 		self.decode_xml ( dom, load_ids )
-		if not device_id:
+		if not self.device_id:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must have a device attribute")
 		try:
 			self.device = connector.topology.devices[self.device_id]
 		except KeyError, err:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must reference an existing device: %s" % self.device_id)
-		if not device_id:
+		if not self.device_id:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must have an interface attribute")
 		try:
 			self.interface = self.device.interfaces[self.interface_id]

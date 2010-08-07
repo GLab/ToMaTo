@@ -42,12 +42,19 @@ class Topology(XmlObject):
 		self.analysis=topology_analysis.analyze(self)
 		if not self.state:
 			self.state=TopologyState.CREATED
+		if not self.name:
+			self.name = "Topology %s" % self.id
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	"""
 	The id of the topology, this is an assigned value
 	"""
 	
+	name=property(curry(XmlObject.get_attr, "name"), curry(XmlObject.set_attr, "name"))
+	"""
+	The name of the topology.
+	"""
+
 	state=property(curry(XmlObject.get_attr, "state"), curry(XmlObject.set_attr, "state"))
 	"""
 	@see TopologyState
@@ -363,6 +370,7 @@ class Topology(XmlObject):
 	
 	def _change_created(self, newtop, task):
 		# easy case: simply exchange definition, no change to deployed components needed
+		self.name = newtop.name
 		self.free_resources()
 		self.devices = {}
 		self.connectors = {}
@@ -377,6 +385,7 @@ class Topology(XmlObject):
 	def _change_prepared(self, newtop, task):
 		# difficult case: deployed components already exist
 		changeid=str(uuid.uuid1())
+		self.name = newtop.name
 		task.subtasks_total = 1 + len(self.affected_hosts())*2 + len(self.devices) + len(self.connectors)
 		newdevs=set()
 		changeddevs={}
