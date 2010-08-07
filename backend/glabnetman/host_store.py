@@ -127,6 +127,12 @@ def select_host(group=None):
 			best = host
 	return best
 
+def check_add(host, task):
+	task.subtasks_total = 5
+	host.check(task)
+	add(host)
+	task.done()
+
 def init():
 	load()
 	atexit.register(save)

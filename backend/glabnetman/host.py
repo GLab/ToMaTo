@@ -4,6 +4,8 @@ from util import *
 
 import config, resource
 
+from task import TaskStatus
+
 import subprocess
 
 class Host(XmlObject):
@@ -30,15 +32,19 @@ class Host(XmlObject):
 		if not self.public_bridge:
 			self.public_bridge = "vmbr0"
 
-	def check(self):
+	def check(self, task):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		"""
-		print "checking for openvz..."
-		run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], config.remote_dry_run)
-		print "checking for bridge utils..."
-		run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], config.remote_dry_run)
-		print "checking for dummynet..."
-		run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], config.remote_dry_run)
-		print "checking for tinc..."
-		run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run)
+		task.output.write("checking for openvz...\n")
+		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], config.remote_dry_run))
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write("checking for bridge utils...\n")
+		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], config.remote_dry_run))
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write("checking for dummynet...\n")
+		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], config.remote_dry_run))
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write("checking for tinc...\n")
+		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run))
+		task.subtasks_done = task.subtasks_done + 1

@@ -6,7 +6,7 @@ from topology import *
 from log import Logger
 from task import TaskStatus
 
-import xmlrpclib
+import xmlrpclib, thread
 
 class Fault(xmlrpclib.Fault):
 	UNKNOWN = -1
@@ -144,9 +144,9 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	host.name = host_name
 	host.group = group_name
 	host.public_bridge = public_bridge
-	host.check()
-	host_store.add(host)
-	return True
+	task = TaskStatus()
+	thread.start_new_thread(host_store.check_add, (host,task))
+	return task.id
 
 def host_remove(host_name, user=None):
 	logger.log("host_remove(%s)" % host_name, user=user.username)
