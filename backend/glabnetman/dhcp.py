@@ -41,19 +41,20 @@ class DhcpdDevice(Device):
 		"""
 		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
 		"""
-		pass
+		Device.retake_resources(self)
 
 	def take_resources(self):
 		"""
 		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
 		"""
-		pass
+		Device.take_resources(self)
+
 
 	def free_resources(self):
 		"""
 		Free all resources for all resource slots of this object and its child objects.
 		"""
-		pass
+		Device.free_resources(self)
 
 	def bridge_name(self, interface):
 		"""

@@ -7,12 +7,14 @@
 	<tr>
 		<th>host</th>
 		<th>group</th>
+		<th>devices</th>
 		<th>actions</th>
 	</tr>
 {% for host in host_list %}
 	<tr>
 		<td>{{host.name}}</td>
 		<td>{{host.group}}</td>
+		<td>{{host.device_count}}</td>
 		<td><a href="/host/remove?hostname={{host.name}}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')">[remove]</a></td>
 	</tr>
 {% endfor %}

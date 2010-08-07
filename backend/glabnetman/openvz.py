@@ -52,6 +52,7 @@ class OpenVZDevice(Device):
 		"""
 		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
 		"""
+		Device.retake_resources(self)
 		if self.openvz_id:
 			self.host.openvz_ids.take_specific(self.openvz_id)
 	
@@ -59,6 +60,7 @@ class OpenVZDevice(Device):
 		"""
 		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
 		"""
+		Device.take_resources(self)
 		if not self.openvz_id:
 			self.openvz_id=self.host.openvz_ids.take()
 
@@ -66,6 +68,7 @@ class OpenVZDevice(Device):
 		"""
 		Free all resources for all resource slots of this object and its child objects.
 		"""
+		Device.free_resources(self)
 		if self.openvz_id:
 			self.host.openvz_ids.free(self.openvz_id)
 			self.openvz_id=None

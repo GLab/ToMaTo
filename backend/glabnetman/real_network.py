@@ -16,7 +16,6 @@ class RealNetworkConnector(Connector):
 		"""
 		Connector.__init__(self, topology, dom, load_ids)
 		for con in self.connections:
-			con.bridge_name = con.interface.device.host.public_bridge
 			if con.delay or con.bandwidth or con.lossratio:
 				raise Exception("ipfw not supported on real network")
 
@@ -30,7 +29,8 @@ class RealNetworkConnector(Connector):
 		"""
 		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
 		"""
-		pass
+		for con in self.connections:
+			con.bridge_name = con.interface.device.host.public_bridge
 
 	def free_resources(self):
 		"""

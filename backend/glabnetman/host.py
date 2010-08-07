@@ -20,6 +20,7 @@ class Host(XmlObject):
 		Creates a new host object
 		"""
 		self.attributes={}
+		self.devices=set()
 		self.ports = resource.Store(7000,1000)
 		self.bridge_ids = resource.Store(1000,1000)
 		self.openvz_ids = resource.Store(1000,100)

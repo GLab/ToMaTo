@@ -19,15 +19,6 @@ class Device(XmlObject):
 		self.interfaces={}
 		self.topology = topology
 		Device.decode_xml ( self, dom, load_ids )
-		try:
-			if self.host_name:
-				self.host = host_store.get(self.host_name)
-			else:
-				self.host = host_store.select_host(self.host_group)
-				self.host.devices_total = self.host.devices_total + 1
-				self.host_name = self.host.name
-		except KeyError:
-			raise Exception("Unknown host: %s" % self.host_name)
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	"""
@@ -78,3 +69,28 @@ class Device(XmlObject):
 			iface = doc.createElement("interface")
 			interface.encode_xml(iface,doc, print_ids)
 			dom.appendChild(iface)
+
+	def retake_resources(self):
+		"""
+		Take all resources that this object and child objects once had. Fields containing the ids of assigned resources control which resources will be taken.
+		"""
+		if self.host_name:
+			self.host = host_store.get(self.host_name)
+			self.host.devices.add(self)
+
+	def take_resources(self):
+		"""
+		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		"""
+		if not self.host_name:
+			self.host = host_store.select_host(self.host_group)
+			self.host_name = self.host.name
+			self.host.devices.add(self)
+
+	def free_resources(self):
+		"""
+		Free all resources for all resource slots of this object and its child objects.
+		"""
+		self.host.devices.remove(self)
+		self.host = None
+		self.host_name = None

@@ -116,16 +116,6 @@ def remove(host_name):
 		del groups[host.group]
 	save()
 	
-def update_host_usage():
-	for host in hosts.values():
-		host.devices_total=0
-		host.devices_started=0
-	for top in topology_store.topologies.values():
-		for dev in top.devices.values():
-			dev.host.devices_total = dev.host.devices_total + 1
-			if top.state == TopologyState.STARTED:
-				dev.host.devices_started = dev.host.devices_started + 1
-
 def select_host(group=None):
 	best = None
 	if group:
@@ -133,9 +123,7 @@ def select_host(group=None):
 	else:
 		thosts = hosts.values()
 	for host in thosts:
-		if not best:
-			best = host
-		if best.devices_total > host.devices_total or ( best.devices_total == host.devices_total and best.devices_started > host.devices_started ):
+		if ( not best ) or ( len(best.devices) > len(host.devices) ):
 			best = host
 	return best
 

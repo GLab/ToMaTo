@@ -31,7 +31,8 @@ def _topology_info(top):
 		"connector_count": len(top.connectors)}
 
 def _host_info(host):
-	return {"name": str(host.name), "group": str(host.group), "public_bridge": str(host.public_bridge)}
+	return {"name": str(host.name), "group": str(host.group), 
+		"public_bridge": str(host.public_bridge), "device_count": len(host.devices)}
 
 logger = Logger(config.log_dir + "/api.log")
 
@@ -63,7 +64,6 @@ def top_import(xml, user=None):
 	if not user.is_user:
 		raise Fault(Fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
 	dom=minidom.parseString(xml)
-	host_store.update_host_usage()
 	top=Topology(dom,False)
 	top.owner=user.username
 	id=topology_store.add(top)
@@ -73,7 +73,6 @@ def top_change(top_id, xml, user=None):
 	logger.log("top_change(%s)" % top_id, user=user.username, bigmessage=xml)
 	_top_access(top_id, user)
 	dom=minidom.parseString(xml)
-	host_store.update_host_usage()
 	newtop=Topology(dom,False)
 	top = topology_store.get(top_id)
 	return top.change(newtop)
