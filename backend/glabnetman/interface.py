@@ -17,6 +17,9 @@ class Interface(XmlObject):
 		self.device = device
 		self.connection = None
 		XmlObject.decode_xml(self, dom)
+		if not id:
+			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: interface must have an id attribute")
+
 
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	

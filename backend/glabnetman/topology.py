@@ -78,7 +78,10 @@ class Topology(XmlObject):
 		@param dom the xml dom to load the topology definition from
 		@param load_ids whether to load or ignore assigned ids from that file
 		"""
-		x_top = dom.getElementsByTagName ( "topology" )[0]
+		try:
+			x_top = dom.getElementsByTagName ( "topology" )[0]
+		except IndexError, err:
+			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: topology must contain a <topology> tag")
 		if not load_ids:
 			if x_top.hasAttribute("id"):
 				x_top.removeAttribute("id")
@@ -88,10 +91,16 @@ class Topology(XmlObject):
 				x_top.removeAttribute("owner")
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
-			Type = { "openvz": openvz.OpenVZDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
+			try:
+				Type = { "openvz": openvz.OpenVZDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
+			except KeyError, err:
+				raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % x_dev.getAttribute("type") )
 			self.add_device ( Type ( self, x_dev, load_ids ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
-			Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": real_network.RealNetworkConnector }[x_con.getAttribute("type")]
+			try:
+				Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": real_network.RealNetworkConnector }[x_con.getAttribute("type")]
+			except KeyError, err:
+				raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % x_con.getAttribute("type") )
 			self.add_connector ( Type ( self, x_con, load_ids ) )
 			
 	def create_dom ( self, print_ids ):

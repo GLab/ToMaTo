@@ -16,6 +16,8 @@ class Fault(xmlrpclib.Fault):
 	INVALID_TOPOLOGY_STATE_TRANSITION = 103
 	IMPOSSIBLE_TOPOLOGY_CHANGE = 104
 	TOPOLOGY_HAS_PROBLEMS = 105
+	MALFORMED_XML = 106
+	MALFORMED_TOPOLOGY_DESCRIPTION = 107
 	NO_SUCH_HOST = 200
 	NO_SUCH_HOST_GROUP = 201
 	ACCESS_TO_HOST_DENIED = 202
@@ -64,11 +66,17 @@ def top_list(state_filter, owner_filter, host_filter, user=None):
 			tops.append(_topology_info(t))
 	return tops
 	
+def _parse_xml(xml):
+	try:
+		return minidom.parseString(xml)
+	except Exception, exc:
+		raise Fault(Fault.MALFORMED_XML, "Malformed XML: %s" % exc )
+
 def top_import(xml, user=None):
 	logger.log("top_import()", user=user.username, bigmessage=xml)
 	if not user.is_user:
 		raise Fault(Fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
-	dom=minidom.parseString(xml)
+	dom = _parse_xml(xml)
 	top=Topology(dom,False)
 	top.owner=user.username
 	id=topology_store.add(top)
@@ -77,7 +85,7 @@ def top_import(xml, user=None):
 def top_change(top_id, xml, user=None):
 	logger.log("top_change(%s)" % top_id, user=user.username, bigmessage=xml)
 	_top_access(top_id, user)
-	dom=minidom.parseString(xml)
+	dom = _parse_xml(xml)
 	newtop=Topology(dom,False)
 	top = topology_store.get(top_id)
 	return top.change(newtop)

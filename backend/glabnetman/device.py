@@ -19,6 +19,8 @@ class Device(XmlObject):
 		self.interfaces={}
 		self.topology = topology
 		Device.decode_xml ( self, dom, load_ids )
+		if not id:
+			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device must have an id attribute")
 		
 	id=property(curry(XmlObject.get_attr, "id"), curry(XmlObject.set_attr, "id"))
 	"""
