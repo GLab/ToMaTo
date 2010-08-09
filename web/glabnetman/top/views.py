@@ -48,7 +48,8 @@ def upload(request):
 		api = request.session.api
 		top_id=request.REQUEST["top_id"]
 		if not request.FILES.has_key("image"):
-			return render_to_response("top/upload.html", {'top_id': top_id} )
+			top=api.top_info(int(top_id))
+			return render_to_response("top/upload.html", {'top_id': top_id, 'top': top} )
 		device_id=request.REQUEST["device_id"]
 		file=request.FILES["image"]
 		upload_id=api.upload_start()
@@ -68,7 +69,8 @@ def download(request):
 		api = request.session.api
 		top_id=request.REQUEST["top_id"]
 		if not request.REQUEST.has_key("device_id"):
-			return render_to_response("top/download.html", {'top_id': top_id} )
+			top=api.top_info(int(top_id))
+			return render_to_response("top/download.html", {'top_id': top_id, 'top': top} )
 		device_id=request.REQUEST["device_id"]
 		top=api.top_info(int(top_id))
 		download_id=api.download_image(top_id, device_id)

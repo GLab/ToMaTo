@@ -3,7 +3,13 @@
 {% block content %}
 <h1>Download image of topology {{top_id}}</h1>
 <form action="/top/download" method="POST">
-	Device ID: <input name="device_id" value=""/><br/>
+	Device ID:
+	<select name="device_id">
+		{% for dev in top.devices %}
+		<option>{{dev}}</option>
+		{% endfor %}
+	</select>
+	<br/>
 	<input type="hidden" name="top_id" value="{{top_id}}"/>
 	<br/>
 	<input type="submit"/>

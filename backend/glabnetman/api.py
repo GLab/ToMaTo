@@ -33,8 +33,9 @@ def _topology_info(top):
 		"is_uploaded": state == TopologyState.UPLOADED, 
 		"is_prepared": state == TopologyState.PREPARED,
 		"is_started": state == TopologyState.STARTED,
-		"owner": str(top.owner), "analysis": top.analysis, "device_count": len(top.devices),
-		"connector_count": len(top.connectors)}
+		"owner": str(top.owner), "analysis": top.analysis,
+		"devices": top.devices.keys(), "device_count": len(top.devices),
+		"connectors": top.connectors.keys(), "connector_count": len(top.connectors)}
 
 def _host_info(host):
 	return {"name": str(host.name), "group": str(host.group), 

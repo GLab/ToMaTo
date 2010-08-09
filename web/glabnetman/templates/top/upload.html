@@ -3,7 +3,13 @@
 {% block content %}
 <h1>Upload image for topology {{top_id}}</h1>
 <form action="/top/upload" method="POST" enctype="multipart/form-data">
-	Device ID: <input name="device_id" value=""/><br/>
+	Device ID: 
+	<select name="device_id">
+		{% for dev in top.devices %}
+		<option>{{dev}}</option>
+		{% endfor %}
+	</select>
+	<br/>
 	File: <input type="file" name="image"/>
 	<input type="hidden" name="top_id" value="{{top_id}}"/>
 	<br/>
