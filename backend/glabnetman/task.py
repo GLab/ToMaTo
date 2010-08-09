@@ -33,3 +33,19 @@ class UploadTask():
 	def finished(self):
 		self.fd.close()
 		del UploadTask.tasks[self.id]
+		
+class DownloadTask():
+	tasks={}
+	def __init__(self, filename):
+		self.filename = filename
+		self.id = str(uuid.uuid1())
+		DownloadTask.tasks[self.id]=self
+		self.fd = open(self.filename, "rb")
+	def chunk(self):
+		size=1024*1024
+		data = self.fd.read(size)
+		if len(data) == 0:
+			self.fd.close()
+			del DownloadTask.tasks[self.id]
+			os.remove(self.filename)
+		return data

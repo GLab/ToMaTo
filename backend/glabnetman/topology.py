@@ -483,7 +483,7 @@ class Topology(XmlObject):
 			raise api.Fault (api.Fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		if not hasattr(device,"upload_image"):
 			os.remove(filename)
-			raise api.Fault (api.Fault.UPLOAD_NOT_SUPPORTED, "Device does not support imafge upload: %s" % device_id)
+			raise api.Fault (api.Fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
 		if self.state == TopologyState.STARTED:
 			os.remove(filename)
 			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE, "Cannot upload an image to a running topology")
@@ -491,3 +491,13 @@ class Topology(XmlObject):
 		thread.start_new_thread(device.upload_image, (filename, task))
 		return task.id
 	
+	def download_image(self, device_id):
+		if self.devices.has_key(device_id):
+			device = self.devices[device_id]
+		else:
+			raise api.Fault (api.Fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
+		if not hasattr(device,"download_image"):
+			raise api.Fault (api.Fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
+		if self.state == TopologyState.STARTED:
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE, "Cannot download an image of a running topology")
+		return device.download_image()

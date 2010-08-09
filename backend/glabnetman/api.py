@@ -4,7 +4,7 @@ import config, host_store, topology_store
 from host import Host
 from topology import *
 from log import Logger
-from task import TaskStatus, UploadTask
+from task import TaskStatus, UploadTask, DownloadTask
 
 import xmlrpclib, thread
 
@@ -183,6 +183,19 @@ def upload_image(top_id, device_id, upload_id, user=None):
 	_top_access(top_id, user)
 	top=topology_store.get(top_id)
 	return top.upload_image(device_id, upload.filename)
+
+def download_image(top_id, device_id, user=None):
+	logger.log("download_image(%s, %s)" % (top_id, device_id), user=user.username)
+	_top_access(top_id, user)
+	top=topology_store.get(top_id)
+	filename = top.download_image(device_id)
+	task = DownloadTask(filename)
+	return task.id
+
+def download_chunk(download_id, user=None):
+	task = DownloadTask.tasks[download_id]
+	data = task.chunk()
+	return xmlrpclib.Binary(data)
 
 host_store.init()
 topology_store.init()

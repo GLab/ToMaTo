@@ -3,9 +3,10 @@
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.http import Http404
+from django.core.servers.basehttp import FileWrapper
 
 from lib import *
-import xmlrpclib
+import xmlrpclib, tempfile
 
 def index(request):
 	try:
@@ -59,6 +60,35 @@ def upload(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 	
+
+def download(request):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		top_id=request.REQUEST["top_id"]
+		if not request.REQUEST.has_key("device_id"):
+			return render_to_response("top/download.html", {'top_id': top_id} )
+		device_id=request.REQUEST["device_id"]
+		top=api.top_info(int(top_id))
+		download_id=api.download_image(top_id, device_id)
+		temp = tempfile.TemporaryFile()
+		while True:
+			data = api.download_chunk(download_id).data
+			if len(data) == 0:
+				break
+			temp.write(data)
+		size = temp.tell()
+		temp.seek(0)
+		wrapper = FileWrapper(temp)
+		response = HttpResponse(wrapper, content_type='application/force-download')
+		response['Content-Length'] = size
+		response['Content-Disposition'] = 'attachment; filename=%s_%s.tgz' % ( top["name"], device_id )
+		return response
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
+
 def edit(request):
 	try:
 		if not getapi(request):

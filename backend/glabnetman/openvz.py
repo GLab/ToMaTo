@@ -5,7 +5,7 @@ from util import *
 
 import config, api
 
-import os, uuid
+import os, uuid, xmlrpclib
 
 class OpenVZDevice(Device):
 	"""
@@ -160,7 +160,7 @@ class OpenVZDevice(Device):
 		task.subtasks_total=3
 		host = self.host
 		tmp_id = uuid.uuid1()
-		remote_filename= "%/tmp/glabnetman-%s" % tmp_id
+		remote_filename= "/tmp/glabnetman-%s" % tmp_id
 		dst = "root@%s:%s" % ( host.name, remote_filename )
 		task.output.write(run_shell(["rsync",  "-a", filename, dst], config.remote_dry_run))
 		task.subtasks_done = task.subtasks_done + 1
@@ -169,6 +169,17 @@ class OpenVZDevice(Device):
 		task.output.write(run_shell(["ssh",  "root@%s" % host.name, "rm", remote_filename ], config.remote_dry_run))
 		os.remove(filename)
 		task.done()
+
+	def download_image(self):
+		host = self.host
+		tmp_id = uuid.uuid1()
+		filename = "/tmp/glabnetman-%s" % tmp_id
+		src = "root@%s:%s/*.tgz" % ( host.name, filename )
+		print run_shell(["ssh",  "root@%s" % host.name, "mkdir", "-p", filename ], config.remote_dry_run)
+		print run_shell(["ssh",  "root@%s" % host.name, "vzdump", "--compress", "--dumpdir", filename, "--suspend", self.openvz_id ], config.remote_dry_run)
+		print run_shell(["rsync",  "-a", src, filename], config.remote_dry_run)
+		print run_shell(["ssh",  "root@%s" % host.name, "rm -r", filename ], config.remote_dry_run)
+		return filename
 
 	def __str__(self):
 		return "openvz %s" % self.id
