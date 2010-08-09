@@ -47,7 +47,6 @@ hosts = get("local","hosts","config/hosts.xml")
 """
 The local config file to use for storing the hosts in.
 """
-
 default_template = get("openvz","default_template","debian-6.0-standard_6.0-2_i386")
 """
 The default openvz template to use when no template is specified.

@@ -4,7 +4,7 @@ import config, host_store, topology_store
 from host import Host
 from topology import *
 from log import Logger
-from task import TaskStatus
+from task import TaskStatus, UploadTask
 
 import xmlrpclib, thread
 
@@ -18,6 +18,9 @@ class Fault(xmlrpclib.Fault):
 	TOPOLOGY_HAS_PROBLEMS = 105
 	MALFORMED_XML = 106
 	MALFORMED_TOPOLOGY_DESCRIPTION = 107
+	NO_SUCH_DEVICE = 108
+	UPLOAD_NOT_SUPPORTED = 109
+	INVALID_TOPOLOGY_STATE = 110
 	NO_SUCH_HOST = 200
 	NO_SUCH_HOST_GROUP = 201
 	ACCESS_TO_HOST_DENIED = 202
@@ -162,5 +165,24 @@ def task_status(id, user=None):
 	logger.log("task_status(%s)" % id, user=user.username)
 	return TaskStatus.tasks[id].dict()
 	
+def upload_start(user=None):
+	logger.log("upload_start()", user=user.username)
+	task = UploadTask()
+	return task.id
+
+def upload_chunk(upload_id, chunk, user=None):
+	#logger.log("upload_chunk(%s,...)" % upload_id, user=user.username)
+	task = UploadTask.tasks[upload_id]
+	task.chunk(chunk.data)
+	return 0
+
+def upload_image(top_id, device_id, upload_id, user=None):
+	logger.log("upload_image(%s, %s, %s)" % (top_id, device_id, upload_id), user=user.username)
+	upload = UploadTask.tasks[upload_id]
+	upload.finished()
+	_top_access(top_id, user)
+	top=topology_store.get(top_id)
+	return top.upload_image(device_id, upload.filename)
+
 host_store.init()
 topology_store.init()

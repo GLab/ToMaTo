@@ -474,3 +474,20 @@ class Topology(XmlObject):
 	def _log(self, task, output):
 		logger = Logger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
+		
+	def upload_image(self, device_id, filename):
+		if self.devices.has_key(device_id):
+			device = self.devices[device_id]
+		else:
+			os.remove(filename)
+			raise api.Fault (api.Fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
+		if not hasattr(device,"upload_image"):
+			os.remove(filename)
+			raise api.Fault (api.Fault.UPLOAD_NOT_SUPPORTED, "Device does not support imafge upload: %s" % device_id)
+		if self.state == TopologyState.STARTED:
+			os.remove(filename)
+			raise api.Fault (api.Fault.INVALID_TOPOLOGY_STATE, "Cannot upload an image to a running topology")
+		task = TaskStatus()
+		thread.start_new_thread(device.upload_image, (filename, task))
+		return task.id
+	

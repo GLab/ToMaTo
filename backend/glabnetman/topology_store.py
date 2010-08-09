@@ -22,6 +22,7 @@ def exists (id):
 	Returns whether a topology exists
 	@param id id of the topology
 	"""
+	id = int(id)
 	return topologies.has_key(id)
 
 def get (id):
@@ -29,6 +30,7 @@ def get (id):
 	Returns a topology by its id
 	@param id id of the topology
 	"""
+	id = int(id)
 	if not exists(id):
 		raise api.Fault(api.Fault.NO_SUCH_TOPOLOGY, "no such topology: %s" % id) 
 	return topologies[id]
@@ -59,6 +61,7 @@ def remove (id):
 	Removes a topology by its id
 	@param id id of the topology
 	"""
+	id = int(id)
 	if not exists(id):
 		raise api.Fault(api.Fault.NO_SUCH_TOPOLOGY, "no such topology: %s" % id) 
 	top = topologies[id]

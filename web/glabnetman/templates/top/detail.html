@@ -38,6 +38,9 @@ Hint: {{h}}<br/>
 {% if top.is_prepared or top.is_created or top.is_uploaded %} 
 		<li><a href="/top/edit?top_id={{top_id}}">edit</a></li>
 {% endif %}
+{% if top.is_prepared %}
+		<li><a href="/top/upload?top_id={{top_id}}">upload image</a></li>
+{% endif %}
 {% if top.is_created %}
 		<li><a href="/top/{{top_id}}/remove" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 {% endif %}
