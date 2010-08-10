@@ -8,8 +8,8 @@ class Store(object):
 	def __init__ (self, start_id, num):
 		"""
 		Creates a new resource store
-		@start_id lowest id in the resource set
-		@num number of ids to insert into the resource set
+		@param start_id lowest id in the resource set
+		@param num number of ids to insert into the resource set
 		"""
 		self.resources = range(start_id, start_id+num-1)
 	

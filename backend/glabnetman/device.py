@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from interface import *
-from util import *
-import host_store
+from interface import Interface
+from util import XmlObject, curry
+import host_store, api
 
 class Device(XmlObject):
 	"""
 	This class represents a device
 	"""
-  
+
 	def __init__ ( self, topology, dom, load_ids ):
 		"""
 		Creates a device object
@@ -46,7 +46,7 @@ class Device(XmlObject):
 		"""
 		Read the attributes from the xml dom object
 		@param dom the xml dom object to read the data from
-		@load_ids whether to load or ignore assigned ids
+		@param load_ids whether to load or ignore assigned ids
 		"""
 		if not load_ids:
 			if dom.hasAttribute("host"):
@@ -61,7 +61,7 @@ class Device(XmlObject):
 		Encode the object to an xml dom object
 		@param dom the xml dom object to write the data to
 		@param doc the xml document needed to create child elements
-		@print_ids whether to include or ignore assigned ids
+		@param print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self,dom)
 		if not print_ids:

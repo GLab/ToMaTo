@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import config, host_store, topology_store
+import host_store, topology_store, config
 from host import Host
-from topology import *
+from topology import Topology, TopologyState
 from log import Logger
 from task import TaskStatus, UploadTask, DownloadTask
 
 import xmlrpclib, thread
+from xml.dom import minidom
 
 class Fault(xmlrpclib.Fault):
 	UNKNOWN = -1
@@ -20,7 +21,8 @@ class Fault(xmlrpclib.Fault):
 	MALFORMED_TOPOLOGY_DESCRIPTION = 107
 	NO_SUCH_DEVICE = 108
 	UPLOAD_NOT_SUPPORTED = 109
-	INVALID_TOPOLOGY_STATE = 110
+	DOWNLOAD_NOT_SUPPORTED = 110
+	INVALID_TOPOLOGY_STATE = 111
 	NO_SUCH_HOST = 200
 	NO_SUCH_HOST_GROUP = 201
 	ACCESS_TO_HOST_DENIED = 202

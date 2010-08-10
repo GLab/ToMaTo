@@ -4,12 +4,12 @@ from xml.dom import minidom
 
 from task import TaskStatus
 
-from util import *
+from util import XmlObject, curry, run_shell
 from log import Logger
 
-import api, config, openvz, dhcp, tinc, real_network, topology_analysis, resource
+import api, config, openvz, dhcp, tinc, real_network, topology_analysis
 
-import shutil, os, stat, sys, thread, uuid
+import shutil, os, stat, thread, uuid
 
 class TopologyState():
 	"""
@@ -87,7 +87,7 @@ class Topology(XmlObject):
 		"""
 		try:
 			x_top = dom.getElementsByTagName ( "topology" )[0]
-		except IndexError, err:
+		except IndexError:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: topology must contain a <topology> tag")
 		if not load_ids:
 			if x_top.hasAttribute("id"):
@@ -100,13 +100,13 @@ class Topology(XmlObject):
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			try:
 				Type = { "openvz": openvz.OpenVZDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
-			except KeyError, err:
+			except KeyError:
 				raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % x_dev.getAttribute("type") )
 			self.add_device ( Type ( self, x_dev, load_ids ) )
 		for x_con in x_top.getElementsByTagName ( "connector" ):
 			try:
 				Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": real_network.RealNetworkConnector }[x_con.getAttribute("type")]
-			except KeyError, err:
+			except KeyError:
 				raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % x_con.getAttribute("type") )
 			self.add_connector ( Type ( self, x_con, load_ids ) )
 			
@@ -206,7 +206,7 @@ class Topology(XmlObject):
 
 	def upload(self):
 		"""
-		This will upload the topology to the testbed in thwe following steps:
+		This will upload the topology to the testbed in the following steps:
 		1. Fill all unassigned resource slots
 		2. Create the control scripts
 		3. Upload the control scripts

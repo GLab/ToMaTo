@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from util import *
+from util import parse_bool 
 
 import ConfigParser, os
 
 """
-This class represents the copnfiguration
+This class represents the configuration
 """
 config=ConfigParser.SafeConfigParser()
 config.read(['glabnetman.conf', '/etc/glabnetman.conf', os.path.expanduser('~/.glabnetman.conf')])

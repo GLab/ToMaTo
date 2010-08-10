@@ -28,7 +28,7 @@ def _check_fully_connected(top, res):
 	#put everything in unreachable
 	for device in top.devices.values():
 		unreachable.add(device)
-	#select a strating device and put it in todo
+	#select a starting device and put it in todo
 	start=iter(unreachable).next()
 	todo.add(start)
 	while len(todo)>0:
@@ -97,7 +97,7 @@ def _check_connectors_ip_structure(top,res):
 		if len(dhcp_clients)>0 and len(dhcp_server)==0 and not connector.type=="real":
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.id, dhcp_clients ) )
 		if len(dhcp_clients)==0 and len(dhcp_server)>0:
-			res.hints.append("Dhcp server configured on %s but no clients using it: %s" % ( connector.id, dhcp_servers ) )
+			res.hints.append("Dhcp server configured on %s but no clients using it: %s" % ( connector.id, dhcp_server ) )
 				
 def _check_connection_performance(top,res):
 	for connector in top.connectors.values():

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from connector import *
-from util import *
+from connector import Connector
+from connection import Connection
+from util import curry
 import resource
 import os, subprocess, shutil
 

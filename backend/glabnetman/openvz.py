@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from device import *
-from util import *
+from device import Device
+from util import curry, run_shell, parse_bool
 
 import config, api
 
-import os, uuid, xmlrpclib
+import os, uuid
 
 class OpenVZDevice(Device):
 	"""
@@ -30,7 +30,7 @@ class OpenVZDevice(Device):
 		"""
 		Read the attributes from the xml dom object
 		@param dom the xml dom object to read the data from
-		@load_ids whether to load or ignore assigned ids
+		@param load_ids whether to load or ignore assigned ids
 		"""
 		if not load_ids:
 			if dom.hasAttribute("openvz_id"):
@@ -41,7 +41,7 @@ class OpenVZDevice(Device):
 		Encode the object to an xml dom object
 		@param dom the xml dom object to write the data to
 		@param doc the xml document needed to create child elements
-		@print_ids whether to include or ignore assigned ids
+		@param print_ids whether to include or ignore assigned ids
 		"""
 		Device.encode_xml(self,dom,doc,print_ids)
 		if not print_ids:
@@ -58,7 +58,7 @@ class OpenVZDevice(Device):
 	
 	def take_resources(self):
 		"""
-		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		Take free resources for all unassigned resource slots of those object and its child objects. The number of the resources will be stored in internal fields.
 		"""
 		Device.take_resources(self)
 		if not self.openvz_id:

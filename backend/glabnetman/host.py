@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from util import *
+from util import XmlObject, curry, run_shell
 
 import config, resource
-
-from task import TaskStatus
-
-import subprocess
 
 class Host(XmlObject):
 	"""

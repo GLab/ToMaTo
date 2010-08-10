@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from connection import *
-from util import *
+from connection import Connection
+from util import XmlObject, curry
+
+import api
 
 class Connector(XmlObject):
 	"""
 	This class represents a connector
 	"""
-  
+
 	def __init__ ( self, topology, dom, load_ids ):
 		"""
 		Creates a connector object
@@ -35,7 +37,7 @@ class Connector(XmlObject):
 		"""
 		Read the attributes from the xml dom object
 		@param dom the xml dom object to read the data from
-		@load_ids whether to load or ignore assigned ids
+		@param load_ids whether to load or ignore assigned ids
 		"""
 		XmlObject.decode_xml(self,dom)
 		for connection in dom.getElementsByTagName ( "connection" ):
@@ -46,7 +48,7 @@ class Connector(XmlObject):
 		Encode the object to an xml dom object
 		@param dom the xml dom object to write the data to
 		@param doc the xml document needed to create child elements
-		@print_ids whether to include or ignore assigned ids
+		@param print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self,dom)
 		for con in self.connections:

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from util import *
+from util import XmlObject, curry
+
+import api
 
 class Interface(XmlObject):
-  	"""
+	"""
 	This class represents an interface
 	"""
 
@@ -28,7 +30,7 @@ class Interface(XmlObject):
 		Encode the object to an xml dom object
 		@param dom the xml dom object to write the data to
 		@param doc the xml document needed to create child elements
-		@print_ids whether to include or ignore assigned ids
+		@param print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self, dom)
 	

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from util import *
+from util import XmlObject, curry
+import api
 
 class Connection(XmlObject):
 	"""
@@ -12,7 +13,7 @@ class Connection(XmlObject):
 		Creates a connection object
 		@param connector the parent connector object
 		@param dom the xml dom object of the connection
-		@param load_ids whether to lod or ignore assigned ids
+		@param load_ids whether to load or ignore assigned ids
 		"""
 		self.connector = connector
 		self.decode_xml ( dom, load_ids )
@@ -20,13 +21,13 @@ class Connection(XmlObject):
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must have a device attribute")
 		try:
 			self.device = connector.topology.devices[self.device_id]
-		except KeyError, err:
+		except KeyError:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must reference an existing device: %s" % self.device_id)
 		if not self.device_id:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must have an interface attribute")
 		try:
 			self.interface = self.device.interfaces[self.interface_id]
-		except KeyError, err:
+		except KeyError:
 			raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connection must reference an existing interface: %s.%s" % ( self.device_id, self.interface_id) )
 		self.interface.connection = self
 
@@ -35,7 +36,7 @@ class Connection(XmlObject):
 		Encode the object to an xml dom object
 		@param dom the xml dom object to write the data to
 		@param doc the xml document needed to create child elements
-		@print_ids whether to include or ignore assigned ids
+		@param print_ids whether to include or ignore assigned ids
 		"""
 		XmlObject.encode_xml(self, dom)
 		if not print_ids:
@@ -48,7 +49,7 @@ class Connection(XmlObject):
 		"""
 		Read the attributes from the xml dom object
 		@param dom the xml dom object to read the data from
-		@load_ids whether to load or ignore assigned ids
+		@param load_ids whether to load or ignore assigned ids
 		"""
 		if not load_ids:
 			if dom.hasAttribute("bridge_id"):
@@ -131,7 +132,7 @@ class Connection(XmlObject):
 
 	def take_resources(self):
 		"""
-		Take free resources for all unassigned resource slots of thos object and its child objects. The number of the resources will be stored in internal fields.
+		Take free resources for all unassigned resource slots of those object and its child objects. The number of the resources will be stored in internal fields.
 		"""
 		if not self.bridge_id and not self.bridge_name:
 			self.bridge_id = self.device.host.bridge_ids.take()

@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from util import *
-import config, api, resource
-from topology import *
+import resource, api, config
+from topology import Topology, TopologyState
 
 from xml.dom import minidom
-
 import atexit, os
 
 """
-A topology store holds all topologes that glabnetman knows of.
+A topology store holds all topologies that glabnetman knows of.
 The store is automatically loaded and saved to a file configured in the configuration but it helps to call save() after changes.
 The topologies are stored in individual xml files in a configures directory.
 """

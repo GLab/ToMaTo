@@ -24,7 +24,7 @@ class static:
 	"""
 	def __init__(self, anycallable):
 		self.__call__ = anycallable
-        
+
 class curry:
 	"""
 	Allows to create new methods by currying.

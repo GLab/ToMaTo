@@ -2,16 +2,14 @@
 
 from xml.dom import minidom
 
-from util import *
-from host import *
-from topology import TopologyState
+from host import Host
 
-import topology_store, config, api
+import config, api
 
 import atexit, os
 
 """
-A global storage for host objects. It contains all availabe hosts.
+A global storage for host objects. It contains all available hosts.
 The store is automatically loaded and saved to a file configured in the configuration but it helps to call save() after changes.
 The hosts are stored in that file using a simple xml format:
 <hosts>

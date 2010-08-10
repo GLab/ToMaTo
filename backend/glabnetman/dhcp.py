@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from device import Device
-from util import *
-
-import os
+from util import curry
 
 class DhcpdDevice(Device):
 	"""
 	This class represents a dhcpd device 
 	"""
-  
+
 	subnet=property(curry(Device.get_attr,"subnet"),curry(Device.set_attr,"subnet"))
 	"""
 	The subnet-number should be an IP address or domain name which resolves to the subnet number of the subnet being described. [dhcpd.conf.5]
