@@ -137,7 +137,7 @@ class OpenVZDevice(Device):
 				if dhcp:
 					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
 					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )					
-			fd.write("( while true; do vncterm -rfport %s -passwd %s -c vzctl enter %s ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
+			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
 		if script == "stop":
 			fd.write("cat vnc-%s.pid | xargs kill" % self.id )
 			fd.write("vzctl stop %s\n" % self.openvz_id)
