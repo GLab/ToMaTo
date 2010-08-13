@@ -168,12 +168,14 @@ class OpenVZDevice(Device):
 			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
 
 	def upload_image(self, filename, task):
-		task.subtasks_total=3
+		task.subtasks_total=4
 		host = self.host
 		tmp_id = uuid.uuid1()
 		remote_filename= "/tmp/glabnetman-%s" % tmp_id
 		dst = "root@%s:%s" % ( host.name, remote_filename )
 		task.output.write(run_shell(["rsync",  "-a", filename, dst], config.remote_dry_run))
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write(run_shell(["ssh",  "root@%s" % host.name, "vzctl", "remove", self.openvz_id ], config.remote_dry_run))
 		task.subtasks_done = task.subtasks_done + 1
 		task.output.write(run_shell(["ssh",  "root@%s" % host.name, "vzrestore", remote_filename, self.openvz_id ], config.remote_dry_run))
 		task.subtasks_done = task.subtasks_done + 1
