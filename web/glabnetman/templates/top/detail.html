@@ -21,6 +21,14 @@ Warning: {{w}}<br/>
 Hint: {{h}}<br/>
 {% endfor %}
 
+<script language="javascript"><!--
+function console (top, dev) {
+    var url = "/top/vncview?top_id="+top+"&device_id="+dev;
+    var nw = window.open(url, '_blank', "innerWidth=745,innerheight=400");
+    nw.focus();
+}
+--></script>
+
 <table>
 	<tr>
 		<th>Device ID</th>
@@ -35,7 +43,7 @@ Hint: {{h}}<br/>
 		<td>{{dev.host}}</td>
 		<td>
 {% if top.is_started %}
-		<a href="/top/vncview?top_id={{top_id}}&device_id={{dev.id}}" target="_blank">console</a>
+		<a href="javascript:console('{{top_id}}','{{dev.id}}')">console</a>
 {% endif %}
 {% if top.is_prepared %}
 		<a href="/top/upload?top_id={{top_id}}&device_id={{dev.id}}">upload image</a>

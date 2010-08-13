@@ -3,13 +3,44 @@
     <title>{{top.name}} - {{device.id}}</title>
     <meta content="">
     <style></style>
+    <script language="javascript"><!--
+function wresize() {
+ 
+   var ps = document.vncapp.getPreferredSize();
+   var aw = ps.width;
+   var ah = ps.height;
+   var oh;
+   var ow;
+ 
+   if (!window.innerHeight && document.body && document.body.offsetHeight) {
+     // hack for IE
+     oh = document.documentElement.clientHeight;
+     ow = document.documentElement.clientWidth;
+   }  else {
+     // other browsers
+     oh = window.innerHeight;
+     ow = window.innerWidth;
+   }
+ 
+   document.vncapp.width = aw;
+   document.vncapp.height = ah;
+ 
+   var offsetw = aw - ow;
+   var offseth = ah - oh;
+   if (offsetw !== 0 || offseth !== 0) {
+     try { window.resizeBy(offsetw, offseth); } catch (e) {}
+   }
+ 
+   setTimeout ("wresize()", 1000);
+ }
+--></script>
   </head>
-  <body>
-  <APPLET CODE='VncViewer.class' ARCHIVE='/static/VncViewer.jar' WIDTH=745 HEIGHT=400>
+  <body onLoad="javascript:wresize()" style="margin:0px;overflow='hidden'">
+  <applet name="vncapp" code='VncViewer.class' archive='/static/VncViewer.jar' width="745" height="400"> 
 	<param name="HOST" value="{{device.host}}">
 	<param name="PORT" value="{{device.vnc_port}}">
 	<param name="PASSWORD" value="{{device.vnc_password}}">
 	<param name="Show Controls" value='No'>
-  </APPLET>
+  </applet> 
   </body>
 </html>
