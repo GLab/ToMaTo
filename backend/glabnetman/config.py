@@ -47,9 +47,15 @@ hosts = get("local","hosts","config/hosts.xml")
 """
 The local config file to use for storing the hosts in.
 """
-default_template = get("openvz","default_template","debian-6.0-standard_6.0-2_i386")
+
+openvz_default_template = get("openvz","default_template","debian-6.0-standard_6.0-2_i386")
 """
 The default openvz template to use when no template is specified.
+"""
+
+kvm_default_template = get("kvm","default_template","debian_lenny_i386_small.qcow2")
+"""
+The default kvm template to use when no template is specified.
 """
 
 remote_control_dir = get("remote","control_dir","/root/glabnetman")

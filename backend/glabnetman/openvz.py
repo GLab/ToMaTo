@@ -24,7 +24,7 @@ class OpenVZDevice(Device):
 
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
 	vnc_port=property(curry(Device.get_attr, "vnc_port"), curry(Device.set_attr, "vnc_port"))
-	template=property(curry(Device.get_attr, "template", default=config.default_template), curry(Device.set_attr, "template"))
+	template=property(curry(Device.get_attr, "template", default=config.openvz_default_template), curry(Device.set_attr, "template"))
 	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
 	
 	def decode_xml ( self, dom, load_ids ):

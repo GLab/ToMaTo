@@ -24,7 +24,7 @@ class KVMDevice(Device):
 
 	kvm_id=property(curry(Device.get_attr, "kvm_id"), curry(Device.set_attr, "kvm_id"))
 	vnc_port=property(curry(Device.get_attr, "vnc_port"), curry(Device.set_attr, "vnc_port"))
-	template=property(curry(Device.get_attr, "template", default=config.default_template), curry(Device.set_attr, "template"))
+	template=property(curry(Device.get_attr, "template", default=config.kvm_default_template), curry(Device.set_attr, "template"))
 	
 	def decode_xml ( self, dom, load_ids ):
 		"""
@@ -107,7 +107,9 @@ class KVMDevice(Device):
 		"""
 		if script == "prepare":
 			fd.write("qm create %s\n" % self.kvm_id )
-			#TODO: add ide0
+			fd.write("mkdir -p /var/lib/vz/images/%s\n" % self.kvm_id)
+			fd.write("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s\n" % (self.template, self.kvm_id))
+			fd.write("qm set %s --ide0 local:%s/%s\n" % (self.kvm_id, self.kvm_id, self.template))
 			for iface in self.interfaces.values():
 				bridge = self.bridge_name(iface)
 				fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, int(iface.id) ) )
