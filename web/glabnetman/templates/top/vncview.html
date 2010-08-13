@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title>{{top.name}} - {{device.id}}</title>
+    <meta content="">
+    <style></style>
+  </head>
+  <body>
+  <APPLET CODE='VncViewer.class' ARCHIVE='/static/VncViewer.jar' WIDTH=745 HEIGHT=400>
+	<param name="HOST" value="{{device.host}}">
+	<param name="PORT" value="{{device.vnc_port}}">
+	<param name="PASSWORD" value="{{device.vnc_password}}">
+	<param name="Show Controls" value='No'>
+  </APPLET>
+  </body>
+</html>

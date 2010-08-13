@@ -21,6 +21,31 @@ Warning: {{w}}<br/>
 Hint: {{h}}<br/>
 {% endfor %}
 
+<table>
+	<tr>
+		<th>Device ID</th>
+		<th>Type</th>
+		<th>Host</th>
+		<th>Actions</th>
+	</tr>
+{% for name, dev in top.devices %}
+	<tr>
+		<td>{{dev.id}}</td>
+		<td>{{dev.type}}</td>
+		<td>{{dev.host}}</td>
+		<td>
+{% if top.is_started %}
+		<a href="/top/vncview?top_id={{top_id}}&device_id={{dev.id}}" target="_blank">console</a>
+{% endif %}
+{% if top.is_prepared %}
+		<a href="/top/upload?top_id={{top_id}}&device_id={{dev.id}}">upload image</a>
+		<a href="/top/download?top_id={{top_id}}&device_id={{dev.id}}">download image</a>
+{% endif %}
+		</td>		
+	</tr>
+{% endfor %}
+</table>
+
 {% if action %}
 <h2>Executing {{action}} ...</h2>
 <iframe width="80%" height="60%" frameborder="0" src="/task/{{task_id}}"></iframe>
@@ -37,10 +62,6 @@ Hint: {{h}}<br/>
 		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
 {% if top.is_prepared or top.is_created or top.is_uploaded %} 
 		<li><a href="/top/edit?top_id={{top_id}}">edit</a></li>
-{% endif %}
-{% if top.is_prepared %}
-		<li><a href="/top/upload?top_id={{top_id}}">upload image</a></li>
-		<li><a href="/top/download?top_id={{top_id}}">download image</a></li>
 {% endif %}
 {% if top.is_created %}
 		<li><a href="/top/{{top_id}}/remove" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>

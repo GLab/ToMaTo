@@ -36,8 +36,14 @@ def _topology_info(top):
 		"is_prepared": state == TopologyState.PREPARED,
 		"is_started": state == TopologyState.STARTED,
 		"owner": str(top.owner), "analysis": top.analysis,
-		"devices": top.devices.keys(), "device_count": len(top.devices),
+		"devices": [(k,_device_info(v)) for (k,v) in top.devices.items()], "device_count": len(top.devices),
 		"connectors": top.connectors.keys(), "connector_count": len(top.connectors)}
+
+def _device_info(dev):
+	res = {"id": dev.id, "type": dev.type, "host": dev.host_name}
+	if dev.type == "openvz":
+		res.update(vnc_port=dev.vnc_port, vnc_password=dev.vnc_password())
+	return res
 
 def _host_info(host):
 	return {"name": str(host.name), "group": str(host.group), 

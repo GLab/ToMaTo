@@ -5,7 +5,7 @@ from util import curry, run_shell, parse_bool
 
 import config, api
 
-import os, uuid, md5
+import os, uuid, hashlib
 
 class OpenVZDevice(Device):
 	"""
@@ -137,7 +137,7 @@ class OpenVZDevice(Device):
 				if dhcp:
 					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
 					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )					
-			fd.write("( while true; do vncterm -rfport %s -passwd %s -c vzctl enter %s ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vpn_password(), self.openvz_id, self.id ) )
+			fd.write("( while true; do vncterm -rfport %s -passwd %s -c vzctl enter %s ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
 		if script == "stop":
 			fd.write("cat vnc-%s.pid | xargs kill" % self.id )
 			fd.write("vzctl stop %s\n" % self.openvz_id)
@@ -195,14 +195,14 @@ class OpenVZDevice(Device):
 		print run_shell(["ssh",  "root@%s" % host.name, "rm -r", filename ], config.remote_dry_run)
 		return filename
 
-	def vpn_password(self):
-		m = md5.new()
+	def vnc_password(self):
+		m = hashlib.md5()
 		m.update(config.password_salt)
 		m.update(self.id)
 		m.update(self.openvz_id)
 		m.update(self.vnc_port)
-		m.update(self.topology.owner)
-		return m.disgest()
+		m.update(str(self.topology.owner))
+		return m.hexdigest()
 
 	def __str__(self):
 		return "openvz %s" % self.id

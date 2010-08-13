@@ -47,10 +47,10 @@ def upload(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
 		top_id=request.REQUEST["top_id"]
+		device_id=request.REQUEST["device_id"]
 		if not request.FILES.has_key("image"):
 			top=api.top_info(int(top_id))
-			return render_to_response("top/upload.html", {'top_id': top_id, 'top': top} )
-		device_id=request.REQUEST["device_id"]
+			return render_to_response("top/upload.html", {'top_id': top_id, 'top': top, 'device_id': device_id} )
 		file=request.FILES["image"]
 		upload_id=api.upload_start()
 		for chunk in file.chunks():
@@ -68,9 +68,6 @@ def download(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
 		top_id=request.REQUEST["top_id"]
-		if not request.REQUEST.has_key("device_id"):
-			top=api.top_info(int(top_id))
-			return render_to_response("top/download.html", {'top_id': top_id, 'top': top} )
 		device_id=request.REQUEST["device_id"]
 		top=api.top_info(int(top_id))
 		download_id=api.download_image(top_id, device_id)
@@ -90,6 +87,18 @@ def download(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
+def vncview(request):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		top_id=request.REQUEST["top_id"]
+		device_id=request.REQUEST["device_id"]
+		top=api.top_info(int(top_id))
+		device=dict(top["devices"])[device_id]
+		return render_to_response("top/vncview.html", {'top': top, 'device': device})
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
 
 def edit(request):
 	try:
