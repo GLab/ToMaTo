@@ -111,10 +111,7 @@ class OpenVZDevice(Device):
 			fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 			if self.root_password:
 				fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-			if self.host_name:
-				fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.host_name ) )
-			else:
-				fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
 			for iface in self.interfaces.values():
 				bridge = self.bridge_name(iface)
 				fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
@@ -137,7 +134,7 @@ class OpenVZDevice(Device):
 				if dhcp:
 					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
 					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )					
-			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
+			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
 		if script == "stop":
 			fd.write("cat vnc-%s.pid | xargs kill" % self.id )
 			fd.write("vzctl stop %s\n" % self.openvz_id)
