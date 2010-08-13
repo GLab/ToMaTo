@@ -22,6 +22,7 @@ class Host(XmlObject):
 		self.ports = resource.Store(7000,1000)
 		self.bridge_ids = resource.Store(1000,1000)
 		self.openvz_ids = resource.Store(1000,100)
+		self.kvm_ids = resource.Store(1000,100)
 		
 	def decode_xml(self,dom):
 		XmlObject.decode_xml(self,dom)

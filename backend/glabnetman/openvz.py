@@ -151,14 +151,9 @@ class OpenVZDevice(Device):
 		Adapt this device to the new device
 		"""
 		self.root_password = newdev.root_password
-		self.host_name = newdev.host_name
 		self.host_group = newdev.host_group
 		if self.root_password:
 			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-		if self.host_name:
-			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.host_name ) )
-		else:
-			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
 		for iface in self.interfaces.values():
 			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.id ) )
 		self.interfaces = newdev.interfaces

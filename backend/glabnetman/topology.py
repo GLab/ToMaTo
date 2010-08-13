@@ -7,7 +7,7 @@ from task import TaskStatus
 from util import XmlObject, curry, run_shell
 from log import Logger
 
-import api, config, openvz, dhcp, tinc, real_network, topology_analysis
+import api, config, openvz, kvm, dhcp, tinc, real_network, topology_analysis
 
 import shutil, os, stat, thread, uuid
 
@@ -99,7 +99,7 @@ class Topology(XmlObject):
 		XmlObject.decode_xml(self,x_top)
 		for x_dev in x_top.getElementsByTagName ( "device" ):
 			try:
-				Type = { "openvz": openvz.OpenVZDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
+				Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[x_dev.getAttribute("type")]
 			except KeyError:
 				raise api.Fault(api.Fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % x_dev.getAttribute("type") )
 			self.add_device ( Type ( self, x_dev, load_ids ) )
