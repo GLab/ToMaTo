@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Edit topology {{top_id}}</h1>
 <form action="/top/edit" method="POST">
+    <a href="http://fileserver.german-lab.de/trac/glabnetman/wiki/TopologyDescription" target="_blank">Syntax help</a><br/>
 	<textarea name="xml" cols="80" rows="25">{{xml|safe}}</textarea>
 	<input type="hidden" name="top_id" value="{{top_id}}"/>
 	<br/>
