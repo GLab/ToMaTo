@@ -5,7 +5,7 @@ from util import curry, run_shell, parse_bool
 
 import config, api
 
-import os, uuid
+import os, uuid, md5
 
 class OpenVZDevice(Device):
 	"""
@@ -23,6 +23,7 @@ class OpenVZDevice(Device):
 		self.decode_xml(dom, load_ids)
 
 	openvz_id=property(curry(Device.get_attr, "openvz_id"), curry(Device.set_attr, "openvz_id"))
+	vnc_port=property(curry(Device.get_attr, "vnc_port"), curry(Device.set_attr, "vnc_port"))
 	template=property(curry(Device.get_attr, "template", default=config.default_template), curry(Device.set_attr, "template"))
 	root_password=property(curry(Device.get_attr, "root_password"), curry(Device.set_attr, "root_password"))
 	
@@ -35,6 +36,8 @@ class OpenVZDevice(Device):
 		if not load_ids:
 			if dom.hasAttribute("openvz_id"):
 				dom.removeAttribute("openvz_id")
+			if dom.hasAttribute("vnc_port"):
+				dom.removeAttribute("vnc_port")
 
 	def encode_xml ( self, dom, doc, print_ids ):
 		"""
@@ -47,6 +50,8 @@ class OpenVZDevice(Device):
 		if not print_ids:
 			if dom.hasAttribute("openvz_id"):
 				dom.removeAttribute("openvz_id")
+			if dom.hasAttribute("vnc_port"):
+				dom.removeAttribute("vnc_port")
 
 	def retake_resources(self):
 		"""
@@ -55,6 +60,8 @@ class OpenVZDevice(Device):
 		Device.retake_resources(self)
 		if self.openvz_id:
 			self.host.openvz_ids.take_specific(self.openvz_id)
+		if self.vnc_port:
+			self.host.ports.take_specific(self.vnc_port)
 	
 	def take_resources(self):
 		"""
@@ -63,6 +70,8 @@ class OpenVZDevice(Device):
 		Device.take_resources(self)
 		if not self.openvz_id:
 			self.openvz_id=self.host.openvz_ids.take()
+		if not self.vnc_port:
+			self.vnc_port=self.host.ports.take()
 
 	def free_resources(self):
 		"""
@@ -72,6 +81,9 @@ class OpenVZDevice(Device):
 		if self.openvz_id:
 			self.host.openvz_ids.free(self.openvz_id)
 			self.openvz_id=None
+		if self.vnc_port:
+			self.host.ports.free(self.vnc_port)
+			self.vnc_port=None
 
 	def bridge_name(self, interface):
 		"""
@@ -87,7 +99,7 @@ class OpenVZDevice(Device):
 	def write_aux_files(self):
 		"""
 		Write the aux files for this object and its child objects
-		"""
+		"""		
 		pass
 
 	def write_control_script(self, host, script, fd):
@@ -124,8 +136,10 @@ class OpenVZDevice(Device):
 					fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
 				if dhcp:
 					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
-					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )
+					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )					
+			fd.write("( while true; do vncterm -rfport %s -passwd %s -c vzctl enter %s ) & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vpn_password(), self.openvz_id, self.id ) )
 		if script == "stop":
+			fd.write("cat vnc-%s.pid | xargs kill" % self.id )
 			fd.write("vzctl stop %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
 
@@ -180,6 +194,15 @@ class OpenVZDevice(Device):
 		print run_shell(["rsync",  "-a", src, filename], config.remote_dry_run)
 		print run_shell(["ssh",  "root@%s" % host.name, "rm -r", filename ], config.remote_dry_run)
 		return filename
+
+	def vpn_password(self):
+		m = md5.new()
+		m.update(config.password_salt)
+		m.update(self.id)
+		m.update(self.openvz_id)
+		m.update(self.vnc_port)
+		m.update(self.topology.owner)
+		return m.disgest()
 
 	def __str__(self):
 		return "openvz %s" % self.id

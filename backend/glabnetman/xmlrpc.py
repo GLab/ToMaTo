@@ -19,8 +19,8 @@ class User():
 			self.is_admin=ldap.is_admin()
 
 class APIServer(xmlrpc.XMLRPC):
-	def __init__(self, api):
-		self.api=api
+	def __init__(self, papi):
+		self.api=papi
 		xmlrpc.XMLRPC.__init__(self)
 
 	def authenticate(self, username, password):
@@ -65,3 +65,4 @@ def run_server():
 	api_server=APIServer(api)
 	reactor.listenTCP(8000, server.Site(api_server))
 	reactor.run()
+

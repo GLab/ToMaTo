@@ -61,3 +61,5 @@ remote_dry_run = parse_bool(get("remote","dry_run",False))
 """
 If this is true all remote commands are just printed but not executed
 """
+
+password_salt = get("local", "password_salt", "glabnetman")

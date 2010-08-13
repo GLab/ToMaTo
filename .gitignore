@@ -3,3 +3,6 @@ backend/logs
 *.pyc
 web/apache.conf
 *.komodoproject
+.project
+.pydevproject
+.settings
