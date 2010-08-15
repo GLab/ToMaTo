@@ -1,5 +1,5 @@
-backend/config
-backend/logs
+*/config
+*/logs
 *.pyc
 web/apache.conf
 *.komodoproject

@@ -2,7 +2,7 @@
 
 import ldap
 
-import config, generic
+import config
 
 def log(msg):
     #syslog.openlog('glweb', 0, settings.GLBIMGMT_LOG_FACILITY)
@@ -164,9 +164,3 @@ class LdapUser(object):
         Shortcut for use in templates.
         """
         return self.is_in_group('users')
-
-def login(username, password):
-	ldap_user = LdapUser(username)
-	if not ldap_user.authenticate(password):
-		return False
-	return generic.User(username, ldap_user.is_user(), ldap_user.is_admin())

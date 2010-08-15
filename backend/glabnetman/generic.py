@@ -4,6 +4,12 @@ from django.db import models
 
 import hosts, topology
 
+class User():
+	def __init__ (self, name, is_user, is_admin):
+		self.name = name
+		self.is_user = is_user
+		self.is_admin = is_admin
+
 class Device(models.Model):
 	TYPES = ( ('openvz', 'OpenVZ'), ('kvm', 'KVM'), ('dhcpd', 'DHCP server') )
 	name = models.CharField(max_length=20)
