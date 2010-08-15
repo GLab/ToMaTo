@@ -6,3 +6,4 @@ web/apache.conf
 .project
 .pydevproject
 .settings
+*.sqlite
