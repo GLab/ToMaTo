@@ -37,13 +37,27 @@ class Host(models.Model):
 		task.subtasks_done = task.subtasks_done + 1
 				
 def get_host(name):
-	Host.objects.get(name=name)
+	return Host.objects.get(name=name)
 
 def get_host_group(name):
-	HostGroup.objects.get(name=name)
+	return HostGroup.objects.get(name=name)
 	
 def get_best_host(group):
 	all = Host.objects.all()
 	if group:
 		all = all.filter(group__name=group)
-	return all.annotate(num_devices=models.Count('devices')).order_by('devices', '?')[1]
+	return all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')[1]
+
+def next_free_port(host):
+	ids = range(7000,8000)
+	import openvz
+	for dev in openvz.OpenVZDevice.objects.filter(host=host):
+		ids.remove(dev.vnc_port)
+	return ids[0]
+
+def next_free_bridge(host):
+	ids = range(1000,2000)
+	import generic
+	for con in generic.Connection.objects.filter(interface__device__host=host):
+		ids.remove(con.bridge_id)
+	return ids[0]

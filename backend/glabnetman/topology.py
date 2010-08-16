@@ -2,8 +2,8 @@
 
 from django.db import models
 import thread, os, shutil, stat, uuid
-import config, log, fault, generic, util, tasks
-import topology_analysis, openvz, kvm, dhcp, tinc, internet
+import config, log, fault, util, tasks
+import topology_analysis
 
 class State():
 	"""
@@ -41,20 +41,22 @@ class Topology(models.Model):
 	
 	owner = models.CharField(max_length=30)
 
-	def __init__ (self, dom, owner):
+	def init (self, dom, owner):
 		"""
 		Creates a new topology
 		@param file the xml file to load the topology definition from
 		@param owner the owner of the topology
 		"""
-		self.load_from(dom)
-		self.analysis=topology_analysis.analyze(self)
 		self.owner=owner
 		self.state=State.CREATED
 		self.save()
+		self.load_from(dom)
 		if not self.name:
 			self.name = "Topology %s" % self.id
 		self.save()
+
+	def analysis(self):
+		return topology_analysis.analyze(self)
 
 	def devices_all(self):
 		return self.device_set.all()
@@ -94,19 +96,26 @@ class Topology(models.Model):
 		Loads this topology from a file
 		@param dom the xml dom to load the topology definition from
 		"""
-		self.name = dom.getAttribute("name", None)
+		if dom.hasAttribute("name"):
+			self.name = dom.getAttribute("name")
 		for dev in dom.getElementsByTagName ( "device" ):
+			import openvz, kvm, dhcp
 			try:
 				Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[dev.getAttribute("type")]
 			except KeyError:
 				raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
-			self.devices_add ( Type ( self, dev ) )
+			d = Type()
+			d.init(self, dev)
+			self.devices_add ( d )
 		for con in dom.getElementsByTagName ( "connector" ):
+			import tinc, internet
 			try:
 				Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": internet.InternetConnector }[con.getAttribute("type")]
 			except KeyError:
 				raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
-			self.connectors_add ( Type ( self, con ) )
+			c = Type()
+			c.init(self, con)
+			self.connectors_add ( c )
 	
 	def save_to ( self, dom, doc, internal ):
 		"""
@@ -397,7 +406,6 @@ class Topology(models.Model):
 			con.take_resources()
 		self.write_control_scripts(task)
 		self.upload_control_scripts(task)
-		self.analysis = topology_analysis.analyze(self)
 		self._log("change", task.output.getvalue())
 		task.done()
 
@@ -456,3 +464,8 @@ def get(id):
 
 def all():
 	return Topology.objects.all()
+
+def create(dom, owner):
+	top = Topology()
+	top.init(dom, owner)
+	return top

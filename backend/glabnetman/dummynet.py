@@ -2,34 +2,46 @@
 
 from django.db import models
 
-import generic
+import re
+import generic, hosts, util
 
 class EmulatedConnection(generic.Connection):
 	delay = models.IntegerField(null=True)
 	bandwidth = models.IntegerField(null=True)
 	lossratio = models.FloatField(null=True)
 	
-	def __init__(self, connector, dom):
+	def init(self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
+		self.bridge_id = hosts.next_free_bridge(self.interface.device.host)		
+		self.save()
 	
 	def is_tinc(self):
-		#TODO
-		return True
+		try:
+			self.tincconnection
+			return True
+		except:
+			return False
 	
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("delay", self.delay)
-		dom.setAttribute("bandwidth", self.bandwidth)
-		dom.setAttribute("lossratio", self.lossratio)
+		if self.delay:
+			dom.setAttribute("delay", "%sms" % self.delay)
+		if self.bandwidth:
+			dom.setAttribute("bandwidth", "%sk" % self.bandwidth)
+		if self.lossratio:
+			dom.setAttribute("lossratio", str(self.lossratio))
 		if self.is_tinc():
-			self.tinc.encode_xml(dom, doc, internal)
+			self.tincconnection.encode_xml(dom, doc, internal)
 				
 	def decode_xml(self, dom):
 		generic.Connection.decode_xml(self, dom)
-		self.delay = dom.getAttribute("delay")
-		self.bandwidth = dom.getAttribute("bandwidth")
-		self.lossratio = dom.getAttribute("lossratio")
-		
+		self.delay = re.match("(\d+)ms", util.get_attr(dom, "delay", default="0ms")).group(1)
+		self.bandwidth = re.match("(\d+)k", util.get_attr(dom, "bandwidth", default="0k")).group(1)
+		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
+
+	def write_aux_files(self):
+		pass
+	
 	def write_control_script(self, host, script, fd):
 		"""
 		Write the control scrips for this object and its child objects

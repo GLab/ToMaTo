@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import generic
+import generic, hosts
 
 class DhcpdDevice(generic.Device):
 	subnet = models.CharField(max_length=15)
@@ -11,11 +11,14 @@ class DhcpdDevice(generic.Device):
 	gateway = models.CharField(max_length=15)
 	nameserver = models.CharField(max_length=15)
 
-	def __init__(self, topology, dom):
+	def init(self, topology, dom):
 		self.topology = topology
 		self.decode_xml(dom)
+		self.host = hosts.get_best_host(self.hostgroup)
+		self.save()
 		for interface in dom.getElementsByTagName ( "interface" ):
-			iface = generic.Interface(self, interface)
+			iface = generic.Interface()
+			iface.init(self, interface)
 			self.interfaces_add(iface)
 
 	def encode_xml(self, dom, doc, internal):
@@ -32,3 +35,11 @@ class DhcpdDevice(generic.Device):
 		self.range = dom.getAttribute("range")
 		self.gateway = dom.getAttribute("gateway")
 		self.nameserver = dom.getAttribute("nameserver")
+		
+	def write_aux_files(self):
+		#TODO
+		pass
+	
+	def write_control_script(self, host, script, fd):
+		#TODO
+		pass

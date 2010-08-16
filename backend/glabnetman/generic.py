@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import hosts, topology
+import hosts, util
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -16,7 +16,8 @@ class Device(models.Model):
 	TYPE_DHCPD="dhcpd"
 	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM'), (TYPE_DHCPD, 'DHCP server') )
 	name = models.CharField(max_length=20)
-	topology = models.ForeignKey(topology.Topology)
+	from topology import Topology
+	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	host = models.ForeignKey(hosts.Host)
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
@@ -26,6 +27,9 @@ class Device(models.Model):
 
 	def interfaces_add(self, iface):
 		return self.interface_set.add(iface)
+
+	def interfaces_all(self):
+		return self.interface_set.all()
 
 	def is_openvz(self):
 		return type == Device.TYPE_OPENVZ
@@ -61,7 +65,7 @@ class Device(models.Model):
 			dom.setAttribute("hostgroup", self.hostgroup)
 		if internal:
 			dom.setAttribute("host", self.host)
-		for iface in self.interfaces:
+		for iface in self.interfaces_all():
 			x_iface = doc.createElement ( "interface" )
 			iface.encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
@@ -75,37 +79,68 @@ class Device(models.Model):
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
-		self.hostgroup = dom.getAttribute("hostgroup", None)
-				
+		util.get_attr(dom, "hostgroup", default=None)
+		
+	def write_aux_files(self):
+		if self.is_openvz():
+			self.openvz.write_aux_files()
+		if self.is_kvm():
+			self.kvm.write_aux_files()
+		if self.is_dhcpd():
+			self.dhcpd.write_aux_files()
+	
+	def write_control_script(self, host, script, fd):
+		if self.is_openvz():
+			self.openvz.write_control_script(host, script, fd)
+		if self.is_kvm():
+			self.kvm.write_control_script(host, script, fd)
+		if self.is_dhcpd():
+			self.dhcpd.write_control_script(host, script, fd)
+
+	def __unicode__(self):
+		self.name
+		
 		
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
 	
-	def __init__(self, device, dom):
+	def init(self, device, dom):
 		self.device = device
 		self.decode_xml(dom)
+		self.save()
 	
 	def is_configured(self):
-		#TODO
-		return True
+		try:
+			self.configuredinterface
+			return True
+		except:
+			return False
 	
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
 		if self.is_configured():
-			self.configured_interface.encode_xml(dom, doc, internal)
+			self.configuredinterface.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
+		
+	def __unicode__(self):
+		str(self.device.name)+"."+str(self.name)
+		
 
 class Connector(models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('real', 'Real network') )
 	name = models.CharField(max_length=20)
-	topology = models.ForeignKey(topology.Topology)
+	from topology import Topology
+	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 
 	def connections_add(self, con):
 		return self.connection_set.add(con)
+
+	def connections_all(self):
+		return self.connection_set.all()
 
 	def is_tinc(self):
 		return type=='router' or type=='switch' or type=='hub'
@@ -116,7 +151,7 @@ class Connector(models.Model):
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("name", self.name)
 		dom.setAttribute("type", self.type)
-		for con in self.connections:
+		for con in self.connections_all():
 			x_con = doc.createElement ( "connection" )
 			con.encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
@@ -129,19 +164,36 @@ class Connector(models.Model):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
 
+	def write_aux_files(self):
+		if self.is_tinc():
+			self.tinc.write_aux_files()
+		if self.is_internet():
+			self.internet.write_aux_files()
+	
+	def write_control_script(self, host, script, fd):
+		if self.is_tinc():
+			self.tinc.write_control_script(host, script, fd)
+		if self.is_internet():
+			self.internet.write_control_script(host, script, fd)
+
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
 	bridge_id = models.IntegerField()
 	bridge_special_name = models.CharField(max_length=15)
 
-	def __init__ (self, connector, dom):
+	def init (self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
+		self.bridge_id = hosts.next_free_bridge(self.interface.device.host)
+		self.save()
 
 	def is_emulated(self):
-		#TODO
-		return True
+		try:
+			self.emulatedconnection
+			return True
+		except:
+			return False
 
 	def bridge_name(self):
 		if self.bridge_special_name:
@@ -152,7 +204,7 @@ class Connection(models.Model):
 		dom.setAttribute("device", self.interface.device.name)
 		dom.setAttribute("interface", self.interface.name)
 		if self.is_emulated():
-			self.emulated.encode_xml(dom, doc, internal)
+			self.emulatedconnection.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		device_name = dom.getAttribute("device")
@@ -160,6 +212,9 @@ class Connection(models.Model):
 		iface_name = dom.getAttribute("interface")
 		self.interface = device.interfaces_get(iface_name)
 		
+	def write_aux_files(self):
+		pass
+	
 	def write_control_script(self, host, script, fd):
 		"""
 		Write the control scrips for this object and its child objects
