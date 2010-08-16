@@ -3,28 +3,9 @@
 import os
 os.environ['DJANGO_SETTINGS_MODULE']="glabnetman.config"
 
-import config, log, topology, hosts
+import config, log, topology, hosts, fault, tasks
 
 logger = log.Logger(config.log_dir + "/api.log")
-
-class Fault():
-	UNKNOWN = -1
-	NO_SUCH_TOPOLOGY = 100
-	ACCESS_TO_TOPOLOGY_DENIED = 101
-	NOT_A_REGULAR_USER = 102
-	INVALID_TOPOLOGY_STATE_TRANSITION = 103
-	IMPOSSIBLE_TOPOLOGY_CHANGE = 104
-	TOPOLOGY_HAS_PROBLEMS = 105
-	MALFORMED_XML = 106
-	MALFORMED_TOPOLOGY_DESCRIPTION = 107
-	NO_SUCH_DEVICE = 108
-	UPLOAD_NOT_SUPPORTED = 109
-	DOWNLOAD_NOT_SUPPORTED = 110
-	INVALID_TOPOLOGY_STATE = 111
-	NO_SUCH_HOST = 200
-	NO_SUCH_HOST_GROUP = 201
-	ACCESS_TO_HOST_DENIED = 202
-	HOST_EXISTS = 203
 
 def _topology_info(top):
 	state = str(top.state)
@@ -52,15 +33,11 @@ def _top_access(top, user=None):
 		return
 	if user.is_admin:
 		return
-	raise Fault(Fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
+	raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
 
 def _host_access(host, user=None):
 	if not user.is_admin:
-		raise Fault(Fault.ACCESS_TO_HOST_DENIED, "access to host %s denied" % host.hostname)
-
-def syncdb():
-	from django.core.management import call_command
-	call_command('syncdb')
+		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "access to host %s denied" % host.hostname)
 	
 def login(username, password):
 	import ldapauth
@@ -99,12 +76,142 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	except HostGroup.DoesNotExist:
 		group = HostGroup.objects.create(name=group_name)
 	host = Host(name=host_name, public_bridge=public_bridge, group=group)
-	t = task.TaskStatus()
+	t = tasks.TaskStatus()
 	thread.start_new_thread(host.check_save, (t,))
 	return t.id
 
 def host_remove(host_name, user=None):
 	logger.log("host_remove(%s)" % host_name, user=user.name)
 	_host_access(host_name,user)
-	hosts.Host.objects.get(name=host_name).delete()
+	hosts.get_host(name=host_name).delete()
 	return True
+
+def _parse_xml(xml):
+	try:
+		from xml.dom import minidom
+		dom = minidom.parseString(xml)
+		return dom.getElementsByTagName ( "topology" )[0]
+	except IndexError:
+		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: topology must contain a <topology> tag")
+	except Exception, exc:
+		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
+
+def top_info(id, user=None):
+	logger.log("top_info(%s)" % id, user=user.username)
+	return _topology_info(topology.get(id))
+
+def top_list(state_filter, owner_filter, host_filter, user=None):
+	logger.log("top_list(state_filter=%s, owner_filter=%s, host_filter=%s)" % (state_filter, owner_filter, host_filter), user=user.username)
+	tops=[]
+	all = topology.all()
+	if not state_filter=="*":
+		all = all.filter(state=state_filter)
+	if not owner_filter=="*":
+		all = all.filter(owner=owner_filter)
+	if not host_filter=="*":
+		all = all.filter(device__host__name=host_filter)
+	for t in all:
+		tops.append(_topology_info(t))
+	return tops
+	
+def top_get(top_id, include_ids=False, user=None):
+	logger.log("top_get(%s, include_ids=%s)" % (top_id, include_ids), user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	from xml.dom import minidom
+	doc = minidom.Document()
+	dom = doc.createElement ( "topology" )
+	top.save_to(dom, doc, include_ids)
+	return dom.toprettyxml(indent="\t", newl="\n")
+
+def top_import(xml, user=None):
+	logger.log("top_import()", user=user.username, bigmessage=xml)
+	if not user.is_user:
+		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
+	dom = _parse_xml(xml)
+	top=topology.Topology(dom, user.name)
+	top.save()
+	return top.id
+	
+def top_change(top_id, xml, user=None):
+	logger.log("top_change(%s)" % top_id, user=user.username, bigmessage=xml)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	dom = _parse_xml(xml)
+	newtop=topology.Topology(dom,user.name)
+	return top.change(newtop)
+
+def top_remove(top_id, user=None):
+	logger.log("top_remove(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	top.remove()
+	return True
+	
+def top_prepare(top_id, user=None):
+	logger.log("top_prepare(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	return top.prepare()
+	
+def top_destroy(top_id, user=None):
+	logger.log("top_destroy(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	return top.destroy()
+	
+def top_upload(top_id, user=None):
+	logger.log("top_upload(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	return top.upload()
+	
+def top_start(top_id, user=None):
+	logger.log("top_start(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	return top.start()
+	
+def top_stop(top_id, user=None):
+	logger.log("top_stop(%s)" % top_id, user=user.username)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	return top.stop()
+
+def task_status(id, user=None):
+	logger.log("task_status(%s)" % id, user=user.username)
+	return tasks.TaskStatus.tasks[id].dict()
+	
+def upload_start(user=None):
+	logger.log("upload_start()", user=user.username)
+	task = tasks.UploadTask()
+	return task.id
+
+def upload_chunk(upload_id, chunk, user=None):
+	#logger.log("upload_chunk(%s,...)" % upload_id, user=user.username)
+	task = tasks.UploadTask.tasks[upload_id]
+	task.chunk(chunk.data)
+	return 0
+
+def upload_image(top_id, device_id, upload_id, user=None):
+	logger.log("upload_image(%s, %s, %s)" % (top_id, device_id, upload_id), user=user.username)
+	upload = tasks.UploadTask.tasks[upload_id]
+	upload.finished()
+	top=topology.get(top_id)
+	_top_access(top, user)
+	return top.upload_image(device_id, upload.filename)
+
+def download_image(top_id, device_id, user=None):
+	logger.log("download_image(%s, %s)" % (top_id, device_id), user=user.username)
+	top=topology.get(top_id)
+	_top_access(top, user)
+	filename = top.download_image(device_id)
+	task = tasks.DownloadTask(filename)
+	return task.id
+
+def download_chunk(download_id, user=None):
+	task = tasks.DownloadTask.tasks[download_id]
+	data = task.chunk()
+	import xmlrpclib
+	return xmlrpclib.Binary(data)
+

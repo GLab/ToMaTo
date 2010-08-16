@@ -35,3 +35,15 @@ class Host(models.Model):
 		task.output.write("checking for tinc...\n")
 		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run))
 		task.subtasks_done = task.subtasks_done + 1
+				
+def get_host(name):
+	Host.objects.get(name=name)
+
+def get_host_group(name):
+	HostGroup.objects.get(name=name)
+	
+def get_best_host(group):
+	all = Host.objects.all()
+	if group:
+		all = all.filter(group__name=group)
+	return all.annotate(num_devices=models.Count('devices')).order_by('devices', '?')[1]
