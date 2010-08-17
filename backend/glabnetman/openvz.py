@@ -19,6 +19,8 @@ class OpenVZDevice(generic.Device):
 	def init(self, topology, dom):
 		self.topology = topology
 		self.decode_xml(dom)
+		if not self.template:
+			self.template = config.openvz_default_template
 		self.host = hosts.get_best_host(self.hostgroup)
 		self.openvz_id = next_free_id(self.host)
 		self.vnc_port = hosts.next_free_port(self.host)

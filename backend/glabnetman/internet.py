@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from django.db import models
-
 import generic
 
 class InternetConnector(generic.Connector):
