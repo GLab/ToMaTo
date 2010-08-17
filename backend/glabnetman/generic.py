@@ -143,22 +143,22 @@ class Connector(models.Model):
 		return self.connection_set.all()
 
 	def is_tinc(self):
-		return type=='router' or type=='switch' or type=='hub'
+		return self.type=='router' or self.type=='switch' or self.type=='hub'
 
 	def is_internet(self):
-		return type=='real'
+		return self.type=='real'
 
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("name", self.name)
+		dom.setAttribute("id", self.name)
 		dom.setAttribute("type", self.type)
 		for con in self.connections_all():
 			x_con = doc.createElement ( "connection" )
 			con.encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
 		if self.is_tinc():
-			self.tinc.encode_xml(dom, doc, internal)
+			self.tincconnector.encode_xml(dom, doc, internal)
 		if self.is_internet():
-			self.internet.encode_xml(dom, doc, internal)
+			self.internetconnector.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
@@ -166,15 +166,15 @@ class Connector(models.Model):
 
 	def write_aux_files(self):
 		if self.is_tinc():
-			self.tinc.write_aux_files()
+			self.tincconnector.write_aux_files()
 		if self.is_internet():
-			self.internet.write_aux_files()
+			self.internetconnector.write_aux_files()
 	
 	def write_control_script(self, host, script, fd):
 		if self.is_tinc():
-			self.tinc.write_control_script(host, script, fd)
+			self.tincconnector.write_control_script(host, script, fd)
 		if self.is_internet():
-			self.internet.write_control_script(host, script, fd)
+			self.internetconnector.write_control_script(host, script, fd)
 
 	def __unicode__(self):
 		return self.name
@@ -189,7 +189,7 @@ class Connection(models.Model):
 	def init (self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
-		self.bridge_id = hosts.next_free_bridge(self.interface.device.host)
+		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.save()
 
 	def is_emulated(self):
@@ -202,7 +202,7 @@ class Connection(models.Model):
 	def bridge_name(self):
 		if self.bridge_special_name:
 			return self.bridge_special_name
-		return "gbr_" + self.bridge_id
+		return "gbr_%s" % self.bridge_id
 
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("device", self.interface.device.name)
@@ -215,6 +215,7 @@ class Connection(models.Model):
 		device = self.connector.topology.devices_get(device_name)
 		iface_name = dom.getAttribute("interface")
 		self.interface = device.interfaces_get(iface_name)
+		#FIXME: raise fault when device/interface not found
 		
 	def write_aux_files(self):
 		pass

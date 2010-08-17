@@ -76,7 +76,7 @@ def _check_real_connectors(top,res):
 		if connector.type == "real":
 			real.append(connector)
 	if len(real)==0:
-		res.warning.append("No real network connector used")
+		res.warnings.append("No real network connector used")
 	if len(real)>1:
 		res.hints.append("Multiple real world connectors can be joined")
 
@@ -112,4 +112,4 @@ def _check_connection_performance(top,res):
 					if (r<0.0) or (r>1.0):
 						res.problems.append("Loss ratio for %s must be in [0..1]" % repr(connection))
 					if r==1:
-						res.warning.append("Loss ratio for %s set to 1, that means no connection" % repr(connection))
+						res.warnings.append("Loss ratio for %s set to 1, that means no connection" % repr(connection))

@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import config
+import config, fault
 
 class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
@@ -36,6 +36,36 @@ class Host(models.Model):
 		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run))
 		task.subtasks_done = task.subtasks_done + 1
 				
+	def next_free_vm_id (self):
+		ids = range(1000,1100)
+		import openvz
+		for dev in openvz.OpenVZDevice.objects.filter(host=self):
+			ids.remove(dev.openvz_id)
+		import kvm
+		for dev in kvm.KVMDevice.objects.filter(host=self):
+			ids.remove(dev.kvm_id)
+		return ids[0]
+
+	def next_free_port(self):
+		ids = range(7000,8000)
+		import openvz
+		for dev in openvz.OpenVZDevice.objects.filter(host=self):
+			ids.remove(dev.vnc_port)
+		import kvm
+		for dev in kvm.KVMDevice.objects.filter(host=self):
+			ids.remove(dev.vnc_port)
+		import tinc
+		for con in tinc.TincConnection.objects.filter(interface__device__host=self):
+			ids.remove(con.tinc_port)
+		return ids[0]
+
+	def next_free_bridge(self):
+		ids = range(1000,2000)
+		import generic
+		for con in generic.Connection.objects.filter(interface__device__host=self):
+			ids.remove(con.bridge_id)
+		return ids[0]				
+				
 def get_host(name):
 	return Host.objects.get(name=name)
 
@@ -46,18 +76,8 @@ def get_best_host(group):
 	all = Host.objects.all()
 	if group:
 		all = all.filter(group__name=group)
-	return all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')[0]
-
-def next_free_port(host):
-	ids = range(7000,8000)
-	import openvz
-	for dev in openvz.OpenVZDevice.objects.filter(host=host):
-		ids.remove(dev.vnc_port)
-	return ids[0]
-
-def next_free_bridge(host):
-	ids = range(1000,2000)
-	import generic
-	for con in generic.Connection.objects.filter(interface__device__host=host):
-		ids.remove(con.bridge_id)
-	return ids[0]
+	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
+	if len(hosts) > 0:
+		return hosts[0]
+	else:
+		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")

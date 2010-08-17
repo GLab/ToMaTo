@@ -43,7 +43,7 @@ class DhcpdDevice(generic.Device):
 		@param interface the interface
 		"""
 		if interface.connection:
-			return interface.connection.bridge_name
+			return interface.connection.bridge_name()
 		else:
 			return None
 

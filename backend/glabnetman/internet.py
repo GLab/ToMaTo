@@ -11,6 +11,7 @@ class InternetConnector(generic.Connector):
 		for connection in dom.getElementsByTagName ( "connection" ):
 			con = generic.Connection()
 			con.init (self, connection)
+			con.bridge_special_name = con.interface.device.host.public_bridge
 			self.connection_set.add ( con )
 
 	def encode_xml(self, dom, doc, internal):

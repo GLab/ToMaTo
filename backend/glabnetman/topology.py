@@ -66,6 +66,7 @@ class Topology(models.Model):
 
 	def devices_add(self, dev):
 		self.device_set.add(dev)
+		#FIXME: ensure name uniqueness
 
 	def devices_remove(self, dev):
 		self.device_set.remove(dev)
@@ -78,6 +79,7 @@ class Topology(models.Model):
 
 	def connectors_add(self, con):
 		self.connector_set.add(con)
+		#FIXME: ensure name uniqueness
 
 	def connectors_remove(self, con):
 		self.connector_set.remove(con)
@@ -171,9 +173,8 @@ class Topology(models.Model):
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = tasks.TaskStatus()
-		#thread.start_new_thread(self.upload_run,(task,)) 
-		#FIXME: uncomment
-		self.upload_run(task)
+		thread.start_new_thread(self.upload_run,(task,))
+		#self.upload_run(task) 
 		return task.id
 	
 	def upload_run(self, task):

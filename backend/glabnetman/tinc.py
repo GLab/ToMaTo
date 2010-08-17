@@ -28,20 +28,23 @@ class TincConnector(generic.Connector):
 		generic.Connector.decode_xml(self, dom)
 
 	def tincname(self, con):
-		return "tinc_" + con.tinc_id
-				
+		return "tinc_%s" % con.emulatedconnection.tincconnection.tinc_id
+
+	def tincport(self, con):
+		return con.emulatedconnection.tincconnection.tinc_port
 
 	def write_aux_files(self):
-		for con in self.connections:
+		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
+			tincport = self.tincport(con) 
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
 			subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			self_host_fd = open(path+"/hosts/"+tincname, "w")
 			self_host_fd.write("Address=%s\n" % host.name)
-			self_host_fd.write("Port=%s\n" % con.port_number )
+			self_host_fd.write("Port=%s\n" % tincport )
 			self_host_fd.write("Cipher=none\n" )
 			self_host_fd.write("Digest=none\n" )
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
@@ -53,17 +56,17 @@ class TincConnector(generic.Connector):
 			tinc_conf_fd.write ( "Mode=%s\n" % self.type )
 			tinc_conf_fd.write ( "Name=%s\n" % tincname )
 			tinc_conf_fd.write ( "AddressFamily=ipv4\n" )
-			for con2 in self.connections:
+			for con2 in self.connections_all():
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
 				if not tincname == tincname2:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 			tinc_conf_fd.close()
-		for con in self.connections:
+		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
-			for con2 in self.connections:
+			for con2 in self.connections_all():
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
 				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
@@ -74,10 +77,10 @@ class TincConnector(generic.Connector):
 		"""
 		Write the control scrips for this object and its child objects
 		"""
-		for con in self.connections:
-			if con.interface.device.host_name == host.name:
-				con.write_control_script(host, script, fd)
-		for con in self.connections:
+		for con in self.connections_all():
+			if con.interface.device.host.name == host.name:
+				con.emulatedconnection.tincconnection.write_control_script(host, script, fd)
+		for con in self.connections_all():
 			tincname = self.tincname(con)
 			if script == "prepare":
 				fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
@@ -87,7 +90,7 @@ class TincConnector(generic.Connector):
 			if script == "start":
 				fd.write ( "tincd --net=%s\n" % tincname )
 				#FIXME: brctl does not work for routing
-				fd.write ( "brctl addif %s %s\n" % (con.bridge_name, tincname ) )
+				fd.write ( "brctl addif %s %s\n" % (con.bridge_name(), tincname ) )
 				fd.write ( "ip link set %s up\n" %  tincname )
 			if script == "stop":
 				fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
@@ -97,26 +100,27 @@ class TincConnector(generic.Connector):
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_id = models.IntegerField()
+	tinc_port = models.IntegerField()
 	
 	def init(self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
-		self.bridge_id = hosts.next_free_bridge(self.interface.device.host)
+		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.tinc_id = next_free_id(self.interface.device.host)
+		self.tinc_port = self.interface.device.host.next_free_port()
 		self.save()
 	
 	def encode_xml(self, dom, doc, internal):
 		if internal:
 			dom.setAttribute("tinc_id", self.tinc_id)
+			dom.setAttribute("tinc_port", self.tinc_port)
 		
 	def decode_xml(self, dom):
 		dummynet.EmulatedConnection.decode_xml(self, dom)
 		
 	def write_aux_files(self):
-		#TODO
-		pass
+		dummynet.EmulatedConnection.write_aux_files(self)
 	
 	def write_control_script(self, host, script, fd):
-		#TODO
-		pass
+		dummynet.EmulatedConnection.write_control_script(self, host, script, fd)
 		

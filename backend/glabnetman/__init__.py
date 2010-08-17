@@ -23,6 +23,8 @@ def _device_info(dev):
 	res = {"id": dev.name, "type": dev.type, "host": dev.host.name}
 	if dev.type == "openvz":
 		res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
+	if dev.type == "kvm":
+		res.update(vnc_port=dev.kvmdevice.vnc_port, vnc_password=dev.kvmdevice.vnc_password())
 	return res
 
 def _host_info(host):

@@ -4,12 +4,6 @@ from django.db import models
 
 import generic, util, hosts, hashlib, config, fault, os, uuid
 
-def next_free_id (host):
-	ids = range(1000,1100)
-	for dev in OpenVZDevice.objects.filter(host=host):
-		ids.remove(dev.openvz_id)
-	return ids[0]
-
 class OpenVZDevice(generic.Device):
 	openvz_id = models.IntegerField()
 	root_password = models.CharField(max_length=50, null=True)
@@ -22,8 +16,8 @@ class OpenVZDevice(generic.Device):
 		if not self.template:
 			self.template = config.openvz_default_template
 		self.host = hosts.get_best_host(self.hostgroup)
-		self.openvz_id = next_free_id(self.host)
-		self.vnc_port = hosts.next_free_port(self.host)
+		self.openvz_id = self.host.next_free_vm_id()
+		self.vnc_port = self.host.next_free_port()
 		self.save()
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = ConfiguredInterface()
@@ -58,7 +52,7 @@ class OpenVZDevice(generic.Device):
 		@param interface the interface
 		"""
 		if interface.connection:
-			return interface.connection.bridge_name
+			return interface.connection.bridge_name()
 		else:
 			return None
 
