@@ -36,17 +36,7 @@ local_control_dir = get("local","control_dir","/tmp/glabnetem")
 The local directory to use for preparing control scripts before they are uploaded to the hosts.
 """
 
-topology_dir = get("local","topology_dir","config/topologies")
-"""
-The local directory to use for storing the topology files in.
-"""
-
 log_dir = get("local","log_dir","logs")
-
-hosts = get("local","hosts","config/hosts.xml")
-"""
-The local config file to use for storing the hosts in.
-"""
 
 openvz_default_template = get("openvz","default_template","debian-6.0-standard_6.0-2_i386")
 """
@@ -72,6 +62,7 @@ password_salt = get("local", "password_salt", "glabnetman")
 
 auth_dry_run = parse_bool(get("auth","dry_run",True))
 
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'db.sqlite'
+DATABASE_ENGINE = get("local", "database_engine", 'sqlite3')
+DATABASE_NAME = get("local", "database_name", 'db.sqlite')
+
 INSTALLED_APPS = ('glabnetman')
