@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import generic, hosts, fault, config, hashlib
+import generic, hosts, fault, config, hashlib, re
 
 def next_free_id (host):
 	ids = range(1000,1100)
@@ -71,28 +71,30 @@ class KVMDevice(generic.Device):
 			fd.write("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s\n" % (self.template, self.kvm_id))
 			fd.write("qm set %s --ide0 local:%s/%s\n" % (self.kvm_id, self.kvm_id, self.template))
 			for iface in self.interfaces_all():
+				iface_id = re.match("eth(\d+)", iface.name).group(1)
 				bridge = self.bridge_name(iface)
-				fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, int(iface.id) ) )
+				fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
 		if script == "destroy":
 			fd.write("qm destroy %s\n" % self.kvm_id)
 			fd.write ( "true\n" )
 		if script == "start":
 			fd.write("qm start %s\n" % self.kvm_id)
 			for iface in self.interfaces_all():
+				iface_id = re.match("eth(\d+)", iface.name).group(1)
 				bridge = self.bridge_name(iface)
-				fd.write("brctl delif vmbr%s vmtab%si%s\n" % ( int(iface.id), self.kvm_id, int(iface.id) ) )
+				fd.write("brctl delif vmbr%s vmtab%si%s\n" % ( iface_id, self.kvm_id, iface_id ) )
 				fd.write("brctl addbr %s\n" % bridge )
-				fd.write("brctl addif %s vmtab%si%s\n" % ( bridge, self.kvm_id, int(iface.id) ) )
+				fd.write("brctl addif %s vmtab%si%s\n" % ( bridge, self.kvm_id, iface_id ) )
 				fd.write("ip link set %s up\n" % bridge )
-			fd.write("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.id ) )
+			fd.write("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ) )
 		if script == "stop":
-			fd.write("cat vnc-%s.pid | xargs kill\n" % self.id )
+			fd.write("cat vnc-%s.pid | xargs kill\n" % self.name )
 			fd.write("qm stop %s\n" % self.kvm_id)
 			fd.write ( "true\n" )
 
 	def check_change_possible(self, newdev):
 		if not self.host_name == newdev.host_name or not self.host_group == newdev.host_group:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of kvm vm %s cannot be changed" % self.id)
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of kvm vm %s cannot be changed" % self.name)
 
 	def change(self, newdev, fd):
 		"""
@@ -103,7 +105,7 @@ class KVMDevice(generic.Device):
 	def vnc_password(self):
 		m = hashlib.md5()
 		m.update(config.password_salt)
-		m.update(str(self.id))
+		m.update(str(self.name))
 		m.update(str(self.kvm_id))
 		m.update(str(self.vnc_port))
 		m.update(str(self.topology.owner))

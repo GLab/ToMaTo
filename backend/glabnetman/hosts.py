@@ -46,7 +46,7 @@ def get_best_host(group):
 	all = Host.objects.all()
 	if group:
 		all = all.filter(group__name=group)
-	return all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')[1]
+	return all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')[0]
 
 def next_free_port(host):
 	ids = range(7000,8000)

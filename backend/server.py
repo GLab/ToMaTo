@@ -20,7 +20,7 @@ class APIServer(xmlrpc.XMLRPC):
 		try:
 			return function(*args, user=user)
 		except xmlrpclib.Fault, f:
-			self.api.logger.log("Error: %s"%f, user=user.username)
+			self.api.logger.log("Error: %s"%f, user=user.name)
 			raise f
 		#except Exception, exc:
 		#	api.logger.log("Exception: %s" % exc, user=user.username)

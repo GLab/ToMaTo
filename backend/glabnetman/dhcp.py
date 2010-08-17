@@ -51,7 +51,7 @@ class DhcpdDevice(generic.Device):
 		"""
 		Write the aux files for this object and its child objects
 		"""
-		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
+		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.name+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
 		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
 		dhcpd_fd.write("  option domain-name-servers %s;\n" % self.nameserver )
@@ -64,12 +64,12 @@ class DhcpdDevice(generic.Device):
 		Write the control script for this object and its child objects
 		"""
 		if script == "start":
-			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
+			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.name, self.name ) )
 			for iface in self.interfaces_all():
 				fd.write(" %s" % self.bridge_name(iface))
 			fd.write(" &\n")
 		if script == "stop":
-			fd.write ( "cat %s.pid | xargs kill\n" % self.id )
+			fd.write ( "cat %s.pid | xargs kill\n" % self.name )
 
 	def check_change_possible(self, newdev):
 		pass

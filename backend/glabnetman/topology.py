@@ -350,13 +350,13 @@ class Topology(models.Model):
 		changeddevs={}
 		removeddevs=set()
 		for dev in self.devices_all():
-			newdev=newtop.devices_get(dev.id)
+			newdev=newtop.devices_get(dev.name)
 			if newdev:
 				changeddevs[dev]=newdev
 			else:
 				removeddevs.add(dev)
 		for dev in newtop.devices_all():
-			if not self.devices_get(dev.id):
+			if not self.devices_get(dev.name):
 				newdevs.add(dev)
 		#delete removed devices
 		for dev in removeddevs:
@@ -390,11 +390,11 @@ class Topology(models.Model):
 		removedcons=set()
 		for con in self.connectors_all():
 			removedcons.add(con)
-			newcon = newtop.connectors_get(con.id)
+			newcon = newtop.connectors_get(con.name)
 			if newcon:
 				newcons.add(newcon)
 		for con in newtop.connectors_all():
-			if not self.connectors_get(con.id):
+			if not self.connectors_get(con.name):
 				newcons.add(con)
 		#delete removed connectors
 		for con in removedcons:
@@ -411,7 +411,7 @@ class Topology(models.Model):
 
 	def check_change_possible(self, newtop):
 		for dev in self.devices_all():
-			newdev=newtop.devices_get(dev.id)
+			newdev=newtop.devices_get(dev.name)
 			if newdev:
 				dev.check_change_possible(newdev)
 				

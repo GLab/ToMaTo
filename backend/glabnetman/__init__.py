@@ -36,12 +36,11 @@ def _top_access(top, user=None):
 		return
 	raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
 
-def _host_access(host, user=None):
+def _host_access(user=None):
 	if not user.is_admin:
-		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "access to host %s denied" % host.hostname)
+		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "access to host denied")
 	
 def login(username, password):
-	import ldapauth
 	if config.auth_dry_run:
 		if username=="guest":
 			return generic.User(username, False, False)
@@ -50,6 +49,7 @@ def login(username, password):
 		else:
 			return generic.User(username, True, False)
 	else:
+		import ldapauth
 		return ldapauth.login(username, password)
 
 def account(user=None):
@@ -68,7 +68,7 @@ def host_list(group_filter="*", user=None):
 
 def host_add(host_name, group_name, public_bridge, user=None):
 	logger.log("host_add(%s,%s,%s)" % (host_name, group_name, public_bridge), user=user.name)
-	_host_access(host_name,user)
+	_host_access(user)
 	from hosts import Host, HostGroup
 	import thread
 	try:
@@ -82,7 +82,7 @@ def host_add(host_name, group_name, public_bridge, user=None):
 
 def host_remove(host_name, user=None):
 	logger.log("host_remove(%s)" % host_name, user=user.name)
-	_host_access(host_name,user)
+	_host_access(user)
 	hosts.get_host(host_name).delete()
 	return True
 

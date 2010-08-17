@@ -29,6 +29,8 @@ def _check_fully_connected(top, res):
 	#put everything in unreachable
 	for device in top.devices_all():
 		unreachable.add(device)
+	if len(unreachable)==0:
+		return
 	#select a starting device and put it in todo
 	start=iter(unreachable).next()
 	todo.add(start)
@@ -45,7 +47,7 @@ def _check_fully_connected(top, res):
 					if not dev in reachable:
 						todo.add(dev)
 	if len(unreachable):
-		res.warnings.append("Topology is not fully connected, e.g. %s and %s" % (iter(reachable).next().id, iter(unreachable).next().id ) )
+		res.warnings.append("Topology is not fully connected, e.g. %s and %s" % (iter(reachable).next().name, iter(unreachable).next().name ) )
 	
 def _check_interface_connection_count(top,res):
 	con={}
@@ -64,9 +66,9 @@ def _check_interface_connection_count(top,res):
 def _check_connectors_connection_count(top,res):
 	for connector in top.connectors_all():
 		if len(connector.connections_all())==0:
-			res.problems.append("Connector %s is not connected" % connector.id)
+			res.problems.append("Connector %s is not connected" % connector.name)
 		if len(connector.connections_all())==1 and not connector.type == "real":
-			res.warnings.append("Connector %s is only connected once" % connector.id)
+			res.warnings.append("Connector %s is only connected once" % connector.name)
 			
 def _check_real_connectors(top,res):
 	real=[]
@@ -88,18 +90,18 @@ def _check_connectors_ip_structure(top,res):
 				if connection.interface.configuredinterface.ip4address:
 					ip=connection.interface.configuredinterface.ip4address
 					if ip in ip_addresses:
-						res.warnings.append("Duplicate IP address %s on %s" % ( ip, connector.id ) )
+						res.warnings.append("Duplicate IP address %s on %s" % ( ip, connector.name ) )
 						ip_addresses.add(ip)
 				if connection.interface.configuredinterface.use_dhcp:
-					dhcp_clients.add(connection.interface.device.id)
+					dhcp_clients.add(connection.interface.device.name)
 			if connection.interface.device.type == "dhcpd":
-				dhcp_server.add(connection.interface.device.id)
+				dhcp_server.add(connection.interface.device.name)
 		if len(dhcp_server)>1:
-			res.warnings.append("Multiple dhcp servers on connector %s: %s" % ( connector.id, dhcp_server ) )
+			res.warnings.append("Multiple dhcp servers on connector %s: %s" % ( connector.name, dhcp_server ) )
 		if len(dhcp_clients)>0 and len(dhcp_server)==0 and not connector.type=="real":
-			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.id, dhcp_clients ) )
+			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, dhcp_clients ) )
 		if len(dhcp_clients)==0 and len(dhcp_server)>0:
-			res.hints.append("Dhcp server configured on %s but no clients using it: %s" % ( connector.id, dhcp_server ) )
+			res.hints.append("Dhcp server configured on %s but no clients using it: %s" % ( connector.name, dhcp_server ) )
 				
 def _check_connection_performance(top,res):
 	for connector in top.connectors_all():

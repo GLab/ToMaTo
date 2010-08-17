@@ -33,7 +33,7 @@ class OpenVZDevice(generic.Device):
 	def vnc_password(self):
 		m = hashlib.md5()
 		m.update(config.password_salt)
-		m.update(str(self.id))
+		m.update(str(self.name))
 		m.update(str(self.openvz_id))
 		m.update(str(self.vnc_port))
 		m.update(str(self.topology.owner))
@@ -77,11 +77,11 @@ class OpenVZDevice(generic.Device):
 			fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
 			if self.root_password:
 				fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.id ) )
+			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.name ) )
 			for iface in self.interfaces_all():
 				bridge = self.bridge_name(iface)
-				fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
-				fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+				fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
+				fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
 		if script == "destroy":
 			fd.write("vzctl destroy %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
@@ -97,21 +97,21 @@ class OpenVZDevice(generic.Device):
 					netmask = iface.configuredinterface.ip4netmask
 					dhcp = iface.configuredinterface.use_dhcp
 					if ip4:
-						fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.id, ip4, netmask ) ) 
+						fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
 					if dhcp:
-						fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.id ) )
-						fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.id ) )					
-			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.id ) )
+						fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
+						fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
+			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ) )
 		if script == "stop":
-			fd.write("cat vnc-%s.pid | xargs kill\n" % self.id )
+			fd.write("cat vnc-%s.pid | xargs kill\n" % self.name )
 			fd.write("vzctl stop %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
 
 	def check_change_possible(self, newdev):
 		if not self.template == newdev.template:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.id)
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
 		if not self.host_name == newdev.host_name or not self.host_group == newdev.host_group:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of openvz vm %s cannot be changed" % self.id)
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of openvz vm %s cannot be changed" % self.name)
 
 	def change(self, newdev, fd):
 		"""
@@ -122,12 +122,12 @@ class OpenVZDevice(generic.Device):
 		if self.root_password:
 			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
 		for iface in self.interfaces_all():
-			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.id ) )
+			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
 		self.interfaces = newdev.interfaces
 		for iface in self.interfaces_all():
 			bridge = self.bridge_name(iface)
-			fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
-			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )
+			fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
+			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
 
 	def upload_image(self, filename, task):
 		task.subtasks_total=4
