@@ -119,10 +119,10 @@ class OpenVZDevice(generic.Device):
 		self.host_group = newdev.host_group
 		if self.root_password:
 			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-		for iface in self.interfaces.values():
+		for iface in self.interfaces_all():
 			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.id ) )
 		self.interfaces = newdev.interfaces
-		for iface in self.interfaces.values():
+		for iface in self.interfaces_all():
 			bridge = self.bridge_name(iface)
 			fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.id ) )
 			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.id, self.openvz_id, iface.id, bridge ) )

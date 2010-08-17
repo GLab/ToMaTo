@@ -65,7 +65,7 @@ class DhcpdDevice(generic.Device):
 		"""
 		if script == "start":
 			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
-			for iface in self.interfaces.values():
+			for iface in self.interfaces_all():
 				fd.write(" %s" % self.bridge_name(iface))
 			fd.write(" &\n")
 		if script == "stop":
