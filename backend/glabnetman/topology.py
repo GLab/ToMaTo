@@ -168,16 +168,16 @@ class Topology(models.Model):
 		"""
 		if not self.id:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
-		if len(self.analysis.problems) > 0:
+		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.upload_run,(task,))
+		#thread.start_new_thread(self.upload_run,(task,)) 
+		#FIXME: uncomment
+		self.upload_run(task)
 		return task.id
 	
 	def upload_run(self, task):
-		task.subtasks_total = 1 + len(self.affected_hosts()) + len(self.devices) + len(self.connectors)
-		self.take_resources()
-		task.subtasks_done = 1
+		task.subtasks_total = len(self.affected_hosts()) + len(self.devices_all()) + len(self.connectors_all())
 		self.write_control_scripts(task)
 		self.upload_control_scripts(task)
 		if self.state == State.CREATED:
@@ -208,10 +208,10 @@ class Topology(models.Model):
 			for script in ("prepare", "destroy", "start", "stop"):
 				script_fd = open(self.get_control_script(host.name,script), "w")
 				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
-				for dev in self.devices.values():
+				for dev in self.devices_all():
 					script_fd.write("\n# commands for %s\n" % dev)
 					dev.write_control_script(host, script, script_fd)
-				for con in self.connectors.values():
+				for con in self.connectors_all():
 					script_fd.write("\n# commands for %s\n" % con)
 					con.write_control_script(host, script, script_fd)
 				script_fd.close()
@@ -257,7 +257,7 @@ class Topology(models.Model):
 		Starts the topology.
 		This will fail if the topology has not been uploaded or prepared yet or is already started.
 		"""
-		if len(self.analysis.problems) > 0:
+		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
@@ -293,7 +293,7 @@ class Topology(models.Model):
 		Prepares the topology.
 		This will fail if the topology has not been uploaded yet or is already prepared or started.
 		"""
-		if len(self.analysis.problems) > 0:
+		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")

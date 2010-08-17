@@ -165,8 +165,17 @@ class LdapUser(object):
         """
         return self.is_in_group('users')
 
+users={}
+passwords={}
+
 def login(username, password):
-	ldap_user = LdapUser(username)
-	if not ldap_user.authenticate(password):
-		return False
-	return generic.User(username, ldap_user.is_user(), ldap_user.is_admin())
+    if users.has_key(username):
+        if passwords[username] == password:
+            return users[username] 
+    ldap_user = LdapUser(username)
+    if not ldap_user.authenticate(password):
+        return False
+    user = generic.User(username, ldap_user.is_user(), ldap_user.is_admin())
+    users[username] = user
+    passwords[username] = password
+    return user

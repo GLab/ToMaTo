@@ -24,6 +24,7 @@ TOP1='''
 
 
 import glabnetman as api
+import time
 
 admin=api.login("admin","123")
 
@@ -34,6 +35,7 @@ api.host_add("host1b", "group1", "vmbr0", user=admin)
 api.host_add("host2a", "group2", "vmbr0", user=admin)
 api.host_add("host2b", "group2", "vmbr0", user=admin)
 api.host_add("host2c", "group2", "vmbr0", user=admin)
+time.sleep(0.1)
 
 assert len(api.host_list("*", user=admin)) == 5
 assert len(api.host_list("group1", user=admin)) == 2
@@ -49,5 +51,28 @@ api.top_import(TOP1, user=admin)
 assert len(api.top_list("*", "*", "*", user=admin)) == 1
 
 api.top_get(1, user=admin)
+api.top_info(1, user=admin)
 
-print api.top_info(1, user=admin)
+assert api.top_info(1, user=admin)["state"] == "created"
+api.top_upload(1, user=admin)
+time.sleep(0.1)
+assert api.top_info(1, user=admin)["state"] == "uploaded"
+
+api.top_prepare(1, user=admin)
+time.sleep(0.1)
+assert api.top_info(1, user=admin)["state"] == "prepared"
+
+api.top_start(1, user=admin)
+time.sleep(0.1)
+assert api.top_info(1, user=admin)["state"] == "started"
+
+api.top_stop(1, user=admin)
+time.sleep(0.1)
+assert api.top_info(1, user=admin)["state"] == "prepared"
+
+api.top_destroy(1, user=admin)
+time.sleep(0.1)
+assert api.top_info(1, user=admin)["state"] == "uploaded"
+
+api.top_remove(1, user=admin)
+assert api.top_list("*", "*", "*", user=admin) == []

@@ -32,31 +32,31 @@ class Device(models.Model):
 		return self.interface_set.all()
 
 	def is_openvz(self):
-		return type == Device.TYPE_OPENVZ
+		return self.type == Device.TYPE_OPENVZ
 
 	def is_kvm(self):
-		return type == Device.TYPE_KVM
+		return self.type == Device.TYPE_KVM
 
 	def is_dhcpd(self):
-		return type == Device.TYPE_DHCPD
+		return self.type == Device.TYPE_DHCPD
 
 	def download_supported(self):
 		return self.is_openvz() or self.is_kvm()
 		
 	def download_image(self, filename, task):
 		if self.is_openvz():
-			self.openvz.download_image(filename, task)
+			self.openvzdevice.download_image(filename, task)
 		if self.is_kvm():
-			self.kvm.download_image(filename, task)
+			self.kvmdevice.download_image(filename, task)
 		
 	def upload_supported(self):
 		return self.is_openvz() or self.is_kvm()
 		
 	def upload_image(self, filename, task):
 		if self.is_openvz():
-			self.openvz.upload_image(filename, task)
+			self.openvzdevice.upload_image(filename, task)
 		if self.is_kvm():
-			self.kvm.upload_image(filename, task)
+			self.kvmdevice.upload_image(filename, task)
 	
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
@@ -70,11 +70,11 @@ class Device(models.Model):
 			iface.encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
 		if self.is_openvz():
-			self.openvz.encode_xml(dom, doc, internal)
+			self.openvzdevice.encode_xml(dom, doc, internal)
 		if self.is_kvm():
-			self.kvm.encode_xml(dom, doc, internal)
+			self.kvmdevice.encode_xml(dom, doc, internal)
 		if self.is_dhcpd():
-			self.dhcpd.encode_xml(dom, doc, internal)
+			self.dhcpddevice.encode_xml(dom, doc, internal)
 		
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
@@ -83,22 +83,22 @@ class Device(models.Model):
 		
 	def write_aux_files(self):
 		if self.is_openvz():
-			self.openvz.write_aux_files()
+			self.openvzdevice.write_aux_files()
 		if self.is_kvm():
-			self.kvm.write_aux_files()
+			self.kvmdevice.write_aux_files()
 		if self.is_dhcpd():
-			self.dhcpd.write_aux_files()
+			self.dhcpddevice.write_aux_files()
 	
 	def write_control_script(self, host, script, fd):
 		if self.is_openvz():
-			self.openvz.write_control_script(host, script, fd)
+			self.openvzdevice.write_control_script(host, script, fd)
 		if self.is_kvm():
-			self.kvm.write_control_script(host, script, fd)
+			self.kvmdevice.write_control_script(host, script, fd)
 		if self.is_dhcpd():
-			self.dhcpd.write_control_script(host, script, fd)
+			self.dhcpddevice.write_control_script(host, script, fd)
 
 	def __unicode__(self):
-		self.name
+		return self.name
 		
 		
 class Interface(models.Model):
@@ -126,7 +126,7 @@ class Interface(models.Model):
 		self.name = dom.getAttribute("id")
 		
 	def __unicode__(self):
-		str(self.device.name)+"."+str(self.name)
+		return str(self.device.name)+"."+str(self.name)
 		
 
 class Connector(models.Model):
@@ -175,6 +175,10 @@ class Connector(models.Model):
 			self.tinc.write_control_script(host, script, fd)
 		if self.is_internet():
 			self.internet.write_control_script(host, script, fd)
+
+	def __unicode__(self):
+		return self.name
+
 
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
@@ -225,3 +229,6 @@ class Connection(models.Model):
 		if script == "stop":
 			fd.write("ip link set %s down\n" % self.bridge_name() )
 			fd.write("brctl delbr %s\n" % self.bridge_name() )
+
+	def __unicode__(self):
+		return str(self.connector) + "<->" + str(self.interface)

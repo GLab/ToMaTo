@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
+# Explicitly import all django models
 
-from hosts import *
-from topology import *
-from generic import *
-from openvz import *
-from kvm import *
-from dhcp import *
-from tinc import *
-from dummynet import *
+from dhcp import * #@UnusedWildImport
+from dummynet import * #@UnusedWildImport
+from generic import * #@UnusedWildImport
+from hosts import * #@UnusedWildImport
+from internet import * #@UnusedWildImport
+from kvm import * #@UnusedWildImport
+from openvz import * #@UnusedWildImport
+from tinc import * #@UnusedWildImport
+from topology import * #@UnusedWildImport

@@ -36,10 +36,49 @@ class DhcpdDevice(generic.Device):
 		self.gateway = dom.getAttribute("gateway")
 		self.nameserver = dom.getAttribute("nameserver")
 		
+	def bridge_name(self, interface):
+		"""
+		Returns the name of the bridge for the connection of the given interface
+		Note: This must be 16 characters or less for brctl to work
+		@param interface the interface
+		"""
+		if interface.connection:
+			return interface.connection.bridge_name
+		else:
+			return None
+
 	def write_aux_files(self):
-		#TODO
-		pass
-	
+		"""
+		Write the aux files for this object and its child objects
+		"""
+		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.id+".conf","w")
+		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
+		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
+		dhcpd_fd.write("  option domain-name-servers %s;\n" % self.nameserver )
+		dhcpd_fd.write("  max-lease-time 300;\n" )
+		dhcpd_fd.write("  range %s;\n" % self.range )
+		dhcpd_fd.write("}\n" )
+
 	def write_control_script(self, host, script, fd):
-		#TODO
+		"""
+		Write the control script for this object and its child objects
+		"""
+		if script == "start":
+			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.id, self.id ) )
+			for iface in self.interfaces.values():
+				fd.write(" %s" % self.bridge_name(iface))
+			fd.write(" &\n")
+		if script == "stop":
+			fd.write ( "cat %s.pid | xargs kill\n" % self.id )
+
+	def check_change_possible(self, newdev):
 		pass
+
+	def change(self, newdev, fd):
+		"""
+		Adapt this device to the new device
+		"""
+		self.netmask=newdev.netmask
+		self.range=newdev.range
+		self.gateway=newdev.gateway
+		self.nameserver=newdev.nameserver

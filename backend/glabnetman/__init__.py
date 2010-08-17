@@ -16,17 +16,17 @@ def _topology_info(top):
 		"is_prepared": state == topology.State.PREPARED,
 		"is_started": state == topology.State.STARTED,
 		"owner": str(top.owner), "analysis": top.analysis(),
-		"devices": [_device_info(v) for v in top.devices_all()], "device_count": len(top.devices_all()),
+		"devices": [(v.name, _device_info(v)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [v.name for v in top.connectors_all()], "connector_count": len(top.connectors_all())}
 
 def _device_info(dev):
-	res = {"id": dev.id, "type": dev.type, "host": dev.host.name}
+	res = {"id": dev.name, "type": dev.type, "host": dev.host.name}
 	if dev.type == "openvz":
 		res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
 	return res
 
 def _host_info(host):
-	return {"name": str(host.name), "group": str(host.group), 
+	return {"name": host.name, "group": host.group.name, 
 		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count()}
 
 def _top_access(top, user=None):
@@ -56,7 +56,7 @@ def account(user=None):
 	logger.log("account()", user=user.name)
 	return user
 
-def host_list(group_filter=None, user=None):
+def host_list(group_filter="*", user=None):
 	logger.log("host_list(group_filter=%s)" % group_filter, user=user.name)
 	res=[]
 	qs = hosts.Host.objects.all()
@@ -70,14 +70,14 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	logger.log("host_add(%s,%s,%s)" % (host_name, group_name, public_bridge), user=user.name)
 	_host_access(host_name,user)
 	from hosts import Host, HostGroup
+	import thread
 	try:
 		group = HostGroup.objects.get(name=group_name)
 	except HostGroup.DoesNotExist:
 		group = HostGroup.objects.create(name=group_name)
 	host = Host(name=host_name, public_bridge=public_bridge, group=group)
 	t = tasks.TaskStatus()
-	#thread.start_new_thread(host.check_save, (t,))
-	host.check_save(t)
+	thread.start_new_thread(host.check_save, (t,))
 	return t.id
 
 def host_remove(host_name, user=None):
@@ -145,7 +145,7 @@ def top_remove(top_id, user=None):
 	logger.log("top_remove(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	top.remove()
+	top.delete()
 	return True
 	
 def top_prepare(top_id, user=None):
