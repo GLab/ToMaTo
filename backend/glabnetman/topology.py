@@ -50,7 +50,11 @@ class Topology(models.Model):
 		self.owner=owner
 		self.state=State.CREATED
 		self.save()
-		self.load_from(dom)
+		try:
+			self.load_from(dom)
+		except:
+			self.delete()
+			raise
 		if not self.name:
 			self.name = "Topology %s" % self.id
 		self.save()

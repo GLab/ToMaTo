@@ -10,12 +10,16 @@ logger = log.Logger(config.log_dir + "/api.log")
 
 def _topology_info(top):
 	state = str(top.state)
+	try:
+		analysis = top.analysis()
+	except Exception, exc:
+		analysis = "Error in analysis: %s" % exc
 	return {"id": top.id, "state": str(top.state), "name": top.name,
 		"is_created": state == topology.State.CREATED,
 		"is_uploaded": state == topology.State.UPLOADED, 
 		"is_prepared": state == topology.State.PREPARED,
 		"is_started": state == topology.State.STARTED,
-		"owner": str(top.owner), "analysis": top.analysis(),
+		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [v.name for v in top.connectors_all()], "connector_count": len(top.connectors_all())}
 
