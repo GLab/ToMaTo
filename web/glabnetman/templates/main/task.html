@@ -6,7 +6,7 @@
 <link href="/static/style/style.css" rel="stylesheet" type="text/css" /> 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
 {% if not task.done %}
-<meta http-equiv="Refresh" content="1;/task/{{task.id}}" /> 
+<meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}" /> 
 {% endif %}
 </head>
 <body>

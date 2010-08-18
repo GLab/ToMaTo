@@ -41,6 +41,10 @@ class Topology(models.Model):
 	
 	owner = models.CharField(max_length=30)
 
+	date_created = models.DateTimeField(auto_now_add=True)
+	
+	date_modified = models.DateTimeField(auto_now=True)
+
 	def init (self, dom, owner):
 		"""
 		Creates a new topology

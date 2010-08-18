@@ -2,9 +2,9 @@
 
 {% block menu_top %}
 <ul>
-	<li><a href="/top">Topologies</a></li>
-	<li><a href="/host">Hosts</a></li>
-	<li><a href="http://fileserver.german-lab.de/trac/glabnetman/wiki">Help</a></li>
-	<li><a href="/logout">Logout</a></li>
+	<li><a href="{%url top.index%}">Topologies</a></li>
+	<li><a href="{%url host.index%}">Hosts</a></li>
+	<li><a href="{%url main.help%}">Help</a></li>
+	<li><a href="{%url main.logout%}">Logout</a></li>
 </ul>
 {% endblock %}

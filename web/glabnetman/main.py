@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
 
 from lib import *
@@ -21,3 +21,6 @@ def task_status(request, task_id):
 
 def logout(request):
 	return HttpResponseNotAuthorized("/")
+
+def help(request, page):
+	return HttpResponseRedirect("http://fileserver.german-lab.de/trac/glabnetman/wiki/%s" % page)

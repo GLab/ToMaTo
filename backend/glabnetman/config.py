@@ -64,5 +64,7 @@ auth_dry_run = parse_bool(get("auth","dry_run",True))
 
 DATABASE_ENGINE = get("local", "database_engine", 'sqlite3')
 DATABASE_NAME = get("local", "database_name", 'db.sqlite')
+TIME_ZONE = 'Europe/Berlin'
+LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('glabnetman')

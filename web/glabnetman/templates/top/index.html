@@ -15,7 +15,7 @@
 {% for top in top_list %}
   <tr>
     <td>{{top.id}}</td>
-    <td><a href="/top/{{top.id}}/">{{top.name}}</a></td>
+    <td><a href="{%url top.details top.id%}">{{top.name}}</a></td>
     <td>{{top.state}}</td>
     <td>{{top.owner}}</td>
     <td>{{top.device_count}}</td>

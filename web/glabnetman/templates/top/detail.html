@@ -5,6 +5,7 @@
 
 Owner: {{top.owner}}<br/>
 State: {{top.state}}<br/>
+Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
 <br/>
@@ -22,8 +23,8 @@ Hint: {{h}}<br/>
 {% endfor %}
 
 <script language="javascript"><!--
-function console (top, dev) {
-    var url = "/top/vncview?top_id="+top+"&device_id="+dev;
+function console (dev) {
+    var url = "{%url top.vncview top_id=top.id device_id=""%}"+dev;
     var nw = window.open(url, '_blank', "innerWidth=745,innerheight=400");
     nw.focus();
 }
@@ -43,11 +44,11 @@ function console (top, dev) {
 		<td>{{dev.host}}</td>
 		<td>
 {% if top.is_started %}
-		<a href="javascript:console('{{top_id}}','{{dev.id}}')">console</a>
+		<a href="javascript:console('{{dev.id}}')">console</a>
 {% endif %}
 {% if top.is_prepared %}
-		<a href="/top/upload?top_id={{top_id}}&device_id={{dev.id}}">upload image</a>
-		<a href="/top/download?top_id={{top_id}}&device_id={{dev.id}}">download image</a>
+		<a href="{%url top.upload_image top_id=top_id device_id=dev.id%}">upload image</a>
+		<a href="{%url top.download_image top_id=top_id device_id=dev.id%}">download image</a>
 {% endif %}
 		</td>		
 	</tr>
@@ -56,7 +57,7 @@ function console (top, dev) {
 
 {% if action %}
 <h2>Executing {{action}} ...</h2>
-<iframe width="80%" height="60%" frameborder="0" src="/task/{{task_id}}"></iframe>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}"></iframe>
 {% endif %}
 
 {% endblock %}
@@ -65,14 +66,14 @@ function console (top, dev) {
 <div id="sidemenu">
 	<h2>Topology {{top_id}}</h2>
 	<ul>
-		<li><a href="/top/{{top_id}}">details</a></li>
-		<li><a href="/top/{{top_id}}/showxml">show</a></li>
-		<li><a href="/top/{{top_id}}/showxml?plain">download</a></li>
+		<li><a href="{%url top.details top_id%}">details</a></li>
+		<li><a href="{%url top.showxml top_id%}">show</a></li>
+		<li><a href="{%url top.showxml top_id%}?plain">download</a></li>
 {% if top.is_prepared or top.is_created or top.is_uploaded %} 
-		<li><a href="/top/edit?top_id={{top_id}}">edit</a></li>
+		<li><a href="{%url top.edit top_id%}">edit</a></li>
 {% endif %}
 {% if top.is_created or top.is_uploaded %}
-		<li><a href="/top/{{top_id}}/remove" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
+		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 {% endif %}
 	</ul>
 </div>
@@ -81,17 +82,17 @@ function console (top, dev) {
 	<h2>Deployment</h2>
 	<ul>
 {% if top.is_prepared %} 
-		<li><a href="/top/{{top_id}}/start">start</a></li>
+		<li><a href="{%url top.start top_id%}">start</a></li>
 {% endif %}
 {% if top.is_prepared or top.is_started %} 
-		<li><a href="/top/{{top_id}}/stop">stop</a></li>
+		<li><a href="{%url top.stop top_id%}">stop</a></li>
 {% endif %}
 {% if top.is_uploaded %} 
-		<li><a href="/top/{{top_id}}/prepare">prepare</a></li>
+		<li><a href="{%url top.prepare top_id%}">prepare</a></li>
 {% endif %}
-		<li><a href="/top/{{top_id}}/upload">upload</a></li>
+		<li><a href="{%url top.upload top_id%}">upload</a></li>
 {% if top.is_uploaded or top.is_prepared %} 
-		<li><a href="/top/{{top_id}}/destroy" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
+		<li><a href="{%url top.destroy top_id%}" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
 {% endif %}
 	</ul>
 </div>

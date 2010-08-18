@@ -3,10 +3,10 @@
 {% block content %}
 {% if task_id %}
 <h1>Adding {{hostname}}</h1>
-<iframe width="80%" height="60%" frameborder="0" src="/task/{{task_id}}"></iframe>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}"></iframe>
 {% else %}
 <h1>Add new host</h1>
-<form action="/host/add" method="POST">
+<form action="{%url host.add%}" method="POST">
 	Hostname: <input name="hostname"/><br/>
 	Group: <input name="group"/><br/>
 	public bridge: <input name="public_bridge" value="vmbr0"/><br/>

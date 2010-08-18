@@ -2,10 +2,10 @@
 
 {% block menu_top %}
 <ul>
-	<li class="active"><a href="/top">Topologies</a></li>
-	<li><a href="/host">Hosts</a></li>
-	<li><a href="/help">Help</a></li>
-	<li><a href="/logout">Logout</a></li>
+	<li class="active"><a href="{%url top.index%}">Topologies</a></li>
+	<li><a href="{%url host.index%}">Hosts</a></li>
+	<li><a href="{%url main.help%}">Help</a></li>
+	<li><a href="{%url main.logout%}">Logout</a></li>
 </ul>
 {% endblock %}
 
@@ -13,8 +13,8 @@
 <div id="sidemenu">
 	<h2>Topologies</h2>
 	<ul>
-		<li><a href="/top/create">create new topology</a></li>
-		<li><a href="/top">list of all topologies</a></li>
+		<li><a href="{%url top.create%}">create new topology</a></li>
+		<li><a href="{%url top.index%}">list of all topologies</a></li>
 	</ul>
 </div>
 {% endblock %}

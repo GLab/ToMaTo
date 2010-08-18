@@ -41,13 +41,11 @@ def create(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 	
-def upload(request):
+def upload_image(request, top_id, device_id):
 	try:
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
-		top_id=request.REQUEST["top_id"]
-		device_id=request.REQUEST["device_id"]
 		if not request.FILES.has_key("image"):
 			top=api.top_info(int(top_id))
 			return render_to_response("top/upload.html", {'top_id': top_id, 'top': top, 'device_id': device_id} )
@@ -62,13 +60,11 @@ def upload(request):
 		return render_to_response("main/error.html", {'error': f})
 	
 
-def download(request):
+def download_image(request, top_id, device_id):
 	try:
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
-		top_id=request.REQUEST["top_id"]
-		device_id=request.REQUEST["device_id"]
 		top=api.top_info(int(top_id))
 		download_id=api.download_image(top_id, device_id)
 		temp = tempfile.TemporaryFile()
@@ -87,25 +83,22 @@ def download(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
-def vncview(request):
+def vncview(request, top_id, device_id):
 	try:
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
-		top_id=request.REQUEST["top_id"]
-		device_id=request.REQUEST["device_id"]
 		top=api.top_info(int(top_id))
 		device=dict(top["devices"])[device_id]
 		return render_to_response("top/vncview.html", {'top': top, 'device': device})
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
-def edit(request):
+def edit(request, top_id):
 	try:
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
-		top_id=request.REQUEST["top_id"]
 		if not request.REQUEST.has_key("xml"):
 			xml=api.top_get(int(top_id))
 			return render_to_response("top/edit.html", {'top_id': top_id, 'xml': xml} )
@@ -116,7 +109,31 @@ def edit(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
-def action(request, top_id, action=None):
+def details(request, top_id):
+	return _action(request, top_id, "")
+	
+def showxml(request, top_id):
+	return _action(request, top_id, "showxml")
+
+def remove(request, top_id):
+	return _action(request, top_id, "remove")
+
+def upload(request, top_id):
+	return _action(request, top_id, "upload")
+
+def prepare(request, top_id):
+	return _action(request, top_id, "prepare")
+
+def destroy(request, top_id):
+	return _action(request, top_id, "destroy")
+
+def start(request, top_id):
+	return _action(request, top_id, "start")
+
+def stop(request, top_id):
+	return _action(request, top_id, "stop")
+
+def _action(request, top_id, action):
 	try:
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")

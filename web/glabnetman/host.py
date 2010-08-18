@@ -31,9 +31,8 @@ def add(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
-def remove(request):
+def remove(request, hostname):
 	try:
-		hostname=request.REQUEST["hostname"]
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
