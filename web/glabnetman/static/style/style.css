@@ -197,3 +197,17 @@ height: 1%;
 }
 
 div.tx_sevenpack-list_container { margin: 0; }
+
+.topology_analysis {
+	list-style-type: none;
+}
+.problem {
+	font-weight:bold;
+	color:red;
+}
+.warning {
+	color:orange;
+}
+.hint {
+	color:yellow;
+}

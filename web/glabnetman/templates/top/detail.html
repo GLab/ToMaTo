@@ -10,17 +10,19 @@ Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
 <br/>
 
+<ul class="topology_analysis">
 {% for p in top.analysis.problems %}
-Problem: {{p}}<br/>
+<li class="problem">Problem: {{p}}</li>
 {% endfor %}
 
 {% for w in top.analysis.warnings %}
-Warning: {{w}}<br/>
+<li class="warning">Warning: {{w}}</li>
 {% endfor %}
 
 {% for w in top.analysis.hints %}
-Hint: {{h}}<br/>
+<li class="hint">Hint: {{h}}</li>
 {% endfor %}
+</ul>
 
 <script language="javascript"><!--
 function console (dev) {
