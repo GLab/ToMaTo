@@ -218,8 +218,9 @@ class Topology(models.Model):
 				script_fd = open(self.get_control_script(host.name,script), "w")
 				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
 				for dev in self.devices_all():
-					script_fd.write("\n# commands for %s\n" % dev)
-					dev.upcast().write_control_script(host, script, script_fd)
+					if dev.host == host:
+						script_fd.write("\n# commands for %s\n" % dev)
+						dev.upcast().write_control_script(host, script, script_fd)
 				for con in self.connectors_all():
 					script_fd.write("\n# commands for %s\n" % con)
 					con.upcast().write_control_script(host, script, script_fd)

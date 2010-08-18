@@ -83,22 +83,21 @@ class TincConnector(generic.Connector):
 		for con in self.connections_all():
 			if con.interface.device.host.name == host.name:
 				con.emulatedconnection.tincconnection.write_control_script(host, script, fd)
-		for con in self.connections_all():
-			tincname = self.tincname(con)
-			if script == "prepare":
-				fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
-			if script == "destroy":
-				fd.write ( "rm /etc/tinc/%s\n" % tincname )
-				fd.write ( "true\n" )
-			if script == "start":
-				fd.write ( "tincd --net=%s\n" % tincname )
-				#FIXME: brctl does not work for routing
-				fd.write ( "brctl addif %s %s\n" % (con.bridge_name(), tincname ) )
-				fd.write ( "ip link set %s up\n" %  tincname )
-			if script == "stop":
-				fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
-				fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
-				fd.write ( "true\n" )
+				tincname = self.tincname(con)
+				if script == "prepare":
+					fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
+				if script == "destroy":
+					fd.write ( "rm /etc/tinc/%s\n" % tincname )
+					fd.write ( "true\n" )
+				if script == "start":
+					fd.write ( "tincd --net=%s\n" % tincname )
+					#FIXME: brctl does not work for routing
+					fd.write ( "brctl addif %s %s\n" % (con.bridge_name(), tincname ) )
+					fd.write ( "ip link set %s up\n" %  tincname )
+				if script == "stop":
+					fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
+					fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
+					fd.write ( "true\n" )
 
 	def change_possible(self, dom):
 		pass
