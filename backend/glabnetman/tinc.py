@@ -4,12 +4,6 @@ from django.db import models
 
 import dummynet, generic, hosts, os, subprocess, shutil, fault
 
-def next_free_id (host):
-	ids = range(1,100)
-	for con in TincConnection.objects.filter(interface__device__host=host):
-		ids.remove(con.tinc_id)
-	return ids[0]
-
 class TincConnector(generic.Connector):
 	
 	def init(self, topology, dom):
@@ -31,7 +25,7 @@ class TincConnector(generic.Connector):
 		generic.Connector.decode_xml(self, dom)
 
 	def tincname(self, con):
-		return "tinc_%s" % con.emulatedconnection.tincconnection.tinc_id
+		return "tinc_%s" % con.id
 
 	def tincport(self, con):
 		return con.emulatedconnection.tincconnection.tinc_port
@@ -128,14 +122,12 @@ class TincConnector(generic.Connector):
 				con.delete()			
 
 class TincConnection(dummynet.EmulatedConnection):
-	tinc_id = models.IntegerField()
 	tinc_port = models.IntegerField()
 	
 	def init(self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
 		self.bridge_id = self.interface.device.host.next_free_bridge()		
-		self.tinc_id = next_free_id(self.interface.device.host)
 		self.tinc_port = self.interface.device.host.next_free_port()
 		self.save()
 	
@@ -145,7 +137,6 @@ class TincConnection(dummynet.EmulatedConnection):
 	def encode_xml(self, dom, doc, internal):
 		dummynet.EmulatedConnection.encode_xml(self, dom, doc, internal)
 		if internal:
-			dom.setAttribute("tinc_id", self.tinc_id)
 			dom.setAttribute("tinc_port", self.tinc_port)
 		
 	def decode_xml(self, dom):
