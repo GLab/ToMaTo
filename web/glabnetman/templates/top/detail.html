@@ -71,9 +71,7 @@ function console (dev) {
 		<li><a href="{%url top.details top_id%}">details</a></li>
 		<li><a href="{%url top.showxml top_id%}">show</a></li>
 		<li><a href="{%url top.showxml top_id%}?plain">download</a></li>
-{% if top.is_prepared or top.is_created or top.is_uploaded %} 
 		<li><a href="{%url top.edit top_id%}">edit</a></li>
-{% endif %}
 {% if top.is_created or top.is_uploaded %}
 		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 {% endif %}

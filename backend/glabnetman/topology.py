@@ -413,6 +413,8 @@ class Topology(models.Model):
 			task.output.write(util.run_shell (["rsync",  "-a",  "%s/" % src, dst], config.remote_dry_run))
 			script = "%s/%s_%s.sh" % ( config.remote_control_dir, host_name, change_id )
 			task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, script ], config.remote_dry_run ))
+		
+		task.done()
 
 	def change_possible(self, dom):
 		for x_dev in dom.getElementsByTagName("device"):

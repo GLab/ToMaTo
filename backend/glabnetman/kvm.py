@@ -80,12 +80,19 @@ class KVMDevice(generic.Device):
 			fd.write("qm stop %s\n" % self.kvm_id)
 			fd.write ( "true\n" )
 
+	def is_changed(self, dom):
+		if not self.template == util.get_attr(dom, "template", self.template):
+			return True
+		old_ifaces = [i.name for i in self.interfaces_all()]
+		new_ifaces = [i.getAttribute("id") for i in dom.getElementsByTagName("interface")]
+		return not old_ifaces == new_ifaces
+
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
 		if not self.template == util.get_attr(dom, "template", self.template):
 			if self.topology.state == "started" or self.topology.state == "prepared":
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of kvm %s cannot be changed" % self.name)
-		if self.topology.state == "started":
+		if self.is_changed(dom) and self.topology.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 
 	def change_run(self, dom, task, fd):
