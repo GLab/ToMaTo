@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import hosts, util
+import hosts, util, fault
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -27,6 +27,9 @@ class Device(models.Model):
 
 	def interfaces_add(self, iface):
 		return self.interface_set.add(iface)
+
+	def interfaces_remove(self, iface):
+		return self.interface_set.remove(iface)
 
 	def interfaces_all(self):
 		return self.interface_set.all()
@@ -89,6 +92,12 @@ class Device(models.Model):
 	def write_control_script(self, host, script, fd):
 		pass
 
+	def change_possible(self, dom):
+		if not self.hostgroup == util.get_attr(dom, "hostgroup", self.hostgroup):
+			from topology import State
+			if self.topology.state == State.PREPARED or self.topology.state == State.STARTED: 
+				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Cannot change host of deployed device")
+
 	def __unicode__(self):
 		return self.name
 		
@@ -149,6 +158,9 @@ class Connector(models.Model):
 		if self.is_internet():
 			return self.internetconnector.upcast()
 		return self
+
+	def affected_hosts(self):
+		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct()
 
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)

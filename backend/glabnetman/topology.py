@@ -3,7 +3,7 @@
 from django.db import models
 import thread, os, shutil, stat, uuid
 import config, log, fault, util, tasks
-import topology_analysis
+import topology_analysis, generic
 
 class State():
 	"""
@@ -72,8 +72,15 @@ class Topology(models.Model):
 		self.device_set.add(dev)
 		#FIXME: ensure name uniqueness
 
-	def devices_remove(self, dev):
-		self.device_set.remove(dev)
+	def devices_add_dom(self, dev):
+		import openvz, kvm, dhcp
+		try:
+			Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[dev.getAttribute("type")]
+		except KeyError:
+			raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
+		d = Type()
+		d.init(self, dev)
+		self.devices_add ( d )		
 
 	def connectors_all(self):
 		return self.connector_set.all()
@@ -85,8 +92,15 @@ class Topology(models.Model):
 		self.connector_set.add(con)
 		#FIXME: ensure name uniqueness
 
-	def connectors_remove(self, con):
-		self.connector_set.remove(con)
+	def connectors_add_dom(self, con):
+		import tinc, internet
+		try:
+			Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": internet.InternetConnector }[con.getAttribute("type")]
+		except KeyError:
+			raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
+		c = Type()
+		c.init(self, con)
+		self.connectors_add ( c )		
 
 	def affected_hosts (self):
 		"""
@@ -103,23 +117,9 @@ class Topology(models.Model):
 		if dom.hasAttribute("name"):
 			self.name = dom.getAttribute("name")
 		for dev in dom.getElementsByTagName ( "device" ):
-			import openvz, kvm, dhcp
-			try:
-				Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[dev.getAttribute("type")]
-			except KeyError:
-				raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
-			d = Type()
-			d.init(self, dev)
-			self.devices_add ( d )
+			self.devices_add_dom(dev)
 		for con in dom.getElementsByTagName ( "connector" ):
-			import tinc, internet
-			try:
-				Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": internet.InternetConnector }[con.getAttribute("type")]
-			except KeyError:
-				raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
-			c = Type()
-			c.init(self, con)
-			self.connectors_add ( c )
+			self.connectors_add_dom(con)
 	
 	def save_to ( self, dom, doc, internal ):
 		"""
@@ -326,112 +326,109 @@ class Topology(models.Model):
 		task = tasks.TaskStatus()
 		thread.start_new_thread(self.exec_script,("destroy", task, State.UPLOADED))
 		return task.id
-	
-	def _change_created(self, newtop, task):
-		# easy case: simply exchange definition, no change to deployed components needed
-		self.name = newtop.name
-		for dev in self.devices_all():
-			self.devices_remove(dev)
-			dev.delete()
-		for dev in newtop.devices_all():
-			self.devices_add(dev)
-		for con in self.connectors_all():
-			self.connectors_remove(con)
-			con.delete()
-		for con in newtop.connectors_all():
-			self.connectors_add(con)
-		self.save()
-		self.analysis = topology_analysis.analyze(self)
-		task.done()
 
-	def _change_prepared(self, newtop, task):
-		# difficult case: deployed components already exist
-		changeid=str(uuid.uuid1())
-		self.name = newtop.name
-		task.subtasks_total = 1 + len(self.affected_hosts())*2 + len(self.devices) + len(self.connectors)
-		newdevs=set()
-		changeddevs={}
-		removeddevs=set()
-		for dev in self.devices_all():
-			newdev=newtop.devices_get(dev.name)
-			if newdev:
-				changeddevs[dev]=newdev
+	def change_run(self, dom, task):
+		dir = config.local_control_dir + "/tmp"
+		change_id = uuid.uuid1()
+		if not os.path.exists(dir):
+			os.makedirs(dir)
+		host_scripts={}
+		def get_host_script(host):
+			if host_scripts.has_key(host.name):
+				return host_scripts[host.name]
 			else:
-				removeddevs.add(dev)
-		for dev in newtop.devices_all():
-			if not self.devices_get(dev.name):
-				newdevs.add(dev)
-		#delete removed devices
-		for dev in removeddevs:
-			dev.free_resources()
-			self.devices_remove(dev)
-		#add new devices
-		for dev in newdevs:
-			self.devices_add(dev)
-			dev.take_resources()
-		for host in self.affected_hosts():
-			script = "change_%s" % changeid
-			src = self.get_control_script(host.name,script)
-			script_fd = open(src, "w")
-			for dev in removeddevs:
-				if dev.host_name == host.name:
-					dev.write_control_script(host,"destroy",script_fd)
-			for dev in newdevs:
-				if dev.host_name == host.name:
-					dev.write_control_script(host,"prepare",script_fd)
-			for dev in changeddevs.keys():
-				if dev.host_name == host.name:
-					dev.change(changeddevs[dev],script_fd)
+				script_fd = open("%s/%s_%s.sh" % (dir, host.name, change_id), "a")
+				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
+				host_scripts[host.name] = script_fd
+				return script_fd
+			
+		devices=set()
+		for x_dev in dom.getElementsByTagName("device"):
+			name = x_dev.getAttribute("id")
+			devices.add(name)
+			try:
+				dev = self.devices_get(name)
+				# changed device
+				dev.upcast().change_run(x_dev, task, get_host_script(dev.host))
+			except generic.Device.DoesNotExist:
+				# new device
+				self.devices_add_dom(x_dev)
+				dev = self.devices_get(name)
+				if self.state == State.PREPARED or self.state == State.STARTED:
+					dev.write_control_script(dev.host, "prepare", get_host_script(dev.host))
+				if self.state == State.STARTED:
+					dev.write_control_script(dev.host, "start", get_host_script(dev.host))
+		for dev in self.devices_all():
+			if not dev.name in devices:
+				#removed device
+				if self.state == State.STARTED:
+					dev.upcast().write_control_script(dev.host, "stop", get_host_script(dev.host))
+				if self.state == State.PREPARED or self.state == State.STARTED:
+					dev.upcast().write_control_script(dev.host, "destroy", get_host_script(dev.host))
+				dev.delete()
+				
+		connectors=set()	
+		for x_con in dom.getElementsByTagName("connector"):
+			name = x_con.getAttribute("id")
+			connectors.add(name)
+			try:
+				con = self.connectors_get(name)
+				con.upcast().change_run(x_con, task)
+				for host in con.affected_hosts():
+					if self.state == State.STARTED:
+						con.upcast().write_control_script(host, "stop", get_host_script(host))
+					if self.state == State.PREPARED or self.state == State.STARTED:
+						con.upcast().write_control_script(host, "destroy", get_host_script(host))
+			except generic.Connector.DoesNotExist:
+				self.connectors_add_dom(x_con)
+				con = self.connectors_get(name)				
+			for host in con.affected_hosts():
+				if self.state == State.PREPARED or self.state == State.STARTED:
+					con.upcast().write_control_script(host, "prepare", get_host_script(host))
+				if self.state == State.STARTED:
+					con.upcast().write_control_script(host, "start", get_host_script(host))
+		for con in self.connectors_all():
+			if not con.name in connectors:
+				for host in con.affected_hosts():
+					if self.state == State.STARTED:
+						con.upcast().write_control_script(host, "stop", get_host_script(host))
+					if self.state == State.PREPARED or self.state == State.STARTED:
+						con.upcast().write_control_script(host, "destroy", get_host_script(host))
+				con.delete()				
+
+		#finalize and execute scripts
+		self.upload_control_scripts(task)
+		for (host_name, script_fd) in host_scripts.items():
 			script_fd.close()
+			src = "%s/%s_%s.sh" % (dir, host_name, change_id)
 			os.chmod(src, stat.S_IRWXU)
 			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			remote_script = "%s/%s/%s.sh" % ( config.remote_control_dir, self.id, script )
-			task.output.write(util.run_shell(["rsync",  "-a", src, dst], config.remote_dry_run))
-			task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, remote_script ], config.remote_dry_run))
-			task.subtasks_done = task.subtasks_done + 1
-		newcons=set()
-		removedcons=set()
-		for con in self.connectors_all():
-			removedcons.add(con)
-			newcon = newtop.connectors_get(con.name)
-			if newcon:
-				newcons.add(newcon)
-		for con in newtop.connectors_all():
-			if not self.connectors_get(con.name):
-				newcons.add(con)
-		#delete removed connectors
-		for con in removedcons:
-			con.free_resources()
-			self.connectors_remove(con)
-		#add new connectors
-		for con in newcons:
-			self.connectors_add(con)
-			con.take_resources()
-		self.write_control_scripts(task)
-		self.upload_control_scripts(task)
-		self._log("change", task.output.getvalue())
-		task.done()
+			task.output.write(util.run_shell (["rsync",  "-a",  "%s/" % src, dst], config.remote_dry_run))
+			script = "%s/%s_%s.sh" % ( config.remote_control_dir, host_name, change_id )
+			task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, script ], config.remote_dry_run ))
 
-	def check_change_possible(self, newtop):
-		for dev in self.devices_all():
-			newdev=newtop.devices_get(dev.name)
-			if newdev:
-				dev.check_change_possible(newdev)
+	def change_possible(self, dom):
+		for x_dev in dom.getElementsByTagName("device"):
+			name = x_dev.getAttribute("id")
+			try:
+				dev = self.devices_get(name)
+				dev.upcast().change_possible(x_dev)
+			except generic.Device.DoesNotExist:
+				pass
+		for x_con in dom.getElementsByTagName("connector"):
+			name = x_con.getAttribute("id")
+			try:
+				con = self.connectors_get(name)
+				con.upcast().change_possible(x_con)
+			except generic.Connector.DoesNotExist:
+				pass
 				
 	def change(self, newtop):
-		if self.state == State.UPLOADED:
-			self.state = State.CREATED
-		if self.state == State.CREATED:
-			task = tasks.TaskStatus()
-			thread.start_new_thread(self._change_created,(newtop, task))
-			return task.id
-		if self.state == State.PREPARED:
-			self.check_change_possible(newtop)
-			task = tasks.TaskStatus()
-			thread.start_new_thread(self._change_prepared,(newtop, task))
-			return task.id
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
+		self.change_possible(newtop)
+		task = tasks.TaskStatus()
+		thread.start_new_thread(self.change_run,(newtop, task))
+		#self.change_run(newtop, task)
+		return task.id
 		
 	def _log(self, task, output):
 		logger = log.Logger(config.log_dir+"/top_%s.log" % self.id)

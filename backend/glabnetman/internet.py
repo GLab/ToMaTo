@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import generic
+import generic, fault
 
 class InternetConnector(generic.Connector):
 
@@ -18,16 +18,20 @@ class InternetConnector(generic.Connector):
 		return self
 
 	def encode_xml(self, dom, doc, internal):
-		pass
+		generic.Connector.encode_xml(self, dom, doc, internal)
 		
 	def decode_xml(self, dom):
 		generic.Connector.decode_xml(self, dom)
 		
 	def write_aux_files(self):
-		#TODO
 		pass
 	
 	def write_control_script(self, host, script, fd):
-		#TODO
 		pass
 		
+	def change_possible(self, dom):
+		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of internet connectors not implemented yet")
+	
+	def change_run(self, dom, task):
+		#FIXME: replace/add connections
+		pass

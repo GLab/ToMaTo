@@ -32,8 +32,9 @@ class DhcpdDevice(generic.Device):
 		dom.setAttribute("gateway", self.gateway)
 		dom.setAttribute("nameserver", self.nameserver)
 		
-	def decode_xml(self, dom):
-		generic.Device.decode_xml(self, dom)
+	def decode_xml(self, dom, recurse=True):
+		if recurse:
+			generic.Device.decode_xml(self, dom)
 		self.subnet = dom.getAttribute("subnet")
 		self.netmask = dom.getAttribute("netmask")
 		self.range = dom.getAttribute("range")
@@ -66,14 +67,14 @@ class DhcpdDevice(generic.Device):
 		if script == "stop":
 			fd.write ( "cat %s.pid | xargs kill\n" % self.name )
 
-	def check_change_possible(self, newdev):
-		pass
+	def change_possible(self, dom):
+		generic.Device.change_possible(self, dom)
 
-	def change(self, newdev, fd):
+	def change_run(self, dom, task, fd):
 		"""
 		Adapt this device to the new device
 		"""
-		self.netmask=newdev.netmask
-		self.range=newdev.range
-		self.gateway=newdev.gateway
-		self.nameserver=newdev.nameserver
+		self.decode_xml(dom, False)
+		if self.topology.state == "started":
+			self.write_control_script(self.host, "stop", fd)
+			self.write_control_script(self.host, "start", fd)

@@ -95,27 +95,52 @@ class OpenVZDevice(generic.Device):
 			fd.write("vzctl stop %s\n" % self.openvz_id)
 			fd.write ( "true\n" )
 
-	def check_change_possible(self, newdev):
-		if not self.template == newdev.template:
+	def change_possible(self, dom):
+		generic.Device.change_possible(self, dom)
+		if not self.template == util.get_attr(dom, "template", self.template):
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
-		if not self.host_name == newdev.host_name or not self.host_group == newdev.host_group:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of openvz vm %s cannot be changed" % self.name)
+		if self.topology.state == "started":
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Started OpenVZ vm %s cannot be changed" % self.name)
 
-	def change(self, newdev, fd):
+	def change_run(self, dom, task, fd):
 		"""
 		Adapt this device to the new device
 		"""
-		self.root_password = newdev.root_password
-		self.host_group = newdev.host_group
-		if self.root_password:
+		self.root_password = util.get_attr(dom, "root_password")
+		if self.root_password and self.topology.state == "prepared":
 			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+		ifaces=set()
+		for x_iface in dom.getElementsByTagName("interface"):
+			name = x_iface.getAttribute("id")
+			ifaces.add(name)
+			try:
+				iface = self.interfaces_get(name)
+				iface = iface.upcast()
+				iface.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
+				iface.ip4address = util.get_attr(dom, "ip4address", default=None)
+				iface.ip4netmask = util.get_attr(dom, "ip4netmask", default=None)
+			except generic.Interface.DoesNotExist:
+				iface = ConfiguredInterface()
+				iface.init(self, x_iface)
+				self.interfaces_add(iface)
+				bridge = self.bridge_name(iface)
+				if self.topology.state == "prepared" or self.topology.state == "started":
+					fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
+					fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
+			if self.topology.state == "started":
+				ip4 = iface.configuredinterface.ip4address
+				netmask = iface.configuredinterface.ip4netmask
+				dhcp = iface.configuredinterface.use_dhcp
+				if ip4:
+					fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
+				if dhcp:
+					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
+					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
 		for iface in self.interfaces_all():
-			fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
-		self.interfaces = newdev.interfaces
-		for iface in self.interfaces_all():
-			bridge = self.bridge_name(iface)
-			fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
-			fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
+			if not iface.name in ifaces:
+				self.interfaces_remove(name)
+				if self.topology.state == "prepared" or self.topology.state == "started":
+					fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
 
 	def upload_image(self, filename, task):
 		task.subtasks_total=4

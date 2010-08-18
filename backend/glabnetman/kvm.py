@@ -80,15 +80,14 @@ class KVMDevice(generic.Device):
 			fd.write("qm stop %s\n" % self.kvm_id)
 			fd.write ( "true\n" )
 
-	def check_change_possible(self, newdev):
-		if not self.host_name == newdev.host_name or not self.host_group == newdev.host_group:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Host of kvm vm %s cannot be changed" % self.name)
+	def change_possible(self, dom):
+		generic.Device.change_possible(self, dom)
+		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM changes not supported yet")
 
-	def change(self, newdev, fd):
+	def change_run(self, dom, task, fd):
 		"""
 		Adapt this device to the new device
 		"""
-		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM changes not supported yet")
 
 	def vnc_password(self):
 		m = hashlib.md5()

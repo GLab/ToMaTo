@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import dummynet, generic, hosts, os, subprocess, shutil
+import dummynet, generic, hosts, os, subprocess, shutil, fault
 
 def next_free_id (host):
 	ids = range(1,100)
@@ -25,7 +25,7 @@ class TincConnector(generic.Connector):
 		return self
 
 	def encode_xml(self, dom, doc, internal):
-		pass
+		generic.Connector.encode_xml(self, dom, doc, internal)
 		
 	def decode_xml(self, dom):
 		generic.Connector.decode_xml(self, dom)
@@ -100,6 +100,12 @@ class TincConnector(generic.Connector):
 				fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
 				fd.write ( "true\n" )
 
+	def change_possible(self, dom):
+		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of tinc connectors not implemented yet")
+	
+	def change_run(self, dom, task):
+		#FIXME: replace/add connections
+		pass
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_id = models.IntegerField()

@@ -147,8 +147,7 @@ def top_change(top_id, xml, user=None):
 	top = topology.get(top_id)
 	_top_access(top, user)
 	dom = _parse_xml(xml)
-	newtop=topology.create(dom,user.name)
-	return top.change(newtop)
+	return top.change(dom)
 
 def top_remove(top_id, user=None):
 	logger.log("top_remove(%s)" % top_id, user=user.name)
