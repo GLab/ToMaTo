@@ -28,9 +28,6 @@ class Device(models.Model):
 	def interfaces_add(self, iface):
 		return self.interface_set.add(iface)
 
-	def interfaces_remove(self, iface):
-		return self.interface_set.remove(iface)
-
 	def interfaces_all(self):
 		return self.interface_set.all()
 
@@ -145,6 +142,9 @@ class Connector(models.Model):
 
 	def connections_all(self):
 		return self.connection_set.all()
+
+	def connections_get(self, interface):
+		return self.connection_set.get(interface=interface)
 
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'

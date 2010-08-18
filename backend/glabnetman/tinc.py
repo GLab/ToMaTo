@@ -101,11 +101,27 @@ class TincConnector(generic.Connector):
 				fd.write ( "true\n" )
 
 	def change_possible(self, dom):
-		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of tinc connectors not implemented yet")
+		pass
 	
 	def change_run(self, dom, task):
-		#FIXME: replace/add connections
-		pass
+		cons=set()
+		for x_con in dom.getElementsByTagName("connection"):
+			device_name = x_con.getAttribute("device")
+			device = self.topology.devices_get(device_name)
+			iface_name = x_con.getAttribute("interface")
+			iface = device.interfaces_get(iface_name)
+			cons.add(iface)
+			try:
+				con = self.connections_get(iface)				
+			except generic.Connection.DoesNotExist:
+				#new connection
+				con = TincConnection()
+				con.init(self, x_con)
+				self.connections_add(con)
+		for con in self.connections_all():
+			if not con.interface in cons:
+				#deleted connection
+				con.delete()			
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_id = models.IntegerField()

@@ -98,16 +98,16 @@ class OpenVZDevice(generic.Device):
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
 		if not self.template == util.get_attr(dom, "template", self.template):
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
-		if self.topology.state == "started":
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Started OpenVZ vm %s cannot be changed" % self.name)
+			if self.topology.state == "started" or self.topology.state == "prepared":
+				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
 
 	def change_run(self, dom, task, fd):
 		"""
 		Adapt this device to the new device
 		"""
+		self.template = util.get_attr(dom, "template", self.template)
 		self.root_password = util.get_attr(dom, "root_password")
-		if self.root_password and self.topology.state == "prepared":
+		if self.root_password and ( self.topology.state == "prepared" or self.topology.state == "started" ):
 			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
@@ -138,9 +138,9 @@ class OpenVZDevice(generic.Device):
 					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
-				self.interfaces_remove(name)
 				if self.topology.state == "prepared" or self.topology.state == "started":
 					fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
+				iface.delete()
 
 	def upload_image(self, filename, task):
 		task.subtasks_total=4

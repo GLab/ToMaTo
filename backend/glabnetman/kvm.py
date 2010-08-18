@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import generic, hosts, fault, config, hashlib, re
+import generic, hosts, fault, config, hashlib, re, util
 
 class KVMDevice(generic.Device):
 	kvm_id = models.IntegerField()
@@ -82,12 +82,39 @@ class KVMDevice(generic.Device):
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
-		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM changes not supported yet")
+		if not self.template == util.get_attr(dom, "template", self.template):
+			if self.topology.state == "started" or self.topology.state == "prepared":
+				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of kvm %s cannot be changed" % self.name)
+		if self.topology.state == "started":
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 
 	def change_run(self, dom, task, fd):
 		"""
 		Adapt this device to the new device
 		"""
+		self.template = util.get_attr(dom, "template", self.template)
+		ifaces=set()
+		for x_iface in dom.getElementsByTagName("interface"):
+			name = x_iface.getAttribute("id")
+			ifaces.add(name)
+			try:
+				iface = self.interfaces_get(name)
+			except generic.Interface.DoesNotExist:
+				#new interface
+				iface = generic.Interface()
+				iface.init(self, x_iface)
+				self.interfaces_add(iface)
+				if self.topology.state == "prepared":
+					iface_id = re.match("eth(\d+)", iface.name).group(1)
+					fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
+		for iface in self.interfaces_all():
+			if not iface.name in ifaces:
+				#deleted interface
+				if self.topology.state == "prepared":
+					iface_id = re.match("eth(\d+)", iface.name).group(1)
+					#FIXME: find a way to delete interfaces
+				iface.delete()
+		
 
 	def vnc_password(self):
 		m = hashlib.md5()
