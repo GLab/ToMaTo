@@ -3,6 +3,9 @@
 import os
 os.environ['DJANGO_SETTINGS_MODULE']="glabnetman.config"
 
+from django.core.management import call_command
+call_command('syncdb')
+
 import config, log, generic, topology, hosts, fault, tasks
 import tinc, internet, kvm, openvz, dhcp
 
