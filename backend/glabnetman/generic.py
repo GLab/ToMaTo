@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import hosts, util, fault
+import hosts, util, fault, re
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -106,6 +106,8 @@ class Interface(models.Model):
 	def init(self, device, dom):
 		self.device = device
 		self.decode_xml(dom)
+		if not re.match("eth(\d+)", self.name):
+			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % self.name)
 		self.save()
 	
 	def is_configured(self):
@@ -218,12 +220,16 @@ class Connection(models.Model):
 		dom.setAttribute("interface", self.interface.name)
 
 	def decode_xml(self, dom):
-		device_name = dom.getAttribute("device")
-		device = self.connector.topology.devices_get(device_name)
-		iface_name = dom.getAttribute("interface")
-		self.interface = device.interfaces_get(iface_name)
-		#FIXME: raise fault when device/interface not found
-		
+		try:
+			device_name = dom.getAttribute("device")
+			device = self.connector.topology.devices_get(device_name)
+			iface_name = dom.getAttribute("interface")
+			self.interface = device.interfaces_get(iface_name)
+		except Device.DoesNotExist:
+			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
+		except Interface.DoesNotExist:
+			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
+					
 	def write_aux_files(self):
 		pass
 	

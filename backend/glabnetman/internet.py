@@ -35,11 +35,16 @@ class InternetConnector(generic.Connector):
 	def change_run(self, dom, task):
 		cons=set()
 		for x_con in dom.getElementsByTagName("connection"):
-			device_name = x_con.getAttribute("device")
-			device = self.topology.devices_get(device_name)
-			iface_name = x_con.getAttribute("interface")
-			iface = device.interfaces_get(iface_name)
-			cons.add(iface)
+			try:
+				device_name = x_con.getAttribute("device")
+				device = self.topology.devices_get(device_name)
+				iface_name = x_con.getAttribute("interface")
+				iface = device.interfaces_get(iface_name)
+				cons.add(iface)
+			except generic.Device.DoesNotExist:
+				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
+			except generic.Interface.DoesNotExist:
+				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
 			try:
 				con = self.connections_get(iface)				
 			except generic.Connection.DoesNotExist:

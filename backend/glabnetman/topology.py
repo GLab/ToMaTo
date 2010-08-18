@@ -69,15 +69,16 @@ class Topology(models.Model):
 		return self.device_set.get(name=name)
 
 	def devices_add(self, dev):
+		if self.device_set.filter(name=dev.name).count() > 0:
+			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
 		self.device_set.add(dev)
-		#FIXME: ensure name uniqueness
 
 	def devices_add_dom(self, dev):
 		import openvz, kvm, dhcp
 		try:
 			Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[dev.getAttribute("type")]
 		except KeyError:
-			raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
+			raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
 		d = Type()
 		d.init(self, dev)
 		self.devices_add ( d )		
@@ -89,15 +90,16 @@ class Topology(models.Model):
 		return self.connector_set.get(name=name)
 
 	def connectors_add(self, con):
+		if self.connector_set.filter(name=con.name).count() > 0:
+			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
 		self.connector_set.add(con)
-		#FIXME: ensure name uniqueness
 
 	def connectors_add_dom(self, con):
 		import tinc, internet
 		try:
 			Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": internet.InternetConnector }[con.getAttribute("type")]
 		except KeyError:
-			raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
+			raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
 		c = Type()
 		c.init(self, con)
 		self.connectors_add ( c )		
