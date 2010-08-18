@@ -73,7 +73,7 @@ class Topology(models.Model):
 		return self.device_set.get(name=name)
 
 	def devices_add(self, dev):
-		if self.device_set.filter(name=dev.name).count() > 0:
+		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0:
 			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
 		self.device_set.add(dev)
 
@@ -94,7 +94,7 @@ class Topology(models.Model):
 		return self.connector_set.get(name=name)
 
 	def connectors_add(self, con):
-		if self.connector_set.filter(name=con.name).count() > 0:
+		if self.connector_set.filter(name=con.name).exclude(id=dev.id).count() > 0:
 			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
 		self.connector_set.add(con)
 
