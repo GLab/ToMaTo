@@ -115,7 +115,7 @@ def top_list(state_filter, owner_filter, host_filter, user=None):
 	if not owner_filter=="*":
 		all = all.filter(owner=owner_filter)
 	if not host_filter=="*":
-		all = all.filter(device__host__name=host_filter)
+		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
 		tops.append(_topology_info(t))
 	return tops

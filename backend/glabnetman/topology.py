@@ -92,10 +92,8 @@ class Topology(models.Model):
 		"""
 		The set of all hosts that this topology has devices on.
 		"""
-		hosts=set()
-		for dev in self.devices_all():
-			hosts.add(dev.host)
-		return hosts
+		import hosts
+		return hosts.Host.objects.filter(device__topology=self).distinct()
 
 	def load_from(self, dom):
 		"""
@@ -135,11 +133,11 @@ class Topology(models.Model):
 		dom.setAttribute("name", self.name)
 		for dev in self.devices_all():
 			x_dev = doc.createElement ( "device" )
-			dev.encode_xml ( x_dev, doc, internal )
+			dev.upcast().encode_xml ( x_dev, doc, internal )
 			dom.appendChild ( x_dev )
 		for con in self.connectors_all():
 			x_con = doc.createElement ( "connector" )
-			con.encode_xml ( x_con, doc, internal )
+			con.upcast().encode_xml ( x_con, doc, internal )
 			dom.appendChild ( x_con )
 		return dom
 
@@ -200,11 +198,11 @@ class Topology(models.Model):
 			shutil.rmtree(config.local_control_dir)
 		for dev in self.devices_all():
 			task.output.write("\tcreating aux files for %s ...\n" % dev)
-			dev.write_aux_files()
+			dev.upcast().write_aux_files()
 			task.subtasks_done = task.subtasks_done+1
 		for con in self.connectors_all():
 			task.output.write("\tcreating aux files for %s ...\n" % con)
-			con.write_aux_files()
+			con.upcast().write_aux_files()
 			task.subtasks_done = task.subtasks_done+1
 		for host in self.affected_hosts():
 			dir=self.get_control_dir(host.name)
@@ -215,10 +213,10 @@ class Topology(models.Model):
 				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
 				for dev in self.devices_all():
 					script_fd.write("\n# commands for %s\n" % dev)
-					dev.write_control_script(host, script, script_fd)
+					dev.upcast().write_control_script(host, script, script_fd)
 				for con in self.connectors_all():
 					script_fd.write("\n# commands for %s\n" % con)
-					con.write_control_script(host, script, script_fd)
+					con.upcast().write_control_script(host, script, script_fd)
 				script_fd.close()
 				os.chmod(self.get_control_script(host.name,script), stat.S_IRWXU)
 
@@ -444,25 +442,25 @@ class Topology(models.Model):
 		if not device:
 			os.remove(filename)
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		if not device.upload_supported():
+		if not device.upcast().upload_supported():
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
 		if self.state == State.STARTED:
 			os.remove(filename)
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot upload an image to a running topology")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(device.upload_image, (filename, task))
+		thread.start_new_thread(device.upcast().upload_image, (filename, task))
 		return task.id
 	
 	def download_image(self, device_id):
 		device = self.devices_get(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		if not device.download_supported():
+		if not device.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot download an image of a running topology")
-		return device.download_image()
+		return device.upcast().download_image()
 
 def get(id):
 	return Topology.objects.get(id=id)

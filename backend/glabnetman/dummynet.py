@@ -16,6 +16,11 @@ class EmulatedConnection(generic.Connection):
 		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.save()
 	
+	def upcast(self):
+		if self.is_tinc():
+			return self.tincconnection
+		return self
+
 	def is_tinc(self):
 		try:
 			self.tincconnection
@@ -24,6 +29,7 @@ class EmulatedConnection(generic.Connection):
 			return False
 	
 	def encode_xml(self, dom, doc, internal):
+		generic.Connection.encode_xml(self, dom, doc, internal)
 		if self.delay:
 			dom.setAttribute("delay", "%sms" % self.delay)
 		if self.bandwidth:

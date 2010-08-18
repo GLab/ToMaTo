@@ -31,6 +31,15 @@ class Device(models.Model):
 	def interfaces_all(self):
 		return self.interface_set.all()
 
+	def upcast(self):
+		if self.is_dhcpd():
+			return self.dhcpdevice.upcast()
+		if self.is_kvm():
+			return self.kvmdevice.upcast()
+		if self.is_openvz():
+			return self.openvzdevice.upcast()
+		return self
+
 	def is_openvz(self):
 		return self.type == Device.TYPE_OPENVZ
 
@@ -41,23 +50,22 @@ class Device(models.Model):
 		return self.type == Device.TYPE_DHCPD
 
 	def download_supported(self):
-		return self.is_openvz() or self.is_kvm()
-		
-	def download_image(self, filename, task):
-		if self.is_openvz():
-			self.openvzdevice.download_image(filename, task)
-		if self.is_kvm():
-			self.kvmdevice.download_image(filename, task)
+		return False
 		
 	def upload_supported(self):
-		return self.is_openvz() or self.is_kvm()
+		return False
 		
-	def upload_image(self, filename, task):
-		if self.is_openvz():
-			self.openvzdevice.upload_image(filename, task)
-		if self.is_kvm():
-			self.kvmdevice.upload_image(filename, task)
-	
+	def bridge_name(self, interface):
+		"""
+		Returns the name of the bridge for the connection of the given interface
+		Note: This must be 16 characters or less for brctl to work
+		@param interface the interface
+		"""
+		if interface.connection:
+			return interface.connection.bridge_name()
+		else:
+			return None		
+
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
 		dom.setAttribute("type", self.type)
@@ -67,14 +75,8 @@ class Device(models.Model):
 			dom.setAttribute("host", self.host)
 		for iface in self.interfaces_all():
 			x_iface = doc.createElement ( "interface" )
-			iface.encode_xml(x_iface, doc, internal)
+			iface.upcast().encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
-		if self.is_openvz():
-			self.openvzdevice.encode_xml(dom, doc, internal)
-		if self.is_kvm():
-			self.kvmdevice.encode_xml(dom, doc, internal)
-		if self.is_dhcpd():
-			self.dhcpddevice.encode_xml(dom, doc, internal)
 		
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
@@ -82,20 +84,10 @@ class Device(models.Model):
 		util.get_attr(dom, "hostgroup", default=None)
 		
 	def write_aux_files(self):
-		if self.is_openvz():
-			self.openvzdevice.write_aux_files()
-		if self.is_kvm():
-			self.kvmdevice.write_aux_files()
-		if self.is_dhcpd():
-			self.dhcpddevice.write_aux_files()
+		pass
 	
 	def write_control_script(self, host, script, fd):
-		if self.is_openvz():
-			self.openvzdevice.write_control_script(host, script, fd)
-		if self.is_kvm():
-			self.kvmdevice.write_control_script(host, script, fd)
-		if self.is_dhcpd():
-			self.dhcpddevice.write_control_script(host, script, fd)
+		pass
 
 	def __unicode__(self):
 		return self.name
@@ -117,10 +109,13 @@ class Interface(models.Model):
 		except:
 			return False
 	
+	def upcast(self):
+		if self.is_configured():
+			return self.configuredinterface.upcast()
+		return self
+
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
-		if self.is_configured():
-			self.configuredinterface.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
@@ -148,33 +143,30 @@ class Connector(models.Model):
 	def is_internet(self):
 		return self.type=='real'
 
+	def upcast(self):
+		if self.is_tinc():
+			return self.tincconnector.upcast()
+		if self.is_internet():
+			return self.internetconnector.upcast()
+		return self
+
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
 		dom.setAttribute("type", self.type)
 		for con in self.connections_all():
 			x_con = doc.createElement ( "connection" )
-			con.encode_xml(x_con, doc, internal)
+			con.upcast().encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
-		if self.is_tinc():
-			self.tincconnector.encode_xml(dom, doc, internal)
-		if self.is_internet():
-			self.internetconnector.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
 
 	def write_aux_files(self):
-		if self.is_tinc():
-			self.tincconnector.write_aux_files()
-		if self.is_internet():
-			self.internetconnector.write_aux_files()
+		pass
 	
 	def write_control_script(self, host, script, fd):
-		if self.is_tinc():
-			self.tincconnector.write_control_script(host, script, fd)
-		if self.is_internet():
-			self.internetconnector.write_control_script(host, script, fd)
+		pass
 
 	def __unicode__(self):
 		return self.name
@@ -199,6 +191,11 @@ class Connection(models.Model):
 		except:
 			return False
 
+	def upcast(self):
+		if self.is_emulated():
+			return self.emulatedconnection.upcast()
+		return self
+
 	def bridge_name(self):
 		if self.bridge_special_name:
 			return self.bridge_special_name
@@ -207,8 +204,6 @@ class Connection(models.Model):
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("device", self.interface.device.name)
 		dom.setAttribute("interface", self.interface.name)
-		if self.is_emulated():
-			self.emulatedconnection.encode_xml(dom, doc, internal)
 
 	def decode_xml(self, dom):
 		device_name = dom.getAttribute("device")

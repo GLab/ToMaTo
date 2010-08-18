@@ -23,6 +23,9 @@ class KVMDevice(generic.Device):
 			iface.init(self, interface)
 			self.interfaces_add(iface)
 	
+	def upcast(self):
+		return self
+
 	def download_image(self, filename, task):
 		pass
 
@@ -30,6 +33,7 @@ class KVMDevice(generic.Device):
 		pass
 
 	def encode_xml(self, dom, doc, internal):
+		generic.Device.encode_xml(self, dom, doc, internal)
 		dom.setAttribute("template", self.template)
 		if internal:
 			dom.setAttribute("kvm_id", self.kvm_id)
@@ -38,27 +42,17 @@ class KVMDevice(generic.Device):
 		generic.Device.decode_xml(self, dom)
 		self.template = dom.getAttribute("template")
 
-	def bridge_name(self, interface):
-		"""
-		Returns the name of the bridge for the connection of the given interface
-		Note: This must be 16 characters or less for brctl to work
-		@param interface the interface
-		"""
-		if interface.connection:
-			return interface.connection.bridge_name()
-		else:
-			return None
-
 	def write_aux_files(self):
 		"""
 		Write the aux files for this object and its child objects
 		"""		
-		pass
+		generic.Device.write_aux_files(self)
 
 	def write_control_script(self, host, script, fd):
 		"""
 		Write the control script for this object and its child objects
 		"""
+		generic.Device.write_control_script(self, host, script, fd)
 		if script == "prepare":
 			fd.write("qm create %s\n" % self.kvm_id )
 			fd.write("mkdir -p /var/lib/vz/images/%s\n" % self.kvm_id)

@@ -21,7 +21,11 @@ class DhcpdDevice(generic.Device):
 			iface.init(self, interface)
 			self.interfaces_add(iface)
 
+	def upcast(self):
+		return self
+
 	def encode_xml(self, dom, doc, internal):
+		generic.Device.encode_xml(self, dom, doc, internal)
 		dom.setAttribute("subnet", self.subnet)
 		dom.setAttribute("netmask", self.netmask)
 		dom.setAttribute("range", self.range)
@@ -35,22 +39,12 @@ class DhcpdDevice(generic.Device):
 		self.range = dom.getAttribute("range")
 		self.gateway = dom.getAttribute("gateway")
 		self.nameserver = dom.getAttribute("nameserver")
-		
-	def bridge_name(self, interface):
-		"""
-		Returns the name of the bridge for the connection of the given interface
-		Note: This must be 16 characters or less for brctl to work
-		@param interface the interface
-		"""
-		if interface.connection:
-			return interface.connection.bridge_name()
-		else:
-			return None
 
 	def write_aux_files(self):
 		"""
 		Write the aux files for this object and its child objects
 		"""
+		generic.Device.write_aux_files(self)
 		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.name+".conf","w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
 		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
@@ -63,6 +57,7 @@ class DhcpdDevice(generic.Device):
 		"""
 		Write the control script for this object and its child objects
 		"""
+		generic.Device.write_control_script(self, host, script, fd)
 		if script == "start":
 			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.name, self.name ) )
 			for iface in self.interfaces_all():

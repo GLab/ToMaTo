@@ -24,6 +24,9 @@ class OpenVZDevice(generic.Device):
 			iface.init(self, interface)
 			self.interfaces_add(iface)
 	
+	def upcast(self):
+		return self
+
 	def vnc_password(self):
 		m = hashlib.md5()
 		m.update(config.password_salt)
@@ -34,6 +37,7 @@ class OpenVZDevice(generic.Device):
 		return m.hexdigest()
 	
 	def encode_xml(self, dom, doc, internal):
+		generic.Device.encode_xml(self, dom, doc, internal)
 		dom.setAttribute("template", self.template)
 		if self.root_password:
 			dom.setAttribute("root_password", self.root_password)
@@ -45,27 +49,17 @@ class OpenVZDevice(generic.Device):
 		self.template = dom.getAttribute("template")
 		self.root_password = dom.getAttribute("root_password")
 
-	def bridge_name(self, interface):
-		"""
-		Returns the name of the bridge for the connection of the given interface
-		Note: This must be 16 characters or less for brctl to work
-		@param interface the interface
-		"""
-		if interface.connection:
-			return interface.connection.bridge_name()
-		else:
-			return None
-
 	def write_aux_files(self):
 		"""
 		Write the aux files for this object and its child objects
 		"""		
-		pass
+		generic.Device.write_aux_files(self)
 
 	def write_control_script(self, host, script, fd):
 		"""
 		Write the control script for this object and its child objects
 		"""
+		generic.Device.write_control_script(self, host, script, fd)
 		if script == "prepare":
 			fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
 			fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
@@ -160,7 +154,11 @@ class ConfiguredInterface(generic.Interface):
 		self.decode_xml(dom)
 		self.save()
 
+	def upcast(self):
+		return self
+
 	def encode_xml(self, dom, doc, internal):
+		generic.Interface.encode_xml(self, dom, doc, internal)
 		if self.use_dhcp:
 			dom.setAttribute("use_dhcp", str(self.use_dhcp).lower())
 		if self.ip4address:
@@ -173,11 +171,3 @@ class ConfiguredInterface(generic.Interface):
 		self.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
 		self.ip4address = util.get_attr(dom, "ip4address", default=None)
 		self.ip4netmask = util.get_attr(dom, "ip4netmask", default=None)
-		
-	def write_aux_files(self):
-		#TODO
-		pass
-	
-	def write_control_script(self, host, script, fd):
-		#TODO
-		pass	

@@ -21,6 +21,9 @@ class TincConnector(generic.Connector):
 			con.init(self, connection)
 			self.connection_set.add ( con )
 	
+	def upcast(self):
+		return self
+
 	def encode_xml(self, dom, doc, internal):
 		pass
 		
@@ -110,7 +113,11 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.tinc_port = self.interface.device.host.next_free_port()
 		self.save()
 	
+	def upcast(self):
+		return self
+
 	def encode_xml(self, dom, doc, internal):
+		dummynet.EmulatedConnection.encode_xml(self, dom, doc, internal)
 		if internal:
 			dom.setAttribute("tinc_id", self.tinc_id)
 			dom.setAttribute("tinc_port", self.tinc_port)
