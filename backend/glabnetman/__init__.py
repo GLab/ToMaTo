@@ -12,27 +12,39 @@ import tinc, internet, kvm, openvz, dhcp
 logger = log.Logger(config.log_dir + "/api.log")
 
 def _topology_info(top):
-	state = str(top.state)
 	try:
 		analysis = top.analysis()
 	except Exception, exc:
 		analysis = "Error in analysis: %s" % exc
-	return {"id": top.id, "state": str(top.state), "name": top.name,
-		"is_created": state == topology.State.CREATED,
-		"is_prepared": state == topology.State.PREPARED,
-		"is_started": state == topology.State.STARTED,
+	return {"id": top.id, "name": top.name,
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v)) for v in top.devices_all()], "device_count": len(top.devices_all()),
-		"connectors": [v.name for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
+		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
         "date_created": top.date_created, "date_modified": top.date_modified
         }
 
 def _device_info(dev):
-	res = {"id": dev.name, "type": dev.type, "host": dev.host.name}
+	state = str(dev.state)
+	res = {"id": dev.name, "type": dev.type, "host": dev.host.name,
+		"state": state,
+		"is_created": state == generic.State.CREATED,
+		"is_prepared": state == generic.State.PREPARED,
+		"is_started": state == generic.State.STARTED,
+		}
 	if dev.type == "openvz":
 		res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
 	if dev.type == "kvm":
 		res.update(vnc_port=dev.kvmdevice.vnc_port, vnc_password=dev.kvmdevice.vnc_password())
+	return res
+
+def _connector_info(con):
+	state = str(con.state)
+	res = {"id": con.name, "type": con.type,
+		"state": state,
+		"is_created": state == generic.State.CREATED,
+		"is_prepared": state == generic.State.PREPARED,
+		"is_started": state == generic.State.STARTED,
+		}
 	return res
 
 def _host_info(host):
@@ -110,12 +122,10 @@ def top_info(id, user=None):
 	logger.log("top_info(%s)" % id, user=user.name)
 	return _topology_info(topology.get(id))
 
-def top_list(state_filter, owner_filter, host_filter, user=None):
-	logger.log("top_list(state_filter=%s, owner_filter=%s, host_filter=%s)" % (state_filter, owner_filter, host_filter), user=user.name)
+def top_list(owner_filter, host_filter, user=None):
+	logger.log("top_list(owner_filter=%s, host_filter=%s)" % (owner_filter, host_filter), user=user.name)
 	tops=[]
 	all = topology.all()
-	if not state_filter=="*":
-		all = all.filter(state=state_filter)
 	if not owner_filter=="*":
 		all = all.filter(owner=owner_filter)
 	if not host_filter=="*":
@@ -180,6 +190,62 @@ def top_stop(top_id, user=None):
 	top = topology.get(top_id)
 	_top_access(top, user)
 	return top.stop()
+
+def device_prepare(top_id, device_name, user=None):
+	logger.log("device_prepare(%s,%s)" % (top_id, device_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	device = top.devices_get(device_name)
+	return device.prepare()
+	
+def device_destroy(top_id, device_name, user=None):
+	logger.log("device_destroy(%s,%s)" % (top_id, device_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	device = top.devices_get(device_name)
+	return device.destroy()
+	
+def device_start(top_id, device_name, user=None):
+	logger.log("device_start(%s,%s)" % (top_id, device_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	device = top.devices_get(device_name)
+	return device.start()
+	
+def device_stop(top_id, device_name, user=None):
+	logger.log("device_stop(%s,%s)" % (top_id, device_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	device = top.devices_get(device_name)
+	return device.stop()
+
+def connector_prepare(top_id, connector_name, user=None):
+	logger.log("connector_prepare(%s,%s)" % (top_id, connector_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	connector = top.connectors_get(connector_name)
+	return connector.prepare()
+	
+def connector_destroy(top_id, connector_name, user=None):
+	logger.log("connector_destroy(%s,%s)" % (top_id, connector_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	connector = top.connectors_get(connector_name)
+	return connector.destroy()
+	
+def connector_start(top_id, connector_name, user=None):
+	logger.log("connector_start(%s,%s)" % (top_id, connector_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	connector = top.connectors_get(connector_name)
+	return connector.start()
+	
+def connector_stop(top_id, connector_name, user=None):
+	logger.log("connector_stop(%s,%s)" % (top_id, connector_name), user=user.name)
+	top = topology.get(top_id)
+	_top_access(top, user)
+	connector = top.connectors_get(connector_name)
+	return connector.stop()
 
 def task_status(id, user=None):
 	logger.log("task_status(%s)" % id, user=user.name)

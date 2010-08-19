@@ -30,11 +30,10 @@ class TincConnector(generic.Connector):
 	def tincport(self, con):
 		return con.emulatedconnection.tincconnection.tinc_port
 
-	def start(self, task):
-		generic.Connector.start(self, task)
+	def start_run(self, task):
+		generic.Connector.start_run(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host
-			con.emulatedconnection.tincconnection.start(task)
 			tincname = self.tincname(con)
 			host.execute ( "tincd --net=%s" % tincname, task)
 			host.execute ( "ip link set %s up" %  tincname, task)
@@ -52,12 +51,14 @@ class TincConnector(generic.Connector):
 				host.execute ( "ifconfig %s %s netmask %s up" % (con.bridge_name(), con.upcast().gateway_ip, con.upcast().gateway_netmask), task )
 			else:
 				host.execute ( "brctl addif %s %s" % (con.bridge_name(), tincname ), task)
+		self.state = generic.State.STARTED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def stop(self, task):
-		generic.Connector.stop(self, task)
+	def stop_run(self, task):
+		generic.Connector.stop_run(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host
-			con.emulatedconnection.tincconnection.stop(task)
 			tincname = self.tincname(con)
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
@@ -70,9 +71,12 @@ class TincConnector(generic.Connector):
 				host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ), task )
 			host.execute ( "cat /var/run/tinc.%s.pid | xargs kill" % tincname, task)
 			host.execute ( "rm /var/run/tinc.%s.pid" % tincname, task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare(self, task):
-		generic.Connector.prepare(self, task)
+	def prepare_run(self, task):
+		generic.Connector.prepare_run(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
@@ -113,20 +117,24 @@ class TincConnector(generic.Connector):
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
 		for con in self.connections_all():
 			host = con.interface.device.host
-			con.emulatedconnection.tincconnection.prepare(task)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			host.upload(path, self.topology.get_remote_control_dir() + "/" + tincname, task)
 			tincname = self.tincname(con)
 			host.execute ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname), task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy(self, task):
-		generic.Connector.destroy(self, task)		
+	def destroy_run(self, task):
+		generic.Connector.destroy_run(self, task)		
 		for con in self.connections_all():
 			host = con.interface.device.host
-			con.emulatedconnection.tincconnection.destroy(task)
 			tincname = self.tincname(con)
 			host.execute ( "rm /etc/tinc/%s" % tincname, task )
 			host.execute ( "true", task )
+		self.state = generic.State.CREATED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):
 		pass
@@ -185,14 +193,14 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.gateway_ip = util.get_attr(dom, "gateway_ip", default=None)
 		self.gateway_netmask = util.get_attr(dom, "gateway_netmask", default=None)
 		
-	def start(self, task):
-		dummynet.EmulatedConnection.start(self, task)
+	def start_run(self, task):
+		dummynet.EmulatedConnection.start_run(self, task)
 
-	def stop(self, task):
-		dummynet.EmulatedConnection.stop(self, task)
+	def stop_run(self, task):
+		dummynet.EmulatedConnection.stop_run(self, task)
 
-	def prepare(self, task):
-		dummynet.EmulatedConnection.prepare(self, task)
+	def prepare_run(self, task):
+		dummynet.EmulatedConnection.prepare_run(self, task)
 
-	def destroy(self, task):
-		dummynet.EmulatedConnection.destroy(self, task)				
+	def destroy_run(self, task):
+		dummynet.EmulatedConnection.destroy_run(self, task)				

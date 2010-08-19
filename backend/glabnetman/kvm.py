@@ -42,8 +42,8 @@ class KVMDevice(generic.Device):
 		generic.Device.decode_xml(self, dom)
 		self.template = dom.getAttribute("template")
 
-	def start(self, task):
-		generic.Device.start(self, task)
+	def start_run(self, task):
+		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
@@ -53,14 +53,20 @@ class KVMDevice(generic.Device):
 			self.host.execute("brctl addif %s vmtab%si%s" % ( bridge, self.kvm_id, iface_id ), task)
 			self.host.execute("ip link set %s up" % bridge, task)
 		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
+		self.state = generic.State.STARTED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def stop(self, task):
-		generic.Device.stop(self, task)
+	def stop_run(self, task):
+		generic.Device.stop_run(self, task)
 		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
 		self.host.execute("qm stop %s" % self.kvm_id, task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare(self, task):
-		generic.Device.prepare(self, task)
+	def prepare_run(self, task):
+		generic.Device.prepare_run(self, task)
 		self.host.execute("qm create %s" % self.kvm_id, task)
 		self.host.execute("mkdir -p /var/lib/vz/images/%s" % self.kvm_id, task)
 		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s" % (self.template, self.kvm_id), task)
@@ -68,10 +74,16 @@ class KVMDevice(generic.Device):
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy(self, task):
-		generic.Device.destroy(self, task)
+	def destroy_run(self, task):
+		generic.Device.destroy_run(self, task)
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
+		self.state = generic.State.CREATED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def is_changed(self, dom):
 		if not self.template == util.get_attr(dom, "template", self.template):
@@ -83,9 +95,9 @@ class KVMDevice(generic.Device):
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
 		if not self.template == util.get_attr(dom, "template", self.template):
-			if self.topology.state == "started" or self.topology.state == "prepared":
+			if self.state == "started" or self.state == "prepared":
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of kvm %s cannot be changed" % self.name)
-		if self.is_changed(dom) and self.topology.state == "started":
+		if self.is_changed(dom) and self.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 
 	def change_run(self, dom, task):
@@ -104,13 +116,13 @@ class KVMDevice(generic.Device):
 				iface = generic.Interface()
 				iface.init(self, x_iface)
 				self.interfaces_add(iface)
-				if self.topology.state == "prepared":
+				if self.state == "prepared":
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
 					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				#deleted interface
-				if self.topology.state == "prepared":
+				if self.state == "prepared":
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
 					#FIXME: find a way to delete interfaces
 				iface.delete()

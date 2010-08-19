@@ -2,13 +2,25 @@
 
 from django.db import models
 
-import hosts, util, fault, re
+import hosts, util, fault, re, tasks, thread
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
 		self.name = name
 		self.is_user = is_user
 		self.is_admin = is_admin
+
+class State():
+	"""
+	The state of the element, this is an assigned value. The states are considered to be in order:
+	created -> prepared -> started
+	created		the element has been created but not prepared
+	prepared	all devices have been prepared
+	started		the element has been prepared and is currently up and running
+	"""
+	CREATED="created"
+	PREPARED="prepared"
+	STARTED="started"
 
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
@@ -19,6 +31,7 @@ class Device(models.Model):
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
+	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	host = models.ForeignKey(hosts.Host)
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
 
@@ -73,6 +86,7 @@ class Device(models.Model):
 			dom.setAttribute("hostgroup", self.hostgroup)
 		if internal:
 			dom.setAttribute("host", self.host)
+			dom.setAttribute("state", self.state)
 		for iface in self.interfaces_all():
 			x_iface = doc.createElement ( "interface" )
 			iface.upcast().encode_xml(x_iface, doc, internal)
@@ -83,22 +97,57 @@ class Device(models.Model):
 		self.type = dom.getAttribute("type")
 		util.get_attr(dom, "hostgroup", default=None)
 		
-	def start(self, task):
+	def start(self):
+		task = tasks.TaskStatus()
+		if self.state == State.CREATED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().start_run, (task,))
+		return task.id
+		
+	def stop(self):
+		task = tasks.TaskStatus()
+		if self.state == State.CREATED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().stop_run, (task,))
+		return task.id
+
+	def prepare(self):
+		task = tasks.TaskStatus()
+		if self.state == State.PREPARED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().prepare_run, (task,))
+		return task.id
+
+	def destroy(self):
+		task = tasks.TaskStatus()
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().destroy_run, (task,))
+		return task.id
+
+	def start_run(self, task):
 		pass
 
-	def stop(self, task):
+	def stop_run(self, task):
 		pass
 
-	def prepare(self, task):
+	def prepare_run(self, task):
 		pass
 
-	def destroy(self, task):
+	def destroy_run(self, task):
 		pass
 
 	def change_possible(self, dom):
 		if not self.hostgroup == util.get_attr(dom, "hostgroup", self.hostgroup):
-			from topology import State
-			if self.topology.state == State.PREPARED or self.topology.state == State.STARTED: 
+			if self.state == State.PREPARED or self.state == State.STARTED: 
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Cannot change host of deployed device")
 
 	def __unicode__(self):
@@ -144,6 +193,7 @@ class Connector(models.Model):
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
+	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 
 	def connections_add(self, con):
 		return self.connection_set.add(con)
@@ -173,6 +223,8 @@ class Connector(models.Model):
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
 		dom.setAttribute("type", self.type)
+		if internal:
+			dom.setAttribute("state", self.state)
 		for con in self.connections_all():
 			x_con = doc.createElement ( "connection" )
 			con.upcast().encode_xml(x_con, doc, internal)
@@ -182,21 +234,57 @@ class Connector(models.Model):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
 
-	def start(self, task):
-		for con in self.connections_all():
-			con.upcast().start(task)
+	def start(self):
+		task = tasks.TaskStatus()
+		if self.state == State.CREATED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().start_run, (task,))
+		return task.id
+		
+	def stop(self):
+		task = tasks.TaskStatus()
+		if self.state == State.CREATED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().stop_run, (task,))
+		return task.id
 
-	def stop(self, task):
-		for con in self.connections_all():
-			con.upcast().stop(task)
+	def prepare(self):
+		task = tasks.TaskStatus()
+		if self.state == State.PREPARED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().prepare_run, (task,))
+		return task.id
 
-	def prepare(self, task):
-		for con in self.connections_all():
-			con.upcast().prepare(task)
+	def destroy(self):
+		task = tasks.TaskStatus()
+		if self.state == State.STARTED:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task.subtasks_total = 1
+		thread.start_new_thread(self.upcast().destroy_run, (task,))
+		return task.id
 
-	def destroy(self, task):
+	def start_run(self, task):
 		for con in self.connections_all():
-			con.upcast().destroy(task)
+			con.upcast().start_run(task)
+
+	def stop_run(self, task):
+		for con in self.connections_all():
+			con.upcast().stop_run(task)
+
+	def prepare_run(self, task):
+		for con in self.connections_all():
+			con.upcast().prepare_run(task)
+
+	def destroy_run(self, task):
+		for con in self.connections_all():
+			con.upcast().destroy_run(task)
 
 	def __unicode__(self):
 		return self.name
@@ -246,22 +334,22 @@ class Connection(models.Model):
 		except Interface.DoesNotExist:
 			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
 					
-	def start(self, task):
+	def start_run(self, task):
 		host = self.interface.device.host
 		if not self.bridge_special_name:
 			host.execute("brctl addbr %s" % self.bridge_name(), task)
 			host.execute("ip link set %s up" % self.bridge_name(), task)
 
-	def stop(self, task):
+	def stop_run(self, task):
 		host = self.interface.device.host
 		if not self.bridge_special_name:
 			host.execute("ip link set %s down" % self.bridge_name(), task)
-			host.execute("brctl delbr %s" % self.bridge_name(), task)
+			#host.execute("brctl delbr %s" % self.bridge_name(), task)
 
-	def prepare(self, task):
+	def prepare_run(self, task):
 		pass
 
-	def destroy(self, task):
+	def destroy_run(self, task):
 		pass
 
 	def __unicode__(self):

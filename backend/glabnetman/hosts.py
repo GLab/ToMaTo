@@ -71,30 +71,30 @@ class Host(models.Model):
 		str = self.name + ": " + command + "\n"
 		if task:
 			task.output.write(str)
-			task.output.write(util.run_shell(cmd))
+			task.output.write(util.run_shell(cmd, config.remote_dry_run))
 		else:
 			print str
-			print util.run_shell(cmd)
+			print util.run_shell(cmd, config.remote_dry_run)
 	
 	def upload(self, local_file, remote_file, task=None):
 		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
 		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		if task:
 			task.output.write(str)
-			task.output.write(util.run_shell(cmd))
+			task.output.write(util.run_shell(cmd, config.remote_dry_run))
 		else:
 			print str
-			print util.run_shell(cmd)
+			print util.run_shell(cmd, config.remote_dry_run)
 	
 	def download(self, remote_file, local_file, task=None):
 		cmd = ["rsync", "-a", "root@%s:%s" % (self.name, remote_file), local_file]
 		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
 			task.output.write(str)
-			task.output.write(util.run_shell(cmd))
+			task.output.write(util.run_shell(cmd, config.remote_dry_run))
 		else:
 			print str
-			print util.run_shell(cmd)
+			print util.run_shell(cmd, config.remote_dry_run)
 				
 def get_host(name):
 	return Host.objects.get(name=name)

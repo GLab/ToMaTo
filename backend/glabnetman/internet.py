@@ -7,6 +7,7 @@ class InternetConnector(generic.Connector):
 	def init(self, topology, dom):
 		self.topology = topology
 		self.decode_xml(dom)
+		self.state = generic.State.STARTED
 		self.save()		
 		for connection in dom.getElementsByTagName ( "connection" ):
 			con = generic.Connection()
@@ -23,17 +24,25 @@ class InternetConnector(generic.Connector):
 	def decode_xml(self, dom):
 		generic.Connector.decode_xml(self, dom)
 		
-	def start(self, task):
-		generic.Connector.start(self, task)
+	def start_run(self, task):
+		generic.Connector.start_run(self, task)
+		#not changing state
+		task.subtasks_done = task.subtasks_done + 1
 
-	def stop(self, task):
-		generic.Connector.stop(self, task)
+	def stop_run(self, task):
+		generic.Connector.stop_run(self, task)
+		#not changing state
+		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare(self, task):
-		generic.Connector.prepare(self, task)
+	def prepare_run(self, task):
+		generic.Connector.prepare_run(self, task)
+		#not changing state
+		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy(self, task):
-		generic.Connector.destroy(self, task)		
+	def destroy_run(self, task):
+		generic.Connector.destroy_run(self, task)		
+		#not changing state
+		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):
 		pass

@@ -5,18 +5,6 @@ import thread, os
 import config, log, fault, util, tasks
 import topology_analysis, generic
 
-class State():
-	"""
-	The state of the topology, this is an assigned value. The states are considered to be in order:
-	created -> uploaded -> prepared -> started
-	created		the topology has been created but not uploaded
-	prepared	the topology has been uploaded and all devices have been prepared
-	started		the topology has been uploaded and prepared and is currently up and running
-	"""
-	CREATED="created"
-	PREPARED="prepared"
-	STARTED="started"
-
 class Topology(models.Model):
 	"""
 	This class represents a whole topology and offers methods to work with it
@@ -31,12 +19,7 @@ class Topology(models.Model):
 	"""
 	The name of the topology.
 	"""
-	
-	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)))
-	"""
-	@see TopologyState
-	"""
-	
+		
 	owner = models.CharField(max_length=30)
 
 	date_created = models.DateTimeField(auto_now_add=True)
@@ -50,7 +33,6 @@ class Topology(models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
-		self.state=State.CREATED
 		self.save()
 		try:
 			self.load_from(dom)
@@ -132,7 +114,6 @@ class Topology(models.Model):
 		"""
 		if internal:
 			dom.setAttribute("id", self.id)
-			dom.setAttribute("state", self.state)
 			dom.setAttribute("owner", self.owner)
 		dom.setAttribute("name", self.name)
 		for dev in self.devices_all():
@@ -165,12 +146,6 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
-		if self.state == State.PREPARED:
-			pass
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
 		thread.start_new_thread(self.start_run,(task,))
 		return task.id
@@ -178,15 +153,23 @@ class Topology(models.Model):
 	def start_run(self, task):
 		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
 		for dev in self.devices_all():
-			task.output.write("\n# starting " + dev.name + "\n") 
-			dev.upcast().start(task)
-			task.subtasks_done = task.subtasks_done + 1
+			if dev.state == generic.State.CREATED:
+				task.subtasks_total = task.subtasks_total + 1
+				task.output.write("\n# preparing " + dev.name + "\n") 
+				dev.upcast().prepare_run(task)
 		for con in self.connectors_all():
-			task.output.write("\n# starting " + con.name + "\n") 
-			con.upcast().start(task)
-			task.subtasks_done = task.subtasks_done + 1
-		self.state = State.STARTED
-		self.save()
+			if con.state == generic.State.CREATED:
+				task.subtasks_total = task.subtasks_total + 1
+				task.output.write("\n# preparing " + con.name + "\n") 
+				con.upcast().prepare_run(task)
+		for con in self.connectors_all():
+			if con.state == generic.State.PREPARED:
+				task.output.write("\n# starting " + con.name + "\n") 
+				con.upcast().start_run(task)
+		for dev in self.devices_all():
+			if dev.state == generic.State.PREPARED:
+				task.output.write("\n# starting " + dev.name + "\n") 
+				dev.upcast().start_run(task)
 		task.done()
 
 	def stop(self):
@@ -194,12 +177,6 @@ class Topology(models.Model):
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
-		if self.state == State.PREPARED:
-			pass
-		if self.state == State.STARTED:
-			pass
 		task = tasks.TaskStatus()
 		thread.start_new_thread(self.stop_run,(task,))
 		#self.stop_run(task)
@@ -208,15 +185,13 @@ class Topology(models.Model):
 	def stop_run(self, task):
 		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
 		for dev in self.devices_all():
-			task.output.write("\n# stopping " + dev.name + "\n") 
-			dev.upcast().stop(task)
-			task.subtasks_done = task.subtasks_done + 1
+			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
+				task.output.write("\n# stopping " + dev.name + "\n") 
+				dev.upcast().stop_run(task)
 		for con in self.connectors_all():
-			task.output.write("\n# stopping " + con.name + "\n") 
-			con.upcast().stop(task)
-			task.subtasks_done = task.subtasks_done + 1
-		self.state = State.PREPARED
-		self.save()
+			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
+				task.output.write("\n# stopping " + con.name + "\n") 
+				con.upcast().stop_run(task)
 		task.done()
 
 	def prepare(self):
@@ -226,12 +201,6 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		if self.state == State.CREATED:
-			pass
-		if self.state == State.PREPARED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already prepared")
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
 		thread.start_new_thread(self.prepare_run,(task,))
 		return task.id
@@ -239,15 +208,13 @@ class Topology(models.Model):
 	def prepare_run(self, task):
 		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
 		for dev in self.devices_all():
-			task.output.write("\n# preparing " + dev.name + "\n") 
-			dev.upcast().prepare(task)
-			task.subtasks_done = task.subtasks_done + 1
+			if dev.state == generic.State.CREATED:
+				task.output.write("\n# preparing " + dev.name + "\n") 
+				dev.upcast().prepare_run(task)
 		for con in self.connectors_all():
-			task.output.write("\n# preparing " + con.name + "\n") 
-			con.upcast().prepare(task)
-			task.subtasks_done = task.subtasks_done + 1
-		self.state = State.PREPARED
-		self.save()
+			if con.state == generic.State.CREATED:
+				task.output.write("\n# preparing " + con.name + "\n") 
+				con.upcast().prepare_run(task)
 		task.done()
 
 	def destroy(self):
@@ -255,12 +222,6 @@ class Topology(models.Model):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
-		if self.state == State.CREATED:
-			pass
-		if self.state == State.PREPARED:
-			pass
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
 		thread.start_new_thread(self.destroy_run,(task,))
 		return task.id
@@ -268,15 +229,23 @@ class Topology(models.Model):
 	def destroy_run(self, task):
 		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
 		for dev in self.devices_all():
-			task.output.write("\n# destroying " + dev.name + "\n") 
-			dev.upcast().destroy(task)
-			task.subtasks_done = task.subtasks_done + 1
+			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
+				task.subtasks_total = task.subtasks_total + 1
+				task.output.write("\n# stopping " + dev.name + "\n") 
+				dev.upcast().stop_run(task)
 		for con in self.connectors_all():
-			task.output.write("\n# destroying " + con.name + "\n") 
-			con.upcast().destroy(task)
-			task.subtasks_done = task.subtasks_done + 1
-		self.state = State.CREATED
-		self.save()
+			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
+				task.subtasks_total = task.subtasks_total + 1
+				task.output.write("\n# stopping " + con.name + "\n") 
+				con.upcast().stop_run(task)
+		for dev in self.devices_all():
+			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
+				task.output.write("\n# destroying " + dev.name + "\n") 
+				dev.upcast().destroy_run(task)
+		for con in self.connectors_all():
+			if con.state == generic.State.PREPARED or con.state == generic.State.CREATED:
+				task.output.write("\n# destroying " + con.name + "\n") 
+				con.upcast().destroy_run(task)
 		task.done()
 
 	def change_run(self, dom, task):
@@ -292,16 +261,12 @@ class Topology(models.Model):
 				# new device
 				self.devices_add_dom(x_dev)
 				dev = self.devices_get(name)
-				if self.state == State.PREPARED or self.state == State.STARTED:
-					dev.upcast().prepare(task)
-				if self.state == State.STARTED:
-					dev.upcast().start(task)
 		for dev in self.devices_all():
 			if not dev.name in devices:
 				#removed device
-				if self.state == State.STARTED:
+				if dev.state == generic.State.STARTED:
 					dev.upcast().stop(task)
-				if self.state == State.PREPARED or self.state == State.STARTED:
+				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
 					dev.upcast().destroy(task)
 				dev.delete()
 				
@@ -312,22 +277,22 @@ class Topology(models.Model):
 			try:
 				con = self.connectors_get(name)
 				con.upcast().change_run(x_con, task)
-				if self.state == State.STARTED:
+				if con.state == generic.State.STARTED:
 					con.upcast().stop(task)
-				if self.state == State.PREPARED or self.state == State.STARTED:
+				if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
 					con.upcast().destroy(task)
 			except generic.Connector.DoesNotExist:
 				self.connectors_add_dom(x_con)
 				con = self.connectors_get(name)				
-			if self.state == State.PREPARED or self.state == State.STARTED:
+			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
 				con.upcast().prepare(task)
-			if self.state == State.STARTED:
+			if con.state == generic.State.STARTED:
 				con.upcast().start(task)
 		for con in self.connectors_all():
 			if not con.name in connectors:
-				if self.state == State.STARTED:
+				if con.state == generic.State.STARTED:
 					con.upcast().stop(task)
-				if self.state == State.PREPARED or self.state == State.STARTED:
+				if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
 					con.upcast().destroy(task)
 				con.delete()				
 		task.done()
@@ -367,7 +332,7 @@ class Topology(models.Model):
 		if not device.upcast().upload_supported():
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
-		if self.state == State.STARTED:
+		if device.state == generic.State.STARTED:
 			os.remove(filename)
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot upload an image to a running topology")
 		task = tasks.TaskStatus()
@@ -380,7 +345,7 @@ class Topology(models.Model):
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		if not device.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
-		if self.state == State.STARTED:
+		if device.state == generic.State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot download an image of a running topology")
 		return device.upcast().download_image()
 

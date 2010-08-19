@@ -41,20 +41,26 @@ class DhcpdDevice(generic.Device):
 		self.gateway = dom.getAttribute("gateway")
 		self.nameserver = dom.getAttribute("nameserver")
 
-	def start(self, task):
-		generic.Device.start(self, task)
+	def start_run(self, task):
+		generic.Device.start_run(self, task)
 		command = "dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.name, self.name )
 		for iface in self.interfaces_all():
 			command += " %s" % self.bridge_name(iface)
 		command += " &"
 		self.host.execute(command, task)
+		self.state = generic.State.STARTED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def stop(self, task):
-		generic.Device.stop(self, task)
+	def stop_run(self, task):
+		generic.Device.stop_run(self, task)
 		self.host.execute("cat %s.pid | xargs kill\n" % self.name, task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare(self, task):
-		generic.Device.prepare(self, task)
+	def prepare_run(self, task):
+		generic.Device.prepare_run(self, task)
 		local_file = self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.name+".conf"
 		dhcpd_fd=open(local_file,"w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
@@ -64,10 +70,16 @@ class DhcpdDevice(generic.Device):
 		dhcpd_fd.write("  range %s;\n" % self.range )
 		dhcpd_fd.write("}\n" )
 		self.host.upload(local_file, self.topology.get_remote_control_dir()+"/dhcpd."+self.name+".conf", task)
+		self.state = generic.State.PREPARED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy(self, task):
-		generic.Device.destroy(self, task)
+	def destroy_run(self, task):
+		generic.Device.destroy_run(self, task)
 		self.host.execute("rm " + self.topology.get_remote_control_dir()+"/dhcpd."+self.name+".conf", task)
+		self.state = generic.State.CREATED
+		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
@@ -77,8 +89,8 @@ class DhcpdDevice(generic.Device):
 		Adapt this device to the new device
 		"""
 		self.decode_xml(dom, False)
-		if self.topology.state == "prepared" or self.topology.state == "started":
+		if self.state == "prepared" or self.state == "started":
 			self.prepare(task)
-		if self.topology.state == "started":
+		if self.state == "started":
 			self.stop(task)
 			self.start(task)

@@ -19,10 +19,7 @@ def index(request):
 		owner_filter = "*"
 		if request.REQUEST.has_key("owner_filter"):
 			owner_filter=request.REQUEST["owner_filter"]
-		state_filter = "*"
-		if request.REQUEST.has_key("state_filter"):
-			state_filter=request.REQUEST["state_filter"]
-		toplist=api.top_list(state_filter, owner_filter, host_filter)
+		toplist=api.top_list(owner_filter, host_filter)
 		return render_to_response("top/index.html", {'top_list': toplist})
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
@@ -146,9 +143,7 @@ def _action(request, top_id, action):
 			api.top_remove(int(top_id))
 			return index(request)
 		task_id=None
-		if action=="upload":
-			task_id=api.top_upload(int(top_id))
-		elif action=="prepare":
+		if action=="prepare":
 			task_id=api.top_prepare(int(top_id))
 		elif action=="destroy":
 			task_id=api.top_destroy(int(top_id))
@@ -156,6 +151,70 @@ def _action(request, top_id, action):
 			task_id=api.top_start(int(top_id))
 		elif action=="stop":
 			task_id=api.top_stop(int(top_id))
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
+		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
+def dev_prepare(request, top_id, device_id):
+	return _dev_action(request, top_id, device_id, "prepare")
+
+def dev_destroy(request, top_id, device_id):
+	return _dev_action(request, top_id, device_id, "destroy")
+
+def dev_start(request, top_id, device_id):
+	return _dev_action(request, top_id, device_id, "start")
+
+def dev_stop(request, top_id, device_id):
+	return _dev_action(request, top_id, device_id, "stop")
+
+def _dev_action(request, top_id, device_id, action):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		if action=="prepare":
+			task_id=api.device_prepare(int(top_id), device_id)
+		elif action=="destroy":
+			task_id=api.device_destroy(int(top_id), device_id)
+		elif action=="start":
+			task_id=api.device_start(int(top_id), device_id)
+		elif action=="stop":
+			task_id=api.device_stop(int(top_id), device_id)
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
+		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
+def con_prepare(request, top_id, connector_id):
+	return _con_action(request, top_id, connector_id, "prepare")
+
+def con_destroy(request, top_id, connector_id):
+	return _con_action(request, top_id, connector_id, "destroy")
+
+def con_start(request, top_id, connector_id):
+	return _con_action(request, top_id, connector_id, "start")
+
+def con_stop(request, top_id, connector_id):
+	return _con_action(request, top_id, connector_id, "stop")
+
+def _con_action(request, top_id, connector_id, action):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		if action=="prepare":
+			task_id=api.connector_prepare(int(top_id), connector_id)
+		elif action=="destroy":
+			task_id=api.connector_destroy(int(top_id), connector_id)
+		elif action=="start":
+			task_id=api.connector_start(int(top_id), connector_id)
+		elif action=="stop":
+			task_id=api.connector_stop(int(top_id), connector_id)
 		top=api.top_info(int(top_id))
 		if not top:
 			raise Http404

@@ -4,7 +4,6 @@
 <h1>Detail view of topology "{{top.name}}" [{{top.id}}] </h1>
 
 Owner: {{top.owner}}<br/>
-State: {{top.state}}<br/>
 Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
@@ -25,8 +24,7 @@ Connectors: {{top.connector_count}}<br/>
 </ul>
 
 <script language="javascript"><!--
-function console (dev) {
-    var url = "{%url top.vncview top_id=top.id device_id=""%}"+dev;
+function console (url) {
     var nw = window.open(url, '_blank', "innerWidth=745,innerheight=400");
     nw.focus();
 }
@@ -37,6 +35,7 @@ function console (dev) {
 		<th>Device ID</th>
 		<th>Type</th>
 		<th>Host</th>
+		<th>State</th>
 		<th>Actions</th>
 	</tr>
 {% for name, dev in top.devices %}
@@ -44,13 +43,58 @@ function console (dev) {
 		<td>{{dev.id}}</td>
 		<td>{{dev.type}}</td>
 		<td>{{dev.host}}</td>
+		<td>{{dev.state}}</td>
 		<td>
-{% if top.is_started %}
-		<a href="javascript:console('{{dev.id}}')">console</a>
+{% if dev.is_created %}
+		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.id%}">prepare</a>
+{% endif %}		
+{% if dev.is_prepared %}
+		<a href="{%url top.dev_start top_id=top_id device_id=dev.id%}">start</a>
 {% endif %}
-{% if top.is_prepared %}
+{% if dev.is_prepared or dev.is_started %}
+		<a href="{%url top.dev_stop top_id=top_id device_id=dev.id%}">stop</a>
+{% endif %}
+{% if dev.is_prepared or dev.is_created %}
+		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.id%}">destroy</a>
+{% endif %}
+{% if dev.is_started %}
+		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.id%}');">console</a>
+{% endif %}
+{% if dev.is_prepared %}
 		<a href="{%url top.upload_image top_id=top_id device_id=dev.id%}">upload image</a>
 		<a href="{%url top.download_image top_id=top_id device_id=dev.id%}">download image</a>
+{% endif %}
+		</td>		
+	</tr>
+{% endfor %}
+</table>
+
+<br/><br/>
+
+<table>
+	<tr>
+		<th>Connector ID</th>
+		<th>Type</th>
+		<th>State</th>
+		<th>Actions</th>
+	</tr>
+{% for name, con in top.connectors %}
+	<tr>
+		<td>{{con.id}}</td>
+		<td>{{con.type}}</td>
+		<td>{{con.state}}</td>
+		<td>
+{% if con.is_created %}
+		<a href="{%url top.con_prepare top_id=top_id connector_id=con.id%}">prepare</a>
+{% endif %}		
+{% if con.is_prepared %}
+		<a href="{%url top.con_start top_id=top_id connector_id=con.id%}">start</a>
+{% endif %}
+{% if con.is_prepared or con.is_started %}
+		<a href="{%url top.con_stop top_id=top_id connector_id=con.id%}">stop</a>
+{% endif %}
+{% if con.is_prepared or con.is_created %}
+		<a href="{%url top.con_destroy top_id=top_id connector_id=con.id%}">destroy</a>
 {% endif %}
 		</td>		
 	</tr>
@@ -72,27 +116,17 @@ function console (dev) {
 		<li><a href="{%url top.showxml top_id%}">show</a></li>
 		<li><a href="{%url top.showxml top_id%}?plain">download</a></li>
 		<li><a href="{%url top.edit top_id%}">edit</a></li>
-{% if top.is_created %}
 		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
-{% endif %}
 	</ul>
 </div>
 
 <div id="sidemenu">
 	<h2>Deployment</h2>
 	<ul>
-{% if top.is_prepared %} 
 		<li><a href="{%url top.start top_id%}">start</a></li>
-{% endif %}
-{% if top.is_prepared or top.is_started %} 
 		<li><a href="{%url top.stop top_id%}">stop</a></li>
-{% endif %}
-{% if top.is_created %} 
 		<li><a href="{%url top.prepare top_id%}">prepare</a></li>
-{% endif %}
-{% if top.is_prepared %} 
 		<li><a href="{%url top.destroy top_id%}" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
-{% endif %}
 	</ul>
 </div>
 {% endblock %}

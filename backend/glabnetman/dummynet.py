@@ -45,8 +45,8 @@ class EmulatedConnection(generic.Connection):
 		self.bandwidth = re.match("(\d+)k", util.get_attr(dom, "bandwidth", default="0k")).group(1)
 		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
 
-	def start(self, task):
-		generic.Connection.start(self, task)
+	def start_run(self, task):
+		generic.Connection.start_run(self, task)
 		host = self.interface.device.host
 		pipe_id = int(self.bridge_id) * 10
 		pipe_config=""
@@ -60,15 +60,15 @@ class EmulatedConnection(generic.Connection):
 		if self.lossratio:
 			host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
 
-	def stop(self, task):
-		generic.Connection.stop(self, task)
+	def stop_run(self, task):
+		generic.Connection.stop_run(self, task)
 		host = self.interface.device.host
 		pipe_id = int(self.bridge_id) * 10
 		host.execute("ipfw delete %d" % pipe_id, task)
 		host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
 			
-	def prepare(self, task):
-		generic.Connection.prepare(self, task)
+	def prepare_run(self, task):
+		generic.Connection.prepare_run(self, task)
 
-	def destroy(self, task):
-		generic.Connection.destroy(self, task)
+	def destroy_run(self, task):
+		generic.Connection.destroy_run(self, task)
