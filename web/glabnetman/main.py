@@ -15,7 +15,10 @@ def task_status(request, task_id):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
 		task = api.task_status(task_id)
-		return render_to_response("main/task.html", {'task': task})
+		backurl=""
+		if request.REQUEST.has_key("backurl"):
+			backurl=request.REQUEST["backurl"]
+		return render_to_response("main/task.html", {'task': task, 'backurl': backurl})
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 

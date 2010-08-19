@@ -6,7 +6,7 @@
 <link href="/static/style/style.css" rel="stylesheet" type="text/css" /> 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
 {% if not task.done %}
-<meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}" /> 
+<meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}?backurl={{backurl}}" /> 
 {% endif %}
 </head>
 <body>
@@ -15,6 +15,14 @@
 Progress: 
 {% if task.done %}
 done
+{% if backurl %}
+<script language="javascript"><!--
+  function back(){
+    window.parent.location = "{{backurl}}"
+  }
+  setTimeout("back()",1000)
+//--></script>
+{% endif %}
 {% else %}
 {{task.subtasks_done}}/{{task.subtasks_total}}
 {% endif %}

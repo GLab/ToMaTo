@@ -69,6 +69,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
 		self.state = generic.State.STARTED
 		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def stop_run(self, task):
 		generic.Device.stop_run(self, task)
@@ -76,6 +77,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl stop %s" % self.openvz_id, task)
 		self.state = generic.State.PREPARED
 		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
@@ -90,12 +92,14 @@ class OpenVZDevice(generic.Device):
 			self.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ), task)
 		self.state = generic.State.PREPARED
 		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("vzctl destroy %s" % self.openvz_id, task)
 		self.state = generic.State.CREATED
 		self.save()
+		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)

@@ -45,24 +45,24 @@ function console (url) {
 		<td>{{dev.host}}</td>
 		<td>{{dev.state}}</td>
 		<td>
-{% if dev.is_created %}
-		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.id%}">prepare</a>
-{% endif %}		
 {% if dev.is_prepared %}
-		<a href="{%url top.dev_start top_id=top_id device_id=dev.id%}">start</a>
+		<a href="{%url top.dev_start top_id=top_id device_id=dev.id%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
 {% if dev.is_prepared or dev.is_started %}
-		<a href="{%url top.dev_stop top_id=top_id device_id=dev.id%}">stop</a>
+		<a href="{%url top.dev_stop top_id=top_id device_id=dev.id%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
+{% if dev.is_created %}
+		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.id%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+{% endif %}		
 {% if dev.is_prepared or dev.is_created %}
-		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.id%}">destroy</a>
+		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.id%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 {% if dev.is_started %}
-		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.id%}');">console</a>
+		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.id%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
 {% if dev.is_prepared %}
-		<a href="{%url top.upload_image top_id=top_id device_id=dev.id%}">upload image</a>
-		<a href="{%url top.download_image top_id=top_id device_id=dev.id%}">download image</a>
+		<a href="{%url top.upload_image top_id=top_id device_id=dev.id%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
+		<a href="{%url top.download_image top_id=top_id device_id=dev.id%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
 {% endif %}
 		</td>		
 	</tr>
@@ -84,17 +84,17 @@ function console (url) {
 		<td>{{con.type}}</td>
 		<td>{{con.state}}</td>
 		<td>
-{% if con.is_created %}
-		<a href="{%url top.con_prepare top_id=top_id connector_id=con.id%}">prepare</a>
-{% endif %}		
 {% if con.is_prepared %}
-		<a href="{%url top.con_start top_id=top_id connector_id=con.id%}">start</a>
+		<a href="{%url top.con_start top_id=top_id connector_id=con.id%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
 {% if con.is_prepared or con.is_started %}
-		<a href="{%url top.con_stop top_id=top_id connector_id=con.id%}">stop</a>
+		<a href="{%url top.con_stop top_id=top_id connector_id=con.id%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
+{% if con.is_created %}
+		<a href="{%url top.con_prepare top_id=top_id connector_id=con.id%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+{% endif %}		
 {% if con.is_prepared or con.is_created %}
-		<a href="{%url top.con_destroy top_id=top_id connector_id=con.id%}">destroy</a>
+		<a href="{%url top.con_destroy top_id=top_id connector_id=con.id%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 		</td>		
 	</tr>
@@ -103,7 +103,7 @@ function console (url) {
 
 {% if action %}
 <h2>Executing {{action}} ...</h2>
-<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}"></iframe>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url top.details top_id%}"></iframe>
 {% endif %}
 
 {% endblock %}
