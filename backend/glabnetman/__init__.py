@@ -11,30 +11,33 @@ import tinc, internet, kvm, openvz, dhcp
 
 logger = log.Logger(config.log_dir + "/api.log")
 
-def _topology_info(top):
+def _topology_info(top, auth):
 	try:
 		analysis = top.analysis()
 	except Exception, exc:
 		analysis = "Error in analysis: %s" % exc
 	return {"id": top.id, "name": top.name,
 		"owner": str(top.owner), "analysis": analysis,
-		"devices": [(v.name, _device_info(v)) for v in top.devices_all()], "device_count": len(top.devices_all()),
+		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
         "date_created": top.date_created, "date_modified": top.date_modified
         }
 
-def _device_info(dev):
+def _device_info(dev, auth):
 	state = str(dev.state)
 	res = {"id": dev.name, "type": dev.type, "host": dev.host.name,
 		"state": state,
 		"is_created": state == generic.State.CREATED,
 		"is_prepared": state == generic.State.PREPARED,
 		"is_started": state == generic.State.STARTED,
+		"upload_supported": dev.upload_supported(),
+		"download_supported": dev.download_supported(),
 		}
-	if dev.type == "openvz":
-		res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
-	if dev.type == "kvm":
-		res.update(vnc_port=dev.kvmdevice.vnc_port, vnc_password=dev.kvmdevice.vnc_password())
+	if auth:
+		if dev.type == "openvz":
+			res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
+		if dev.type == "kvm":
+			res.update(vnc_port=dev.kvmdevice.vnc_port, vnc_password=dev.kvmdevice.vnc_password())
 	return res
 
 def _connector_info(con):
@@ -120,7 +123,8 @@ def _parse_xml(xml):
 
 def top_info(id, user=None):
 	logger.log("top_info(%s)" % id, user=user.name)
-	return _topology_info(topology.get(id))
+	top = topology.get(id)
+	return _topology_info(top, user.name==top.owner or user.is_admin)
 
 def top_list(owner_filter, host_filter, user=None):
 	logger.log("top_list(owner_filter=%s, host_filter=%s)" % (owner_filter, host_filter), user=user.name)
@@ -131,7 +135,7 @@ def top_list(owner_filter, host_filter, user=None):
 	if not host_filter=="*":
 		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
-		tops.append(_topology_info(t))
+		tops.append(_topology_info(t, user.name==t.owner or user.is_admin))
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
