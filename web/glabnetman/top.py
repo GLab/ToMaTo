@@ -118,9 +118,6 @@ def showxml(request, top_id):
 def remove(request, top_id):
 	return _action(request, top_id, "remove")
 
-def upload(request, top_id):
-	return _action(request, top_id, "upload")
-
 def prepare(request, top_id):
 	return _action(request, top_id, "prepare")
 

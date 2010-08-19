@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
-import thread, os, shutil, stat, uuid
+import thread, os
 import config, log, fault, util, tasks
 import topology_analysis, generic
 
@@ -10,12 +10,10 @@ class State():
 	The state of the topology, this is an assigned value. The states are considered to be in order:
 	created -> uploaded -> prepared -> started
 	created		the topology has been created but not uploaded
-	uploaded	the topology has been uploaded to the hosts but has not been prepared yet
 	prepared	the topology has been uploaded and all devices have been prepared
 	started		the topology has been uploaded and prepared and is currently up and running
 	"""
 	CREATED="created"
-	UPLOADED="uploaded"
 	PREPARED="prepared"
 	STARTED="started"
 
@@ -34,7 +32,7 @@ class Topology(models.Model):
 	The name of the topology.
 	"""
 	
-	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.UPLOADED, State.UPLOADED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)))
+	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)))
 	"""
 	@see TopologyState
 	"""
@@ -160,162 +158,97 @@ class Topology(models.Model):
 		"""
 		return config.remote_control_dir+"/"+str(self.id)
 
-	def get_control_script(self,host_name,script):
-		"""
-		The local path of a specific control script.
-		@param host_name the name of the host for the deployment
-		@param script the name of the script without .sh
-		"""
-		return self.get_control_dir(host_name)+"/"+script+".sh"
-
-	def upload(self):
-		"""
-		This will upload the topology to the testbed in the following steps:
-		1. Fill all unassigned resource slots
-		2. Create the control scripts
-		3. Upload the control scripts
-		Note: this can be done even if the topology is already uploaded or even running
-		"""
-		if not self.id:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
-		if len(self.analysis()["problems"]) > 0:
-			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		task = tasks.TaskStatus()
-		thread.start_new_thread(self.upload_run,(task,))
-		#self.upload_run(task) 
-		return task.id
-	
-	def upload_run(self, task):
-		task.subtasks_total = len(self.affected_hosts()) + len(self.devices_all()) + len(self.connectors_all())
-		self.write_control_scripts(task)
-		self.upload_control_scripts(task)
-		if self.state == State.CREATED:
-			self.state = State.UPLOADED
-		self.save()
-		self._log("upload", task.output.getvalue())
-		task.done()
-	
-	def write_control_scripts(self, task):
-		"""
-		Creates all control scripts and stores them in a local directory.
-		"""
-		task.output.write("creating scripts ...\n")
-		if config.local_control_dir and os.path.exists(config.local_control_dir):
-			shutil.rmtree(config.local_control_dir)
-		for dev in self.devices_all():
-			task.output.write("\tcreating aux files for %s ...\n" % dev)
-			dev.upcast().write_aux_files()
-			task.subtasks_done = task.subtasks_done+1
-		for con in self.connectors_all():
-			task.output.write("\tcreating aux files for %s ...\n" % con)
-			con.upcast().write_aux_files()
-			task.subtasks_done = task.subtasks_done+1
-		for host in self.affected_hosts():
-			dir=self.get_control_dir(host.name)
-			if not os.path.exists(dir):
-				os.makedirs(dir)
-			for script in ("prepare", "destroy", "start", "stop"):
-				script_fd = open(self.get_control_script(host.name,script), "w")
-				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
-				for dev in self.devices_all():
-					if dev.host == host:
-						script_fd.write("\n# commands for %s\n" % dev)
-						dev.upcast().write_control_script(host, script, script_fd)
-				for con in self.connectors_all():
-					script_fd.write("\n# commands for %s\n" % con)
-					con.upcast().write_control_script(host, script, script_fd)
-				script_fd.close()
-				os.chmod(self.get_control_script(host.name,script), stat.S_IRWXU)
-
-	def upload_control_scripts(self, task):
-		"""
-		Uploads all control scripts stored in a local directory.
-		"""
-		task.output.write("uploading scripts ...\n")
-		for host in self.affected_hosts():
-			task.output.write("%s ...\n" % host.name)
-			src = self.get_control_dir(host.name)
-			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			task.output.write(util.run_shell ( ["ssh",  "root@%s" % host.name, "mkdir -p %s/%s" % ( config.remote_control_dir, self.id ) ], config.remote_dry_run ))
-			task.output.write(util.run_shell (["ssh",  "root@%s" % host.name, "rm -r %s/%s" % ( config.remote_control_dir, self.id ) ], config.remote_dry_run ))
-			task.output.write(util.run_shell (["rsync",  "-a",  "%s/" % src, dst], config.remote_dry_run))
-			task.output.write("\n")
-			task.subtasks_done = task.subtasks_done+1
-			
-	def exec_script(self, script, task, newstate):
-		"""
-		Executes a control script.
-		@param script the script to execute
-		"""
-		if not self.id:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not registered")
-		task.subtasks_total = len(self.affected_hosts())
-		task.output.write("executing %s ...\n" % script)
-		script = "%s/%s/%s.sh" % ( config.remote_control_dir, self.id, script )
-		for host in self.affected_hosts():
-			task.output.write("%s ...\n" % host.name)
-			task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, script ], config.remote_dry_run ))
-			task.output.write("\n")
-			task.subtasks_done = task.subtasks_done + 1
-		self.state=newstate
-		self.save()
-		self._log("execute %s" % script, task.output.getvalue())
-		task.done()
-
 	def start(self):
 		"""
 		Starts the topology.
-		This will fail if the topology has not been uploaded or prepared yet or is already started.
+		This will fail if the topology has not been prepared yet or is already started.
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
-		if self.state == State.UPLOADED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == State.PREPARED:
 			pass
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.exec_script,("start", task, State.STARTED))
+		thread.start_new_thread(self.start_run,(task,))
 		return task.id
+
+	def start_run(self, task):
+		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
+		for dev in self.devices_all():
+			task.output.write("\n# starting " + dev.name + "\n") 
+			dev.upcast().start(task)
+			task.subtasks_done = task.subtasks_done + 1
+		for con in self.connectors_all():
+			task.output.write("\n# starting " + con.name + "\n") 
+			con.upcast().start(task)
+			task.subtasks_done = task.subtasks_done + 1
+		self.state = State.STARTED
+		self.save()
+		task.done()
 
 	def stop(self):
 		"""
 		Stops the topology.
-		This will fail if the topology has not been uploaded or prepared yet.
+		This will fail if the topology has not been prepared yet.
 		"""
 		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
-		if self.state == State.UPLOADED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not prepared")
 		if self.state == State.PREPARED:
 			pass
 		if self.state == State.STARTED:
 			pass
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.exec_script,("stop", task, State.PREPARED))
+		thread.start_new_thread(self.stop_run,(task,))
+		#self.stop_run(task)
 		return task.id
+
+	def stop_run(self, task):
+		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
+		for dev in self.devices_all():
+			task.output.write("\n# stopping " + dev.name + "\n") 
+			dev.upcast().stop(task)
+			task.subtasks_done = task.subtasks_done + 1
+		for con in self.connectors_all():
+			task.output.write("\n# stopping " + con.name + "\n") 
+			con.upcast().stop(task)
+			task.subtasks_done = task.subtasks_done + 1
+		self.state = State.PREPARED
+		self.save()
+		task.done()
 
 	def prepare(self):
 		"""
 		Prepares the topology.
-		This will fail if the topology has not been uploaded yet or is already prepared or started.
+		This will fail if the topology is already prepared or started.
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
-		if self.state == State.UPLOADED:
 			pass
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.exec_script,("prepare", task, State.PREPARED))
+		thread.start_new_thread(self.prepare_run,(task,))
 		return task.id
+
+	def prepare_run(self, task):
+		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
+		for dev in self.devices_all():
+			task.output.write("\n# preparing " + dev.name + "\n") 
+			dev.upcast().prepare(task)
+			task.subtasks_done = task.subtasks_done + 1
+		for con in self.connectors_all():
+			task.output.write("\n# preparing " + con.name + "\n") 
+			con.upcast().prepare(task)
+			task.subtasks_done = task.subtasks_done + 1
+		self.state = State.PREPARED
+		self.save()
+		task.done()
 
 	def destroy(self):
 		"""
@@ -323,32 +256,30 @@ class Topology(models.Model):
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
 		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "not uploaded")
-		if self.state == State.UPLOADED:
 			pass
 		if self.state == State.PREPARED:
 			pass
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "already started")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.exec_script,("destroy", task, State.UPLOADED))
+		thread.start_new_thread(self.destroy_run,(task,))
 		return task.id
 
+	def destroy_run(self, task):
+		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
+		for dev in self.devices_all():
+			task.output.write("\n# destroying " + dev.name + "\n") 
+			dev.upcast().destroy(task)
+			task.subtasks_done = task.subtasks_done + 1
+		for con in self.connectors_all():
+			task.output.write("\n# destroying " + con.name + "\n") 
+			con.upcast().destroy(task)
+			task.subtasks_done = task.subtasks_done + 1
+		self.state = State.CREATED
+		self.save()
+		task.done()
+
 	def change_run(self, dom, task):
-		dir = config.local_control_dir + "/tmp"
-		change_id = uuid.uuid1()
-		if not os.path.exists(dir):
-			os.makedirs(dir)
-		host_scripts={}
-		def get_host_script(host):
-			if host_scripts.has_key(host.name):
-				return host_scripts[host.name]
-			else:
-				script_fd = open("%s/%s_%s.sh" % (dir, host.name, change_id), "a")
-				script_fd.write("#!/bin/bash\ncd %s\n\n" % self.get_remote_control_dir())
-				host_scripts[host.name] = script_fd
-				return script_fd
-			
 		devices=set()
 		for x_dev in dom.getElementsByTagName("device"):
 			name = x_dev.getAttribute("id")
@@ -356,22 +287,22 @@ class Topology(models.Model):
 			try:
 				dev = self.devices_get(name)
 				# changed device
-				dev.upcast().change_run(x_dev, task, get_host_script(dev.host))
+				dev.upcast().change_run(x_dev, task)
 			except generic.Device.DoesNotExist:
 				# new device
 				self.devices_add_dom(x_dev)
 				dev = self.devices_get(name)
 				if self.state == State.PREPARED or self.state == State.STARTED:
-					dev.write_control_script(dev.host, "prepare", get_host_script(dev.host))
+					dev.upcast().prepare(task)
 				if self.state == State.STARTED:
-					dev.write_control_script(dev.host, "start", get_host_script(dev.host))
+					dev.upcast().start(task)
 		for dev in self.devices_all():
 			if not dev.name in devices:
 				#removed device
 				if self.state == State.STARTED:
-					dev.upcast().write_control_script(dev.host, "stop", get_host_script(dev.host))
+					dev.upcast().stop(task)
 				if self.state == State.PREPARED or self.state == State.STARTED:
-					dev.upcast().write_control_script(dev.host, "destroy", get_host_script(dev.host))
+					dev.upcast().destroy(task)
 				dev.delete()
 				
 		connectors=set()	
@@ -381,39 +312,24 @@ class Topology(models.Model):
 			try:
 				con = self.connectors_get(name)
 				con.upcast().change_run(x_con, task)
-				for host in con.affected_hosts():
-					if self.state == State.STARTED:
-						con.upcast().write_control_script(host, "stop", get_host_script(host))
-					if self.state == State.PREPARED or self.state == State.STARTED:
-						con.upcast().write_control_script(host, "destroy", get_host_script(host))
+				if self.state == State.STARTED:
+					con.upcast().stop(task)
+				if self.state == State.PREPARED or self.state == State.STARTED:
+					con.upcast().destroy(task)
 			except generic.Connector.DoesNotExist:
 				self.connectors_add_dom(x_con)
 				con = self.connectors_get(name)				
-			for host in con.affected_hosts():
-				if self.state == State.PREPARED or self.state == State.STARTED:
-					con.upcast().write_control_script(host, "prepare", get_host_script(host))
-				if self.state == State.STARTED:
-					con.upcast().write_control_script(host, "start", get_host_script(host))
+			if self.state == State.PREPARED or self.state == State.STARTED:
+				con.upcast().prepare(task)
+			if self.state == State.STARTED:
+				con.upcast().start(task)
 		for con in self.connectors_all():
 			if not con.name in connectors:
-				for host in con.affected_hosts():
-					if self.state == State.STARTED:
-						con.upcast().write_control_script(host, "stop", get_host_script(host))
-					if self.state == State.PREPARED or self.state == State.STARTED:
-						con.upcast().write_control_script(host, "destroy", get_host_script(host))
+				if self.state == State.STARTED:
+					con.upcast().stop(task)
+				if self.state == State.PREPARED or self.state == State.STARTED:
+					con.upcast().destroy(task)
 				con.delete()				
-
-		#finalize and execute scripts
-		self.upload_control_scripts(task)
-		for (host_name, script_fd) in host_scripts.items():
-			script_fd.close()
-			src = "%s/%s_%s.sh" % (dir, host_name, change_id)
-			os.chmod(src, stat.S_IRWXU)
-			dst = "root@%s:%s" % ( host.name, self.get_remote_control_dir() )
-			task.output.write(util.run_shell (["rsync",  "-a",  "%s/" % src, dst], config.remote_dry_run))
-			script = "%s/%s_%s.sh" % ( config.remote_control_dir, host_name, change_id )
-			task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, script ], config.remote_dry_run ))
-		
 		task.done()
 
 	def change_possible(self, dom):

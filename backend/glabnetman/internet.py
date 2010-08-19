@@ -23,12 +23,18 @@ class InternetConnector(generic.Connector):
 	def decode_xml(self, dom):
 		generic.Connector.decode_xml(self, dom)
 		
-	def write_aux_files(self):
-		pass
-	
-	def write_control_script(self, host, script, fd):
-		pass
-		
+	def start(self, task):
+		generic.Connector.start(self, task)
+
+	def stop(self, task):
+		generic.Connector.stop(self, task)
+
+	def prepare(self, task):
+		generic.Connector.prepare(self, task)
+
+	def destroy(self, task):
+		generic.Connector.destroy(self, task)		
+
 	def change_possible(self, dom):
 		pass
 	

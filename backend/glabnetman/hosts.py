@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import config, fault
+import config, fault, util
 
 class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
@@ -64,7 +64,37 @@ class Host(models.Model):
 		import generic
 		for con in generic.Connection.objects.filter(interface__device__host=self):
 			ids.remove(con.bridge_id)
-		return ids[0]				
+		return ids[0]
+	
+	def execute(self, command, task=None):
+		cmd = ["ssh", "root@%s" % self.name, command]
+		str = self.name + ": " + command + "\n"
+		if task:
+			task.output.write(str)
+			task.output.write(util.run_shell(cmd))
+		else:
+			print str
+			print util.run_shell(cmd)
+	
+	def upload(self, local_file, remote_file, task=None):
+		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
+		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
+		if task:
+			task.output.write(str)
+			task.output.write(util.run_shell(cmd))
+		else:
+			print str
+			print util.run_shell(cmd)
+	
+	def download(self, remote_file, local_file, task=None):
+		cmd = ["rsync", "-a", "root@%s:%s" % (self.name, remote_file), local_file]
+		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
+		if task:
+			task.output.write(str)
+			task.output.write(util.run_shell(cmd))
+		else:
+			print str
+			print util.run_shell(cmd)
 				
 def get_host(name):
 	return Host.objects.get(name=name)

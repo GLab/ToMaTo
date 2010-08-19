@@ -72,7 +72,7 @@ function console (dev) {
 		<li><a href="{%url top.showxml top_id%}">show</a></li>
 		<li><a href="{%url top.showxml top_id%}?plain">download</a></li>
 		<li><a href="{%url top.edit top_id%}">edit</a></li>
-{% if top.is_created or top.is_uploaded %}
+{% if top.is_created %}
 		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 {% endif %}
 	</ul>
@@ -87,11 +87,10 @@ function console (dev) {
 {% if top.is_prepared or top.is_started %} 
 		<li><a href="{%url top.stop top_id%}">stop</a></li>
 {% endif %}
-{% if top.is_uploaded %} 
+{% if top.is_created %} 
 		<li><a href="{%url top.prepare top_id%}">prepare</a></li>
 {% endif %}
-		<li><a href="{%url top.upload top_id%}">upload</a></li>
-{% if top.is_uploaded or top.is_prepared %} 
+{% if top.is_prepared %} 
 		<li><a href="{%url top.destroy top_id%}" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
 {% endif %}
 	</ul>

@@ -19,7 +19,6 @@ def _topology_info(top):
 		analysis = "Error in analysis: %s" % exc
 	return {"id": top.id, "state": str(top.state), "name": top.name,
 		"is_created": state == topology.State.CREATED,
-		"is_uploaded": state == topology.State.UPLOADED, 
 		"is_prepared": state == topology.State.PREPARED,
 		"is_started": state == topology.State.STARTED,
 		"owner": str(top.owner), "analysis": analysis,
@@ -169,12 +168,6 @@ def top_destroy(top_id, user=None):
 	top = topology.get(top_id)
 	_top_access(top, user)
 	return top.destroy()
-	
-def top_upload(top_id, user=None):
-	logger.log("top_upload(%s)" % top_id, user=user.name)
-	top = topology.get(top_id)
-	_top_access(top, user)
-	return top.upload()
 	
 def top_start(top_id, user=None):
 	logger.log("top_start(%s)" % top_id, user=user.name)

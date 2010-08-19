@@ -41,40 +41,44 @@ class DhcpdDevice(generic.Device):
 		self.gateway = dom.getAttribute("gateway")
 		self.nameserver = dom.getAttribute("nameserver")
 
-	def write_aux_files(self):
-		"""
-		Write the aux files for this object and its child objects
-		"""
-		generic.Device.write_aux_files(self)
-		dhcpd_fd=open(self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.name+".conf","w")
+	def start(self, task):
+		generic.Device.start(self, task)
+		command = "dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.name, self.name )
+		for iface in self.interfaces_all():
+			command += " %s" % self.bridge_name(iface)
+		command += " &"
+		self.host.execute(command, task)
+
+	def stop(self, task):
+		generic.Device.stop(self, task)
+		self.host.execute("cat %s.pid | xargs kill\n" % self.name, task)
+
+	def prepare(self, task):
+		generic.Device.prepare(self, task)
+		local_file = self.topology.get_control_dir(self.host_name)+"/dhcpd."+self.name+".conf"
+		dhcpd_fd=open(local_file,"w")
 		dhcpd_fd.write("subnet %s netmask %s {\n" % ( self.subnet, self.netmask ) )
 		dhcpd_fd.write("  option routers %s;\n" % self.gateway )
 		dhcpd_fd.write("  option domain-name-servers %s;\n" % self.nameserver )
 		dhcpd_fd.write("  max-lease-time 300;\n" )
 		dhcpd_fd.write("  range %s;\n" % self.range )
 		dhcpd_fd.write("}\n" )
+		self.host.upload(local_file, self.topology.get_remote_control_dir()+"/dhcpd."+self.name+".conf", task)
 
-	def write_control_script(self, host, script, fd):
-		"""
-		Write the control script for this object and its child objects
-		"""
-		generic.Device.write_control_script(self, host, script, fd)
-		if script == "start":
-			fd.write("dhcpd3 -cf dhcpd.%s.conf -pf %s.pid -lf leases" % ( self.name, self.name ) )
-			for iface in self.interfaces_all():
-				fd.write(" %s" % self.bridge_name(iface))
-			fd.write(" &\n")
-		if script == "stop":
-			fd.write ( "cat %s.pid | xargs kill\n" % self.name )
+	def destroy(self, task):
+		generic.Device.destroy(self, task)
+		self.host.execute("rm " + self.topology.get_remote_control_dir()+"/dhcpd."+self.name+".conf", task)
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
 
-	def change_run(self, dom, task, fd):
+	def change_run(self, dom, task):
 		"""
 		Adapt this device to the new device
 		"""
 		self.decode_xml(dom, False)
+		if self.topology.state == "prepared" or self.topology.state == "started":
+			self.prepare(task)
 		if self.topology.state == "started":
-			self.write_control_script(self.host, "stop", fd)
-			self.write_control_script(self.host, "start", fd)
+			self.stop(task)
+			self.start(task)

@@ -83,10 +83,16 @@ class Device(models.Model):
 		self.type = dom.getAttribute("type")
 		util.get_attr(dom, "hostgroup", default=None)
 		
-	def write_aux_files(self):
+	def start(self, task):
 		pass
-	
-	def write_control_script(self, host, script, fd):
+
+	def stop(self, task):
+		pass
+
+	def prepare(self, task):
+		pass
+
+	def destroy(self, task):
 		pass
 
 	def change_possible(self, dom):
@@ -176,11 +182,21 @@ class Connector(models.Model):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
 
-	def write_aux_files(self):
-		pass
-	
-	def write_control_script(self, host, script, fd):
-		pass
+	def start(self, task):
+		for con in self.connections_all():
+			con.upcast().start(task)
+
+	def stop(self, task):
+		for con in self.connections_all():
+			con.upcast().stop(task)
+
+	def prepare(self, task):
+		for con in self.connections_all():
+			con.upcast().prepare(task)
+
+	def destroy(self, task):
+		for con in self.connections_all():
+			con.upcast().destroy(task)
 
 	def __unicode__(self):
 		return self.name
@@ -230,19 +246,23 @@ class Connection(models.Model):
 		except Interface.DoesNotExist:
 			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
 					
-	def write_aux_files(self):
+	def start(self, task):
+		host = self.interface.device.host
+		if not self.bridge_special_name:
+			host.execute("brctl addbr %s" % self.bridge_name(), task)
+			host.execute("ip link set %s up" % self.bridge_name(), task)
+
+	def stop(self, task):
+		host = self.interface.device.host
+		if not self.bridge_special_name:
+			host.execute("ip link set %s down" % self.bridge_name(), task)
+			host.execute("brctl delbr %s" % self.bridge_name(), task)
+
+	def prepare(self, task):
 		pass
-	
-	def write_control_script(self, host, script, fd):
-		"""
-		Write the control scrips for this object and its child objects
-		"""
-		if script == "start":
-			fd.write("brctl addbr %s\n" % self.bridge_name() )
-			fd.write("ip link set %s up\n" % self.bridge_name() )
-		if script == "stop":
-			fd.write("ip link set %s down\n" % self.bridge_name() )
-			fd.write("brctl delbr %s\n" % self.bridge_name() )
+
+	def destroy(self, task):
+		pass
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)

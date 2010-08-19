@@ -49,51 +49,45 @@ class OpenVZDevice(generic.Device):
 		self.template = dom.getAttribute("template")
 		self.root_password = dom.getAttribute("root_password")
 
-	def write_aux_files(self):
-		"""
-		Write the aux files for this object and its child objects
-		"""		
-		generic.Device.write_aux_files(self)
+	def start(self, task):
+		generic.Device.start(self, task)
+		for iface in self.interfaces_all():
+			bridge = self.bridge_name(iface)
+			self.host.execute("brctl addbr %s" % bridge, task)
+			self.host.execute("ip link set %s up" % bridge, task)
+		self.host.execute("vzctl start %s --wait" % self.openvz_id, task)
+		for iface in self.interfaces_all():
+			if iface.is_configured():				
+				ip4 = iface.configuredinterface.ip4address
+				netmask = iface.configuredinterface.ip4netmask
+				dhcp = iface.configuredinterface.use_dhcp
+				if ip4:
+					self.host.execute("vzctl exec %s ifconfig %s %s netmask %s up" % ( self.openvz_id, iface.name, ip4, netmask ), task) 
+				if dhcp:
+					self.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % ( self.openvz_id, iface.name ), task)
+					self.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % ( self.openvz_id, iface.name ), task)					
+		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
 
-	def write_control_script(self, host, script, fd):
-		"""
-		Write the control script for this object and its child objects
-		"""
-		generic.Device.write_control_script(self, host, script, fd)
-		if script == "prepare":
-			fd.write("vzctl create %s --ostemplate %s\n" % ( self.openvz_id, self.template ) )
-			fd.write("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save\n" % self.openvz_id)
-			if self.root_password:
-				fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
-			fd.write("vzctl set %s --hostname %s --save\n" % ( self.openvz_id, self.name ) )
-			for iface in self.interfaces_all():
-				bridge = self.bridge_name(iface)
-				fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
-				fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
-		if script == "destroy":
-			fd.write("vzctl destroy %s\n" % self.openvz_id)
-			fd.write ( "true\n" )
-		if script == "start":
-			for iface in self.interfaces_all():
-				bridge = self.bridge_name(iface)
-				fd.write("brctl addbr %s\n" % bridge )
-				fd.write("ip link set %s up\n" % bridge )
-			fd.write("vzctl start %s --wait\n" % self.openvz_id)
-			for iface in self.interfaces_all():
-				if iface.is_configured():				
-					ip4 = iface.configuredinterface.ip4address
-					netmask = iface.configuredinterface.ip4netmask
-					dhcp = iface.configuredinterface.use_dhcp
-					if ip4:
-						fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
-					if dhcp:
-						fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
-						fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
-			fd.write("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ) )
-		if script == "stop":
-			fd.write("cat vnc-%s.pid | xargs kill\n" % self.name )
-			fd.write("vzctl stop %s\n" % self.openvz_id)
-			fd.write ( "true\n" )
+	def stop(self, task):
+		generic.Device.stop(self, task)
+		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
+		self.host.execute("vzctl stop %s" % self.openvz_id, task)
+
+	def prepare(self, task):
+		generic.Device.prepare(self, task)
+		self.host.execute("vzctl create %s --ostemplate %s" % ( self.openvz_id, self.template ), task)
+		self.host.execute("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save" % self.openvz_id, task)
+		if self.root_password:
+			self.host.execute("vzctl set %s --userpasswd root:%s --save" % ( self.openvz_id, self.root_password ), task)
+		self.host.execute("vzctl set %s --hostname %s --save" % ( self.openvz_id, self.name ), task)
+		for iface in self.interfaces_all():
+			bridge = self.bridge_name(iface)
+			self.host.execute("vzctl set %s --netif_add %s --save" % ( self.openvz_id, iface.name ), task)
+			self.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ), task)
+
+	def destroy(self, task):
+		generic.Device.destroy(self, task)
+		self.host.execute("vzctl destroy %s" % self.openvz_id, task)
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
@@ -101,14 +95,14 @@ class OpenVZDevice(generic.Device):
 			if self.topology.state == "started" or self.topology.state == "prepared":
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
 
-	def change_run(self, dom, task, fd):
+	def change_run(self, dom, task):
 		"""
 		Adapt this device to the new device
 		"""
 		self.template = util.get_attr(dom, "template", self.template)
 		self.root_password = util.get_attr(dom, "root_password")
 		if self.root_password and ( self.topology.state == "prepared" or self.topology.state == "started" ):
-			fd.write("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
 			name = x_iface.getAttribute("id")
@@ -125,21 +119,21 @@ class OpenVZDevice(generic.Device):
 				self.interfaces_add(iface)
 				bridge = self.bridge_name(iface)
 				if self.topology.state == "prepared" or self.topology.state == "started":
-					fd.write("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
-					fd.write("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
+					self.host.execute("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
+					self.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
 			if self.topology.state == "started":
 				ip4 = iface.configuredinterface.ip4address
 				netmask = iface.configuredinterface.ip4netmask
 				dhcp = iface.configuredinterface.use_dhcp
 				if ip4:
-					fd.write("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
+					self.host.execute("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
 				if dhcp:
-					fd.write("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
-					fd.write("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
+					self.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
+					self.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				if self.topology.state == "prepared" or self.topology.state == "started":
-					fd.write("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
+					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
 				iface.delete()
 
 	def upload_image(self, filename, task):

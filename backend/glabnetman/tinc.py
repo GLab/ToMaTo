@@ -30,7 +30,28 @@ class TincConnector(generic.Connector):
 	def tincport(self, con):
 		return con.emulatedconnection.tincconnection.tinc_port
 
-	def write_aux_files(self):
+	def start(self, task):
+		generic.Connector.start(self, task)
+		for con in self.connections_all():
+			host = con.interface.device.host
+			con.emulatedconnection.tincconnection.start(task)
+			tincname = self.tincname(con)
+			host.execute ( "tincd --net=%s" % tincname, task)
+			#FIXME: brctl does not work for routing
+			host.execute ( "brctl addif %s %s" % (con.bridge_name(), tincname ), task)
+			host.execute ( "ip link set %s up" %  tincname, task)
+
+	def stop(self, task):
+		generic.Connector.stop(self, task)
+		for con in self.connections_all():
+			host = con.interface.device.host
+			con.emulatedconnection.tincconnection.stop(task)
+			tincname = self.tincname(con)
+			host.execute ( "cat /var/run/tinc.%s.pid | xargs kill" % tincname, task)
+			host.execute ( "rm /var/run/tinc.%s.pid" % tincname, task)
+
+	def prepare(self, task):
+		generic.Connector.prepare(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
@@ -69,29 +90,22 @@ class TincConnector(generic.Connector):
 				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
 				if not tincname == tincname2:
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
-
-	def write_control_script(self, host, script, fd):
-		"""
-		Write the control scrips for this object and its child objects
-		"""
 		for con in self.connections_all():
-			if con.interface.device.host.name == host.name:
-				con.emulatedconnection.tincconnection.write_control_script(host, script, fd)
-				tincname = self.tincname(con)
-				if script == "prepare":
-					fd.write ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s\n" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname) )
-				if script == "destroy":
-					fd.write ( "rm /etc/tinc/%s\n" % tincname )
-					fd.write ( "true\n" )
-				if script == "start":
-					fd.write ( "tincd --net=%s\n" % tincname )
-					#FIXME: brctl does not work for routing
-					fd.write ( "brctl addif %s %s\n" % (con.bridge_name(), tincname ) )
-					fd.write ( "ip link set %s up\n" %  tincname )
-				if script == "stop":
-					fd.write ( "cat /var/run/tinc.%s.pid | xargs kill\n" % tincname )
-					fd.write ( "rm /var/run/tinc.%s.pid\n" % tincname )
-					fd.write ( "true\n" )
+			host = con.interface.device.host
+			con.emulatedconnection.tincconnection.prepare(task)
+			path = self.topology.get_control_dir(host.name) + "/" + tincname
+			host.upload(path, self.topology.get_remote_control_dir() + "/" + tincname, task)
+			tincname = self.tincname(con)
+			host.execute ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname), task)
+
+	def destroy(self, task):
+		generic.Connector.destroy(self, task)		
+		for con in self.connections_all():
+			host = con.interface.device.host
+			con.emulatedconnection.tincconnection.destroy(task)
+			tincname = self.tincname(con)
+			host.execute ( "rm /etc/tinc/%s" % tincname, task )
+			host.execute ( "true", task )
 
 	def change_possible(self, dom):
 		pass
@@ -142,9 +156,14 @@ class TincConnection(dummynet.EmulatedConnection):
 	def decode_xml(self, dom):
 		dummynet.EmulatedConnection.decode_xml(self, dom)
 		
-	def write_aux_files(self):
-		dummynet.EmulatedConnection.write_aux_files(self)
-	
-	def write_control_script(self, host, script, fd):
-		dummynet.EmulatedConnection.write_control_script(self, host, script, fd)
-		
+	def start(self, task):
+		dummynet.EmulatedConnection.start(self, task)
+
+	def stop(self, task):
+		dummynet.EmulatedConnection.stop(self, task)
+
+	def prepare(self, task):
+		dummynet.EmulatedConnection.prepare(self, task)
+
+	def destroy(self, task):
+		dummynet.EmulatedConnection.destroy(self, task)				

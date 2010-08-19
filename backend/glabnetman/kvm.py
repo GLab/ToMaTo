@@ -42,43 +42,36 @@ class KVMDevice(generic.Device):
 		generic.Device.decode_xml(self, dom)
 		self.template = dom.getAttribute("template")
 
-	def write_aux_files(self):
-		"""
-		Write the aux files for this object and its child objects
-		"""		
-		generic.Device.write_aux_files(self)
+	def start(self, task):
+		generic.Device.start(self, task)
+		self.host.execute("qm start %s" % self.kvm_id, task)
+		for iface in self.interfaces_all():
+			iface_id = re.match("eth(\d+)", iface.name).group(1)
+			bridge = self.bridge_name(iface)
+			self.host.execute("brctl delif vmbr%s vmtab%si%s" % ( iface_id, self.kvm_id, iface_id ), task)
+			self.host.execute("brctl addbr %s" % bridge, task)
+			self.host.execute("brctl addif %s vmtab%si%s" % ( bridge, self.kvm_id, iface_id ), task)
+			self.host.execute("ip link set %s up" % bridge, task)
+		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
 
-	def write_control_script(self, host, script, fd):
-		"""
-		Write the control script for this object and its child objects
-		"""
-		generic.Device.write_control_script(self, host, script, fd)
-		if script == "prepare":
-			fd.write("qm create %s\n" % self.kvm_id )
-			fd.write("mkdir -p /var/lib/vz/images/%s\n" % self.kvm_id)
-			fd.write("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s\n" % (self.template, self.kvm_id))
-			fd.write("qm set %s --ide0 local:%s/%s\n" % (self.kvm_id, self.kvm_id, self.template))
-			for iface in self.interfaces_all():
-				iface_id = re.match("eth(\d+)", iface.name).group(1)
-				bridge = self.bridge_name(iface)
-				fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
-		if script == "destroy":
-			fd.write("qm destroy %s\n" % self.kvm_id)
-			fd.write ( "true\n" )
-		if script == "start":
-			fd.write("qm start %s\n" % self.kvm_id)
-			for iface in self.interfaces_all():
-				iface_id = re.match("eth(\d+)", iface.name).group(1)
-				bridge = self.bridge_name(iface)
-				fd.write("brctl delif vmbr%s vmtab%si%s\n" % ( iface_id, self.kvm_id, iface_id ) )
-				fd.write("brctl addbr %s\n" % bridge )
-				fd.write("brctl addif %s vmtab%si%s\n" % ( bridge, self.kvm_id, iface_id ) )
-				fd.write("ip link set %s up\n" % bridge )
-			fd.write("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid\n" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ) )
-		if script == "stop":
-			fd.write("cat vnc-%s.pid | xargs kill\n" % self.name )
-			fd.write("qm stop %s\n" % self.kvm_id)
-			fd.write ( "true\n" )
+	def stop(self, task):
+		generic.Device.stop(self, task)
+		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
+		self.host.execute("qm stop %s" % self.kvm_id, task)
+
+	def prepare(self, task):
+		generic.Device.prepare(self, task)
+		self.host.execute("qm create %s" % self.kvm_id, task)
+		self.host.execute("mkdir -p /var/lib/vz/images/%s" % self.kvm_id, task)
+		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s" % (self.template, self.kvm_id), task)
+		self.host.execute("qm set %s --ide0 local:%s/%s" % (self.kvm_id, self.kvm_id, self.template), task)
+		for iface in self.interfaces_all():
+			iface_id = re.match("eth(\d+)", iface.name).group(1)
+			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
+
+	def destroy(self, task):
+		generic.Device.destroy(self, task)
+		self.host.execute("qm destroy %s" % self.kvm_id, task)
 
 	def is_changed(self, dom):
 		if not self.template == util.get_attr(dom, "template", self.template):
@@ -95,7 +88,7 @@ class KVMDevice(generic.Device):
 		if self.is_changed(dom) and self.topology.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 
-	def change_run(self, dom, task, fd):
+	def change_run(self, dom, task):
 		"""
 		Adapt this device to the new device
 		"""
@@ -113,7 +106,7 @@ class KVMDevice(generic.Device):
 				self.interfaces_add(iface)
 				if self.topology.state == "prepared":
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					fd.write("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
+					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				#deleted interface
