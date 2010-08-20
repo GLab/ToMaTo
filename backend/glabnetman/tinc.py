@@ -69,8 +69,7 @@ class TincConnector(generic.Connector):
 				host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ), task )
 				host.execute ( "ip route del table %s default dev %s" % ( table_in, con.bridge_name() ), task )
 				host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ), task )
-			host.execute ( "cat /var/run/tinc.%s.pid | xargs kill" % tincname, task)
-			host.execute ( "rm /var/run/tinc.%s.pid" % tincname, task)
+			host.execute ( "tincd --net=%s -k" % tincname, task)
 		self.state = generic.State.PREPARED
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1

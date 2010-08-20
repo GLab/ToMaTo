@@ -148,19 +148,23 @@ class OpenVZDevice(generic.Device):
 					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
 				iface.delete()
 
+	def upload_supported(self):
+		return self.state == generic.State.CREATED or self.state == generic.State.PREPARED
+
 	def upload_image(self, filename, task):
 		task.subtasks_total=4
 		host = self.host
 		tmp_id = uuid.uuid1()
 		remote_filename= "/tmp/glabnetman-%s" % tmp_id
-		dst = "root@%s:%s" % ( host.name, remote_filename )
-		task.output.write(util.run_shell(["rsync",  "-a", filename, dst], config.remote_dry_run))
+		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
-		task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, "vzctl", "remove", self.openvz_id ], config.remote_dry_run))
+		if self.state == generic.State.PREPARED:
+			self.host.execute("vzctl delete %s" % self.openvz_id, task)
 		task.subtasks_done = task.subtasks_done + 1
-		task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, "vzrestore", remote_filename, self.openvz_id ], config.remote_dry_run))
+		self.host.execute("vzrestore %s %s" % ( remote_filename, self.openvz_id ), task)
+		self.state = generic.State.PREPARED
 		task.subtasks_done = task.subtasks_done + 1
-		task.output.write(util.run_shell(["ssh",  "root@%s" % host.name, "rm", remote_filename ], config.remote_dry_run))
+		self.host.execute("rm %s" % remote_filename, task)
 		os.remove(filename)
 		task.done()
 
