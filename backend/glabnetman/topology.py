@@ -332,9 +332,6 @@ class Topology(models.Model):
 		if not device.upcast().upload_supported():
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
-		if device.state == generic.State.STARTED:
-			os.remove(filename)
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot upload an image to a running topology")
 		task = tasks.TaskStatus()
 		thread.start_new_thread(device.upcast().upload_image, (filename, task))
 		return task.id
@@ -345,8 +342,6 @@ class Topology(models.Model):
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		if not device.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
-		if device.state == generic.State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Cannot download an image of a running topology")
 		return device.upcast().download_image()
 
 def get(id):

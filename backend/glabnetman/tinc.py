@@ -36,10 +36,11 @@ class TincConnector(generic.Connector):
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			host.execute ( "tincd --net=%s" % tincname, task)
-			host.execute ( "ip link set %s up" %  tincname, task)
+			host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname, task)
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
 				table_out = 1000 + 2 * con.id + 1 
+				host.execute ( "ifconfig %s %s netmask %s up" % (con.bridge_name(), con.upcast().gateway_ip, con.upcast().gateway_netmask), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ), task )
 				host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ), task )
@@ -48,7 +49,6 @@ class TincConnector(generic.Connector):
 				host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_out), table_out ), task )
 				host.execute ( "ip route add table %s default dev %s" % ( table_in, con.bridge_name() ), task )
 				host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ), task )
-				host.execute ( "ifconfig %s %s netmask %s up" % (con.bridge_name(), con.upcast().gateway_ip, con.upcast().gateway_netmask), task )
 			else:
 				host.execute ( "brctl addif %s %s" % (con.bridge_name(), tincname ), task)
 		self.state = generic.State.STARTED
@@ -90,6 +90,7 @@ class TincConnector(generic.Connector):
 			self_host_fd.write("Port=%s\n" % tincport )
 			self_host_fd.write("Cipher=none\n" )
 			self_host_fd.write("Digest=none\n" )
+			#FIXME: write Subnet entry
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)

@@ -30,8 +30,8 @@ def _device_info(dev, auth):
 		"is_created": state == generic.State.CREATED,
 		"is_prepared": state == generic.State.PREPARED,
 		"is_started": state == generic.State.STARTED,
-		"upload_supported": dev.upload_supported(),
-		"download_supported": dev.download_supported(),
+		"upload_supported": dev.upcast().upload_supported(),
+		"download_supported": dev.upcast().download_supported(),
 		}
 	if auth:
 		if dev.type == "openvz":

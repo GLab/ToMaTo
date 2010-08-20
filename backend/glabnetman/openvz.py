@@ -164,15 +164,16 @@ class OpenVZDevice(generic.Device):
 		os.remove(filename)
 		task.done()
 
+	def download_supported(self):
+		return self.state == generic.State.PREPARED or self.state == generic.State.STARTED
+
 	def download_image(self):
-		host = self.host
 		tmp_id = uuid.uuid1()
 		filename = "/tmp/glabnetman-%s" % tmp_id
-		src = "root@%s:%s/*.tgz" % ( host.name, filename )
-		print util.run_shell(["ssh",  "root@%s" % host.name, "mkdir", "-p", filename ], config.remote_dry_run)
-		print util.run_shell(["ssh",  "root@%s" % host.name, "vzdump", "--compress", "--dumpdir", filename, "--suspend", self.openvz_id ], config.remote_dry_run)
-		print util.run_shell(["rsync",  "-a", src, filename], config.remote_dry_run)
-		print util.run_shell(["ssh",  "root@%s" % host.name, "rm -r", filename ], config.remote_dry_run)
+		self.host.execute("mkdir -p %s" % filename)
+		self.host.execute("vzdump --compress --dumpdir %s --suspend %s " % ( filename, self.openvz_id ) )
+		self.host.download("%s/*.tgz" % filename, filename)
+		self.host.execute("rm -r %s" % filename)
 		return filename
 
 class ConfiguredInterface(generic.Interface):
