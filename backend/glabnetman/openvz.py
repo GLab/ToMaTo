@@ -85,7 +85,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save" % self.openvz_id, task)
 		if self.root_password:
 			self.host.execute("vzctl set %s --userpasswd root:%s --save" % ( self.openvz_id, self.root_password ), task)
-		self.host.execute("vzctl set %s --hostname %s --save" % ( self.openvz_id, self.name ), task)
+		self.host.execute("vzctl set %s --hostname %s_%s --save" % ( self.openvz_id, self.topology.name, self.name ), task)
 		for iface in self.interfaces_all():
 			bridge = self.bridge_name(iface)
 			self.host.execute("vzctl set %s --netif_add %s --save" % ( self.openvz_id, iface.name ), task)

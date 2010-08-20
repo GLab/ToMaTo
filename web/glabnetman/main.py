@@ -25,5 +25,5 @@ def task_status(request, task_id):
 def logout(request):
 	return HttpResponseNotAuthorized("/")
 
-def help(request, page):
+def help(request, page=""):
 	return HttpResponseRedirect("http://fileserver.german-lab.de/trac/glabnetman/wiki/%s" % page)
