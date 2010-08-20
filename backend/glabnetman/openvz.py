@@ -153,7 +153,6 @@ class OpenVZDevice(generic.Device):
 
 	def upload_image(self, filename, task):
 		task.subtasks_total=4
-		host = self.host
 		tmp_id = uuid.uuid1()
 		remote_filename= "/tmp/glabnetman-%s" % tmp_id
 		self.host.upload(filename, remote_filename, task)
