@@ -88,9 +88,13 @@ class DhcpdDevice(generic.Device):
 		"""
 		Adapt this device to the new device
 		"""
+		oldstate = self.state
+		if ( self.state == generic.State.STARTED ):
+			self.stop_run(task)
+		if ( self.state == generic.State.PREPARED ):
+			self.destroy_run(task)
 		self.decode_xml(dom, False)
-		if self.state == "prepared" or self.state == "started":
+		if oldstate == generic.State.PREPARED or oldstate == generic.State.STARTED:
 			self.prepare(task)
-		if self.state == "started":
-			self.stop(task)
+		if oldstate == generic.State.STARTED:
 			self.start(task)

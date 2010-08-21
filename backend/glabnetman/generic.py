@@ -289,12 +289,40 @@ class Connector(models.Model):
 	def __unicode__(self):
 		return self.name
 
-
+	def change_run(self, dom, task):
+		cons=set()
+		for x_con in dom.getElementsByTagName("connection"):
+			try:
+				device_name = x_con.getAttribute("device")
+				device = self.topology.devices_get(device_name)
+				iface_name = x_con.getAttribute("interface")
+				iface = device.interfaces_get(iface_name)
+			except generic.Device.DoesNotExist:
+				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
+			except generic.Interface.DoesNotExist:
+				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
+			try:
+				con = self.connections_get(iface)
+				con.upcast().change_run(x_con, task)
+				cons.add(con)				
+			except generic.Connection.DoesNotExist:
+				#new connection
+				con = self.add_connection(x_con)
+				if self.state == generic.State.STARTED:
+					con.start_run(task)
+				cons.add(con)
+		for con in self.connections_all():
+			if not con.interface in cons:
+				#deleted connection
+				if self.state == generic.State.STARTED:
+					con.stop_run(task)
+				con.delete()
+				
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
 	bridge_id = models.IntegerField()
-	bridge_special_name = models.CharField(max_length=15)
+	bridge_special_name = models.CharField(max_length=15, null=True)
 
 	def init (self, connector, dom):
 		self.connector = connector
@@ -345,6 +373,9 @@ class Connection(models.Model):
 		if not self.bridge_special_name:
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 			#host.execute("brctl delbr %s" % self.bridge_name(), task)
+
+	def change_run(self, dom, task):
+		pass
 
 	def prepare_run(self, task):
 		pass

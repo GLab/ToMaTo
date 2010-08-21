@@ -260,7 +260,6 @@ class Topology(models.Model):
 			except generic.Device.DoesNotExist:
 				# new device
 				self.devices_add_dom(x_dev)
-				dev = self.devices_get(name)
 		for dev in self.devices_all():
 			if not dev.name in devices:
 				#removed device
@@ -269,25 +268,17 @@ class Topology(models.Model):
 				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
 					dev.upcast().destroy(task)
 				dev.delete()
-				
 		connectors=set()	
 		for x_con in dom.getElementsByTagName("connector"):
 			name = x_con.getAttribute("id")
 			connectors.add(name)
 			try:
 				con = self.connectors_get(name)
+				# changed device
 				con.upcast().change_run(x_con, task)
-				if con.state == generic.State.STARTED:
-					con.upcast().stop(task)
-				if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
-					con.upcast().destroy(task)
 			except generic.Connector.DoesNotExist:
+				# new connector
 				self.connectors_add_dom(x_con)
-				con = self.connectors_get(name)				
-			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
-				con.upcast().prepare(task)
-			if con.state == generic.State.STARTED:
-				con.upcast().start(task)
 		for con in self.connectors_all():
 			if not con.name in connectors:
 				if con.state == generic.State.STARTED:

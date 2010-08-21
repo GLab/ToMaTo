@@ -58,14 +58,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl start %s --wait" % self.openvz_id, task)
 		for iface in self.interfaces_all():
 			if iface.is_configured():				
-				ip4 = iface.configuredinterface.ip4address
-				netmask = iface.configuredinterface.ip4netmask
-				dhcp = iface.configuredinterface.use_dhcp
-				if ip4:
-					self.host.execute("vzctl exec %s ifconfig %s %s netmask %s up" % ( self.openvz_id, iface.name, ip4, netmask ), task) 
-				if dhcp:
-					self.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % ( self.openvz_id, iface.name ), task)
-					self.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % ( self.openvz_id, iface.name ), task)					
+				iface.upcast.start_run(iface, task)
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
 		self.state = generic.State.STARTED
 		self.save()
@@ -87,9 +80,7 @@ class OpenVZDevice(generic.Device):
 			self.host.execute("vzctl set %s --userpasswd root:%s --save" % ( self.openvz_id, self.root_password ), task)
 		self.host.execute("vzctl set %s --hostname %s_%s --save" % ( self.openvz_id, self.topology.name, self.name ), task)
 		for iface in self.interfaces_all():
-			bridge = self.bridge_name(iface)
-			self.host.execute("vzctl set %s --netif_add %s --save" % ( self.openvz_id, iface.name ), task)
-			self.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ), task)
+			iface.upcast().prepare_run(task)
 		self.state = generic.State.PREPARED
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
@@ -122,26 +113,15 @@ class OpenVZDevice(generic.Device):
 			try:
 				iface = self.interfaces_get(name)
 				iface = iface.upcast()
-				iface.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
-				iface.ip4address = util.get_attr(dom, "ip4address", default=None)
-				iface.ip4netmask = util.get_attr(dom, "ip4netmask", default=None)
+				iface.decode_xml(x_iface)
 			except generic.Interface.DoesNotExist:
 				iface = ConfiguredInterface()
 				iface.init(self, x_iface)
 				self.interfaces_add(iface)
-				bridge = self.bridge_name(iface)
 				if self.state == "prepared" or self.state == "started":
-					self.host.execute("vzctl set %s --netif_add %s --save\n" % ( self.openvz_id, iface.name ) )
-					self.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save\n" % ( self.openvz_id, iface.name, self.openvz_id, iface.name, bridge ) )
+					iface.prepare_run(task)
 			if self.state == "started":
-				ip4 = iface.configuredinterface.ip4address
-				netmask = iface.configuredinterface.ip4netmask
-				dhcp = iface.configuredinterface.use_dhcp
-				if ip4:
-					self.host.execute("vzctl exec %s ifconfig %s %s netmask %s up\n" % ( self.openvz_id, iface.name, ip4, netmask ) ) 
-				if dhcp:
-					self.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"\n" % ( self.openvz_id, iface.name ) )
-					self.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"\n" % ( self.openvz_id, iface.name ) )					
+				iface.start_run(task)
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				if self.state == "prepared" or self.state == "started":
@@ -206,3 +186,19 @@ class ConfiguredInterface(generic.Interface):
 		self.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
 		self.ip4address = util.get_attr(dom, "ip4address", default=None)
 		self.ip4netmask = util.get_attr(dom, "ip4netmask", default=None)
+		
+	def start_run(self, task):
+		openvz_id = self.device.upcast().openvz_id
+		bridge = self.device.upcast().bridge_name(self)
+		if self.ip4address:
+			self.device.host.execute("vzctl exec %s ifconfig %s %s netmask %s up" % ( openvz_id, self.name, self.ip4address, self.ip4netmask ), task) 
+		if self.use_dhcp:
+			self.device.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % ( openvz_id, self.name ), task)
+			self.device.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % ( openvz_id, self.name ), task)					
+		self.device.host.execute("ip link set %s up" % bridge, task)
+
+	def prepare_run(self, task):
+		openvz_id = self.device.upcast().openvz_id
+		bridge = self.device.upcast().bridge_name(self)
+		self.device.host.execute("vzctl set %s --netif_add %s --save" % ( openvz_id, self.name ), task)
+		self.device.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( openvz_id, self.name, openvz_id, self.name, bridge ), task)

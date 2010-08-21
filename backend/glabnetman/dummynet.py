@@ -72,3 +72,17 @@ class EmulatedConnection(generic.Connection):
 
 	def destroy_run(self, task):
 		generic.Connection.destroy_run(self, task)
+
+	def change_run(self, dom, task):
+		self.decode_xml(dom)
+		generic.Connection.start_run(self, task)
+		host = self.interface.device.host
+		pipe_id = int(self.bridge_id) * 10
+		pipe_config=""
+		if self.delay:
+			pipe_config = pipe_config + " " + "delay %sms" % self.delay
+		if self.bandwidth:
+			pipe_config = pipe_config + " " + "bw %sk" % self.bandwidth
+		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
+		host.execute("ipfw change %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
+		

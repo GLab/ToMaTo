@@ -140,29 +140,19 @@ class TincConnector(generic.Connector):
 		pass
 	
 	def change_run(self, dom, task):
-		cons=set()
-		for x_con in dom.getElementsByTagName("connection"):
-			try:
-				device_name = x_con.getAttribute("device")
-				device = self.topology.devices_get(device_name)
-				iface_name = x_con.getAttribute("interface")
-				iface = device.interfaces_get(iface_name)
-				cons.add(iface)
-			except generic.Device.DoesNotExist:
-				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
-			except generic.Interface.DoesNotExist:
-				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
-			try:
-				con = self.connections_get(iface)				
-			except generic.Connection.DoesNotExist:
-				#new connection
-				con = TincConnection()
-				con.init(self, x_con)
-				self.connections_add(con)
-		for con in self.connections_all():
-			if not con.interface in cons:
-				#deleted connection
-				con.delete()			
+		oldcons = [con.interface for con in self.connections_all()]
+		generic.Connector.change_run(self, dom, task)
+		cons = [con.interface for con in self.connections_all()]
+		if not oldcons == cons:
+			oldstate = self.state
+			if self.state == generic.State.STARTED:
+				self.stop_run(task)
+			if self.state == generic.State.PREPARED:
+				self.destroy_run(task)
+			if oldstate == generic.State.STARTED or oldstate == generic.State.PREPARED:
+				self.prepare_run(task)
+			if oldstate == generic.State.STARTED:
+				self.start_run(task)
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_port = models.IntegerField()
@@ -204,3 +194,7 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def destroy_run(self, task):
 		dummynet.EmulatedConnection.destroy_run(self, task)				
+
+	def change_run(self, dom, task):
+		self.decode_xml(dom)
+		dummynet.EmulatedConnection.change_run(self, dom, task)
