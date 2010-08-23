@@ -1,6 +1,23 @@
 # -*- coding: utf-8 -*-
 
-import subprocess
+import subprocess, threading
+
+class RepeatedTimer(threading.Thread):
+	def __init__(self, timeout, func, *args, **kwargs):
+		self.timeout = timeout
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
+		threading.Thread.__init__(self)
+		self.event = threading.Event()
+		self.daemon = True
+	def run(self):
+		while not self.event.isSet():
+			self.event.wait(self.timeout)
+			if not self.event.isSet():
+				self.func(*self.args, **self.kwargs)
+	def stop(self):
+		self.event.set()
 
 def run_shell(cmd, pretend=False):
 	if pretend:

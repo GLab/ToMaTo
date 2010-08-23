@@ -2,7 +2,7 @@
 
 import uuid, os
 
-import config
+import config, util, atexit, time
 
 from cStringIO import StringIO
 
@@ -14,10 +14,14 @@ class TaskStatus():
 		self.output = StringIO()
 		self.subtasks_total = 0
 		self.subtasks_done = 0
+		self.started = time.time()
 	def done(self):
 		self.subtasks_done = self.subtasks_total
 	def dict(self):
 		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total}
+	def check_delete(self):
+		if time.time() - self.started > 3600:
+			del TaskStatus.tasks[self.id]
 
 class UploadTask():
 	tasks={}
@@ -28,11 +32,17 @@ class UploadTask():
 		if not os.path.exists(config.local_control_dir+"/tmp/"):
 			os.makedirs(config.local_control_dir+"/tmp/")
 		self.fd = open(self.filename, "w")
+		self.started = time.time()
 	def chunk(self, data):
 		self.fd.write(data)
 	def finished(self):
 		self.fd.close()
 		del UploadTask.tasks[self.id]
+	def check_delete(self):
+		if time.time() - self.started > 3600:
+			del UploadTask.tasks[self.id]
+			if os.path.exists(self.filename):
+				os.remove(self.filename)
 		
 class DownloadTask():
 	tasks={}
@@ -41,6 +51,7 @@ class DownloadTask():
 		self.id = str(uuid.uuid1())
 		DownloadTask.tasks[self.id]=self
 		self.fd = open(self.filename, "rb")
+		self.started = time.time()
 	def chunk(self):
 		size=1024*1024
 		data = self.fd.read(size)
@@ -49,3 +60,20 @@ class DownloadTask():
 			del DownloadTask.tasks[self.id]
 			os.remove(self.filename)
 		return data
+	def check_delete(self):
+		if time.time() - self.started > 3600:
+			del DownloadTask.tasks[self.id]
+			if os.path.exists(self.filename):
+				os.remove(self.filename)
+	
+def cleanup():
+	for task in TaskStatus.tasks.values():
+		task.check_delete()
+	for task in DownloadTask.tasks.values():
+		task.check_delete()
+	for task in UploadTask.tasks.values():
+		task.check_delete()
+	
+cleanup_task = util.RepeatedTimer(3, cleanup)
+cleanup_task.start()
+atexit.register(cleanup_task.stop)
