@@ -7,3 +7,6 @@ web/apache.conf
 .pydevproject
 .settings
 *.sqlite
+buildui/nbproject/private
+buildui/dist
+buildui/build
