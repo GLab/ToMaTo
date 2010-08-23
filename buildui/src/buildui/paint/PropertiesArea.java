@@ -1,4 +1,4 @@
-package buildui;
+package buildui.paint;
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -19,11 +19,10 @@ package buildui;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Netbuild;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-
-import buildui.paint.Element;
 
 public abstract class PropertiesArea extends Panel implements TextListener, ActionListener {
 

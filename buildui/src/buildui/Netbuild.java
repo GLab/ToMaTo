@@ -33,6 +33,8 @@ package buildui;
  * X validate name (e.g. no collisions)
  *
  */
+import buildui.paint.FlatButton;
+import buildui.paint.PropertiesArea;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;

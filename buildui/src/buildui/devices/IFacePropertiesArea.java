@@ -1,6 +1,6 @@
 package buildui.devices;
 
-import buildui.PropertiesArea;
+import buildui.paint.PropertiesArea;
 import buildui.paint.Element;
 
 /*

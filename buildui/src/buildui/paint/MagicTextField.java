@@ -1,4 +1,4 @@
-package buildui;
+package buildui.paint;
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -22,7 +22,7 @@ package buildui;
 import java.awt.*;
 import java.awt.event.*;
 
-class MagicTextField implements TextListener, FocusListener {
+public class MagicTextField implements TextListener, FocusListener {
 
   public TextField tf;
   private boolean zapped;

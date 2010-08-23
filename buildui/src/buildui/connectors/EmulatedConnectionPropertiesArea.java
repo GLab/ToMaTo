@@ -1,6 +1,6 @@
 package buildui.connectors;
 
-import buildui.PropertiesArea;
+import buildui.paint.PropertiesArea;
 import buildui.paint.Element;
 
 /*
@@ -22,19 +22,20 @@ import buildui.paint.Element;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class EmulatedConnectionPropertiesArea extends PropertiesArea
-{
-    public boolean iCare( Element t ) {
-	return t instanceof EmulatedConnection;
-    }
+public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
 
-    public String getName() { return "LAN Link Properties"; }
+  public boolean iCare (Element t) {
+    return t instanceof EmulatedConnection;
+  }
 
-    public EmulatedConnectionPropertiesArea() 
-    {
-	super();
-	addProperty("bandwidth", "bandwidth(Mb/s):", "<auto>", false, false);
-	addProperty("latency", "latency(ms):", "<auto>", false, false);
-	addProperty("loss", "loss rate(0.0-1.0):", "<auto>", false, false);
-    }
+  public String getName () {
+    return "Emulated link properties";
+  }
+
+  public EmulatedConnectionPropertiesArea () {
+    super();
+    addProperty("bandwidth", "bandwidth(Kb/s):", "10000", false, false);
+    addProperty("latency", "latency(ms):", "0", false, false);
+    addProperty("loss", "loss rate(0.0-1.0):", "0.0", false, false);
+  }
 };

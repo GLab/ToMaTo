@@ -1,4 +1,4 @@
-package buildui;
+package buildui.paint;
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -21,7 +21,7 @@ package buildui;
 import java.awt.*;
 import java.awt.event.*;
 
-class Expando extends Component {
+public class Expando extends Component {
 	private String text;
 	private boolean expanded;
 	private ActionListener actionListener;

@@ -22,17 +22,17 @@ import buildui.paint.Element;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class SwitchPropertiesArea extends PropertiesArea {
+public class RouterPropertiesArea extends PropertiesArea {
 
   public boolean iCare (Element t) {
-    return (t instanceof SwitchConnector);
+    return (t instanceof RouterConnector);
   }
 
   public String getName () {
     return "Switch properties";
   }
 
-  public SwitchPropertiesArea () {
+  public RouterPropertiesArea () {
     super();
     addProperty("name", "name:", "", true, false);
   }

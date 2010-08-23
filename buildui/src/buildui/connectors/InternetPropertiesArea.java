@@ -1,6 +1,6 @@
 package buildui.connectors;
 
-import buildui.PropertiesArea;
+import buildui.paint.PropertiesArea;
 import buildui.paint.Element;
 
 /*
@@ -22,20 +22,18 @@ import buildui.paint.Element;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class InternetPropertiesArea extends PropertiesArea
-{
-    public boolean iCare( Element t ) {
-	return (t instanceof InternetConnector);
-    }
+public class InternetPropertiesArea extends PropertiesArea {
 
-    public String getName() { return "Lan Properties"; }
+  public boolean iCare (Element t) {
+    return (t instanceof InternetConnector);
+  }
 
-    public InternetPropertiesArea() 
-    {
-	super();
-	addProperty("name", "name:","", true, false);
-	addProperty("bandwidth", "bandwidth(Mb/s):", "100", false, false);
-	addProperty("latency", "latency(ms):", "0", false, false);
-	addProperty("loss", "loss rate(0.0 - 1.0):", "0.0", false, false);
-    }
+  public String getName () {
+    return "Internet properties";
+  }
+
+  public InternetPropertiesArea () {
+    super();
+    addProperty("name", "name:", "", true, false);
+  }
 };
