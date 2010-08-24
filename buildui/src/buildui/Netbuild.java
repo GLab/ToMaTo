@@ -23,8 +23,6 @@ package buildui;
  * FIXME: Glab colors
  * FIXME: Implement download
  * FIXME: More edit elements (Dropdowns, etc.)
- * FIXME: Fix chrome browser behavior
- * FIXME: Fix palette spacing
  */
 import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
@@ -531,8 +529,9 @@ public class Netbuild extends java.applet.Applet
       addKeyListener(this);
 
       Dimension d = getSize();
-      appWidth = d.width - 1; //640;
-      appHeight = d.height - 1; //480;
+
+      appWidth = 800;
+      appHeight = 600;
 
       propAreaWidth = 160;
       paletteWidth = 80;
@@ -547,6 +546,7 @@ public class Netbuild extends java.applet.Applet
       dragStarted = false;
 
       workAreaX = paletteWidth;
+
       propAreaX = paletteWidth + workAreaWidth;
 
       setBackground(darkBlue);
