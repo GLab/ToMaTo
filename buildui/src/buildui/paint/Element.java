@@ -23,7 +23,7 @@ import java.lang.Math;
 import java.util.*;
 import java.text.*;
 
-public class Element {
+public abstract class Element {
 	private boolean nameFixed;
 	private String name;
 	private int x, y;
@@ -257,4 +257,6 @@ public class Element {
 		g.drawString(name, -(stringWidth / 2), textDown());
 		g.translate(-x, -y);
 	}
+
+  public abstract PropertiesArea getPropertiesArea() ;
 }

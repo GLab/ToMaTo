@@ -29,7 +29,7 @@ public class HubPropertiesArea extends PropertiesArea {
   }
 
   public String getName () {
-    return "Switch properties";
+    return "Hub properties";
   }
 
   public HubPropertiesArea () {

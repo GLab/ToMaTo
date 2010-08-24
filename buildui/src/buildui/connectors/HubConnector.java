@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class HubConnector extends IconElement {
 
@@ -45,4 +46,11 @@ public class HubConnector extends IconElement {
   public Element createAnother () {
     return new HubConnector("hub"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new HubPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };

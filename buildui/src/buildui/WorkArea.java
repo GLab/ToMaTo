@@ -26,7 +26,7 @@ import java.lang.*;
 import buildui.connectors.EmulatedConnection;
 import buildui.connectors.InternetConnector;
 import buildui.connectors.Connection;
-import buildui.devices.IFaceThingee;
+import buildui.devices.Interface;
 import buildui.devices.KvmDevice;
 import buildui.paint.Element;
 
@@ -103,7 +103,7 @@ public class WorkArea {
     Enumeration thingeeEnum = iFaceThingees.elements();
 
     while (thingeeEnum.hasMoreElements()) {
-      IFaceThingee t = (IFaceThingee)thingeeEnum.nextElement();
+      Interface t = (Interface)thingeeEnum.nextElement();
       if (t.isConnectedTo(node) && t.isConnectedTo(linkOrLan))
         return t;
     }
@@ -515,8 +515,8 @@ public class WorkArea {
 
     while (e.hasMoreElements()) {
       Element t1 = (Element)e.nextElement();
-      if (t1 instanceof IFaceThingee) {
-        IFaceThingee t = (IFaceThingee)t1;
+      if (t1 instanceof Interface) {
+        Interface t = (Interface)t1;
         Connection lt = null;
         KvmDevice nt = null;
         if (t.getA() instanceof Connection) {
@@ -620,8 +620,8 @@ public class WorkArea {
 
     while (e.hasMoreElements()) {
       Element t1 = (Element)e.nextElement();
-      if (t1 instanceof IFaceThingee) {
-        IFaceThingee t = (IFaceThingee)t1;
+      if (t1 instanceof Interface) {
+        Interface t = (Interface)t1;
         Connection lt = null;
         KvmDevice nt = null;
         if (t.getA() instanceof Connection) {
@@ -721,8 +721,8 @@ public class WorkArea {
           add(nt);
           map.put(t, nt);
 
-          IFaceThingee i = new IFaceThingee("", a, nt);
-          IFaceThingee i2 = new IFaceThingee("", b, nt);
+          Interface i = new Interface("", a, nt);
+          Interface i2 = new Interface("", b, nt);
 
           add(i);
           add(i2);
@@ -742,7 +742,7 @@ public class WorkArea {
           Element node;
           if (a instanceof KvmDevice) node = a;
           else node = b;
-          IFaceThingee i = new IFaceThingee("", node, nt);
+          Interface i = new Interface("", node, nt);
           add(i);
           newIFaces.addElement(i);
         }
@@ -856,7 +856,7 @@ public class WorkArea {
   }
 
   public void remove (Element t) {
-    if (t instanceof IFaceThingee)
+    if (t instanceof Interface)
       iFaceThingees.removeElement(t);
     else if (t instanceof Connection) {
       boolean done = false;
@@ -864,7 +864,7 @@ public class WorkArea {
         done = true;
         Enumeration e = iFaceThingees.elements();
         while (e.hasMoreElements() && done) {
-          IFaceThingee i = (IFaceThingee)e.nextElement();
+          Interface i = (Interface)e.nextElement();
           if (i.isConnectedTo(t)) {
             remove(i);
             done = false;
@@ -892,7 +892,7 @@ public class WorkArea {
   public void add (Element t) {
     if (t instanceof Connection)
       linkThingees.addElement(t);
-    else if (t instanceof IFaceThingee)
+    else if (t instanceof Interface)
       iFaceThingees.addElement(t);
     else
       thingees.addElement(t);

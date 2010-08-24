@@ -22,20 +22,21 @@ import buildui.paint.Element;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class IFacePropertiesArea extends PropertiesArea
-{
-    public boolean iCare( Element t ) {
-	return (t instanceof IFaceThingee);
-    }
+public class InterfacePropertiesArea extends PropertiesArea {
 
-    public String getName() { return "Interface Properties"; }
+  public boolean iCare (Element t) {
+    return (t instanceof Interface);
+  }
 
-    public IFacePropertiesArea() 
-    {
-	super();
-	addProperty("ip", "IP address:","<auto>", false, false);
-    }
+  public String getName () {
+    return "Interface Properties";
+  }
+
+  public InterfacePropertiesArea () {
+    super();
+    addProperty("ip", "IP address:", "<auto>", false, false);
+  }
 };
 
 /* lanlink
-   delay/b/loss */
+delay/b/loss */

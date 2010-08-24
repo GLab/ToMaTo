@@ -48,12 +48,13 @@ import buildui.connectors.EmulatedConnectionPropertiesArea;
 import buildui.connectors.InternetPropertiesArea;
 import buildui.connectors.ConnectionPropertiesArea;
 import buildui.connectors.Connection;
-import buildui.devices.IFacePropertiesArea;
-import buildui.devices.IFaceThingee;
+import buildui.devices.InterfacePropertiesArea;
+import buildui.devices.Interface;
 import buildui.devices.KvmPropertiesArea;
 import buildui.devices.KvmDevice;
 import buildui.paint.Palette;
 import buildui.paint.Element;
+import java.util.HashSet;
 //import netscape.javascript.*;
 //import java.io.*;
 
@@ -64,11 +65,6 @@ public class Netbuild extends java.applet.Applet
   private WorkArea workArea;
   private Palette palette;
   private Panel propertiesPanel;
-  private PropertiesArea linkPropertiesArea;
-  private PropertiesArea lanPropertiesArea;
-  private PropertiesArea nodePropertiesArea;
-  private PropertiesArea iFacePropertiesArea;
-  private PropertiesArea lanLinkPropertiesArea;
   private boolean modify;
   private boolean mouseDown;
   private boolean clickedOnSomething;
@@ -147,110 +143,43 @@ public class Netbuild extends java.applet.Applet
 
   // returns true if anything was added.
   private boolean doittoit (boolean needed, PropertiesArea which, boolean forceExpand) {
-    if (needed)
-      if (which.isStarted())
-        //		System.out.println("Refreshing");
-        which.refresh();
+    if (needed) {
+      if (which.isStarted()) which.refresh();
       else {
-        //System.out.println("Vising");
         which.setVisible(false);
-        //System.out.println("v1");
         propertiesPanel.add(which);
-        //System.out.println("v2");
         which.start();
-        //System.out.println("v3");
         if (forceExpand)
           which.showProperties();
         else
           which.hideProperties();
-        //System.out.println("v4");
         which.setVisible(true);
-        //System.out.println("Done.");
         return true;
       }
-    else //System.out.println("Leaving alone.");
-    if (which.isStarted()) {
-      //System.out.println("Stopping");
+    } else if (which.isStarted()) {
       which.stop();
       propertiesPanel.remove(which);
     }
     return false;
   }
 
-  private void precachePropertiesAreas () {
-    // this hack makes it so
-    // the widget creating goes on at app startup,
-    // not when the user places the first node (that is very annoying)
-
-    doittoit(true, nodePropertiesArea, false);
-    doittoit(true, linkPropertiesArea, false);
-    doittoit(true, lanPropertiesArea, false);
-    doittoit(true, lanLinkPropertiesArea, false);
-    doittoit(true, iFacePropertiesArea, false);
-    propertiesPanel.doLayout();
-    propertiesPanel.setVisible(false);
-    propertiesPanel.repaint();
-  }
-
   private void startAppropriatePropertiesArea () {
-    int typeCount = 0;
-    int selCount = 0;
-    boolean needLanLink = false;
-    boolean needLink = false;
-    boolean needLan = false;
-    boolean needIFace = false;
-    boolean needNode = false;
-
+    Set<PropertiesArea> oldPanels = new HashSet<PropertiesArea>() ;
+    for ( Component c : propertiesPanel.getComponents() ) {
+      if ( c instanceof PropertiesArea ) oldPanels.add((PropertiesArea)c);
+    }
     Enumeration en = Element.selectedElements();
-
+    Set<PropertiesArea> newPanels = new HashSet<PropertiesArea>() ;
     while (en.hasMoreElements()) {
       Element t = (Element)en.nextElement();
-
-      if (t.propertyEditable)
-        if (t instanceof EmulatedConnection) {
-          if (!needLanLink) typeCount++;
-          needLanLink = true;
-        } else if (t instanceof Connection) {
-          if (!needLink) typeCount++;
-          needLink = true;
-        } else if (t instanceof InternetConnector) {
-          if (!needLan) typeCount++;
-          needLan = true;
-          selCount++;
-        } else if (t instanceof IFaceThingee) {
-          if (!needIFace) typeCount++;
-          needIFace = true;
-        } else if (t instanceof KvmDevice) {
-          if (!needNode) typeCount++;
-          needNode = true;
-          selCount++;
-        }
+      if (t.propertyEditable) newPanels.add(t.getPropertiesArea());
     }
-
-    boolean exp = typeCount <= 1;
+    boolean exp = newPanels.size() <= 1;
     propertiesPanel.setVisible(false);
-    boolean changes = false;
-    changes |= doittoit(needNode, nodePropertiesArea, exp);
-    changes |= doittoit(needLink, linkPropertiesArea, exp);
-    changes |= doittoit(needLan, lanPropertiesArea, exp);
-    changes |= doittoit(needLanLink, lanLinkPropertiesArea, exp);
-    changes |= doittoit(needIFace, iFacePropertiesArea, exp);
-
-    if (selCount > 0) {
-      if (!copyButton.isVisible()) {
-        copyButton.setVisible(true);
-        propertiesPanel.add(copyButton);
-      } else // this is so it is always on the bottom.
-      if (changes) {
-        // if a panel got added.. re-cycle to the bottom.
-        propertiesPanel.remove(copyButton);
-        propertiesPanel.add(copyButton);
-      }
-    } else if (copyButton.isVisible()) {
-      propertiesPanel.remove(copyButton);
-      copyButton.setVisible(false);
-    }
-
+    for ( PropertiesArea pa: newPanels ) if ( ! oldPanels.contains(pa) )
+     doittoit(true, pa, exp);
+    for ( PropertiesArea pa: oldPanels ) if ( ! newPanels.contains(pa) )
+     doittoit(false, pa, exp);
     propertiesPanel.doLayout();
     propertiesPanel.setVisible(true);
   }
@@ -713,9 +642,9 @@ public class Netbuild extends java.applet.Applet
             if (a instanceof KvmDevice && b instanceof KvmDevice) {
               Connection t = new Connection(Element.genName("link"), a, b);
               workArea.add(t);
-              IFaceThingee it = new IFaceThingee("", a, t);
+              Interface it = new Interface("", a, t);
               workArea.add(it);
-              IFaceThingee it2 = new IFaceThingee("", b, t);
+              Interface it2 = new Interface("", b, t);
               workArea.add(it2);
               paintThingee(t);
               paintThingee(it);
@@ -723,14 +652,14 @@ public class Netbuild extends java.applet.Applet
             } else if (a instanceof KvmDevice && b instanceof InternetConnector) {
               Connection t = new EmulatedConnection("", a, b);
               workArea.add(t);
-              IFaceThingee it = new IFaceThingee("", a, t);
+              Interface it = new Interface("", a, t);
               workArea.add(it);
               paintThingee(t);
               paintThingee(it);
             } else if (b instanceof KvmDevice && a instanceof InternetConnector) {
               Connection t = new EmulatedConnection("", a, b);
               workArea.add(t);
-              IFaceThingee it = new IFaceThingee("", b, t);
+              Interface it = new Interface("", b, t);
               workArea.add(it);
               paintThingee(t);
               paintThingee(it);
@@ -872,7 +801,7 @@ public class Netbuild extends java.applet.Applet
                 t.deselect();
                 workArea.remove(t);
                 Netbuild.setStatus("Selection trashed.");
-              } else if (t instanceof IFaceThingee)
+              } else if (t instanceof Interface)
                 t.deselect();
             }
             repaint();
@@ -987,12 +916,6 @@ public class Netbuild extends java.applet.Applet
     //modify = grabIt();
 
     if (!fatalError) {
-      nodePropertiesArea = new KvmPropertiesArea();
-      linkPropertiesArea = new ConnectionPropertiesArea();
-      iFacePropertiesArea = new IFacePropertiesArea();
-      lanPropertiesArea = new InternetPropertiesArea();
-      lanLinkPropertiesArea = new EmulatedConnectionPropertiesArea();
-
       dragStarted = false;
 
 
@@ -1028,8 +951,6 @@ public class Netbuild extends java.applet.Applet
 
       copyButton.setVisible(false);
       copyButton.setSize(propAreaWidth - 16, 20);
-
-      precachePropertiesAreas();
     }
   }
 

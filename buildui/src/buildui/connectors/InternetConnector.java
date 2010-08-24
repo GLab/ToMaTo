@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class InternetConnector extends IconElement {
 
@@ -45,4 +46,11 @@ public class InternetConnector extends IconElement {
   public Element createAnother () {
     return new InternetConnector("internet"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new InternetPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };

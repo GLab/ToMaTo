@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class SwitchConnector extends IconElement {
 
@@ -44,6 +45,12 @@ public class SwitchConnector extends IconElement {
 
   public Element createAnother () {
     return new SwitchConnector("switch"+(num++)) ;
+  }
+
+  static PropertiesArea propertiesArea = new SwitchPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
   }
 
 };

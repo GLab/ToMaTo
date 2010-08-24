@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class OpenVzDevice extends IconElement {
 
@@ -45,4 +46,11 @@ public class OpenVzDevice extends IconElement {
   public Element createAnother () {
     return new OpenVzDevice("openvz"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new OpenVzPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };

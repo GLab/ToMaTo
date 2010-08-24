@@ -87,7 +87,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     child.add(tf.tf);
     tf.tf.addTextListener(this);
 
-    if (name.compareTo("name:") != 0) {
+    if (name.compareTo("name:") != 0 && def != null ) {
       final PropertiesArea propertiesArea = this;
       FlatButton fb = new FlatButton("default") {
 

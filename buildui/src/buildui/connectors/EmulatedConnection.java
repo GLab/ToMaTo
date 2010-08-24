@@ -21,6 +21,7 @@ package buildui.connectors;
 import java.awt.*;
 
 import buildui.paint.Element;
+import buildui.paint.PropertiesArea;
 
 
 public class EmulatedConnection extends Connection {
@@ -45,4 +46,11 @@ public class EmulatedConnection extends Connection {
 	public EmulatedConnection(String newName, Element na, Element nb) {
 		super(newName, na, nb);
 	}
+
+  static PropertiesArea propertiesArea = new EmulatedConnectionPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 }

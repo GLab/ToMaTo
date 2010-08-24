@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class RouterConnector extends IconElement {
 
@@ -45,4 +46,11 @@ public class RouterConnector extends IconElement {
   public Element createAnother () {
     return new RouterConnector("router"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new RouterPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };

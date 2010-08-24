@@ -29,7 +29,7 @@ public class RouterPropertiesArea extends PropertiesArea {
   }
 
   public String getName () {
-    return "Switch properties";
+    return "Router properties";
   }
 
   public RouterPropertiesArea () {

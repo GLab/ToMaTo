@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class DhcpdDevice extends IconElement {
 
@@ -45,4 +46,11 @@ public class DhcpdDevice extends IconElement {
   public Element createAnother () {
     return new DhcpdDevice("dhcpd"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new DhcpdPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };

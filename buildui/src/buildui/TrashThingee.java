@@ -19,6 +19,7 @@ package buildui;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.paint.PropertiesArea;
 import java.awt.*;
 
 import buildui.paint.IconElement;
@@ -38,5 +39,10 @@ public class TrashThingee extends IconElement {
 
   public TrashThingee (String newName) {
     super(newName);
+  }
+
+  @Override
+  public PropertiesArea getPropertiesArea () {
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 };

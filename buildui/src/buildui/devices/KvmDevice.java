@@ -23,6 +23,7 @@ import buildui.paint.Element;
 import java.awt.*;
 
 import buildui.paint.IconElement;
+import buildui.paint.PropertiesArea;
 
 public class KvmDevice extends IconElement {
 
@@ -45,4 +46,11 @@ public class KvmDevice extends IconElement {
   public Element createAnother () {
     return new KvmDevice("kvm"+(num++)) ;
   }
+
+  static PropertiesArea propertiesArea = new KvmPropertiesArea() ;
+
+  public PropertiesArea getPropertiesArea() {
+    return propertiesArea ;
+  }
+
 };
