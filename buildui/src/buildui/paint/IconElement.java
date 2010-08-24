@@ -32,7 +32,8 @@ abstract public class IconElement extends NetElement implements ImageObserver {
     return Netbuild.getImage(iconName);
   }
 
-  public void drawIcon (Graphics g, Image icon) {
+  @Override
+  public void drawIcon (Graphics g) {
     /*g.setColor( Color.lightGray );
     g.fillRect( -12, -12, 32, 32 );
     g.setColor( Color.white );
@@ -41,8 +42,8 @@ abstract public class IconElement extends NetElement implements ImageObserver {
     g.drawRect( -16, -16, 32, 32 );
      */
     try {
-      int height = icon.getHeight(null);
-      int width = icon.getWidth(null);
+      int height = icon.getHeight(this);
+      int width = icon.getWidth(this);
       if (icon != null) g.drawImage(icon, -width/2, -height/2, this);
     } catch (Exception e) {
       System.out.println(e.getMessage());
@@ -52,7 +53,7 @@ abstract public class IconElement extends NetElement implements ImageObserver {
 
   @Override
   public int textDown() {
-    return icon.getHeight(null)/2;
+    return 12 + icon.getHeight(this)/2;
   }
 
   public IconElement (String newName, boolean displayName, String icon) {
