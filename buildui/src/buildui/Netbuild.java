@@ -22,7 +22,7 @@ package buildui;
 /******** 
  * FIXME: Glab colors
  * FIXME: Implement download
- * FIXME: Initialize properties
+ * FIXME: More edit elements (Dropdowns, etc.)
  * FIXME: Popup on exception
  * FIXME: Fix chrome browser behavior
  * FIXME: Fix palette spacing
@@ -153,8 +153,7 @@ public class Netbuild extends java.applet.Applet
     }
     boolean exp = newPanels.size() <= 1;
     propertiesPanel.setVisible(false);
-    for (PropertiesArea pa: newPanels) if (!oldPanels.contains(pa))
-        doittoit(true, pa, exp);
+    for (PropertiesArea pa: newPanels) doittoit(true, pa, exp);
     for (PropertiesArea pa: oldPanels) if (!newPanels.contains(pa))
         doittoit(false, pa, exp);
     propertiesPanel.doLayout();

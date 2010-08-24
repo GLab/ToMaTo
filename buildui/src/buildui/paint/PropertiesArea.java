@@ -224,14 +224,10 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     boolean first = true;
     for (NetElement el: NetElement.selectedElements()) {
       if (iCare(el)) {
-        Enumeration e = propertyList.elements();
-
         thingsICareAbout++;
         elements.addElement(el);
 
-        while (e.hasMoreElements()) {
-          Property p = (Property)e.nextElement();
-
+        for (Property p: propertyList) {
           if (p.name.compareTo("ip") == 0)
             ipEdit = p.textField;
 
