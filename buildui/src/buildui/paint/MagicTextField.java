@@ -30,12 +30,7 @@ public class MagicTextField implements TextListener, FocusListener {
   private boolean alphaAllowed;
   private boolean specialAllowed; // '+' and '_'
   private boolean numAllowed;
-  private static Color darkGreen;
-
-  static {
-    //	darkGreen = new Color( 0.20f, 0.55f, 0.20f );
-    darkGreen = new Color(0.0f, 0.33f, 0.0f);
-  }
+  private static Color darkGreen = new Color(0.0f, 0.33f, 0.0f);
 
   public void focusGained (FocusEvent f) {
     tf.selectAll();

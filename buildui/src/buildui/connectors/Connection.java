@@ -31,11 +31,7 @@ public class Connection extends NetElement {
 
   private Connector con;
   private Device dev;
-  private static Color paleGreen;
-
-  static {
-    paleGreen = new Color(0.8f, 1.0f, 0.8f);
-  }
+  private static Color paleGreen = new Color(0.8f, 1.0f, 0.8f);
 
   public Connector getConnector () {
     return con;

@@ -30,11 +30,7 @@ public class Interface extends NetElement {
 
   private Device dev;
   private Connection con;
-  private static Color ickyBrown;
-
-  static {
-    ickyBrown = new Color(0.8f, 0.8f, 0.7f);
-  }
+  private static Color ickyBrown = new Color(0.8f, 0.8f, 0.7f);
 
   private void domove () {
     // snap to unit circle from a in dir of b.

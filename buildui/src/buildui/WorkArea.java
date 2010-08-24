@@ -65,9 +65,9 @@ public class WorkArea {
 
   public WorkArea (int w, int h) {
     super();
-    elements = new Vector();
-    connectionElements = new Vector();
-    interfaceElements = new Vector();
+    elements = new Vector<NetElement>();
+    connectionElements = new Vector<Connection>();
+    interfaceElements = new Vector<Interface>();
   }
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {

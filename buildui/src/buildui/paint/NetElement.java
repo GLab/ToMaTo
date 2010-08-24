@@ -31,21 +31,19 @@ public abstract class NetElement {
 	private int stringWidth;
 	private boolean stringWidthValid;
 
-	static private Dictionary selections;
+	static private Set<NetElement> selections = new HashSet<NetElement>();
   private final boolean displayName;
 
 	public void select() {
-		if (!isSelected()) {
-			selections.put(this, new Integer(1));
-		}
+		if (!isSelected()) selections.add(this);
 	}
 
-	public static Enumeration selectedElements() {
-		return selections.keys();
+	public static Set<NetElement> selectedElements() {
+		return selections;
 	}
 
 	public static void deselectAll() {
-		selections = new Hashtable();
+		selections = new HashSet<NetElement>();
 	}
 
 	public void deselect() {
@@ -57,12 +55,12 @@ public abstract class NetElement {
 	}
 
 	public boolean isSelected() {
-		return selections.get(this) != null;
+		return selections.contains(this);
 	}
 
-	static private Dictionary names;
+	static private Set<String> names = new HashSet<String>();
 
-	protected Dictionary properties;
+	protected Dictionary<String,String> properties;
 
 	public void copyProps(NetElement t) {
 		Enumeration e = t.properties.keys();
@@ -73,20 +71,6 @@ public abstract class NetElement {
 			properties.put(new String(s), t.properties.get(s));
 		}
 
-	}
-
-	static public String genName(String name) {
-		/*
-		 * if (names.get( name ) == null) { return name; }
-		 */
-
-		int num = 0;
-		String n = new String();
-		do {
-			n = name + NumberFormat.getInstance().format(num);
-			num++;
-		} while (names.get(n) != null);
-		return new String(n);
 	}
 
 	public synchronized String getProperty(String name, String def) {
@@ -123,20 +107,6 @@ public abstract class NetElement {
 	public boolean propertyEditable;
 	public boolean trashable;
 
-	// static NetElement currentlySelected;
-
-	static {
-		names = new Hashtable();
-		// currentlySelected = null;
-		selections = new Hashtable();
-	}
-
-	/*
-	 * static public NetElement getSelected() { return currentlySelected; }
-	 * 
-	 * static public void setSelected( NetElement t ) { currentlySelected = t; }
-	 */
-
 	public void fixName(boolean fix) {
 		nameFixed = fix;
 	}
@@ -155,16 +125,16 @@ public abstract class NetElement {
 		if (!nameFixed) {
 			names.remove(name);
 			name = new String(newName);
-			names.put(name, new Integer(1));
+			names.add(name);
 			stringWidthValid = false;
 		}
 	}
 
 	public NetElement(String newName, boolean displayName) {
 		name = new String(newName);
-		names.put(name, new Integer(1));
+		names.add(name);
     this.displayName = displayName ;
-		properties = new Hashtable();
+		properties = new Hashtable<String,String>();
 		stringWidth = 128;
 		stringWidthValid = false;
 		linkable = true;

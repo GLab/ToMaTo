@@ -20,6 +20,7 @@ package buildui.paint;
  */
 
 import buildui.Netbuild;
+import buildui.paint.NetElement;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -35,17 +36,11 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
   private boolean childVisible;
   private Expando expando;
   private Vector currentThingees;
-  private static Color darkBlue;
-  private static Color disabledBox;
+  private static Color darkBlue = new Color(0.3f, 0.3f, 0.5f);
+  private static Color disabledBox = new Color(0.7f, 0.7f, 0.85f);
 
   public boolean isStarted () {
     return started;
-  }
-
-  static {
-    darkBlue = new Color(0.3f, 0.3f, 0.5f);
-    //	disabledBox = new Color( 0.5f, 0.5f, 0.65f );
-    disabledBox = new Color(0.7f, 0.7f, 0.85f);
   }
 
   private void setVisibleAll (boolean b) {
@@ -119,7 +114,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
     return tf;
   }
-  private Vector propertyList;
+  private Vector<Property> propertyList;
 
   class Property {
 
@@ -162,7 +157,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     //setBackground( Color.green );
     expando = new Expando(getName());
     expando.addActionListener(this);
-    propertyList = new Vector();
+    propertyList = new Vector<Property>();
     nameEdit = null;
 
     //layout = new GridBagLayout();
@@ -219,26 +214,20 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
   public abstract String getName ();
 
   private synchronized void download () {
-    //	System.out.println( "PropertiesArea.download(): Beginning");
-    Enumeration et = NetElement.selectedElements();
-
-    //currentThingees = new Vector();
     currentThingees = null;
-    Vector cThingees = new Vector();
+    Vector<NetElement> elements = new Vector<NetElement>();
 
     int thingsICareAbout = 0;
 
     MagicTextField ipEdit = null;
 
     boolean first = true;
-    while (et.hasMoreElements()) {
-      NetElement t = (NetElement)et.nextElement();
-
-      if (iCare(t)) {
+    for (NetElement el: NetElement.selectedElements()) {
+      if (iCare(el)) {
         Enumeration e = propertyList.elements();
 
         thingsICareAbout++;
-        cThingees.addElement(t);
+        elements.addElement(el);
 
         while (e.hasMoreElements()) {
           Property p = (Property)e.nextElement();
@@ -246,7 +235,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
           if (p.name.compareTo("ip") == 0)
             ipEdit = p.textField;
 
-          String value = t.getProperty(p.name, p.def);
+          String value = el.getProperty(p.name, p.def);
 
           if (first)
             p.textField.setText(value);
@@ -270,7 +259,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
       }
     } else {
       if (nameEdit != null)
-        if (thingsICareAbout == 1 && ((NetElement)cThingees.elementAt(0)).nameFixed()) {
+        if (thingsICareAbout == 1 && (elements.elementAt(0)).nameFixed()) {
           nameEdit.tf.setEditable(false);
           nameEdit.tf.setBackground(disabledBox);
         } else {
@@ -284,7 +273,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
       }
     }
 
-    currentThingees = cThingees;
+    currentThingees = elements;
     //	System.out.println( "PropertiesArea.download(): Ending");
   }
 

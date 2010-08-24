@@ -25,11 +25,7 @@ public class Expando extends Component {
 	private String text;
 	private boolean expanded;
 	private ActionListener actionListener;
-	private static Color darkBlue;
-
-	static {
-		darkBlue = new Color(0.3f, 0.3f, 0.5f);
-	}
+	private static Color darkBlue=new Color(0.3f, 0.3f, 0.5f);
 
 	public void setState(boolean state) {
 		expanded = state;

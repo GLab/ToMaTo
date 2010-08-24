@@ -24,7 +24,8 @@ package buildui;
  * FIXME: Implement download
  * FIXME: Initialize properties
  * FIXME: Popup on exception
- * FIXME: Fix chrome browser
+ * FIXME: Fix chrome browser behavior
+ * FIXME: Fix palette spacing
  */
 import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
@@ -64,9 +65,9 @@ public class Netbuild extends java.applet.Applet
   private int lastDragX, lastDragY;
   private int downX, downY;
   private static Netbuild me;
-  private static Color cornflowerBlue;
-  private static Color lightBlue;
-  private static Color darkBlue;
+  private static Color cornflowerBlue = new Color(0.95f, 0.95f, 1.0f);
+  private static Color lightBlue = new Color(0.9f, 0.9f, 1.0f);
+  private static Color darkBlue = new Color(0.3f, 0.3f, 0.5f);
   private String status;
   private int appWidth, appHeight;
   private int propAreaWidth;
@@ -76,15 +77,9 @@ public class Netbuild extends java.applet.Applet
   private int propAreaX;
   private FlatButton exportButton;
   private FlatButton copyButton;
-  private static boolean fatalError;
+  private static boolean fatalError = false;
   private static String fatalErrorMessage;
 
-  static {
-    fatalError = false;
-    cornflowerBlue = new Color(0.95f, 0.95f, 1.0f);
-    lightBlue = new Color(0.9f, 0.9f, 1.0f);
-    darkBlue = new Color(0.3f, 0.3f, 0.5f);
-  }
   private Dialog d;
 
   private void dialog (String title, String message) {
@@ -152,11 +147,9 @@ public class Netbuild extends java.applet.Applet
     Set<PropertiesArea> oldPanels = new HashSet<PropertiesArea>();
     for (Component c: propertiesPanel.getComponents())
       if (c instanceof PropertiesArea) oldPanels.add((PropertiesArea)c);
-    Enumeration en = NetElement.selectedElements();
     Set<PropertiesArea> newPanels = new HashSet<PropertiesArea>();
-    while (en.hasMoreElements()) {
-      NetElement t = (NetElement)en.nextElement();
-      if (t.propertyEditable) newPanels.add(t.getPropertiesArea());
+    for (NetElement el: NetElement.selectedElements()) {
+      if (el.propertyEditable) newPanels.add(el.getPropertiesArea());
     }
     boolean exp = newPanels.size() <= 1;
     propertiesPanel.setVisible(false);
@@ -221,16 +214,13 @@ public class Netbuild extends java.applet.Applet
         if (dragStarted) {
           if (palette.hitTrash(lastDragX + downX, lastDragY + downY))
             palette.funktasticizeTrash(g);
-          Enumeration en = NetElement.selectedElements();
-
-          while (en.hasMoreElements()) {
-            NetElement t = (NetElement)en.nextElement();
-            if (t.moveable || t.trashable)
+          for (NetElement el: NetElement.selectedElements()) {
+            if (el.moveable || el.trashable)
               if (selFromPalette)
-                g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
+                g.drawRect(el.getX() + lastDragX - 16, el.getY() + lastDragY - 16, 32, 32);
               else
-                g.drawRect(t.getX() + lastDragX - 16 + workAreaX,
-                 t.getY() + lastDragY - 16,
+                g.drawRect(el.getX() + lastDragX - 16 + workAreaX,
+                 el.getY() + lastDragY - 16,
                  32, 32);
           }
         }
@@ -243,16 +233,13 @@ public class Netbuild extends java.applet.Applet
         if (palette.hitTrash(e.getX(), e.getY()))
           palette.funktasticizeTrash(g);
 
-        Enumeration en = NetElement.selectedElements();
-
-        while (en.hasMoreElements()) {
-          NetElement t = (NetElement)en.nextElement();
-          if (t.moveable || t.trashable)
+        for (NetElement el: NetElement.selectedElements()) {
+          if (el.moveable || el.trashable)
             if (selFromPalette)
-              g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
+              g.drawRect(el.getX() + lastDragX - 16, el.getY() + lastDragY - 16, 32, 32);
             else
-              g.drawRect(t.getX() + lastDragX - 16 + workAreaX,
-               t.getY() + lastDragY - 16,
+              g.drawRect(el.getX() + lastDragX - 16 + workAreaX,
+               el.getY() + lastDragY - 16,
                32, 32);
         }
       }
@@ -336,10 +323,7 @@ public class Netbuild extends java.applet.Applet
     if (e.isControlDown()) {
       allowMove = false;
       if (clickedOnSomething) {
-        Enumeration en = NetElement.selectedElements();
-
-        while (en.hasMoreElements()) {
-          NetElement a = (NetElement)en.nextElement();
+        for (NetElement a: NetElement.selectedElements()) {
           NetElement b = clickedOn;
 
           if (a != b && a != null && b != null && a.linkable && b.linkable)
@@ -350,15 +334,15 @@ public class Netbuild extends java.applet.Applet
               workArea.add(con);
               Interface iface = ((Device)a).createInterface(con);
               workArea.add(iface);
-              paintThingee(con);
-              paintThingee(iface);
+              paintElement(con);
+              paintElement(iface);
             } else if (b instanceof Device && a instanceof Connector) {
               Connection con = ((Connector)a).createConnection((Device)b);
               workArea.add(con);
               Interface iface = ((Device)b).createInterface(con);
               workArea.add(iface);
-              paintThingee(con);
-              paintThingee(iface);
+              paintElement(con);
+              paintElement(iface);
             } else if (a instanceof InternetConnector && b instanceof InternetConnector)
               Netbuild.setStatus("!Connector to connector connection not allowed.");
             else {
@@ -390,7 +374,7 @@ public class Netbuild extends java.applet.Applet
     dragStarted = false;
   }
 
-  private void paintThingee (NetElement t) {
+  private void paintElement (NetElement t) {
     Rectangle r = t.getRectangle();
 
     // HACK!
@@ -399,36 +383,21 @@ public class Netbuild extends java.applet.Applet
     else
       repaint(r.x + workAreaX, r.y, r.width, r.height);
   }
-  private Dictionary wasSelected;
+  private Set<NetElement> wasSelected;
 
   private void prePaintSelChange () {
-    wasSelected = new Hashtable();
-    Enumeration en = NetElement.selectedElements();
-
-    while (en.hasMoreElements()) {
-      NetElement t = (NetElement)en.nextElement();
-      wasSelected.put(t, new Integer(1));
-    }
+    wasSelected = new HashSet<NetElement>();
+    wasSelected.addAll(NetElement.selectedElements());
   }
 
   private void paintSelChange () {
-    Enumeration en = NetElement.selectedElements();
-
-    while (en.hasMoreElements()) {
-      NetElement t = (NetElement)en.nextElement();
-
-      if (wasSelected.get(t) == null) {
-        paintThingee(t);
-        wasSelected.remove(t);
+    for (NetElement el: NetElement.selectedElements()) {
+      if (!wasSelected.contains(el)) {
+        paintElement(el);
+        wasSelected.remove(el);
       }
     }
-
-    en = wasSelected.keys();
-
-    while (en.hasMoreElements()) {
-      NetElement t = (NetElement)en.nextElement();
-      paintThingee(t);
-    }
+    for (NetElement el: wasSelected) paintElement(el);
   }
 
   public void mouseReleased (MouseEvent e) {
@@ -441,22 +410,16 @@ public class Netbuild extends java.applet.Applet
         Graphics g = getGraphics();
         g.setXORMode(Color.white);
 
-        if (palette.hitTrash(lastDragX + downX, lastDragY + downY))
-          palette.funktasticizeTrash(g);
+        if (palette.hitTrash(lastDragX + downX, lastDragY + downY)) palette.funktasticizeTrash(g);
 
-        {//prevent name clash of en
-          Enumeration en = NetElement.selectedElements();
-
-          while (en.hasMoreElements()) {
-            NetElement t = (NetElement)en.nextElement();
-            if (t.moveable || t.trashable)
-              if (selFromPalette)
-                g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
-              else
-                g.drawRect(t.getX() + lastDragX - 16 + workAreaX,
-                 t.getY() + lastDragY - 16,
-                 32, 32);
-          }
+        for (NetElement el: NetElement.selectedElements()) {
+          if (el.moveable || el.trashable)
+            if (selFromPalette)
+              g.drawRect(el.getX() + lastDragX - 16, el.getY() + lastDragY - 16, 32, 32);
+            else
+              g.drawRect(el.getX() + lastDragX - 16 + workAreaX,
+               el.getY() + lastDragY - 16,
+               32, 32);
         }
 
         g.setPaintMode();
@@ -471,7 +434,7 @@ public class Netbuild extends java.applet.Applet
           } else {
             // into workarea. Create.
             prePaintSelChange();
-            NetElement t = (NetElement)NetElement.selectedElements().nextElement();
+            NetElement t = NetElement.selectedElements().iterator().next();
             NetElement el = t.createAnother();
             el.move(x - paletteWidth, y);
             workArea.add(el);
@@ -488,17 +451,14 @@ public class Netbuild extends java.applet.Applet
         if (!isInWorkArea(x, y)) {
           // out of work area.. but to where?
           if (palette.hitTrash(x, y)) {
-            Enumeration en = NetElement.selectedElements();
-
-            while (en.hasMoreElements()) {
-              NetElement t = (NetElement)en.nextElement();
-              if (t.trashable) {
+            for (NetElement el: NetElement.selectedElements()) {
+              if (el.trashable) {
                 // into trash -- gone.
-                t.deselect();
-                workArea.remove(t);
+                el.deselect();
+                workArea.remove(el);
                 Netbuild.setStatus("Selection trashed.");
-              } else if (t instanceof Interface)
-                t.deselect();
+              } else if (el instanceof Interface)
+                el.deselect();
             }
             repaint();
             startAppropriatePropertiesArea();
@@ -507,13 +467,8 @@ public class Netbuild extends java.applet.Applet
               exportButton.setEnabled(false);
           }
         } else {
-          Enumeration en = NetElement.selectedElements();
-
-          while (en.hasMoreElements()) {
-            NetElement t = (NetElement)en.nextElement();
-
-            if (t.moveable)
-              t.move(t.getX() + lastDragX, t.getY() + lastDragY);
+          for (NetElement el: NetElement.selectedElements()) {
+            if (el.moveable) el.move(el.getX() + lastDragX, el.getY() + lastDragY);
             repaint();
           }
         }
