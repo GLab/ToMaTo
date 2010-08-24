@@ -34,7 +34,7 @@ public class ConfiguredInterfacePropertiesArea extends PropertiesArea {
 
   public ConfiguredInterfacePropertiesArea () {
     super();
-    addProperty("name", "name:", "<auto>", true, false);
+    addProperty("name", "name:", "", true, false);
     addProperty("usedhcp", "use dhcp:", "true", true, false);
     addProperty("ip", "ip:", "", true, false);
     addProperty("netmask", "netmask:", "", true, false);

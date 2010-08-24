@@ -34,7 +34,7 @@ public class InterfacePropertiesArea extends PropertiesArea {
 
   public InterfacePropertiesArea () {
     super();
-    addProperty("name", "name:", "<auto>", true, false);
+    addProperty("name", "name:", "", true, false);
   }
 };
 

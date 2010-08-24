@@ -202,9 +202,7 @@ public class Netbuild extends java.applet.Applet
 
   public static Image getImage (String name) {
     try {
-      System.out.println("Trying to load image" + name);
       URL url = Netbuild.class.getResource(name);
-      System.out.println(url);
       Image im = me.getImage(url);
       if (im == null) System.out.println("Failed to load image.");
       return im;

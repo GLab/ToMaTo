@@ -41,7 +41,7 @@ public class ConfiguredInterface extends Interface {
     super.writeAttributes(xml);
     xml.setAttribute("ip4address", getProperty("ip", ""));
     xml.setAttribute("ip4netmask", getProperty("netmask", ""));
-    xml.setAttribute("use_dhcp", getProperty("usedhcp", ""));
+    xml.setAttribute("use_dhcp", getProperty("usedhcp", "true"));
   }
 
 }

@@ -16,8 +16,8 @@ public class OpenVzPropertiesArea extends PropertiesArea {
   public OpenVzPropertiesArea () {
     super();
     addProperty("name", "name:", "", true, false);
-    addProperty("hostgroup", "hostgroup:", "<auto>", true, false);
-    addProperty("template", "template:", "<auto>", true, true);
+    addProperty("hostgroup", "hostgroup:", "", true, false);
+    addProperty("template", "template:", "", true, true);
     addProperty("root_password", "root password:", "test123", true, true);
   }
 };

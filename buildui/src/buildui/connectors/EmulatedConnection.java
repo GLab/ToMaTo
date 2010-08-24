@@ -59,9 +59,9 @@ public class EmulatedConnection extends Connection {
   @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
-    xml.setAttribute("delay", getProperty("delay", ""));
-    xml.setAttribute("lossratio", getProperty("lossratio", ""));
-    xml.setAttribute("bandwidth", getProperty("bandwidth", ""));
+    xml.setAttribute("delay", getProperty("delay", "0"));
+    xml.setAttribute("lossratio", getProperty("lossratio", "0.0"));
+    xml.setAttribute("bandwidth", getProperty("bandwidth", "10000"));
   }
 
 }
