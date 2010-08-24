@@ -255,8 +255,10 @@ public class WorkArea {
       DOMSource source = new DOMSource(doc);
       trans.transform(source, result);
     } catch (TransformerException ex) {
+      Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
     } catch (ParserConfigurationException ex) {
+      Netbuild.exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
@@ -269,10 +271,13 @@ public class WorkArea {
       Element workflow = (Element)doc.getElementsByTagName("workflow").item(0);
       
     } catch (SAXException ex) {
+      Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
     } catch (IOException ex) {
+      Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
     } catch (ParserConfigurationException ex) {
+      Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
     }
 

@@ -23,7 +23,6 @@ package buildui;
  * FIXME: Glab colors
  * FIXME: Implement download
  * FIXME: More edit elements (Dropdowns, etc.)
- * FIXME: Popup on exception
  * FIXME: Fix chrome browser behavior
  * FIXME: Fix palette spacing
  */
@@ -77,16 +76,12 @@ public class Netbuild extends java.applet.Applet
   private int propAreaX;
   private FlatButton exportButton;
   private FlatButton copyButton;
-  private static boolean fatalError = false;
-  private static String fatalErrorMessage;
 
-  private Dialog d;
-
-  private void dialog (String title, String message) {
+  private static void dialog (String title, String message) {
     Frame window = new Frame();
 
     // Create a modal dialog
-    d = new Dialog(window, title, true);
+    final Dialog d = new Dialog(window, title, false);
 
     // Use a flow layout
     d.setLayout(new FlowLayout());
@@ -99,7 +94,7 @@ public class Netbuild extends java.applet.Applet
 
       public void actionPerformed (ActionEvent e) {
         // Hide dialog
-        me.d.setVisible(false);
+        d.setVisible(false);
       }
     });
 
@@ -112,13 +107,21 @@ public class Netbuild extends java.applet.Applet
     d.setVisible(true);
   }
 
-  private void fatalError (String message) {
-    fatalErrorMessage = message;
-    fatalError = true;
+  public static void exception (Throwable t) {
+    try {
+      fatalError(t.getMessage());
+    } catch (Throwable ex) {
+      t.printStackTrace();
+      ex.printStackTrace();
+    }
   }
 
-  private void warningError (String message) {
-    dialog("NetBuild Warning", message);
+  private static void fatalError (String message) {
+    dialog("Fatal error", message);
+  }
+
+  private static void warningError (String message) {
+    dialog("Warning", message);
   }
 
   // returns true if anything was added.
@@ -165,8 +168,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public static void redrawAll () {
-    if (fatalError) return;
-
     me.repaint();
   }
 
@@ -182,8 +183,7 @@ public class Netbuild extends java.applet.Applet
       if (im == null) System.out.println("Failed to load image.");
       return im;
     } catch (Exception e) {
-      System.out.println("Error getting image.");
-      e.printStackTrace();
+      Netbuild.exception (e) ;
       return null;
     }
   }
@@ -202,8 +202,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void mouseDragged (MouseEvent e) {
-    if (fatalError) return;
-
     if (!mouseDown) return;
     Graphics g = getGraphics();
     g.setXORMode(Color.white);
@@ -283,7 +281,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void actionPerformed (ActionEvent e) {
-    if (fatalError) return;
     if (e.getSource() == exportButton) {
       startAppropriatePropertiesArea(); // make sure strings are up'd
       upload(modify);
@@ -291,8 +288,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void mousePressed (MouseEvent e) {
-    if (fatalError) return;
-
     mouseDown = true;
     int x = e.getX();
     int y = e.getY();
@@ -400,8 +395,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void mouseReleased (MouseEvent e) {
-    if (fatalError) return;
-
     if (!mouseDown) return;
     mouseDown = false;
     if (clickedOnSomething) {
@@ -526,34 +519,32 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void init () {
-    fatalError = false;
-    status = "Netbuild v1.03 started.";
-    me = this;
-    mouseDown = false;
+    try {
+      status = "Netbuild v1.03 started.";
+      me = this;
+      mouseDown = false;
 
-    setLayout(null);
+      setLayout(null);
 
-    addMouseListener(this);
-    addMouseMotionListener(this);
-    addKeyListener(this);
+      addMouseListener(this);
+      addMouseMotionListener(this);
+      addKeyListener(this);
 
-    Dimension d = getSize();
-    appWidth = d.width - 1; //640;
-    appHeight = d.height - 1; //480;
+      Dimension d = getSize();
+      appWidth = d.width - 1; //640;
+      appHeight = d.height - 1; //480;
 
-    propAreaWidth = 160;
-    paletteWidth = 80;
-    workAreaWidth = appWidth - propAreaWidth - paletteWidth;
+      propAreaWidth = 160;
+      paletteWidth = 80;
+      workAreaWidth = appWidth - propAreaWidth - paletteWidth;
 
-    workArea = new WorkArea(workAreaWidth, appHeight);
-    palette = new Palette();
-    propertiesPanel = new Panel();
+      workArea = new WorkArea(workAreaWidth, appHeight);
+      palette = new Palette();
+      propertiesPanel = new Panel();
 
-    modify = download();
+      modify = download();
 
-    if (!fatalError) {
       dragStarted = false;
-
 
       workAreaX = paletteWidth;
       propAreaX = paletteWidth + workAreaWidth;
@@ -587,27 +578,13 @@ public class Netbuild extends java.applet.Applet
 
       copyButton.setVisible(false);
       copyButton.setSize(propAreaWidth - 16, 20);
+
+    } catch ( Exception ex ) {
+      exception (ex);
     }
   }
 
   public void paint (Graphics g) {
-    if (fatalError) {
-      g.setColor(Color.black);
-      g.drawString("Fatal Error!", 10, 30);
-      if (fatalErrorMessage.equals("parsefail")) {
-        g.drawString("Failed to parse NS file!", 10, 55);
-        g.drawString("This may be due to attempting to edit an experiment which", 10, 70);
-        g.drawString("used an NS file that wasn't generated by NetBuild,", 10, 85);
-        g.drawString("or was modified by hand to be more complicated than", 10, 100);
-        g.drawString("NetBuild can understand, or if an experiment no longer exists at all.", 10, 115);
-        g.drawString("If this is a problem, please contact Testbed Ops.", 10, 145);
-      } else {
-        g.drawString(fatalErrorMessage, 10, 50);
-        g.drawString("If this is a problem, please contact Testbed Ops.", 10, 80);
-      }
-      super.paint(g);
-      return;
-    }
     g.setColor(lightBlue);
     g.fillRect(0, 0, paletteWidth, appHeight);
 
@@ -669,7 +646,7 @@ public class Netbuild extends java.applet.Applet
       URL backurl = new URL ( getParameter("back_url") );
       getAppletContext().showDocument(backurl);
     } catch (Exception ex) {
-      System.out.println (ex) ;
+      exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
@@ -692,6 +669,7 @@ public class Netbuild extends java.applet.Applet
 
       iStream.close();
     } catch (IOException ex) {
+      exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
     return true;

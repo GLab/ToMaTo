@@ -19,6 +19,7 @@ package buildui.paint;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Netbuild;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -113,6 +114,7 @@ public class MagicTextField implements TextListener, FocusListener {
       try {
         tf.setCaretPosition(caret);
       } catch (Exception ex) {
+        Netbuild.exception (ex) ;
       }
     }
   }

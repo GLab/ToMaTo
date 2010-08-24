@@ -46,8 +46,7 @@ abstract public class IconElement extends NetElement implements ImageObserver {
       int width = icon.getWidth(this);
       if (icon != null) g.drawImage(icon, -width/2, -height/2, this);
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      e.printStackTrace();
+      Netbuild.exception (e) ;
     }
   }
 
