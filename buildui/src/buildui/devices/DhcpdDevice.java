@@ -20,9 +20,10 @@ package buildui.devices;
  */
 
 import buildui.connectors.Connection;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class DhcpdDevice extends Device {
 
@@ -32,7 +33,7 @@ public class DhcpdDevice extends Device {
     super(newName, "/icons/computer.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new DhcpdDevice("dhcpd"+(num++)) ;
   }
 
@@ -49,4 +50,13 @@ public class DhcpdDevice extends Device {
     return new Interface("eth"+(ifaceNum++), this, con);
   }
 
-};
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "dhcpd");
+    xml.setAttribute("subnet", getProperty("subnet", ""));
+    xml.setAttribute("netmask", getProperty("netmask", ""));
+    xml.setAttribute("range", getProperty("range", ""));
+  }
+
+}

@@ -214,13 +214,13 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
       return new Dimension(640 - 480 - 16, d.height);
   }
 
-  public abstract boolean iCare (Element t);
+  public abstract boolean iCare (NetElement t);
 
   public abstract String getName ();
 
   private synchronized void download () {
     //	System.out.println( "PropertiesArea.download(): Beginning");
-    Enumeration et = Element.selectedElements();
+    Enumeration et = NetElement.selectedElements();
 
     //currentThingees = new Vector();
     currentThingees = null;
@@ -232,7 +232,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
     boolean first = true;
     while (et.hasMoreElements()) {
-      Element t = (Element)et.nextElement();
+      NetElement t = (NetElement)et.nextElement();
 
       if (iCare(t)) {
         Enumeration e = propertyList.elements();
@@ -270,7 +270,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
       }
     } else {
       if (nameEdit != null)
-        if (thingsICareAbout == 1 && ((Element)cThingees.elementAt(0)).nameFixed()) {
+        if (thingsICareAbout == 1 && ((NetElement)cThingees.elementAt(0)).nameFixed()) {
           nameEdit.tf.setEditable(false);
           nameEdit.tf.setBackground(disabledBox);
         } else {
@@ -297,7 +297,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     boolean needRedraw = false;
     while (et.hasMoreElements()) {
       //	    System.out.println( "PropertiesArea.upload(): Regarding a thingee.");
-      Element t = (Element)et.nextElement();
+      NetElement t = (NetElement)et.nextElement();
 
       //if (iCare(t)) {
       Enumeration e = propertyList.elements();

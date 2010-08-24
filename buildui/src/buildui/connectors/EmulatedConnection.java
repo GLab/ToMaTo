@@ -18,10 +18,13 @@ package buildui.connectors;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import buildui.devices.Device;
+import buildui.devices.Interface;
 import java.awt.*;
 
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 
 public class EmulatedConnection extends Connection {
@@ -43,14 +46,22 @@ public class EmulatedConnection extends Connection {
 		g.drawRect(-8, -8, 16, 16);
 	}
 
-	public EmulatedConnection(String newName, Element na, Element nb) {
-		super(newName, na, nb);
+	public EmulatedConnection(String newName, Connector con, Device dev) {
+		super(newName, con, dev);
 	}
 
   static PropertiesArea propertiesArea = new EmulatedConnectionPropertiesArea() ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
+  }
+
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("delay", getProperty("delay", ""));
+    xml.setAttribute("lossratio", getProperty("lossratio", ""));
+    xml.setAttribute("bandwidth", getProperty("bandwidth", ""));
   }
 
 }

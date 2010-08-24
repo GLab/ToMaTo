@@ -19,15 +19,17 @@ package buildui.devices;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.connectors.Connection;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
-import java.lang.*;
 
-import buildui.paint.Element;
+import buildui.paint.NetElement;
+import org.w3c.dom.Element;
 
-public class Interface extends Element {
+public class Interface extends NetElement {
 
-  private Element a, b;
+  private Device dev;
+  private Connection con;
   private static Color ickyBrown;
 
   static {
@@ -36,35 +38,35 @@ public class Interface extends Element {
 
   private void domove () {
     // snap to unit circle from a in dir of b.
-    float xd = b.getX() - a.getX();
-    float yd = b.getY() - a.getY();
+    float xd = con.getX() - dev.getX();
+    float yd = con.getY() - dev.getY();
     float magSquared = (xd * xd + yd * yd);
     float mag = 14.0f / (float)Math.sqrt(magSquared);
 
-    super.move((int)((float)a.getX() + (xd * mag)),
-     (int)((float)a.getY() + (yd * mag)));
+    super.move((int)((float)dev.getX() + (xd * mag)),
+     (int)((float)dev.getY() + (yd * mag)));
     /*
     super.move((a.getX() * 3 + b.getX()) / 4,
     (a.getY() * 3 + b.getY()) / 4 );
      */
   }
 
-  public Interface (String newName, Element na, Element nb) {
+  public Interface (String newName, Device dev, Connection con) {
     super(newName, false);
     linkable = false;
     moveable = false;
     trashable = false;
-    a = na;
-    b = nb;
+    this.dev = dev;
+    this.con = con;
     domove();
   }
 
-  public Element getA () {
-    return a;
+  public Device getDevice () {
+    return dev;
   }
 
-  public Element getB () {
-    return b;
+  public Connection getConnection () {
+    return con;
   }
 
   public void move (int nx, int ny) {
@@ -103,8 +105,8 @@ public class Interface extends Element {
     super.draw(g);
   }
 
-  public boolean isConnectedTo (Element t) {
-    return (a == t | b == t);
+  public boolean isConnectedTo (NetElement t) {
+    return (dev == t | con == t);
   }
 
   static PropertiesArea propertiesArea = new InterfacePropertiesArea () ;
@@ -112,5 +114,9 @@ public class Interface extends Element {
   @Override
   public PropertiesArea getPropertiesArea () {
     return propertiesArea ;
+  }
+
+  public void writeAttributes(Element xml) {
+    xml.setAttribute("id", getName());
   }
 }

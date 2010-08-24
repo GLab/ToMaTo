@@ -20,9 +20,10 @@ package buildui.connectors;
  */
 
 import buildui.devices.Device;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class SwitchConnector extends Connector {
 
@@ -32,7 +33,7 @@ public class SwitchConnector extends Connector {
     super(newName, "/icons/switch.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new SwitchConnector("switch"+(num++)) ;
   }
 
@@ -46,4 +47,11 @@ public class SwitchConnector extends Connector {
   public Connection createConnection (Device dev) {
     return new EmulatedConnection("", this, dev);
   }
-};
+
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "switch");
+  }
+
+}

@@ -1,11 +1,11 @@
 package buildui.devices;
 
 import buildui.paint.PropertiesArea;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 public class KvmPropertiesArea extends PropertiesArea {
 
-  public boolean iCare (Element t) {
+  public boolean iCare (NetElement t) {
     return (t instanceof KvmDevice);
   }
 

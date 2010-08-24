@@ -20,9 +20,10 @@ package buildui.connectors;
  */
 
 import buildui.devices.Device;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class HubConnector extends Connector {
 
@@ -32,7 +33,7 @@ public class HubConnector extends Connector {
     super(newName, "/icons/hub.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new HubConnector("hub"+(num++)) ;
   }
 
@@ -45,6 +46,12 @@ public class HubConnector extends Connector {
   @Override
   public Connection createConnection (Device dev) {
     return new EmulatedConnection("", this, dev);
+  }
+
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "hub");
   }
 
 };

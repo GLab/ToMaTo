@@ -22,6 +22,7 @@ package buildui.connectors;
 
 import buildui.devices.Device;
 import buildui.paint.IconElement;
+import org.w3c.dom.Element;
 
 public abstract class Connector extends IconElement {
 
@@ -30,5 +31,9 @@ public abstract class Connector extends IconElement {
   }
 
   public abstract Connection createConnection ( Device dev ) ;
+
+  public void writeAttributes(Element xml) {
+    xml.setAttribute("id", getName());
+  }
 
 };

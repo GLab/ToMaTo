@@ -20,9 +20,10 @@ package buildui.connectors;
  */
 
 import buildui.devices.Device;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class InternetConnector extends Connector {
 
@@ -32,7 +33,7 @@ public class InternetConnector extends Connector {
     super(newName, "/icons/internet.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new InternetConnector("internet"+(num++)) ;
   }
 
@@ -46,4 +47,11 @@ public class InternetConnector extends Connector {
   public Connection createConnection (Device dev) {
     return new Connection("", this, dev);
   }
-};
+
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "real");
+  }
+
+}

@@ -34,12 +34,12 @@ import java.util.List;
 
 public class Palette {
 
-  private List<Element> elements = new LinkedList<Element> () ;
+  private List<NetElement> elements = new LinkedList<NetElement> () ;
   private TrashThingee trash ;
   private int x = 40 ;
   private int y = 40 ;
 
-  private void addElement(Element el) {
+  private void addElement(NetElement el) {
     elements.add(el);
     el.linkable = false;
     el.trashable = false;
@@ -61,12 +61,12 @@ public class Palette {
     addElement(trash);
   }
 
-  public boolean has (Element el) {
+  public boolean has (NetElement el) {
     return elements.contains(el) ;
   }
 
   public void paint (Graphics g) {
-    for (Element el: elements) {
+    for (NetElement el: elements) {
       el.draw(g);
     }
   }
@@ -83,8 +83,8 @@ public class Palette {
     return false;
   }
 
-  public Element clicked (int x, int y) {
-    for (Element el: elements) {
+  public NetElement clicked (int x, int y) {
+    for (NetElement el: elements) {
       if ( el.clicked(x, y) && el != trash ) return el ;
     }
     return null;

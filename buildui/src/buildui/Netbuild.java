@@ -37,28 +37,32 @@ import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.util.*;
-import java.lang.*;
 import java.net.*;
 
-import buildui.connectors.EmulatedConnection;
 import buildui.connectors.InternetConnector;
-import buildui.connectors.EmulatedConnectionPropertiesArea;
-import buildui.connectors.InternetPropertiesArea;
-import buildui.connectors.ConnectionPropertiesArea;
 import buildui.connectors.Connection;
 import buildui.connectors.Connector;
 import buildui.devices.Device;
-import buildui.devices.InterfacePropertiesArea;
 import buildui.devices.Interface;
-import buildui.devices.KvmPropertiesArea;
-import buildui.devices.KvmDevice;
 import buildui.paint.Palette;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 import java.util.HashSet;
-//import netscape.javascript.*;
-//import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentType;
+import org.w3c.dom.Element;
 
 public class Netbuild extends java.applet.Applet
  implements MouseListener, MouseMotionListener, ActionListener,
@@ -87,10 +91,8 @@ public class Netbuild extends java.applet.Applet
   private int workAreaWidth;
   private int workAreaX;
   private int propAreaX;
-  //    private Linko exportButton;
   private FlatButton exportButton;
   private FlatButton copyButton;
-  private boolean copyButtonActive;
   private static boolean fatalError;
   private static String fatalErrorMessage;
 
@@ -133,8 +135,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   private void fatalError (String message) {
-    //dialog( "NetBuild Fatal Error", message );
-    //System.exit(0);
     fatalErrorMessage = message;
     fatalError = true;
   }
@@ -145,7 +145,7 @@ public class Netbuild extends java.applet.Applet
 
   // returns true if anything was added.
   private boolean doittoit (boolean needed, PropertiesArea which, boolean forceExpand) {
-    if (needed) {
+    if (needed)
       if (which.isStarted()) which.refresh();
       else {
         which.setVisible(false);
@@ -158,7 +158,7 @@ public class Netbuild extends java.applet.Applet
         which.setVisible(true);
         return true;
       }
-    } else if (which.isStarted()) {
+    else if (which.isStarted()) {
       which.stop();
       propertiesPanel.remove(which);
     }
@@ -166,22 +166,21 @@ public class Netbuild extends java.applet.Applet
   }
 
   private void startAppropriatePropertiesArea () {
-    Set<PropertiesArea> oldPanels = new HashSet<PropertiesArea>() ;
-    for ( Component c : propertiesPanel.getComponents() ) {
-      if ( c instanceof PropertiesArea ) oldPanels.add((PropertiesArea)c);
-    }
-    Enumeration en = Element.selectedElements();
-    Set<PropertiesArea> newPanels = new HashSet<PropertiesArea>() ;
+    Set<PropertiesArea> oldPanels = new HashSet<PropertiesArea>();
+    for (Component c: propertiesPanel.getComponents())
+      if (c instanceof PropertiesArea) oldPanels.add((PropertiesArea)c);
+    Enumeration en = NetElement.selectedElements();
+    Set<PropertiesArea> newPanels = new HashSet<PropertiesArea>();
     while (en.hasMoreElements()) {
-      Element t = (Element)en.nextElement();
+      NetElement t = (NetElement)en.nextElement();
       if (t.propertyEditable) newPanels.add(t.getPropertiesArea());
     }
     boolean exp = newPanels.size() <= 1;
     propertiesPanel.setVisible(false);
-    for ( PropertiesArea pa: newPanels ) if ( ! oldPanels.contains(pa) )
-     doittoit(true, pa, exp);
-    for ( PropertiesArea pa: oldPanels ) if ( ! newPanels.contains(pa) )
-     doittoit(false, pa, exp);
+    for (PropertiesArea pa: newPanels) if (!oldPanels.contains(pa))
+        doittoit(true, pa, exp);
+    for (PropertiesArea pa: oldPanels) if (!newPanels.contains(pa))
+        doittoit(false, pa, exp);
     propertiesPanel.doLayout();
     propertiesPanel.setVisible(true);
   }
@@ -198,7 +197,6 @@ public class Netbuild extends java.applet.Applet
 
   public static void setStatus (String newStatus) {
     me.status = newStatus;
-    //	g.drawString( status, workAreaX + 4, 474 );
     me.repaint(me.workAreaX + 4, 420, 640 - (me.workAreaX + 4), 60);
   }
 
@@ -215,21 +213,13 @@ public class Netbuild extends java.applet.Applet
       e.printStackTrace();
       return null;
     }
-    //return me.getImage( me.getCodeBase(), name );
   }
 
   public void keyTyped (KeyEvent e) {
   }
 
   public void keyPressed (KeyEvent e) {
-    if (fatalError) return;
-
-    System.out.println("Woo.");
-    if (e.getKeyCode() == KeyEvent.VK_C) {
-      prePaintSelChange();
-      workArea.copySelected();
-      paintSelChange();
-    }
+    //ignore
   }
 
   public void keyReleased (KeyEvent e) {
@@ -250,10 +240,10 @@ public class Netbuild extends java.applet.Applet
         if (dragStarted) {
           if (palette.hitTrash(lastDragX + downX, lastDragY + downY))
             palette.funktasticizeTrash(g);
-          Enumeration en = Element.selectedElements();
+          Enumeration en = NetElement.selectedElements();
 
           while (en.hasMoreElements()) {
-            Element t = (Element)en.nextElement();
+            NetElement t = (NetElement)en.nextElement();
             if (t.moveable || t.trashable)
               if (selFromPalette)
                 g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
@@ -272,10 +262,10 @@ public class Netbuild extends java.applet.Applet
         if (palette.hitTrash(e.getX(), e.getY()))
           palette.funktasticizeTrash(g);
 
-        Enumeration en = Element.selectedElements();
+        Enumeration en = NetElement.selectedElements();
 
         while (en.hasMoreElements()) {
-          Element t = (Element)en.nextElement();
+          NetElement t = (NetElement)en.nextElement();
           if (t.moveable || t.trashable)
             if (selFromPalette)
               g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
@@ -300,7 +290,6 @@ public class Netbuild extends java.applet.Applet
       }
 
       if (dragStarted)
-        //g.drawRect( downX, downY, lastDragX, lastDragY );
         g.drawRect(leastX, leastY, sizeX, sizeY);
       dragStarted = true;
       lastDragX = e.getX() - downX;
@@ -321,267 +310,16 @@ public class Netbuild extends java.applet.Applet
         }
 
         g.drawRect(leastX2, leastY2, sizeX2, sizeY2);
-        //g.drawRect( downX2, downY2, lastDragX2, lastDragY2 );
       }
     }
     g.setPaintMode();
   }
 
-  /*
-  public boolean grabIt () {
-    try {
-      String action = getParameter("action");
-      if (action == null || !action.equals("modify")) {
-        System.out.println("Not modifying...");
-        return false;
-      }
-      String eid = getParameter("eid");
-      String pid = getParameter("pid");
-      String uid = getParameter("uid");
-      String auth = getParameter("auth");
-
-      if (eid == null || pid == null || uid == null || auth == null)
-        fatalError("Insufficient Parameters.");
-
-      String ns = new String("");
-      int linesRecd = 0;
-
-      System.out.println("Getting NS...");
-      {
-        URL url;
-        URLConnection urlConn;
-        DataOutputStream printout;
-        DataInputStream input;
-        // URL of CGI-Bin script.
-        //url = new URL (getCodeBase().toString() + "env.tcgi");
-        url = new URL(getParameter("importurl"));
-        // URL connection channel.
-        urlConn = url.openConnection();
-        // Let the run-time system (RTS) know that we want input.
-        urlConn.setDoInput(true);
-        // Let the RTS know that we want to do output.
-        urlConn.setDoOutput(true);
-        // No caching, we want the real thing.
-        urlConn.setUseCaches(false);
-        // Specify the content type.
-        urlConn.setRequestProperty("Content-Type",
-         "application/x-www-form-urlencoded");
-        // Send POST output.
-        printout = new DataOutputStream(urlConn.getOutputStream());
-        String content =
-         "eid=" + URLEncoder.encode(eid) + "&pid=" + URLEncoder.encode(pid) + "&nocookieuid=" + URLEncoder.encode(uid)
-         + "&justns=1" + "&nocookieauth=" + URLEncoder.encode(auth);
-        printout.writeBytes(content);
-        printout.flush();
-        printout.close();
-        // Get response data.
-        input = new DataInputStream(urlConn.getInputStream());
-        String str;
-        System.out.println("BEGIN NS FROM SERVER:");
-        while (null != ((str = input.readLine()))) {
-          //System.out.println (str);
-          ns = ns.concat(str);
-          ns = ns.concat("\n");
-          linesRecd++;
-        }
-        System.out.println("END NS FROM SERVER.");
-        input.close();
-      }
-
-      //System.out.println("Modify = '" + modify + "'");
-      if (linesRecd == 0) {
-        fatalError("NS file was blank!");
-        //System.out.println("Got blank NS file!");
-        return false;
-      }
-      System.out.println("Successfully (?) obtained NS file.");
-      // System.out.print(ns);
-      // call fromNS on ns.
-      if (!workArea.fromNS(ns)) {
-        fatalError("parsefail");
-        //System.out.println("NS failed to parse!");
-        return false;
-      } else
-        System.out.println("Successfully parsed NS!");
-      return true;
-    } catch (Exception ex) {
-      System.out.println("grabIt(): exception '" + ex.getMessage() + "'");
-      ex.printStackTrace();
-      fatalError("Failed to get and parse NS file!");
-      return false;
-    }
-  }
-*/
-  /*
-  public String modifyIt (String s) {
-    String eid = getParameter("eid");
-    String pid = getParameter("pid");
-    String uid = getParameter("uid");
-    String auth = getParameter("auth");
-
-    if (eid == null || pid == null || uid == null || auth == null) {
-      warningError("Failed to modify experiment.");
-      //System.out.println("Insufficient parameters...");
-      return "Bad applet parameters";
-    }
-
-    String response = new String("Could not contact server.");
-
-    try {
-      URL url;
-      URLConnection urlConn;
-      DataOutputStream printout;
-      DataInputStream input;
-      // URL of CGI-Bin script.
-      //url = new URL (getCodeBase().toString() + "env.tcgi");
-      url = new URL(getParameter("modifyurl"));
-      // URL connection channel.
-      urlConn = url.openConnection();
-      // Let the run-time system (RTS) know that we want input.
-      urlConn.setDoInput(true);
-      // Let the RTS know that we want to do output.
-      urlConn.setDoOutput(true);
-      // No caching, we want the real thing.
-      urlConn.setUseCaches(false);
-      // Specify the content type.
-      urlConn.setRequestProperty("Content-Type",
-       "application/x-www-form-urlencoded");
-      // Send POST output.
-      printout = new DataOutputStream(urlConn.getOutputStream());
-      String content =
-       "nsdata=" + URLEncoder.encode(s) + "&go=1&reboot=1" + "&eid=" + URLEncoder.encode(eid) + "&pid=" + URLEncoder.
-       encode(pid) + "&nocookieuid=" + URLEncoder.encode(uid) + "&nocookieauth=" + URLEncoder.encode(auth);
-      printout.writeBytes(content);
-      printout.flush();
-      printout.close();
-      // Get response data.
-      input = new DataInputStream(urlConn.getInputStream());
-      String str;
-      while (null != ((str = input.readLine())))
-        //System.out.println (str);
-        if (str.toLowerCase().startsWith("<!-- netbuild!"))
-          //System.out.println( "Registered response!");
-          response = str;
-      input.close();
-
-      System.out.println("Response = " + response);
-      return response.substring(15, response.length() - 4);
-    } catch (Exception ex) {
-      //warningError("Failed to modify experiment");
-      System.out.println("modifyIt() exception: " + ex.getMessage());
-      ex.printStackTrace();
-      return "Exception";
-    }
-
-    //return "nsref=" + String.valueOf(hash) +
-    //       "&guid=" + randVal;
-    //return response;
-  }
-
-  public String postIt (String s) {
-    int hash = s.hashCode();
-    Random rand = new Random();
-    int randInt = rand.nextInt() % 102010201;
-    if (randInt < 0) randInt = -randInt;
-    String randVal = String.valueOf(randInt);
-
-    if (hash < 0) hash = -hash;
-    if (hash == 0) hash = 1;
-    try {
-      URL url;
-      URLConnection urlConn;
-      DataOutputStream printout;
-      DataInputStream input;
-      // URL of CGI-Bin script.
-      //url = new URL (getCodeBase().toString() + "env.tcgi");
-      url = new URL(getParameter("exporturl"));
-      // URL connection channel.
-      urlConn = url.openConnection();
-      // Let the run-time system (RTS) know that we want input.
-      urlConn.setDoInput(true);
-      // Let the RTS know that we want to do output.
-      urlConn.setDoOutput(true);
-      // No caching, we want the real thing.
-      urlConn.setUseCaches(false);
-      // Specify the content type.
-      urlConn.setRequestProperty("Content-Type",
-       "application/x-www-form-urlencoded");
-      // Send POST output.
-      printout = new DataOutputStream(urlConn.getOutputStream());
-      String content =
-       "nsdata=" + URLEncoder.encode(s) + "&nsref=" + String.valueOf(hash) + "&guid=" + randVal;
-      printout.writeBytes(content);
-      printout.flush();
-      printout.close();
-      // Get response data.
-      input = new DataInputStream(urlConn.getInputStream());
-      String str;
-      while (null != ((str = input.readLine())))
-        System.out.println(str);
-      input.close();
-
-    } catch (Exception ex) {
-      System.out.println("exception: " + ex.getMessage());
-      ex.printStackTrace();
-      return "posterror=1";
-    }
-    return "nsref=" + String.valueOf(hash) + "&guid=" + randVal;
-  }
-*/
-  // public void toCookie( String s ) {
-  //   java.util.Calendar c = java.util.Calendar.getInstance();
-  //   c.add(java.util.Calendar.MONTH, 1);
-  //   String expires = "; expires=" + c.getTime().toString();
-  //   String s1 = s + expires;
-  //   System.out.println(s1);
-  //   JSObject myBrowser = JSObject.getWindow(this);
-  //   JSObject myDocument =  (JSObject) myBrowser.getMember("document");
-  //   myDocument.setMember("cookie", s1);
-  //}
   public void actionPerformed (ActionEvent e) {
     if (fatalError) return;
     if (e.getSource() == exportButton) {
       startAppropriatePropertiesArea(); // make sure strings are up'd
-      String ns = workArea.toNS();
-      System.out.println(ns);
-/*
-      if (!modify) {
-        String ref = postIt(ns);
-        //String url = getParameter("exporturl") + "?nsdata=" +
-        //URLEncoder.encode( ns );
-        //toCookie( ns );
-        //String url = getParameter("exporturl") + "?nsdataincookie=1";
-        String url = getParameter("expcreateurl") + "?" + ref;
-        System.out.println(url);
-        try {
-          getAppletContext().showDocument(new URL(url), "_blank");
-        } catch (Exception ex) {
-          System.out.println("exception: " + ex.getMessage());
-          ex.printStackTrace();
-        }
-      } else {
-        String ret = modifyIt(ns);
-        if (ret.equalsIgnoreCase("success")) {
-          System.out.println("actionPerformed: modify success");
-          String url = getParameter("modifyurl") + "?" + "&eid=" + URLEncoder.encode(getParameter("eid")) + "&pid=" + URLEncoder.
-           encode(getParameter("pid")) + "&justsuccess=1";
-          System.out.println(url);
-          try {
-            getAppletContext().showDocument(new URL(url), "_blank");
-          } catch (Exception ex) {
-            System.out.println("exception: " + ex.getMessage());
-            ex.printStackTrace();
-          }
-        } else {
-          System.out.println("actionPerformed: failed.");
-          warningError(ret);
-        }
-      }*/
-    } else if (e.getSource() == copyButton) {
-      prePaintSelChange();
-      workArea.copySelected();
-      paintSelChange();
-      startAppropriatePropertiesArea();
+      upload(modify);
     }
   }
 
@@ -591,24 +329,6 @@ public class Netbuild extends java.applet.Applet
     mouseDown = true;
     int x = e.getX();
     int y = e.getY();
-    /*
-    if (x < 8 && y < 8) {
-
-    try {
-    File foo = new File( "out.txt" );
-    FileOutputStream fos = new FileOutputStream( foo );
-    FilterOutputStream foos = new FilterOutputStream( fos );
-    PrintWriter pw = new PrintWriter( foos );
-    pw.println( workArea.toNS() );
-    pw.flush();
-    } catch (Exception ex ) {
-    System.out.println("exception: " + ex.getMessage());
-    ex.printStackTrace();
-    //System.out.println( workArea.toNS());
-
-    }
-    }
-     */
 
     shiftWasDown = e.isShiftDown();
     downX = x;
@@ -617,7 +337,7 @@ public class Netbuild extends java.applet.Applet
     lastDragX = 0;
     lastDragY = 0;
 
-    Element clickedOn;
+    NetElement clickedOn;
 
     prePaintSelChange();
 
@@ -625,7 +345,7 @@ public class Netbuild extends java.applet.Applet
       clickedOn = workArea.clicked(x - paletteWidth, y);
       selFromPalette = false;
     } else {
-      Element.deselectAll();
+      NetElement.deselectAll();
       clickedOn = palette.clicked(x, y);
       selFromPalette = true;
     }
@@ -635,16 +355,16 @@ public class Netbuild extends java.applet.Applet
     if (e.isControlDown()) {
       allowMove = false;
       if (clickedOnSomething) {
-        Enumeration en = Element.selectedElements();
+        Enumeration en = NetElement.selectedElements();
 
         while (en.hasMoreElements()) {
-          Element a = (Element)en.nextElement();
-          Element b = clickedOn;
+          NetElement a = (NetElement)en.nextElement();
+          NetElement b = clickedOn;
 
           if (a != b && a != null && b != null && a.linkable && b.linkable)
-            if (a instanceof Device && b instanceof Device) {
+            if (a instanceof Device && b instanceof Device)
               Netbuild.setStatus("!Device to device connection not allowed.");
-            } else if (a instanceof Device && b instanceof Connector) {
+            else if (a instanceof Device && b instanceof Connector) {
               Connection con = ((Connector)b).createConnection((Device)a);
               workArea.add(con);
               Interface iface = ((Device)a).createInterface(con);
@@ -669,14 +389,14 @@ public class Netbuild extends java.applet.Applet
       allowMove = true;
       if (clickedOn == null) {
         if (!e.isShiftDown())
-          Element.deselectAll();
+          NetElement.deselectAll();
       } else if (clickedOn.isSelected())
         if (!e.isShiftDown()) {
         } else
           clickedOn.deselect();
       else {
         if (!e.isShiftDown())
-          Element.deselectAll();
+          NetElement.deselectAll();
         clickedOn.select();
       }
     }
@@ -689,7 +409,7 @@ public class Netbuild extends java.applet.Applet
     dragStarted = false;
   }
 
-  private void paintThingee (Element t) {
+  private void paintThingee (NetElement t) {
     Rectangle r = t.getRectangle();
 
     // HACK!
@@ -702,19 +422,19 @@ public class Netbuild extends java.applet.Applet
 
   private void prePaintSelChange () {
     wasSelected = new Hashtable();
-    Enumeration en = Element.selectedElements();
+    Enumeration en = NetElement.selectedElements();
 
     while (en.hasMoreElements()) {
-      Element t = (Element)en.nextElement();
+      NetElement t = (NetElement)en.nextElement();
       wasSelected.put(t, new Integer(1));
     }
   }
 
   private void paintSelChange () {
-    Enumeration en = Element.selectedElements();
+    Enumeration en = NetElement.selectedElements();
 
     while (en.hasMoreElements()) {
-      Element t = (Element)en.nextElement();
+      NetElement t = (NetElement)en.nextElement();
 
       if (wasSelected.get(t) == null) {
         paintThingee(t);
@@ -725,7 +445,7 @@ public class Netbuild extends java.applet.Applet
     en = wasSelected.keys();
 
     while (en.hasMoreElements()) {
-      Element t = (Element)en.nextElement();
+      NetElement t = (NetElement)en.nextElement();
       paintThingee(t);
     }
   }
@@ -743,11 +463,11 @@ public class Netbuild extends java.applet.Applet
         if (palette.hitTrash(lastDragX + downX, lastDragY + downY))
           palette.funktasticizeTrash(g);
 
-        {
-          Enumeration en = Element.selectedElements();
+        {//prevent name clash of en
+          Enumeration en = NetElement.selectedElements();
 
           while (en.hasMoreElements()) {
-            Element t = (Element)en.nextElement();
+            NetElement t = (NetElement)en.nextElement();
             if (t.moveable || t.trashable)
               if (selFromPalette)
                 g.drawRect(t.getX() + lastDragX - 16, t.getY() + lastDragY - 16, 32, 32);
@@ -770,11 +490,11 @@ public class Netbuild extends java.applet.Applet
           } else {
             // into workarea. Create.
             prePaintSelChange();
-            Element t = (Element)Element.selectedElements().nextElement() ;
-            Element el = t.createAnother() ;
-            el.move(x-paletteWidth, y);
+            NetElement t = (NetElement)NetElement.selectedElements().nextElement();
+            NetElement el = t.createAnother();
+            el.move(x - paletteWidth, y);
             workArea.add(el);
-            Element.deselectAll();
+            NetElement.deselectAll();
             t.select();
             selFromPalette = false;
             startAppropriatePropertiesArea();
@@ -787,10 +507,10 @@ public class Netbuild extends java.applet.Applet
         if (!isInWorkArea(x, y)) {
           // out of work area.. but to where?
           if (palette.hitTrash(x, y)) {
-            Enumeration en = Element.selectedElements();
+            Enumeration en = NetElement.selectedElements();
 
             while (en.hasMoreElements()) {
-              Element t = (Element)en.nextElement();
+              NetElement t = (NetElement)en.nextElement();
               if (t.trashable) {
                 // into trash -- gone.
                 t.deselect();
@@ -802,18 +522,14 @@ public class Netbuild extends java.applet.Applet
             repaint();
             startAppropriatePropertiesArea();
 
-            if (workArea.getThingeeCount() < 1)
+            if (workArea.getElementCount() < 1)
               exportButton.setEnabled(false);
-          } else if (palette.hitCopier(x, y)) {
-            prePaintSelChange();
-            workArea.copySelected();
-            paintSelChange();
           }
         } else {
-          Enumeration en = Element.selectedElements();
+          Enumeration en = NetElement.selectedElements();
 
           while (en.hasMoreElements()) {
-            Element t = (Element)en.nextElement();
+            NetElement t = (NetElement)en.nextElement();
 
             if (t.moveable)
               t.move(t.getX() + lastDragX, t.getY() + lastDragY);
@@ -844,15 +560,8 @@ public class Netbuild extends java.applet.Applet
       }
 
       if (dragStarted)
-        //		    g.drawRect( downX, downY, lastDragX, lastDragY );
         g.drawRect(leastX, leastY, sizeX, sizeY);
       g.setPaintMode();
-      /*
-      workArea.selectRectangle( new Rectangle( downX - workAreaX,
-      downY - workAreaY,
-      lastDragX,
-      lastDragY), shiftWasDown );
-       */
       if (lastDragX != 0 && lastDragY != 0) {
         workArea.selectRectangle(new Rectangle(leastX - workAreaX,
          leastY,
@@ -881,8 +590,6 @@ public class Netbuild extends java.applet.Applet
     return "Designs a network topology.";
   }
 
-  //    public Netbuild() {
-  //super();
   public void init () {
     fatalError = false;
     status = "Netbuild v1.03 started.";
@@ -891,7 +598,6 @@ public class Netbuild extends java.applet.Applet
 
     setLayout(null);
 
-    //setLayout( new FlowLayout( FlowLayout.RIGHT, 4, 4 ) );
     addMouseListener(this);
     addMouseMotionListener(this);
     addKeyListener(this);
@@ -908,7 +614,7 @@ public class Netbuild extends java.applet.Applet
     palette = new Palette();
     propertiesPanel = new Panel();
 
-    //modify = grabIt();
+    modify = download();
 
     if (!fatalError) {
       dragStarted = false;
@@ -938,7 +644,7 @@ public class Netbuild extends java.applet.Applet
       propertiesPanel.setSize(propAreaWidth - 16, appHeight - 16 - 32 - 22);
 
       exportButton.setVisible(true);
-      exportButton.setEnabled(workArea.getThingeeCount() > 0);
+      exportButton.setEnabled(workArea.getElementCount() > 0);
       add(exportButton);
 
       exportButton.setLocation(propAreaX + 8, appHeight - 24 - 2 - 2);
@@ -991,7 +697,6 @@ public class Netbuild extends java.applet.Applet
     g.drawString(status, workAreaX + 4, appHeight - 6);
 
     palette.paint(g);
-    //propertiesArea.paint( g );
 
     g.setColor(Color.black);
     g.fillRect(propAreaX + 8 - 3, appHeight - 24 - 2 - 8,
@@ -1008,10 +713,23 @@ public class Netbuild extends java.applet.Applet
     g.setClip(0, 0, appWidth, appHeight);
     super.paint(g);
   }
+
+  public void upload (boolean modify) {
+    try {
+      Document doc = workArea.encode(modify);
+      TransformerFactory transfac = TransformerFactory.newInstance();
+      Transformer trans = transfac.newTransformer();
+      trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+      trans.setOutputProperty(OutputKeys.INDENT, "yes");
+      StreamResult result = new StreamResult(System.out);
+      DOMSource source = new DOMSource(doc);
+      trans.transform(source, result);
+    } catch (TransformerException ex) {
+      Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
+
+  public boolean download () {
+    return false;
+  }
 }
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 package buildui.connectors;
 
 import buildui.paint.PropertiesArea;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
@@ -24,7 +24,7 @@ import buildui.paint.Element;
  */
 public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
 
-  public boolean iCare (Element t) {
+  public boolean iCare (NetElement t) {
     return t instanceof EmulatedConnection;
   }
 
@@ -35,7 +35,7 @@ public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
   public EmulatedConnectionPropertiesArea () {
     super();
     addProperty("bandwidth", "bandwidth(Kb/s):", "10000", false, false);
-    addProperty("latency", "latency(ms):", "0", false, false);
-    addProperty("loss", "loss rate(0.0-1.0):", "0.0", false, false);
+    addProperty("delay", "latency(ms):", "0", false, false);
+    addProperty("lossratio", "loss rate(0.0-1.0):", "0.0", false, false);
   }
 };

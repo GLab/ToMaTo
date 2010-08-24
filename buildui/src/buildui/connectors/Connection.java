@@ -19,36 +19,40 @@ package buildui.connectors;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.devices.Device;
+import buildui.devices.Interface;
 import java.awt.*;
 
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
-public class Connection extends Element {
+public class Connection extends NetElement {
 
-  private Element a, b;
+  private Connector con;
+  private Device dev;
   private static Color paleGreen;
 
   static {
     paleGreen = new Color(0.8f, 1.0f, 0.8f);
   }
 
-  public Element getA () {
-    return a;
+  public Connector getConnector () {
+    return con;
   }
 
-  public Element getB () {
-    return b;
+  public Device getInterface () {
+    return dev;
   }
 
-  public Connection (String newName, Element na, Element nb) {
+  public Connection (String newName, Connector con, Device dev) {
     super(newName, true);
     linkable = false;
     moveable = false;
-    a = na;
-    b = nb;
-    super.move((a.getX() + b.getX()) / 2,
-     (a.getY() + b.getY()) / 2);
+    this.con = con;
+    this.dev = dev;
+    super.move((con.getX() + dev.getX()) / 2,
+     (con.getY() + dev.getY()) / 2);
   }
 
   public void move (int nx, int ny) {
@@ -76,10 +80,10 @@ public class Connection extends Element {
    */
 
   public void draw (Graphics g) {
-    super.move((a.getX() + b.getX()) / 2,
-     (a.getY() + b.getY()) / 2);
+    super.move((con.getX() + dev.getX()) / 2,
+     (con.getY() + dev.getY()) / 2);
     g.setColor(Color.darkGray);
-    g.drawLine(a.getX(), a.getY(), b.getX(), b.getY());
+    g.drawLine(con.getX(), con.getY(), dev.getX(), dev.getY());
     super.draw(g);
   }
 
@@ -94,14 +98,18 @@ public class Connection extends Element {
     return 20;
   }
 
-  public boolean isConnectedTo (Element t) {
-    return (a == t | b == t);
+  public boolean isConnectedTo (NetElement t) {
+    return (con == t | dev == t);
   }
 
   static PropertiesArea propertiesArea = new ConnectionPropertiesArea() ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
+  }
+
+  public void writeAttributes(Element xml) {
+    //nothing to do
   }
 
 }

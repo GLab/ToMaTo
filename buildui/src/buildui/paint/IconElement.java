@@ -24,7 +24,7 @@ import java.awt.image.*;
 
 import buildui.Netbuild;
 
-abstract public class IconElement extends Element implements ImageObserver {
+abstract public class IconElement extends NetElement implements ImageObserver {
 
   Image icon;
 
@@ -70,4 +70,4 @@ abstract public class IconElement extends Element implements ImageObserver {
     }
     return true;
   }
-};
+}

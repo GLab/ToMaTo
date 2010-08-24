@@ -20,9 +20,10 @@ package buildui.devices;
  */
 
 import buildui.connectors.Connection;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class KvmDevice extends Device {
 
@@ -32,7 +33,7 @@ public class KvmDevice extends Device {
     super(newName, "/icons/computer.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new KvmDevice("kvm"+(num++)) ;
   }
 
@@ -49,4 +50,12 @@ public class KvmDevice extends Device {
     return new Interface("eth"+(ifaceNum++), this, con);
   }
 
-};
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "kvm");
+    xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
+    xml.setAttribute("template", getProperty("template", ""));
+  }
+
+}

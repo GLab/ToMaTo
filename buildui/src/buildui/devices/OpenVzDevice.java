@@ -20,9 +20,10 @@ package buildui.devices;
  */
 
 import buildui.connectors.Connection;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import org.w3c.dom.Element;
 
 public class OpenVzDevice extends Device {
 
@@ -32,7 +33,7 @@ public class OpenVzDevice extends Device {
     super(newName, "/icons/computer.png");
   }
 
-  public Element createAnother () {
+  public NetElement createAnother () {
     return new OpenVzDevice("openvz"+(num++)) ;
   }
 
@@ -49,4 +50,13 @@ public class OpenVzDevice extends Device {
     return new ConfiguredInterface("eth"+(ifaceNum++), this, con);
   }
 
-};
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("type", "openvz");
+    xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
+    xml.setAttribute("template", getProperty("template", ""));
+    xml.setAttribute("root_password", getProperty("root_password", ""));
+  }
+
+}

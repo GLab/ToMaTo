@@ -1,7 +1,7 @@
 package buildui.connectors;
 
 import buildui.paint.PropertiesArea;
-import buildui.paint.Element;
+import buildui.paint.NetElement;
 
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
@@ -24,7 +24,7 @@ import buildui.paint.Element;
  */
 public class SwitchPropertiesArea extends PropertiesArea {
 
-  public boolean iCare (Element t) {
+  public boolean iCare (NetElement t) {
     return (t instanceof SwitchConnector);
   }
 

@@ -23,7 +23,7 @@ import java.lang.Math;
 import java.util.*;
 import java.text.*;
 
-public abstract class Element {
+public abstract class NetElement {
 	private boolean nameFixed;
 	private String name;
 	private int x, y;
@@ -64,7 +64,7 @@ public abstract class Element {
 
 	protected Dictionary properties;
 
-	public void copyProps(Element t) {
+	public void copyProps(NetElement t) {
 		Enumeration e = t.properties.keys();
 
 		while (e.hasMoreElements()) {
@@ -123,7 +123,7 @@ public abstract class Element {
 	public boolean propertyEditable;
 	public boolean trashable;
 
-	// static Element currentlySelected;
+	// static NetElement currentlySelected;
 
 	static {
 		names = new Hashtable();
@@ -132,9 +132,9 @@ public abstract class Element {
 	}
 
 	/*
-	 * static public Element getSelected() { return currentlySelected; }
+	 * static public NetElement getSelected() { return currentlySelected; }
 	 * 
-	 * static public void setSelected( Element t ) { currentlySelected = t; }
+	 * static public void setSelected( NetElement t ) { currentlySelected = t; }
 	 */
 
 	public void fixName(boolean fix) {
@@ -150,7 +150,7 @@ public abstract class Element {
 	}
 
 	public void setName(String newName) {
-		// System.out.println("Element.setName(): Renamed from \"" + name +
+		// System.out.println("NetElement.setName(): Renamed from \"" + name +
 		// "\" to \"" + newName + "\"" );
 		if (!nameFixed) {
 			names.remove(name);
@@ -160,7 +160,7 @@ public abstract class Element {
 		}
 	}
 
-	public Element(String newName, boolean displayName) {
+	public NetElement(String newName, boolean displayName) {
 		name = new String(newName);
 		names.put(name, new Integer(1));
     this.displayName = displayName ;
@@ -219,7 +219,7 @@ public abstract class Element {
 		return 30;
 	}
 
-  public Element createAnother() {
+  public NetElement createAnother() {
     return null ;
   }
 

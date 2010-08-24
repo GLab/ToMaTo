@@ -19,16 +19,14 @@ package buildui.devices;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.connectors.Connection;
 import buildui.paint.PropertiesArea;
-import java.awt.*;
-import java.lang.*;
-
-import buildui.paint.Element;
+import org.w3c.dom.Element;
 
 public class ConfiguredInterface extends Interface {
 
-  public ConfiguredInterface (String newName, Element na, Element nb) {
-    super(newName, na, nb);
+  public ConfiguredInterface (String newName, Device dev, Connection con) {
+    super(newName, dev, con);
   }
 
   static PropertiesArea propertiesArea = new ConfiguredInterfacePropertiesArea () ;
@@ -37,4 +35,13 @@ public class ConfiguredInterface extends Interface {
   public PropertiesArea getPropertiesArea () {
     return propertiesArea ;
   }
+
+  @Override
+  public void writeAttributes(Element xml) {
+    super.writeAttributes(xml);
+    xml.setAttribute("ip4address", getProperty("ip", ""));
+    xml.setAttribute("ip4netmask", getProperty("netmask", ""));
+    xml.setAttribute("use_dhcp", getProperty("usedhcp", ""));
+  }
+
 }
