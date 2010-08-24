@@ -1,4 +1,4 @@
-package buildui;
+package buildui.devices;
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -21,18 +21,20 @@ package buildui;
 
 import buildui.paint.PropertiesArea;
 import java.awt.*;
+import java.lang.*;
 
-import buildui.paint.IconElement;
+import buildui.paint.Element;
 
-public class TrashThingee extends IconElement {
+public class ConfiguredInterface extends Interface {
 
-  public TrashThingee (String newName) {
-    super(newName, true, "/icons/trash.png");
+  public ConfiguredInterface (String newName, Element na, Element nb) {
+    super(newName, na, nb);
   }
+
+  static PropertiesArea propertiesArea = new ConfiguredInterfacePropertiesArea () ;
 
   @Override
   public PropertiesArea getPropertiesArea () {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return propertiesArea ;
   }
-
-};
+}

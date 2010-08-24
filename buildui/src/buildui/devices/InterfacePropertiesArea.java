@@ -29,12 +29,12 @@ public class InterfacePropertiesArea extends PropertiesArea {
   }
 
   public String getName () {
-    return "Interface Properties";
+    return "Interface properties";
   }
 
   public InterfacePropertiesArea () {
     super();
-    addProperty("ip", "IP address:", "<auto>", false, false);
+    addProperty("name", "name:", "<auto>", true, false);
   }
 };
 

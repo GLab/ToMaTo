@@ -1,4 +1,8 @@
-package buildui;
+package buildui.devices;
+
+import buildui.paint.PropertiesArea;
+import buildui.paint.Element;
+
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -18,21 +22,24 @@ package buildui;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+public class ConfiguredInterfacePropertiesArea extends PropertiesArea {
 
-import buildui.paint.PropertiesArea;
-import java.awt.*;
-
-import buildui.paint.IconElement;
-
-public class TrashThingee extends IconElement {
-
-  public TrashThingee (String newName) {
-    super(newName, true, "/icons/trash.png");
+  public boolean iCare (Element t) {
+    return (t instanceof Interface);
   }
 
-  @Override
-  public PropertiesArea getPropertiesArea () {
-    throw new UnsupportedOperationException("Not supported yet.");
+  public String getName () {
+    return "Interface properties";
   }
 
+  public ConfiguredInterfacePropertiesArea () {
+    super();
+    addProperty("name", "name:", "<auto>", true, false);
+    addProperty("usedhcp", "use dhcp:", "true", true, false);
+    addProperty("ip", "ip:", "", true, false);
+    addProperty("netmask", "netmask:", "", true, false);
+  }
 };
+
+/* lanlink
+delay/b/loss */

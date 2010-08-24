@@ -19,28 +19,17 @@ package buildui.devices;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.connectors.Connection;
 import buildui.paint.Element;
-import java.awt.*;
 
-import buildui.paint.IconElement;
 import buildui.paint.PropertiesArea;
 
-public class KvmDevice extends IconElement {
+public class KvmDevice extends Device {
 
-  static Image icon;
   static int num = 1;
 
-  public String getIconName () {
-    return "/icons/computer.png";
-  }
-
-  public void drawIcon (Graphics g) {
-    if (icon == null) icon = loadIcon();
-    super.drawIcon(g, icon);
-  }
-
   public KvmDevice (String newName) {
-    super(newName);
+    super(newName, "/icons/computer.png");
   }
 
   public Element createAnother () {
@@ -51,6 +40,13 @@ public class KvmDevice extends IconElement {
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
+  }
+
+  int ifaceNum = 0 ;
+
+  @Override
+  public Interface createInterface (Connection con) {
+    return new Interface("eth"+(ifaceNum++), this, con);
   }
 
 };

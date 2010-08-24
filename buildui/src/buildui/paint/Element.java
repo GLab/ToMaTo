@@ -32,6 +32,7 @@ public abstract class Element {
 	private boolean stringWidthValid;
 
 	static private Dictionary selections;
+  private final boolean displayName;
 
 	public void select() {
 		if (!isSelected()) {
@@ -159,9 +160,10 @@ public abstract class Element {
 		}
 	}
 
-	public Element(String newName) {
+	public Element(String newName, boolean displayName) {
 		name = new String(newName);
 		names.put(name, new Integer(1));
+    this.displayName = displayName ;
 		properties = new Hashtable();
 		stringWidth = 128;
 		stringWidthValid = false;
@@ -254,9 +256,10 @@ public abstract class Element {
 		// g.setColor( Color.lightGray );
 		// g.drawString( name, -(stringWidth/2) + 4, textDown() + 4 );
 		g.setColor(Color.black);
-		g.drawString(name, -(stringWidth / 2), textDown());
+		if ( displayName ) g.drawString(name, -(stringWidth / 2), textDown());
 		g.translate(-x, -y);
 	}
 
   public abstract PropertiesArea getPropertiesArea() ;
+
 }

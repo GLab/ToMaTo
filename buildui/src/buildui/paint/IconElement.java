@@ -24,22 +24,12 @@ import java.awt.image.*;
 
 import buildui.Netbuild;
 
-abstract public class IconElement extends Element
- implements ImageObserver {
+abstract public class IconElement extends Element implements ImageObserver {
 
-  abstract public String getIconName ();
+  Image icon;
 
-  protected Image loadIcon () {
-    Image i = Netbuild.getImage(getIconName());
-    /*
-    if (i != null) {
-    System.out.println("loadIcon(): " + i.toString() );
-    } else {
-    System.out.println("loadIcon(): NULL" );
-    }
-     */
-    return i;
-    //return null;
+  protected Image loadIcon (String iconName) {
+    return Netbuild.getImage(iconName);
   }
 
   public void drawIcon (Graphics g, Image icon) {
@@ -51,15 +41,23 @@ abstract public class IconElement extends Element
     g.drawRect( -16, -16, 32, 32 );
      */
     try {
-      if (icon != null) g.drawImage(icon, -16, -16, this);
+      int height = icon.getHeight(null);
+      int width = icon.getWidth(null);
+      if (icon != null) g.drawImage(icon, -width/2, -height/2, this);
     } catch (Exception e) {
       System.out.println(e.getMessage());
       e.printStackTrace();
     }
   }
 
-  public IconElement (String newName) {
-    super(newName);
+  @Override
+  public int textDown() {
+    return icon.getHeight(null)/2;
+  }
+
+  public IconElement (String newName, boolean displayName, String icon) {
+    super(newName, displayName);
+    this.icon = loadIcon(icon);
   }
 
   public boolean imageUpdate (Image img,

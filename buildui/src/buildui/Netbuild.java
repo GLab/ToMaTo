@@ -48,6 +48,8 @@ import buildui.connectors.EmulatedConnectionPropertiesArea;
 import buildui.connectors.InternetPropertiesArea;
 import buildui.connectors.ConnectionPropertiesArea;
 import buildui.connectors.Connection;
+import buildui.connectors.Connector;
+import buildui.devices.Device;
 import buildui.devices.InterfacePropertiesArea;
 import buildui.devices.Interface;
 import buildui.devices.KvmPropertiesArea;
@@ -410,6 +412,7 @@ public class Netbuild extends java.applet.Applet
     }
   }
 */
+  /*
   public String modifyIt (String s) {
     String eid = getParameter("eid");
     String pid = getParameter("pid");
@@ -524,7 +527,7 @@ public class Netbuild extends java.applet.Applet
     }
     return "nsref=" + String.valueOf(hash) + "&guid=" + randVal;
   }
-
+*/
   // public void toCookie( String s ) {
   //   java.util.Calendar c = java.util.Calendar.getInstance();
   //   c.add(java.util.Calendar.MONTH, 1);
@@ -541,7 +544,7 @@ public class Netbuild extends java.applet.Applet
       startAppropriatePropertiesArea(); // make sure strings are up'd
       String ns = workArea.toNS();
       System.out.println(ns);
-
+/*
       if (!modify) {
         String ref = postIt(ns);
         //String url = getParameter("exporturl") + "?nsdata=" +
@@ -573,7 +576,7 @@ public class Netbuild extends java.applet.Applet
           System.out.println("actionPerformed: failed.");
           warningError(ret);
         }
-      }
+      }*/
     } else if (e.getSource() == copyButton) {
       prePaintSelChange();
       workArea.copySelected();
@@ -639,32 +642,24 @@ public class Netbuild extends java.applet.Applet
           Element b = clickedOn;
 
           if (a != b && a != null && b != null && a.linkable && b.linkable)
-            if (a instanceof KvmDevice && b instanceof KvmDevice) {
-              Connection t = new Connection(Element.genName("link"), a, b);
-              workArea.add(t);
-              Interface it = new Interface("", a, t);
-              workArea.add(it);
-              Interface it2 = new Interface("", b, t);
-              workArea.add(it2);
-              paintThingee(t);
-              paintThingee(it);
-              paintThingee(it2);
-            } else if (a instanceof KvmDevice && b instanceof InternetConnector) {
-              Connection t = new EmulatedConnection("", a, b);
-              workArea.add(t);
-              Interface it = new Interface("", a, t);
-              workArea.add(it);
-              paintThingee(t);
-              paintThingee(it);
-            } else if (b instanceof KvmDevice && a instanceof InternetConnector) {
-              Connection t = new EmulatedConnection("", a, b);
-              workArea.add(t);
-              Interface it = new Interface("", b, t);
-              workArea.add(it);
-              paintThingee(t);
-              paintThingee(it);
+            if (a instanceof Device && b instanceof Device) {
+              Netbuild.setStatus("!Device to device connection not allowed.");
+            } else if (a instanceof Device && b instanceof Connector) {
+              Connection con = ((Connector)b).createConnection((Device)a);
+              workArea.add(con);
+              Interface iface = ((Device)a).createInterface(con);
+              workArea.add(iface);
+              paintThingee(con);
+              paintThingee(iface);
+            } else if (b instanceof Device && a instanceof Connector) {
+              Connection con = ((Connector)a).createConnection((Device)b);
+              workArea.add(con);
+              Interface iface = ((Device)b).createInterface(con);
+              workArea.add(iface);
+              paintThingee(con);
+              paintThingee(iface);
             } else if (a instanceof InternetConnector && b instanceof InternetConnector)
-              Netbuild.setStatus("!LAN to LAN connection not allowed.");
+              Netbuild.setStatus("!Connector to connector connection not allowed.");
             else {
             }
 

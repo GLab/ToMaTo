@@ -19,28 +19,17 @@ package buildui.connectors;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.devices.Device;
 import buildui.paint.Element;
-import java.awt.*;
 
-import buildui.paint.IconElement;
 import buildui.paint.PropertiesArea;
 
-public class RouterConnector extends IconElement {
+public class RouterConnector extends Connector {
 
-  static Image icon;
   static int num = 1;
 
-  public String getIconName () {
-    return "/icons/router.png";
-  }
-
-  public void drawIcon (Graphics g) {
-    if (icon == null) icon = loadIcon();
-    super.drawIcon(g, icon);
-  }
-
   public RouterConnector (String newName) {
-    super(newName);
+    super(newName, "/icons/router.png");
   }
 
   public Element createAnother () {
@@ -53,4 +42,8 @@ public class RouterConnector extends IconElement {
     return propertiesArea ;
   }
 
+  @Override
+  public Connection createConnection (Device dev) {
+    return new EmulatedConnection("", this, dev);
+  }
 };

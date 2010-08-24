@@ -1,4 +1,4 @@
-package buildui;
+package buildui.connectors;
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -19,20 +19,16 @@ package buildui;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import buildui.paint.PropertiesArea;
-import java.awt.*;
 
+import buildui.devices.Device;
 import buildui.paint.IconElement;
 
-public class TrashThingee extends IconElement {
+public abstract class Connector extends IconElement {
 
-  public TrashThingee (String newName) {
-    super(newName, true, "/icons/trash.png");
+  public Connector (String newName, String iconName) {
+    super(newName, true, iconName);
   }
 
-  @Override
-  public PropertiesArea getPropertiesArea () {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
+  public abstract Connection createConnection ( Device dev ) ;
 
 };

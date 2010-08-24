@@ -29,7 +29,7 @@ public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
   }
 
   public String getName () {
-    return "Emulated link properties";
+    return "Link properties";
   }
 
   public EmulatedConnectionPropertiesArea () {

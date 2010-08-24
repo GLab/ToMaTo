@@ -42,7 +42,7 @@ public class Connection extends Element {
   }
 
   public Connection (String newName, Element na, Element nb) {
-    super(newName);
+    super(newName, true);
     linkable = false;
     moveable = false;
     a = na;
@@ -103,4 +103,5 @@ public class Connection extends Element {
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
   }
+
 }

@@ -50,7 +50,7 @@ public class Interface extends Element {
   }
 
   public Interface (String newName, Element na, Element nb) {
-    super(newName);
+    super(newName, false);
     linkable = false;
     moveable = false;
     trashable = false;
