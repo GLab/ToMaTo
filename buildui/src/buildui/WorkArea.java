@@ -20,6 +20,7 @@ package buildui;
  */
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.*;
 import java.lang.*;
 
@@ -31,13 +32,23 @@ import buildui.devices.Device;
 import buildui.devices.Interface;
 import buildui.devices.KvmDevice;
 import buildui.paint.NetElement;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 // Code for the "workarea" of the applet,
 // which contains the node graph.
@@ -191,7 +202,7 @@ public class WorkArea {
       elements.addElement(t);
   }
 
-  public Document encode (boolean modify) {
+  public void encode (OutputStream out) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
@@ -205,6 +216,7 @@ public class WorkArea {
       for ( NetElement el: elements) {
         if ( el instanceof Device ) {
           Element x_dev = doc.createElement("device") ;
+          x_dev.setAttribute("pos", el.getX()+","+el.getY()) ;
           ((Device)el).writeAttributes(x_dev);
           for ( Interface iface: interfaceElements ) {
             if ( iface.getDevice() == el ) {
@@ -216,6 +228,7 @@ public class WorkArea {
           devices.appendChild(x_dev);
         } else if ( el instanceof Connector ) {
           Element x_con = doc.createElement("connector") ;
+          x_con.setAttribute("pos", el.getX()+","+el.getY()) ;
           ((Connector)el).writeAttributes(x_con);
           for ( Connection con: connectionElements ) {
             if ( con.getConnector() == el ) {
@@ -234,11 +247,36 @@ public class WorkArea {
           connectors.appendChild(x_con);
         }
       }
-      return doc ;
+      TransformerFactory transfac = TransformerFactory.newInstance();
+      Transformer trans = transfac.newTransformer();
+      trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+      trans.setOutputProperty(OutputKeys.INDENT, "yes");
+      StreamResult result = new StreamResult(out);
+      DOMSource source = new DOMSource(doc);
+      trans.transform(source, result);
+    } catch (TransformerException ex) {
+      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
     } catch (ParserConfigurationException ex) {
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
-      return null ;
     }
   }
+
+  public void decode (InputStream in) {
+    try {
+      DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
+      DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
+      Document doc = docBuilder.parse(in);
+      Element workflow = (Element)doc.getElementsByTagName("workflow").item(0);
+      
+    } catch (SAXException ex) {
+      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (IOException ex) {
+      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (ParserConfigurationException ex) {
+      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
+    }
+
+  }
+
 
 }

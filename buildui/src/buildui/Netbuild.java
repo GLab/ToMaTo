@@ -37,6 +37,7 @@ import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.*;
 import java.net.*;
 
@@ -47,22 +48,11 @@ import buildui.devices.Device;
 import buildui.devices.Interface;
 import buildui.paint.Palette;
 import buildui.paint.NetElement;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import org.w3c.dom.Document;
-import org.w3c.dom.DocumentType;
-import org.w3c.dom.Element;
 
 public class Netbuild extends java.applet.Applet
  implements MouseListener, MouseMotionListener, ActionListener,
@@ -714,20 +704,49 @@ public class Netbuild extends java.applet.Applet
 
   public void upload (boolean modify) {
     try {
-      Document doc = workArea.encode(modify);
-      TransformerFactory transfac = TransformerFactory.newInstance();
-      Transformer trans = transfac.newTransformer();
-      trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-      trans.setOutputProperty(OutputKeys.INDENT, "yes");
-      StreamResult result = new StreamResult(System.out);
-      DOMSource source = new DOMSource(doc);
-      trans.transform(source, result);
-    } catch (TransformerException ex) {
+      URL url = new URL ( getParameter("upload_url") );
+      URLConnection con = url.openConnection();
+      con.setDoOutput(true);
+      con.setDoInput(true);
+      OutputStream oStream = con.getOutputStream();
+
+      workArea.encode(oStream);
+
+      InputStream iStream = con.getInputStream();
+      iStream.skip(iStream.available());
+      iStream.close();
+
+      oStream.flush();
+      oStream.close();
+
+      URL backurl = new URL ( getParameter("back_url") );
+      getAppletContext().showDocument(backurl);
+    } catch (Exception ex) {
+      System.out.println (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
 
   public boolean download () {
-    return false;
+    try {
+      String urlStr = getParameter("download_url") ;
+      if (urlStr == null) return false;
+    } catch ( Exception ex ) {
+      return false;
+    }
+    try {
+      URL url = new URL ( getParameter("download_url") );
+      URLConnection con = url.openConnection();
+      con.setDoOutput(false);
+      con.setDoInput(true);
+      InputStream iStream = con.getInputStream();
+
+      workArea.decode(iStream);
+
+      iStream.close();
+    } catch (IOException ex) {
+      Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    return true;
   }
 }
