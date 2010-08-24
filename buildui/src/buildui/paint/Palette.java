@@ -45,17 +45,25 @@ public class Palette {
     el.trashable = false;
     el.propertyEditable = false;
     el.move(x, y);
-    y += 60;
   }
 
   public Palette () {
     addElement(new OpenVzDevice("OpenVZ"));
+    y += 60;
     addElement(new KvmDevice("KVM"));
+    y += 60;
     addElement(new DhcpdDevice("Dhcp server"));
+    y += 60;
+    y += 80;
     addElement(new InternetConnector("Internet"));
+    y += 60;
     addElement(new HubConnector("Hub"));
+    y += 40;
     addElement(new SwitchConnector("Switch"));
+    y += 40;
     addElement(new RouterConnector("Router"));
+    y += 40;
+    y += 80;
     trash = new TrashThingee("trash");
     trash.moveable = false;
     addElement(trash);
