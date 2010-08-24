@@ -20,18 +20,11 @@ package buildui;
  */
 
 /******** 
- * TODO:
- *
- * fix netscape icon issue
- * better validate (incl. IPs)
- * scroll workarea
- * (?) scroll property area
- * X lanlink stuff.
- * X respect loss pct   
- * X validate user input
- * X auto button
- * X validate name (e.g. no collisions)
- *
+ * FIXME: Glab colors
+ * FIXME: Implement download
+ * FIXME: Initialize properties
+ * FIXME: Popup on exception
+ * FIXME: Fix chrome browser
  */
 import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
