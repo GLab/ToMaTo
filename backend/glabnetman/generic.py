@@ -32,6 +32,7 @@ class Device(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
+	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host)
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
 
@@ -91,10 +92,12 @@ class Device(models.Model):
 			x_iface = doc.createElement ( "interface" )
 			iface.upcast().encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
+		dom.setAttribute("pos", self.pos)
 		
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
+		self.pos = dom.getAttribute("pos")
 		util.get_attr(dom, "hostgroup", default=None)
 		
 	def start(self):
@@ -194,6 +197,7 @@ class Connector(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
+	pos = models.CharField(max_length=10, null=True)
 
 	def connections_add(self, con):
 		return self.connection_set.add(con)
@@ -229,10 +233,12 @@ class Connector(models.Model):
 			x_con = doc.createElement ( "connection" )
 			con.upcast().encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
+		dom.setAttribute("pos", self.pos)
 
 	def decode_xml(self, dom):
 		self.name = dom.getAttribute("id")
 		self.type = dom.getAttribute("type")
+		self.pos = dom.getAttribute("pos")
 
 	def start(self):
 		task = tasks.TaskStatus()
