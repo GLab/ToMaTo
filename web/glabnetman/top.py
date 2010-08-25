@@ -26,12 +26,12 @@ def index(request):
 
 def create(request):
 	try:
-		if not request.REQUEST.has_key("xml"):
-			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"]})
-		xml=request.REQUEST["xml"]
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
+		if not request.REQUEST.has_key("xml"):
+			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"]})
+		xml=request.REQUEST["xml"]
 		top_id=api.top_import(xml)
 		top=api.top_info(int(top_id))
 		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top})
