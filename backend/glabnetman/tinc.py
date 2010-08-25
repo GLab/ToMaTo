@@ -170,6 +170,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.decode_xml(dom)
 		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.tinc_port = self.interface.device.host.next_free_port()
+		self.bridge_special_name = ""
 		self.save()
 	
 	def upcast(self):
