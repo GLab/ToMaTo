@@ -54,4 +54,15 @@ public class RouterConnector extends Connector {
     xml.setAttribute("type", "router");
   }
 
-};
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+  }
+
+  public static Connector readFrom (Element x_con) {
+    String name = x_con.getAttribute("id") ;
+    RouterConnector con = new RouterConnector(name);
+    con.readAttributes(x_con);
+    return con ;
+  }
+
+}

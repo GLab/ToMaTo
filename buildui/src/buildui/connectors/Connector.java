@@ -26,6 +26,15 @@ import org.w3c.dom.Element;
 
 public abstract class Connector extends IconElement {
 
+  public static Connector readFrom (Element x_con) {
+    String type = x_con.getAttribute("type");
+    if ( type.equals("real") ) return InternetConnector.readFrom(x_con);
+    if ( type.equals("hub") ) return HubConnector.readFrom(x_con);
+    if ( type.equals("switch") ) return SwitchConnector.readFrom(x_con);
+    if ( type.equals("router") ) return RouterConnector.readFrom(x_con);
+    return null;
+  }
+
   public Connector (String newName, String iconName) {
     super(newName, true, iconName);
   }
@@ -34,6 +43,15 @@ public abstract class Connector extends IconElement {
 
   public void writeAttributes(Element xml) {
     xml.setAttribute("id", getName());
+    xml.setAttribute("pos", getX()+","+getY()) ;
   }
 
-};
+  public void readAttributes (Element xml) {
+    String pos = xml.getAttribute("pos");
+    try {
+      int x = Integer.parseInt(pos.split(",")[0]);
+      int y = Integer.parseInt(pos.split(",")[1]);
+      move(x,y);
+    } catch ( NumberFormatException ex ) {}
+  }
+}

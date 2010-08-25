@@ -115,4 +115,9 @@ public class Interface extends NetElement {
   public void writeAttributes(Element xml) {
     xml.setAttribute("id", getName());
   }
+
+  public void readAttributes (Element xml) {
+    //nothing to do
+  }
+
 }

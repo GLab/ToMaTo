@@ -54,4 +54,15 @@ public class SwitchConnector extends Connector {
     xml.setAttribute("type", "switch");
   }
 
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+  }
+
+  public static Connector readFrom (Element x_con) {
+    String name = x_con.getAttribute("id") ;
+    SwitchConnector con = new SwitchConnector(name);
+    con.readAttributes(x_con);
+    return con ;
+  }
+
 }

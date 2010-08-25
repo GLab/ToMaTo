@@ -64,4 +64,11 @@ public class EmulatedConnection extends Connection {
     xml.setAttribute("bandwidth", getProperty("bandwidth", "10000"));
   }
 
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+    setProperty("delay", xml.getAttribute("delay"));
+    setProperty("lossratio", xml.getAttribute("lossratio"));
+    setProperty("bandwidth", xml.getAttribute("bandwidth"));
+  }
+  
 }

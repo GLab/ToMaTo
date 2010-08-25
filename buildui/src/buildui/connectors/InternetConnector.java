@@ -54,4 +54,15 @@ public class InternetConnector extends Connector {
     xml.setAttribute("type", "real");
   }
 
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+  }
+
+  public static Connector readFrom (Element x_con) {
+    String name = x_con.getAttribute("id") ;
+    InternetConnector con = new InternetConnector(name);
+    con.readAttributes(x_con);
+    return con ;
+  }
+
 }

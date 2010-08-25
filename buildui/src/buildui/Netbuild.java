@@ -21,7 +21,6 @@ package buildui;
 
 /******** 
  * FIXME: Glab colors
- * FIXME: Implement download
  * FIXME: More edit elements (Dropdowns, etc.)
  */
 import buildui.paint.FlatButton;

@@ -29,8 +29,10 @@ import buildui.connectors.InternetConnector;
 import buildui.connectors.Connection;
 import buildui.connectors.Connector;
 import buildui.devices.Device;
+import buildui.devices.DhcpdDevice;
 import buildui.devices.Interface;
 import buildui.devices.KvmDevice;
+import buildui.devices.OpenVzDevice;
 import buildui.paint.NetElement;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,6 +50,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 // Code for the "workarea" of the applet,
@@ -216,7 +220,6 @@ public class WorkArea {
       for ( NetElement el: elements) {
         if ( el instanceof Device ) {
           Element x_dev = doc.createElement("device") ;
-          x_dev.setAttribute("pos", el.getX()+","+el.getY()) ;
           ((Device)el).writeAttributes(x_dev);
           for ( Interface iface: interfaceElements ) {
             if ( iface.getDevice() == el ) {
@@ -228,7 +231,6 @@ public class WorkArea {
           devices.appendChild(x_dev);
         } else if ( el instanceof Connector ) {
           Element x_con = doc.createElement("connector") ;
-          x_con.setAttribute("pos", el.getX()+","+el.getY()) ;
           ((Connector)el).writeAttributes(x_con);
           for ( Connection con: connectionElements ) {
             if ( con.getConnector() == el ) {
@@ -265,11 +267,52 @@ public class WorkArea {
 
   public void decode (InputStream in) {
     try {
+      Hashtable<String, Device> deviceMap = new Hashtable<String, Device> ();
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.parse(in);
-      Element workflow = (Element)doc.getElementsByTagName("workflow").item(0);
-      
+      Element topology = (Element)doc.getElementsByTagName("topology").item(0);
+      NodeList devices = topology.getElementsByTagName("device");
+      for (int i = 0; i < devices.getLength(); i++) {
+        Element x_dev = (Element)devices.item(i);
+        Device dev = Device.readFrom(x_dev);
+        add(dev);
+        deviceMap.put(dev.getName(), dev);
+      }
+      Hashtable<String, Connection> connectionMap = new Hashtable<String, Connection> ();
+      NodeList connectors = topology.getElementsByTagName("connector");
+      for (int i = 0; i < connectors.getLength(); i++) {
+        Element x_con = (Element)connectors.item(i);
+        Connector con = Connector.readFrom(x_con);
+        add(con);
+        NodeList connections = x_con.getElementsByTagName("connection");
+        for (int j = 0; j < connections.getLength(); j++) {
+          Element x_c = (Element)connections.item(j);
+          String devName = x_c.getAttribute("device");
+          String ifName = x_c.getAttribute("interface");
+          Device dev = deviceMap.get(devName);
+          Connection c = con.createConnection(dev);
+          c.readAttributes(x_c);
+          add(c);
+          connectionMap.put(devName+"."+ifName, c);
+          System.out.println("adding " + devName+"."+ifName);
+        }
+      }
+      for (int i = 0; i < devices.getLength(); i++) {
+        Element x_dev = (Element)devices.item(i);
+        String devName = x_dev.getAttribute("id");
+        Device dev = deviceMap.get(devName);
+        NodeList interfaces = x_dev.getElementsByTagName("interface");
+        for (int j = 0; j < interfaces.getLength(); j++) {
+          Element x_iface = (Element)interfaces.item(j);
+          String ifName = x_iface.getAttribute("id");
+          System.out.println("searching " + devName+"."+ifName);
+          Connection c = connectionMap.get(dev.getName()+"."+ifName);
+          Interface iface = dev.createInterface(ifName, c);
+          iface.readAttributes(x_iface);
+          add(iface);
+        }
+      }
     } catch (SAXException ex) {
       Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);

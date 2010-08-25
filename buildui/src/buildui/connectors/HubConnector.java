@@ -54,4 +54,15 @@ public class HubConnector extends Connector {
     xml.setAttribute("type", "hub");
   }
 
-};
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+  }
+
+  public static Connector readFrom (Element x_con) {
+    String name = x_con.getAttribute("id") ;
+    HubConnector con = new HubConnector(name);
+    con.readAttributes(x_con);
+    return con ;
+  }
+
+}

@@ -51,6 +51,12 @@ public class OpenVzDevice extends Device {
   }
 
   @Override
+  public Interface createInterface (String name, Connection con) {
+    ifaceNum++;
+    return new ConfiguredInterface(name, this, con);
+  }
+
+  @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
     xml.setAttribute("type", "openvz");
@@ -59,4 +65,17 @@ public class OpenVzDevice extends Device {
     xml.setAttribute("root_password", getProperty("root_password", "test123"));
   }
 
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+    setProperty("hostgroup", xml.getAttribute("hostgroup"));
+    setProperty("template", xml.getAttribute("template"));
+    setProperty("root_password", xml.getAttribute("root_password"));
+  }
+
+  public static Device readFrom (Element x_dev) {
+    String name = x_dev.getAttribute("id") ;
+    OpenVzDevice dev = new OpenVzDevice(name);
+    dev.readAttributes(x_dev);
+    return dev ;
+  }
 }

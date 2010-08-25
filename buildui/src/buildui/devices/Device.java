@@ -26,13 +26,33 @@ import org.w3c.dom.Element;
 
 public abstract class Device extends IconElement {
 
+  public static Device readFrom (Element x_dev) {
+    String type = x_dev.getAttribute("type");
+    if ( type.equals("openvz") ) return OpenVzDevice.readFrom(x_dev);
+    if ( type.equals("kvm") ) return KvmDevice.readFrom(x_dev);
+    if ( type.equals("dhcpd") ) return DhcpdDevice.readFrom(x_dev);
+    return null;
+  }
+
   public Device (String newName, String iconName) {
     super(newName, true, iconName);
   }
 
   public abstract Interface createInterface ( Connection con ) ;
+  public abstract Interface createInterface (String name, Connection con);
 
   public void writeAttributes(Element xml) {
     xml.setAttribute("id", getName());
+    xml.setAttribute("pos", getX()+","+getY()) ;
   }
+
+  public void readAttributes (Element xml) {
+    String pos = xml.getAttribute("pos");
+    try {
+      int x = Integer.parseInt(pos.split(",")[0]);
+      int y = Integer.parseInt(pos.split(",")[1]);
+      move(x,y);
+    } catch ( NumberFormatException ex ) {}
+  }
+
 };

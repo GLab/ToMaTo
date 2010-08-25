@@ -51,6 +51,12 @@ public class DhcpdDevice extends Device {
   }
 
   @Override
+  public Interface createInterface (String name, Connection con) {
+    ifaceNum++;
+    return new Interface(name, this, con);
+  }
+
+  @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
     xml.setAttribute("type", "dhcpd");
@@ -59,4 +65,17 @@ public class DhcpdDevice extends Device {
     xml.setAttribute("range", getProperty("range", ""));
   }
 
+  public void readAttributes (Element xml) {
+    super.readAttributes(xml);
+    setProperty("subnet", xml.getAttribute("subnet"));
+    setProperty("netmask", xml.getAttribute("netmask"));
+    setProperty("range", xml.getAttribute("range"));
+  }
+
+  public static Device readFrom (Element x_dev) {
+    String name = x_dev.getAttribute("id") ;
+    DhcpdDevice dev = new DhcpdDevice(name);
+    dev.readAttributes(x_dev);
+    return dev ;
+  }
 }

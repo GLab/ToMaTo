@@ -108,4 +108,8 @@ public class Connection extends NetElement {
     //nothing to do
   }
 
+  public void readAttributes (Element xml) {
+    //nothing to do
+  }
+
 }
