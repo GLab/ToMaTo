@@ -1,0 +1,16 @@
+{% extends "top/base.html" %}
+
+{% block content %}
+{% if top_id %}
+<h1>Edit topology {{top_id}}</h1>
+{% else %}
+<h1>Creation of new topology</h1>
+{% endif %}
+<form action="{% if top_id %}{%url top.edit top_id%}{% else %}{%url top.create%}{% endif %}" method="POST">
+    <a href="{%url main.help "TopologyDescription"%}" target="_blank">Syntax help</a><br/>
+	<textarea name="xml" cols="80" rows="25">{% if xml %}{{xml|safe}}{% else %}<topology>
+</topology>{% endif %}</textarea>
+	<br/>
+	<input type="submit"/>
+</form>
+{% endblock %}
