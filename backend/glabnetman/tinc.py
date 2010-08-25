@@ -11,9 +11,15 @@ class TincConnector(generic.Connector):
 		self.decode_xml(dom)
 		self.save()
 		for connection in dom.getElementsByTagName ( "connection" ):
-			con = TincConnection()
-			con.init(self, connection)
-			self.connection_set.add ( con )
+			self.add_connection(connection)
+
+	def add_connection(self, dom):
+		con = TincConnection()
+		con.init (self, dom)
+		con.bridge_special_name = con.interface.device.host.public_bridge
+		self.connection_set.add ( con )
+		self.save()
+		return con
 	
 	def upcast(self):
 		return self
