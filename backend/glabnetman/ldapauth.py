@@ -188,7 +188,7 @@ def login(username, password):
 def cleanup():
     for user in users.values():
         if time.time() - user.cachetime > 3600:
-            del users[user.name]
+            del users[user.user.name]
     
 cleanup_task = util.RepeatedTimer(3, cleanup)
 cleanup_task.start()
