@@ -303,26 +303,27 @@ class Connector(models.Model):
 				device = self.topology.devices_get(device_name)
 				iface_name = x_con.getAttribute("interface")
 				iface = device.interfaces_get(iface_name)
-			except generic.Device.DoesNotExist:
+			except Device.DoesNotExist:
 				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
-			except generic.Interface.DoesNotExist:
+			except Interface.DoesNotExist:
 				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
 			try:
 				con = self.connections_get(iface)
 				con.upcast().change_run(x_con, task)
-				cons.add(con)				
-			except generic.Connection.DoesNotExist:
+				cons.add(con.interface)				
+			except Connection.DoesNotExist:
 				#new connection
 				con = self.add_connection(x_con)
-				if self.state == generic.State.STARTED:
+				if self.state == State.STARTED:
 					con.start_run(task)
-				cons.add(con)
+				cons.add(con.interface)
 		for con in self.connections_all():
 			if not con.interface in cons:
 				#deleted connection
-				if self.state == generic.State.STARTED:
+				if self.state == State.STARTED:
 					con.stop_run(task)
 				con.delete()
+		self.save()
 				
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)

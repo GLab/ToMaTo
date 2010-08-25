@@ -17,6 +17,7 @@ class InternetConnector(generic.Connector):
 		con.init (self, dom)
 		con.bridge_special_name = con.interface.device.host.public_bridge
 		self.connection_set.add ( con )
+		self.save()
 		return con
 
 	def upcast(self):
