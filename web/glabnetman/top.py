@@ -27,7 +27,7 @@ def index(request):
 def create(request):
 	try:
 		if not request.REQUEST.has_key("xml"):
-			return render_to_response("top/edit_xml.html")
+			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"]})
 		xml=request.REQUEST["xml"]
 		if not getapi(request):
 			return HttpResponseNotAuthorized("Authorization required!")
@@ -98,7 +98,7 @@ def edit(request, top_id):
 		api = request.session.api
 		if not request.REQUEST.has_key("xml"):
 			xml=api.top_get(int(top_id))
-			return render_to_response("top/edit_xml.html", {'top_id': top_id, 'xml': xml} )
+			return render_to_response("top/edit_ui.html", {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"]} )
 		xml=request.REQUEST["xml"]
 		task_id=api.top_change(int(top_id), xml)
 		top=api.top_info(int(top_id))
