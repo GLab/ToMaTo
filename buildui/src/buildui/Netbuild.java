@@ -38,6 +38,7 @@ import buildui.devices.Device;
 import buildui.devices.Interface;
 import buildui.paint.Palette;
 import buildui.paint.NetElement;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashSet;
@@ -628,24 +629,29 @@ public class Netbuild extends java.applet.Applet
 
   public void upload (boolean modify) {
     try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      workArea.encode(baos);
+      String xml = baos.toString();
+
       URL base = getDocumentBase();
       URL url = new URL ( base, getParameter("upload_url") );
       URLConnection con = url.openConnection();
       con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(true);
       con.setDoInput(true);
+      
       OutputStream oStream = con.getOutputStream();
-
-      workArea.encode(oStream);
+      oStream.write("xml=".getBytes());
+      oStream.write(URLEncoder.encode(xml, "utf-8").getBytes());
+      oStream.write("\n".getBytes());
+      oStream.flush();
+      oStream.close();
 
       InputStream iStream = con.getInputStream();
       iStream.skip(iStream.available());
       iStream.close();
 
-      oStream.flush();
-      oStream.close();
-
-      URL backurl = new URL ( getParameter("back_url") );
+      URL backurl = new URL ( base, getParameter("back_url") );
       getAppletContext().showDocument(backurl);
     } catch (Exception ex) {
       exception (ex) ;
@@ -672,7 +678,7 @@ public class Netbuild extends java.applet.Applet
       workArea.decode(iStream);
 
       iStream.close();
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
