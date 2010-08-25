@@ -629,8 +629,10 @@ public class Netbuild extends java.applet.Applet
 
   public void upload (boolean modify) {
     try {
-      URL url = new URL ( getParameter("upload_url") );
+      URL base = getDocumentBase();
+      URL url = new URL ( base, getParameter("upload_url") );
       URLConnection con = url.openConnection();
+      con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(true);
       con.setDoInput(true);
       OutputStream oStream = con.getOutputStream();
@@ -660,8 +662,10 @@ public class Netbuild extends java.applet.Applet
       return false;
     }
     try {
-      URL url = new URL ( getParameter("download_url") );
+      URL base = getDocumentBase();
+      URL url = new URL ( base, getParameter("download_url") );
       URLConnection con = url.openConnection();
+      con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(false);
       con.setDoInput(true);
       InputStream iStream = con.getInputStream();
