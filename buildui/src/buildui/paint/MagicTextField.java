@@ -114,7 +114,6 @@ public class MagicTextField implements TextListener, FocusListener {
       try {
         tf.setCaretPosition(caret);
       } catch (Exception ex) {
-        Netbuild.exception (ex) ;
       }
     }
   }

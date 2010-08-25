@@ -107,7 +107,8 @@ public class Netbuild extends java.applet.Applet
 
   public static void exception (Throwable t) {
     try {
-      fatalError(t.getMessage());
+      t.printStackTrace();
+      fatalError(t.toString());
     } catch (Throwable ex) {
       t.printStackTrace();
       ex.printStackTrace();
