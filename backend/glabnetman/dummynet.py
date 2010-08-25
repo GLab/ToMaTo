@@ -31,9 +31,9 @@ class EmulatedConnection(generic.Connection):
 	def encode_xml(self, dom, doc, internal):
 		generic.Connection.encode_xml(self, dom, doc, internal)
 		if self.delay:
-			dom.setAttribute("delay", "%sms" % self.delay)
+			dom.setAttribute("delay", str(self.delay))
 		if self.bandwidth:
-			dom.setAttribute("bandwidth", "%sk" % self.bandwidth)
+			dom.setAttribute("bandwidth", str(self.bandwidth))
 		if self.lossratio:
 			dom.setAttribute("lossratio", str(self.lossratio))
 		if self.is_tinc():
@@ -41,8 +41,8 @@ class EmulatedConnection(generic.Connection):
 				
 	def decode_xml(self, dom):
 		generic.Connection.decode_xml(self, dom)
-		self.delay = re.match("(\d+)ms", util.get_attr(dom, "delay", default="0ms")).group(1)
-		self.bandwidth = re.match("(\d+)k", util.get_attr(dom, "bandwidth", default="0k")).group(1)
+		self.delay = util.get_attr(dom, "delay", default="0")
+		self.bandwidth = util.get_attr(dom, "bandwidth", default="0")
 		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
 
 	def start_run(self, task):
