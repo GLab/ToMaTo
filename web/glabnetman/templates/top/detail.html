@@ -109,26 +109,3 @@ function console (url) {
 {% endif %}
 
 {% endblock %}
-
-{% block left %}
-<div id="sidemenu">
-	<h2>Topology {{top_id}}</h2>
-	<ul>
-		<li><a href="{%url top.details top_id%}">details</a></li>
-		<li><a href="{%url top.showxml top_id%}">show</a></li>
-		<li><a href="{%url top.showxml top_id%}?plain">download</a></li>
-		<li><a href="{%url top.edit top_id%}">edit</a></li>
-		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
-	</ul>
-</div>
-
-<div id="sidemenu">
-	<h2>Deployment</h2>
-	<ul>
-		<li><a href="{%url top.start top_id%}">start</a></li>
-		<li><a href="{%url top.stop top_id%}">stop</a></li>
-		<li><a href="{%url top.prepare top_id%}">prepare</a></li>
-		<li><a href="{%url top.destroy top_id%}" onclick="javascript:return confirm('Are you sure? All device data will be lost!')">destroy</a></li>
-	</ul>
-</div>
-{% endblock %}
