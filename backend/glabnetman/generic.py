@@ -47,7 +47,7 @@ class Device(models.Model):
 
 	def upcast(self):
 		if self.is_dhcpd():
-			return self.dhcpdevice.upcast()
+			return self.dhcpddevice.upcast()
 		if self.is_kvm():
 			return self.kvmdevice.upcast()
 		if self.is_openvz():
