@@ -27,7 +27,6 @@ import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
 import java.util.*;
 import java.net.*;
 
@@ -639,7 +638,7 @@ public class Netbuild extends java.applet.Applet
       con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(true);
       con.setDoInput(true);
-      
+
       OutputStream oStream = con.getOutputStream();
       oStream.write("xml=".getBytes());
       oStream.write(URLEncoder.encode(xml, "utf-8").getBytes());
@@ -650,6 +649,9 @@ public class Netbuild extends java.applet.Applet
       InputStream iStream = con.getInputStream();
       iStream.skip(iStream.available());
       iStream.close();
+
+      stop();
+      destroy();
 
       URL backurl = new URL ( base, getParameter("back_url") );
       getAppletContext().showDocument(backurl);
