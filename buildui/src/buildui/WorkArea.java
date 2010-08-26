@@ -115,10 +115,18 @@ public class WorkArea {
       for (Connection c: ((Connector)t).connections()) remove(c);
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().removeInterface((Interface)t);
-      remove(((Interface)t).getCon());
+      Connection c = ((Interface)t).getCon();
+      if ( c != null ) {
+        c.setIface(null);
+        remove(c);
+      }
     } else if (t instanceof Connection) {
       ((Connection)t).getConnector().removeConnection((Connection)t);
-      remove(((Connection)t).getIface());
+      Interface iface = ((Connection)t).getIface();
+      if (iface != null) {
+        iface.setCon(null);
+        remove(iface);
+      }
     }
   }
 
