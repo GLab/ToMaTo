@@ -366,8 +366,11 @@ class Connection(models.Model):
 			device = self.connector.topology.devices_get(device_name)
 			iface_name = dom.getAttribute("interface")
 			self.interface = device.interfaces_get(iface_name)
-			if self.interface.connection:
+			try:
+				con = self.interface.connection
 				raise fault.new(fault.DUPLICATE_INTERFACE_CONNECTION, "Interface %s is connected to %s and %s" % (self.interface, self.interface.connection, self) )
+			except Connection.DoesNotExist:
+				pass
 		except Device.DoesNotExist:
 			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
 		except Interface.DoesNotExist:
