@@ -43,16 +43,8 @@ public class KvmDevice extends Device {
     return propertiesArea ;
   }
 
-  int ifaceNum = 0 ;
-
-  @Override
-  public Interface createInterface (Connection con) {
-    return new Interface("eth"+(ifaceNum++), this, con);
-  }
-
   @Override
   public Interface createInterface (String name, Connection con) {
-    ifaceNum++;
     return new Interface(name, this, con);
   }
 

@@ -61,10 +61,6 @@ public class Interface extends NetElement {
     return dev;
   }
 
-  public Connection getConnection () {
-    return con;
-  }
-
   public void move (int nx, int ny) {
     // nope. can't allow this.
   }
@@ -118,6 +114,20 @@ public class Interface extends NetElement {
 
   public void readAttributes (Element xml) {
     //nothing to do
+  }
+
+  /**
+   * @return the con
+   */
+  public Connection getCon () {
+    return con;
+  }
+
+  /**
+   * @param con the con to set
+   */
+  public void setCon (Connection con) {
+    this.con = con;
   }
 
 }

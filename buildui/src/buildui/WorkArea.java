@@ -55,16 +55,8 @@ import org.xml.sax.SAXException;
 //
 public class WorkArea {
 
-  private Vector<NetElement> elements;
-  private Vector<Connection> connectionElements;
-  private Vector<Interface> interfaceElements;
-
-  public WorkArea (int w, int h) {
-    super();
-    elements = new Vector<NetElement>();
-    connectionElements = new Vector<Connection>();
-    interfaceElements = new Vector<Interface>();
-  }
+  private Set<Device> devices = new HashSet<Device>() ;
+  private Set<Connector> connectors = new HashSet<Connector>() ;
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {
     int xDiff = t.getX() - r.x;
@@ -77,125 +69,69 @@ public class WorkArea {
   }
 
   public void selectRectangle (Rectangle r, boolean xor) {
-    Enumeration linkThingeeEnum = connectionElements.elements();
-
-    while (linkThingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)linkThingeeEnum.nextElement();
-      selectOneInRectangle(r, t, xor);
+    for (Device dev: devices) {
+      selectOneInRectangle(r, dev, xor);
+      for (Interface iface: dev.interfaces()) selectOneInRectangle(r, iface, xor);
     }
-
-    Enumeration thingeeEnum = elements.elements();
-
-    while (thingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)thingeeEnum.nextElement();
-      selectOneInRectangle(r, t, xor);
-    }
-
-    Enumeration iFaceThingeeEnum = interfaceElements.elements();
-
-    while (iFaceThingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)iFaceThingeeEnum.nextElement();
-      selectOneInRectangle(r, t, xor);
+    for (Connector con: connectors) {
+      selectOneInRectangle(r, con, xor);
+      for (Connection c: con.connections()) selectOneInRectangle(r, c, xor);
     }
   }
 
   public int getElementCount () {
-    return connectionElements.size() + elements.size() + interfaceElements.size();
+    return devices.size() + connectors.size();
   }
 
   public void paint (Graphics g) {
-    Enumeration linkThingeeEnum = connectionElements.elements();
-
-    while (linkThingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)linkThingeeEnum.nextElement();
-      t.draw(g);
+    for (Connector con: connectors) {
+      for (Connection c: con.connections()) c.draw(g);
+      con.draw(g);
     }
-
-    Enumeration thingeeEnum = elements.elements();
-
-    while (thingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)thingeeEnum.nextElement();
-      t.draw(g);
-    }
-
-    Enumeration iFaceThingeeEnum = interfaceElements.elements();
-
-    while (iFaceThingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)iFaceThingeeEnum.nextElement();
-      t.draw(g);
+    for (Device dev: devices) {
+      dev.draw(g);
+      for (Interface iface: dev.interfaces()) iface.draw(g);
     }
   }
 
   public NetElement clicked (int x, int y) {
-    Enumeration thingeeEnum;
-
-    NetElement got = null;
-
-    thingeeEnum = connectionElements.elements();
-
-    while (thingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)thingeeEnum.nextElement();
-      if (t.clicked(x, y)) got = t;
+    for (Device dev: devices) {
+      for (Interface iface: dev.interfaces()) if (iface.clicked(x, y)) return iface;
+      if (dev.clicked(x, y)) return dev;
     }
-
-    thingeeEnum = elements.elements();
-
-    while (thingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)thingeeEnum.nextElement();
-      if (t.clicked(x, y)) got = t;
+    for (Connector con: connectors) {
+      for (Connection c: con.connections()) if(c.clicked(x, y)) return c;
+      if (con.clicked(x, y)) return con;
     }
-
-    thingeeEnum = interfaceElements.elements();
-
-    while (thingeeEnum.hasMoreElements()) {
-      NetElement t = (NetElement)thingeeEnum.nextElement();
-      if (t.clicked(x, y)) got = t;
-    }
-
-    return got;
+    return null ;
   }
 
   public void remove (NetElement t) {
-    if (t instanceof Interface)
-      interfaceElements.removeElement(t);
-    else if (t instanceof Connection) {
-      boolean done = false;
-      while (!done) {
-        done = true;
-        Enumeration e = interfaceElements.elements();
-        while (e.hasMoreElements() && done) {
-          Interface i = (Interface)e.nextElement();
-          if (i.isConnectedTo(t)) {
-            remove(i);
-            done = false;
-          }
-        }
-      }
-      connectionElements.removeElement(t);
-    } else {
-      boolean done = false; // stupid hack.
-      while (!done) {
-        done = true;
-        Enumeration thingeeEnum = connectionElements.elements();
-        while (thingeeEnum.hasMoreElements() && done) {
-          Connection u = (Connection)thingeeEnum.nextElement();
-          if (u.isConnectedTo(t)) {
-            remove(u);
-            done = false;
-          }
-        }
-      }
-      elements.removeElement(t);
+    if (t instanceof Device) {
+      devices.remove((Device)t);
+      for (Interface iface: ((Device)t).interfaces()) remove(iface);
+    } else if (t instanceof Connector) {
+      connectors.remove((Connector)t);
+      for (Connection c: ((Connector)t).connections()) remove(c);
+    } else if (t instanceof Interface) {
+      ((Interface)t).getDevice().removeInterface((Interface)t);
+      remove(((Interface)t).getCon());
+    } else if (t instanceof Connection) {
+      ((Connection)t).getConnector().removeConnection((Connection)t);
+      remove(((Connection)t).getIface());
     }
   }
 
   public void add (NetElement t) {
-    if (t instanceof Connection)
-      connectionElements.addElement((Connection)t);
-    else if (t instanceof Interface)
-      interfaceElements.addElement((Interface)t);
-    else
-      elements.addElement(t);
+    if (t instanceof Device) {
+      devices.add((Device)t);
+    } else if (t instanceof Connector) {
+      connectors.add((Connector)t);
+    } else if (t instanceof Interface) {
+      ((Interface)t).getDevice().addInterface((Interface)t);
+    } else if (t instanceof Connection) {
+      ((Connection)t).getConnector().addConnection((Connection)t);
+    }
   }
 
   public void encode (OutputStream out) {
@@ -205,41 +141,32 @@ public class WorkArea {
       Document doc = docBuilder.newDocument();
       Element root = doc.createElement("topology");
       doc.appendChild(root);
-      Element devices = doc.createElement("devices");
-      root.appendChild(devices);
-      Element connectors = doc.createElement("connectors");
-      root.appendChild(connectors);
-      for ( NetElement el: elements) {
-        if ( el instanceof Device ) {
-          Element x_dev = doc.createElement("device") ;
-          ((Device)el).writeAttributes(x_dev);
-          for ( Interface iface: interfaceElements ) {
-            if ( iface.getDevice() == el ) {
-              Element x_iface = doc.createElement("interface") ;
-              iface.writeAttributes(x_iface);
-              x_dev.appendChild(x_iface);
-            }
-          }
-          devices.appendChild(x_dev);
-        } else if ( el instanceof Connector ) {
-          Element x_con = doc.createElement("connector") ;
-          ((Connector)el).writeAttributes(x_con);
-          for ( Connection con: connectionElements ) {
-            if ( con.getConnector() == el ) {
-              Element x_c = doc.createElement("connection") ;
-              con.writeAttributes(x_c);
-              for ( Interface iface: interfaceElements ) {
-                if ( iface.getConnection() == con ) {
-                  x_c.setAttribute("device", iface.getDevice().getName());
-                  x_c.setAttribute("interface", iface.getName());
-                  break;
-                }
-              }
-              x_con.appendChild(x_c);
-            }
-          }
-          connectors.appendChild(x_con);
+      Element x_devices = doc.createElement("devices");
+      root.appendChild(x_devices);
+      Element x_connectors = doc.createElement("connectors");
+      root.appendChild(x_connectors);
+      for ( Device dev: devices) {
+        Element x_dev = doc.createElement("device") ;
+        dev.writeAttributes(x_dev);
+        for ( Interface iface: dev.interfaces() ) {
+          Element x_iface = doc.createElement("interface") ;
+          iface.writeAttributes(x_iface);
+          x_dev.appendChild(x_iface);
         }
+        x_devices.appendChild(x_dev);
+      }
+      for ( Connector con: connectors) {
+        Element x_con = doc.createElement("connector") ;
+        con.writeAttributes(x_con);
+        for ( Connection c: con.connections() ) {
+          Element x_c = doc.createElement("connection") ;
+          c.writeAttributes(x_c);
+          Interface iface = c.getIface() ;
+          x_c.setAttribute("device", iface.getDevice().getName());
+          x_c.setAttribute("interface", iface.getName());
+          x_con.appendChild(x_c);
+        }
+        x_connectors.appendChild(x_con);
       }
       TransformerFactory transfac = TransformerFactory.newInstance();
       Transformer trans = transfac.newTransformer();
@@ -300,9 +227,12 @@ public class WorkArea {
           String ifName = x_iface.getAttribute("id");
           System.out.println("searching " + devName+"."+ifName);
           Connection c = connectionMap.get(dev.getName()+"."+ifName);
-          Interface iface = dev.createInterface(ifName, c);
-          iface.readAttributes(x_iface);
-          add(iface);
+          if (c!=null) {
+            Interface iface = dev.createInterface(ifName, c);
+            c.setIface(iface);
+            iface.readAttributes(x_iface);
+            add(iface);
+          }
         }
       }
     } catch (SAXException ex) {

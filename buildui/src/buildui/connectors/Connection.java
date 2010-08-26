@@ -31,14 +31,11 @@ public class Connection extends NetElement {
 
   private Connector con;
   private Device dev;
+  private Interface iface;
   private static Color paleGreen = new Color(0.8f, 1.0f, 0.8f);
 
   public Connector getConnector () {
     return con;
-  }
-
-  public Device getInterface () {
-    return dev;
   }
 
   public Connection (String newName, Connector con, Device dev) {
@@ -110,6 +107,20 @@ public class Connection extends NetElement {
 
   public void readAttributes (Element xml) {
     //nothing to do
+  }
+
+  /**
+   * @return the iface
+   */
+  public Interface getIface () {
+    return iface;
+  }
+
+  /**
+   * @param iface the iface to set
+   */
+  public void setIface (Interface iface) {
+    this.iface = iface;
   }
 
 }

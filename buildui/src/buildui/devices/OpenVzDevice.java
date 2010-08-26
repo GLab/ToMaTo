@@ -43,16 +43,8 @@ public class OpenVzDevice extends Device {
     return propertiesArea ;
   }
 
-  int ifaceNum = 0 ;
-
-  @Override
-  public Interface createInterface (Connection con) {
-    return new ConfiguredInterface("eth"+(ifaceNum++), this, con);
-  }
-
   @Override
   public Interface createInterface (String name, Connection con) {
-    ifaceNum++;
     return new ConfiguredInterface(name, this, con);
   }
 

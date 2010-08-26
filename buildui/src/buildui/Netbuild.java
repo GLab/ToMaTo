@@ -325,6 +325,7 @@ public class Netbuild extends java.applet.Applet
               Connection con = ((Connector)b).createConnection((Device)a);
               workArea.add(con);
               Interface iface = ((Device)a).createInterface(con);
+              con.setIface(iface);
               workArea.add(iface);
               paintElement(con);
               paintElement(iface);
@@ -332,6 +333,7 @@ public class Netbuild extends java.applet.Applet
               Connection con = ((Connector)a).createConnection((Device)b);
               workArea.add(con);
               Interface iface = ((Device)b).createInterface(con);
+              con.setIface(iface);
               workArea.add(iface);
               paintElement(con);
               paintElement(iface);
@@ -537,7 +539,7 @@ public class Netbuild extends java.applet.Applet
       paletteWidth = 80;
       workAreaWidth = appWidth - propAreaWidth - paletteWidth;
 
-      workArea = new WorkArea(workAreaWidth, appHeight);
+      workArea = new WorkArea();
       palette = new Palette();
       propertiesPanel = new Panel();
 

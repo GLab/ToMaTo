@@ -22,6 +22,8 @@ package buildui.devices;
 
 import buildui.connectors.Connection;
 import buildui.paint.IconElement;
+import java.util.HashSet;
+import java.util.Set;
 import org.w3c.dom.Element;
 
 public abstract class Device extends IconElement {
@@ -38,7 +40,30 @@ public abstract class Device extends IconElement {
     super(newName, true, iconName);
   }
 
-  public abstract Interface createInterface ( Connection con ) ;
+  private Set<Interface> interfaces = new HashSet<Interface> () ;
+
+  public Set<Interface> interfaces() {
+    return interfaces ;
+  }
+
+  public void addInterface(Interface iface) {
+    interfaces.add(iface);
+  }
+
+  public void removeInterface(Interface iface) {
+    interfaces.remove(iface);
+  }
+
+  public Interface getInterface (String ifName) {
+    for (Interface iface: interfaces) if ( iface.getName().equals(ifName)) return iface;
+    return null;
+  }
+
+  public Interface createInterface (Connection con) {
+    int ifaceNum = 0 ;
+    while ( getInterface("eth"+ifaceNum) != null ) ifaceNum++;
+    return createInterface("eth"+ifaceNum, con);
+  }
   public abstract Interface createInterface (String name, Connection con);
 
   public void writeAttributes(Element xml) {

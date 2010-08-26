@@ -22,6 +22,8 @@ package buildui.connectors;
 
 import buildui.devices.Device;
 import buildui.paint.IconElement;
+import java.util.HashSet;
+import java.util.Set;
 import org.w3c.dom.Element;
 
 public abstract class Connector extends IconElement {
@@ -40,6 +42,20 @@ public abstract class Connector extends IconElement {
   }
 
   public abstract Connection createConnection ( Device dev ) ;
+
+  private Set<Connection> connections = new HashSet<Connection> () ;
+
+  public Set<Connection> connections() {
+    return connections ;
+  }
+
+  public void addConnection(Connection con) {
+    connections.add(con);
+  }
+
+  public void removeConnection(Connection con) {
+    connections.remove(con);
+  }
 
   public void writeAttributes(Element xml) {
     xml.setAttribute("id", getName());
