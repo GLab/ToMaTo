@@ -58,7 +58,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl start %s --wait" % self.openvz_id, task)
 		for iface in self.interfaces_all():
 			if iface.is_configured():				
-				iface.upcast.start_run(iface, task)
+				iface.upcast().start_run(iface, task)
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
 		self.state = generic.State.STARTED
 		self.save()
