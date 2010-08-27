@@ -18,7 +18,7 @@ class TaskStatus():
 	def done(self):
 		self.subtasks_done = self.subtasks_total
 	def dict(self):
-		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total}
+		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total, "started": self.started}
 	def check_delete(self):
 		if time.time() - self.started > 3600:
 			del TaskStatus.tasks[self.id]

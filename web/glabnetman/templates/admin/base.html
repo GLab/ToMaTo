@@ -3,8 +3,7 @@
 {% block menu_top %}
 <ul>
 	<li><a href="{%url top.index%}">Topologies</a></li>
-	<li class="active"><a href="{%url host.index%}">Hosts</a></li>
-	<li><a href="{%url main.task_list%}">Tasks</a></li>
+	<li class="active"><a href="{%url host.index%}">Admin</a></li>
 	<li><a href="{%url main.help%}">Help</a></li>
 	<li><a href="{%url main.logout%}">Logout</a></li>
 </ul>
@@ -16,6 +15,13 @@
 	<ul>
 		<li><a href="{%url host.index%}">list of all hosts</a></li>
 		<li><a href="{%url host.add%}">add new host</a></li>
+	</ul>
+</div>
+
+<div id="sidemenu">
+	<h2>Tasks</h2>
+	<ul>
+		<li><a href="{%url main.task_list%}">list of all tasks</a></li>
 	</ul>
 </div>
 {% endblock %}

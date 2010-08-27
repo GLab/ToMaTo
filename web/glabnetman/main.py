@@ -15,7 +15,7 @@ def task_list(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
 		tasks = api.task_list()
-		return render_to_response("main/task_list.html", {'tasks': tasks})
+		return render_to_response("admin/task_list.html", {'tasks': tasks})
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
