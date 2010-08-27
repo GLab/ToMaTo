@@ -79,6 +79,7 @@ class Host(models.Model):
 	def upload(self, local_file, remote_file, task=None):
 		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
 		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
+		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
 			task.output.write(str)
 			task.output.write(util.run_shell(cmd, config.remote_dry_run))
