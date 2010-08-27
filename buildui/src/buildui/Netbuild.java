@@ -37,8 +37,10 @@ import buildui.devices.Device;
 import buildui.devices.Interface;
 import buildui.paint.Palette;
 import buildui.paint.NetElement;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.logging.Level;
@@ -646,12 +648,11 @@ public class Netbuild extends java.applet.Applet
       oStream.write(URLEncoder.encode(xml, "utf-8").getBytes());
       oStream.write("\n".getBytes());
       oStream.flush();
+
+      BufferedReader in = new BufferedReader ( new InputStreamReader ( con.getInputStream() ) );
+      while ( in.ready() ) System.out.println (in.readLine()) ;
+
       oStream.close();
-
-      InputStream iStream = con.getInputStream();
-      iStream.skip(iStream.available());
-      iStream.close();
-
       stop();
       destroy();
 
