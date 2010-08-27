@@ -42,7 +42,7 @@ class Topology(models.Model):
 			self.delete()
 			raise
 		if not self.name:
-			self.name = "Topology %s" % self.id
+			self.name = "Topology_%s" % self.id
 		self.save()
 
 	def analysis(self):
