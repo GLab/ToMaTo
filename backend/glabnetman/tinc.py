@@ -16,7 +16,7 @@ class TincConnector(generic.Connector):
 	def add_connection(self, dom):
 		con = TincConnection()
 		con.init (self, dom)
-		con.bridge_special_name = con.interface.device.host.public_bridge
+		con.bridge_special_name = None
 		self.connection_set.add ( con )
 		self.save()
 		return con

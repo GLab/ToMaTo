@@ -19,12 +19,10 @@ class APIServer(xmlrpc.XMLRPC):
 	def execute(self, function, args, user):
 		try:
 			return function(*args, user=user)
-		except xmlrpclib.Fault, f:
-			self.api.logger.log("Error: %s"%f, user=user.name)
-			raise f
-		#except Exception, exc:
-		#	api.logger.log("Exception: %s" % exc, user=user.username)
-		#	raise xmlrpclib.Fault(api.Fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
+		except Exception, exc:
+			print exc
+			glabnetman.logger.log("Exception: %s" % exc, user=user.name)
+			raise glabnetman.fault.new(glabnetman.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
 
 	def render(self, request):
 		username=request.getUser()
