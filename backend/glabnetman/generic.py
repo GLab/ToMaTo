@@ -40,8 +40,6 @@ class Device(models.Model):
 		return self.interface_set.get(name=name)
 
 	def interfaces_add(self, iface):
-		if self.interfaces_get(iface.name):
-			raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface id: %s" % iface )
 		return self.interface_set.add(iface)
 
 	def interfaces_all(self):
