@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import hosts, util, fault, re, tasks, thread
+import hosts, util, fault, re, tasks
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -109,7 +109,7 @@ class Device(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().start_run, (task,))
+		util.start_thread(self.upcast().start_run, task)
 		return task.id
 		
 	def stop(self):
@@ -117,7 +117,7 @@ class Device(models.Model):
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().stop_run, (task,))
+		util.start_thread(self.upcast().stop_run, task)
 		return task.id
 
 	def prepare(self):
@@ -127,7 +127,7 @@ class Device(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().prepare_run, (task,))
+		util.start_thread(self.upcast().prepare_run, task)
 		return task.id
 
 	def destroy(self):
@@ -135,7 +135,7 @@ class Device(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().destroy_run, (task,))
+		util.start_thread(self.upcast().destroy_run, task)
 		return task.id
 
 	def start_run(self, task):
@@ -249,7 +249,7 @@ class Connector(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().start_run, (task,))
+		util.start_thread(self.upcast().start_run, task)
 		return task.id
 		
 	def stop(self):
@@ -257,7 +257,7 @@ class Connector(models.Model):
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().stop_run, (task,))
+		util.start_thread(self.upcast().stop_run, task)
 		return task.id
 
 	def prepare(self):
@@ -267,7 +267,7 @@ class Connector(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().prepare_run, (task,))
+		util.start_thread(self.upcast().prepare_run, task)
 		return task.id
 
 	def destroy(self):
@@ -275,7 +275,7 @@ class Connector(models.Model):
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
-		thread.start_new_thread(self.upcast().destroy_run, (task,))
+		util.start_thread(self.upcast().destroy_run, task)
 		return task.id
 
 	def start_run(self, task):

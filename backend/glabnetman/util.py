@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import subprocess, threading
+import subprocess, threading, thread
 
 class RepeatedTimer(threading.Thread):
 	def __init__(self, timeout, func, *args, **kwargs):
@@ -18,6 +18,19 @@ class RepeatedTimer(threading.Thread):
 				self.func(*self.args, **self.kwargs)
 	def stop(self):
 		self.event.set()
+
+def print_except_helper(func, args, kwargs):
+	try:
+		return func(*args, **kwargs)
+	except Exception, ex:
+		print ex
+		raise
+
+def print_except(func, *args, **kwargs):
+	return print_except_helper(func, args, kwargs)
+
+def start_thread(func, *args, **kwargs):
+	return thread.start_new_thread(print_except_helper, (func, args, kwargs))
 
 def run_shell(cmd, pretend=False):
 	if pretend:

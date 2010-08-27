@@ -95,14 +95,14 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	logger.log("host_add(%s,%s,%s)" % (host_name, group_name, public_bridge), user=user.name)
 	_host_access(user)
 	from hosts import Host, HostGroup
-	import thread
+	import util
 	try:
 		group = HostGroup.objects.get(name=group_name)
 	except HostGroup.DoesNotExist:
 		group = HostGroup.objects.create(name=group_name)
 	host = Host(name=host_name, public_bridge=public_bridge, group=group)
 	t = tasks.TaskStatus()
-	thread.start_new_thread(host.check_save, (t,))
+	util.start_thread(host.check_save, t)
 	return t.id
 
 def host_remove(host_name, user=None):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
-import thread, os
+import os
 import config, log, fault, util, tasks
 import topology_analysis, generic
 
@@ -147,7 +147,7 @@ class Topology(models.Model):
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.start_run,(task,))
+		util.start_thread(self.start_run,task)
 		return task.id
 
 	def start_run(self, task):
@@ -178,8 +178,7 @@ class Topology(models.Model):
 		This will fail if the topology has not been prepared yet.
 		"""
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.stop_run,(task,))
-		#self.stop_run(task)
+		util.start_thread(self.stop_run,task)
 		return task.id
 
 	def stop_run(self, task):
@@ -202,7 +201,7 @@ class Topology(models.Model):
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.prepare_run,(task,))
+		util.start_thread(self.prepare_run,task)
 		return task.id
 
 	def prepare_run(self, task):
@@ -223,7 +222,7 @@ class Topology(models.Model):
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.destroy_run,(task,))
+		util.start_thread(self.destroy_run,task)
 		return task.id
 
 	def destroy_run(self, task):
@@ -307,8 +306,7 @@ class Topology(models.Model):
 	def change(self, newtop):
 		self.change_possible(newtop)
 		task = tasks.TaskStatus()
-		thread.start_new_thread(self.change_run,(newtop, task))
-		#self.change_run(newtop, task)
+		util.start_thread(self.change_run,newtop, task)
 		return task.id
 		
 	def _log(self, task, output):
@@ -324,7 +322,7 @@ class Topology(models.Model):
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
 		task = tasks.TaskStatus()
-		thread.start_new_thread(device.upcast().upload_image, (filename, task))
+		util.start_thread(device.upcast().upload_image, filename, task)
 		return task.id
 	
 	def download_image(self, device_id):
