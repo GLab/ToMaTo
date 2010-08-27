@@ -26,6 +26,8 @@ class Topology(models.Model):
 	
 	date_modified = models.DateTimeField(auto_now=True)
 
+	task = models.CharField(max_length=100, blank=True, null=True)
+
 	def init (self, dom, owner):
 		"""
 		Creates a new topology

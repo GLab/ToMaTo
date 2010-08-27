@@ -9,6 +9,16 @@ import xmlrpclib
 def index(request):
 	return render_to_response("main/base.html")
 
+def task_list(request):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		tasks = api.task_list()
+		return render_to_response("main/task_list.html", {'tasks': tasks})
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
 def task_status(request, task_id):
 	try:
 		if not getapi(request):

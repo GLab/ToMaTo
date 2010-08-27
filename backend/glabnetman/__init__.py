@@ -251,6 +251,10 @@ def connector_stop(top_id, connector_name, user=None):
 	connector = top.connectors_get(connector_name)
 	return connector.stop()
 
+def task_list(user=None):
+	logger.log("task_list(%s)" % id, user=user.name)
+	return [t.dict() for t in tasks.TaskStatus.tasks.values()]
+
 def task_status(id, user=None):
 	logger.log("task_status(%s)" % id, user=user.name)
 	return tasks.TaskStatus.tasks[id].dict()

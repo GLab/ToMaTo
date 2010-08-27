@@ -1,0 +1,20 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h1>List of tasks</h1>
+
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Done</th>
+    <th>Subtasks</th>
+  </tr>
+{% for task in tasks %}
+  <tr>
+    <td><a href="{%url main.task_status task.id%}">{{task.id}}</a></td>
+    <td>{{task.done}}</td>
+    <td>{{task.subtasks_done}}/{{task.subtasks_total}}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}
