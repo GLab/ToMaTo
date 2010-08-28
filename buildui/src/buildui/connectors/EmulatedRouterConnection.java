@@ -18,51 +18,55 @@ package buildui.connectors;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 import buildui.devices.Device;
-import buildui.paint.NetElement;
+import buildui.devices.Interface;
+import java.awt.*;
 
+import buildui.paint.NetElement;
 import buildui.paint.PropertiesArea;
 import org.w3c.dom.Element;
 
-public class RouterConnector extends Connector {
 
-  static int num = 1;
+public class EmulatedRouterConnection extends EmulatedConnection {
 
-  public RouterConnector (String newName) {
-    super(newName, "/icons/router.png");
-  }
+	private static Color paleBlue;
 
-  public NetElement createAnother () {
-    return new RouterConnector("router"+(num++)) ;
-  }
+	static {
+		paleBlue = new Color(0.8f, 0.8f, 1.0f);
+	}
 
-  static PropertiesArea propertiesArea = new RouterPropertiesArea() ;
+	public void drawIcon(Graphics g) {
+		g.setColor(Color.lightGray);
+		g.fillRect(-6, -6, 16, 16);
+
+		g.setColor(paleBlue);
+		g.fillRect(-8, -8, 16, 16);
+
+		g.setColor(Color.black);
+		g.drawRect(-8, -8, 16, 16);
+	}
+
+	public EmulatedRouterConnection(String newName, Connector con, Device dev) {
+		super(newName, con, dev);
+	}
+
+  static PropertiesArea propertiesArea = new EmulatedRouterConnectionPropertiesArea() ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
   }
 
   @Override
-  public Connection createConnection (Device dev) {
-    return new EmulatedRouterConnection("", this, dev);
-  }
-
-  @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
-    xml.setAttribute("type", "router");
+    xml.setAttribute("gateway_ip", getProperty("gateway_ip", ""));
+    xml.setAttribute("gateway_netmask", getProperty("gateway_netmask", ""));
   }
 
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
+    setProperty("gateway_ip", xml.getAttribute("gateway_ip"));
+    setProperty("gateway_netmask", xml.getAttribute("gateway_netmask"));
   }
-
-  public static Connector readFrom (Element x_con) {
-    String name = x_con.getAttribute("id") ;
-    RouterConnector con = new RouterConnector(name);
-    con.readAttributes(x_con);
-    return con ;
-  }
-
+  
 }

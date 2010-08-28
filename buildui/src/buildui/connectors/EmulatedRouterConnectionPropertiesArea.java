@@ -22,20 +22,19 @@ import buildui.paint.NetElement;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
+public class EmulatedRouterConnectionPropertiesArea extends EmulatedConnectionPropertiesArea {
 
   public boolean iCare (NetElement t) {
-    return (t instanceof EmulatedConnection) & ! (t instanceof EmulatedRouterConnection);
+    return t instanceof EmulatedConnection;
   }
 
   public String getName () {
     return "Link properties";
   }
 
-  public EmulatedConnectionPropertiesArea () {
+  public EmulatedRouterConnectionPropertiesArea () {
     super();
-    addProperty("bandwidth", "bandwidth(Kb/s):", "10000", false, false);
-    addProperty("delay", "latency(ms):", "0", false, false);
-    addProperty("lossratio", "loss rate(0.0-1.0):", "0.0", false, false);
+    addProperty("gateway_ip", "gateway", "", false, false);
+    addProperty("gateway_netmask", "netmask", "", false, false);
   }
 };
