@@ -45,6 +45,16 @@ class Topology(models.Model):
 			self.name = "Topology_%s" % self.id
 		self.save()
 
+	def is_busy(self):
+		if not self.task:
+			return False
+		if not tasks.TaskStatus.tasks.has_key(self.task):
+			return False
+		t = tasks.TaskStatus.tasks[self.task]
+		if t.subtasks_total == t.subtasks_done:
+			return False
+		return t
+
 	def analysis(self):
 		return topology_analysis.analyze(self)
 
@@ -148,7 +158,10 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(self.start_run,task)
 		return task.id
 
@@ -179,7 +192,10 @@ class Topology(models.Model):
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(self.stop_run,task)
 		return task.id
 
@@ -202,7 +218,10 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(self.prepare_run,task)
 		return task.id
 
@@ -223,7 +242,10 @@ class Topology(models.Model):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(self.destroy_run,task)
 		return task.id
 
@@ -306,8 +328,11 @@ class Topology(models.Model):
 				pass
 				
 	def change(self, newtop):
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		self.change_possible(newtop)
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(self.change_run,newtop, task)
 		return task.id
 		
@@ -316,6 +341,8 @@ class Topology(models.Model):
 		logger.log(task, bigmessage=output)
 		
 	def upload_image(self, device_id, filename):
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		device = self.devices_get(device_id)
 		if not device:
 			os.remove(filename)
@@ -324,10 +351,13 @@ class Topology(models.Model):
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
 		task = tasks.TaskStatus()
+		self.task = task.id
 		util.start_thread(device.upcast().upload_image, filename, task)
 		return task.id
 	
 	def download_image(self, device_id):
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		device = self.devices_get(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
