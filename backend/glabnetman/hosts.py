@@ -96,12 +96,19 @@ class Host(models.Model):
 		else:
 			print str
 			print util.run_shell(cmd, config.remote_dry_run)
-				
+	
+class Template(models.Model):
+		name = models.CharField(max_length=100)
+		type = models.CharField(max_length=12)
+			
 def get_host(name):
 	return Host.objects.get(name=name)
 
 def get_host_group(name):
 	return HostGroup.objects.get(name=name)
+	
+def get_host_groups():
+	return HostGroup.objects.all()
 	
 def get_best_host(group):
 	all = Host.objects.all()
@@ -112,3 +119,15 @@ def get_best_host(group):
 		return hosts[0]
 	else:
 		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
+	
+def get_templates(type=None):
+	list = Template.objects.all()
+	if type:
+		list = list.filter(type=type)
+	return list
+
+def add_template(name, type):
+	Template.objects.create(name=name, type=type)
+	
+def remove_template(name):
+	Template.objects.filter(name=name).delete()

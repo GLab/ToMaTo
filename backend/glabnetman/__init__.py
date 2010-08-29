@@ -66,7 +66,7 @@ def _top_access(top, user=None):
 		return
 	raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
 
-def _host_access(user=None):
+def _admin_access(user=None):
 	if not user.is_admin:
 		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "access to host denied")
 	
@@ -98,7 +98,7 @@ def host_list(group_filter="*", user=None):
 
 def host_add(host_name, group_name, public_bridge, user=None):
 	logger.log("host_add(%s,%s,%s)" % (host_name, group_name, public_bridge), user=user.name)
-	_host_access(user)
+	_admin_access(user)
 	from hosts import Host, HostGroup
 	import util
 	try:
@@ -112,9 +112,13 @@ def host_add(host_name, group_name, public_bridge, user=None):
 
 def host_remove(host_name, user=None):
 	logger.log("host_remove(%s)" % host_name, user=user.name)
-	_host_access(user)
+	_admin_access(user)
 	hosts.get_host(host_name).delete()
 	return True
+
+def host_groups(user=None):
+	logger.log("host_groups()", user=user.name)
+	return [h.name for h in hosts.get_host_groups()]
 
 def _parse_xml(xml):
 	try:
@@ -297,3 +301,20 @@ def download_chunk(download_id, user=None):
 	import xmlrpclib
 	return xmlrpclib.Binary(data)
 
+def template_list(type, user=None):
+	logger.log("template_list(%s)" % type, user=user.name)
+	if type=="*":
+		type = None
+	return hosts.get_templates(type)
+
+def template_add(name, type, user=None):
+	logger.log("template_add(%s,%s)" % (name, type), user=user.name)
+	_admin_access(user)
+	hosts.add_template(name, type)
+	return True
+
+def template_remove(name, user=None):
+	logger.log("template_remove(%s)" % name, user=user.name)
+	_admin_access(user)
+	hosts.remove_template(name)
+	return True
