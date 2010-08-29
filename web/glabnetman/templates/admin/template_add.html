@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>Add new template</h1>
+<form action="{%url template.add%}" method="POST">
+	Name: <input name="name"/><br/>
+	Type: <select name="type">
+	<option value="openvz">OpenVZ</option>
+	<option value="kvm">KVM</option>
+	</select><br/>
+	<input type="submit"/>
+</form>
+{% endblock %}

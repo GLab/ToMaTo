@@ -25,8 +25,8 @@ def _topology_info(top, auth):
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
-        "date_created": top.date_created, "date_modified": top.date_modified
-        }
+		"date_created": top.date_created, "date_modified": top.date_modified
+	}
 
 def _device_info(dev, auth):
 	state = str(dev.state)
@@ -58,6 +58,9 @@ def _connector_info(con):
 def _host_info(host):
 	return {"name": host.name, "group": host.group.name, 
 		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count()}
+
+def _template_info(template):
+	return {"name": template.name, "type": template.type, "default": template.default}
 
 def _top_access(top, user=None):
 	if top.owner == user.name:
@@ -305,7 +308,7 @@ def template_list(type, user=None):
 	logger.log("template_list(%s)" % type, user=user.name)
 	if type=="*":
 		type = None
-	return hosts.get_templates(type)
+	return [_template_info(t) for t in hosts.get_templates(type)]
 
 def template_add(name, type, user=None):
 	logger.log("template_add(%s,%s)" % (name, type), user=user.name)
@@ -317,4 +320,10 @@ def template_remove(name, user=None):
 	logger.log("template_remove(%s)" % name, user=user.name)
 	_admin_access(user)
 	hosts.remove_template(name)
+	return True
+
+def template_set_default(type, name, user=None):
+	logger.log("template_set_default(%s,%s)" % (type,name), user=user.name)
+	_admin_access(user)
+	hosts.set_default_template(type, name)
 	return True

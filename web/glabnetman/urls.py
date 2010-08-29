@@ -39,4 +39,8 @@ urlpatterns = patterns('',
 	(r'^host/$', 'glabnetman.host.index'),
 	(r'^host/add$', 'glabnetman.host.add'),
 	(r'^host/remove/(?P<hostname>.*)$', 'glabnetman.host.remove'),
+	(r'^template/$', 'glabnetman.template.index'),
+	(r'^template/add$', 'glabnetman.template.add'),
+	(r'^template/remove/(?P<name>.*)$', 'glabnetman.template.remove'),
+	(r'^template/set_default/(?P<type>.*)/(?P<name>.*)$', 'glabnetman.template.set_default'),
 )
