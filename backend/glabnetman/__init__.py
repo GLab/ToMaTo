@@ -3,8 +3,13 @@
 import os
 os.environ['DJANGO_SETTINGS_MODULE']="glabnetman.config"
 
-from django.core.management import call_command
-call_command('syncdb')
+def db_migrate():
+	from django.core.management import call_command
+	call_command('syncdb')
+        from south.management.commands import migrate
+        cmd = migrate.Command()
+        cmd.handle(app="glabnetman")
+db_migrate()
 
 import config, log, generic, topology, hosts, fault, tasks
 import tinc, internet, kvm, openvz, dhcp

@@ -67,4 +67,4 @@ DATABASE_NAME = get("local", "database_name", 'db.sqlite')
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 
-INSTALLED_APPS = ('glabnetman')
+INSTALLED_APPS = ('glabnetman','south')
