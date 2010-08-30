@@ -1,5 +1,6 @@
 package buildui.devices;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -34,11 +35,12 @@ public class ConfiguredInterfacePropertiesArea extends PropertiesArea {
 
   public ConfiguredInterfacePropertiesArea () {
     super();
-    addProperty("name", "name:", "", true, false);
-    addProperty("usedhcp", "use dhcp:", "false", true, false);
-    addProperty("ip", "ip:", "", false, false);
-    addProperty("netmask", "netmask:", "", false, false);
+    addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
+    addSelectProperty("usedhcp", "use dhcp:", new String[]{"true", "false"}, "false");
+    addTextProperty("ip", "ip:", MagicTextField.ip4_pattern, null);
+    addTextProperty("netmask", "netmask:", MagicTextField.ip4_pattern, null);
   }
+
 };
 
 /* lanlink

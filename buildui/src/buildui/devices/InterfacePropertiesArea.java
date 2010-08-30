@@ -1,5 +1,6 @@
 package buildui.devices;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -34,7 +35,7 @@ public class InterfacePropertiesArea extends PropertiesArea {
 
   public InterfacePropertiesArea () {
     super();
-    addProperty("name", "name:", "", true, false);
+    addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
   }
 };
 

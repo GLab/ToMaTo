@@ -1,5 +1,6 @@
 package buildui.connectors;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -34,8 +35,8 @@ public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
 
   public EmulatedConnectionPropertiesArea () {
     super();
-    addProperty("bandwidth", "bandwidth(Kb/s):", "10000", false, false);
-    addProperty("delay", "latency(ms):", "0", false, false);
-    addProperty("lossratio", "loss rate(0.0-1.0):", "0.0", false, false);
+    addTextProperty("bandwidth", "bandwidth(Kb/s):", MagicTextField.numeric_pattern, "10000");
+    addTextProperty("delay", "latency(ms):", MagicTextField.numeric_pattern, "0");
+    addTextProperty("lossratio", "loss rate(0.0-1.0):", MagicTextField.fp_numeric_pattern, "0.0");
   }
 };

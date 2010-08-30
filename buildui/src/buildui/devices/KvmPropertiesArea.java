@@ -1,5 +1,6 @@
 package buildui.devices;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -15,8 +16,8 @@ public class KvmPropertiesArea extends PropertiesArea {
 
   public KvmPropertiesArea () {
     super();
-    addProperty("name", "name:", "", true, false);
-    addProperty("hostgroup", "hostgroup:", "", true, false);
-    addProperty("template", "template:", "", true, true);
+    addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
+    addSelectProperty("hostgroup", "hostgroup:", new String[]{"<auto>", "ukl", "uwue"}, "<auto>");
+    addSelectProperty("template", "template:", new String[]{"<auto>", "debian"}, "<auto>");
   }
 };

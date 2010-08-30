@@ -1,5 +1,6 @@
 package buildui.connectors;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -34,6 +35,6 @@ public class InternetPropertiesArea extends PropertiesArea {
 
   public InternetPropertiesArea () {
     super();
-    addProperty("name", "name:", "", true, false);
+    addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
   }
 };

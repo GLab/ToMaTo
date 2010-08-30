@@ -79,12 +79,9 @@ public abstract class NetElement {
 			// note that the name _can_ be blank.
 			return this.name;
 		}
-		Object foo = properties.get(name);
-		if (foo == null || 0 == ((String) foo).compareTo("")) {
-			return def;
-		} else {
-			return (String) foo;
-		}
+		String foo = properties.get(name);
+		if (foo == null || foo.equals("") || foo.equals("<auto>")) return def;
+		else return foo;
 	}
 
 	public synchronized void setProperty(String name, String value) {

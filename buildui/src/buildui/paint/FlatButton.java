@@ -87,8 +87,8 @@ public class FlatButton extends Canvas {
     int begin = size.width / 2 - stringWidth / 2 - 2;
 
     if (isEnabled()) {
-      if (mouseIsOver) g.setColor(Netbuild.glab_red_light);
-      else g.setColor(Netbuild.glab_red);
+      if (mouseIsOver) g.setColor(Netbuild.glab_red);
+      else g.setColor(Netbuild.glab_red_light);
       g.fillRect(0, 0, size.width, size.height);
       g.setColor(Color.black);
     } else g.setColor(Color.darkGray);

@@ -22,99 +22,104 @@ package buildui.paint;
 import buildui.Netbuild;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.regex.Pattern;
 
-public class MagicTextField implements TextListener, FocusListener {
+public class MagicTextField implements EditElement, TextListener, FocusListener {
 
-  public TextField tf;
+  public TextField textField;
   private boolean wasAuto;
-  private boolean alphaAllowed;
-  private boolean specialAllowed; // '+' and '_'
-  private boolean numAllowed;
+  private String pattern;
   private static Color darkGreen = new Color(0.0f, 0.33f, 0.0f);
+  private PropertiesArea parent ;
+
+  public static final String identifier_pattern = "(?:[0-9a-zA-Z_-]*)" ;
+  public static final String numeric_pattern = "(?:[0-9]|[1-9][0-9]*)" ;
+  public static final String fp_numeric_pattern = numeric_pattern+"\\."+numeric_pattern ;
+  public static final String ip4_pattern = "(?:(?:(?:25[0-6]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}(?:25[0-6]|2[0-4][0-9]|[01]?[0-9]?[0-9]))" ;
 
   public void focusGained (FocusEvent f) {
-    tf.selectAll();
+    textField.selectAll();
   }
 
   public void focusLost (FocusEvent f) {
   }
 
-  public MagicTextField (boolean nAlphaAllowed, boolean nNumAllowed, boolean nSpecialAllowed) {
-    tf = new TextField();
-    tf.addTextListener(this);
-    tf.addFocusListener(this);
-    wasAuto = false;
+  public MagicTextField(final PropertiesArea parent, String name, String pattern, final String def) {
+    this.parent = parent;
 
-    alphaAllowed = nAlphaAllowed;
-    numAllowed = nNumAllowed;
-    specialAllowed = nSpecialAllowed;
+    textField = new TextField();
+    textField.addTextListener(this);
+    textField.addFocusListener(this);
+    wasAuto = false;
+    this.pattern = pattern;
+
+    Label label = new Label(name);
+
+    label.setForeground(Netbuild.glab_red);
+    textField.setBackground(Color.white);
+
+    parent.addComponent(label);
+    parent.addComponent(textField);
+
+    if (name.compareTo("name:") != 0 && def != null ) {
+      FlatButton fb = new FlatButton("default") {
+        public Dimension getPreferredSize () {
+          return new Dimension(72, 18);
+        }
+        protected void clicked () {
+          boolean wasDis = !textField.isEditable();
+          if (wasDis) textField.setEditable(true);
+          textField.setText(def);
+          parent.upload();
+          if (wasDis) textField.setEditable(false);
+        }
+      };
+      Panel p = new Panel();
+      p.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+      p.add(fb);
+      parent.addComponent(p);
+      fb.setVisible(true);
+    }
+
+    textField.setVisible(true);
+    label.setVisible(true);
   }
 
-  public void setText (String t) {
+  public void setValue (String t) {
     wasAuto =
      (0 == t.compareTo("<auto>")) || (0 == t.compareTo("<multiple>"));
-    tf.setText(t);
-  }
-
-  private boolean isAlphic (char c) {
-    return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".indexOf(c, 0) != -1;
-  }
-
-  private boolean isNumeric (char c) {
-    return "0123456789".indexOf(c, 0) != -1;
+    textField.setText(t);
   }
 
   public void textValueChanged (TextEvent e) {
-    String newText = tf.getText();
+    String newText = textField.getText();
 
     if (0 == newText.compareTo("<auto>"))
       //wasAuto = true;
-      tf.setForeground(Color.blue);
+      textField.setForeground(Color.blue);
     else if (0 == newText.compareTo("<multiple>"))
-      tf.setForeground(darkGreen);
+      textField.setForeground(darkGreen);
     else {
-      tf.setForeground(Color.black);
-      if (wasAuto)
-        wasAuto = false;
-
-      int caret = tf.getCaretPosition();
-
-
-      int i = 0;
-      // in perl, this would be one line.
-      String rep = newText;
-      while (i != rep.length()) {
-        char c = rep.charAt(i);
-        // valid if:
-        // alphaAllowed and its alphanumeric (or '-')
-        // (but not numeric or '-' if it is the first char)
-        // numAllowed and its numeric or "."
-		/*		if (alphaAllowed && c == ' ') {
-        rep = rep.replace(' ', '-');
-        i++;
-        } else */
-        if ((alphaAllowed && (isAlphic(c) || (i != 0 && (isNumeric(c)/* || c == '-'*/)))) || (specialAllowed && i != 0 && (c
-         == '_' || c == '-' || c == '+' || c == '.')) || (numAllowed && (isNumeric(c) || c == '.')))
-          // legit.
-          i++;
-        else {
-          // utter crap.
-          caret--;
-          if (i == rep.length() - 1)
-            rep = rep.substring(0, i);
-          else
-            rep = rep.substring(0, i) + rep.substring(i + 1, rep.length());
-        }
-      }
-
-      if (rep.compareTo(newText) != 0)
-        tf.setText(rep);
-
-      try {
-        tf.setCaretPosition(caret);
-      } catch (Exception ex) {
-      }
+      textField.setForeground(Color.black);
+      if (wasAuto) wasAuto = false;
+      if (!Pattern.matches(pattern, newText)) textField.setForeground(Color.RED);
     }
+    parent.valueChanged(this, newText);
   }
-};
+
+  public String getValue () {
+    return textField.getText();
+  }
+
+  public void setEnabled (boolean enabled) {
+    textField.setEditable(enabled);
+    if (enabled) textField.setBackground(Color.white);
+    else textField.setBackground(Color.LIGHT_GRAY);
+  }
+
+  public boolean isEnabled () {
+    return textField.isEditable();
+  }
+
+}
     

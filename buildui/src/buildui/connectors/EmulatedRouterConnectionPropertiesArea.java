@@ -1,5 +1,6 @@
 package buildui.connectors;
 
+import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
 
@@ -34,7 +35,7 @@ public class EmulatedRouterConnectionPropertiesArea extends EmulatedConnectionPr
 
   public EmulatedRouterConnectionPropertiesArea () {
     super();
-    addProperty("gateway_ip", "gateway", "", false, false);
-    addProperty("gateway_netmask", "netmask", "", false, false);
+    addTextProperty("gateway_ip", "gateway", MagicTextField.ip4_pattern, null);
+    addTextProperty("gateway_netmask", "netmask", MagicTextField.ip4_pattern, null);
   }
 };

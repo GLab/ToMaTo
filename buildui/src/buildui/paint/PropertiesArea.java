@@ -25,13 +25,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-public abstract class PropertiesArea extends Panel implements TextListener, ActionListener {
+public abstract class PropertiesArea extends Panel implements ActionListener {
 
   private Panel child;
-  private GridBagLayout layout;
   private GridBagLayout childLayout;
   private GridBagConstraints gbc;
-  private MagicTextField nameEdit;
+  private EditElement nameEdit;
   private boolean started;
   private boolean childVisible;
   private Expando expando;
@@ -67,78 +66,46 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
         setVisibleAll(0 == e.getActionCommand().compareTo("down"));
   }
 
-  private MagicTextField addField (String name, boolean alphic, boolean special, final String def) {
-    final MagicTextField tf = new MagicTextField(alphic, !alphic, special);
-    Label l = new Label(name);
-
-    l.setForeground(Netbuild.glab_red);
-    tf.tf.setBackground(Color.white);
-
-    childLayout.setConstraints(l, gbc);
-    child.add(l);
-    childLayout.setConstraints(tf.tf, gbc);
-    child.add(tf.tf);
-    tf.tf.addTextListener(this);
-
-    if (name.compareTo("name:") != 0 && def != null ) {
-      final PropertiesArea propertiesArea = this;
-      FlatButton fb = new FlatButton("default") {
-
-        public Dimension getPreferredSize () {
-          return new Dimension(72, 18);
-        }
-
-        protected void clicked () {
-          boolean wasDis = !tf.tf.isEditable();
-          if (wasDis) tf.tf.setEditable(true);
-          tf.tf.setText(def);
-          propertiesArea.upload();
-          if (wasDis) tf.tf.setEditable(false);
-        }
-      };
-
-      Panel p = new Panel();
-      p.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-      p.add(fb);
-
-      childLayout.setConstraints(p, gbc);
-      child.add(p);
-
-      fb.setVisible(true);
-    }
-
-    tf.tf.setVisible(true);
-    l.setVisible(true);
-
-    return tf;
+  public void addComponent (Component c) {
+    childLayout.setConstraints(c, gbc);
+    child.add(c);
   }
+
   private Vector<Property> propertyList;
 
   class Property {
-
     public String name;
     public String def;
-    public MagicTextField textField;
+    public EditElement editElement;
     public boolean alphic;
   }
 
-  public void textValueChanged (TextEvent e) {
+  public void valueChanged (EditElement el, String value) {
     upload();
-    if (nameEdit != null && e.getSource() != null
-     && e.getSource() == nameEdit.tf) { // hack.
+    if (nameEdit != null && el != null && el == nameEdit) { // hack.
       Component parent = getParent();
-      if (parent != null)
-        parent.repaint();
+      if (parent != null) parent.repaint();
     }
   }
 
-  public void addProperty (String name, String desc, String def, boolean alphic, boolean special) {
+  public void addTextProperty (String name, String desc, String pattern, String def) {
     Property p = new Property();
     p.name = name;
     p.def = def;
-    p.alphic = alphic;
-    p.textField = addField(desc, alphic, special, def);
-    if (0 == name.compareTo("name")) nameEdit = p.textField;
+    p.editElement = new MagicTextField(this, desc, pattern, def);
+    if (0 == name.compareTo("name")) nameEdit = (MagicTextField)p.editElement;
+    propertyList.addElement(p);
+  }
+
+  public void addSelectProperty (String name, String desc, String[] options, String def) {
+    addSelectProperty(name, desc, Arrays.asList(options), def);
+  }
+
+  public void addSelectProperty (String name, String desc, Collection<String> options, String def) {
+    Property p = new Property();
+    p.name = name;
+    p.def = def;
+    p.editElement = new DropDownField(this, desc, options, def);
     propertyList.addElement(p);
   }
 
@@ -146,20 +113,12 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     super();
     child = new Panel();
 
-    //setVisible( false );
     setVisible(true);
     started = false;
-    //setBackground(Netbuild.glab_red_light);
-    //child.setBackground(Netbuild.glab_red_light);
-    //child.setBackground( Color.red );
-    //setBackground( Color.green );
     expando = new Expando(getName());
     expando.addActionListener(this);
     propertyList = new Vector<Property>();
     nameEdit = null;
-
-    //layout = new GridBagLayout();
-    //setLayout( layout );
 
     setLayout(null);
 
@@ -168,13 +127,8 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     gbc.weightx = 1.0;
     gbc.gridwidth = GridBagConstraints.REMAINDER;
 
-    //layout.setConstraints( expando, gbc );
-
-
     childLayout = new GridBagLayout();
     child.setLayout(childLayout);
-    //child.setVisible( true );
-    //layout.setConstraints( child, gbc );
     currentThingees = null;
 
     expando.setVisible(true);
@@ -191,20 +145,16 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     expando.setLocation(0, 0);
     Dimension d2 = child.getPreferredSize();
     child.setLocation(2, d.height + 2);
-    if (childVisible)
-      child.setSize(640 - 480 - 16 - 2, d2.height);
-    else
-      child.setSize(640 - 480 - 16 - 2, 0);
+    if (childVisible) child.setSize(640 - 480 - 16 - 2, d2.height);
+    else child.setSize(640 - 480 - 16 - 2, 0);
     setSize(640 - 480 - 16, d.height + d2.height + 2);
   }
 
   public Dimension getPreferredSize () {
     Dimension d = expando.getPreferredSize();
     Dimension d2 = child.getPreferredSize();
-    if (childVisible)
-      return new Dimension(640 - 480 - 16, d.height + d2.height + 2);
-    else
-      return new Dimension(640 - 480 - 16, d.height);
+    if (childVisible) return new Dimension(640 - 480 - 16, d.height + d2.height + 2);
+    else return new Dimension(640 - 480 - 16, d.height);
   }
 
   public abstract boolean iCare (NetElement t);
@@ -217,8 +167,6 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
     int thingsICareAbout = 0;
 
-    MagicTextField ipEdit = null;
-
     boolean first = true;
     for (NetElement el: NetElement.selectedElements()) {
       if (iCare(el)) {
@@ -226,15 +174,10 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
         elements.addElement(el);
 
         for (Property p: propertyList) {
-          if (p.name.compareTo("ip") == 0)
-            ipEdit = p.textField;
-
           String value = el.getProperty(p.name, p.def);
-
-          if (first)
-            p.textField.setText(value);
-          else if (0 != p.textField.tf.getText().compareTo(value))
-            p.textField.setText("<multiple>");
+          if (value == null) value = "";
+          if (first) p.editElement.setValue(value);
+          else if (0 != p.editElement.getValue().compareTo(value)) p.editElement.setValue("<multiple>");
         }
         first = false;
       }
@@ -242,36 +185,17 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
 
     if (thingsICareAbout > 1) {
-      if (nameEdit != null) {
-        nameEdit.tf.setEditable(false);
-        nameEdit.tf.setBackground(Color.LIGHT_GRAY);
-      }
-
-      if (ipEdit != null) {
-        ipEdit.tf.setEditable(false);
-        ipEdit.tf.setBackground(Color.LIGHT_GRAY);
-      }
-    } else {
-      if (nameEdit != null)
-        if (thingsICareAbout == 1 && (elements.elementAt(0)).nameFixed()) {
-          nameEdit.tf.setEditable(false);
-          nameEdit.tf.setBackground(Color.LIGHT_GRAY);
-        } else {
-          nameEdit.tf.setEditable(true);
-          nameEdit.tf.setBackground(Color.white);
-        }
-
-      if (ipEdit != null) {
-        ipEdit.tf.setEditable(true);
-        ipEdit.tf.setBackground(Color.white);
-      }
+      if (nameEdit != null) nameEdit.setEnabled(false);
+    } else if (nameEdit != null) {
+      if (thingsICareAbout == 1 && (elements.elementAt(0)).nameFixed()) nameEdit.setEnabled(false);
+      else nameEdit.setEnabled(true);
     }
 
     currentThingees = elements;
     //	System.out.println( "PropertiesArea.download(): Ending");
   }
 
-  private synchronized void upload () {
+  public synchronized void upload () {
     //	System.out.println("Upload begins..");
     if (currentThingees == null) return;
 
@@ -287,8 +211,8 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
       while (e.hasMoreElements()) {
         Property p = (Property)e.nextElement();
-        if (p.textField.tf.isEditable()) {
-          String s = p.textField.tf.getText();
+        if (p.editElement.isEnabled()) {
+          String s = p.editElement.getValue();
           if (0 != s.compareTo("<multiple>")) {
             if (p.name.compareTo("name") == 0 && t.getName().compareTo(s) != 0)
               needRedraw = true;
@@ -315,10 +239,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
   public void start () {
     started = true;
-    //setVisible( true );
     download();
-    //child.setVisible( true );
-    //myLayout();//doLayout();
     validate();
 
     invalidate();
@@ -327,7 +248,6 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
 
   public void stop () {
     started = false;
-    //setVisible( false );
     upload();
 
   }
