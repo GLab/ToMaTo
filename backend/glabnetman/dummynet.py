@@ -36,8 +36,6 @@ class EmulatedConnection(generic.Connection):
 			dom.setAttribute("bandwidth", str(self.bandwidth))
 		if self.lossratio:
 			dom.setAttribute("lossratio", str(self.lossratio))
-		if self.is_tinc():
-			self.tincconnection.encode_xml(dom, doc, internal)
 				
 	def decode_xml(self, dom):
 		generic.Connection.decode_xml(self, dom)

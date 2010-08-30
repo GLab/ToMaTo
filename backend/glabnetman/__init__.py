@@ -116,7 +116,10 @@ def host_add(host_name, group_name, public_bridge, user=None):
 def host_remove(host_name, user=None):
 	logger.log("host_remove(%s)" % host_name, user=user.name)
 	_admin_access(user)
-	hosts.get_host(host_name).delete()
+	host = hosts.get_host(host_name)
+	if host.group.host_set.count()==1:
+		host.group.delete()
+	host.delete()
 	return True
 
 def host_groups(user=None):

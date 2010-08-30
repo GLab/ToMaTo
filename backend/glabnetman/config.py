@@ -58,3 +58,13 @@ TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('glabnetman','south')
+
+
+if os.environ['GLABNETMAN_TESTING']:
+    DATABASE_ENGINE = "sqlite3"
+    DATABASE_NAME = "sqlite.db.testing"
+    import os
+    if os.path.exists(DATABASE_NAME):
+        os.remove(DATABASE_NAME)
+    remote_dry_run = True
+    auth_dry_run = True 
