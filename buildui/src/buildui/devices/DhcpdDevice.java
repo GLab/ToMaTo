@@ -42,7 +42,7 @@ public class DhcpdDevice extends Device {
 
   public static void init ( Applet parent ) {
     num = 1 ;
-    propertiesArea = new OpenVzPropertiesArea();
+    propertiesArea = new DhcpdPropertiesArea();
   }
 
   public PropertiesArea getPropertiesArea() {
