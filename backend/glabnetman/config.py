@@ -38,16 +38,6 @@ The local directory to use for preparing control scripts before they are uploade
 
 log_dir = get("local","log_dir","logs")
 
-openvz_default_template = get("openvz","default_template","debian-6.0-standard_6.0-2_i386")
-"""
-The default openvz template to use when no template is specified.
-"""
-
-kvm_default_template = get("kvm","default_template","debian_lenny_i386_small.qcow2")
-"""
-The default kvm template to use when no template is specified.
-"""
-
 remote_control_dir = get("remote","control_dir","/root/glabnetman")
 """
 The remote directory to use for control scripts

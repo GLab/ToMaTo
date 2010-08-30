@@ -133,6 +133,9 @@ def add_template(name, type):
 def remove_template(name):
 	Template.objects.filter(name=name).delete()
 	
+def get_default_template(type):
+	return Template.objects.filter(type=type, default=True).name
+	
 def set_default_template(type, name):
 	Template.objects.filter(type=type).update(default=False)
 	Template.objects.filter(type=type, name=name).update(default=True)

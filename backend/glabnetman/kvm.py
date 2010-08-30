@@ -13,7 +13,7 @@ class KVMDevice(generic.Device):
 		self.topology = topology
 		self.decode_xml(dom)
 		if not self.template:
-			self.template = config.kvm_default_template
+			self.template = hosts.get_default_template("kvm")
 		self.host = hosts.get_best_host(self.hostgroup)
 		self.kvm_id = self.host.next_free_vm_id()
 		self.vnc_port = self.host.next_free_port()
