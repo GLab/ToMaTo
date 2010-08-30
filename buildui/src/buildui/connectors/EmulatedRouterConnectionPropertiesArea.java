@@ -35,7 +35,6 @@ public class EmulatedRouterConnectionPropertiesArea extends EmulatedConnectionPr
 
   public EmulatedRouterConnectionPropertiesArea () {
     super();
-    addTextProperty("gateway_ip", "gateway", MagicTextField.ip4_pattern, null);
-    addTextProperty("gateway_netmask", "netmask", MagicTextField.ip4_pattern, null);
+    addTextProperty("gateway", "gateway:", MagicTextField.ip4_prefix_pattern, null);
   }
 };

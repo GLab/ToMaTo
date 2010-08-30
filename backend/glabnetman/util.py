@@ -87,3 +87,16 @@ def get_attr(obj, name, default=None, res_type=None):
 		return res_type(val)
 	else:
 		return val
+
+def calculate_subnet(ip_with_prefix):
+	(ip, prefix) = ip_with_prefix.split("/")
+	ip_num = 0
+	for p in ip.split("."):
+		ip_num = ip_num * 256 + int(p)
+	mask = (1<<32) - (1<<(32-int(prefix)))
+	ip_num = ip_num & mask
+	ip = []
+	while len(ip) < 4:
+		ip.insert(0, str(ip_num % 256))
+		ip_num = ip_num // 256
+	return ".".join(ip)+"/"+prefix

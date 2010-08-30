@@ -25,8 +25,7 @@ class State():
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
-	TYPE_DHCPD="dhcpd"
-	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM'), (TYPE_DHCPD, 'DHCP server') )
+	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )
 	name = models.CharField(max_length=20)
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
@@ -46,8 +45,6 @@ class Device(models.Model):
 		return self.interface_set.all()
 
 	def upcast(self):
-		if self.is_dhcpd():
-			return self.dhcpddevice.upcast()
 		if self.is_kvm():
 			return self.kvmdevice.upcast()
 		if self.is_openvz():
@@ -59,9 +56,6 @@ class Device(models.Model):
 
 	def is_kvm(self):
 		return self.type == Device.TYPE_KVM
-
-	def is_dhcpd(self):
-		return self.type == Device.TYPE_DHCPD
 
 	def download_supported(self):
 		return False

@@ -59,14 +59,12 @@ public class EmulatedRouterConnection extends EmulatedConnection {
   @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
-    xml.setAttribute("gateway_ip", getProperty("gateway_ip", ""));
-    xml.setAttribute("gateway_netmask", getProperty("gateway_netmask", ""));
+    xml.setAttribute("gateway", getProperty("gateway", ""));
   }
 
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
-    setProperty("gateway_ip", xml.getAttribute("gateway_ip"));
-    setProperty("gateway_netmask", xml.getAttribute("gateway_netmask"));
+    setProperty("gateway", xml.getAttribute("gateway"));
   }
   
 }

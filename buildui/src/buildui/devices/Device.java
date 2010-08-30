@@ -45,7 +45,6 @@ public abstract class Device extends IconElement {
     String type = x_dev.getAttribute("type");
     if ( type.equals("openvz") ) return OpenVzDevice.readFrom(x_dev);
     if ( type.equals("kvm") ) return KvmDevice.readFrom(x_dev);
-    if ( type.equals("dhcpd") ) return DhcpdDevice.readFrom(x_dev);
     return null;
   }
 

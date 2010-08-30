@@ -70,9 +70,9 @@ class Topology(models.Model):
 		self.device_set.add(dev)
 
 	def devices_add_dom(self, dev):
-		import openvz, kvm, dhcp
+		import openvz, kvm
 		try:
-			Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice, "dhcpd": dhcp.DhcpdDevice }[dev.getAttribute("type")]
+			Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice }[dev.getAttribute("type")]
 		except KeyError:
 			raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
 		d = Type()

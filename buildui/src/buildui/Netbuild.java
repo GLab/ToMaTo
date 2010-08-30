@@ -40,7 +40,6 @@ import buildui.connectors.RouterConnector;
 import buildui.connectors.SwitchConnector;
 import buildui.devices.ConfiguredInterface;
 import buildui.devices.Device;
-import buildui.devices.DhcpdDevice;
 import buildui.devices.Interface;
 import buildui.devices.KvmDevice;
 import buildui.devices.OpenVzDevice;
@@ -545,7 +544,6 @@ public class Netbuild extends java.applet.Applet
       Interface.init(me);
       ConfiguredInterface.init(me);
       Device.init(me);
-      DhcpdDevice.init(me);
       KvmDevice.init(me);
       OpenVzDevice.init(me);
 

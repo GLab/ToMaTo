@@ -12,7 +12,7 @@ def db_migrate():
 db_migrate()
 
 import config, log, generic, topology, hosts, fault, tasks
-import tinc, internet, kvm, openvz, dhcp
+import tinc, internet, kvm, openvz
 
 logger = log.Logger(config.log_dir + "/api.log")
 

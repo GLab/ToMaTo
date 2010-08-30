@@ -1,6 +1,5 @@
 # Explicitly import all django models
 
-from dhcp import * #@UnusedWildImport
 from dummynet import * #@UnusedWildImport
 from generic import * #@UnusedWildImport
 from hosts import * #@UnusedWildImport

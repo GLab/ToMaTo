@@ -82,7 +82,6 @@ def _check_real_connectors(top,res):
 
 def _check_connectors_ip_structure(top,res):
 	for connector in top.connectors_all():
-		dhcp_server=set()
 		ip_addresses=set()
 		dhcp_clients=set()
 		for connection in connector.connections_all():
@@ -94,14 +93,8 @@ def _check_connectors_ip_structure(top,res):
 						ip_addresses.add(ip)
 				if connection.interface.configuredinterface.use_dhcp:
 					dhcp_clients.add(connection.interface.device.name)
-			if connection.interface.device.type == "dhcpd":
-				dhcp_server.add(connection.interface.device.name)
-		if len(dhcp_server)>1:
-			res.warnings.append("Multiple dhcp servers on connector %s: %s" % ( connector.name, dhcp_server ) )
-		if len(dhcp_clients)>0 and len(dhcp_server)==0 and not connector.type=="real":
+		if len(dhcp_clients)>0 and not connector.type=="real":
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, dhcp_clients ) )
-		if len(dhcp_clients)==0 and len(dhcp_server)>0:
-			res.hints.append("Dhcp server configured on %s but no clients using it: %s" % ( connector.name, dhcp_server ) )
 				
 def _check_connection_performance(top,res):
 	for connector in top.connectors_all():

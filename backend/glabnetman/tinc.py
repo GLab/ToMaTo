@@ -46,7 +46,8 @@ class TincConnector(generic.Connector):
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
 				table_out = 1000 + 2 * con.id + 1 
-				host.execute ( "ifconfig %s %s netmask %s up" % (con.bridge_name(), con.upcast().gateway_ip, con.upcast().gateway_netmask), task )
+				host.execute ( "ip addr add %s dev %s" % (con.upcast().gateway, con.bridge_name()), task )
+				host.execute ( "ip link set up dev %s" % con.bridge_name(), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ), task )
 				host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ), task )
@@ -95,7 +96,8 @@ class TincConnector(generic.Connector):
 			self_host_fd.write("Port=%s\n" % tincport )
 			self_host_fd.write("Cipher=none\n" )
 			self_host_fd.write("Digest=none\n" )
-			#FIXME: write Subnet entry
+			if self.type == "router":
+				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet(con.upcast().gateway))
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
@@ -162,8 +164,7 @@ class TincConnector(generic.Connector):
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_port = models.IntegerField()
-	gateway_ip = models.CharField(max_length=15, null=True) 
-	gateway_netmask = models.CharField(max_length=15, null=True)
+	gateway = models.CharField(max_length=18, null=True) 
 	
 	def init(self, connector, dom):
 		self.connector = connector
@@ -178,17 +179,14 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def encode_xml(self, dom, doc, internal):
 		dummynet.EmulatedConnection.encode_xml(self, dom, doc, internal)
-		if self.gateway_ip:
-			dom.setAttribute("gateway_ip", self.gateway_ip)
-		if self.gateway_netmask:
-			dom.setAttribute("gateway_netmask", self.gateway_netmask)
+		if self.gateway:
+			dom.setAttribute("gateway", self.gateway)
 		if internal:
 			dom.setAttribute("tinc_port", self.tinc_port)
 		
 	def decode_xml(self, dom):
 		dummynet.EmulatedConnection.decode_xml(self, dom)
-		self.gateway_ip = util.get_attr(dom, "gateway_ip", default=None)
-		self.gateway_netmask = util.get_attr(dom, "gateway_netmask", default=None)
+		self.gateway = util.get_attr(dom, "gateway", default=None)
 		
 	def start_run(self, task):
 		dummynet.EmulatedConnection.start_run(self, task)
