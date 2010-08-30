@@ -30,7 +30,10 @@ def create(request):
 			return HttpResponseNotAuthorized("Authorization required!")
 		api = request.session.api
 		if not request.REQUEST.has_key("xml"):
-			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"]})
+			tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
+			tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+			host_groups=",".join(api.host_groups())
+			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups})
 		xml=request.REQUEST["xml"]
 		top_id=api.top_import(xml)
 		top=api.top_info(int(top_id))
@@ -98,7 +101,10 @@ def edit(request, top_id):
 		api = request.session.api
 		if not request.REQUEST.has_key("xml"):
 			xml=api.top_get(int(top_id))
-			return render_to_response("top/edit_ui.html", {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"]} )
+			tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
+			tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+			host_groups=",".join(api.host_groups())
+			return render_to_response("top/edit_ui.html", {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups} )
 		xml=request.REQUEST["xml"]
 		task_id=api.top_change(int(top_id), xml)
 		top=api.top_info(int(top_id))

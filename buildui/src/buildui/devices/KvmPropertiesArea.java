@@ -17,7 +17,7 @@ public class KvmPropertiesArea extends PropertiesArea {
   public KvmPropertiesArea () {
     super();
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
-    addSelectProperty("hostgroup", "hostgroup:", new String[]{"<auto>", "ukl", "uwue"}, "<auto>");
-    addSelectProperty("template", "template:", new String[]{"<auto>", "debian"}, "<auto>");
+    addSelectProperty("hostgroup", "hostgroup:", Device.hostGroups, "<auto>");
+    addSelectProperty("template", "template:", KvmDevice.templates, "<auto>");
   }
 };

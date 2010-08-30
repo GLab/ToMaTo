@@ -35,6 +35,8 @@ import buildui.connectors.Connection;
 import buildui.connectors.Connector;
 import buildui.devices.Device;
 import buildui.devices.Interface;
+import buildui.devices.KvmDevice;
+import buildui.devices.OpenVzDevice;
 import buildui.paint.Palette;
 import buildui.paint.NetElement;
 import java.io.BufferedReader;
@@ -652,6 +654,15 @@ public class Netbuild extends java.applet.Applet
   }
 
   public boolean download () {
+    Device.hostGroups.clear();
+    Device.hostGroups.add("<auto>");
+    Device.hostGroups.addAll(Arrays.asList(getParameter("host_groups").split(",")));
+    KvmDevice.templates.clear();
+    KvmDevice.templates.add("<auto>");
+    KvmDevice.templates.addAll(Arrays.asList(getParameter("tpl_kvm").split(",")));
+    OpenVzDevice.templates.clear();
+    OpenVzDevice.templates.add("<auto>");
+    OpenVzDevice.templates.addAll(Arrays.asList(getParameter("tpl_openvz").split(",")));
     try {
       String urlStr = getParameter("download_url") ;
       if (urlStr == null) return false;

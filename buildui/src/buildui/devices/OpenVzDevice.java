@@ -23,10 +23,13 @@ import buildui.connectors.Connection;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.w3c.dom.Element;
 
 public class OpenVzDevice extends Device {
 
+  public static Collection<String> templates = new ArrayList<String> () ;
   static int num = 1;
 
   public OpenVzDevice (String newName) {

@@ -22,11 +22,15 @@ package buildui.devices;
 
 import buildui.connectors.Connection;
 import buildui.paint.IconElement;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import org.w3c.dom.Element;
 
 public abstract class Device extends IconElement {
+
+  public static Collection<String> hostGroups = new ArrayList<String> () ;
 
   public static Device readFrom (Element x_dev) {
     String type = x_dev.getAttribute("type");
