@@ -57,6 +57,7 @@ public class WorkArea {
 
   private Set<Device> devices = new HashSet<Device>() ;
   private Set<Connector> connectors = new HashSet<Connector>() ;
+  public TopologyPropertiesArea topologyProperties = new TopologyPropertiesArea();
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {
     int xDiff = t.getX() - r.x;
@@ -148,6 +149,7 @@ public class WorkArea {
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
       Element root = doc.createElement("topology");
+      root.setAttribute("name", topologyProperties.getNameValue());
       doc.appendChild(root);
       Element x_devices = doc.createElement("devices");
       root.appendChild(x_devices);
@@ -199,6 +201,7 @@ public class WorkArea {
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.parse(in);
       Element topology = (Element)doc.getElementsByTagName("topology").item(0);
+      topologyProperties.setNameValue(topology.getAttribute("name"));
       NodeList devices = topology.getElementsByTagName("device");
       for (int i = 0; i < devices.getLength(); i++) {
         Element x_dev = (Element)devices.item(i);

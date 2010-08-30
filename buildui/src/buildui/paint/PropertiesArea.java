@@ -30,7 +30,7 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
   private Panel child;
   private GridBagLayout childLayout;
   private GridBagConstraints gbc;
-  private EditElement nameEdit;
+  public EditElement nameEdit;
   private boolean started;
   private boolean childVisible;
   private Expando expando;

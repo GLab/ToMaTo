@@ -159,6 +159,7 @@ public class Netbuild extends java.applet.Applet
     for (Component c: propertiesPanel.getComponents())
       if (c instanceof PropertiesArea) oldPanels.add((PropertiesArea)c);
     Set<PropertiesArea> newPanels = new HashSet<PropertiesArea>();
+    newPanels.add(workArea.topologyProperties);
     for (NetElement el: NetElement.selectedElements()) {
       if (el.propertyEditable) newPanels.add(el.getPropertiesArea());
     }
@@ -594,8 +595,8 @@ public class Netbuild extends java.applet.Applet
 
       add(propertiesPanel);
 
-      propertiesPanel.setLocation(propAreaX + 8, 0 + 8 + 24);
-      propertiesPanel.setSize(propAreaWidth - 16, appHeight - 16 - 32 - 22);
+      propertiesPanel.setLocation(propAreaX + 8, 0 + 8);
+      propertiesPanel.setSize(propAreaWidth - 16, appHeight - 16 - 32);
 
       exportButton.setVisible(true);
       exportButton.setEnabled(workArea.getElementCount() > 0);

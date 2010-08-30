@@ -9,7 +9,7 @@ package buildui.paint;
  *
  * @author lemming
  */
-interface EditElement {
+public interface EditElement {
 
   public void setValue (String value);
 
