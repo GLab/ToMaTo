@@ -9,7 +9,7 @@ class HostGroup(models.Model):
 	
 class Host(models.Model):
 	group = models.ForeignKey(HostGroup)
-	name = models.CharField(max_length=50)
+	name = models.CharField(max_length=50, primary_key=True)
 	public_bridge = models.CharField(max_length=10)
 
 	def check_save(self, task):
@@ -134,7 +134,11 @@ def remove_template(name):
 	Template.objects.filter(name=name).delete()
 	
 def get_default_template(type):
-	return Template.objects.filter(type=type, default=True)[0].name
+	list = Template.objects.filter(type=type, default=True)
+	if list.count() == 1:
+		return list[0].name
+	else:
+		return None
 	
 def set_default_template(type, name):
 	Template.objects.filter(type=type).update(default=False)
