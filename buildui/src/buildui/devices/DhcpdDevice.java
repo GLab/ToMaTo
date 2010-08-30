@@ -23,11 +23,12 @@ import buildui.connectors.Connection;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class DhcpdDevice extends Device {
 
-  static int num = 1;
+  static int num;
 
   public DhcpdDevice (String newName) {
     super(newName, "/icons/computer.png");
@@ -37,7 +38,12 @@ public class DhcpdDevice extends Device {
     return new DhcpdDevice("dhcpd"+(num++)) ;
   }
 
-  static PropertiesArea propertiesArea = new DhcpdPropertiesArea() ;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    num = 1 ;
+    propertiesArea = new OpenVzPropertiesArea();
+  }
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

@@ -23,11 +23,18 @@ import buildui.devices.Device;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class RouterConnector extends Connector {
 
-  static int num = 1;
+  static int num;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    num = 1;
+    propertiesArea = new RouterPropertiesArea();
+  }
 
   public RouterConnector (String newName) {
     super(newName, "/icons/router.png");
@@ -36,8 +43,6 @@ public class RouterConnector extends Connector {
   public NetElement createAnother () {
     return new RouterConnector("router"+(num++)) ;
   }
-
-  static PropertiesArea propertiesArea = new RouterPropertiesArea() ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

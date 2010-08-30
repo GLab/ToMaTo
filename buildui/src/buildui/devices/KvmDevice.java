@@ -23,14 +23,24 @@ import buildui.connectors.Connection;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import org.w3c.dom.Element;
 
 public class KvmDevice extends Device {
 
   public static Collection<String> templates = new ArrayList<String> () ;
-  static int num = 1;
+  static int num;
+
+  public static void init ( Applet parent ) {
+    num = 1 ;
+    propertiesArea = new KvmPropertiesArea();
+    templates.clear();
+    templates.add("<auto>");
+    templates.addAll(Arrays.asList(parent.getParameter("tpl_kvm").split(",")));
+  }
 
   public KvmDevice (String newName) {
     super(newName, "/icons/computer.png");
@@ -40,7 +50,7 @@ public class KvmDevice extends Device {
     return new KvmDevice("kvm"+(num++)) ;
   }
 
-  static PropertiesArea propertiesArea = new KvmPropertiesArea() ;
+  static PropertiesArea propertiesArea ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

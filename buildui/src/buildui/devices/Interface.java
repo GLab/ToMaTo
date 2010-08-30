@@ -24,6 +24,7 @@ import buildui.paint.PropertiesArea;
 import java.awt.*;
 
 import buildui.paint.NetElement;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class Interface extends NetElement {
@@ -101,7 +102,11 @@ public class Interface extends NetElement {
     return (dev == t | con == t);
   }
 
-  static PropertiesArea propertiesArea = new InterfacePropertiesArea () ;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    propertiesArea = new InterfacePropertiesArea();
+  }
 
   @Override
   public PropertiesArea getPropertiesArea () {

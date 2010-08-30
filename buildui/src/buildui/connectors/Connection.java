@@ -25,6 +25,7 @@ import java.awt.*;
 
 import buildui.paint.NetElement;
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class Connection extends NetElement {
@@ -94,7 +95,12 @@ public class Connection extends NetElement {
     return (con == t | dev == t);
   }
 
-  static PropertiesArea propertiesArea = new ConnectionPropertiesArea() ;
+  static PropertiesArea propertiesArea;
+
+  public static void init ( Applet parent ) {
+    propertiesArea = new ConnectionPropertiesArea();
+  }
+
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

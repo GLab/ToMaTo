@@ -23,11 +23,12 @@ import buildui.devices.Device;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class HubConnector extends Connector {
 
-  static int num = 1 ;
+  static int num ;
 
   public HubConnector (String newName) {
     super(newName, "/icons/hub.png");
@@ -37,7 +38,12 @@ public class HubConnector extends Connector {
     return new HubConnector("hub"+(num++)) ;
   }
 
-  static PropertiesArea propertiesArea = new HubPropertiesArea() ;
+  static PropertiesArea propertiesArea;
+
+  public static void init ( Applet parent ) {
+    num = 1;
+    propertiesArea = new HubPropertiesArea();
+  }
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

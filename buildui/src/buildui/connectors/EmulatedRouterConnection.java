@@ -25,6 +25,7 @@ import java.awt.*;
 
 import buildui.paint.NetElement;
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 
@@ -45,7 +46,11 @@ public class EmulatedRouterConnection extends EmulatedConnection {
 		super(newName, con, dev);
 	}
 
-  static PropertiesArea propertiesArea = new EmulatedRouterConnectionPropertiesArea() ;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    propertiesArea = new EmulatedRouterConnectionPropertiesArea();
+  }
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;

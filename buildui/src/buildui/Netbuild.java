@@ -33,7 +33,14 @@ import java.net.*;
 import buildui.connectors.InternetConnector;
 import buildui.connectors.Connection;
 import buildui.connectors.Connector;
+import buildui.connectors.EmulatedConnection;
+import buildui.connectors.EmulatedRouterConnection;
+import buildui.connectors.HubConnector;
+import buildui.connectors.RouterConnector;
+import buildui.connectors.SwitchConnector;
+import buildui.devices.ConfiguredInterface;
 import buildui.devices.Device;
+import buildui.devices.DhcpdDevice;
 import buildui.devices.Interface;
 import buildui.devices.KvmDevice;
 import buildui.devices.OpenVzDevice;
@@ -524,7 +531,23 @@ public class Netbuild extends java.applet.Applet
   public void init () {
     try {
       status = "Netbuild v1.03 started.";
+
       me = this;
+
+      Connection.init(me);
+      EmulatedConnection.init(me);
+      EmulatedRouterConnection.init(me);
+      HubConnector.init(me);
+      SwitchConnector.init(me);
+      RouterConnector.init(me);
+      InternetConnector.init(me);
+      Interface.init(me);
+      ConfiguredInterface.init(me);
+      Device.init(me);
+      DhcpdDevice.init(me);
+      KvmDevice.init(me);
+      OpenVzDevice.init(me);
+
       mouseDown = false;
 
       setLayout(null);
@@ -654,15 +677,6 @@ public class Netbuild extends java.applet.Applet
   }
 
   public boolean download () {
-    Device.hostGroups.clear();
-    Device.hostGroups.add("<auto>");
-    Device.hostGroups.addAll(Arrays.asList(getParameter("host_groups").split(",")));
-    KvmDevice.templates.clear();
-    KvmDevice.templates.add("<auto>");
-    KvmDevice.templates.addAll(Arrays.asList(getParameter("tpl_kvm").split(",")));
-    OpenVzDevice.templates.clear();
-    OpenVzDevice.templates.add("<auto>");
-    OpenVzDevice.templates.addAll(Arrays.asList(getParameter("tpl_openvz").split(",")));
     try {
       String urlStr = getParameter("download_url") ;
       if (urlStr == null) return false;

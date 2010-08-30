@@ -21,6 +21,7 @@ package buildui.devices;
 
 import buildui.connectors.Connection;
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class ConfiguredInterface extends Interface {
@@ -29,7 +30,11 @@ public class ConfiguredInterface extends Interface {
     super(newName, dev, con);
   }
 
-  static PropertiesArea propertiesArea = new ConfiguredInterfacePropertiesArea () ;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    propertiesArea = new ConfiguredInterfacePropertiesArea();
+  }
 
   @Override
   public PropertiesArea getPropertiesArea () {

@@ -23,14 +23,24 @@ import buildui.connectors.Connection;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import org.w3c.dom.Element;
 
 public class OpenVzDevice extends Device {
 
   public static Collection<String> templates = new ArrayList<String> () ;
-  static int num = 1;
+  static int num;
+
+  public static void init ( Applet parent ) {
+    num = 1 ;
+    propertiesArea = new OpenVzPropertiesArea();
+    templates.clear();
+    templates.add("<auto>");
+    templates.addAll(Arrays.asList(parent.getParameter("tpl_openvz").split(",")));
+  }
 
   public OpenVzDevice (String newName) {
     super(newName, "/icons/computer.png");

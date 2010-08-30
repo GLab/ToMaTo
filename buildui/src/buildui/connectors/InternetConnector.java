@@ -23,11 +23,18 @@ import buildui.devices.Device;
 import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
+import java.applet.Applet;
 import org.w3c.dom.Element;
 
 public class InternetConnector extends Connector {
 
-  static int num = 1;
+  static int num;
+  static PropertiesArea propertiesArea ;
+
+  public static void init ( Applet parent ) {
+    num = 1;
+    propertiesArea = new InternetPropertiesArea();
+  }
 
   public InternetConnector (String newName) {
     super(newName, "/icons/internet.png");
@@ -36,8 +43,6 @@ public class InternetConnector extends Connector {
   public NetElement createAnother () {
     return new InternetConnector("internet"+(num++)) ;
   }
-
-  static PropertiesArea propertiesArea = new InternetPropertiesArea() ;
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
