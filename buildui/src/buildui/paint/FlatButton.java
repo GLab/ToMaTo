@@ -31,7 +31,6 @@ public class FlatButton extends Canvas {
 
   public FlatButton (String t) {
     super();
-
     text = t;
     mouseIsOver = false;
     myActionListener = null;
@@ -43,34 +42,22 @@ public class FlatButton extends Canvas {
   }
 
   protected void clicked () {
-    ActionEvent ce = new ActionEvent(this,
-     ActionEvent.ACTION_PERFORMED,
-     "clicked");
-    if (myActionListener != null)
-      myActionListener.actionPerformed(ce);
+    ActionEvent ce = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "clicked");
+    if (myActionListener != null) myActionListener.actionPerformed(ce);
   }
 
   protected void processMouseEvent (MouseEvent e) {
-    if (e.getID() == MouseEvent.MOUSE_ENTERED)
-      mouseIsOver = true;
-    else if (e.getID() == MouseEvent.MOUSE_EXITED)
-      mouseIsOver = false;
-    else if (e.getID() == MouseEvent.MOUSE_PRESSED)
-      if (isEnabled())
-        clicked();
+    if (e.getID() == MouseEvent.MOUSE_ENTERED) mouseIsOver = true;
+    else if (e.getID() == MouseEvent.MOUSE_EXITED) mouseIsOver = false;
+    else if (e.getID() == MouseEvent.MOUSE_PRESSED) if (isEnabled()) clicked();
     repaint();
   }
 
   public Dimension getPreferredSize () {
     Graphics g = getGraphics();
-
     if (g != null) {
       FontMetrics fm = g.getFontMetrics();
-      if (fm != null) {
-        int stringWidth = fm.stringWidth(text);
-        //return new Dimension( stringWidth + 12, fm.getHeight() + 6 );
-        return new Dimension(640 - 480 - 16, fm.getHeight() + 8);
-      }
+      if (fm != null) return new Dimension(640 - 480 - 16, fm.getHeight() + 8);
       g.dispose();
     }
     return new Dimension(200, 40);
@@ -85,13 +72,6 @@ public class FlatButton extends Canvas {
   }
 
   public void setEnabled (boolean en) {
-    /*
-    if (en) {
-    setCursor( Cursor.getPredefinedCursor( Cursor.HAND_CURSOR ) );
-    } else {
-    setCursor( Cursor.getPredefinedCursor( Cursor.DEFAULT_CURSOR ) );
-    }
-     */
     super.setEnabled(en);
     repaint();
   }
@@ -101,32 +81,23 @@ public class FlatButton extends Canvas {
     super.paint(g);
 
     int stringWidth = fm.stringWidth(text);
-    int stringHeight = fm.getHeight();
 
     Dimension size = getSize();
 
     int begin = size.width / 2 - stringWidth / 2 - 2;
-    //int end   = size.width / 2 + stringWidth / 2;
 
     if (isEnabled()) {
-      if (mouseIsOver)
-        g.setColor(Netbuild.glab_red_light);
-      else
-        g.setColor(Netbuild.glab_red);
+      if (mouseIsOver) g.setColor(Netbuild.glab_red_light);
+      else g.setColor(Netbuild.glab_red);
       g.fillRect(0, 0, size.width, size.height);
       g.setColor(Color.black);
-    } else
-      g.setColor(Color.darkGray);
+    } else g.setColor(Color.darkGray);
 
     g.drawRect(0, 0, size.width - 1, size.height - 1);
 
-    if (isEnabled())
-      g.setColor(Color.white);
-    else
-      g.setColor(Color.lightGray);
+    if (isEnabled()) g.setColor(Color.white);
+    else g.setColor(Color.lightGray);
 
-
-    //    g.drawLine( begin, stringHeight + 2, end, stringHeight + 2 );
     g.drawString(text, begin, size.height / 2 + fm.getHeight() / 3);
   }
 };
