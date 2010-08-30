@@ -18,6 +18,7 @@ package buildui.connectors;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import buildui.Netbuild;
 import buildui.devices.Device;
 import buildui.devices.Interface;
 import java.awt.*;
@@ -29,17 +30,11 @@ import org.w3c.dom.Element;
 
 public class EmulatedConnection extends Connection {
 
-	private static Color paleBlue;
-
-	static {
-		paleBlue = new Color(0.8f, 0.8f, 1.0f);
-	}
-
 	public void drawIcon(Graphics g) {
 		g.setColor(Color.lightGray);
 		g.fillRect(-6, -6, 16, 16);
 
-		g.setColor(paleBlue);
+		g.setColor(Netbuild.glab_red_light);
 		g.fillRect(-8, -8, 16, 16);
 
 		g.setColor(Color.black);

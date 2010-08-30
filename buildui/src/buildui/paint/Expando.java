@@ -18,6 +18,7 @@ package buildui.paint;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import buildui.Netbuild;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -25,7 +26,6 @@ public class Expando extends Component {
 	private String text;
 	private boolean expanded;
 	private ActionListener actionListener;
-	private static Color darkBlue=new Color(0.3f, 0.3f, 0.5f);
 
 	public void setState(boolean state) {
 		expanded = state;
@@ -91,17 +91,19 @@ public class Expando extends Component {
 
 	public void paint(Graphics g) {
 		// super.paint();
-		g.setColor(Color.white);
+		g.setColor(Color.BLACK);
 		FontMetrics fm = getGraphics().getFontMetrics();
 		int stringHeight = fm.getHeight();
 		g.drawString(text, 20, 8 + (stringHeight / 2));
-		g.fillRect(2, 2, 13, 13);
 
-		g.setColor(Color.black);
+		g.setColor(Netbuild.glab_red);
+    g.fillRect(2, 2, 13, 13);
+
+		g.setColor(Color.WHITE);
 		g.drawRect(2, 2, 13, 13);
 		g.drawRect(3, 3, 11, 11);
 
-		g.setColor(darkBlue);
+		g.setColor(Color.WHITE);
 		g.fillRect(6, 8, 6, 2);
 
 		if (!expanded) {

@@ -32,7 +32,6 @@ public class Connection extends NetElement {
   private Connector con;
   private Device dev;
   private Interface iface;
-  private static Color paleGreen = new Color(0.8f, 1.0f, 0.8f);
 
   public Connector getConnector () {
     return con;
@@ -56,7 +55,7 @@ public class Connection extends NetElement {
     g.setColor(Color.lightGray);
     g.fillRect(-6, -6, 16, 16);
 
-    g.setColor(paleGreen);
+    g.setColor(Color.gray);
     g.fillRect(-8, -8, 16, 16);
 
     g.setColor(Color.black);

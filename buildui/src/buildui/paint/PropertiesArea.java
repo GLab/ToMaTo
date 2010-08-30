@@ -36,8 +36,6 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
   private boolean childVisible;
   private Expando expando;
   private Vector currentThingees;
-  private static Color darkBlue = new Color(0.3f, 0.3f, 0.5f);
-  private static Color disabledBox = new Color(0.7f, 0.7f, 0.85f);
 
   public boolean isStarted () {
     return started;
@@ -73,7 +71,7 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     final MagicTextField tf = new MagicTextField(alphic, !alphic, special);
     Label l = new Label(name);
 
-    l.setForeground(Color.white);
+    l.setForeground(Netbuild.glab_red);
     tf.tf.setBackground(Color.white);
 
     childLayout.setConstraints(l, gbc);
@@ -151,8 +149,8 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     //setVisible( false );
     setVisible(true);
     started = false;
-    setBackground(darkBlue);
-    child.setBackground(darkBlue);
+    //setBackground(Netbuild.glab_red_light);
+    //child.setBackground(Netbuild.glab_red_light);
     //child.setBackground( Color.red );
     //setBackground( Color.green );
     expando = new Expando(getName());
@@ -246,18 +244,18 @@ public abstract class PropertiesArea extends Panel implements TextListener, Acti
     if (thingsICareAbout > 1) {
       if (nameEdit != null) {
         nameEdit.tf.setEditable(false);
-        nameEdit.tf.setBackground(disabledBox);
+        nameEdit.tf.setBackground(Color.LIGHT_GRAY);
       }
 
       if (ipEdit != null) {
         ipEdit.tf.setEditable(false);
-        ipEdit.tf.setBackground(disabledBox);
+        ipEdit.tf.setBackground(Color.LIGHT_GRAY);
       }
     } else {
       if (nameEdit != null)
         if (thingsICareAbout == 1 && (elements.elementAt(0)).nameFixed()) {
           nameEdit.tf.setEditable(false);
-          nameEdit.tf.setBackground(disabledBox);
+          nameEdit.tf.setBackground(Color.LIGHT_GRAY);
         } else {
           nameEdit.tf.setEditable(true);
           nameEdit.tf.setBackground(Color.white);

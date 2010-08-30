@@ -19,6 +19,7 @@ package buildui.paint;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Netbuild;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -27,8 +28,6 @@ public class FlatButton extends Canvas {
   String text;
   boolean mouseIsOver;
   ActionListener myActionListener;
-  private static Color lightBlue = new Color(0.7f, 0.7f, 1.0f);
-  private static Color darkerBlue = new Color(0.4f, 0.4f, 0.6f);
 
   public FlatButton (String t) {
     super();
@@ -111,9 +110,9 @@ public class FlatButton extends Canvas {
 
     if (isEnabled()) {
       if (mouseIsOver)
-        g.setColor(lightBlue);
+        g.setColor(Netbuild.glab_red_light);
       else
-        g.setColor(darkerBlue);
+        g.setColor(Netbuild.glab_red);
       g.fillRect(0, 0, size.width, size.height);
       g.setColor(Color.black);
     } else

@@ -26,7 +26,6 @@ import java.awt.event.*;
 public class MagicTextField implements TextListener, FocusListener {
 
   public TextField tf;
-  private boolean zapped;
   private boolean wasAuto;
   private boolean alphaAllowed;
   private boolean specialAllowed; // '+' and '_'

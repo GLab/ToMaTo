@@ -63,9 +63,8 @@ public class Netbuild extends java.applet.Applet
   private int lastDragX, lastDragY;
   private int downX, downY;
   private static Netbuild me;
-  private static Color cornflowerBlue = new Color(0.95f, 0.95f, 1.0f);
-  private static Color lightBlue = new Color(0.9f, 0.9f, 1.0f);
-  private static Color darkBlue = new Color(0.3f, 0.3f, 0.5f);
+  public static Color glab_red = new Color(0.5664f, 0.10156f, 0.125f);
+  public static Color glab_red_light = new Color(0.5664f, 0.28516f, 0.3008f);
   private String status;
   private int appWidth, appHeight;
   private int propAreaWidth;
@@ -553,8 +552,8 @@ public class Netbuild extends java.applet.Applet
 
       propAreaX = paletteWidth + workAreaWidth;
 
-      setBackground(darkBlue);
-      propertiesPanel.setBackground(darkBlue);
+      setBackground(Color.WHITE);
+      propertiesPanel.setBackground(Color.WHITE);
       propertiesPanel.setVisible(true);
 
       if (!modify) {
@@ -589,26 +588,7 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void paint (Graphics g) {
-    g.setColor(lightBlue);
-    g.fillRect(0, 0, paletteWidth, appHeight);
-
-    g.setColor(cornflowerBlue);
-    g.fillRect(workAreaX, 0, workAreaX + workAreaWidth, appHeight);
-
-    g.setColor(darkBlue);
-    g.fillRect(propAreaX, 0,
-     propAreaX + propAreaWidth, appHeight);
-
-    g.setColor(Color.black);
-    g.drawRect(0, 0, appWidth, appHeight);
-    g.drawRect(0, 0, paletteWidth, appHeight);
-    g.drawRect(workAreaX, 0, workAreaWidth, appHeight);
-    g.drawRect(propAreaX, 0,
-     propAreaWidth, appHeight);
-
-
-    if (status.compareTo("") != 0 && status.charAt(0) == '!')
-      g.setColor(Color.red);
+    if (status.compareTo("") != 0 && status.charAt(0) == '!') g.setColor(Color.red);
 
     g.drawString(status, workAreaX + 4, appHeight - 6);
 
@@ -622,11 +602,18 @@ public class Netbuild extends java.applet.Applet
     g.fillRect(propAreaX + 8 - 3, appHeight - 24 - 2 - 7,
      propAreaWidth - 16 + 6, 1);
 
+    g.setColor(glab_red);
+    g.drawRect(0, 0, appWidth-1, appHeight-1);
+    g.drawRect(0, 0, paletteWidth, appHeight);
+    g.drawRect(workAreaX, 0, workAreaWidth, appHeight);
+    g.drawRect(propAreaX, 0, propAreaWidth, appHeight);
+
     g.translate(workAreaX, 0);
     g.setClip(1, 1, workAreaWidth - 1, appHeight - 1);
     workArea.paint(g);
     g.translate(-workAreaX, 0);
     g.setClip(0, 0, appWidth, appHeight);
+
     super.paint(g);
   }
 

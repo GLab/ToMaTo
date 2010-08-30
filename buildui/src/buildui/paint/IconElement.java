@@ -34,13 +34,6 @@ abstract public class IconElement extends NetElement implements ImageObserver {
 
   @Override
   public void drawIcon (Graphics g) {
-    /*g.setColor( Color.lightGray );
-    g.fillRect( -12, -12, 32, 32 );
-    g.setColor( Color.white );
-    g.fillRect( -16, -16, 32, 32 );
-    g.setColor( Color.black );
-    g.drawRect( -16, -16, 32, 32 );
-     */
     try {
       int height = icon.getHeight(this);
       int width = icon.getWidth(this);

@@ -18,6 +18,7 @@ package buildui.paint;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import buildui.Netbuild;
 import java.awt.*;
 import java.lang.Math;
 import java.util.*;
@@ -204,21 +205,8 @@ public abstract class NetElement {
 
 		if (isSelected()) {
 			Rectangle r = getRectangle();
-			g.setColor(Color.white);
-			g.fillRect(r.x - x, r.y - y, r.width, r.height);
-
-			g.setColor(Color.black);
-			g.drawRect(r.x - x, r.y - y, r.width - 1, r.height - 1);
-			g.drawRect(r.x - x + 1, r.y - y + 1, r.width - 3, r.height - 3);
-			/*
-			 * boolean anytext = (name != ""); int wid = 26; if ((stringWidth/2)
-			 * > wid) { wid = (stringWidth/2) + 4; } g.setColor( Color.white );
-			 * g.fillRect( -wid, -21, wid * 2, anytext ? 57 : 42 );
-			 * 
-			 * g.setColor( Color.black ); g.drawRect( -wid, -21, wid * 2,
-			 * anytext ? 57 : 42 ); g.drawRect( -wid - 1, -21 - 1, wid * 2 + 2,
-			 * (anytext ? 57 : 42) + 2 );
-			 */
+			g.setColor(Netbuild.glab_red);
+			g.drawRect(r.x - x+1, r.y - y+1, r.width-2, r.height-2);
 		}
 
 		drawIcon(g);
