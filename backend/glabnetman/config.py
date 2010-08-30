@@ -62,7 +62,7 @@ INSTALLED_APPS = ('glabnetman', 'south')
 if os.environ.has_key('GLABNETMAN_TESTING'):
     print "Running in testing mode"
     DATABASE_ENGINE = "sqlite3"
-    DATABASE_NAME = "sqlite.db.testing"
+    DATABASE_NAME = "testing.db.sqlite"
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
     remote_dry_run = True
