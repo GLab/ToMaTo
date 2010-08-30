@@ -163,7 +163,7 @@ public class Netbuild extends java.applet.Applet
     for (NetElement el: NetElement.selectedElements()) {
       if (el.propertyEditable) newPanels.add(el.getPropertiesArea());
     }
-    boolean exp = newPanels.size() <= 1;
+    boolean exp = newPanels.size() <= 3;
     propertiesPanel.setVisible(false);
     for (PropertiesArea pa: newPanels) doittoit(true, pa, exp);
     for (PropertiesArea pa: oldPanels) if (!newPanels.contains(pa))
