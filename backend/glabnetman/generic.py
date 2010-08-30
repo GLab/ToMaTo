@@ -69,9 +69,9 @@ class Device(models.Model):
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
-		if interface.connection:
+		try:
 			return interface.connection.bridge_name()
-		else:
+		except:
 			return None		
 
 	def encode_xml(self, dom, doc, internal):

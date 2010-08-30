@@ -1,7 +1,7 @@
 import os
 os.environ['GLABNETMAN_TESTING']="true"
 
-import hosts, templates, topology
+import hosts, templates, kvm, openvz, topology
 
 def wait_for_tasks(api, user):
 	import time
