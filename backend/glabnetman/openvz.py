@@ -105,7 +105,7 @@ class OpenVZDevice(generic.Device):
 		self.template = util.get_attr(dom, "template", self.template)
 		self.root_password = util.get_attr(dom, "root_password")
 		if self.root_password and ( self.state == "prepared" or self.state == "started" ):
-			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ) )
+			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ), task )
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
 			name = x_iface.getAttribute("id")
@@ -117,6 +117,7 @@ class OpenVZDevice(generic.Device):
 			except generic.Interface.DoesNotExist:
 				iface = ConfiguredInterface()
 				iface.init(self, x_iface)
+				iface.save()
 				self.interfaces_add(iface)
 				if self.state == "prepared" or self.state == "started":
 					iface.prepare_run(task)
@@ -125,7 +126,7 @@ class OpenVZDevice(generic.Device):
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				if self.state == "prepared" or self.state == "started":
-					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
+					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 				iface.delete()
 		self.save()
 

@@ -11,6 +11,6 @@ def wait_for_tasks(api, user):
 def tasks_running(api, user):
 	count=0
 	for t in api.task_list(user=user):
-		if not t["done"]:
+		if t["subtasks_total"] == 0 or not t["done"]:
 			count+=1
 	return count

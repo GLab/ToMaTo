@@ -77,10 +77,14 @@ class Test(unittest.TestCase):
 		tests.wait_for_tasks(api, admin)
 		api.device_start(id, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP2, user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP1, user=admin)
-		tests.wait_for_tasks(api, admin)
+		try:
+			api.top_change(id, TOP2, user=admin)
+			tests.wait_for_tasks(api, admin)
+			api.top_change(id, TOP1, user=admin)
+			tests.wait_for_tasks(api, admin)
+			assert False
+		except:
+			pass
 		api.device_stop(id, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
 		api.device_destroy(id, "kvm1", user=admin)

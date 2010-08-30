@@ -329,12 +329,13 @@ class Topology(models.Model):
 				con.upcast().change_possible(x_con)
 			except generic.Connector.DoesNotExist:
 				pass
-				
+	
 	def change(self, newtop):
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		self.change_possible(newtop)
 		task = tasks.TaskStatus()
+		task.subtasks_total = 1
 		self.task = task.id
 		util.start_thread(self.change_run,newtop, task)
 		return task.id

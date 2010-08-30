@@ -144,7 +144,7 @@ class KVMDevice(generic.Device):
 				self.interfaces_add(iface)
 				if self.state == "prepared":
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ) )
+					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				#deleted interface
