@@ -161,6 +161,7 @@ class TincConnector(generic.Connector):
 				self.prepare_run(task)
 			if oldstate == generic.State.STARTED:
 				self.start_run(task)
+		self.save()
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_port = models.IntegerField()

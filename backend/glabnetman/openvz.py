@@ -127,6 +127,7 @@ class OpenVZDevice(generic.Device):
 				if self.state == "prepared" or self.state == "started":
 					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ) )
 				iface.delete()
+		self.save()
 
 	def upload_supported(self):
 		return self.state == generic.State.CREATED or self.state == generic.State.PREPARED

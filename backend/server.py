@@ -7,7 +7,7 @@ Requires python-ldap, python-twisted-web
 
 import glabnetman
 
-import xmlrpclib
+import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, reactor
 
@@ -20,7 +20,7 @@ class APIServer(xmlrpc.XMLRPC):
 		try:
 			return function(*args, user=user)
 		except Exception, exc:
-			print exc
+			traceback.print_exc()
 			glabnetman.logger.log("Exception: %s" % exc, user=user.name)
 			raise glabnetman.fault.new(glabnetman.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
 

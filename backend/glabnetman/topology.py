@@ -273,6 +273,9 @@ class Topology(models.Model):
 
 	def change_run(self, dom, task):
 		devices=set()
+		if dom.getAttribute("name"):
+			self.name = dom.getAttribute("name")
+		self.save()
 		for x_dev in dom.getElementsByTagName("device"):
 			name = x_dev.getAttribute("id")
 			devices.add(name)
@@ -287,9 +290,9 @@ class Topology(models.Model):
 			if not dev.name in devices:
 				#removed device
 				if dev.state == generic.State.STARTED:
-					dev.upcast().stop(task)
+					dev.upcast().stop_run(task)
 				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
-					dev.upcast().destroy(task)
+					dev.upcast().destroy_run(task)
 				dev.delete()
 		connectors=set()	
 		for x_con in dom.getElementsByTagName("connector"):
@@ -305,9 +308,9 @@ class Topology(models.Model):
 		for con in self.connectors_all():
 			if not con.name in connectors:
 				if con.state == generic.State.STARTED:
-					con.upcast().stop(task)
+					con.upcast().stop_run(task)
 				if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
-					con.upcast().destroy(task)
+					con.upcast().destroy_run(task)
 				con.delete()				
 		task.done()
 

@@ -152,6 +152,7 @@ class KVMDevice(generic.Device):
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
 					#FIXME: find a way to delete interfaces
 				iface.delete()
+		self.save()
 		
 
 	def vnc_password(self):

@@ -155,7 +155,11 @@ class Device(models.Model):
 		pass
 
 	def change_possible(self, dom):
-		if not self.hostgroup == util.get_attr(dom, "hostgroup", self.hostgroup):
+		if self.hostgroup is None:
+			hostgroup = ""
+		else:
+			hostgroup = self.hostgroup.name
+		if not hostgroup == util.get_attr(dom, "hostgroup", hostgroup):
 			if self.state == State.PREPARED or self.state == State.STARTED: 
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Cannot change host of deployed device")
 
@@ -383,7 +387,7 @@ class Connection(models.Model):
 			iface_name = dom.getAttribute("interface")
 			self.interface = device.interfaces_get(iface_name)
 			try:
-				if not self.interface.connection == self:
+				if not str(self.interface.connection) == str(self):
 					raise fault.new(fault.DUPLICATE_INTERFACE_CONNECTION, "Interface %s is connected to %s and %s" % (self.interface, self.interface.connection, self) )
 			except Connection.DoesNotExist:
 				pass
