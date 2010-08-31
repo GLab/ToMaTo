@@ -169,6 +169,10 @@ a:active, a:hover
 	font-weight:bold;
 }
 
+img {
+	border: 0;
+}
+
 /* IE workaround */
 * html #sidemenu ul li {
 display: inline;
