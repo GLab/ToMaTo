@@ -13,7 +13,10 @@ class RepeatedTimer(threading.Thread):
 		self.daemon = True
 	def run(self):
 		while not self.event.isSet():
-			self.event.wait(self.timeout)
+			try:
+				self.event.wait(self.timeout)
+			except:
+				return
 			if not self.event.isSet():
 				self.func(*self.args, **self.kwargs)
 	def stop(self):

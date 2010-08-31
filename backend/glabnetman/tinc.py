@@ -154,12 +154,16 @@ class TincConnector(generic.Connector):
 		if not oldcons == cons:
 			oldstate = self.state
 			if self.state == generic.State.STARTED:
+				task.subtasks_total = task.subtasks_total + 1
 				self.stop_run(task)
 			if self.state == generic.State.PREPARED:
+				task.subtasks_total = task.subtasks_total + 1
 				self.destroy_run(task)
 			if oldstate == generic.State.STARTED or oldstate == generic.State.PREPARED:
+				task.subtasks_total = task.subtasks_total + 1
 				self.prepare_run(task)
 			if oldstate == generic.State.STARTED:
+				task.subtasks_total = task.subtasks_total + 1
 				self.start_run(task)
 		self.save()
 

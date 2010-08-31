@@ -12,8 +12,9 @@ class KVMDevice(generic.Device):
 	def init(self, topology, dom):
 		self.topology = topology
 		self.decode_xml(dom)
+		self.template = hosts.get_template("kvm", self.template)
 		if not self.template:
-			self.template = hosts.get_default_template("kvm")
+			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
 		self.host = hosts.get_best_host(self.hostgroup)
 		self.kvm_id = self.host.next_free_vm_id()
 		self.vnc_port = self.host.next_free_port()

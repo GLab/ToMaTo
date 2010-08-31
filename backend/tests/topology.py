@@ -12,14 +12,14 @@ TOP1 = '''
 	<device id="ovz1" type="openvz" root_password="test">
 		<interface id="eth0" use_dhcp="true"/>
 		<interface id="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
-				<interface id="eth2" use_dhcp="true"/>
-				<interface id="eth3" use_dhcp="true"/>
+		<interface id="eth2" use_dhcp="true"/>
+		<interface id="eth3" use_dhcp="true"/>
 	</device>
 	<device id="kvm1" type="kvm">
 		<interface id="eth0"/>
 		<interface id="eth1"/>
-				<interface id="eth2"/>
-				<interface id="eth3"/>
+		<interface id="eth2"/>
+		<interface id="eth3"/>
 	</device>
 	<connector id="internet" type="real">
 		<connection device="ovz1" interface="eth0"/>

@@ -101,6 +101,9 @@ class Template(models.Model):
 		name = models.CharField(max_length=100)
 		type = models.CharField(max_length=12)
 		default = models.BooleanField(default=False)
+		
+		def __unicode__(self):
+			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
 def get_host(name):
 	return Host.objects.get(name=name)
@@ -127,6 +130,12 @@ def get_templates(type=None):
 		list = list.filter(type=type)
 	return list
 
+def get_template(type, name):
+	try:
+		return Template.objects.get(type=type, name=name)
+	except Exception, exc:
+		return get_default_template(type)
+
 def add_template(name, type):
 	Template.objects.create(name=name, type=type)
 	
@@ -135,7 +144,7 @@ def remove_template(name):
 	
 def get_default_template(type):
 	list = Template.objects.filter(type=type, default=True)
-	if list.count() == 1:
+	if list.count() >= 1:
 		return list[0].name
 	else:
 		return None
