@@ -115,6 +115,7 @@ class OpenVZDevice(generic.Device):
 				iface = self.interfaces_get(name)
 				iface = iface.upcast()
 				iface.decode_xml(x_iface)
+				iface.save()
 			except generic.Interface.DoesNotExist:
 				iface = ConfiguredInterface()
 				iface.init(self, x_iface)
