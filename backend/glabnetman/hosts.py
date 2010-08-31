@@ -132,7 +132,7 @@ def get_templates(type=None):
 
 def get_template(type, name):
 	try:
-		return Template.objects.get(type=type, name=name)
+		return Template.objects.get(type=type, name=name).name
 	except Exception, exc:
 		return get_default_template(type)
 
