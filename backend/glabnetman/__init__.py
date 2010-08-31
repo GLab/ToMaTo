@@ -183,8 +183,7 @@ def top_remove(top_id, user=None):
 	logger.log("top_remove(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	top.delete()
-	return True
+	return top.remove()
 	
 def top_prepare(top_id, user=None):
 	logger.log("top_prepare(%s)" % top_id, user=user.name)

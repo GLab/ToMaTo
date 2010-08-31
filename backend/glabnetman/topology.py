@@ -271,6 +271,22 @@ class Topology(models.Model):
 				con.upcast().destroy_run(task)
 		task.done()
 
+	def remove(self):
+		"""
+		Removes the topology.
+		"""
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		task = tasks.TaskStatus()
+		self.task = task.id
+		util.start_thread(self.remove_run,task)
+		return task.id
+
+	def remove_run(self, task):
+		self.destroy_run(task)
+		self.delete()
+		task.done()
+	
 	def change_run(self, dom, task):
 		devices=set()
 		if dom.getAttribute("name"):
