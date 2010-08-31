@@ -11,7 +11,7 @@
 {% if top_id %}
 	<param name="download_url" value="{%url top.showxml top_id%}?plain">
 {% endif %}
-	<param name="back_url" value="{% if top_id %}{%url top.details top_id %}{% else %}{%url top.index%}{% endif %}">
+	<param name="back_url" value="{%url top.details 12345 %}">
 	<param name="auth" value="{{auth}}"/>
 	<param name="tpl_openvz" value="{{tpl_openvz}}"/>
 	<param name="tpl_kvm" value="{{tpl_kvm}}"/>

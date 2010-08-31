@@ -9,7 +9,7 @@ class HostGroup(models.Model):
 	
 class Host(models.Model):
 	group = models.ForeignKey(HostGroup)
-	name = models.CharField(max_length=50, primary_key=True)
+	name = models.CharField(max_length=50, unique=True)
 	public_bridge = models.CharField(max_length=10)
 
 	def check_save(self, task):

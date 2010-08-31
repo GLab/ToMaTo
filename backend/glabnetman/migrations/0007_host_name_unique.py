@@ -7,23 +7,15 @@ class Migration:
     
     def forwards(self, orm):
         
-        # Deleting field 'Host.id'
-        db.delete_column('glabnetman_host', 'id')
-        
-        # Changing field 'Host.name'
-        # (to signature: django.db.models.fields.CharField(max_length=50, primary_key=True))
-        db.alter_column('glabnetman_host', 'name', orm['glabnetman.host:name'])
+        # Creating unique_together for [name] on Host.
+        db.create_unique('glabnetman_host', ['name'])
         
     
     
     def backwards(self, orm):
         
-        # Adding field 'Host.id'
-        db.add_column('glabnetman_host', 'id', orm['glabnetman.host:id'])
-        
-        # Changing field 'Host.name'
-        # (to signature: django.db.models.fields.CharField(max_length=50))
-        db.alter_column('glabnetman_host', 'name', orm['glabnetman.host:name'])
+        # Deleting unique_together for [name] on Host.
+        db.delete_unique('glabnetman_host', ['name'])
         
     
     
@@ -67,7 +59,8 @@ class Migration:
         },
         'glabnetman.host': {
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['glabnetman.HostGroup']"}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50', 'primary_key': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'}),
             'public_bridge': ('django.db.models.fields.CharField', [], {'max_length': '10'})
         },
         'glabnetman.hostgroup': {

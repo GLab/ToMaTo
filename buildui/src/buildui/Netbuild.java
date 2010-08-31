@@ -27,6 +27,7 @@ import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.*;
 import java.net.*;
 
@@ -649,7 +650,7 @@ public class Netbuild extends java.applet.Applet
 
       URL base = getDocumentBase();
       URL url = new URL ( base, getParameter("upload_url") );
-      URLConnection con = url.openConnection();
+      HttpURLConnection con = (HttpURLConnection)url.openConnection();
       con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(true);
       con.setDoInput(true);
@@ -659,16 +660,26 @@ public class Netbuild extends java.applet.Applet
       oStream.write(URLEncoder.encode(xml, "utf-8").getBytes());
       oStream.write("\n".getBytes());
       oStream.flush();
-
-      BufferedReader in = new BufferedReader ( new InputStreamReader ( con.getInputStream() ) );
-      while ( in.ready() ) System.out.println (in.readLine()) ;
-
       oStream.close();
-      stop();
-      destroy();
 
-      URL backurl = new URL ( base, getParameter("back_url") );
-      getAppletContext().showDocument(backurl);
+      String[] reply = parseReply(con.getInputStream());
+      if ( reply != null ) {
+        String kind = reply[2] ;
+        if ( kind.equals("TOPOLOGY") ) {
+          String id = reply[3] ;
+          String task = reply[4] ;
+          String backstr = getParameter("back_url");
+          backstr = backstr.replace("12345", id);
+          con.disconnect();
+          URL backurl = new URL ( base, backstr );
+          getAppletContext().showDocument(backurl);
+          //dialog("Success", id + ": " + task);
+        } else if ( kind.equals("ERROR") ) {
+          String code = reply[3] ;
+          String message = reply[4] ;
+          dialog("Error", code + ": " + message);
+        }
+      }
     } catch (Exception ex) {
       exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
@@ -685,7 +696,7 @@ public class Netbuild extends java.applet.Applet
     try {
       URL base = getDocumentBase();
       URL url = new URL ( base, getParameter("download_url") );
-      URLConnection con = url.openConnection();
+      HttpURLConnection con = (HttpURLConnection)url.openConnection();
       con.setRequestProperty("Authorization", getParameter("auth"));
       con.setDoOutput(false);
       con.setDoInput(true);
@@ -693,11 +704,27 @@ public class Netbuild extends java.applet.Applet
 
       workArea.decode(iStream);
 
-      iStream.close();
+      con.disconnect();
     } catch (Exception ex) {
       exception (ex) ;
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
     return true;
+  }
+
+  public String[] parseReply(InputStream in) {
+    try {
+      BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+      while (reader.ready()) {
+        String s = reader.readLine();
+        System.out.println(s);
+        if ( s.contains("%%%GLABNETMAN%%%") ) return s.split("%%%");
+      }
+      return null;
+    } catch (IOException ex) {
+      exception(ex);
+      Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
+      return null;
+    }
   }
 }

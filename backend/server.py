@@ -19,6 +19,8 @@ class APIServer(xmlrpc.XMLRPC):
 	def execute(self, function, args, user):
 		try:
 			return function(*args, user=user)
+		except xmlrpc.Fault:
+			raise
 		except Exception, exc:
 			traceback.print_exc()
 			glabnetman.logger.log("Exception: %s" % exc, user=user.name)
