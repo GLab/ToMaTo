@@ -125,9 +125,9 @@ class TincConnector(generic.Connector):
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
 		for con in self.connections_all():
 			host = con.interface.device.host
+			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname + "/"
 			host.upload(path, self.topology.get_remote_control_dir() + "/" + tincname, task)
-			tincname = self.tincname(con)
 			host.execute ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname), task)
 		self.state = generic.State.PREPARED
 		self.save()
