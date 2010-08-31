@@ -21,7 +21,12 @@ def getapi(request):
 	if not auth:
 		return None
 	(username, password) = auth
-	request.session.api = xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (username, password) )
+	try:
+		api = xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (username, password) )
+		request.session.api = api
+		api.account()
+	except:
+		raise xmlrpclib.Fault("-1", "Unauthorized")
 	return True
 
 class HttpResponseNotAuthorized(HttpResponse):
