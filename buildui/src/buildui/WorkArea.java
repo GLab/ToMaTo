@@ -202,18 +202,20 @@ public class WorkArea {
       Document doc = docBuilder.parse(in);
       Element topology = (Element)doc.getElementsByTagName("topology").item(0);
       topologyProperties.setNameValue(topology.getAttribute("name"));
-      NodeList devices = topology.getElementsByTagName("device");
-      for (int i = 0; i < devices.getLength(); i++) {
-        Element x_dev = (Element)devices.item(i);
+      NodeList x_devices = topology.getElementsByTagName("device");
+      for (int i = 0; i < x_devices.getLength(); i++) {
+        Element x_dev = (Element)x_devices.item(i);
         Device dev = Device.readFrom(x_dev);
+        dev.fixName(true);
         add(dev);
         deviceMap.put(dev.getName(), dev);
       }
       Hashtable<String, Connection> connectionMap = new Hashtable<String, Connection> ();
-      NodeList connectors = topology.getElementsByTagName("connector");
-      for (int i = 0; i < connectors.getLength(); i++) {
-        Element x_con = (Element)connectors.item(i);
+      NodeList x_connectors = topology.getElementsByTagName("connector");
+      for (int i = 0; i < x_connectors.getLength(); i++) {
+        Element x_con = (Element)x_connectors.item(i);
         Connector con = Connector.readFrom(x_con);
+        con.fixName(true);
         add(con);
         NodeList connections = x_con.getElementsByTagName("connection");
         for (int j = 0; j < connections.getLength(); j++) {
@@ -228,8 +230,8 @@ public class WorkArea {
           System.out.println("adding " + devName+"."+ifName);
         }
       }
-      for (int i = 0; i < devices.getLength(); i++) {
-        Element x_dev = (Element)devices.item(i);
+      for (int i = 0; i < x_devices.getLength(); i++) {
+        Element x_dev = (Element)x_devices.item(i);
         String devName = x_dev.getAttribute("id");
         Device dev = deviceMap.get(devName);
         NodeList interfaces = x_dev.getElementsByTagName("interface");
