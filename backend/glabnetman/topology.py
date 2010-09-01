@@ -386,7 +386,10 @@ class Topology(models.Model):
 		return device.upcast().download_image()
 
 def get(id):
-	return Topology.objects.get(id=id)
+	try:
+		return Topology.objects.get(id=id)
+	except Topology.DoesNotExit:
+		raise fault.new(fault.NO_SUCH_TOPOLOGY, "No such topology: %s" % id)
 
 def all():
 	return Topology.objects.all()
