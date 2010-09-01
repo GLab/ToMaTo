@@ -45,6 +45,7 @@ a:active, a:hover
         clear:both;
         display: block;
         overflow: hidden;
+        margin-bottom: 80px;
 }
 
 #left {
@@ -60,8 +61,11 @@ a:active, a:hover
 
 
 #footer{
+	position:absolute;
 	text-align:center;
-	margin:10px auto 0 auto;
+	margin-left:-460px;
+	left:50%;
+	bottom:0px;
 	padding-top:1px;
 	height:72px;
 	width:921px;
