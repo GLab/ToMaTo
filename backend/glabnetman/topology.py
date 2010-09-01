@@ -28,6 +28,13 @@ class Topology(models.Model):
 
 	task = models.CharField(max_length=100, blank=True, null=True)
 
+	def logger(self):
+		if not self.logger:
+			if not os.path.exists(config.log_dir + "/top"):
+				os.makedirs(config.log_dir + "/top")
+			self.logger = log.Logger(config.log_dir + "/top/%s"%self.id)
+		return self.logger
+
 	def init (self, dom, owner):
 		"""
 		Creates a new topology

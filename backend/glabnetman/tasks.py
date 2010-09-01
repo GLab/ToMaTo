@@ -2,7 +2,7 @@
 
 import uuid, os
 
-import config, util, atexit, time
+import config, util, atexit, time, log
 
 from cStringIO import StringIO
 
@@ -23,6 +23,11 @@ class TaskStatus():
 		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total, "started": self.started}
 	def check_delete(self):
 		if time.time() - self.started > 3600:
+			if not os.path.exists(config.log_dir + "/tasks"):
+				os.makedirs(config.log_dir + "/tasks")
+			logger = log.Logger(config.log_dir + "/tasks/%s"%self.id)
+			logger.lograw(self.output)
+			logger.close()
 			del TaskStatus.tasks[self.id]
 
 class UploadTask():

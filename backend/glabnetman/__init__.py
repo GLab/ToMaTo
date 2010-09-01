@@ -178,100 +178,143 @@ def top_import(xml, user=None):
 	dom = _parse_xml(xml)
 	top=topology.create(dom, user.name)
 	top.save()
+	top.logger().log("imported", user=user.name, bigmessage=xml)
 	return top.id
 	
 def top_change(top_id, xml, user=None):
 	logger.log("top_change(%s)" % top_id, user=user.name, bigmessage=xml)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("changing topology", user=user.name, bigmessage=xml)
 	dom = _parse_xml(xml)
-	return top.change(dom)
+	task_id = top.change(dom)
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 
 def top_remove(top_id, user=None):
 	logger.log("top_remove(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	return top.remove()
+	top.logger().log("removing topology", user=user.name)
+	task_id = top.remove()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def top_prepare(top_id, user=None):
 	logger.log("top_prepare(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	return top.prepare()
+	top.logger().log("preparing topology", user=user.name)
+	task_id = top.prepare()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def top_destroy(top_id, user=None):
 	logger.log("top_destroy(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	return top.destroy()
+	top.logger().log("destroying topology", user=user.name)
+	task_id = top.destroy()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def top_start(top_id, user=None):
 	logger.log("top_start(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	return top.start()
+	top.logger().log("starting topology", user=user.name)
+	task_id = top.start()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def top_stop(top_id, user=None):
 	logger.log("top_stop(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
-	return top.stop()
+	top.logger().log("stopping topology", user=user.name)
+	task_id = top.stop()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 
 def device_prepare(top_id, device_name, user=None):
 	logger.log("device_prepare(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("preparing device %s" % device_name, user=user.name)
 	device = top.devices_get(device_name)
-	return device.prepare()
+	task_id = device.prepare()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def device_destroy(top_id, device_name, user=None):
 	logger.log("device_destroy(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("destroying device %s" % device_name, user=user.name)
 	device = top.devices_get(device_name)
-	return device.destroy()
+	task_id = device.destroy()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def device_start(top_id, device_name, user=None):
 	logger.log("device_start(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("starting device %s" % device_name, user=user.name)
 	device = top.devices_get(device_name)
-	return device.start()
+	task_id = device.start()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def device_stop(top_id, device_name, user=None):
 	logger.log("device_stop(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("stopping device %s" % device_name, user=user.name)
 	device = top.devices_get(device_name)
-	return device.stop()
+	task_id = device.stop()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 
 def connector_prepare(top_id, connector_name, user=None):
 	logger.log("connector_prepare(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("preparing connector %s" % connector_name, user=user.name)
 	connector = top.connectors_get(connector_name)
-	return connector.prepare()
+	task_id = connector.prepare()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def connector_destroy(top_id, connector_name, user=None):
 	logger.log("connector_destroy(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("destroying connector %s" % connector_name, user=user.name)
 	connector = top.connectors_get(connector_name)
-	return connector.destroy()
+	task_id = connector.destroy()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def connector_start(top_id, connector_name, user=None):
 	logger.log("connector_start(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("starting connector %s" % connector_name, user=user.name)
 	connector = top.connectors_get(connector_name)
-	return connector.start()
+	task_id = connector.start()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 	
 def connector_stop(top_id, connector_name, user=None):
 	logger.log("connector_stop(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, user)
+	top.logger().log("stopping connector %s" % connector_name, user=user.name)
 	connector = top.connectors_get(connector_name)
-	return connector.stop()
+	task_id = connector.stop()
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 
 def task_list(user=None):
 	logger.log("task_list(%s)" % id, user=user.name)
@@ -298,7 +341,10 @@ def upload_image(top_id, device_id, upload_id, user=None):
 	upload.finished()
 	top=topology.get(top_id)
 	_top_access(top, user)
-	return top.upload_image(device_id, upload.filename)
+	top.logger().log("uploading image %s" % device_id, user=user.name)
+	task_id =  top.upload_image(device_id, upload.filename)
+	top.logger().log("started task %s" % task_id, user=user.name)
+	return task_id
 
 def download_image(top_id, device_id, user=None):
 	logger.log("download_image(%s, %s)" % (top_id, device_id), user=user.name)

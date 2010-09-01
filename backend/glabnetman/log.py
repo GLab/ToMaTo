@@ -7,7 +7,7 @@ class Logger():
 	def __init__ (self, filename):
 		self.filename = filename
 		self.fd = open(filename, "a")
-		atexit.register(self.fd.close)
+		atexit.register(self.close)
 		
 	def log (self, message, user="unknown", timestamp=None, bigmessage=None):
 		if not timestamp:
@@ -21,3 +21,9 @@ class Logger():
 
 	def lograw (self, message):
 		self.fd.write(message)
+		
+	def close(self):
+		try:
+			self.fd.close()
+		except:
+			pass
