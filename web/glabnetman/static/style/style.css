@@ -61,7 +61,7 @@ a:active, a:hover
 
 
 #footer{
-	position:absolute;
+	position:fixed;
 	text-align:center;
 	margin-left:-460px;
 	left:50%;
