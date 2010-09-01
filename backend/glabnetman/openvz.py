@@ -103,6 +103,7 @@ class OpenVZDevice(generic.Device):
 		"""
 		Adapt this device to the new device
 		"""
+		generic.Device.change_run(self, dom, task)
 		self.template = util.get_attr(dom, "template", self.template)
 		self.root_password = util.get_attr(dom, "root_password")
 		if self.root_password and ( self.state == "prepared" or self.state == "started" ):

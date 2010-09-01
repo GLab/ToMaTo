@@ -154,6 +154,9 @@ class Device(models.Model):
 	def destroy_run(self, task):
 		pass
 
+	def change_run(self, dom, task):
+		self.pos = util.get_attr(dom, "pos", self.pos)
+
 	def change_possible(self, dom):
 		if self.hostgroup is None:
 			hostgroup = ""
@@ -319,6 +322,7 @@ class Connector(models.Model):
 
 	def change_run(self, dom, task):
 		cons=set()
+		self.dom = util.get_attr(dom, "pos", self.pos)
 		for x_con in dom.getElementsByTagName("connection"):
 			try:
 				device_name = x_con.getAttribute("device")

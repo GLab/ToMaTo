@@ -131,6 +131,7 @@ class KVMDevice(generic.Device):
 		"""
 		Adapt this device to the new device
 		"""
+		generic.Device.change_run(self, dom, task)
 		self.template = util.get_attr(dom, "template", self.template)
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
