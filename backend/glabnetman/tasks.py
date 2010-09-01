@@ -17,6 +17,8 @@ class TaskStatus():
 		self.started = time.time()
 	def done(self):
 		self.subtasks_done = self.subtasks_total
+	def is_active(self):
+		return not self.subtasks_done == self.subtasks_total
 	def dict(self):
 		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done==self.subtasks_total, "started": self.started}
 	def check_delete(self):

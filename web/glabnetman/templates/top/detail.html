@@ -8,6 +8,9 @@ Owner: {{top.owner}}<br/>
 Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
+{% if top.finished_task %}
+<a href="{%url main.task_status top.finished_task%}" target="_blank">last task</a><br>
+{% endif %}
 <br/>
 
 <ul class="topology_analysis">
@@ -107,6 +110,11 @@ function console (url) {
 {% if action %}
 <h2>Executing {{action}} ...</h2>
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url top.details top_id%}"></iframe>
+{% endif %}
+
+{% if top.running_task %}
+<h2>Running task ...</h2>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status top.running_task%}?backurl={%url top.details top_id%}"></iframe>
 {% endif %}
 
 {% endblock %}

@@ -97,8 +97,7 @@ class Device(models.Model):
 	def start(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
@@ -110,8 +109,7 @@ class Device(models.Model):
 	def stop(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		task.subtasks_total = 1
@@ -121,8 +119,7 @@ class Device(models.Model):
 	def prepare(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
@@ -134,8 +131,7 @@ class Device(models.Model):
 	def destroy(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1
@@ -256,8 +252,7 @@ class Connector(models.Model):
 	def start(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
@@ -269,8 +264,7 @@ class Connector(models.Model):
 	def stop(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		task.subtasks_total = 1
@@ -280,8 +274,7 @@ class Connector(models.Model):
 	def prepare(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
@@ -293,8 +286,7 @@ class Connector(models.Model):
 	def destroy(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
-		self.topology.task = task.id
+		task = self.topology.new_task()
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		task.subtasks_total = 1

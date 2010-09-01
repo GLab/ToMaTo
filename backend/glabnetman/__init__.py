@@ -21,12 +21,20 @@ def _topology_info(top, auth):
 		analysis = top.analysis()
 	except Exception, exc:
 		analysis = "Error in analysis: %s" % exc
-	return {"id": top.id, "name": top.name,
+	res = {"id": top.id, "name": top.name,
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
 		"date_created": top.date_created, "date_modified": top.date_modified
-	}
+		}
+	if auth:
+		task = top.get_task()
+		if task:
+			if task.is_active():
+				res.update(running_task=task.id)
+			else:
+				res.update(finished_task=task.id)
+	return res
 
 def _device_info(dev, auth):
 	state = str(dev.state)
