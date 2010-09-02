@@ -33,7 +33,11 @@ def create(request):
 			tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 			tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
 			host_groups=",".join(api.host_groups())
-			return render_to_response("top/edit_ui.html", {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups})
+			if not request.REQUEST.has_key("editor"):
+				editor = "ui"
+			else:
+				editor = request.REQUEST["editor"]
+			return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups})
 		xml=request.REQUEST["xml"]
 		top_id=api.top_import(xml)
 		top=api.top_info(int(top_id))
@@ -105,7 +109,11 @@ def edit(request, top_id):
 			tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 			tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
 			host_groups=",".join(api.host_groups())
-			return render_to_response("top/edit_ui.html", {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups} )
+			if not request.REQUEST.has_key("editor"):
+				editor = "ui"
+			else:
+				editor = request.REQUEST["editor"]
+			return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups} )
 		xml=request.REQUEST["xml"]
 		task_id=api.top_change(int(top_id), xml)
 		top=api.top_info(int(top_id))
