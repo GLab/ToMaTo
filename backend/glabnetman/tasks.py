@@ -26,7 +26,7 @@ class TaskStatus():
 			if not os.path.exists(config.log_dir + "/tasks"):
 				os.makedirs(config.log_dir + "/tasks")
 			logger = log.Logger(config.log_dir + "/tasks/%s"%self.id)
-			logger.lograw(self.output.getValue())
+			logger.lograw(self.output.getvalue())
 			logger.close()
 			del TaskStatus.tasks[self.id]
 
