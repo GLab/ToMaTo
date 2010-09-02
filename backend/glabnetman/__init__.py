@@ -131,6 +131,12 @@ def host_remove(host_name, user=None):
 	host.delete()
 	return True
 
+def host_debug(host_name, user=None):
+	logger.log("host_debug(%s)" % host_name, user=user.name)
+	_admin_access(user)
+	host = hosts.get_host(host_name)
+	return host.debug_info()
+
 def host_groups(user=None):
 	logger.log("host_groups()", user=user.name)
 	return [h.name for h in hosts.get_host_groups()]

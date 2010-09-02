@@ -31,6 +31,17 @@ def add(request):
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
 
+def debug(request, hostname):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		debug_info = api.host_debug(hostname)
+		debug = [(k, debug_info[k]) for k in debug_info]
+		return render_to_response("admin/host_debug.html", {"host_name": hostname, "debug": debug})
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
 def remove(request, hostname):
 	try:
 		if not getapi(request):

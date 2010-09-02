@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import config, fault, util
+import config, fault, util, sys
 
 class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
@@ -66,36 +66,58 @@ class Host(models.Model):
 			ids.remove(con.bridge_id)
 		return ids[0]
 	
+	def _exec(self, cmd, print_str, fd):
+		if print_str:
+			fd.write(print_str)
+		fd.write(util.run_shell(cmd, config.remote_dry_run))
+	
 	def execute(self, command, task=None):
 		cmd = ["ssh", "root@%s" % self.name, command]
 		str = self.name + ": " + command + "\n"
 		if task:
-			task.output.write(str)
-			task.output.write(util.run_shell(cmd, config.remote_dry_run))
+			fd = task.output
 		else:
-			print str
-			print util.run_shell(cmd, config.remote_dry_run)
+			fd = sys.stdout
+		self._exec(cmd, str, fd)
 	
 	def upload(self, local_file, remote_file, task=None):
 		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
 		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
-			task.output.write(str)
-			task.output.write(util.run_shell(cmd, config.remote_dry_run))
+			fd = task.output
 		else:
-			print str
-			print util.run_shell(cmd, config.remote_dry_run)
+			fd = sys.stdout
+		self._exec(cmd, str, fd)
 	
 	def download(self, remote_file, local_file, task=None):
 		cmd = ["rsync", "-a", "root@%s:%s" % (self.name, remote_file), local_file]
 		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
-			task.output.write(str)
-			task.output.write(util.run_shell(cmd, config.remote_dry_run))
+			fd = task.output
 		else:
-			print str
-			print util.run_shell(cmd, config.remote_dry_run)
+			fd = sys.stdout
+		self._exec(cmd, str, fd)
+	
+	def get_result(self, command):
+		from cStringIO import StringIO
+		fd = StringIO()
+		cmd = ["ssh", "root@%s" % self.name, command]
+		self._exec(cmd, None, fd)
+		return fd.getvalue()
+
+	def debug_info(self):		
+		result={}
+		result["OpenVZ"] = self.get_result("vzlist -a")
+		result["KVM"] = self.get_result("qm list")
+		result["Bridges"] = self.get_result("brctl show")
+		result["iptables router"] = self.get_result("iptables -t mangle -v -L PREROUTING")		
+		result["ipfw rules"] = self.get_result("ipfw show")
+		result["ipfw pipes"] = self.get_result("ipfw pipe show")
+		result["ifconfig"] = self.get_result("ifconfig -a")
+		result["ifconfig"] = self.get_result("ifconfig -a")
+		result["netstat"] = self.get_result("netstat -tulpen")		
+		return result
 	
 class Template(models.Model):
 		name = models.CharField(max_length=100)
