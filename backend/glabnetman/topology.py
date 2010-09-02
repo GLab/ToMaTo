@@ -385,7 +385,7 @@ class Topology(models.Model):
 def get(id):
 	try:
 		return Topology.objects.get(id=id)
-	except Topology.DoesNotExit:
+	except Topology.DoesNotExist:
 		raise fault.new(fault.NO_SUCH_TOPOLOGY, "No such topology: %s" % id)
 
 def all():
