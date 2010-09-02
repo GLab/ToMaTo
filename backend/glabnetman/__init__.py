@@ -118,6 +118,7 @@ def host_add(host_name, group_name, public_bridge, user=None):
 		group = HostGroup.objects.create(name=group_name)
 	host = Host(name=host_name, public_bridge=public_bridge, group=group)
 	t = tasks.TaskStatus()
+	t.subtasks_total = 1
 	util.start_thread(host.check_save, t)
 	return t.id
 

@@ -67,9 +67,8 @@ class Test(unittest.TestCase):
 		api.template_set_default("kvm", "tpl_kvm_1", user=admin)
 		tests.wait_for_tasks(api, admin)
 		
- 	def tearDown(self):
+	def tearDown(self):
 		admin = api.login("admin", "123")
-		'''
 		tests.wait_for_tasks(api, admin)		
 		for top in api.top_list("*", "*", user=admin):
 			api.top_remove(top["id"], user=admin)
@@ -77,9 +76,7 @@ class Test(unittest.TestCase):
 			api.host_remove(host["name"], user=admin)
 		for template in api.template_list("*", user=admin):
 			api.template_remove(template["name"], user=admin)
-		'''
 
-	'''
 	def testLifecycle(self):
 		admin = api.login("admin", "123")
 		id = api.top_import(TOP1, user=admin)
@@ -99,7 +96,6 @@ class Test(unittest.TestCase):
 		tests.wait_for_tasks(api, admin)
 		api.connector_destroy(id, "router1", user=admin)
 		tests.wait_for_tasks(api, admin)
-	'''
 
 	def testChange(self):
 		admin = api.login("admin", "123")
