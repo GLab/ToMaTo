@@ -84,5 +84,6 @@ class EmulatedConnection(generic.Connection):
 			pipe_config = pipe_config + " " + "bw %sk" % self.bandwidth
 		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
 		host.execute("ipfw delete %d" % pipe_id, task)
-		host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
+		if self.lossratio:
+			host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
 		self.save()
