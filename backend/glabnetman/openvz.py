@@ -143,7 +143,8 @@ class OpenVZDevice(generic.Device):
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("rm -rf /var/lib/vz/private/%s" % self.openvz_id, task)
-		self.host.execute("tar -xzvf %s -C /var/lib/vz/private/%s" % ( remote_filename, self.openvz_id ), task)
+		self.host.execute("mkdir /var/lib/vz/private/%s" % self.openvz_id, task)
+		self.host.execute("tar -xzf %s -C /var/lib/vz/private/%s" % ( remote_filename, self.openvz_id ), task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("rm %s" % remote_filename, task)
 		os.remove(filename)
