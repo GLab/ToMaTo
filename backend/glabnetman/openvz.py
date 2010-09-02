@@ -192,6 +192,7 @@ class ConfiguredInterface(generic.Interface):
 	def start_run(self, task):
 		openvz_id = self.device.upcast().openvz_id
 		bridge = self.device.upcast().bridge_name(self)
+		self.device.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( openvz_id, self.name, openvz_id, self.name, bridge ), task)
 		if self.ip4address:
 			self.device.host.execute("vzctl exec %s ip addr add %s dev %s" % ( openvz_id, self.ip4address, self.name ), task) 
 			self.device.host.execute("vzctl exec %s ip link set up dev %s" % ( openvz_id, self.name ), task) 
@@ -206,4 +207,3 @@ class ConfiguredInterface(generic.Interface):
 		openvz_id = self.device.upcast().openvz_id
 		bridge = self.device.upcast().bridge_name(self)
 		self.device.host.execute("vzctl set %s --netif_add %s --save" % ( openvz_id, self.name ), task)
-		self.device.host.execute("vzctl set %s --ifname %s --host_ifname veth%s.%s --bridge %s --save" % ( openvz_id, self.name, openvz_id, self.name, bridge ), task)
