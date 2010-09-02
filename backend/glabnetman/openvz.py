@@ -134,34 +134,30 @@ class OpenVZDevice(generic.Device):
 		self.save()
 
 	def upload_supported(self):
-		return self.state == generic.State.CREATED or self.state == generic.State.PREPARED
+		return self.state == generic.State.PREPARED
 
 	def upload_image(self, filename, task):
-		task.subtasks_total=4
+		task.subtasks_total=2
 		tmp_id = uuid.uuid1()
 		remote_filename= "/tmp/glabnetman-%s" % tmp_id
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
-		if self.state == generic.State.PREPARED:
-			self.host.execute("vzctl delete %s" % self.openvz_id, task)
-		task.subtasks_done = task.subtasks_done + 1
-		self.host.execute("vzrestore %s %s" % ( remote_filename, self.openvz_id ), task)
-		self.state = generic.State.PREPARED
+		self.host.execute("rm -rf /var/lib/vz/private/%s" % self.openvz_id, task)
+		self.host.execute("tar -xzvf %s -C /var/lib/vz/private/%s" % ( remote_filename, self.openvz_id ), task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("rm %s" % remote_filename, task)
 		os.remove(filename)
 		task.done()
 
 	def download_supported(self):
-		return self.state == generic.State.PREPARED or self.state == generic.State.STARTED
+		return self.state == generic.State.PREPARED
 
 	def download_image(self):
 		tmp_id = uuid.uuid1()
 		filename = "/tmp/glabnetman-%s" % tmp_id
-		self.host.execute("mkdir -p %s" % filename)
-		self.host.execute("vzdump --compress --dumpdir %s --suspend %s " % ( filename, self.openvz_id ) )
-		self.host.download("%s/*.tgz" % filename, filename)
-		self.host.execute("rm -r %s" % filename)
+		self.host.execute("tar -czf %s -C /var/lib/vz/private/%s . " % ( filename, self.openvz_id ) )
+		self.host.download("%s" % filename, filename)
+		self.host.execute("rm %s" % filename)
 		return filename
 
 class ConfiguredInterface(generic.Interface):

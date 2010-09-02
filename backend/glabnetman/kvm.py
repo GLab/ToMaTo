@@ -28,33 +28,22 @@ class KVMDevice(generic.Device):
 		return self
 
 	def download_supported(self):
-		return self.state == generic.State.PREPARED or self.state == generic.State.STARTED
+		return self.state == generic.State.PREPARED
 
 	def download_image(self):
 		tmp_id = uuid.uuid1()
 		filename = "/tmp/glabnetman-%s" % tmp_id
-		self.host.execute("mkdir -p %s" % filename)
-		self.host.execute("vzdump --compress --dumpdir %s --suspend %s " % ( filename, self.kvm_id ) )
-		self.host.download("%s/*.tgz" % filename, filename)
-		self.host.execute("rm -r %s" % filename)
+		self.host.download("/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id, filename)
 		return filename
 
 	def upload_supported(self):
-		return self.state == generic.State.CREATED or self.state == generic.State.PREPARED
+		return self.state == generic.State.PREPARED
 
 	def upload_image(self, filename, task):
-		task.subtasks_total=4
-		tmp_id = uuid.uuid1()
-		remote_filename= "/tmp/glabnetman-%s" % tmp_id
+		task.subtasks_total=1
+		remote_filename= "/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
-		if self.state == generic.State.PREPARED:
-			self.host.execute("qm destroy %s" % self.kvm_id, task)
-		task.subtasks_done = task.subtasks_done + 1
-		self.host.execute("qmrestore %s %s" % ( remote_filename, self.kvm_id ), task)
-		self.state = generic.State.PREPARED
-		task.subtasks_done = task.subtasks_done + 1
-		self.host.execute("rm %s" % remote_filename, task)
 		os.remove(filename)
 		task.done()
 
@@ -95,8 +84,8 @@ class KVMDevice(generic.Device):
 		generic.Device.prepare_run(self, task)
 		self.host.execute("qm create %s" % self.kvm_id, task)
 		self.host.execute("mkdir -p /var/lib/vz/images/%s" % self.kvm_id, task)
-		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s" % (self.template, self.kvm_id), task)
-		self.host.execute("qm set %s --ide0 local:%s/%s" % (self.kvm_id, self.kvm_id, self.template), task)
+		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.template, self.kvm_id), task)
+		self.host.execute("qm set %s --ide0 local:%s/disk.qcow2" % (self.kvm_id, self.kvm_id, self.template), task)
 		self.host.execute("qm set %s --name \"%s_%s\"" % (self.kvm_id, self.topology.name, self.name), task)
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)

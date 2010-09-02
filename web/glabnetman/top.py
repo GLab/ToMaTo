@@ -78,7 +78,8 @@ def download_image(request, top_id, device_id):
 		wrapper = FileWrapper(temp)
 		response = HttpResponse(wrapper, content_type='application/force-download')
 		response['Content-Length'] = size
-		response['Content-Disposition'] = 'attachment; filename=%s_%s.tgz' % ( top["name"], device_id )
+		filename_ext = {'openvz': 'tgz', 'kvm': 'qcow2'}[dict(top['devices'])[device_id]['type']]
+		response['Content-Disposition'] = 'attachment; filename=%s_%s.%s' % ( top["name"], device_id, filename_ext )
 		return response
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
