@@ -110,11 +110,13 @@ function console (url) {
 {% if action %}
 <h2>Executing {{action}} ...</h2>
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url top.details top_id%}"></iframe>
-{% endif %}
+{% else %}
 
 {% if top.running_task %}
 <h2>Running task ...</h2>
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status top.running_task%}?backurl={%url top.details top_id%}"></iframe>
+{% endif %}
+
 {% endif %}
 
 {% endblock %}
