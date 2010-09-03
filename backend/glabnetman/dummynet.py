@@ -57,6 +57,7 @@ class EmulatedConnection(generic.Connection):
 		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
 		if self.lossratio:
 			host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
+		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)", task)
 
 	def stop_run(self, task):
 		generic.Connection.stop_run(self, task)
@@ -67,6 +68,9 @@ class EmulatedConnection(generic.Connection):
 		host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
 			
 	def prepare_run(self, task):
+		host = self.interface.device.host
+		host.execute("brctl addbr dummy", task)
+		host.execute("ifconfig dummy 0.0.0.0 up", task)
 		generic.Connection.prepare_run(self, task)
 
 	def destroy_run(self, task):
