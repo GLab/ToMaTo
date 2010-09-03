@@ -79,7 +79,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save" % self.openvz_id, task)
 		if self.root_password:
 			self.host.execute("vzctl set %s --userpasswd root:%s --save" % ( self.openvz_id, self.root_password ), task)
-		self.host.execute("vzctl set %s --hostname %s_%s --save" % ( self.openvz_id, self.topology.name, self.name ), task)
+		self.host.execute("vzctl set %s --hostname %s-%s --save" % ( self.openvz_id, self.topology.name.replace("_","-"), self.name ), task)
 		for iface in self.interfaces_all():
 			iface.upcast().prepare_run(task)
 		self.state = generic.State.PREPARED
