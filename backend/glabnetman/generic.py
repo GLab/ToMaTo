@@ -97,45 +97,41 @@ class Device(models.Model):
 	def start(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().start_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().start_run, task)
 		return task.id
 		
 	def stop(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		task = self.topology.start_task(self.upcast().stop_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().stop_run, task)
 		return task.id
 
 	def prepare(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().prepare_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().prepare_run, task)
 		return task.id
 
 	def destroy(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().destroy_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().destroy_run, task)
 		return task.id
 
 	def start_run(self, task):
@@ -252,45 +248,41 @@ class Connector(models.Model):
 	def start(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().start_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().start_run, task)
 		return task.id
 		
 	def stop(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		task = self.topology.start_task(self.upcast().stop_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().stop_run, task)
 		return task.id
 
 	def prepare(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().prepare_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().prepare_run, task)
 		return task.id
 
 	def destroy(self):
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = self.topology.new_task()
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		task = self.topology.start_task(self.upcast().destroy_run)
 		task.subtasks_total = 1
-		util.start_thread(self.upcast().destroy_run, task)
 		return task.id
 
 	def start_run(self, task):

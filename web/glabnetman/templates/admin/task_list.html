@@ -7,14 +7,14 @@
   <tr>
     <th>ID</th>
     <th>Date</th>
-    <th>Done</th>
+    <th>Status</th>
     <th>Subtasks</th>
   </tr>
 {% for task in tasks %}
   <tr>
     <td><a href="{%url main.task_status task.id%}">{{task.id}}</a></td>
     <td>{{task.started}}</td>
-    <td>{{task.done}}</td>
+    <td>{{task.status}}</td>
     <td>{{task.subtasks_done}}/{{task.subtasks_total}}</td>
   </tr>
 {% endfor %}

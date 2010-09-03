@@ -117,9 +117,8 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	except HostGroup.DoesNotExist:
 		group = HostGroup.objects.create(name=group_name)
 	host = Host(name=host_name, public_bridge=public_bridge, group=group)
-	t = tasks.TaskStatus()
+	t = tasks.TaskStatus(host.check_save)
 	t.subtasks_total = 1
-	util.start_thread(host.check_save, t)
 	return t.id
 
 def host_remove(host_name, user=None):

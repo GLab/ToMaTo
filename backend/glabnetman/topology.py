@@ -65,10 +65,11 @@ class Topology(models.Model):
 			return False
 		return t.is_active()
 
-	def new_task(self):
+	def start_task(self, func, *args, **kwargs):
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus()
+		task = tasks.TaskStatus(func, *args, **kwargs)
+		task.start()
 		self.task = task.id
 		self.save()
 		return task
@@ -176,8 +177,7 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		task = self.new_task()
-		util.start_thread(self.start_run,task)
+		task = self.start_task(self.start_run)
 		return task.id
 
 	def start_run(self, task):
@@ -207,8 +207,7 @@ class Topology(models.Model):
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
-		task = self.new_task()
-		util.start_thread(self.stop_run,task)
+		task = self.start_task(self.stop_run)
 		return task.id
 
 	def stop_run(self, task):
@@ -230,8 +229,7 @@ class Topology(models.Model):
 		"""
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		task = self.new_task()
-		util.start_thread(self.prepare_run,task)
+		task = self.start_task(self.prepare_run)
 		return task.id
 
 	def prepare_run(self, task):
@@ -251,8 +249,7 @@ class Topology(models.Model):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
-		task = self.new_task()
-		util.start_thread(self.destroy_run,task)
+		task = self.start_task(self.destroy_run)
 		return task.id
 
 	def destroy_run(self, task):
@@ -281,8 +278,7 @@ class Topology(models.Model):
 		"""
 		Removes the topology.
 		"""
-		task = self.new_task()
-		util.start_thread(self.remove_run,task)
+		task = self.start_task(self.remove_run)
 		return task.id
 
 	def remove_run(self, task):
@@ -351,9 +347,8 @@ class Topology(models.Model):
 	
 	def change(self, newtop):
 		self.change_possible(newtop)
-		task = self.new_task()
+		task = self.start_task(self.change_run,newtop)
 		task.subtasks_total = 1
-		util.start_thread(self.change_run,newtop, task)
 		return task.id
 		
 	def _log(self, task, output):
@@ -368,8 +363,7 @@ class Topology(models.Model):
 		if not device.upcast().upload_supported():
 			os.remove(filename)
 			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
-		task = self.new_task()
-		util.start_thread(device.upcast().upload_image, filename, task)
+		task = self.start_task(device.upcast().upload_image, filename)
 		return task.id
 	
 	def download_image(self, device_id):

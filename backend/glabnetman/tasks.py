@@ -8,19 +8,37 @@ from cStringIO import StringIO
 
 class TaskStatus():
 	tasks={}
-	def __init__(self):
+	ACTIVE = "active"
+	DONE = "done"
+	FAILED = "failed"
+	def __init__(self, func, *args, **kwargs):
 		self.id = str(uuid.uuid1())
 		TaskStatus.tasks[self.id]=self
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
 		self.output = StringIO()
 		self.subtasks_total = 0
 		self.subtasks_done = 0
+		self.status = TaskStatus.ACTIVE 
 		self.started = time.time()
 	def done(self):
-		self.subtasks_done = self.subtasks_total
+		self.status = TaskStatus.DONE
+	def failed(self):
+		self.status = TaskStatus.FAILED
 	def is_active(self):
-		return self.subtasks_done < self.subtasks_total
+		return self.status == TaskStatus.ACTIVE
 	def dict(self):
-		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done>=self.subtasks_total, "started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
+		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "status": self.status, "done": self.status==TaskStatus.DONE, "started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
+	def _run(self):
+		try:
+			self.func(*self.args, task=self, **self.kwargs)
+			self.done()
+		except Exception, exc:
+			self.output.write(exc)
+			self.failed()
+	def start(self):
+		util.start_thread(self._run)
 	def check_delete(self):
 		if time.time() - self.started > 3600:
 			if not os.path.exists(config.log_dir + "/tasks"):
