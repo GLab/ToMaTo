@@ -85,7 +85,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("qm create %s" % self.kvm_id, task)
 		self.host.execute("mkdir -p /var/lib/vz/images/%s" % self.kvm_id, task)
 		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.template, self.kvm_id), task)
-		self.host.execute("qm set %s --ide0 local:%s/disk.qcow2" % (self.kvm_id, self.kvm_id, self.template), task)
+		self.host.execute("qm set %s --ide0 local:%s/disk.qcow2" % (self.kvm_id, self.kvm_id), task)
 		self.host.execute("qm set %s --name \"%s_%s\"" % (self.kvm_id, self.topology.name, self.name), task)
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)

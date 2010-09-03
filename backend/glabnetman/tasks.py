@@ -20,7 +20,7 @@ class TaskStatus():
 	def is_active(self):
 		return self.subtasks_done < self.subtasks_total
 	def dict(self):
-		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done>=self.subtasks_total, "started": self.started}
+		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "done": self.subtasks_done>=self.subtasks_total, "started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
 	def check_delete(self):
 		if time.time() - self.started > 3600:
 			if not os.path.exists(config.log_dir + "/tasks"):
