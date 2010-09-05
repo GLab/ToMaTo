@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
 
+from django.db import models
 import xmlrpclib
 
+class Error(models.Model):
+	date = models.DateTimeField(auto_now_add=True)
+	title = models.CharField(max_length=255)
+	message = models.TextField(blank=True)
+
+def errors_all():
+	return Error.objects.all()
+
+def errors_add(title, message):
+	Error.objects.create(title=title, message=message)
+
+def errors_remove(id):
+	Error.objects.get(id=id).delete()
+
 class Fault(xmlrpclib.Fault):
-    pass
+	pass
 
 def new(code, text):
-    return Fault(code, text)
+	return Fault(code, text)
 
 UNKNOWN = -1
 

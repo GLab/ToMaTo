@@ -22,6 +22,7 @@ class APIServer(xmlrpc.XMLRPC):
 		except xmlrpc.Fault:
 			raise
 		except Exception, exc:
+			glabnetman.fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			traceback.print_exc()
 			glabnetman.logger.log("Exception: %s" % exc, user=user.name)
 			raise glabnetman.fault.new(glabnetman.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )

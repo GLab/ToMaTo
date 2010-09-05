@@ -18,15 +18,21 @@ class RepeatedTimer(threading.Thread):
 			except:
 				return
 			if not self.event.isSet():
-				self.func(*self.args, **self.kwargs)
+				try:
+					self.func(*self.args, **self.kwargs)
+				except Exception, exc:
+					import traceback, fault
+					fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def stop(self):
 		self.event.set()
 
 def print_except_helper(func, args, kwargs):
 	try:
 		return func(*args, **kwargs)
-	except Exception, ex:
-		print ex
+	except Exception, exc:
+		import traceback, fault
+		fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+		print exc
 		raise
 
 def print_except(func, *args, **kwargs):

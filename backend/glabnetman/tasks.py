@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import uuid, os
+import uuid, os, traceback
 
-import config, util, atexit, time, log
+import config, util, fault, atexit, time, log
 
 from cStringIO import StringIO
 
@@ -35,6 +35,7 @@ class TaskStatus():
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
 		except Exception, exc:
+			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.output.write(exc)
 			self.failed()
 	def start(self):

@@ -8,3 +8,4 @@ from kvm import * #@UnusedWildImport
 from openvz import * #@UnusedWildImport
 from tinc import * #@UnusedWildImport
 from topology import * #@UnusedWildImport
+from fault import * #@UnusedWildImport
