@@ -393,9 +393,10 @@ def template_set_default(type, name, user=None):
 def errors_all(user=None):
 	logger.log("errors_all()", user=user.name)
 	_admin_access(user)
-	return fault.errors_all()
+	return [f.dict() for f in fault.errors_all()]
 
 def errors_remove(id, user=None):
 	logger.log("errors_remove(%s)" % id, user=user.name)
 	_admin_access(user)
-	return fault.errors_remove(id)
+	fault.errors_remove(id)
+	return True
