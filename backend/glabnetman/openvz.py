@@ -50,6 +50,16 @@ class OpenVZDevice(generic.Device):
 		self.template = dom.getAttribute("template")
 		self.root_password = dom.getAttribute("root_password")
 
+	def get_state(self, task):
+		res = self.host.execute("vzctl status %s" % self.openvz_id, task)
+		if "exist" in res and "running" in res:
+			return generic.State.STARTED
+		if "exist" in res and "down" in res:
+			return generic.State.PREPARED
+		if "deleted" in res:
+			return generic.State.CREATED
+		raise fault.new(fault.UNKNOWN, "Unable to determine openvz state for %s: %s" % ( self, res ) )
+
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
 		for iface in self.interfaces_all():
@@ -61,16 +71,18 @@ class OpenVZDevice(generic.Device):
 			if iface.is_configured():				
 				iface.upcast().start_run(task)
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
-		self.state = generic.State.STARTED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.STARTED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def stop_run(self, task):
 		generic.Device.stop_run(self, task)
 		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
 		self.host.execute("vzctl stop %s" % self.openvz_id, task)
-		self.state = generic.State.PREPARED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.PREPARED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):
@@ -82,15 +94,17 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl set %s --hostname %s-%s --save" % ( self.openvz_id, self.topology.name.replace("_","-"), self.name ), task)
 		for iface in self.interfaces_all():
 			iface.upcast().prepare_run(task)
-		self.state = generic.State.PREPARED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.PREPARED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("vzctl destroy %s" % self.openvz_id, task)
-		self.state = generic.State.CREATED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.CREATED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):

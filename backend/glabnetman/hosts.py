@@ -66,10 +66,8 @@ class Host(models.Model):
 			ids.remove(con.bridge_id)
 		return ids[0]
 	
-	def _exec(self, cmd, print_str, fd):
-		if print_str:
-			fd.write(print_str)
-		fd.write(util.run_shell(cmd, config.remote_dry_run))
+	def _exec(self, cmd):
+		return util.run_shell(cmd, config.remote_dry_run)
 	
 	def execute(self, command, task=None):
 		cmd = ["ssh", "root@%s" % self.name, command]
@@ -78,7 +76,10 @@ class Host(models.Model):
 			fd = task.output
 		else:
 			fd = sys.stdout
-		self._exec(cmd, str, fd)
+		fd.write(str)
+		res = self._exec(cmd)
+		fd.write(res)
+		return res
 	
 	def upload(self, local_file, remote_file, task=None):
 		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
@@ -88,7 +89,10 @@ class Host(models.Model):
 			fd = task.output
 		else:
 			fd = sys.stdout
-		self._exec(cmd, str, fd)
+		fd.write(str)
+		res = self._exec(cmd)
+		fd.write(res)
+		return res
 	
 	def download(self, remote_file, local_file, task=None):
 		cmd = ["rsync", "-a", "root@%s:%s" % (self.name, remote_file), local_file]
@@ -97,14 +101,13 @@ class Host(models.Model):
 			fd = task.output
 		else:
 			fd = sys.stdout
-		self._exec(cmd, str, fd)
+		fd.write(str)
+		res = self._exec(cmd)
+		fd.write(res)
+		return res
 	
 	def get_result(self, command):
-		from cStringIO import StringIO
-		fd = StringIO()
-		cmd = ["ssh", "root@%s" % self.name, command]
-		self._exec(cmd, None, fd)
-		return fd.getvalue()
+		return self._exec(["ssh", "root@%s" % self.name, command])
 
 	def debug_info(self):		
 		result={}

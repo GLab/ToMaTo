@@ -27,6 +27,16 @@ class KVMDevice(generic.Device):
 	def upcast(self):
 		return self
 
+	def get_state(self, task):
+		res = self.host.execute("qm status %s" % self.kvm_id, task)
+		if "running" in res:
+			return generic.State.STARTED
+		if "stopped" in res:
+			return generic.State.PREPARED
+		if "unknown" in res:
+			return generic.State.CREATED
+		raise fault.new(fault.UNKNOWN, "Unable to determine kvm state for %s: %s" % ( self, res ) )
+
 	def download_supported(self):
 		return self.state == generic.State.PREPARED
 
@@ -68,16 +78,18 @@ class KVMDevice(generic.Device):
 			self.host.execute("brctl addif %s vmtab%si%s" % ( bridge, self.kvm_id, iface_id ), task)
 			self.host.execute("ip link set %s up" % bridge, task)
 		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
-		self.state = generic.State.STARTED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.STARTED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def stop_run(self, task):
 		generic.Device.stop_run(self, task)
 		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
 		self.host.execute("qm stop %s" % self.kvm_id, task)
-		self.state = generic.State.PREPARED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.PREPARED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):
@@ -90,15 +102,17 @@ class KVMDevice(generic.Device):
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
-		self.state = generic.State.PREPARED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.PREPARED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
-		self.state = generic.State.CREATED
+		self.state = self.get_state(task)
 		self.save()
+		assert self.state == generic.State.CREATED
 		task.subtasks_done = task.subtasks_done + 1
 
 	def is_changed(self, dom):
