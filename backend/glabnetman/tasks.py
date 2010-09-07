@@ -29,14 +29,18 @@ class TaskStatus():
 	def is_active(self):
 		return self.status == TaskStatus.ACTIVE
 	def dict(self):
-		return {"id": self.id, "output": self.output.getvalue(), "subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total, "status": self.status, "done": self.status==TaskStatus.DONE, "started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
+		return {"id": self.id, "output": self.output.getvalue(), 
+			"subtasks_done": self.subtasks_done, "subtasks_total": self.subtasks_total,
+			"status": self.status, "active": self.status == TaskStatus.ACTIVE, 
+			"failed": self.status == TaskStatus.FAILED, "done": self.status==TaskStatus.DONE,
+			"started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
 	def _run(self):
 		try:
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
 		except Exception, exc:
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
-			self.output.write(exc)
+			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 			self.failed()
 	def start(self):
 		util.start_thread(self._run)
