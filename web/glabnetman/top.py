@@ -236,3 +236,43 @@ def _con_action(request, top_id, connector_id, action):
 		return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
 	except xmlrpclib.Fault, f:
 		return render_to_response("main/error.html", {'error': f})
+	
+def permission_list(request, top_id):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
+		return render_to_response("top/permissions.html", {'top_id': top_id, 'top': top })
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
+def permission_remove(request, top_id, user):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		api.permission_remove(top_id, user)
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
+		return permission_list(request, top_id)
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})
+
+def permission_add(request, top_id):
+	try:
+		if not getapi(request):
+			return HttpResponseNotAuthorized("Authorization required!")
+		api = request.session.api
+		user=request.REQUEST["user"]
+		role=request.REQUEST["role"]
+		api.permission_add(top_id, user, role)
+		top=api.top_info(int(top_id))
+		if not top:
+			raise Http404
+		return permission_list(request, top_id)
+	except xmlrpclib.Fault, f:
+		return render_to_response("main/error.html", {'error': f})

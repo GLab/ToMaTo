@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import hosts, util, fault, re, tasks
+import hosts, util, fault, re
 
 class User():
 	def __init__ (self, name, is_user, is_admin):

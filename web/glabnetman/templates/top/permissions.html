@@ -1,0 +1,32 @@
+{% extends "top/base.html" %}
+
+{% block content %}
+<h1>Permissions for topology "{{top.name}}" [{{top.id}}] </h1>
+
+<table>
+	<tr>
+		<th>User</th>
+		<th>Role</th>
+		<th>Actions</th>
+	</tr>
+	<tr>
+		<td>{{top.owner}}</td>
+		<td><b>owner</b></td>
+		<td></td>
+	</tr>
+{% for p in top.permissions %}
+	<tr>
+		<td>{{p.user}}</td>
+		<td>{{p.role}}</td>
+		<td><a href="{%url top.permission_remove top_id=top_id user=p.user%}"><img src="/static/icons/user_delete.png" alt="remove permission" title="remove permission"/></a></td>		
+	</tr>
+{% endfor %}
+	<tr>
+		<form action="{%url top.permission_add top_id=top_id%}" method="POST">
+		<td><input type="text" name="user"/></td>
+		<td><select name="role"><option>manager</option><option>user</option></select></td>
+		<td><input type="submit" value="Add permission"/></td>		
+		</form>
+	</tr>
+</table>
+{% endblock %}

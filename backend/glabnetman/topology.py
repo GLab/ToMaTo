@@ -2,7 +2,7 @@
 
 from django.db import models
 import os
-import config, log, fault, util, tasks
+import config, log, fault, tasks
 import topology_analysis, generic
 
 class Topology(models.Model):
@@ -375,6 +375,43 @@ class Topology(models.Model):
 		if not device.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
 		return device.upcast().download_image()
+
+	def permissions_add(self, user_name, role):
+		self.permission_set.add(Permission(user=user_name, role=role))
+		self.save()
+	
+	def permissions_all(self):
+		return self.permission_set.all()
+	
+	def permissions_remove(self, user_name):
+		self.permission_set.filter(user=user_name).delete()
+		self.save()
+		
+	def permissions_get(self, user_name):
+		set = self.permission_set.filter(user=user_name)
+		if set.is_empty():
+			return None
+		else:
+			return set[0].role
+		
+	def check_access(self, type, user):
+		if user.is_admin:
+			return True
+		if user.name == self.owner:
+			return True
+		if type == Permission.ROLE_MANAGER:
+			return self.permissions_get(user.name) == Permission.ROLE_MANAGER
+		if type == Permission.ROLE_USER:
+			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
+
+class Permission(models.Model):
+	ROLE_USER="user"
+	ROLE_MANAGER="manager"
+	topology = models.ForeignKey(Topology)
+	user = models.CharField(max_length=30)
+	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))
+	def dict(self):
+		return {"user": self.user, "role": self.role}
 
 def get(id):
 	try:

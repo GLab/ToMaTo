@@ -4,7 +4,8 @@
 <h1>Detail view of topology "{{top.name}}" [{{top.id}}] </h1>
 <!-- %%%GLABNETMAN%%%TOPOLOGY%%%{{top.id}}%%%{{task_id}}%%% -->
 
-Owner: {{top.owner}}<br/>
+Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}">[permissions]</a>
+<br/>
 Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
