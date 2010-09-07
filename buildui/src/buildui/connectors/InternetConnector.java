@@ -38,10 +38,11 @@ public class InternetConnector extends Connector {
 
   public InternetConnector (String newName) {
     super(newName, "/icons/internet.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new InternetConnector("internet"+(num++)) ;
+    return new InternetConnector("internet"+num) ;
   }
 
   public PropertiesArea getPropertiesArea() {

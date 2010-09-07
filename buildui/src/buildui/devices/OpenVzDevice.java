@@ -44,10 +44,11 @@ public class OpenVzDevice extends Device {
 
   public OpenVzDevice (String newName) {
     super(newName, "/icons/computer.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new OpenVzDevice("openvz"+(num++)) ;
+    return new OpenVzDevice("openvz"+num) ;
   }
 
   static PropertiesArea propertiesArea = new OpenVzPropertiesArea() ;

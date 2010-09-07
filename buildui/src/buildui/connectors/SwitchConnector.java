@@ -38,10 +38,11 @@ public class SwitchConnector extends Connector {
 
   public SwitchConnector (String newName) {
     super(newName, "/icons/switch.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new SwitchConnector("switch"+(num++)) ;
+    return new SwitchConnector("switch"+num) ;
   }
 
   public PropertiesArea getPropertiesArea() {

@@ -32,10 +32,11 @@ public class HubConnector extends Connector {
 
   public HubConnector (String newName) {
     super(newName, "/icons/hub.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new HubConnector("hub"+(num++)) ;
+    return new HubConnector("hub"+num) ;
   }
 
   static PropertiesArea propertiesArea;

@@ -38,10 +38,11 @@ public class RouterConnector extends Connector {
 
   public RouterConnector (String newName) {
     super(newName, "/icons/router.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new RouterConnector("router"+(num++)) ;
+    return new RouterConnector("router"+num) ;
   }
 
   public PropertiesArea getPropertiesArea() {
