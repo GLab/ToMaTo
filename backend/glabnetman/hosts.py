@@ -111,6 +111,7 @@ class Host(models.Model):
 
 	def free_port(self, port, task):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
+		self.execute("lsof -i:%s -t | xargs -r kill" % port, task)
 
 	def debug_info(self):		
 		result={}
