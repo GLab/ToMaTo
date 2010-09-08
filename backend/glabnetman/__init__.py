@@ -14,8 +14,6 @@ db_migrate()
 import config, log, generic, topology, hosts, fault, tasks
 import tinc, internet, kvm, openvz
 
-logger = log.Logger(config.log_dir + "/api.log")
-
 def _topology_info(top, auth):
 	try:
 		analysis = top.analysis()
@@ -48,10 +46,11 @@ def _device_info(dev, auth):
 		"download_supported": dev.upcast().download_supported(),
 		}
 	if auth:
-		if dev.type == "openvz":
-			res.update(vnc_port=dev.openvzdevice.vnc_port, vnc_password=dev.openvzdevice.vnc_password())
-		if dev.type == "kvm":
-			res.update(vnc_port=dev.kvmdevice.vnc_port, vnc_password=dev.kvmdevice.vnc_password())
+		dev = dev.upcast()
+		if hasattr(dev, "vnc_port") and dev.vnc_port:
+			res.update(vnc_port=dev.vnc_port)
+		if hasattr(dev, "vnc_password"):
+			res.update(vnc_password=dev.vnc_password())
 	return res
 
 def _connector_info(con):
@@ -92,11 +91,9 @@ def login(username, password):
 		return ldapauth.login(username, password)
 
 def account(user=None):
-	logger.log("account()", user=user.name)
 	return user
 
 def host_list(group_filter="*", user=None):
-	logger.log("host_list(group_filter=%s)" % group_filter, user=user.name)
 	res=[]
 	qs = hosts.Host.objects.all()
 	if not group_filter=="*":
@@ -106,7 +103,6 @@ def host_list(group_filter="*", user=None):
 	return res
 
 def host_add(host_name, group_name, public_bridge, user=None):
-	logger.log("host_add(%s,%s,%s)" % (host_name, group_name, public_bridge), user=user.name)
 	_admin_access(user)
 	from hosts import Host, HostGroup
 	import util
@@ -120,7 +116,6 @@ def host_add(host_name, group_name, public_bridge, user=None):
 	return t.id
 
 def host_remove(host_name, user=None):
-	logger.log("host_remove(%s)" % host_name, user=user.name)
 	_admin_access(user)
 	host = hosts.get_host(host_name)
 	if host.group.host_set.count()==1:
@@ -129,13 +124,11 @@ def host_remove(host_name, user=None):
 	return True
 
 def host_debug(host_name, user=None):
-	logger.log("host_debug(%s)" % host_name, user=user.name)
 	_admin_access(user)
 	host = hosts.get_host(host_name)
 	return host.debug_info()
 
 def host_groups(user=None):
-	logger.log("host_groups()", user=user.name)
 	return [h.name for h in hosts.get_host_groups()]
 
 def _parse_xml(xml):
@@ -149,12 +142,10 @@ def _parse_xml(xml):
 		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
 
 def top_info(id, user=None):
-	logger.log("top_info(%s)" % id, user=user.name)
 	top = topology.get(id)
 	return _topology_info(top, top.check_access("user", user))
 
 def top_list(owner_filter, host_filter, user=None):
-	logger.log("top_list(owner_filter=%s, host_filter=%s)" % (owner_filter, host_filter), user=user.name)
 	tops=[]
 	all = topology.all()
 	if not owner_filter=="*":
@@ -166,7 +157,6 @@ def top_list(owner_filter, host_filter, user=None):
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
-	logger.log("top_get(%s, include_ids=%s)" % (top_id, include_ids), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	from xml.dom import minidom
@@ -176,7 +166,6 @@ def top_get(top_id, include_ids=False, user=None):
 	return dom.toprettyxml(indent="\t", newl="\n")
 
 def top_import(xml, user=None):
-	logger.log("top_import()", user=user.name, bigmessage=xml)
 	if not user.is_user:
 		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
 	dom = _parse_xml(xml)
@@ -186,7 +175,6 @@ def top_import(xml, user=None):
 	return top.id
 	
 def top_change(top_id, xml, user=None):
-	logger.log("top_change(%s)" % top_id, user=user.name, bigmessage=xml)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("changing topology", user=user.name, bigmessage=xml)
@@ -196,7 +184,6 @@ def top_change(top_id, xml, user=None):
 	return task_id
 
 def top_remove(top_id, user=None):
-	logger.log("top_remove(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	top.logger().log("removing topology", user=user.name)
@@ -205,7 +192,6 @@ def top_remove(top_id, user=None):
 	return task_id
 	
 def top_prepare(top_id, user=None):
-	logger.log("top_prepare(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("preparing topology", user=user.name)
@@ -214,7 +200,6 @@ def top_prepare(top_id, user=None):
 	return task_id
 	
 def top_destroy(top_id, user=None):
-	logger.log("top_destroy(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("destroying topology", user=user.name)
@@ -223,7 +208,6 @@ def top_destroy(top_id, user=None):
 	return task_id
 	
 def top_start(top_id, user=None):
-	logger.log("top_start(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("starting topology", user=user.name)
@@ -232,7 +216,6 @@ def top_start(top_id, user=None):
 	return task_id
 	
 def top_stop(top_id, user=None):
-	logger.log("top_stop(%s)" % top_id, user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("stopping topology", user=user.name)
@@ -241,7 +224,6 @@ def top_stop(top_id, user=None):
 	return task_id
 
 def device_prepare(top_id, device_name, user=None):
-	logger.log("device_prepare(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("preparing device %s" % device_name, user=user.name)
@@ -251,7 +233,6 @@ def device_prepare(top_id, device_name, user=None):
 	return task_id
 	
 def device_destroy(top_id, device_name, user=None):
-	logger.log("device_destroy(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("destroying device %s" % device_name, user=user.name)
@@ -261,7 +242,6 @@ def device_destroy(top_id, device_name, user=None):
 	return task_id
 	
 def device_start(top_id, device_name, user=None):
-	logger.log("device_start(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("starting device %s" % device_name, user=user.name)
@@ -271,7 +251,6 @@ def device_start(top_id, device_name, user=None):
 	return task_id
 	
 def device_stop(top_id, device_name, user=None):
-	logger.log("device_stop(%s,%s)" % (top_id, device_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("stopping device %s" % device_name, user=user.name)
@@ -281,7 +260,6 @@ def device_stop(top_id, device_name, user=None):
 	return task_id
 
 def connector_prepare(top_id, connector_name, user=None):
-	logger.log("connector_prepare(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("preparing connector %s" % connector_name, user=user.name)
@@ -291,7 +269,6 @@ def connector_prepare(top_id, connector_name, user=None):
 	return task_id
 	
 def connector_destroy(top_id, connector_name, user=None):
-	logger.log("connector_destroy(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("destroying connector %s" % connector_name, user=user.name)
@@ -301,7 +278,6 @@ def connector_destroy(top_id, connector_name, user=None):
 	return task_id
 	
 def connector_start(top_id, connector_name, user=None):
-	logger.log("connector_start(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("starting connector %s" % connector_name, user=user.name)
@@ -311,7 +287,6 @@ def connector_start(top_id, connector_name, user=None):
 	return task_id
 	
 def connector_stop(top_id, connector_name, user=None):
-	logger.log("connector_stop(%s,%s)" % (top_id, connector_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("stopping connector %s" % connector_name, user=user.name)
@@ -321,26 +296,21 @@ def connector_stop(top_id, connector_name, user=None):
 	return task_id
 
 def task_list(user=None):
-	logger.log("task_list(%s)" % id, user=user.name)
 	return [t.dict() for t in tasks.TaskStatus.tasks.values()]
 
 def task_status(id, user=None):
-	logger.log("task_status(%s)" % id, user=user.name)
 	return tasks.TaskStatus.tasks[id].dict()
 	
 def upload_start(user=None):
-	logger.log("upload_start()", user=user.name)
 	task = tasks.UploadTask()
 	return task.id
 
 def upload_chunk(upload_id, chunk, user=None):
-	#logger.log("upload_chunk(%s,...)" % upload_id, user=user.name)
 	task = tasks.UploadTask.tasks[upload_id]
 	task.chunk(chunk.data)
 	return 0
 
 def upload_image(top_id, device_id, upload_id, user=None):
-	logger.log("upload_image(%s, %s, %s)" % (top_id, device_id, upload_id), user=user.name)
 	upload = tasks.UploadTask.tasks[upload_id]
 	upload.finished()
 	top=topology.get(top_id)
@@ -351,7 +321,6 @@ def upload_image(top_id, device_id, upload_id, user=None):
 	return task_id
 
 def download_image(top_id, device_id, user=None):
-	logger.log("download_image(%s, %s)" % (top_id, device_id), user=user.name)
 	top=topology.get(top_id)
 	_top_access(top, "user", user)
 	filename = top.download_image(device_id)
@@ -365,49 +334,41 @@ def download_chunk(download_id, user=None):
 	return xmlrpclib.Binary(data)
 
 def template_list(type, user=None):
-	logger.log("template_list(%s)" % type, user=user.name)
 	if type=="*":
 		type = None
 	return [_template_info(t) for t in hosts.get_templates(type)]
 
 def template_add(name, type, user=None):
-	logger.log("template_add(%s,%s)" % (name, type), user=user.name)
 	_admin_access(user)
 	hosts.add_template(name, type)
 	return True
 
 def template_remove(name, user=None):
-	logger.log("template_remove(%s)" % name, user=user.name)
 	_admin_access(user)
 	hosts.remove_template(name)
 	return True
 
 def template_set_default(type, name, user=None):
-	logger.log("template_set_default(%s,%s)" % (type,name), user=user.name)
 	_admin_access(user)
 	hosts.set_default_template(type, name)
 	return True
 
 def errors_all(user=None):
-	logger.log("errors_all()", user=user.name)
 	_admin_access(user)
 	return [f.dict() for f in fault.errors_all()]
 
 def errors_remove(id, user=None):
-	logger.log("errors_remove(%s)" % id, user=user.name)
 	_admin_access(user)
 	fault.errors_remove(id)
 	return True
 
 def permission_add(top_id, user_name, role, user=None):
-	logger.log("permission_add(%s, %s, %s)" % (top_id, user_name, role), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	top.permissions_add(user_name, role)
 	return True
 	
 def permission_remove(top_id, user_name, user=None):
-	logger.log("permission_remove(%s, %s)" % (top_id, user_name), user=user.name)
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	top.permissions_remove(user_name)

@@ -62,10 +62,11 @@ class EmulatedConnection(generic.Connection):
 	def stop_run(self, task):
 		generic.Connection.stop_run(self, task)
 		host = self.interface.device.host
-		pipe_id = int(self.bridge_id) * 10
-		host.execute("ipfw delete %d" % pipe_id, task)
-		host.execute("ipfw pipe delete %d" % pipe_id, task)
-		host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
+		if self.bridge_id:
+			pipe_id = int(self.bridge_id) * 10
+			host.execute("ipfw delete %d" % pipe_id, task)
+			host.execute("ipfw pipe delete %d" % pipe_id, task)
+			host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
 			
 	def prepare_run(self, task):
 		host = self.interface.device.host

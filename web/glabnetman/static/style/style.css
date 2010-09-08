@@ -15,6 +15,7 @@ pre
  font-size:14px;
  color:#0000ff;
  padding:5px;
+ white-space: pre-wrap;
 }
 
 a:link, a:visited, a:active, a:hover

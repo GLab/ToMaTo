@@ -39,30 +39,30 @@ class Host(models.Model):
 	def next_free_vm_id (self):
 		ids = range(1000,1100)
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self):
+		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False):
 			ids.remove(dev.openvz_id)
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self):
+		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False):
 			ids.remove(dev.kvm_id)
 		return ids[0]
 
 	def next_free_port(self):
 		ids = range(7000,8000)
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self):
+		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False):
 			ids.remove(dev.vnc_port)
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self):
+		for dev in kvm.KVMDevice.objects.filter(host=self, vnc_port__isnull=False):
 			ids.remove(dev.vnc_port)
 		import tinc
-		for con in tinc.TincConnection.objects.filter(interface__device__host=self):
+		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False):
 			ids.remove(con.tinc_port)
 		return ids[0]
 
 	def next_free_bridge(self):
 		ids = range(1000,2000)
 		import generic
-		for con in generic.Connection.objects.filter(interface__device__host=self):
+		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False):
 			ids.remove(con.bridge_id)
 		return ids[0]
 	
@@ -108,6 +108,9 @@ class Host(models.Model):
 	
 	def get_result(self, command):
 		return self._exec(["ssh", "root@%s" % self.name, command])
+
+	def free_port(self, port, task):
+		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
 
 	def debug_info(self):		
 		result={}

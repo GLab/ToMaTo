@@ -36,7 +36,7 @@ def create(api, request):
 	xml=request.REQUEST["xml"]
 	top_id=api.top_import(xml)
 	return _display_top(api, top_id)
-create=wrap_rpc(index)
+create=wrap_rpc(create)
 	
 def upload_image(api, request, top_id, device_id):
 	if not request.FILES.has_key("image"):
@@ -96,7 +96,7 @@ def details(api, request, top_id):
 details=wrap_rpc(details)
 	
 def showxml(api, request, top_id):
-	xml=api.top_get(int(top_id))
+	xml=api.top_get(int(top_id), True)
 	if request.REQUEST.has_key("plain"):
 		return HttpResponse(xml, mimetype="text/plain")
 	else:
@@ -176,12 +176,12 @@ permission_list=wrap_rpc(permission_list)
 
 def permission_remove(api, request, top_id, user):
 	api.permission_remove(top_id, user)
-	return permission_list(api, request, top_id)
+	return permission_list(request, top_id)
 permission_remove=wrap_rpc(permission_remove)
 
 def permission_add(api, request, top_id):
 	user=request.REQUEST["user"]
 	role=request.REQUEST["role"]
 	api.permission_add(top_id, user, role)
-	return permission_list(api, request, top_id)
+	return permission_list(request, top_id)
 permission_add=wrap_rpc(permission_add)

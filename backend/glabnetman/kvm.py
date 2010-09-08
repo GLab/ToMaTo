@@ -5,9 +5,9 @@ from django.db import models
 import generic, hosts, fault, config, hashlib, re, util, uuid, os
 
 class KVMDevice(generic.Device):
-	kvm_id = models.IntegerField()
+	kvm_id = models.IntegerField(null=True)
 	template = models.CharField(max_length=30)
-	vnc_port = models.IntegerField()
+	vnc_port = models.IntegerField(null=True)
 	
 	def init(self, topology, dom):
 		self.topology = topology
@@ -16,8 +16,6 @@ class KVMDevice(generic.Device):
 		if not self.template:
 			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
 		self.host = hosts.get_best_host(self.hostgroup)
-		self.kvm_id = self.host.next_free_vm_id()
-		self.vnc_port = self.host.next_free_port()
 		self.save()		
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = generic.Interface()
@@ -28,6 +26,8 @@ class KVMDevice(generic.Device):
 		return self
 
 	def get_state(self, task):
+		if not self.kvm_id:
+			return generic.State.CREATED
 		res = self.host.execute("qm status %s" % self.kvm_id, task)
 		if "running" in res:
 			return generic.State.STARTED
@@ -61,7 +61,10 @@ class KVMDevice(generic.Device):
 		generic.Device.encode_xml(self, dom, doc, internal)
 		dom.setAttribute("template", self.template)
 		if internal:
-			dom.setAttribute("kvm_id", self.kvm_id)
+			if self.kvm_id:
+				dom.setAttribute("kvm_id", str(self.kvm_id))
+			if self.vnc_port:
+				dom.setAttribute("vnc_port", str(self.vnc_port))
 		
 	def decode_xml(self, dom):
 		generic.Device.decode_xml(self, dom)
@@ -77,6 +80,10 @@ class KVMDevice(generic.Device):
 			self.host.execute("brctl addbr %s" % bridge, task)
 			self.host.execute("brctl addif %s vmtab%si%s" % ( bridge, self.kvm_id, iface_id ), task)
 			self.host.execute("ip link set %s up" % bridge, task)
+		if not self.vnc_port:
+			self.vnc_port = self.host.next_free_port()
+			self.save()
+		self.host.free_port(self.vnc_port, task)		
 		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
 		self.state = self.get_state(task)
 		self.save()
@@ -85,7 +92,8 @@ class KVMDevice(generic.Device):
 
 	def stop_run(self, task):
 		generic.Device.stop_run(self, task)
-		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
+		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name, task)
+		self.vnc_port=None
 		self.host.execute("qm stop %s" % self.kvm_id, task)
 		self.state = self.get_state(task)
 		self.save()
@@ -94,6 +102,9 @@ class KVMDevice(generic.Device):
 
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
+		if not self.kvm_id:
+			self.kvm_id = self.host.next_free_vm_id()
+			self.save()
 		self.host.execute("qm create %s" % self.kvm_id, task)
 		self.host.execute("mkdir -p /var/lib/vz/images/%s" % self.kvm_id, task)
 		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.template, self.kvm_id), task)
@@ -110,6 +121,7 @@ class KVMDevice(generic.Device):
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
+		self.kvm_id=None
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.CREATED
@@ -161,6 +173,8 @@ class KVMDevice(generic.Device):
 		
 
 	def vnc_password(self):
+		if not self.kvm_id:
+			return "---"
 		m = hashlib.md5()
 		m.update(config.password_salt)
 		m.update(str(self.name))

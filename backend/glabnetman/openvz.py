@@ -5,10 +5,10 @@ from django.db import models
 import generic, util, hosts, hashlib, config, fault, os, uuid
 
 class OpenVZDevice(generic.Device):
-	openvz_id = models.IntegerField()
+	openvz_id = models.IntegerField(null=True)
 	root_password = models.CharField(max_length=50, null=True)
 	template = models.CharField(max_length=30)
-	vnc_port = models.IntegerField()
+	vnc_port = models.IntegerField(null=True)
 		
 	def init(self, topology, dom):
 		self.topology = topology
@@ -17,8 +17,6 @@ class OpenVZDevice(generic.Device):
 		if not self.template:
 			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
 		self.host = hosts.get_best_host(self.hostgroup)
-		self.openvz_id = self.host.next_free_vm_id()
-		self.vnc_port = self.host.next_free_port()
 		self.save()
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = ConfiguredInterface()
@@ -29,6 +27,8 @@ class OpenVZDevice(generic.Device):
 		return self
 
 	def vnc_password(self):
+		if not self.vnc_port:
+			return "---" 
 		m = hashlib.md5()
 		m.update(config.password_salt)
 		m.update(str(self.name))
@@ -43,7 +43,10 @@ class OpenVZDevice(generic.Device):
 		if self.root_password:
 			dom.setAttribute("root_password", self.root_password)
 		if internal:
-			dom.setAttribute("openvz_id", str(self.openvz_id))
+			if self.openvz_id:
+				dom.setAttribute("openvz_id", str(self.openvz_id))
+			if self.vnc_port:
+				dom.setAttribute("vnc_port", str(self.vnc_port))
 		
 	def decode_xml(self, dom):
 		generic.Device.decode_xml(self, dom)
@@ -51,6 +54,8 @@ class OpenVZDevice(generic.Device):
 		self.root_password = dom.getAttribute("root_password")
 
 	def get_state(self, task):
+		if not self.openvz_id:
+			return generic.State.CREATED
 		res = self.host.execute("vzctl status %s" % self.openvz_id, task)
 		if "exist" in res and "running" in res:
 			return generic.State.STARTED
@@ -70,6 +75,10 @@ class OpenVZDevice(generic.Device):
 		for iface in self.interfaces_all():
 			if iface.is_configured():				
 				iface.upcast().start_run(task)
+		if not self.vnc_port:
+			self.vnc_port = self.host.next_free_port()
+			self.save()		
+		self.host.free_port(self.vnc_port, task)		
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
 		self.state = self.get_state(task)
 		self.save()
@@ -78,7 +87,8 @@ class OpenVZDevice(generic.Device):
 
 	def stop_run(self, task):
 		generic.Device.stop_run(self, task)
-		self.host.execute("cat vnc-%s.pid | xargs kill" % self.name, task)
+		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name, task)
+		self.vnc_port=None
 		self.host.execute("vzctl stop %s" % self.openvz_id, task)
 		self.state = self.get_state(task)
 		self.save()
@@ -87,6 +97,9 @@ class OpenVZDevice(generic.Device):
 
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
+		if not self.openvz_id:
+			self.openvz_id = self.host.next_free_vm_id()
+			self.save()				
 		self.host.execute("vzctl create %s --ostemplate %s" % ( self.openvz_id, self.template ), task)
 		self.host.execute("vzctl set %s --devices c:10:200:rw  --capability net_admin:on --save" % self.openvz_id, task)
 		if self.root_password:
@@ -102,6 +115,7 @@ class OpenVZDevice(generic.Device):
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("vzctl destroy %s" % self.openvz_id, task)
+		self.openvz_id=None
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.CREATED
@@ -219,5 +233,4 @@ class ConfiguredInterface(generic.Interface):
 
 	def prepare_run(self, task):
 		openvz_id = self.device.upcast().openvz_id
-		bridge = self.device.upcast().bridge_name(self)
 		self.device.host.execute("vzctl set %s --netif_add %s --save" % ( openvz_id, self.name ), task)

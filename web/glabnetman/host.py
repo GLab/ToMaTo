@@ -29,5 +29,5 @@ debug=wrap_rpc(debug)
 
 def remove(api, request, hostname):
 	api.host_remove(hostname)
-	return render_to_response("admin/host_index.html", {'host_list': api.host_list()})
+	return index(request)
 remove=wrap_rpc(remove)

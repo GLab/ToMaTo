@@ -33,14 +33,12 @@ class TincConnector(generic.Connector):
 	def tincname(self, con):
 		return "tinc_%s" % con.id
 
-	def tincport(self, con):
-		return con.emulatedconnection.tincconnection.tinc_port
-
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
+			host.free_port(con.upcast().tinc_port, task)		
 			host.execute ( "tincd --net=%s" % tincname, task)
 			host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname, task)
 			if self.type == "router":
@@ -86,7 +84,7 @@ class TincConnector(generic.Connector):
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			tincport = self.tincport(con) 
+			tincport = con.upcast().tinc_port 
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
@@ -168,14 +166,13 @@ class TincConnector(generic.Connector):
 		self.save()
 
 class TincConnection(dummynet.EmulatedConnection):
-	tinc_port = models.IntegerField()
+	tinc_port = models.IntegerField(null=True)
 	gateway = models.CharField(max_length=18, null=True) 
 	
 	def init(self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
 		self.bridge_id = self.interface.device.host.next_free_bridge()		
-		self.tinc_port = self.interface.device.host.next_free_port()
 		self.bridge_special_name = ""
 		self.save()
 	
@@ -187,7 +184,8 @@ class TincConnection(dummynet.EmulatedConnection):
 		if self.gateway:
 			dom.setAttribute("gateway", self.gateway)
 		if internal:
-			dom.setAttribute("tinc_port", self.tinc_port)
+			if self.tinc_port:
+				dom.setAttribute("tinc_port", str(self.tinc_port))
 		
 	def decode_xml(self, dom):
 		dummynet.EmulatedConnection.decode_xml(self, dom)
@@ -200,9 +198,14 @@ class TincConnection(dummynet.EmulatedConnection):
 		dummynet.EmulatedConnection.stop_run(self, task)
 
 	def prepare_run(self, task):
+		if not self.tinc_port:
+			self.tinc_port = self.interface.device.host.next_free_port()
+			self.save()
 		dummynet.EmulatedConnection.prepare_run(self, task)
 
 	def destroy_run(self, task):
+		self.tinc_port=None
+		self.save()
 		dummynet.EmulatedConnection.destroy_run(self, task)				
 
 	def change_run(self, dom, task):

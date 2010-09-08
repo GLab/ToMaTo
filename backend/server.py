@@ -15,16 +15,24 @@ class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, papi):
 		self.api=papi
 		xmlrpc.XMLRPC.__init__(self)
+		self.logger = glabnetman.log.Logger(glabnetman.config.log_dir + "/api.log")
+
+	def log(self, function, args, user):
+		if len(str(args)) < 50:
+			self.logger.log("%s%s" %(function.__name__, args), user=user.name)
+		else:
+			self.logger.log(function.__name__, bigmessage=str(args), user=user.name)
 
 	def execute(self, function, args, user):
 		try:
+			self.log(function, args, user)
 			return function(*args, user=user)
 		except xmlrpc.Fault:
 			raise
 		except Exception, exc:
 			traceback.print_exc()
 			glabnetman.fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
-			glabnetman.logger.log("Exception: %s" % exc, user=user.name)
+			self.logger.log("Exception: %s" % exc, user=user.name)
 			raise glabnetman.fault.new(glabnetman.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
 
 	def render(self, request):

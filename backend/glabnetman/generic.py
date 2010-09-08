@@ -78,9 +78,9 @@ class Device(models.Model):
 		dom.setAttribute("id", self.name)
 		dom.setAttribute("type", self.type)
 		if self.hostgroup:
-			dom.setAttribute("hostgroup", self.hostgroup)
+			dom.setAttribute("hostgroup", self.hostgroup.name)
 		if internal:
-			dom.setAttribute("host", self.host)
+			dom.setAttribute("host", self.host.name)
 			dom.setAttribute("state", self.state)
 		for iface in self.interfaces_all():
 			x_iface = doc.createElement ( "interface" )
@@ -338,13 +338,12 @@ class Connector(models.Model):
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
-	bridge_id = models.IntegerField()
+	bridge_id = models.IntegerField(null=True)
 	bridge_special_name = models.CharField(max_length=15, null=True)
 
 	def init (self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
-		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.save()
 
 	def is_emulated(self):
@@ -400,10 +399,13 @@ class Connection(models.Model):
 		pass
 
 	def prepare_run(self, task):
-		pass
+		if not self.bridge_id:
+			self.bridge_id = self.interface.device.host.next_free_bridge()
+			self.save()		
 
 	def destroy_run(self, task):
-		pass
+		self.bridge_id=None
+		self.save()
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)

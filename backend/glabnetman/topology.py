@@ -144,7 +144,7 @@ class Topology(models.Model):
 		@param internal whether to store or ignore assigned ids int the dom
 		"""
 		if internal:
-			dom.setAttribute("id", self.id)
+			dom.setAttribute("id", str(self.id))
 			dom.setAttribute("owner", self.owner)
 		dom.setAttribute("name", self.name)
 		for dev in self.devices_all():

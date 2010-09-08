@@ -16,7 +16,7 @@ error_list=wrap_rpc(error_list)
 
 def error_remove(api, request, error_id):
 	api.errors_remove(error_id)
-	return error_list(api, request)
+	return error_list(request)
 error_remove=wrap_rpc(error_remove)
 
 def task_list(api, request):

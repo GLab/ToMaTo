@@ -45,5 +45,8 @@ class wrap_rpc:
 			if api is None:
 				return HttpResponseNotAuthorized("Authorization required!")
 			return self.fun(api, request, *args, **kwargs) 
+		except xmlrpclib.ProtocolError, e:
+			f={"faultCode": e.errcode, "faultString": e.errmsg}
+			return render_to_response("main/error.html", {'error': f})
 		except xmlrpclib.Fault, f:
 			return render_to_response("main/error.html", {'error': f})
