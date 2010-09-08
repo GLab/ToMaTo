@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.http import HttpResponse
+from django.shortcuts import render_to_response
 import xmlrpclib
 
 httprealm="Glab Network Manager"
@@ -23,8 +24,8 @@ def getapi(request):
 	(username, password) = auth
 	try:
 		api = xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (username, password) )
-		request.session.api = api
 		api.account()
+		return api
 	except:
 		raise xmlrpclib.Fault("-1", "Unauthorized")
 	return True
@@ -35,3 +36,14 @@ class HttpResponseNotAuthorized(HttpResponse):
 		HttpResponse.__init__(self)
 		self['WWW-Authenticate'] = 'Basic realm="%s"' % httprealm
 
+class wrap_rpc:
+	def __init__(self, fun):
+		self.fun = fun
+	def __call__(self, request, *args, **kwargs):
+		try:
+			api = getapi(request)
+			if api is None:
+				return HttpResponseNotAuthorized("Authorization required!")
+			return self.fun(api, request, *args, **kwargs) 
+		except xmlrpclib.Fault, f:
+			return render_to_response("main/error.html", {'error': f})
