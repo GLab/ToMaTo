@@ -44,10 +44,11 @@ public class KvmDevice extends Device {
 
   public KvmDevice (String newName) {
     super(newName, "/icons/computer.png");
+    num++;
   }
 
   public NetElement createAnother () {
-    return new KvmDevice("kvm"+(num++)) ;
+    return new KvmDevice("kvm"+num) ;
   }
 
   static PropertiesArea propertiesArea ;
