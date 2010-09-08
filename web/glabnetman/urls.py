@@ -9,7 +9,6 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('',
 	(r'^$', 'glabnetman.main.index'),
 	(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'static'}),
-	(r'^logout$', 'glabnetman.main.logout'),
 	(r'^help$', 'glabnetman.main.help'),
 	(r'^help/(?P<page>.*)$', 'glabnetman.main.help'),
 	(r'^errors$', 'glabnetman.main.error_list'),
