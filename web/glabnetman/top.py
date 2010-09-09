@@ -106,7 +106,7 @@ showxml=wrap_rpc(showxml)
 
 def remove(api, request, top_id):
 	api.top_remove(int(top_id))
-	return index(api, request)
+	return index(request)
 remove=wrap_rpc(remove)
 
 def prepare(api, request, top_id):
