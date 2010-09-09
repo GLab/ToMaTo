@@ -315,7 +315,7 @@ def upload_image(top_id, device_id, upload_id, user=None):
 	upload = tasks.UploadTask.tasks[upload_id]
 	upload.finished()
 	top=topology.get(top_id)
-	_top_access(top, "user", user)
+	_top_access(top, "manager", user)
 	top.logger().log("uploading image %s" % device_id, user=user.name)
 	task_id =  top.upload_image(device_id, upload.filename)
 	top.logger().log("started task %s" % task_id, user=user.name)
@@ -323,7 +323,7 @@ def upload_image(top_id, device_id, upload_id, user=None):
 
 def download_image(top_id, device_id, user=None):
 	top=topology.get(top_id)
-	_top_access(top, "user", user)
+	_top_access(top, "manager", user)
 	filename = top.download_image(device_id)
 	task = tasks.DownloadTask(filename)
 	return task.id
