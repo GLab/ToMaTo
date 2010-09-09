@@ -19,10 +19,6 @@ package buildui;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/******** 
- * FIXME: Glab colors
- * FIXME: More edit elements (Dropdowns, etc.)
- */
 import buildui.paint.FlatButton;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
@@ -324,12 +320,12 @@ public class Netbuild extends java.applet.Applet
     clickedOnSomething = (clickedOn != null);
 
     if (e.isControlDown()) {
+      if (readOnly) return;
       allowMove = false;
       if (clickedOnSomething) {
         for (NetElement a: NetElement.selectedElements()) {
           NetElement b = clickedOn;
-
-          if (a != b && a != null && b != null && a.linkable && b.linkable)
+          if (a != b && a != null && b != null && a.linkable && b.linkable) {
             if (a instanceof Device && b instanceof Device)
               Netbuild.setStatus("!Device to device connection not allowed.");
             else if (a instanceof Device && b instanceof Connector) {
@@ -350,9 +346,7 @@ public class Netbuild extends java.applet.Applet
               paintElement(iface);
             } else if (a instanceof InternetConnector && b instanceof InternetConnector)
               Netbuild.setStatus("!Connector to connector connection not allowed.");
-            else {
-            }
-
+          }
         }
       }
     } else {// if (e.controlDown())

@@ -227,7 +227,6 @@ public class WorkArea {
           c.readAttributes(x_c);
           add(c);
           connectionMap.put(devName+"."+ifName, c);
-          System.out.println("adding " + devName+"."+ifName);
         }
       }
       for (int i = 0; i < x_devices.getLength(); i++) {
@@ -238,7 +237,6 @@ public class WorkArea {
         for (int j = 0; j < interfaces.getLength(); j++) {
           Element x_iface = (Element)interfaces.item(j);
           String ifName = x_iface.getAttribute("id");
-          System.out.println("searching " + devName+"."+ifName);
           Connection c = connectionMap.get(dev.getName()+"."+ifName);
           if (c!=null) {
             Interface iface = dev.createInterface(ifName, c);
