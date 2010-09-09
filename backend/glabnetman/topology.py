@@ -389,10 +389,10 @@ class Topology(models.Model):
 		
 	def permissions_get(self, user_name):
 		set = self.permission_set.filter(user=user_name)
-		if set.is_empty():
-			return None
-		else:
+		if set.count() > 0:
 			return set[0].role
+		else:
+			return None
 		
 	def check_access(self, type, user):
 		if user.is_admin:
