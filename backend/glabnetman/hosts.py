@@ -114,13 +114,13 @@ class Host(models.Model):
 
 	def debug_info(self):		
 		result={}
+		result["top"] = self.get_result("top -n 1")
 		result["OpenVZ"] = self.get_result("vzlist -a")
 		result["KVM"] = self.get_result("qm list")
 		result["Bridges"] = self.get_result("brctl show")
 		result["iptables router"] = self.get_result("iptables -t mangle -v -L PREROUTING")		
 		result["ipfw rules"] = self.get_result("ipfw show")
 		result["ipfw pipes"] = self.get_result("ipfw pipe show")
-		result["ifconfig"] = self.get_result("ifconfig -a")
 		result["ifconfig"] = self.get_result("ifconfig -a")
 		result["netstat"] = self.get_result("netstat -tulpen")		
 		return result
