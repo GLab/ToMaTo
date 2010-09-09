@@ -32,7 +32,7 @@ public class RouterConnector extends Connector {
   static PropertiesArea propertiesArea ;
 
   public static void init ( Applet parent ) {
-    num = 1;
+    num = 0;
     propertiesArea = new RouterPropertiesArea();
   }
 

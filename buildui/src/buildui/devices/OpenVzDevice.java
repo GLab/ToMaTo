@@ -35,7 +35,7 @@ public class OpenVzDevice extends Device {
   static int num;
 
   public static void init ( Applet parent ) {
-    num = 1 ;
+    num = 0 ;
     propertiesArea = new OpenVzPropertiesArea();
     templates.clear();
     templates.add("<auto>");
