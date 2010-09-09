@@ -385,8 +385,8 @@ class Connection(models.Model):
 					
 	def start_run(self, task):
 		host = self.interface.device.host
+		host.execute("brctl addbr %s" % self.bridge_name(), task)
 		if not self.bridge_special_name:
-			host.execute("brctl addbr %s" % self.bridge_name(), task)
 			host.execute("ip link set %s up" % self.bridge_name(), task)
 
 	def stop_run(self, task):
