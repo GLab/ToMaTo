@@ -85,7 +85,7 @@ def edit(api, request, top_id):
 			editor = "ui"
 		else:
 			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups} )
+		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, 'edit':True} )
 	xml=request.REQUEST["xml"]
 	task_id=api.top_change(int(top_id), xml)
 	return _display_top(api, top_id, task_id, "Change topology")
@@ -95,14 +95,16 @@ def details(api, request, top_id):
 	return _display_top(api, top_id)
 details=wrap_rpc(details)
 	
-def showxml(api, request, top_id):
+def show(api, request, top_id):
 	xml=api.top_get(int(top_id), True)
-	if request.REQUEST.has_key("plain"):
-		return HttpResponse(xml, mimetype="text/plain")
+	if not request.REQUEST.has_key("format"):
+		format = "ui"
 	else:
-		top=api.top_info(int(top_id))
-		return render_to_response("top/showxml.html", {'top_id': top_id, 'top': top, 'xml': xml})
-showxml=wrap_rpc(showxml)
+		format = request.REQUEST["format"]
+	if format == "plain":
+		return HttpResponse(xml, mimetype="text/plain")		
+	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': ""} )
+show=wrap_rpc(show)
 
 def remove(api, request, top_id):
 	api.top_remove(int(top_id))

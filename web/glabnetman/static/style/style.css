@@ -156,18 +156,21 @@ a:active, a:hover
 	background: url(images/line.gif) repeat-x left bottom;
 }
 
-#sidemenu ul li a {
+#sidemenu ul li {
 	display: block;
-	text-decoration: none;
 	background: url(images/glab_icon.png)  10px 3px no-repeat;
 	padding: 2px 0 2px 40px;
-	color: #000000;
-	line-height: 19px;
 }
 
-#sidemenu ul ul li a {
+#sidemenu ul ul li {
 	background-position: 40px 3px;
 	padding-left: 70px;
+}
+
+#sidemenu ul li a {
+	text-decoration: none;
+	color: #000000;
+	line-height: 19px;
 }
 
 #sidemenu ul li a:hover, #sidemenu  .active a{
