@@ -145,7 +145,7 @@ def top_info(id, user=None):
 	top = topology.get(id)
 	return _topology_info(top, top.check_access("user", user))
 
-def top_list(owner_filter, host_filter, user=None):
+def top_list(owner_filter, host_filter, access_filter, user=None):
 	tops=[]
 	all = topology.all()
 	if not owner_filter=="*":
@@ -153,7 +153,8 @@ def top_list(owner_filter, host_filter, user=None):
 	if not host_filter=="*":
 		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
-		tops.append(_topology_info(t, t.check_access("user", user)))
+		if access_filter=="*" or t.check_access(access_filter, user):
+			tops.append(_topology_info(t, t.check_access("user", user)))
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
