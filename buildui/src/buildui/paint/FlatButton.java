@@ -25,7 +25,7 @@ import java.awt.event.*;
 
 public class FlatButton extends Canvas {
 
-  String text;
+  private String text;
   boolean mouseIsOver;
   ActionListener myActionListener;
 
@@ -42,6 +42,7 @@ public class FlatButton extends Canvas {
   }
 
   protected void clicked () {
+    if ( ! isEnabled() ) return;
     ActionEvent ce = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "clicked");
     if (myActionListener != null) myActionListener.actionPerformed(ce);
   }
@@ -99,5 +100,19 @@ public class FlatButton extends Canvas {
     else g.setColor(Color.lightGray);
 
     g.drawString(text, begin, size.height / 2 + fm.getHeight() / 3);
+  }
+
+  /**
+   * @return the text
+   */
+  public String getText () {
+    return text;
+  }
+
+  /**
+   * @param text the text to set
+   */
+  public void setText (String text) {
+    this.text = text;
   }
 };

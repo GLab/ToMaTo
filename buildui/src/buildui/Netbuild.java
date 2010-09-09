@@ -79,6 +79,7 @@ public class Netbuild extends java.applet.Applet
   private int propAreaX;
   private FlatButton exportButton;
   private FlatButton copyButton;
+  private boolean readOnly = false;
 
   private static void dialog (String title, String message) {
     Frame window = new Frame();
@@ -207,6 +208,7 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void mouseDragged (MouseEvent e) {
+    if (readOnly) return;
     if (!mouseDown) return;
     Graphics g = getGraphics();
     g.setXORMode(Color.white);
@@ -286,6 +288,7 @@ public class Netbuild extends java.applet.Applet
   }
 
   public void actionPerformed (ActionEvent e) {
+    if (readOnly) return;
     if (e.getSource() == exportButton) {
       startAppropriatePropertiesArea(); // make sure strings are up'd
       upload(modify);
@@ -523,6 +526,10 @@ public class Netbuild extends java.applet.Applet
     return "Designs a network topology.";
   }
 
+  public static boolean isReadOnly() {
+    return me.readOnly;
+  }
+
   public void init () {
     try {
       status = "Netbuild v1.03 started.";
@@ -564,6 +571,7 @@ public class Netbuild extends java.applet.Applet
       propertiesPanel = new Panel();
 
       modify = download();
+      readOnly = getParameter("upload_url") == null;
 
       dragStarted = false;
 
@@ -591,8 +599,8 @@ public class Netbuild extends java.applet.Applet
       propertiesPanel.setLocation(propAreaX + 8, 0 + 8);
       propertiesPanel.setSize(propAreaWidth - 16, appHeight - 16 - 32);
 
-      exportButton.setVisible(true);
-      exportButton.setEnabled(workArea.getElementCount() > 0);
+      exportButton.setVisible(!readOnly);
+      exportButton.setEnabled(workArea.getElementCount() > 0 && !readOnly);
       add(exportButton);
 
       exportButton.setLocation(propAreaX + 8, appHeight - 24 - 2 - 2);
@@ -638,6 +646,10 @@ public class Netbuild extends java.applet.Applet
 
   public void upload (boolean modify) {
     try {
+      readOnly = true;
+      exportButton.setEnabled(false);
+      exportButton.setText("sending...");
+      exportButton.repaint();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       workArea.encode(baos);
       String xml = baos.toString();
@@ -667,7 +679,8 @@ public class Netbuild extends java.applet.Applet
           con.disconnect();
           URL backurl = new URL ( base, backstr );
           getAppletContext().showDocument(backurl);
-          //dialog("Success", id + ": " + task);
+          removeAll();
+          setVisible(false);
         } else if ( kind.equals("ERROR") ) {
           String code = reply[3] ;
           String message = reply[4] ;

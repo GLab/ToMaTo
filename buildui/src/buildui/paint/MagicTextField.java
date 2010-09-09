@@ -31,6 +31,7 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
   private String pattern;
   private static Color darkGreen = new Color(0.0f, 0.33f, 0.0f);
   private PropertiesArea parent ;
+  private FlatButton fb;
 
   public static final String identifier_pattern = "(?:[0-9a-zA-Z_-]*)" ;
   public static final String numeric_pattern = "(?:[0-9]|[1-9][0-9]*)" ;
@@ -63,7 +64,7 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
     parent.addComponent(textField);
 
     if (name.compareTo("name:") != 0 && def != null ) {
-      FlatButton fb = new FlatButton("default") {
+      fb = new FlatButton("default") {
         public Dimension getPreferredSize () {
           return new Dimension(72, 18);
         }
@@ -116,6 +117,7 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
     textField.setEditable(enabled);
     if (enabled) textField.setBackground(Color.white);
     else textField.setBackground(Color.LIGHT_GRAY);
+    if ( fb != null ) fb.setEnabled(enabled);
   }
 
   public boolean isEnabled () {
