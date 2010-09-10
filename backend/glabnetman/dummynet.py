@@ -70,7 +70,7 @@ class EmulatedConnection(generic.Connection):
 			
 	def prepare_run(self, task):
 		host = self.interface.device.host
-		host.execute("brctl addbr dummy", task)
+		host.bridge_create("dummy")
 		host.execute("ifconfig dummy 0.0.0.0 up", task)
 		generic.Connection.prepare_run(self, task)
 

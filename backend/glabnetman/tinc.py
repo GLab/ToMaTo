@@ -40,6 +40,7 @@ class TincConnector(generic.Connector):
 			tincname = self.tincname(con)
 			host.free_port(con.upcast().tinc_port, task)		
 			host.execute ( "tincd --net=%s" % tincname, task)
+			assert host.interface_exists(tincname), "Tinc deamon did not start"
 			host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname, task)
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
@@ -55,7 +56,7 @@ class TincConnector(generic.Connector):
 				host.execute ( "ip route add table %s default dev %s" % ( table_in, con.bridge_name() ), task )
 				host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ), task )
 			else:
-				host.execute ( "brctl addif %s %s" % (con.bridge_name(), tincname ), task)
+				host.bridge_connect(con.bridge_name(), tincname)
 		self.state = generic.State.STARTED
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1

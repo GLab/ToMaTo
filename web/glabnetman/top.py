@@ -32,7 +32,7 @@ def create(api, request):
 			editor = "ui"
 		else:
 			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups})
+		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "edit": True})
 	xml=request.REQUEST["xml"]
 	top_id=api.top_import(xml)
 	return _display_top(api, top_id)

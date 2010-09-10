@@ -113,6 +113,46 @@ class Host(models.Model):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
 		self.execute("lsof -i:%s -t | xargs -r kill" % port, task)
 
+	def bridge_exists(self, bridge):
+		return self.get_result("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge).split()[0] == "0"
+
+	def bridge_create(self, bridge):
+		self.get_result("brctl addbr %s" % bridge)
+		assert self.bridge_exists(bridge), "Bridge cannot be created: %s" % bridge
+		
+	def bridge_remove(self, bridge):
+		self.get_result("brctl delbr %s" % bridge)
+		assert not self.bridge_exists(bridge), "Bridge cannot be removed: %s" % bridge
+		
+	def bridge_interfaces(self, bridge):
+		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge 
+		return self.get_result("ls /sys/class/net/%s/brif" % bridge).split()
+		
+	def bridge_disconnect(self, bridge, iface):
+		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge
+		if not iface in self.bridge_interfaces(bridge):
+			return
+		self.get_result("brctl delif %s %s" % (bridge, iface))
+		assert not iface in self.bridge_interfaces(bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
+		
+	def bridge_connect(self, bridge, iface):
+		if iface in self.bridge_interfaces(bridge):
+			return
+		assert self.interface_exists(iface), "Interface does not exist: %s" % iface
+		if not self.bridge_exists(bridge):
+			self.bridge_create(bridge)
+		oldbridge = self.interface_bridge(iface)
+		if oldbridge:
+			self.bridge_disconnect(oldbridge, iface)
+		self.get_result("brctl addif %s %s" % (bridge, iface))
+		assert iface in self.bridge_interfaces(bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
+		
+	def interface_bridge(self, iface):
+		return self.get_result("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)).split()[0]
+			
+	def interface_exists(self, iface):
+		return self.get_result("[ -d /sys/class/net/%s ]; echo $?" % iface).split()[0] == "0"
+
 	def debug_info(self):		
 		result={}
 		result["top"] = self.get_result("top -n 1")

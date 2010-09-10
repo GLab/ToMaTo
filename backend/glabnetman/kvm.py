@@ -76,9 +76,7 @@ class KVMDevice(generic.Device):
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			bridge = self.bridge_name(iface)
-			self.host.execute("brctl delif vmbr%s vmtab%si%s" % ( iface_id, self.kvm_id, iface_id ), task)
-			self.host.execute("brctl addbr %s" % bridge, task)
-			self.host.execute("brctl addif %s vmtab%si%s" % ( bridge, self.kvm_id, iface_id ), task)
+			self.host.bridge_connect(bridge, "vmtab%si%s" % ( self.kvm_id, iface_id ) )
 			self.host.execute("ip link set %s up" % bridge, task)
 		if not self.vnc_port:
 			self.vnc_port = self.host.next_free_port()
@@ -87,7 +85,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
 		self.state = self.get_state(task)
 		self.save()
-		assert self.state == generic.State.STARTED
+		assert self.state == generic.State.STARTED, "VM is not started"
 		task.subtasks_done = task.subtasks_done + 1
 
 	def stop_run(self, task):
@@ -97,7 +95,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("qm stop %s" % self.kvm_id, task)
 		self.state = self.get_state(task)
 		self.save()
-		assert self.state == generic.State.PREPARED
+		assert self.state == generic.State.PREPARED, "VM is not prepared"
 		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):
@@ -115,7 +113,7 @@ class KVMDevice(generic.Device):
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
 		self.state = self.get_state(task)
 		self.save()
-		assert self.state == generic.State.PREPARED
+		assert self.state == generic.State.PREPARED, "VM is not prepared"
 		task.subtasks_done = task.subtasks_done + 1
 
 	def destroy_run(self, task):
@@ -124,7 +122,7 @@ class KVMDevice(generic.Device):
 		self.kvm_id=None
 		self.state = self.get_state(task)
 		self.save()
-		assert self.state == generic.State.CREATED
+		assert self.state == generic.State.CREATED, "VM still exists"
 		task.subtasks_done = task.subtasks_done + 1
 
 	def is_changed(self, dom):
