@@ -145,7 +145,7 @@ def top_info(id, user=None):
 	top = topology.get(id)
 	return _topology_info(top, top.check_access("user", user))
 
-def top_list(owner_filter, host_filter, user=None):
+def top_list(owner_filter, host_filter, access_filter, user=None):
 	tops=[]
 	all = topology.all()
 	if not owner_filter=="*":
@@ -153,7 +153,8 @@ def top_list(owner_filter, host_filter, user=None):
 	if not host_filter=="*":
 		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
-		tops.append(_topology_info(t, t.check_access("user", user)))
+		if access_filter=="*" or t.check_access(access_filter, user):
+			tops.append(_topology_info(t, t.check_access("user", user)))
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
@@ -314,7 +315,7 @@ def upload_image(top_id, device_id, upload_id, user=None):
 	upload = tasks.UploadTask.tasks[upload_id]
 	upload.finished()
 	top=topology.get(top_id)
-	_top_access(top, "user", user)
+	_top_access(top, "manager", user)
 	top.logger().log("uploading image %s" % device_id, user=user.name)
 	task_id =  top.upload_image(device_id, upload.filename)
 	top.logger().log("started task %s" % task_id, user=user.name)
@@ -322,7 +323,7 @@ def upload_image(top_id, device_id, upload_id, user=None):
 
 def download_image(top_id, device_id, user=None):
 	top=topology.get(top_id)
-	_top_access(top, "user", user)
+	_top_access(top, "manager", user)
 	filename = top.download_image(device_id)
 	task = tasks.DownloadTask(filename)
 	return task.id

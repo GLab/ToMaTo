@@ -3,6 +3,7 @@
 {% block content %}
 <h1>List of topologies</h1>
 
+{% if top_list %}
 <table>
   <tr>
     <th>ID</th>
@@ -21,4 +22,7 @@
   </tr>
 {% endfor %}
 </table>
+{% else %}
+Currently you do not have any topologies you can access. Click on "create new topology" to create one.
+{% endif %}
 {% endblock %}

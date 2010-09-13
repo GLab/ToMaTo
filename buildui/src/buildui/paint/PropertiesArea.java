@@ -193,11 +193,13 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
 
     currentThingees = elements;
     //	System.out.println( "PropertiesArea.download(): Ending");
+    if ( Netbuild.isReadOnly() ) for (Property p: propertyList) p.editElement.setEnabled(false);
+
   }
 
   public synchronized void upload () {
     //	System.out.println("Upload begins..");
-    if (currentThingees == null) return;
+    if (currentThingees == null || Netbuild.isReadOnly()) return;
 
     Enumeration et = currentThingees.elements();
 

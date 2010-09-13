@@ -7,7 +7,7 @@ from lib import *
 import xmlrpclib
 
 def index(request):
-	return render_to_response("main/base.html")
+	return render_to_response("main/start.html")
 
 def error_list(api, request):
 	errors = api.errors_all()
