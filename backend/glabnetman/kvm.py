@@ -112,7 +112,6 @@ class KVMDevice(generic.Device):
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
-			self.host.execute("brctl addbr vmbr%s" % iface_id)
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
@@ -161,8 +160,8 @@ class KVMDevice(generic.Device):
 				self.interfaces_add(iface)
 				if self.state == "prepared":
 					iface_id = re.match("eth(\d+)", iface.name).group(1)
+					self.host.bridge_create("vmbr%s" % iface_id)
 					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
-					self.host.execute("brctl addbr vmbr%s" % iface_id)
 		for iface in self.interfaces_all():
 			if not iface.name in ifaces:
 				#deleted interface
