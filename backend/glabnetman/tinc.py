@@ -2,7 +2,7 @@
 
 from django.db import models
 
-import dummynet, generic, hosts, os, subprocess, shutil, fault, util
+import dummynet, generic, config, hosts, os, subprocess, shutil, fault, util
 
 class TincConnector(generic.Connector):
 	
@@ -40,7 +40,8 @@ class TincConnector(generic.Connector):
 			tincname = self.tincname(con)
 			host.free_port(con.upcast().tinc_port, task)		
 			host.execute ( "tincd --net=%s" % tincname, task)
-			assert host.interface_exists(tincname), "Tinc deamon did not start"
+			if not config.remote_dry_run:
+				assert host.interface_exists(tincname), "Tinc deamon did not start"
 			host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname, task)
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id

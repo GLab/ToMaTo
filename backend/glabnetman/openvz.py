@@ -54,6 +54,8 @@ class OpenVZDevice(generic.Device):
 		self.root_password = dom.getAttribute("root_password")
 
 	def get_state(self, task):
+		if config.remote_dry_run:
+			return self.state
 		if not self.openvz_id:
 			return generic.State.CREATED
 		res = self.host.execute("vzctl status %s" % self.openvz_id, task)

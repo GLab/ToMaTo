@@ -26,6 +26,8 @@ class KVMDevice(generic.Device):
 		return self
 
 	def get_state(self, task):
+		if config.remote_dry_run:
+			return self.state
 		if not self.kvm_id:
 			return generic.State.CREATED
 		res = self.host.execute("qm status %s" % self.kvm_id, task)
