@@ -110,6 +110,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("qm set %s --name \"%s_%s\"" % (self.kvm_id, self.topology.name, self.name), task)
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
+			self.host.bridge_create("vmbr%s" % iface_id)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
 		self.state = self.get_state(task)
 		self.save()
