@@ -23,7 +23,7 @@ def _topology_info(top, auth):
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
-		"date_created": top.date_created, "date_modified": top.date_modified
+		"date_created": top.date_created, "date_modified": top.date_modified, "date_usage": top.date_usage
 		}
 	if auth:
 		task = top.get_task()
@@ -223,6 +223,13 @@ def top_stop(top_id, user=None):
 	task_id = top.stop()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
+
+def top_renew(top_id, user=None):
+	top = topology.get(top_id)
+	_top_access(top, "user", user)
+	top.logger().log("renewing topology", user=user.name)
+	top.renew()
+	return True
 
 def device_prepare(top_id, device_name, user=None):
 	top = topology.get(top_id)

@@ -52,6 +52,10 @@ password_salt = get("local", "password_salt", "glabnetman")
 
 auth_dry_run = parse_bool(get("auth", "dry_run", True))
 
+timeout_stop_weeks = int(get("timeout", "stop", 4))
+timeout_destroy_weeks = int(get("timeout", "destroy", 12))
+timeout_remove_weeks = int(get("timeout", "remove", 24))
+
 DATABASE_ENGINE = get("local", "database_engine", 'sqlite3')
 DATABASE_NAME = get("local", "database_name", 'db.sqlite')
 TIME_ZONE = 'Europe/Berlin'

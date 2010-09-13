@@ -95,6 +95,7 @@ class Device(models.Model):
 		util.get_attr(dom, "hostgroup", default=None)
 		
 	def start(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
@@ -106,6 +107,7 @@ class Device(models.Model):
 		return task.id
 		
 	def stop(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
@@ -115,6 +117,7 @@ class Device(models.Model):
 		return task.id
 
 	def prepare(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.PREPARED:
@@ -126,6 +129,7 @@ class Device(models.Model):
 		return task.id
 
 	def destroy(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
@@ -246,6 +250,7 @@ class Connector(models.Model):
 		self.pos = dom.getAttribute("pos")
 
 	def start(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
@@ -257,6 +262,7 @@ class Connector(models.Model):
 		return task.id
 		
 	def stop(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
@@ -266,6 +272,7 @@ class Connector(models.Model):
 		return task.id
 
 	def prepare(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.PREPARED:
@@ -277,6 +284,7 @@ class Connector(models.Model):
 		return task.id
 
 	def destroy(self):
+		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:

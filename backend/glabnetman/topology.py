@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
-import os
+import os, datetime, util, atexit
 import config, log, fault, tasks
 import topology_analysis, generic
 
@@ -26,7 +26,13 @@ class Topology(models.Model):
 	
 	date_modified = models.DateTimeField(auto_now=True)
 
+	date_usage = models.DateTimeField()
+
 	task = models.CharField(max_length=100, blank=True, null=True)
+
+	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
+	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
+	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.timeout_remove_weeks)
 
 	def logger(self):
 		if not hasattr(self, "_logger"):
@@ -42,6 +48,7 @@ class Topology(models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
+		self.date_usage = datetime.datetime.now()
 		self.save()
 		try:
 			self.load_from(dom)
@@ -51,6 +58,22 @@ class Topology(models.Model):
 		if not self.name:
 			self.name = "Topology_%s" % self.id
 		self.save()
+
+	def renew(self):
+		self.date_usage = datetime.datetime.now()
+		self.save()
+
+	def check_timeout(self):
+		now = datetime.datetime.now()
+		if now > self.date_usage + self.REMOVE_TIMEOUT:
+			self.logger().log("timeout: removing topology")
+			self.remove()
+		elif now > self.date_usage + self.DESTROY_TIMEOUT:
+			self.logger().log("timeout: destroying topology")
+			self.destroy()
+		elif now > self.date_usage + self.STOP_TIMEOUT:
+			self.logger().log("timeout: stopping topology")
+			self.stop()
 
 	def get_task(self):
 		if not self.task:
@@ -175,6 +198,7 @@ class Topology(models.Model):
 		Starts the topology.
 		This will fail if the topology has not been prepared yet or is already started.
 		"""
+		self.renew()
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = self.start_task(self.start_run)
@@ -207,6 +231,7 @@ class Topology(models.Model):
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
+		self.renew()
 		task = self.start_task(self.stop_run)
 		return task.id
 
@@ -227,6 +252,7 @@ class Topology(models.Model):
 		Prepares the topology.
 		This will fail if the topology is already prepared or started.
 		"""
+		self.renew()
 		if len(self.analysis()["problems"]) > 0:
 			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
 		task = self.start_task(self.prepare_run)
@@ -249,6 +275,7 @@ class Topology(models.Model):
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
+		self.renew()
 		task = self.start_task(self.destroy_run)
 		return task.id
 
@@ -346,6 +373,7 @@ class Topology(models.Model):
 				pass
 	
 	def change(self, newtop):
+		self.renew()
 		self.change_possible(newtop)
 		task = self.start_task(self.change_run,newtop)
 		task.subtasks_total = 1
@@ -356,6 +384,7 @@ class Topology(models.Model):
 		logger.log(task, bigmessage=output)
 		
 	def upload_image(self, device_id, filename):
+		self.renew()
 		device = self.devices_get(device_id)
 		if not device:
 			os.remove(filename)
@@ -367,6 +396,7 @@ class Topology(models.Model):
 		return task.id
 	
 	def download_image(self, device_id):
+		self.renew()
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		device = self.devices_get(device_id)
@@ -377,6 +407,7 @@ class Topology(models.Model):
 		return device.upcast().download_image()
 
 	def permissions_add(self, user_name, role):
+		self.renew()
 		self.permission_set.add(Permission(user=user_name, role=role))
 		self.save()
 	
@@ -384,6 +415,7 @@ class Topology(models.Model):
 		return self.permission_set.all()
 	
 	def permissions_remove(self, user_name):
+		self.renew()
 		self.permission_set.filter(user=user_name).delete()
 		self.save()
 		
@@ -403,7 +435,7 @@ class Topology(models.Model):
 			return self.permissions_get(user.name) == Permission.ROLE_MANAGER
 		if type == Permission.ROLE_USER:
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
-
+		
 class Permission(models.Model):
 	ROLE_USER="user"
 	ROLE_MANAGER="manager"
@@ -426,3 +458,12 @@ def create(dom, owner):
 	top = Topology()
 	top.init(dom, owner)
 	return top
+
+def cleanup():
+	print "Checking topology timeouts"
+	for top in all():
+		top.check_timeout()
+
+cleanup_task = util.RepeatedTimer(300, cleanup)
+cleanup_task.start()
+atexit.register(cleanup_task.stop)

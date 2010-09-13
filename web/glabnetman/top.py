@@ -69,7 +69,13 @@ def download_image(api, request, top_id, device_id):
 	return response
 download_image=wrap_rpc(download_image)
 
+def renew(api, request, top_id):
+	api.top_renew(int(top_id))
+	return _display_top(api, top_id)
+renew=wrap_rpc(renew)
+
 def vncview(api, request, top_id, device_id):
+	api.top_renew(int(top_id))
 	top=api.top_info(int(top_id))
 	device=dict(top["devices"])[device_id]
 	return render_to_response("top/vncview.html", {'top': top, 'device': device})
