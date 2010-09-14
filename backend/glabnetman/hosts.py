@@ -109,6 +109,15 @@ class Host(models.Model):
 	def get_result(self, command):
 		return self._exec(["ssh", "root@%s" % self.name, command])
 
+	def _first_line(self, str):
+		if not str:
+			return str
+		str = str.splitlines()
+		if len(str) == 0:
+			return ""
+		else:
+			return str[0]
+
 	def free_port(self, port, task):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
 		self.execute("lsof -i:%s -t | xargs -r kill" % port, task)
@@ -116,7 +125,7 @@ class Host(models.Model):
 	def bridge_exists(self, bridge):
 		if config.remote_dry_run:
 			return
-		return self.get_result("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge).split()[0] == "0"
+		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
 
 	def bridge_create(self, bridge):
 		if config.remote_dry_run:
@@ -162,12 +171,12 @@ class Host(models.Model):
 	def interface_bridge(self, iface):
 		if config.remote_dry_run:
 			return
-		return self.get_result("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)).split()[0]
+		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
 			
 	def interface_exists(self, iface):
 		if config.remote_dry_run:
 			return
-		return self.get_result("[ -d /sys/class/net/%s ]; echo $?" % iface).split()[0] == "0"
+		return self._first_line(self.get_result("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
 
 	def debug_info(self):		
 		result={}
