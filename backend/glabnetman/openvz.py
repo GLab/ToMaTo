@@ -9,6 +9,7 @@ class OpenVZDevice(generic.Device):
 	root_password = models.CharField(max_length=50, null=True)
 	template = models.CharField(max_length=30)
 	vnc_port = models.IntegerField(null=True)
+	gateway = models.CharField(max_length=15, null=True)
 		
 	def init(self, topology, dom):
 		self.topology = topology
@@ -42,6 +43,8 @@ class OpenVZDevice(generic.Device):
 		dom.setAttribute("template", self.template)
 		if self.root_password:
 			dom.setAttribute("root_password", self.root_password)
+		if self.gateway:
+			dom.setAttribute("gateway", self.gateway)
 		if internal:
 			if self.openvz_id:
 				dom.setAttribute("openvz_id", str(self.openvz_id))
@@ -52,6 +55,7 @@ class OpenVZDevice(generic.Device):
 		generic.Device.decode_xml(self, dom)
 		self.template = dom.getAttribute("template")
 		self.root_password = dom.getAttribute("root_password")
+		self.gateway = util.get_attr(dom, "gateway", default=None)
 
 	def get_state(self, task):
 		if config.remote_dry_run:
@@ -79,6 +83,8 @@ class OpenVZDevice(generic.Device):
 				iface = iface.upcast()
 				iface.start_run(task)
 				assert self.host.interface_bridge(iface.interface_name()) == self.bridge_name(iface), "Interface %s not connect to bridge %s" % (iface.interface_name(), self.bridge_name(iface))
+		if self.gateway:
+			self.host.execute("vzctl exec %s route add default gw %s" % ( self.openvz_id, self.gateway), task) 
 		if not self.vnc_port:
 			self.vnc_port = self.host.next_free_port()
 			self.save()		
@@ -141,6 +147,7 @@ class OpenVZDevice(generic.Device):
 		self.root_password = util.get_attr(dom, "root_password")
 		if self.root_password and ( self.state == "prepared" or self.state == "started" ):
 			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ), task )
+		self.gateway = util.get_attr(dom, "gateway", self.gateway)
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
 			name = x_iface.getAttribute("id")
@@ -197,7 +204,6 @@ class OpenVZDevice(generic.Device):
 class ConfiguredInterface(generic.Interface):
 	use_dhcp = models.BooleanField()
 	ip4address = models.CharField(max_length=18, null=True)
-	gateway = models.CharField(max_length=15, null=True)
 
 	def init(self, device, dom):
 		self.device = device
@@ -213,8 +219,6 @@ class ConfiguredInterface(generic.Interface):
 			dom.setAttribute("use_dhcp", str(self.use_dhcp).lower())
 		if self.ip4address:
 			dom.setAttribute("ip4address", self.ip4address)
-		if self.gateway:
-			dom.setAttribute("gateway", self.gateway)
 
 	def interface_name(self):
 		return "veth%s.%s" % ( self.device.upcast().openvz_id, self.name )
@@ -223,7 +227,6 @@ class ConfiguredInterface(generic.Interface):
 		generic.Interface.decode_xml(self, dom)
 		self.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
 		self.ip4address = util.get_attr(dom, "ip4address", default=None)
-		self.gateway = util.get_attr(dom, "gateway", default=None)
 		
 	def start_run(self, task):
 		openvz_id = self.device.upcast().openvz_id
@@ -232,8 +235,6 @@ class ConfiguredInterface(generic.Interface):
 		if self.ip4address:
 			self.device.host.execute("vzctl exec %s ip addr add %s dev %s" % ( openvz_id, self.ip4address, self.name ), task) 
 			self.device.host.execute("vzctl exec %s ip link set up dev %s" % ( openvz_id, self.name ), task) 
-		if self.gateway:
-			self.device.host.execute("vzctl exec %s route add default gw %s" % ( openvz_id, self.gateway), task) 
 		if self.use_dhcp:
 			self.device.host.execute("vzctl exec %s \"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % ( openvz_id, self.name ), task)
 			self.device.host.execute("vzctl exec %s \"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % ( openvz_id, self.name ), task)					
