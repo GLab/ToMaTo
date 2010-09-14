@@ -43,20 +43,25 @@ class EmulatedConnection(generic.Connection):
 		self.bandwidth = util.get_attr(dom, "bandwidth", default="0")
 		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
 
-	def start_run(self, task):
-		generic.Connection.start_run(self, task)
+	def _config_link(self, task):
 		host = self.interface.device.host
 		pipe_id = int(self.bridge_id) * 10
 		pipe_config=""
-		host.execute("modprobe ipfw_mod", task)
-		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id+1, pipe_id, self.bridge_name() ), task)
 		if self.delay:
 			pipe_config = pipe_config + " " + "delay %sms" % self.delay
 		if self.bandwidth:
 			pipe_config = pipe_config + " " + "bw %sk" % self.bandwidth
-		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
 		if self.lossratio:
-			host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
+			pipe_config = pipe_config + " " + "plr %s" % self.lossratio
+		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
+
+	def start_run(self, task):
+		generic.Connection.start_run(self, task)
+		host = self.interface.device.host
+		pipe_id = int(self.bridge_id) * 10
+		host.execute("modprobe ipfw_mod", task)
+		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ), task)
+		self._config_link(task)
 		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)", task)
 
 	def stop_run(self, task):
@@ -79,16 +84,7 @@ class EmulatedConnection(generic.Connection):
 
 	def change_run(self, dom, task):
 		self.decode_xml(dom)
-		generic.Connection.start_run(self, task)
-		host = self.interface.device.host
-		pipe_id = int(self.bridge_id) * 10
-		pipe_config=""
-		if self.delay:
-			pipe_config = pipe_config + " " + "delay %sms" % self.delay
-		if self.bandwidth:
-			pipe_config = pipe_config + " " + "bw %sk" % self.bandwidth
-		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
-		host.execute("ipfw delete %d" % pipe_id, task)
-		if self.lossratio:
-			host.execute("ipfw add %d prob %s drop via %s out" % ( pipe_id, self.lossratio, self.bridge_name() ), task)
+		if self.connector.state == generic.State.STARTED:
+			generic.Connection.start_run(self, task)
+			self._config_link(task)
 		self.save()
