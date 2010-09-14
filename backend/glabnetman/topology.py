@@ -460,7 +460,6 @@ def create(dom, owner):
 	return top
 
 def cleanup():
-	print "Checking topology timeouts"
 	for top in all():
 		top.check_timeout()
 
