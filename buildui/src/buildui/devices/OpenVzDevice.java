@@ -69,6 +69,7 @@ public class OpenVzDevice extends Device {
     xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
     xml.setAttribute("template", getProperty("template", ""));
     xml.setAttribute("root_password", getProperty("root_password", "test123"));
+    xml.setAttribute("gateway", getProperty("gateway", ""));
   }
 
   public void readAttributes (Element xml) {
@@ -76,6 +77,7 @@ public class OpenVzDevice extends Device {
     setProperty("hostgroup", xml.getAttribute("hostgroup"));
     setProperty("template", xml.getAttribute("template"));
     setProperty("root_password", xml.getAttribute("root_password"));
+    setProperty("gateway", xml.getAttribute("gateway"));
   }
 
   public static Device readFrom (Element x_dev) {

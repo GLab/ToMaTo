@@ -20,5 +20,6 @@ public class OpenVzPropertiesArea extends PropertiesArea {
     addSelectProperty("hostgroup", "hostgroup:", Device.hostGroups, "<auto>");
     addSelectProperty("template", "template:", OpenVzDevice.templates, "<auto>");
     addTextProperty("root_password", "root password:", ".*", "test123");
+    addTextProperty("gateway", "gateway:", MagicTextField.ip4_pattern, null);
   }
 };

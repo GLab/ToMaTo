@@ -45,14 +45,12 @@ public class ConfiguredInterface extends Interface {
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
     xml.setAttribute("ip4address", getProperty("ip", ""));
-    xml.setAttribute("gateway", getProperty("gateway", ""));
     xml.setAttribute("use_dhcp", getProperty("usedhcp", "false"));
   }
 
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
     setProperty("ip", xml.getAttribute("ip4address"));
-    setProperty("gateway", xml.getAttribute("gateway"));
     setProperty("usedhcp", xml.getAttribute("use_dhcp"));
   }
 

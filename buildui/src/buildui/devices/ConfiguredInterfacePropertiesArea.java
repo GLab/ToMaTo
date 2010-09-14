@@ -38,7 +38,6 @@ public class ConfiguredInterfacePropertiesArea extends PropertiesArea {
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
     addSelectProperty("usedhcp", "use dhcp:", new String[]{"true", "false"}, "false");
     addTextProperty("ip", "ip:", MagicTextField.ip4_prefix_pattern, null);
-    addTextProperty("gateway", "gateway:", MagicTextField.ip4_pattern, null);
   }
 
 };
