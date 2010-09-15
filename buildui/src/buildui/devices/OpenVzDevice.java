@@ -68,7 +68,7 @@ public class OpenVzDevice extends Device {
     xml.setAttribute("type", "openvz");
     xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
     xml.setAttribute("template", getProperty("template", ""));
-    xml.setAttribute("root_password", getProperty("root_password", "test123"));
+    xml.setAttribute("root_password", getProperty("root_password", "glabroot" ));
     xml.setAttribute("gateway", getProperty("gateway", ""));
   }
 
