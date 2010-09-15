@@ -196,7 +196,7 @@ class OpenVZDevice(generic.Device):
 	def download_image(self):
 		tmp_id = uuid.uuid1()
 		filename = "/tmp/glabnetman-%s" % tmp_id
-		self.host.execute("tar -czf %s -C /var/lib/vz/private/%s . " % ( filename, self.openvz_id ) )
+		self.host.execute("tar --numeric-owner -czf %s -C /var/lib/vz/private/%s . " % ( filename, self.openvz_id ) )
 		self.host.download("%s" % filename, filename)
 		self.host.execute("rm %s" % filename)
 		return filename
