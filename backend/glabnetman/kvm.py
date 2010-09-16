@@ -102,6 +102,7 @@ class KVMDevice(generic.Device):
 
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
+		self.template = hosts.get_template("kvm", self.template)
 		if not self.kvm_id:
 			self.kvm_id = self.host.next_free_vm_id()
 			self.save()
@@ -149,6 +150,7 @@ class KVMDevice(generic.Device):
 		"""
 		generic.Device.change_run(self, dom, task)
 		self.template = util.get_attr(dom, "template", self.template)
+		self.template = hosts.get_template("kvm", self.template)
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
 			name = x_iface.getAttribute("id")
