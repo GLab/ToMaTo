@@ -12,10 +12,13 @@ def index(api, request):
 index=wrap_rpc(index)
 
 def add(api, request):
-	name=request.REQUEST["name"]
-	type=request.REQUEST["type"]
-	api.template_add(name, type)
-	return index(request)
+	if request.REQUEST.has_key("name"):
+		name=request.REQUEST["name"]
+		type=request.REQUEST["type"]
+		api.template_add(name, type)
+		return index(request)
+	else:
+		return render_to_response("admin/template_add.html")
 add=wrap_rpc(add)
 
 def remove(api, request, name):
