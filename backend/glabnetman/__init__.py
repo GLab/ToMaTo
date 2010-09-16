@@ -37,7 +37,7 @@ def _topology_info(top, auth):
 
 def _device_info(dev, auth):
 	state = str(dev.state)
-	res = {"id": dev.name, "type": dev.type, "host": dev.host.name,
+	res = {"id": dev.name, "type": dev.type, "host": str(dev.host),
 		"state": state,
 		"is_created": state == generic.State.CREATED,
 		"is_prepared": state == generic.State.PREPARED,

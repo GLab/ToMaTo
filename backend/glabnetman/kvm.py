@@ -103,6 +103,8 @@ class KVMDevice(generic.Device):
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template("kvm", self.template)
+		if not self.host:
+			self.host = hosts.get_best_host(self.hostgroup)
 		if not self.kvm_id:
 			self.kvm_id = self.host.next_free_vm_id()
 			self.save()
@@ -123,10 +125,11 @@ class KVMDevice(generic.Device):
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
-		self.kvm_id=None
 		self.state = self.get_state(task)
-		self.save()
 		assert self.state == generic.State.CREATED, "VM still exists"
+		self.kvm_id=None
+		self.host = None
+		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
 	def is_changed(self, dom):

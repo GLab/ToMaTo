@@ -12,6 +12,9 @@ class Host(models.Model):
 	name = models.CharField(max_length=50, unique=True)
 	public_bridge = models.CharField(max_length=10)
 
+	def __unicode__(self):
+		return self.name
+
 	def check_save(self, task):
 		task.subtasks_total = 5
 		self.check(task)

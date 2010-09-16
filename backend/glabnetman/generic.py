@@ -32,7 +32,7 @@ class Device(models.Model):
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	pos = models.CharField(max_length=10, null=True)
-	host = models.ForeignKey(hosts.Host)
+	host = models.ForeignKey(hosts.Host, null=True)
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
 
 	def interfaces_get(self, name):
@@ -80,7 +80,8 @@ class Device(models.Model):
 		if self.hostgroup:
 			dom.setAttribute("hostgroup", self.hostgroup.name)
 		if internal:
-			dom.setAttribute("host", self.host.name)
+			if self.host:
+				dom.setAttribute("host", self.host.name)
 			dom.setAttribute("state", self.state)
 		for iface in self.interfaces_all():
 			x_iface = doc.createElement ( "interface" )

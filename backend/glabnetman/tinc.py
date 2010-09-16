@@ -82,6 +82,9 @@ class TincConnector(generic.Connector):
 		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):
+		for con in self.connections_all():
+			if con.interface.device.state == generic.State.CREATED:
+				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
 		generic.Connector.prepare_run(self, task)
 		for con in self.connections_all():
 			host = con.interface.device.host

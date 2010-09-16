@@ -17,7 +17,6 @@ class OpenVZDevice(generic.Device):
 		self.template = hosts.get_template("openvz", self.template)
 		if not self.template:
 			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
-		self.host = hosts.get_best_host(self.hostgroup)
 		self.save()
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = ConfiguredInterface()
@@ -108,6 +107,8 @@ class OpenVZDevice(generic.Device):
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template("openvz", self.template)
+		if not self.host:
+			self.host = hosts.get_best_host(self.hostgroup)
 		if not self.openvz_id:
 			self.openvz_id = self.host.next_free_vm_id()
 			self.save()				
@@ -127,10 +128,11 @@ class OpenVZDevice(generic.Device):
 		generic.Device.destroy_run(self, task)
 		if self.openvz_id:
 			self.host.execute("vzctl destroy %s" % self.openvz_id, task)
-		self.openvz_id=None
 		self.state = self.get_state(task)
-		self.save()
 		assert self.state == generic.State.CREATED, "VM still exists"
+		self.openvz_id=None
+		self.host = None
+		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
 	def change_possible(self, dom):
