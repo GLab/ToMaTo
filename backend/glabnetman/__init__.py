@@ -33,6 +33,13 @@ def _topology_info(top, auth):
 			else:
 				res.update(finished_task=task.id)
 		res.update(permissions=[p.dict() for p in top.permissions_all()])
+		captures = []
+		for con in top.connectors_all():
+			for c in con.connections_all():
+				c = c.upcast()
+				if hasattr(c, "download_supported") and c.download_supported():
+					captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
+		res.update(captures=captures)
 	return res
 
 def _device_info(dev, auth):
@@ -332,6 +339,13 @@ def download_image(top_id, device_id, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
 	filename = top.download_image(device_id)
+	task = tasks.DownloadTask(filename)
+	return task.id
+
+def download_capture(top_id, connector_id, device_id, interface_id, user=None):
+	top=topology.get(top_id)
+	_top_access(top, "user", user)
+	filename = top.download_capture(connector_id, device_id, interface_id)
 	task = tasks.DownloadTask(filename)
 	return task.id
 

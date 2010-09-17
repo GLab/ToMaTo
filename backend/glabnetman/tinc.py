@@ -138,8 +138,9 @@ class TincConnector(generic.Connector):
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			host.execute ( "rm /etc/tinc/%s" % tincname, task )
-			host.execute ( "true", task )
+			if host:
+				host.execute ( "rm /etc/tinc/%s" % tincname, task )
+				host.execute ( "true", task )
 		self.state = generic.State.CREATED
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
@@ -174,7 +175,6 @@ class TincConnection(dummynet.EmulatedConnection):
 	def init(self, connector, dom):
 		self.connector = connector
 		self.decode_xml(dom)
-		self.bridge_id = self.interface.device.host.next_free_bridge()		
 		self.bridge_special_name = ""
 		self.save()
 	
@@ -202,12 +202,16 @@ class TincConnection(dummynet.EmulatedConnection):
 		dummynet.EmulatedConnection.stop_run(self, task)
 
 	def prepare_run(self, task):
+		if not self.bridge_id:
+			self.bridge_id = self.interface.device.host.next_free_bridge()		
+			self.save()
 		if not self.tinc_port:
 			self.tinc_port = self.interface.device.host.next_free_port()
 			self.save()
 		dummynet.EmulatedConnection.prepare_run(self, task)
 
 	def destroy_run(self, task):
+		self.bridge_id=None
 		self.tinc_port=None
 		self.save()
 		dummynet.EmulatedConnection.destroy_run(self, task)				

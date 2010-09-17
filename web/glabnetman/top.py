@@ -69,6 +69,24 @@ def download_image(api, request, top_id, device_id):
 	return response
 download_image=wrap_rpc(download_image)
 
+def download_capture(api, request, top_id, connector_id, device_id, interface_id):
+	top=api.top_info(int(top_id))
+	download_id=api.download_capture(top_id, connector_id, device_id, interface_id)
+	temp = tempfile.TemporaryFile()
+	while True:
+		data = api.download_chunk(download_id).data
+		if len(data) == 0:
+			break
+		temp.write(data)
+	size = temp.tell()
+	temp.seek(0)
+	wrapper = FileWrapper(temp)
+	response = HttpResponse(wrapper, content_type='application/force-download')
+	response['Content-Length'] = size
+	response['Content-Disposition'] = 'attachment; filename=capture_%s_%s_%s_%s.tar.gz' % ( top["name"], connector_id, device_id, interface_id )
+	return response
+download_capture=wrap_rpc(download_capture)
+
 def renew(api, request, top_id):
 	api.top_renew(int(top_id))
 	return _display_top(api, top_id)

@@ -406,6 +406,21 @@ class Topology(models.Model):
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
 		return device.upcast().download_image()
 
+	def download_capture(self, connector_id, device_id, interface_id):
+		self.renew()
+		if self.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		device = self.devices_get(device_id)
+		if not device:
+			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
+		interface = device.interfaces_get(interface_id)
+		if not interface:
+			raise fault.new(fault.NO_SUCH_DEVICE, "No such interface: %s.%s" % (device_id, interface_id))
+		con = interface.connection
+		if not con.upcast().download_supported():
+			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Connection does not support capture download: %s" % con)
+		return con.upcast().download_capture()
+
 	def permissions_add(self, user_name, role):
 		self.renew()
 		self.permission_set.add(Permission(user=user_name, role=role))

@@ -109,6 +109,15 @@ function console (url) {
 {% endfor %}
 </table>
 
+<br/>
+
+<h2>Captures ready to download</h2>
+{% for capture in top.captures %}
+<a href="{%url top.download_capture top.id capture.connector capture.device capture.interface%}">{{capture.connector}} <-> {{capture.device}}.{{capture.interface}}</a><br/>
+{% empty %}
+No captures ready
+{% endfor %}
+
 {% if action %}
 <h2>Executing {{action}} ...</h2>
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url top.details top_id%}"></iframe>

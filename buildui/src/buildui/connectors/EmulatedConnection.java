@@ -62,6 +62,7 @@ public class EmulatedConnection extends Connection {
     xml.setAttribute("delay", getProperty("delay", "0"));
     xml.setAttribute("lossratio", getProperty("lossratio", "0.0"));
     xml.setAttribute("bandwidth", getProperty("bandwidth", "10000"));
+    xml.setAttribute("capture", getProperty("capture", "false"));
   }
 
   public void readAttributes (Element xml) {
@@ -69,6 +70,7 @@ public class EmulatedConnection extends Connection {
     setProperty("delay", xml.getAttribute("delay"));
     setProperty("lossratio", xml.getAttribute("lossratio"));
     setProperty("bandwidth", xml.getAttribute("bandwidth"));
+    setProperty("capture", xml.getAttribute("capture"));
   }
   
 }

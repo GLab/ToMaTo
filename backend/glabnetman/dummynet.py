@@ -2,13 +2,14 @@
 
 from django.db import models
 
-import re
+import uuid
 import generic, hosts, util
 
 class EmulatedConnection(generic.Connection):
 	delay = models.IntegerField(null=True)
 	bandwidth = models.IntegerField(null=True)
 	lossratio = models.FloatField(null=True)
+	capture = models.BooleanField(default=False)
 	
 	def init(self, connector, dom):
 		self.connector = connector
@@ -36,12 +37,15 @@ class EmulatedConnection(generic.Connection):
 			dom.setAttribute("bandwidth", str(self.bandwidth))
 		if self.lossratio:
 			dom.setAttribute("lossratio", str(self.lossratio))
+		if self.capture:
+			dom.setAttribute("capture", str(self.capture))
 				
 	def decode_xml(self, dom):
 		generic.Connection.decode_xml(self, dom)
 		self.delay = util.get_attr(dom, "delay", default="0")
 		self.bandwidth = util.get_attr(dom, "bandwidth", default="0")
 		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
+		self.capture = util.parse_bool(util.get_attr(dom, "capture", default="false"))
 
 	def _config_link(self, task):
 		host = self.interface.device.host
@@ -55,6 +59,17 @@ class EmulatedConnection(generic.Connection):
 			pipe_config = pipe_config + " " + "plr %s" % self.lossratio
 		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
 
+	def _capture_dir(self):
+		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id )
+
+	def _start_capture(self, task):
+		host = self.interface.device.host
+		dir = self._capture_dir()
+		host.execute("mkdir -p %s" % dir, task )
+		host.bridge_create(self.bridge_name())
+		host.execute("ip link set up %s" % self.bridge_name(), task)
+		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), dir, dir ), task )		
+
 	def start_run(self, task):
 		generic.Connection.start_run(self, task)
 		host = self.interface.device.host
@@ -63,6 +78,14 @@ class EmulatedConnection(generic.Connection):
 		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ), task)
 		self._config_link(task)
 		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)", task)
+		if self.capture:
+			self._start_capture(task)
+
+	def _stop_capture(self, task):
+		host = self.interface.device.host
+		dir = self._capture_dir()
+		host.execute("cat %s.pid | xargs -r kill" % dir, task )
+		host.execute("rm %s.pid" % dir, task )
 
 	def stop_run(self, task):
 		generic.Connection.stop_run(self, task)
@@ -72,6 +95,8 @@ class EmulatedConnection(generic.Connection):
 			host.execute("ipfw delete %d" % pipe_id, task)
 			host.execute("ipfw pipe delete %d" % pipe_id, task)
 			host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
+		if self.capture:
+			self._stop_capture(task)
 			
 	def prepare_run(self, task):
 		host = self.interface.device.host
@@ -81,10 +106,30 @@ class EmulatedConnection(generic.Connection):
 
 	def destroy_run(self, task):
 		generic.Connection.destroy_run(self, task)
+		host = self.interface.device.host
+		dir = self._capture_dir()
+		host.execute("rm -r %s %s.pid" % (dir, dir), task )
+
+	def download_supported(self):
+		return not self.connector.state == generic.State.CREATED and self.capture
+
+	def download_capture(self):
+		tmp_id = uuid.uuid1()
+		filename = "/tmp/glabnetman-%s" % tmp_id
+		host = self.interface.device.host
+		host.execute("tar -czf %s -C %s . " % ( filename, self._capture_dir() ) )
+		host.download("%s" % filename, filename)
+		host.execute("rm %s" % filename)
+		return filename
 
 	def change_run(self, dom, task):
+		cap = self.capture		
 		self.decode_xml(dom)
 		if self.connector.state == generic.State.STARTED:
 			generic.Connection.start_run(self, task)
 			self._config_link(task)
+			if cap and not self.capture:
+				self._stop_capture(task)
+			if self.capture and not cap:
+				self._start_capture(task)
 		self.save()
