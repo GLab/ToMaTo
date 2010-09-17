@@ -86,6 +86,32 @@ a:active, a:hover
 	height:79px; 
 }
 
+#logo-text{
+	float:left;
+	vertical-align:middle;
+}
+
+#logo-text h1{
+	display: inline;
+	vertical-align: top;
+	position: relative;
+	color:#911a20;
+	font-size:40px;
+	margin-left: 10px;
+	font-weight: bold;
+	letter-spacing: 2px;
+	clear: right;
+}
+
+#logo-text h2{
+	display: inline;
+	vertical-align: top;
+	/*top: 10px;
+	position: relative;*/
+	font-size:12px;
+	margin-left: 10px;
+}
+
 #minimenu_top{
 	margin:20px 0px; 
 	float:right;
