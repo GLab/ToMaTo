@@ -33,6 +33,7 @@ public class HubConnector extends Connector {
   public HubConnector (String newName) {
     super(newName, "/icons/hub.png");
     num++;
+    subnetId = nextSubnetId++;
   }
 
   public NetElement createAnother () {
@@ -44,6 +45,7 @@ public class HubConnector extends Connector {
   public static void init ( Applet parent ) {
     num = 0;
     propertiesArea = new HubPropertiesArea();
+    nextSubnetId = 1;
   }
 
   public PropertiesArea getPropertiesArea() {

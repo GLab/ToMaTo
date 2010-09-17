@@ -34,11 +34,13 @@ public class RouterConnector extends Connector {
   public static void init ( Applet parent ) {
     num = 0;
     propertiesArea = new RouterPropertiesArea();
+    nextSubnetId = 1;
   }
 
   public RouterConnector (String newName) {
     super(newName, "/icons/router.png");
     num++;
+    subnetId = nextSubnetId++;
   }
 
   public NetElement createAnother () {

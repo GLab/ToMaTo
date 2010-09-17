@@ -28,6 +28,10 @@ public class ConfiguredInterface extends Interface {
 
   public ConfiguredInterface (String newName, Device dev, Connection con) {
     super(newName, dev, con);
+    String ip = con.getInterfaceIpHint();
+    System.out.println(ip);
+    if ( ip != null ) setProperty("ip", ip);
+    else setProperty("usedhcp", "true");
   }
 
   static PropertiesArea propertiesArea ;

@@ -34,11 +34,13 @@ public class SwitchConnector extends Connector {
   public static void init ( Applet parent ) {
     num = 0;
     propertiesArea = new SwitchPropertiesArea();
+    nextSubnetId = 1;
   }
 
   public SwitchConnector (String newName) {
     super(newName, "/icons/switch.png");
     num++;
+    subnetId = nextSubnetId++;
   }
 
   public NetElement createAnother () {

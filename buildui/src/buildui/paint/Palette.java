@@ -22,6 +22,7 @@ package buildui.paint;
 import java.awt.Graphics;
 
 import buildui.TrashThingee;
+import buildui.connectors.Connector;
 import buildui.connectors.HubConnector;
 import buildui.connectors.InternetConnector;
 import buildui.connectors.RouterConnector;
@@ -64,6 +65,8 @@ public class Palette {
     trash = new TrashThingee("trash");
     trash.moveable = false;
     addElement(trash);
+
+    Connector.init();
   }
 
   public boolean has (NetElement el) {

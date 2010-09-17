@@ -72,5 +72,9 @@ public class EmulatedConnection extends Connection {
     setProperty("bandwidth", xml.getAttribute("bandwidth"));
     setProperty("capture", xml.getAttribute("capture"));
   }
-  
+
+  public String getInterfaceIpHint () {
+    return "10."+getConnector().subnetId+".1."+hostIp+"/24" ;
+  }
+
 }

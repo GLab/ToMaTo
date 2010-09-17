@@ -33,6 +33,7 @@ public class Connection extends NetElement {
   private Connector con;
   private Device dev;
   private Interface iface;
+  protected int hostIp ;
 
   public Connector getConnector () {
     return con;
@@ -44,6 +45,7 @@ public class Connection extends NetElement {
     moveable = false;
     this.con = con;
     this.dev = dev;
+    this.hostIp = con.nextHostIp++;
     super.move((con.getX() + dev.getX()) / 2,
      (con.getY() + dev.getY()) / 2);
   }
@@ -126,6 +128,10 @@ public class Connection extends NetElement {
    */
   public void setIface (Interface iface) {
     this.iface = iface;
+  }
+
+  public String getInterfaceIpHint () {
+    return null ;
   }
 
 }

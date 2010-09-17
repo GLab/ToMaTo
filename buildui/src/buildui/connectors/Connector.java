@@ -37,13 +37,21 @@ public abstract class Connector extends IconElement {
     return null;
   }
 
+  public static void init () {
+    nextSubnetId = 1;
+  }
+
   public Connector (String newName, String iconName) {
     super(newName, true, iconName);
   }
 
   public abstract Connection createConnection ( Device dev ) ;
+  protected static int nextSubnetId = 1;
 
   private Set<Connection> connections = new HashSet<Connection> () ;
+  protected int subnetId;
+
+  protected int nextHostIp = 1 ;
 
   public Set<Connection> connections() {
     return connections ;

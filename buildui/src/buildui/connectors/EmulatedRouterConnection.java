@@ -44,6 +44,7 @@ public class EmulatedRouterConnection extends EmulatedConnection {
 
 	public EmulatedRouterConnection(String newName, Connector con, Device dev) {
 		super(newName, con, dev);
+    setProperty("gateway", getGatewayIpHint());
 	}
 
   static PropertiesArea propertiesArea ;
@@ -59,13 +60,22 @@ public class EmulatedRouterConnection extends EmulatedConnection {
   @Override
   public void writeAttributes(Element xml) {
     super.writeAttributes(xml);
-    xml.setAttribute("gateway", getProperty("gateway", "10.1.1.254"));
+    xml.setAttribute("gateway", getProperty("gateway", getGatewayIpHint()));
   }
 
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
     setProperty("gateway", xml.getAttribute("gateway"));
-    setProperty("gateway", getProperty("gateway", "10.1.1.254"));
+    setProperty("gateway", getProperty("gateway", getGatewayIpHint()));
   }
+
+  public String getGatewayIpHint () {
+    return "10."+getConnector().subnetId+"."+hostIp+".254/24" ;
+  }
+
+  public String getInterfaceIpHint () {
+    return "10."+getConnector().subnetId+"."+hostIp+".1/24" ;
+  }
+
   
 }
