@@ -3,7 +3,8 @@
 {% block content %}
 <h1>Permissions for topology "{{top.name}}" [{{top.id}}] </h1>
 <a href="{%url main.help "PermissionSystem"%}">Permission help</a>
-<table>
+<script src="/static/sorttable.js"></script>
+<table class="sortable">
 	<tr>
 		<th>User</th>
 		<th>Role</th>
