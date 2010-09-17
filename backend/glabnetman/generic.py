@@ -130,6 +130,10 @@ class Device(models.Model):
 		return task.id
 
 	def destroy(self):
+		for iface in self.interfaces_all():
+			con = iface.connection.connector
+			if not con.type == "real" and not con.state == State.CREATED:
+				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -303,6 +307,9 @@ class Connector(models.Model):
 			con.upcast().stop_run(task)
 
 	def prepare_run(self, task):
+		for con in self.connections_all():
+			if con.interface.device.state == State.CREATED:
+				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
 		for con in self.connections_all():
 			con.upcast().prepare_run(task)
 

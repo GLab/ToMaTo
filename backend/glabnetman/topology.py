@@ -281,24 +281,24 @@ class Topology(models.Model):
 
 	def destroy_run(self, task):
 		task.subtasks_total = self.devices_all().count() + self.connectors_all().count() 
-		for dev in self.devices_all():
-			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
-				task.subtasks_total = task.subtasks_total + 1
-				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run(task)
 		for con in self.connectors_all():
 			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# stopping " + con.name + "\n") 
 				con.upcast().stop_run(task)
 		for dev in self.devices_all():
-			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
-				task.output.write("\n# destroying " + dev.name + "\n") 
-				dev.upcast().destroy_run(task)
+			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
+				task.subtasks_total = task.subtasks_total + 1
+				task.output.write("\n# stopping " + dev.name + "\n") 
+				dev.upcast().stop_run(task)
 		for con in self.connectors_all():
 			if con.state == generic.State.PREPARED or con.state == generic.State.CREATED:
 				task.output.write("\n# destroying " + con.name + "\n") 
 				con.upcast().destroy_run(task)
+		for dev in self.devices_all():
+			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
+				task.output.write("\n# destroying " + dev.name + "\n") 
+				dev.upcast().destroy_run(task)
 		task.done()
 
 	def remove(self):
