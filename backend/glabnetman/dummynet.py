@@ -42,9 +42,18 @@ class EmulatedConnection(generic.Connection):
 				
 	def decode_xml(self, dom):
 		generic.Connection.decode_xml(self, dom)
-		self.delay = util.get_attr(dom, "delay", default="0")
-		self.bandwidth = util.get_attr(dom, "bandwidth", default="0")
-		self.lossratio = util.get_attr(dom,"lossratio", default=0.0)
+		try:
+			self.delay = int(util.get_attr(dom, "delay", default="0"))
+		except:
+			self.delay = 0
+		try:
+			self.bandwidth = int(util.get_attr(dom, "bandwidth", default="0"))			
+		except:
+			self.bandwidth = 10000
+		try:
+			self.lossratio = float(util.get_attr(dom,"lossratio", default=0.0))
+		except:
+			self.lossratio = 0.0
 		self.capture = util.parse_bool(util.get_attr(dom, "capture", default="false"))
 
 	def _config_link(self, task):
