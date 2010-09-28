@@ -15,7 +15,6 @@ class KVMDevice(generic.Device):
 		self.template = hosts.get_template("kvm", self.template)
 		if not self.template:
 			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
-		self.host = hosts.get_best_host(self.hostgroup)
 		self.save()		
 		for interface in dom.getElementsByTagName ( "interface" ):
 			iface = generic.Interface()
