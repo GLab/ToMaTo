@@ -110,10 +110,10 @@ public class WorkArea {
   public void remove (NetElement t) {
     if (t instanceof Device) {
       devices.remove((Device)t);
-      for (Interface iface: ((Device)t).interfaces()) remove(iface);
+      for (Interface iface: new HashSet<Interface>(((Device)t).interfaces())) remove(iface);
     } else if (t instanceof Connector) {
       connectors.remove((Connector)t);
-      for (Connection c: ((Connector)t).connections()) remove(c);
+      for (Connection c: new HashSet<Connection>(((Connector)t).connections())) remove(c);
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().removeInterface((Interface)t);
       Connection c = ((Interface)t).getCon();
