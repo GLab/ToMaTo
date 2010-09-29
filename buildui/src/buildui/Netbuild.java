@@ -1,8 +1,13 @@
 package buildui;
 /*
- * Copyright (c) 2002-2006 University of Utah and the Flux Group.
- * All rights reserved.
- * This file is part of the Emulab network testbed software.
+ * NEW CODE:
+ *   Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+ *   This file is part of ToMaTo (Topology management software) 
+ *   
+ * OLD CODE:
+ *   Copyright (c) 2002-2006 University of Utah and the Flux Group.
+ *   All rights reserved.
+ *   This file is part of the Emulab network testbed software.
  * 
  * Emulab is free software, also known as "open source;" you can
  * redistribute it and/or modify it under the terms of the GNU Affero
@@ -111,6 +116,8 @@ public class Netbuild extends java.applet.Applet
     d.setVisible(true);
   }
 
+// NEW CODE FROM HERE ON (owned by University of Kaiserslautern)
+  
   public static void exception (Throwable t) {
     try {
       t.printStackTrace();
@@ -168,6 +175,8 @@ public class Netbuild extends java.applet.Applet
     propertiesPanel.doLayout();
     propertiesPanel.setVisible(true);
   }
+
+// OLD CODE FROM HERE ON (owned by Emulab)
 
   private boolean isInWorkArea (int x, int y) {
     return x > workAreaX && y > 0 && x < workAreaX + workAreaWidth && y < appHeight;
@@ -643,6 +652,8 @@ public class Netbuild extends java.applet.Applet
 
     super.paint(g);
   }
+
+ // NEW CODE FROM HERE ON (owned by University of Kaiserslautern)
 
   public void upload (boolean modify) {
     try {
