@@ -55,14 +55,17 @@ class Host(models.Model):
 		task.subtasks_done = task.subtasks_done + 1
 				
 	def next_free_vm_id (self):
-		ids = range(1000,1100)
+		ids = range(1000,1200)
 		import openvz
 		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False):
 			ids.remove(dev.openvz_id)
 		import kvm
 		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False):
 			ids.remove(dev.kvm_id)
-		return ids[0]
+		try:
+			return ids[0]
+		except:
+			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
 
 	def next_free_port(self):
 		ids = range(7000,8000)
@@ -75,14 +78,20 @@ class Host(models.Model):
 		import tinc
 		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False):
 			ids.remove(con.tinc_port)
-		return ids[0]
+		try:
+			return ids[0]
+		except:
+			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 
 	def next_free_bridge(self):
 		ids = range(1000,2000)
 		import generic
 		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False):
 			ids.remove(con.bridge_id)
-		return ids[0]
+		try:
+			return ids[0]
+		except:
+			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
 	
 	def _exec(self, cmd):
 		return util.run_shell(cmd, config.remote_dry_run)
