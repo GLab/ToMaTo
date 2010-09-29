@@ -152,6 +152,12 @@ class OpenVZDevice(generic.Device):
 
 	def change_possible(self, dom):
 		generic.Device.change_possible(self, dom)
+		if self.state == generic.State.STARTED:
+			for x_iface in dom.getElementsByTagName("interface"):
+				try:
+					self.interfaces_get(x_iface.getAttribute("id"))
+				except generic.Interface.DoesNotExist:
+					raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
 		if not self.template == util.get_attr(dom, "template", self.template):
 			if self.state == "started" or self.state == "prepared":
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
