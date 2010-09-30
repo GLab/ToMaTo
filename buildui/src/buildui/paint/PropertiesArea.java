@@ -116,6 +116,14 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
     propertyList.addElement(p);
   }
 
+  public void addBoolProperty (String name, String desc, boolean def) {
+    Property p = new Property();
+    p.name = name;
+    p.def = def ? "true" : "false" ;
+    p.editElement = new CheckboxField(this, desc, def);
+    propertyList.addElement(p);
+  }
+
 // OLD CODE FROM HERE ON (owned by Emulab)
 
   public PropertiesArea () {

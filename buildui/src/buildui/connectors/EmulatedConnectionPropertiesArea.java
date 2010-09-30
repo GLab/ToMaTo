@@ -38,6 +38,6 @@ public class EmulatedConnectionPropertiesArea extends ConnectionPropertiesArea {
     addTextProperty("bandwidth", "bandwidth(Kb/s):", MagicTextField.numeric_pattern, "10000");
     addTextProperty("delay", "latency(ms):", MagicTextField.numeric_pattern, "0");
     addTextProperty("lossratio", "loss rate(0.0-1.0):", MagicTextField.fp_numeric_pattern, "0.0");
-    addSelectProperty("capture", "capture packets:", new String[]{"true", "false"}, "false");
+    addBoolProperty("capture", "capture packets", false);
   }
 };
