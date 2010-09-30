@@ -17,9 +17,9 @@
 		<td>{{host.group}}</td>
 		<td>{{host.device_count}}</td>
 		<td>
-			<a href="{%url host.remove hostname=host.name%}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')">[remove]</a>
-			<a href="{%url top.index host_filter=host.name%}">[all topologies]</a>
-			<a href="{%url host.debug host.name%}">[debug info]</a>
+			<a href="{%url host.remove hostname=host.name%}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')"><img src="/static/icons/destroy.png" alt="remove" title="remove"/></a>
+			<a href="{%url top.index host_filter=host.name%}"><img src="/static/icons/view_list.png" alt="all topologies" title="all topologies"/></a>
+			<a href="{%url host.debug host.name%}"><img src="/static/icons/magnifier.png" alt="debug info" title="debug info"/></a>
 		</td>
 	</tr>
 {% endfor %}

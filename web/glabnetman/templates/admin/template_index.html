@@ -15,7 +15,10 @@
 	<tr>
 		<td>{% if tpl.default %}<b>{{tpl.name}} (default)</b>{% else %}{{tpl.name}}{% endif %}</td>
 		<td>{{tpl.type}}</td>
-		<td><a href="{%url template.remove name=tpl.name%}">[remove]</a> <a href="{%url template.set_default name=tpl.name type=tpl.type%}">[set default]</a></td>
+		<td>
+			<a href="{%url template.remove name=tpl.name%}"><img src="/static/icons/destroy.png" alt="remove" title="remove"/></a>
+			{% if not tpl.default %}<a href="{%url template.set_default name=tpl.name type=tpl.type%}"><img src="/static/icons/star.png" alt="set default" title="set default"/></a>{% endif %}
+		</td>
 	</tr>
 {% endfor %}
 </table>
