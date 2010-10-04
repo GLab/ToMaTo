@@ -116,10 +116,10 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 		deviceType = new JComboBox(new String[] { "OpenVZ", "KVM" });
 		deviceType.addActionListener(this);
 		template = new JComboBox(OpenVzDevice.templates.toArray());
-		template.removeItem("<auto>");
+		//template.removeItem("<auto>");
 		ipPrefix = new JTextField("10.1.1.");
 		publicIP = new JComboBox(new String[] { "no", "yes" });
-		rootPassword = new JTextField("");
+		rootPassword = new JTextField("glabroot");
 
 		this.setLayout(new BorderLayout());
 
@@ -217,7 +217,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				ipPrefix.setVisible(false);
 				// publicIP.setVisible(false);
 			}
-			template.removeItem("<auto>");
+			//template.removeItem("<auto>");
 		} else if (arg0.getSource().equals(myCreateButton)) {
 			Device el3;
 			int number;
