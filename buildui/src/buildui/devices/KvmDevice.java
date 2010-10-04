@@ -42,7 +42,7 @@ public class KvmDevice extends Device {
   }
 
   public KvmDevice (String newName) {
-    super(newName, "/icons/computer.png");
+    super(newName, "/icons/pc_green.png");
     num++;
   }
 

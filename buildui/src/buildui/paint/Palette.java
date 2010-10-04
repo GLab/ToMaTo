@@ -1,4 +1,5 @@
 package buildui.paint;
+
 /*
  * Copyright (c) 2002-2006 University of Utah and the Flux Group.
  * All rights reserved.
@@ -21,8 +22,8 @@ package buildui.paint;
 
 import java.awt.Graphics;
 
+import buildui.TopologyCreatorElement;
 import buildui.TrashThingee;
-import buildui.connectors.Connector;
 import buildui.connectors.HubConnector;
 import buildui.connectors.InternetConnector;
 import buildui.connectors.RouterConnector;
@@ -34,67 +35,76 @@ import java.util.List;
 
 public class Palette {
 
-  private List<NetElement> elements = new LinkedList<NetElement> () ;
-  private TrashThingee trash ;
-  private int x = 40 ;
-  private int y = 40 ;
+	private List<NetElement> elements = new LinkedList<NetElement>();
+	private TrashThingee trash;
+	private TopologyCreatorElement tc;
+	private int x = 40;
+	private int y = 40;
+	private Boolean showTc = true;
 
-  private void addElement(NetElement el) {
-    elements.add(el);
-    el.linkable = false;
-    el.trashable = false;
-    el.propertyEditable = false;
-    el.move(x, y);
-  }
+	private void addElement(NetElement el) {
+		elements.add(el);
+		el.linkable = false;
+		el.trashable = false;
+		el.propertyEditable = false;
+		el.move(x, y);
+	}
 
-  public Palette () {
-    addElement(new OpenVzDevice("OpenVZ"));
-    y += 60;
-    addElement(new KvmDevice("KVM"));
-    y += 60;
-    y += 90;
-    addElement(new InternetConnector("Internet"));
-    y += 60;
-    addElement(new HubConnector("Hub"));
-    y += 50;
-    addElement(new SwitchConnector("Switch"));
-    y += 50;
-    addElement(new RouterConnector("Router"));
-    y += 50;
-    y += 90;
-    trash = new TrashThingee("trash");
-    trash.moveable = false;
-    addElement(trash);
+	public Palette() {
+		addElement(new OpenVzDevice("OpenVZ"));
+		y += 60;
+		addElement(new KvmDevice("KVM"));
+		y += 60;
+		y += 30;
+		addElement(new InternetConnector("Internet"));
+		y += 60;
+		addElement(new HubConnector("Hub"));
+		y += 50;
+		addElement(new SwitchConnector("Switch"));
+		y += 50;
+		addElement(new RouterConnector("Router"));
+		y += 90;
+		trash = new TrashThingee("trash");
+		trash.moveable = false;
+		addElement(trash);
+		y += 90;
+		tc = new TopologyCreatorElement("TC");
+		tc.moveable = false;
+		addElement(tc);
+	}
 
-    Connector.init();
-  }
+	public void showTc(Boolean b) {
+		showTc = b;
+	}
 
-  public boolean has (NetElement el) {
-    return elements.contains(el) ;
-  }
+	public boolean has(NetElement el) {
+		return elements.contains(el);
+	}
 
-  public void paint (Graphics g) {
-    for (NetElement el: elements) {
-      el.draw(g);
-    }
-  }
+	public void paint(Graphics g) {
+		for (NetElement el : elements) {
+			if (!el.equals(tc) || showTc)
+				el.draw(g);
+		}
+	}
 
-  public boolean hitTrash (int x, int y) {
-    return trash.clicked(x, y);
-  }
+	public boolean hitTrash(int x, int y) {
+		return trash.clicked(x, y);
+	}
 
-  public void funktasticizeTrash (Graphics g) {
-    trash.drawRect(g);
-  }
+	public void funktasticizeTrash(Graphics g) {
+		trash.drawRect(g);
+	}
 
-  public boolean hitCopier (int x, int y) {
-    return false;
-  }
+	public boolean hitCopier(int x, int y) {
+		return false;
+	}
 
-  public NetElement clicked (int x, int y) {
-    for (NetElement el: elements) {
-      if ( el.clicked(x, y) && el != trash ) return el ;
-    }
-    return null;
-  }
+	public NetElement clicked(int x, int y) {
+		for (NetElement el : elements) {
+			if (el.clicked(x, y) && el != trash)
+				return el;
+		}
+		return null;
+	}
 };

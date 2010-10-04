@@ -62,7 +62,11 @@ import org.xml.sax.SAXException;
 public class WorkArea {
 
   private Set<Device> devices = new HashSet<Device>() ;
-  private Set<Connector> connectors = new HashSet<Connector>() ;
+  public Set<Device> getDevices() {
+	return devices;
+}
+
+private Set<Connector> connectors = new HashSet<Connector>() ;
   public TopologyPropertiesArea topologyProperties = new TopologyPropertiesArea();
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {
