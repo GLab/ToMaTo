@@ -265,7 +265,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					Connection con = (el1).createConnection(d);
 					workArea.add(con);
 					Interface iface = (d).createInterface(con);
-					iface.setProperty("ip", ipPrefix.getText() + (i+1));
+					iface.setProperty("ip", ipPrefix.getText() + (i+1) + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
 				}
@@ -290,14 +290,14 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					Interface iface = (d1).createInterface(con);
 					iface
 							.setProperty("ip", ipPrefix.getText() + (i + 1)
-									+ ".1");
+									+ ".1" + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
 					Connection con2 = (el1).createConnection(d2);
 					workArea.add(con2);
 					Interface iface2 = (d2).createInterface(con2);
 					iface2.setProperty("ip", ipPrefix.getText() + (i + 1)
-							+ ".2");
+							+ ".2" + "/24");
 					con2.setIface(iface2);
 					workArea.add(iface2);
 				}
@@ -320,14 +320,14 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 						workArea.add(con);
 						Interface iface = (d1).createInterface(con);
 						iface.setProperty("ip", ipPrefix.getText()
-								+ Math.min(d1i * 16 + d2i, 254) + ".1");
+								+ Math.min(d1i * 16 + d2i, 254) + ".1" + "/24");
 						con.setIface(iface);
 						workArea.add(iface);
 						Connection con2 = (el1).createConnection(d2);
 						workArea.add(con2);
 						Interface iface2 = (d2).createInterface(con2);
 						iface2.setProperty("ip", ipPrefix.getText()
-								+ Math.min(d1i * 16 + d2i, 254) + ".2");
+								+ Math.min(d1i * 16 + d2i, 254) + ".2" + "/24");
 						con2.setIface(iface2);
 						workArea.add(iface2);
 					}
@@ -353,14 +353,14 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					workArea.add(con);
 					Interface iface = (d1).createInterface(con);
 					iface.setProperty("ip", ipPrefix.getText()
-							+ (i+1) + ".2");
+							+ (i+1) + ".2" + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
 					Connection con2 = (el1).createConnection(el3);
 					workArea.add(con2);
 					Interface iface2 = (el3).createInterface(con2);
 					iface2.setProperty("ip", ipPrefix.getText()
-							+ (i+1) + ".1");
+							+ (i+1) + ".1" + "/24");
 					con2.setIface(iface2);
 					workArea.add(iface2);
 				}
