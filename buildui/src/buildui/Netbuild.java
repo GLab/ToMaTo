@@ -2,6 +2,7 @@ package buildui;
 /*
  * NEW CODE:
  *   Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+ *   Copyright (C) 2010 David Hock, University of Würzburg
  *   This file is part of ToMaTo (Topology management software) 
  *   
  * OLD CODE:
