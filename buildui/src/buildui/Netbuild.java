@@ -460,7 +460,7 @@ public class Netbuild extends java.applet.Applet
         if (!isInWorkArea(x, y)) {
           // out of work area.. but to where?
           if (palette.hitTrash(x, y)) {
-            for (NetElement el: NetElement.selectedElements()) {
+            for (NetElement el: new HashSet<NetElement>(NetElement.selectedElements())) {
               if (el.trashable) {
                 // into trash -- gone.
                 el.deselect();
