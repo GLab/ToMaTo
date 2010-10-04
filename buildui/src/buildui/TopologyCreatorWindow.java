@@ -51,9 +51,6 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 	private static WorkArea workArea;
 	private static ArrayList<Device> devices=new ArrayList<Device>();
 
-	private static OpenVzDevice myopenvz;
-	private static KvmDevice mykvm;
-	private static SwitchConnector myswitch;
 	private static InternetConnector myinternet;
 
 	private static int middlex=275;
@@ -102,9 +99,6 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 	public void init(Netbuild p) {
 		parent = p;
 		workArea = parent.getWorkArea();
-		myopenvz = new OpenVzDevice("OpenVZ");
-		mykvm = new KvmDevice("Kvm");
-		myswitch = new SwitchConnector("Switch");
 
 		this.setTitle("Automatic Topology Creator");
 
@@ -231,9 +225,9 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 
 				for (int i = 0; i < number; i++) {
 					if (deviceType.getSelectedIndex() == 0) {
-						el3 = (OpenVzDevice) myopenvz.createAnother();
+						el3 = new OpenVzDevice();
 					} else {
-						el3 = (KvmDevice) mykvm.createAnother();
+						el3 = new KvmDevice();
 					}
 					el3.setProperty("root_password", rootPassword.getText());
 					el3.setProperty("template", (String) template
@@ -257,7 +251,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 			switch (topologyType.getSelectedIndex()) {
 			//STAR
 			case 0:
-				el1 = (SwitchConnector) myswitch.createAnother();
+				el1 = new SwitchConnector();
 				el1.move(middlex, middley);
 				workArea.add(el1);
 				for (int i = 0; i < devices.size(); i++) {
@@ -274,7 +268,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 			//RING
 			case 1:
 				for (int i = 0; i < devices.size(); i++) {
-					el1 = (SwitchConnector) myswitch.createAnother();
+					el1 = new SwitchConnector();
 					int x = (int) (Math
 							.cos(((double) (i + 0.5) / (double) number) * 2
 									* Math.PI - Math.PI / 2) * rangex);
@@ -309,7 +303,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					for (int j = i + 1; j < devices.size(); j++) {
 						Device d1 = (Device) devices.toArray()[i];
 						Device d2 = (Device) devices.toArray()[j];
-						el1 = (SwitchConnector) myswitch.createAnother();
+						el1 = new SwitchConnector();
 						int x = (d1.getX() + d2.getX()) / 2;
 						int y = (d1.getY() + d2.getY()) / 2;
 						el1.move(x, y);
@@ -336,7 +330,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				
 			//STAR AROUND HOST
 			case 3:
-				el3 = (OpenVzDevice) myopenvz.createAnother();
+				el3 = new OpenVzDevice();
 				el3.setProperty("root_password", rootPassword.getText());
 				el3.setProperty("template", (String) template
 								.getSelectedItem());
@@ -344,7 +338,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				workArea.add(el3);
 				for (int i = 0; i < devices.size(); i++) {
 					Device d1 = (Device) devices.toArray()[i];
-					el1 = (SwitchConnector) myswitch.createAnother();
+					el1 = new SwitchConnector();
 					int x = (d1.getX() + el3.getX()) / 2;
 					int y = (d1.getY() + el3.getY()) / 2;
 					el1.move(x, y);

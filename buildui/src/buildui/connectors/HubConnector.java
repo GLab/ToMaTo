@@ -29,6 +29,10 @@ public class HubConnector extends Connector {
 
   static int num ;
 
+  public HubConnector () {
+    this("hub"+num);
+  }
+
   public HubConnector (String newName) {
     super(newName, "/icons/hub.png");
     num++;

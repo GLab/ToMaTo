@@ -24,6 +24,7 @@ import java.awt.Graphics;
 
 import buildui.TopologyCreatorElement;
 import buildui.TrashThingee;
+import buildui.connectors.Connector;
 import buildui.connectors.HubConnector;
 import buildui.connectors.InternetConnector;
 import buildui.connectors.RouterConnector;
@@ -71,6 +72,7 @@ public class Palette {
 		tc = new TopologyCreatorElement("Creator");
 		tc.moveable = false;
 		addElement(tc);
+    Connector.init();
 	}
 
 	public void showTc(Boolean b) {
