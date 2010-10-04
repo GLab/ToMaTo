@@ -68,7 +68,7 @@ public class Palette {
 		trash.moveable = false;
 		addElement(trash);
 		y += 90;
-		tc = new TopologyCreatorElement("TC");
+		tc = new TopologyCreatorElement("Creator");
 		tc.moveable = false;
 		addElement(tc);
 	}
