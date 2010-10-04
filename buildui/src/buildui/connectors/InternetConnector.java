@@ -35,6 +35,10 @@ public class InternetConnector extends Connector {
     propertiesArea = new InternetPropertiesArea();
   }
 
+  public InternetConnector () {
+    this("internet"+num);
+  }
+
   public InternetConnector (String newName) {
     super(newName, "/icons/internet.png");
     num++;

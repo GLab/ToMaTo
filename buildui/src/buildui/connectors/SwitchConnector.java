@@ -36,6 +36,10 @@ public class SwitchConnector extends Connector {
     nextSubnetId = 1;
   }
 
+  public SwitchConnector () {
+    this("switch"+num);
+  }
+
   public SwitchConnector (String newName) {
     super(newName, "/icons/switch.png");
     num++;

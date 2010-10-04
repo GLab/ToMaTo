@@ -142,4 +142,11 @@ public class Connection extends NetElement {
     return null ;
   }
 
+  /**
+   * @return the dev
+   */
+  public Device getDevice () {
+    return dev;
+  }
+
 }

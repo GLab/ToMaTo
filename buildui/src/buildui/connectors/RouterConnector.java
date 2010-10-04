@@ -36,6 +36,10 @@ public class RouterConnector extends Connector {
     nextSubnetId = 1;
   }
 
+  public RouterConnector () {
+    this("router"+num);
+  }
+
   public RouterConnector (String newName) {
     super(newName, "/icons/router.png");
     num++;

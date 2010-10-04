@@ -42,6 +42,10 @@ public class OpenVzDevice extends Device {
     templates.addAll(Arrays.asList(parent.getParameter("tpl_openvz").split(",")));
   }
 
+  public OpenVzDevice () {
+    this("openvz"+num);
+  }
+
   public OpenVzDevice (String newName) {
     super(newName, "/icons/computer.png");
     num++;

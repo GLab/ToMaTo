@@ -41,8 +41,12 @@ public class KvmDevice extends Device {
     templates.addAll(Arrays.asList(parent.getParameter("tpl_kvm").split(",")));
   }
 
+  public KvmDevice () {
+    this("kvm"+num);
+  }
+
   public KvmDevice (String newName) {
-    super(newName, "/icons/computer.png");
+    super(newName, "/icons/pc_green.png");
     num++;
   }
 

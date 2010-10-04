@@ -2,6 +2,7 @@ package buildui;
 /*
  * NEW CODE:
  *   Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+ *   Copyright (C) 2010 David Hock, University of Würzburg
  *   This file is part of ToMaTo (Topology management software) 
  *   
  * OLD CODE:
@@ -61,6 +62,13 @@ public class Netbuild extends java.applet.Applet
  KeyListener {
 
   private WorkArea workArea;
+  public WorkArea getWorkArea() {
+    return workArea;
+  }
+
+  public void setWorkArea(WorkArea workArea) {
+    this.workArea = workArea;
+  }
   private Palette palette;
   private Panel propertiesPanel;
   private boolean modify;
@@ -85,6 +93,8 @@ public class Netbuild extends java.applet.Applet
   private FlatButton exportButton;
   private FlatButton copyButton;
   private boolean readOnly = false;
+  private String versionstring="Netbuild v1.03c started.";
+  private boolean tcClicked;
 
   private static void dialog (String title, String message) {
     Frame window = new Frame();
@@ -189,6 +199,7 @@ public class Netbuild extends java.applet.Applet
   public static void setStatus (String newStatus) {
     me.status = newStatus;
     me.repaint(me.workAreaX + 4, 420, 640 - (me.workAreaX + 4), 60);
+    me.repaint();
   }
 
   public static Image getImage (String name) {
@@ -320,16 +331,45 @@ public class Netbuild extends java.applet.Applet
 
     prePaintSelChange();
 
-    if (isInWorkArea(x, y)) {
-      clickedOn = workArea.clicked(x - paletteWidth, y);
-      selFromPalette = false;
-    } else {
-      NetElement.deselectAll();
-      clickedOn = palette.clicked(x, y);
+		if (isInWorkArea(x, y)) {
+			clickedOn = workArea.clicked(x - paletteWidth, y);
+			selFromPalette = false;
+		} else {
+			clickedOn = palette.clicked(x, y);
+			if (!(clickedOn instanceof TopologyCreatorElement))
+				NetElement.deselectAll();
       selFromPalette = true;
-    }
+		}
 
     clickedOnSomething = (clickedOn != null);
+    
+    if (clickedOnSomething && clickedOn instanceof TopologyCreatorElement) {
+    	ArrayList<Device> temp = new ArrayList<Device>();
+      int minx=Integer.MAX_VALUE;
+      int miny=Integer.MAX_VALUE;
+      int maxx=Integer.MIN_VALUE;
+      int maxy=Integer.MIN_VALUE;
+    	for (NetElement nE:NetElement.selectedElements()) {
+    		if (nE instanceof Device)	{
+    			temp.add((Device)nE);
+    			minx=Math.min(nE.getX(),minx);
+    			miny=Math.min(nE.getX(),miny);
+    			maxx=Math.max(nE.getX(),maxx);
+    			maxy=Math.max(nE.getX(),maxy);
+    		}
+    	}    		
+			if (temp.size() == 0) {
+				tcClicked = true;
+				mouseDown = false;
+				Netbuild.setStatus("Please select the area where the topology should be created. Click anywhere to use entire area.");
+				return;
+			} else {
+				mouseDown = false;
+				TopologyCreatorElement.open(me,minx, miny, maxx-minx, maxy-miny,temp);
+				return;
+			}
+    		
+    }
 
     if (e.isControlDown()) {
       if (readOnly) return;
@@ -337,28 +377,7 @@ public class Netbuild extends java.applet.Applet
       if (clickedOnSomething) {
         for (NetElement a: NetElement.selectedElements()) {
           NetElement b = clickedOn;
-          if (a != b && a != null && b != null && a.linkable && b.linkable) {
-            if (a instanceof Device && b instanceof Device)
-              Netbuild.setStatus("!Device to device connection not allowed.");
-            else if (a instanceof Device && b instanceof Connector) {
-              Connection con = ((Connector)b).createConnection((Device)a);
-              workArea.add(con);
-              Interface iface = ((Device)a).createInterface(con);
-              con.setIface(iface);
-              workArea.add(iface);
-              paintElement(con);
-              paintElement(iface);
-            } else if (b instanceof Device && a instanceof Connector) {
-              Connection con = ((Connector)a).createConnection((Device)b);
-              workArea.add(con);
-              Interface iface = ((Device)b).createInterface(con);
-              con.setIface(iface);
-              workArea.add(iface);
-              paintElement(con);
-              paintElement(iface);
-            } else if (a instanceof InternetConnector && b instanceof InternetConnector)
-              Netbuild.setStatus("!Connector to connector connection not allowed.");
-          }
+          connect ( a, b );
         }
       }
     } else {// if (e.controlDown())
@@ -382,7 +401,36 @@ public class Netbuild extends java.applet.Applet
 
     //repaint();
 
-    dragStarted = false;
+    dragStarted = false;    
+  }
+
+  private void connect ( NetElement a, NetElement b ) {
+    if (a != b && a != null && b != null && a.linkable && b.linkable) {
+      if (a instanceof Device && b instanceof Device) {
+        SwitchConnector sw = new SwitchConnector () ;
+        workArea.add(sw);
+        connect(a, sw);
+        connect(b, sw);
+        paintElement(sw);
+      } else if (a instanceof Device && b instanceof Connector) {
+        Connection con = ((Connector)b).createConnection((Device)a);
+        workArea.add(con);
+        Interface iface = ((Device)a).createInterface(con);
+        con.setIface(iface);
+        workArea.add(iface);
+        paintElement(con);
+        paintElement(iface);
+      } else if (b instanceof Device && a instanceof Connector) {
+        Connection con = ((Connector)a).createConnection((Device)b);
+        workArea.add(con);
+        Interface iface = ((Device)b).createInterface(con);
+        con.setIface(iface);
+        workArea.add(iface);
+        paintElement(con);
+        paintElement(iface);
+      } else if (a instanceof Connector && b instanceof Connector)
+        Netbuild.setStatus("!Connector to connector connection not allowed.");
+    }
   }
 
   private void paintElement (NetElement t) {
@@ -415,6 +463,8 @@ public class Netbuild extends java.applet.Applet
     if (!mouseDown) return;
     mouseDown = false;
     if (clickedOnSomething) {
+    	tcClicked=false;
+      Netbuild.setStatus(""); 
       if (dragStarted) {
         Graphics g = getGraphics();
         g.setXORMode(Color.white);
@@ -513,8 +563,24 @@ public class Netbuild extends java.applet.Applet
          sizeX,
          sizeY), shiftWasDown);
 
+        if (tcClicked){
+        	tcClicked=false;
+        	Netbuild.setStatus("");
+        	if (NetElement.selectedElements().size()==0) {
+        		if (leastX>=workAreaX && sizeX<workAreaWidth)
+        			TopologyCreatorElement.open(me,leastX-workAreaX, leastY, sizeX, sizeY,new ArrayList<Device>());
+        		else Netbuild.setStatus("!Topology creator can only be started inside work area.");
+        	} else Netbuild.setStatus("!Topology creator can only be started for empty area.");        	
+          return;
+        }        
+        
         paintSelChange();
         startAppropriatePropertiesArea();
+      } else {
+				if (tcClicked && leastX > workAreaX) {
+					TopologyCreatorElement.open(me, 50, 50, 500, 500,new ArrayList<Device>());
+					tcClicked = false;
+				}
       }
     }
     dragStarted = false;
@@ -522,7 +588,7 @@ public class Netbuild extends java.applet.Applet
     lastDragY = 0;
   }
 
-  public void mouseEntered (MouseEvent e) {
+public void mouseEntered (MouseEvent e) {
   }
 
   public void mouseExited (MouseEvent e) {
@@ -541,7 +607,7 @@ public class Netbuild extends java.applet.Applet
 
   public void init () {
     try {
-      status = "Netbuild v1.03 started.";
+      status = versionstring;
 
       me = this;
 

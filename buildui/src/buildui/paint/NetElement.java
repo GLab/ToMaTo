@@ -40,7 +40,7 @@ public abstract class NetElement {
 	private boolean stringWidthValid;
 
 	static private Set<NetElement> selections = new HashSet<NetElement>();
-  private final boolean displayName;
+  protected boolean displayName;
 
 	public void select() {
 		if (!isSelected()) selections.add(this);
