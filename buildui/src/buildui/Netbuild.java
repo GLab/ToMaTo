@@ -377,28 +377,7 @@ public class Netbuild extends java.applet.Applet
       if (clickedOnSomething) {
         for (NetElement a: NetElement.selectedElements()) {
           NetElement b = clickedOn;
-          if (a != b && a != null && b != null && a.linkable && b.linkable) {
-            if (a instanceof Device && b instanceof Device)
-              Netbuild.setStatus("!Device to device connection not allowed.");
-            else if (a instanceof Device && b instanceof Connector) {
-              Connection con = ((Connector)b).createConnection((Device)a);
-              workArea.add(con);
-              Interface iface = ((Device)a).createInterface(con);
-              con.setIface(iface);
-              workArea.add(iface);
-              paintElement(con);
-              paintElement(iface);
-            } else if (b instanceof Device && a instanceof Connector) {
-              Connection con = ((Connector)a).createConnection((Device)b);
-              workArea.add(con);
-              Interface iface = ((Device)b).createInterface(con);
-              con.setIface(iface);
-              workArea.add(iface);
-              paintElement(con);
-              paintElement(iface);
-            } else if (a instanceof InternetConnector && b instanceof InternetConnector)
-              Netbuild.setStatus("!Connector to connector connection not allowed.");
-          }
+          connect ( a, b );
         }
       }
     } else {// if (e.controlDown())
@@ -423,6 +402,35 @@ public class Netbuild extends java.applet.Applet
     //repaint();
 
     dragStarted = false;    
+  }
+
+  private void connect ( NetElement a, NetElement b ) {
+    if (a != b && a != null && b != null && a.linkable && b.linkable) {
+      if (a instanceof Device && b instanceof Device) {
+        SwitchConnector sw = new SwitchConnector () ;
+        workArea.add(sw);
+        connect(a, sw);
+        connect(b, sw);
+        paintElement(sw);
+      } else if (a instanceof Device && b instanceof Connector) {
+        Connection con = ((Connector)b).createConnection((Device)a);
+        workArea.add(con);
+        Interface iface = ((Device)a).createInterface(con);
+        con.setIface(iface);
+        workArea.add(iface);
+        paintElement(con);
+        paintElement(iface);
+      } else if (b instanceof Device && a instanceof Connector) {
+        Connection con = ((Connector)a).createConnection((Device)b);
+        workArea.add(con);
+        Interface iface = ((Device)b).createInterface(con);
+        con.setIface(iface);
+        workArea.add(iface);
+        paintElement(con);
+        paintElement(iface);
+      } else if (a instanceof Connector && b instanceof Connector)
+        Netbuild.setStatus("!Connector to connector connection not allowed.");
+    }
   }
 
   private void paintElement (NetElement t) {

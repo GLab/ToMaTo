@@ -98,6 +98,7 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
 
   public void paint (Graphics g) {
     for (Connector con: connectors) {
+      con.checkImplicit();
       for (Connection c: con.connections()) c.draw(g);
       con.draw(g);
     }

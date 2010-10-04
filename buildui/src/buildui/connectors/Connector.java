@@ -20,11 +20,16 @@ package buildui.connectors;
 
 import buildui.devices.Device;
 import buildui.paint.IconElement;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.util.HashSet;
 import java.util.Set;
 import org.w3c.dom.Element;
 
 public abstract class Connector extends IconElement {
+
+  private static Color blue = new Color(0.0f, 107.0f/256, 153.0f/256);
 
   public static Connector readFrom (Element x_con) {
     String type = x_con.getAttribute("type");
@@ -75,5 +80,47 @@ public abstract class Connector extends IconElement {
       int y = Integer.parseInt(pos.split(",")[1]);
       move(x,y);
     } catch ( NumberFormatException ex ) {}
+  }
+
+  public boolean isImplicit () {
+    return connections.size() == 2;
+  }
+
+  public void checkImplicit () {
+    moveable = !isImplicit() ;
+    displayName = !isImplicit();
+    if ( isImplicit() ) {
+      Connection[] cons = connections.toArray(new Connection[2]) ;
+      int x = ( cons[0].getDevice().getX() + cons[1].getDevice().getX() ) / 2 ;
+      int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
+      super.move(x, y);
+    }
+  }
+
+  @Override
+  public void move(int x, int y) {
+    if ( ! isImplicit() ) super.move(x, y);
+  }
+
+  @Override
+  public void drawIcon(Graphics g) {
+    if ( isImplicit() ) {
+      g.setColor(blue);
+      g.fillRect(-6, -4, 12, 8);
+      g.setColor(Color.black);
+      g.drawRect(-6, -4, 12, 8);
+    } else super.drawIcon(g);
+  }
+
+  @Override
+  public Rectangle getRectangle() {
+		if ( isImplicit() ) return new Rectangle(getX() + -6 - 4, getY() + -4 - 4, 12+8, 8+8);
+    else return super.getRectangle() ;
+	}
+
+  @Override
+  public void draw(Graphics g) {
+    checkImplicit();
+    super.draw(g);
   }
 }
