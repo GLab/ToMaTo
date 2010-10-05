@@ -25,7 +25,7 @@ import glabnetman
 
 import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
-from twisted.internet import defer, reactor
+from twisted.internet import defer, reactor, ssl
 
 class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, papi):
@@ -71,6 +71,9 @@ class APIServer(xmlrpc.XMLRPC):
 
 if __name__ == "__main__":
 	api_server=APIServer(glabnetman)
-	reactor.listenTCP(8000, server.Site(api_server))
+	if glabnetman.config.server_ssl:
+		sslContext = ssl.DefaultOpenSSLContextFactory(glabnetman.config.server_ssl_private_key, glabnetman.config.server_ssl_ca_key) 
+		reactor.listenSSL(glabnetman.config.server_port, server.Site(api_server), contextFactory = sslContext)
+	else:
+		reactor.listenTCP(glabnetman.config.server_port, server.Site(api_server))
 	reactor.run()
-

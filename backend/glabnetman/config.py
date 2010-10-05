@@ -71,6 +71,11 @@ timeout_stop_weeks = int(get("timeout", "stop", 4))
 timeout_destroy_weeks = int(get("timeout", "destroy", 12))
 timeout_remove_weeks = int(get("timeout", "remove", 24))
 
+server_port = int(get("server", "port", 8000))
+server_ssl = parse_bool(get("server", "ssl", False))
+server_ssl_private_key = get("server", "ssl_private_key", "")
+server_ssl_ca_key = get("server", "ssl_ca_key", "")
+
 DATABASE_ENGINE = get("local", "database_engine", 'sqlite3')
 DATABASE_NAME = get("local", "database_name", 'db.sqlite')
 TIME_ZONE = 'Europe/Berlin'

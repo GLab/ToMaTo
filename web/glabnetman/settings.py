@@ -81,3 +81,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
 )
+
+server_protocol = "https"
+server_host = "localhost"
+server_port = "8000"

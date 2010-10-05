@@ -19,6 +19,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 import xmlrpclib
+from settings import *
 
 httprealm="Glab Network Manager"
 
@@ -39,7 +40,7 @@ def getapi(request):
 		return None
 	(username, password) = auth
 	try:
-		api = xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (username, password) )
+		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port) )
 		api.account()
 		return api
 	except:
