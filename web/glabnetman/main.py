@@ -20,7 +20,7 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
 
 from lib import *
-import xmlrpclib
+import xmlrpclib, settings
 
 def index(request):
 	return render_to_response("main/start.html")
@@ -49,4 +49,4 @@ def task_status(api, request, task_id):
 task_status=wrap_rpc(task_status)
 
 def help(request, page=""):
-	return HttpResponseRedirect("http://fileserver.german-lab.de/trac/glabnetman/wiki/%s" % page)
+	return HttpResponseRedirect(settings.help_url % page)

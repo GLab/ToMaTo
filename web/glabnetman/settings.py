@@ -85,3 +85,5 @@ INSTALLED_APPS = (
 server_protocol = "https"
 server_host = "localhost"
 server_port = "8000"
+server_httprealm="Glab Network Manager"
+help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"

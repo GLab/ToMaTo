@@ -21,8 +21,6 @@ from django.shortcuts import render_to_response
 import xmlrpclib
 from settings import *
 
-httprealm="Glab Network Manager"
-
 def getauth(request):
 	if not request.META.has_key("HTTP_AUTHORIZATION"):
 		return None
@@ -51,7 +49,7 @@ class HttpResponseNotAuthorized(HttpResponse):
 	status_code = 401
 	def __init__(self, redirect_to):
 		HttpResponse.__init__(self)
-		self['WWW-Authenticate'] = 'Basic realm="%s"' % httprealm
+		self['WWW-Authenticate'] = 'Basic realm="%s"' % server_httprealm
 
 class wrap_rpc:
 	def __init__(self, fun):
