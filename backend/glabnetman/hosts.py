@@ -25,7 +25,14 @@ class HostGroup(models.Model):
 class Host(models.Model):
 	group = models.ForeignKey(HostGroup)
 	name = models.CharField(max_length=50, unique=True)
+	enabled = models.BooleanField(default=True)
 	public_bridge = models.CharField(max_length=10)
+	port_range_start = models.PositiveSmallIntegerField(default=7000)
+	port_range_count = models.PositiveSmallIntegerField(default=1000)
+	vmid_range_start = models.PositiveSmallIntegerField(default=1000)
+	vmid_range_count = models.PositiveSmallIntegerField(default=200)
+	bridge_range_start = models.PositiveSmallIntegerField(default=1000)
+	bridge_range_count = models.PositiveSmallIntegerField(default=1000)
 
 	def __unicode__(self):
 		return self.name
@@ -55,7 +62,7 @@ class Host(models.Model):
 		task.subtasks_done = task.subtasks_done + 1
 				
 	def next_free_vm_id (self):
-		ids = range(1000,1200)
+		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
 		import openvz
 		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False):
 			ids.remove(dev.openvz_id)
@@ -68,7 +75,7 @@ class Host(models.Model):
 			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
 
 	def next_free_port(self):
-		ids = range(7000,8000)
+		ids = range(self.port_range_start,self.port_range_start+self.port_range_count)
 		import openvz
 		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False):
 			ids.remove(dev.vnc_port)
@@ -84,7 +91,7 @@ class Host(models.Model):
 			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 
 	def next_free_bridge(self):
-		ids = range(1000,2000)
+		ids = range(self.bridge_range_start,self.bridge_range_start+self.bridge_range_count)
 		import generic
 		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False):
 			ids.remove(con.bridge_id)
@@ -236,7 +243,7 @@ def get_host_groups():
 	return HostGroup.objects.all()
 	
 def get_best_host(group):
-	all = Host.objects.all()
+	all = Host.objects.filter(enabled=True)
 	if group:
 		all = all.filter(group__name=group)
 	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
@@ -273,3 +280,39 @@ def get_default_template(type):
 def set_default_template(type, name):
 	Template.objects.filter(type=type).update(default=False)
 	Template.objects.filter(type=type, name=name).update(default=True)
+	
+def create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+	try:
+		group = HostGroup.objects.get(name=group_name)
+	except HostGroup.DoesNotExist:
+		group = HostGroup.objects.create(name=group_name)
+	host = Host(name=host_name, enabled=enabled, public_bridge=public_bridge, group=group,
+			vmid_range_start=vmid_start, vmid_range_count=vmid_count,
+			port_range_start=port_start, port_range_count=port_count,
+			bridge_range_start=bridge_start, bridge_range_count=bridge_count)
+	import tasks
+	t = tasks.TaskStatus(host.check_save)
+	t.subtasks_total = 1
+	t.start()
+	return t.id
+
+def change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+	host = get_host(host_name)
+	oldgroup = host.group.name
+	host.enabled=enabled
+	host.public_bridge=public_bridge
+	try:
+		group = HostGroup.objects.get(name=group_name)
+	except HostGroup.DoesNotExist:
+		group = HostGroup.objects.create(name=group_name)
+	host.group=group
+	host.vmid_range_start=vmid_start
+	host.vmid_range_count=vmid_count
+	host.port_range_start=port_start
+	host.port_range_count=port_count
+	host.bridge_range_start=bridge_start
+	host.bridge_range_count=bridge_count
+	host.save()
+	oldgroup = get_host_group(oldgroup)
+	if oldgroup.host_set.count() == 0:
+		oldgroup.delete()

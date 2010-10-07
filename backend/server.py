@@ -37,7 +37,7 @@ class APIServer(xmlrpc.XMLRPC):
 		if len(str(args)) < 50:
 			self.logger.log("%s%s" %(function.__name__, args), user=user.name)
 		else:
-			self.logger.log(function.__name__, bigmessage=str(args), user=user.name)
+			self.logger.log(function.__name__, bigmessage=str(args)+"\n", user=user.name)
 
 	def execute(self, function, args, user):
 		try:

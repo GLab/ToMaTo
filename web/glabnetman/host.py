@@ -27,15 +27,31 @@ def index(api, request):
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list()})
 index=wrap_rpc(index)
 
-def add(api, request):
-	if not request.REQUEST.has_key("hostname"):
-		return render_to_response("admin/host_add.html")
+def edit(api, request):
+	host = None
+	if request.REQUEST.has_key("hostname"):
+		hostname = request.REQUEST["hostname"]
+		host = api.host_info(hostname)
+	if not request.REQUEST.has_key("action"):
+		return render_to_response("admin/host_edit.html", {"host": host})
 	hostname=request.REQUEST["hostname"]
 	group=request.REQUEST["group"]
+	enabled=request.REQUEST.has_key("enabled")
 	public_bridge=request.REQUEST["public_bridge"]
-	task_id = api.host_add(hostname, group, public_bridge)
-	return render_to_response("admin/host_add.html", {"task_id": task_id, "hostname": hostname})
-add=wrap_rpc(add)
+	vmid_start=request.REQUEST["vmid_start"]
+	vmid_count=request.REQUEST["vmid_count"]
+	port_start=request.REQUEST["port_start"]
+	port_count=request.REQUEST["port_count"]
+	bridge_start=request.REQUEST["bridge_start"]
+	bridge_count=request.REQUEST["bridge_count"]
+	action = request.REQUEST["action"] 
+	if action=="add":
+		task_id = api.host_add(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+		return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": hostname})
+	else:
+		api.host_change(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+		return index(request)
+edit=wrap_rpc(edit)
 
 def debug(api, request, hostname):
 	debug_info = api.host_debug(hostname)

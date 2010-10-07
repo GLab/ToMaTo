@@ -8,6 +8,7 @@
 	<tr>
 		<th>host</th>
 		<th>group</th>
+		<th>enabled</th>
 		<th>devices</th>
 		<th>actions</th>
 	</tr>
@@ -15,8 +16,10 @@
 	<tr>
 		<td>{{host.name}}</td>
 		<td>{{host.group}}</td>
+		<td>{{host.enabled}}</td>
 		<td>{{host.device_count}}</td>
 		<td>
+			<a href="{%url host.edit%}?hostname={{host.name}}"><img src="/static/icons/computer_edit.png" alt="edit" title="edit"/></a>
 			<a href="{%url host.remove hostname=host.name%}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')"><img src="/static/icons/destroy.png" alt="remove" title="remove"/></a>
 			<a href="{%url top.index host_filter=host.name%}"><img src="/static/icons/view_list.png" alt="all topologies" title="all topologies"/></a>
 			<a href="{%url host.debug host.name%}"><img src="/static/icons/magnifier.png" alt="debug info" title="debug info"/></a>

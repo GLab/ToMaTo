@@ -86,8 +86,11 @@ def _connector_info(con):
 	return res
 
 def _host_info(host):
-	return {"name": host.name, "group": host.group.name, 
-		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count()}
+	return {"name": host.name, "group": host.group.name, "enabled": host.enabled, 
+		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count(),
+		"vmid_start": host.vmid_range_start, "vmid_count": host.vmid_range_count,
+		"port_start": host.port_range_start, "port_count": host.port_range_count,
+		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count}
 
 def _template_info(template):
 	return {"name": template.name, "type": template.type, "default": template.default}
@@ -115,6 +118,12 @@ def login(username, password):
 def account(user=None):
 	return user
 
+def host_info(hostname, user=None):
+	try:
+		return _host_info(hosts.get_host(hostname))
+	except hosts.Host.DoesNotExist:
+		return False
+
 def host_list(group_filter="*", user=None):
 	res=[]
 	qs = hosts.Host.objects.all()
@@ -124,18 +133,14 @@ def host_list(group_filter="*", user=None):
 		res.append(_host_info(h))
 	return res
 
-def host_add(host_name, group_name, public_bridge, user=None):
+def host_add(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
 	_admin_access(user)
-	from hosts import Host, HostGroup
-	import util
-	try:
-		group = HostGroup.objects.get(name=group_name)
-	except HostGroup.DoesNotExist:
-		group = HostGroup.objects.create(name=group_name)
-	host = Host(name=host_name, public_bridge=public_bridge, group=group)
-	t = tasks.TaskStatus(host.check_save)
-	t.subtasks_total = 1
-	return t.id
+	return hosts.create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+
+def host_change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
+	_admin_access(user)
+	hosts.change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+	return True
 
 def host_remove(host_name, user=None):
 	_admin_access(user)
