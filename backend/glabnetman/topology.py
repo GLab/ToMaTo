@@ -85,11 +85,11 @@ class Topology(models.Model):
 			self.remove()
 		elif now > self.date_usage + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
-			self.destroy()
+			self.destroy(False)
 		elif now > self.date_usage + self.STOP_TIMEOUT:
 			self.logger().log("timeout: stopping topology")
-			self.stop()
-
+			self.stop(False)
+		
 	def get_task(self):
 		if not self.task:
 			return None
@@ -241,12 +241,13 @@ class Topology(models.Model):
 				dev.upcast().start_run(task)
 		task.done()
 
-	def stop(self):
+	def stop(self, renew=True):
 		"""
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
-		self.renew()
+		if renew:
+			self.renew()
 		task = self.start_task(self.stop_run)
 		return task.id
 
@@ -285,12 +286,13 @@ class Topology(models.Model):
 				con.upcast().prepare_run(task)
 		task.done()
 
-	def destroy(self):
+	def destroy(self, renew=True):
 		"""
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
-		self.renew()
+		if renew:
+			self.renew()
 		task = self.start_task(self.destroy_run)
 		return task.id
 
