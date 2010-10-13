@@ -31,8 +31,9 @@ def add(api, request):
 	if request.REQUEST.has_key("name"):
 		name=request.REQUEST["name"]
 		type=request.REQUEST["type"]
-		api.template_add(name, type)
-		return index(request)
+		url=request.REQUEST["url"]
+		task = api.template_add(name, type, url)
+		return render_to_response("admin/template_index.html", {'templates': api.template_list("*"), "task": task})
 	else:
 		return render_to_response("admin/template_add.html")
 add=wrap_rpc(add)

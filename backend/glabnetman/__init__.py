@@ -93,7 +93,7 @@ def _host_info(host):
 		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count}
 
 def _template_info(template):
-	return {"name": template.name, "type": template.type, "default": template.default}
+	return {"name": template.name, "type": template.type, "default": template.default, "url": template.download_url}
 
 def _top_access(top, role, user):
 	if not top.check_access(role, user):
@@ -380,10 +380,9 @@ def template_list(type, user=None):
 		type = None
 	return [_template_info(t) for t in hosts.get_templates(type)]
 
-def template_add(name, type, user=None):
+def template_add(name, type, url, user=None):
 	_admin_access(user)
-	hosts.add_template(name, type)
-	return True
+	return hosts.add_template(name, type, url)
 
 def template_remove(name, user=None):
 	_admin_access(user)
@@ -392,7 +391,7 @@ def template_remove(name, user=None):
 
 def template_set_default(type, name, user=None):
 	_admin_access(user)
-	hosts.set_default_template(type, name)
+	hosts.get_template(type, name).set_default()
 	return True
 
 def errors_all(user=None):

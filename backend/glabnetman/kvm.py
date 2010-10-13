@@ -27,7 +27,7 @@ class KVMDevice(generic.Device):
 	def init(self, topology, dom):
 		self.topology = topology
 		self.decode_xml(dom)
-		self.template = hosts.get_template("kvm", self.template)
+		self.template = hosts.get_template_name("kvm", self.template)
 		if not self.template:
 			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
 		self.save()		
@@ -116,7 +116,7 @@ class KVMDevice(generic.Device):
 
 	def prepare_run(self, task):
 		generic.Device.prepare_run(self, task)
-		self.template = hosts.get_template("kvm", self.template)
+		self.template = hosts.get_template_name("kvm", self.template)
 		if not self.host:
 			self.host = hosts.get_best_host(self.hostgroup)
 		if not self.kvm_id:
@@ -167,7 +167,7 @@ class KVMDevice(generic.Device):
 		"""
 		generic.Device.change_run(self, dom, task)
 		self.template = util.get_attr(dom, "template", self.template)
-		self.template = hosts.get_template("kvm", self.template)
+		self.template = hosts.get_template_name("kvm", self.template)
 		ifaces=set()
 		for x_iface in dom.getElementsByTagName("interface"):
 			name = x_iface.getAttribute("id")

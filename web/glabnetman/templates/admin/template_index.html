@@ -22,4 +22,8 @@
 	</tr>
 {% endfor %}
 </table>
+
+{% if task %}
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task%}?backurl={%url template.index%}"></iframe>
+{% endif %}
 {% endblock %}

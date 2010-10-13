@@ -40,10 +40,15 @@ class Host(models.Model):
 	def __unicode__(self):
 		return self.name
 
+	def fetch_all_templates(self, task):
+		for tpl in Template.objects.all():
+			tpl.upload_to_host(self, task)
+
 	def check_save(self, task):
 		task.subtasks_total = 6
 		self.check(task)
 		self.save()
+		self.fetch_all_templates(task)
 		task.done()
 
 	def check(self, task):
@@ -244,7 +249,34 @@ class Template(models.Model):
 		name = models.CharField(max_length=100)
 		type = models.CharField(max_length=12)
 		default = models.BooleanField(default=False)
+		download_url = models.CharField(max_length=255, default="")
 		
+		def init(self, name, type, download_url):
+			self.name = name
+			self.type = type
+			self.download_url = download_url
+			self.save()
+
+		def set_default(self):
+			Template.objects.filter(type=self.type).update(default=False)
+			self.default=True
+			self.save()
+		
+		def get_filename(self):
+			if self.type == "kvm":
+				return "/var/lib/vz/template/qemu/%s" % self.name
+			if self.type == "openvz":
+				return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+		
+		def upload_to_all(self, task):
+			dst = self.get_filename()
+			for host in Host.objects.all():
+				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+		
+		def upload_to_host(self, host, task):
+			dst = self.get_filename()
+			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+
 		def __unicode__(self):
 			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
@@ -273,14 +305,22 @@ def get_templates(type=None):
 		list = list.filter(type=type)
 	return list
 
-def get_template(type, name):
+def get_template_name(type, name):
 	try:
 		return Template.objects.get(type=type, name=name).name
 	except Exception:
 		return get_default_template(type)
 
-def add_template(name, type):
-	Template.objects.create(name=name, type=type)
+def get_template(type, name):
+	return Template.objects.get(type=type, name=name)
+
+def add_template(name, type, url):
+	tpl = Template.objects.create(name=name, type=type, download_url=url)
+	import tasks
+	t = tasks.TaskStatus(tpl.upload_to_all)
+	t.subtasks_total = 1
+	t.start()
+	return t.id
 	
 def remove_template(name):
 	Template.objects.filter(name=name).delete()
@@ -291,10 +331,6 @@ def get_default_template(type):
 		return list[0].name
 	else:
 		return None
-	
-def set_default_template(type, name):
-	Template.objects.filter(type=type).update(default=False)
-	Template.objects.filter(type=type, name=name).update(default=True)
 	
 def create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
 	try:
