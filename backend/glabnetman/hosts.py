@@ -23,8 +23,8 @@ class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
 	
 class Host(models.Model):
-	SSH_COMMAND = "ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oPasswordAuthentication=false"
-	RSYNC_COMMAND = "rsync -a -e\""+SSH_COMMAND+"\""
+	SSH_COMMAND = ["ssh", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
+	RSYNC_COMMAND = ["rsync", "-a", "-e\""+" ".join(SSH_COMMAND)+"\""]
 	
 	group = models.ForeignKey(HostGroup)
 	name = models.CharField(max_length=50, unique=True)
@@ -119,7 +119,7 @@ class Host(models.Model):
 		return util.run_shell(cmd, config.remote_dry_run)
 	
 	def execute(self, command, task=None):
-		cmd = [Host.SSH_COMMAND, "root@%s" % self.name, command]
+		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
 		str = self.name + ": " + command + "\n"
 		if task:
 			fd = task.output
@@ -131,7 +131,7 @@ class Host(models.Model):
 		return res
 	
 	def upload(self, local_file, remote_file, task=None):
-		cmd = [Host.RSYNC_COMMAND, local_file, "root@%s:%s" % (self.name, remote_file)]
+		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
@@ -144,7 +144,7 @@ class Host(models.Model):
 		return res
 	
 	def download(self, remote_file, local_file, task=None):
-		cmd = [Host.RSYNC_COMMAND, "root@%s:%s" % (self.name, remote_file), local_file]
+		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
 			fd = task.output
@@ -156,7 +156,7 @@ class Host(models.Model):
 		return res
 	
 	def get_result(self, command):
-		return self._exec([Host.SSH_COMMAND, "root@%s" % self.name, command])
+		return self._exec(Host.SSH_COMMAND+["root@%s" % self.name, command])
 
 	def _first_line(self, str):
 		if not str:
