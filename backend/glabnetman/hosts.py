@@ -23,6 +23,9 @@ class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
 	
 class Host(models.Model):
+	SSH_COMMAND = "ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oPasswordAuthentication=false"
+	RSYNC_COMMAND = "rsync -a -e\""+SSH_COMMAND+"\""
+	
 	group = models.ForeignKey(HostGroup)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
@@ -38,7 +41,7 @@ class Host(models.Model):
 		return self.name
 
 	def check_save(self, task):
-		task.subtasks_total = 5
+		task.subtasks_total = 6
 		self.check(task)
 		self.save()
 		task.done()
@@ -47,18 +50,30 @@ class Host(models.Model):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		"""
-		from util import run_shell
 		task.output.write("checking for openvz...\n")
-		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "vzctl --version" ], config.remote_dry_run))
+		res = self.get_result("vzctl --version; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "OpenVZ error"
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write("checking for kvm...\n")
+		res = self.get_result("qm list; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		task.output.write("checking for bridge utils...\n")
-		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "brctl show" ], config.remote_dry_run))
+		res = self.get_result("brctl --version; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
 		task.output.write("checking for dummynet...\n")
-		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "ipfw -h" ], config.remote_dry_run))
+		res = self.get_result("ipfw list; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
 		task.output.write("checking for tinc...\n")
-		task.output.write(run_shell (["ssh",  "root@%s" % self.name, "tincd --version" ], config.remote_dry_run))
+		res = self.get_result("tincd --version; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
 				
 	def next_free_vm_id (self):
@@ -104,7 +119,7 @@ class Host(models.Model):
 		return util.run_shell(cmd, config.remote_dry_run)
 	
 	def execute(self, command, task=None):
-		cmd = ["ssh", "-oStrictHostKeyChecking=no", "root@%s" % self.name, command]
+		cmd = [Host.SSH_COMMAND, "root@%s" % self.name, command]
 		str = self.name + ": " + command + "\n"
 		if task:
 			fd = task.output
@@ -116,7 +131,7 @@ class Host(models.Model):
 		return res
 	
 	def upload(self, local_file, remote_file, task=None):
-		cmd = ["rsync", "-a", local_file, "root@%s:%s" % (self.name, remote_file)]
+		cmd = [Host.RSYNC_COMMAND, local_file, "root@%s:%s" % (self.name, remote_file)]
 		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
@@ -129,7 +144,7 @@ class Host(models.Model):
 		return res
 	
 	def download(self, remote_file, local_file, task=None):
-		cmd = ["rsync", "-a", "root@%s:%s" % (self.name, remote_file), local_file]
+		cmd = [Host.RSYNC_COMMAND, "root@%s:%s" % (self.name, remote_file), local_file]
 		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
 			fd = task.output
@@ -141,7 +156,7 @@ class Host(models.Model):
 		return res
 	
 	def get_result(self, command):
-		return self._exec(["ssh", "-oStrictHostKeyChecking=no", "root@%s" % self.name, command])
+		return self._exec([Host.SSH_COMMAND, "root@%s" % self.name, command])
 
 	def _first_line(self, str):
 		if not str:
