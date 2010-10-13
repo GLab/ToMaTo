@@ -104,7 +104,7 @@ class Host(models.Model):
 		return util.run_shell(cmd, config.remote_dry_run)
 	
 	def execute(self, command, task=None):
-		cmd = ["ssh", "root@%s" % self.name, command]
+		cmd = ["ssh", "-oStrictHostKeyChecking=no", "root@%s" % self.name, command]
 		str = self.name + ": " + command + "\n"
 		if task:
 			fd = task.output
@@ -141,7 +141,7 @@ class Host(models.Model):
 		return res
 	
 	def get_result(self, command):
-		return self._exec(["ssh", "root@%s" % self.name, command])
+		return self._exec(["ssh", "-oStrictHostKeyChecking=no", "root@%s" % self.name, command])
 
 	def _first_line(self, str):
 		if not str:
