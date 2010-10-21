@@ -71,7 +71,7 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
 		task.output.write("checking for dummynet...\n")
-		res = self.get_result("ipfw list; echo $?")
+		res = self.get_result("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
