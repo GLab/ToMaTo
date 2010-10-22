@@ -495,6 +495,6 @@ def cleanup():
 	for top in all():
 		top.check_timeout()
 
-cleanup_task = util.RepeatedTimer(300, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
+#cleanup_task = util.RepeatedTimer(300, cleanup)
+#cleanup_task.start()
+#atexit.register(cleanup_task.stop)
