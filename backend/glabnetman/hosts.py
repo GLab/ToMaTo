@@ -23,7 +23,7 @@ class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
 	
 class Host(models.Model):
-	SSH_COMMAND = ["ssh", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
+	SSH_COMMAND = ["ssh", "-q", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
 	RSYNC_COMMAND = ["rsync", "-a", "-e\""+" ".join(SSH_COMMAND)+"\""]
 	
 	group = models.ForeignKey(HostGroup)

@@ -40,5 +40,16 @@ class Logger():
 	def close(self):
 		try:
 			self.fd.close()
+			del loggers[self.filename]
 		except:
 			pass
+		
+loggers={}		
+		
+def get_logger(filename):
+	if loggers.has_key(filename):
+		return loggers[filename]
+	else:
+		logger = Logger(filename)
+		loggers[filename] = logger
+		return logger
