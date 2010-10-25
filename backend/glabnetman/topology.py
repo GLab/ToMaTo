@@ -50,11 +50,9 @@ class Topology(models.Model):
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.timeout_remove_weeks)
 
 	def logger(self):
-		if not hasattr(self, "_logger"):
-			if not os.path.exists(config.log_dir + "/top"):
-				os.makedirs(config.log_dir + "/top")
-			self._logger = log.Logger(config.log_dir + "/top/%s"%self.id)
-		return self._logger
+		if not os.path.exists(config.log_dir + "/top"):
+			os.makedirs(config.log_dir + "/top")
+		return log.get_logger(config.log_dir + "/top/%s"%self.id)
 
 	def init (self, dom, owner):
 		"""
@@ -397,7 +395,7 @@ class Topology(models.Model):
 		return task.id
 		
 	def _log(self, task, output):
-		logger = log.Logger(config.log_dir+"/top_%s.log" % self.id)
+		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
 		
 	def upload_image(self, device_id, filename):
