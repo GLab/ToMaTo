@@ -92,6 +92,7 @@ class KVMDevice(generic.Device):
 		for iface in self.interfaces_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			bridge = self.bridge_name(iface)
+			self.host.bridge_create(bridge)
 			self.host.bridge_connect(bridge, "vmtab%si%s" % ( self.kvm_id, iface_id ) )
 			self.host.execute("ip link set %s up" % bridge, task)
 		if not self.vnc_port:
