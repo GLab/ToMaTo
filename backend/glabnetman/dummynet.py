@@ -132,7 +132,8 @@ class EmulatedConnection(generic.Connection):
 		generic.Connection.destroy_run(self, task)
 		host = self.interface.device.host
 		dir = self._capture_dir()
-		host.execute("rm -r %s %s.pid" % (dir, dir), task )
+		if host:
+			host.execute("rm -r %s %s.pid" % (dir, dir), task )
 
 	def download_supported(self):
 		return not self.connector.state == generic.State.CREATED and self.capture
