@@ -76,6 +76,21 @@ class Topology(models.Model):
 		self.date_usage = datetime.datetime.now()
 		self.save()
 
+	def max_state(self):
+		max_state = generic.State.CREATED
+		for con in self.connectors_all():
+			if not con.is_internet():
+				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
+					max_state = generic.State.PREPARED
+				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
+					max_state = generic.State.STARTED
+		for dev in self.devices_all():
+			if dev.state == generic.State.PREPARED and max_state == generic.State.CREATED:
+				max_state = generic.State.PREPARED
+			if dev.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
+				max_state = generic.State.STARTED
+		return max_state
+
 	def check_timeout(self):
 		now = datetime.datetime.now()
 		if now > self.date_usage + self.REMOVE_TIMEOUT:
@@ -83,10 +98,13 @@ class Topology(models.Model):
 			self.remove()
 		elif now > self.date_usage + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
-			self.destroy(False)
+			max_state = self.max_state()
+			if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
+				self.destroy(False)
 		elif now > self.date_usage + self.STOP_TIMEOUT:
 			self.logger().log("timeout: stopping topology")
-			self.stop(False)
+			if self.max_state() == generic.State.STARTED:
+				self.stop(False)
 		
 	def get_task(self):
 		if not self.task:

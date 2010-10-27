@@ -9,15 +9,17 @@
   <tr>
     <th>ID</th>
     <th>Name</th>
-    <th>Owner</rh>
-    <th>Devices</rh>
-    <th>Connectors</rh>
+    <th>Owner</th>
+    <th>State</th>
+    <th>Devices</th>
+    <th>Connectors</th>
   </tr>
 {% for top in top_list %}
   <tr>
     <td>{{top.id}}</td>
     <td><a href="{%url top.details top.id%}">{{top.name}}</a></td>
     <td>{{top.owner}}</td>
+    <td>{{top.state}}</td>
     <td>{{top.device_count}}</td>
     <td>{{top.connector_count}}</td>
   </tr>

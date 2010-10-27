@@ -34,7 +34,7 @@ def _topology_info(top, auth):
 		analysis = top.analysis()
 	except Exception, exc:
 		analysis = "Error in analysis: %s" % exc
-	res = {"id": top.id, "name": top.name,
+	res = {"id": top.id, "name": top.name, "state": top.max_state(),
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
 		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
