@@ -297,7 +297,7 @@ class PhysicalLink(models.Model):
 	def adapt(self, loss, delay_avg, delay_stddev):
 		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss
 		self.delay_avg = ( 1.0 - self.sliding_factor ) * self.delay_avg + self.sliding_factor * delay_avg
-		self.delay_Stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
+		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
 	
 def get_host(name):
