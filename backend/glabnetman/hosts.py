@@ -45,7 +45,7 @@ class Host(models.Model):
 			tpl.upload_to_host(self, task)
 
 	def check_save(self, task):
-		task.subtasks_total = 6
+		task.subtasks_total = 7
 		self.check(task)
 		self.save()
 		self.fetch_all_templates(task)
@@ -79,6 +79,11 @@ class Host(models.Model):
 		res = self.get_result("tincd --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "tinc error"
+		task.subtasks_done = task.subtasks_done + 1
+		task.output.write("checking for timeout...\n")
+		res = self.get_result("timeout 1 true; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
 				
 	def next_free_vm_id (self):
