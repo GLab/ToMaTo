@@ -91,7 +91,7 @@ class OpenVZDevice(generic.Device):
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
 			self.host.execute("ip link set %s up" % bridge, task)
-		self.host.execute("vzctl start %s --wait" % self.openvz_id, task)
+		self.host.execute("timeout 60 vzctl start %s --wait" % self.openvz_id, task)
 		for iface in self.interfaces_all():
 			if iface.is_configured():
 				iface = iface.upcast()
