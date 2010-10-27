@@ -95,6 +95,9 @@ def _host_info(host):
 def _template_info(template):
 	return {"name": template.name, "type": template.type, "default": template.default, "url": template.download_url}
 
+def _physical_link_info(link):
+	return {"src": link.src_group.name, "dst": link.dst_group.name, "loss": link.loss, "delay_avg": link.delay_avg, "delay_stddev": link.delay_stddev}
+
 def _top_access(top, role, user):
 	if not top.check_access(role, user):
 		raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
@@ -415,3 +418,8 @@ def permission_remove(top_id, user_name, user=None):
 	top.permissions_remove(user_name)
 	return True
 		
+def physical_links_get(src_group, dst_group, user=None):
+	return _physical_link_info(hosts.get_physical_link(src_group, dst_group))
+	
+def physical_links_get_all(user=None):
+	return [_physical_link_info(l) for l in hosts.get_all_physical_links()]

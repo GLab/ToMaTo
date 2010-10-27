@@ -48,5 +48,12 @@ def task_status(api, request, task_id):
 	return render_to_response("main/task.html", {'task': task, 'backurl': backurl})
 task_status=wrap_rpc(task_status)
 
+def physical_links(api, request):
+	links = api.physical_links_get_all()
+	for l in links:
+		l["loss"] = l["loss"] * 100.0
+	return render_to_response("admin/physical_links.html", {"links": links})
+physical_links=wrap_rpc(physical_links)
+
 def help(request, page=""):
 	return HttpResponseRedirect(settings.help_url % page)

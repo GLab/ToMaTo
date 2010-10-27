@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import config, fault, util, sys
+import config, fault, util, sys, atexit
 
 class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
@@ -280,6 +280,21 @@ class Template(models.Model):
 		def __unicode__(self):
 			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
+class PhysicalLink(models.Model):
+	src_group = models.ForeignKey(HostGroup)
+	dst_group = models.ForeignKey(HostGroup, related_name="reverselink")
+	loss = models.FloatField()
+	delay_avg = models.FloatField()
+	delay_stddev = models.FloatField()
+			
+	sliding_factor = 0.25
+			
+	def adapt(self, loss, delay_avg, delay_stddev):
+		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss
+		self.delay_avg = ( 1.0 - self.sliding_factor ) * self.delay_avg + self.sliding_factor * delay_avg
+		self.delay_Stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
+		self.save()
+	
 def get_host(name):
 	return Host.objects.get(name=name)
 
@@ -367,3 +382,43 @@ def change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count
 	oldgroup = get_host_group(oldgroup)
 	if oldgroup.host_set.count() == 0:
 		oldgroup.delete()
+		
+def get_physical_link(srcg_name, dstg_name):
+	return PhysicalLink.objects.get(src_group__name = srcg_name, dst_group__name = dstg_name)		
+		
+def get_all_physical_links():
+	return PhysicalLink.objects.all()		
+		
+def measure_link_properties(src, dst):
+	res = src.get_result("ping -A -c 500 -n -q -w 300 %s" % dst.name)
+	lines = res.splitlines()
+	loss = float(lines[3].split()[5][:-1])/100.0
+	import math
+	loss = 1.0 - math.sqrt(1.0 - loss)
+	times = lines[4].split()[3].split("/")
+	unit = lines[4].split()[4][:-1]
+	avg = float(times[1]) / 2.0
+	stddev = float(times[3]) / 2.0
+	if unit == "s":
+		avg = avg * 1000.0
+		stddev = stddev * 1000.0
+	return (loss, avg, stddev)
+				
+def measure_physical_links():
+	for srcg in get_host_groups():
+		for dstg in get_host_groups():
+			if not srcg == dstg:
+				try:
+					src = get_best_host(srcg.name)
+					dst = get_best_host(dstg.name)
+					(loss, delay_avg, delay_stddev) = measure_link_properties(src, dst)
+					link = get_physical_link(srcg.name, dstg.name)
+					link.adapt(loss, delay_avg, delay_stddev) 
+				except PhysicalLink.DoesNotExist:
+					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev)
+				except fault.Fault:
+					pass
+				
+measurement_task = util.RepeatedTimer(3600, measure_physical_links)
+measurement_task.start()
+atexit.register(measurement_task.stop)

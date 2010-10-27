@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>List of physical links</h1>
+
+<script src="/static/sorttable.js"></script>
+
+<table class="sortable">
+  <tr>
+    <th>From</th>
+    <th>To</th>
+    <th>Delay avg</th>
+    <th>Delay stddev</th>
+    <th>Loss</th>
+  </tr>
+{% for link in links %}
+  <tr>
+    <td>{{link.src}}</td>
+    <td>{{link.dst}}</td>
+    <td>{{link.delay_avg}}ms</td>
+    <td>{{link.delay_stddev}}ms</td>
+    <td>{{link.loss}}%</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}
