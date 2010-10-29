@@ -17,9 +17,9 @@
   <tr>
     <td>{{link.src}}</td>
     <td>{{link.dst}}</td>
-    <td>{{link.delay_avg}}ms</td>
-    <td>{{link.delay_stddev}}ms</td>
-    <td>{{link.loss}}%</td>
+    <td>{{link.delay_avg|floatformat}}ms</td>
+    <td>{{link.delay_stddev|floatformat}}ms</td>
+    <td>{{link.loss|floatformat}}%</td>
   </tr>
 {% endfor %}
 </table>
