@@ -60,7 +60,7 @@ inst{1}
 
 \end_inset
 
- and David Hock
+, David Hock
 \begin_inset ERT
 status open
 
@@ -73,7 +73,7 @@ inst{2}
 
 \end_inset
 
- and Daniel Günther
+, Daniel Günther
 \begin_inset ERT
 status open
 
@@ -86,7 +86,7 @@ inst{1}
 
 \end_inset
 
- and Bernd Reuther
+, Bernd Reuther
 \begin_inset ERT
 status open
 
@@ -99,7 +99,7 @@ inst{1}
 
 \end_inset
 
- and Paul Müller
+, Paul Müller
 \begin_inset ERT
 status open
 
@@ -825,6 +825,14 @@ reference "sec:ExperimentSupport"
 \end_inset
 
  outlines how ToMaTo supports these types of experiments.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Efficiency-and-scalability"
+
+\end_inset
+
+ takes a quick look at the efficiency and scalability of ToMaTo.
 \end_layout
 
 \begin_layout Subsection
@@ -1114,6 +1122,44 @@ Seattle is perfectly distributable, runs on nearly any computer
 
 \end_layout
 
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Efficiency-and-scalability"
+
+\end_inset
+
+Efficiency and scalability
+\end_layout
+
+\begin_layout Standard
+With ToMaTo, users can choose between OpenVZ and KVM virtualization.
+ This way users can get the level of access that is needed for their experiments
+ and still use as less resources as possible.
+ A modern cluster node can handle up to 250 OpenVZ devices and up to 50
+ KVM devices, both depending on device usage.
+ The connector components only pose a very small overhead and can handle
+ connections with over 100 Mbps.
+\end_layout
+
+\begin_layout Standard
+ToMaTo hosts use an existing operating system as basis and only need small
+ changes that have been bundled as software package.
+ That means that support and security updates are available and do not have
+ to be provided by the experimental facility administrators.
+ As the ToMaTo back-end only controls the hosts and only contacts them when
+ users change their topologies, the back-end can handle many host nodes
+ making the solution very scalable.
+\end_layout
+
+\begin_layout Standard
+ToMaTo can be used to create experimental facilities with distributed hosts.
+ Limitations in network emulation apply since the resulting link characteristics
+ are a combination of real and emulated link properties.
+ ToMaTo offers long-term link statistics so the users can plan their experiments
+ accordingly.
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -1125,28 +1171,30 @@ Conclusion & future work
 \end_layout
 
 \begin_layout Standard
-{{TODO}}
+As shown in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Evaluation"
+
+\end_inset
+
+, ToMaTo fits for a wide range of experiments identified as common in the
+ context of the German-Lab project.
+ The design of the experimental facility software offers efficiency and
+ scalability.
+ ToMaTo is not bound to German-Lab and can easily be used to build similar
+ experimental facilities.
 \end_layout
 
-\begin_layout Itemize
-tomato fits for a wide range of experiments and offers scalability and efficient
- resource usage
+\begin_layout Standard
+In the German-Lab experimental facility currently 20 of 182 hosts are ToMaTo-ena
+bled.
+ The goal is to increase this number to about 50 and thereby increase its
+ usability.
+ Early plans exist to integrate support for Openflow hardware and software
+ to allow even complexer network topologies.
 \end_layout
 
-\begin_layout Itemize
-future work
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-openflow integration
-\end_layout
-
-\begin_layout Itemize
-integration into glab
-\end_layout
-
-\end_deeper
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
