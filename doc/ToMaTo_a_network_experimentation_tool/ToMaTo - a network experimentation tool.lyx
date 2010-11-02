@@ -1,0 +1,1162 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass llncs
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+ToMaTo - a network experimentation tool
+\end_layout
+
+\begin_layout Author
+Dennis Schwerdel
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{1}
+\end_layout
+
+\end_inset
+
+ and David Hock
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{2}
+\end_layout
+
+\end_inset
+
+ and Daniel Günther
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{1}
+\end_layout
+
+\end_inset
+
+ and Bernd Reuther
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{1}
+\end_layout
+
+\end_inset
+
+ and Paul Müller
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{1}
+\end_layout
+
+\end_inset
+
+ and Phouc Tran-Gia
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+inst{2}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Institute
+Integrated Communication Systems Lab, University of Kaiserslautern, Germany
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+{schwerdel,guenther,reuther,pmueller}@informatik.uni-kl.de
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+and
+\end_layout
+
+\end_inset
+
+ University of Würzburg, Germany
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+{hock,trangia}@informatik.uni-wuerzburg.de
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Motivation"
+
+\end_inset
+
+Motivation
+\end_layout
+
+\begin_layout Standard
+Today's Internet has a large economic influence but is based on legacy mechanism
+s and algorithms from the 70ies and 80ies.
+ The rapid evolution of applications and transport technologies demands
+ for changes even of core technologies of the Internet.
+ A lot of research work has been done on improving isolated aspects of the
+ Internet but in the last years also a lot of holistic research efforts
+ investigate concepts and technologies for future networks in general.
+\end_layout
+
+\begin_layout Standard
+All of these research projects need ways to evaluate their ideas and results.
+ In the beginning of the projects theoretical models and simulations might
+ be sufficient but at some stage a more realistic environment is needed.
+ Real networks and real hardware show unforeseen effects that cannot be
+ modeled.
+ New protocols and architectures will have to work with legacy components,
+ i.e.
+ currently widespread hardware and software, often with unpublished behavior
+ details.
+\end_layout
+
+\begin_layout Standard
+Experimental facilities aim to provide a realistic environment for experiments
+ using emulation technique.
+ In experimental facilities, there is always a tradeoff between realism
+ and concurrency and repeatability.
+ Realistic environments show unforeseen and random effects that cannot be
+ repeated.
+ To be able to run concurrent experiments on the facility the access of
+ each experiment must be restricted to sharable or virtualized resources
+ which in turn limits the realism.
+\end_layout
+
+\begin_layout Standard
+A lot of software for experimental facilities has been developed and each
+ one works at a certain range of realism, concurrency and repeatability
+ but not at others.
+ The German-Lab experimental facility allows its researchers to choose from
+ various experimental facility software.
+ The German-Lab project also developed an experimental facility software
+ called Topology Management Tool (ToMaTo).
+ ToMaTo allows researchers to create virtual network topologies populated
+ by virtual nodes running standard software.
+\end_layout
+
+\begin_layout Standard
+This paper describes the ToMaTo software and compares it to other experimental
+ facility software.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Related-work"
+
+\end_inset
+
+ lists other experimental facility software and comparable solutions.
+ The design of ToMaTo is described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:ToMaTo-design"
+
+\end_inset
+
+.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Evaluation"
+
+\end_inset
+
+ evaluates the design by identifying common experiment types and outlining
+ the support for these experiments in ToMaTo.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Conclusion-&-future"
+
+\end_inset
+
+ concludes the work and mentions future work on ToMaTo.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Related-work"
+
+\end_inset
+
+Related work
+\end_layout
+
+\begin_layout Standard
+{{TODO}}
+\end_layout
+
+\begin_layout Itemize
+Virconel
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+not multi-user capable
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "VIRCONEL"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Common Open Research Emulator CORE
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+not multi-user capable, limitation in distributed use
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CORE"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Wisebed
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+special testbed for sensor networks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/ewsn/BaumgartnerCDKKMPP10"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+DES testbed
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+special testbed for wireless networks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "620"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Planetlab
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+high node numbers
+\end_layout
+
+\begin_layout Itemize
+no link emulation (Vini)
+\end_layout
+
+\begin_layout Itemize
+no hardware/limited kernel access
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/osdi/PetersonBFM06"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Emulab
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+needs complex cluster setup
+\end_layout
+
+\begin_layout Itemize
+access to physical hardware
+\end_layout
+
+\begin_layout Itemize
+also has a few virtual nodes (openvz) and wireless nodes (only core network
+ regarded here)
+\end_layout
+
+\begin_layout Itemize
+scriptable events
+\end_layout
+
+\begin_layout Itemize
+not distributed
+\end_layout
+
+\begin_layout Itemize
+paper: An Integrated Experimental Environment for Distributed Systems and
+ Networks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/osdi/WhiteLSRGNHBJ02"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Seattle
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+testbed for modified python code
+\end_layout
+
+\begin_layout Itemize
+no hardware/kernel access
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/sigcse/CapposBKA09"
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:ToMaTo-design"
+
+\end_inset
+
+ToMaTo design
+\end_layout
+
+\begin_layout Standard
+\begin_inset Wrap figure
+lines 0
+placement O
+overhang 0in
+width "40col%"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename example1.png
+	width 40col%
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example Topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The goal of ToMaTo is to enable users to create and use network topologies
+ for their experiments.
+ A network topology consists of two types of components.
+ Devices are active components like computers that run the software of the
+ experiment and are the only sources and sinks of data.
+ Connectors are middle-boxes that connect devices and transport their data
+ exhibiting certain configurable characteristics.
+\end_layout
+
+\begin_layout Subsection
+Architecture
+\end_layout
+
+\begin_layout Standard
+ToMaTo uses virtualization technologies to allow experiments to run concurrently
+ in isolated environments spanning parts of the experimental facility.
+ ToMaTo consists of three modules, the host hypervisor, the central back-end
+ and the web-front-end.
+\end_layout
+
+\begin_layout Standard
+The host hypervisor runs on all hosts of the experimental facility and offers
+ virtualized resources to be controlled by the central back-end.
+ The host hypervisor consists of a Linux operating system with additional
+ components installed:
+\end_layout
+
+\begin_layout Itemize
+PROXMOX VE
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Proxmox"
+
+\end_inset
+
+ as virtualization tool for virtual machines
+\end_layout
+
+\begin_layout Itemize
+Tinc
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Tinc"
+
+\end_inset
+
+ as virtualization tool for virtual networks
+\end_layout
+
+\begin_layout Itemize
+Dummynet
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:journals/ccr/CarboneR10"
+
+\end_inset
+
+ as link emulation tool
+\end_layout
+
+\begin_layout Standard
+\begin_inset Wrap figure
+lines 11
+placement O
+overhang 0in
+width "60col%"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename structure1.dia
+	width 60text%
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+ToMaTo structure
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The host component allows the central back-end to configure and control
+ these tools via a secure communication channel.
+ This back-end is realized as a central component to allow easy resource
+ management.
+ It distributes the virtual machines evenly across the physical hosts to
+ balance the load on those hosts.
+ To keep the host environment as simple as possible the back-end contains
+ all program logic and uses a secure communication channel to execute commands
+ on the hosts.
+ The back-end also manages user authentication and authorization and a very
+ basic accounting.
+ Using an LDAP
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Lightweight Directory Access Protocol
+\end_layout
+
+\end_inset
+
+ server existing user accounts could be easily integrated into the back-end.
+\end_layout
+
+\begin_layout Standard
+The back-end offers an XML interface to be used by front-end tools.
+ Currently only one front-end exists but the API is generic enough to allow
+ other front-ends as well.
+ The main ToMaTo front-end consists of a website that allows users to create
+ and edit their topologies using a graphical editor and to manage the topologies
+, devices and connectors.
+ Users can also access their devices using a built-in VNC
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Virtual Network Computing
+\end_layout
+
+\end_inset
+
+ viewer.
+ Administrators can use a special section to access debugging information,
+ manage the physical hosts and carry out various administrative tasks.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename 10.png
+	width 100col%
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Graphical topology editor
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename 16.2.png
+	width 100col%
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+VNC access to a KVM device
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+{{TODO Topology creator (David)}}
+\end_layout
+
+\begin_layout Subsection
+Device types & capabilities
+\end_layout
+
+\begin_layout Standard
+ToMaTo currently supports two device types offered by PROXMOX: OpenVZ and
+ KVM virtual machines.
+ OpenVZ is a container-based virtualization solution for Linux.
+ OpenVZ virtual machines can run nearly all flavors of Linux and provide
+ an environment similar to a physical machine from a user-space perspective.
+ Since OpenVZ does only run a single kernel for all virtual machines some
+ limitations arise.
+ The kernel can not be modified, extended using modules or configured using
+ sysctl from a virtual machine.
+ Also the kernel version limits the guest systems to Linux operation systems
+ that are compatible to a current kernel.
+ Virtual network interfaces can be created on the OpenVZ host and exposed
+ to the guest.
+ Being a container-based virtualization, OpenVZ is very lightweight and
+ offers flexible resource management (i.e.
+ the external memory usage of a VM equals the internal usage inside the
+ VM).
+\end_layout
+
+\begin_layout Standard
+KVM
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Kernel-based Virtual Machine
+\end_layout
+
+\end_inset
+
+ offers a full virtualization including running one kernel per virtual machine
+ and exposing emulated hardware to the VMs.
+ Using KVM allows to run any x86-based operating system (even Windows and
+ BSD) and to configure the operating system as needed.
+ All hardware that is needed by the operating system including main board,
+ hard disks and network interfaces is emulated by KVM.
+ This offers maximal flexibility in choosing and configuring the VM but
+ it also has a higher cost in terms of memory usage and performance reduction.
+ ToMaTo offers both virtualization choices to the users to allow maximal
+ flexibility for their experiments.
+\end_layout
+
+\begin_layout Standard
+For both virtualization solutions ToMaTo offers pre-built virtual machines
+ called templates.
+ The users can choose between various Linux distributions in 32 and 64 bit
+ architectures when they choose OpenVZ.
+ For KVM the template options are some Linux distributions and a pre-built
+ FreeBSD.
+ Users can also download and upload images of their virtual machines.
+ This can either be user for backup purposes, or to prepare an experiment
+ first before actually running it or to build images containing a custom
+ operating system that is not in the template list.
+\end_layout
+
+\begin_layout Subsection
+Connector types & capabilities
+\end_layout
+
+\begin_layout Standard
+To connect the devices and thus form a network topology ToMaTo offers different
+ options the user can choose from.
+ The simplest option is the connector type 
+\begin_inset Quotes eld
+\end_inset
+
+internet
+\begin_inset Quotes erd
+\end_inset
+
+.
+ This connector simply connects the network interface to the Internet.
+ Network configuration is done automatically using DHCP.
+ Using this connector topologies can use external services, the user can
+ access the exposed devices like normal servers over the Internet and even
+ other testbed resources can be connected to ToMaTo topologies.
+ As normal the Internet does not allow any QOS guarantees and due to technical
+ reasons no QOS limitations can be set on this connector type.
+\end_layout
+
+\begin_layout Standard
+Other connector types use the Tinc VPN.
+ Using this software devices can be connected in private networks that are
+ not connected to each others nor to the Internet.
+ Users can choose between hub, switch and router semantics in this private
+ network.
+ On connections using these connectors network characteristics like packet
+ loss, delay and bandwidth limitation can be emulated.
+ Additionally users can select to capture network traffic at these connectors
+ and download it as a pcap file to analyze or view the traffic using specialized
+ tools like Wireshark.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Evaluation"
+
+\end_inset
+
+Evaluation
+\end_layout
+
+\begin_layout Standard
+Evaluating a sofware design is a complex task, one approach is to compare
+ the design goals or requirements with the actual capabilities of the resulting
+ software.
+ In case of experimental facility software the design goal is to support
+ experiments and help researchers carry out their experiments.
+ To evaluate ToMaTo based on this goal section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Types-of-experiments"
+
+\end_inset
+
+ first develops a classification of experiments and section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:ExperimentSupport"
+
+\end_inset
+
+ outlines how ToMaTo supports these types of experiments.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Types-of-experiments"
+
+\end_inset
+
+Types of experiments
+\end_layout
+
+\begin_layout Standard
+The following experiment types have been identified in the German-Lab project.
+\end_layout
+
+\begin_layout Description
+Access
+\begin_inset space ~
+\end_inset
+
+layer
+\begin_inset space ~
+\end_inset
+
+experiments: This kind of experiment considers the lower networking layers
+ and examines the usage of hardware for networking.
+ An example for this experiment class are mobile handover protocols.
+ These experiments need access to real hardware, they often need to run
+ custom operating systems (e.g.
+ with real-time support) and they need heterogeneous access technology (3G,
+ Wifi, Fiber, etc.).
+ In most cases these requirements can only be fulfilled with custom testbeds
+ so supporting this kind of experiment was no design goal for ToMaTo.
+\end_layout
+
+\begin_layout Description
+Network
+\begin_inset space ~
+\end_inset
+
+layer
+\begin_inset space ~
+\end_inset
+
+experiments: This experiment class considered the TCP/IP suite and its networkin
+g layers.
+ Examples for this class are experiments with IPv6 extensions and TCP substitute
+s.
+ This kind of experiment needs to run modified kernels.
+ The resources that a single experiment needs is normally limited to a few
+ devices but these devices have to be connected in complex network topologies
+ with link emulation.
+ 
+\end_layout
+
+\begin_layout Description
+Protocol/Algorithm
+\begin_inset space ~
+\end_inset
+
+experiments: This class of experiments works on top of the the network layer
+ and considered protocols and algorithms for bigger networks.
+ Nearly all peer-to-peer experiments fall in this category.
+ These experiments need a high number of devices but not much hardware access,
+ especially no kernel access.
+ They only need simple network topologies with link emulation.
+\end_layout
+
+\begin_layout Description
+Legacy
+\begin_inset space ~
+\end_inset
+
+application
+\begin_inset space ~
+\end_inset
+
+experiments: These experiments contain legacy software, i.e.
+ widespread software that cannot be modeled because of its unspecified or
+ unpublished behavior.
+ Examples of this software are Skype and Windows.
+ The experiments with this software often need special operating system
+ environments including Internet access and link emulation.
+ In turn these experiments normally do not need big or complex network topologie
+s.
+\end_layout
+
+\begin_layout Standard
+Experience of the German-Lab experimental facility show that most experiments
+ can be categorized fairly well with this scheme.
+ Some few experiments have two experiment classes and thus have requirements
+ of both classes.
+ The requirements of the classes are very heterogeneous but a general trade-off
+ between more resource access and access to more resources becomes evident.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:ExperimentSupport"
+
+\end_inset
+
+Experiment support in ToMaTo
+\end_layout
+
+\begin_layout Standard
+ToMaTo has been designed to support all experiment classes identified in
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Types-of-experiments"
+
+\end_inset
+
+ except for access layer experiments because these experiments need a specialize
+d experimental facility depending on the access type.
+ Wisebed and the DES testbed are such specialized experimental facilities
+ for sensor networks and wifi.
+\end_layout
+
+\begin_layout Standard
+Network layer experiments can be done easily in ToMaTo using KVM devices
+ and switch connectors.
+ The KVM devices offer all needed flexibility in kernel choice and modification
+ required by this experiment class.
+ Switched networks are layer-3-agnostic so any TCP/IP modification or substitude
+ can be examined.
+ Using the graphical editor even very complex topologies can be easily designed.
+ The possibility to capture and download network traffic can very handy
+ for this kind of experiment.
+\end_layout
+
+\begin_layout Standard
+Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
+ and switch or router connectors.
+ Since OpenVZ devices are very lightweight, high numbers of devices can
+ be used in topologies.
+ Using an Internet connector even external resources like Planet-Lab nodes
+ can be included in the experiment.
+ The topology creator makes it very easy to design huge experiments with
+ ring or star topology.
+ Using the upload/download image feature users can prepare a device image
+ once and upload it to all of their devices.
+ Capturing network traffic can be used to debug the protocols.
+\end_layout
+
+\begin_layout Standard
+ToMaTo also supports kegacy application experiments using KVM devices and
+ internet connectors.
+ With KVM nearly all x86 operating systems (including Windows and BSD) can
+ be run on a device.
+ This allows users to build a custom environment for their legacy applications.
+ The legacy application can communicate with external services using the
+ internet connector.
+ Traffic of the legacy application can be captured and analyzed using specialize
+d tools without any of the operating system.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Itemize
+Access layer exp.
+\end_layout
+
+\begin_layout Itemize
+Wisebed/DES testbed perfect for sensors and wireless
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Emulab partially usable
+\end_layout
+
+\begin_layout Itemize
+Tomato, Planetlab and Seattle offer no access to physical hardware
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Network layer exp.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Emulab fits perfectly
+\end_layout
+
+\begin_layout Itemize
+Tomato fits perfectly
+\end_layout
+
+\begin_layout Itemize
+Planetlab and seattle unusable, they do not offer kernel access
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Protocol/Algorithm exp.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Emulab partially usable but does not offer high node numbers
+\end_layout
+
+\begin_layout Itemize
+Tomato fits perfectly (high node nunbers with openvz, pcap traces come handy)
+\end_layout
+
+\begin_layout Itemize
+Planetlab and Seattle usable but do not offer link emulation
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Legacy application exp.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Emulab usable but does not offer pcap traces
+\end_layout
+
+\begin_layout Itemize
+Tomato fits perfectly (custom operating systems with kvm, pcap traces come
+ handy)
+\end_layout
+
+\begin_layout Itemize
+Planetlab and Seattle unusable because environment is fixed
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Parallel experiments
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Wisebed/DES testbed have no virtual resources -> exclusive resource usage
+\end_layout
+
+\begin_layout Itemize
+Emulab uses mostly physical resources -> exculsive resource usage
+\end_layout
+
+\begin_layout Itemize
+Tomato and Planetlab have only virtual resources -> highly scalable (Planetlab
+ a little more)
+\end_layout
+
+\begin_layout Itemize
+Seattle is perfectly scalable
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Distributed testbed
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Wisebed and DES testbed distributrion is limited by sensor/wireless ranges
+\end_layout
+
+\begin_layout Itemize
+Emulab is not distributed and due to its complex setup not distributable
+\end_layout
+
+\begin_layout Itemize
+Tomato and Planetlab are well distributable but need powerfull dedicated
+ nodes
+\end_layout
+
+\begin_layout Itemize
+Seattle is perfectly distributable, runs on nearly any computer
+\end_layout
+
+\end_deeper
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Conclusion-&-future"
+
+\end_inset
+
+Conclusion & future work
+\end_layout
+
+\begin_layout Standard
+{{TODO}}
+\end_layout
+
+\begin_layout Itemize
+tomato fits for a wide range of experiments and offers scalability and efficient
+ resource usage
+\end_layout
+
+\begin_layout Itemize
+future work
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+openflow integration
+\end_layout
+
+\begin_layout Itemize
+integration into glab
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "references"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

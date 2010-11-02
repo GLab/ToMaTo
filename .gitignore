@@ -10,3 +10,4 @@ web/apache.conf
 buildui/nbproject/private
 buildui/dist
 buildui/build
+*.lyx~
