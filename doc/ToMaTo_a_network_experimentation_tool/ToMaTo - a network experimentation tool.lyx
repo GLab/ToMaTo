@@ -276,183 +276,112 @@ Related work
 \end_layout
 
 \begin_layout Standard
-{{TODO}}
-\end_layout
-
-\begin_layout Itemize
-Virconel
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-not multi-user capable
-\end_layout
-
-\begin_layout Itemize
+Network experimentation tools like VIRCONEL
 \begin_inset CommandInset citation
 LatexCommand cite
 key "VIRCONEL"
 
 \end_inset
 
-
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Common Open Research Emulator CORE
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-not multi-user capable, limitation in distributed use
-\end_layout
-
-\begin_layout Itemize
+ and the Common Open Research Emulator (CORE)
 \begin_inset CommandInset citation
 LatexCommand cite
 key "CORE"
 
 \end_inset
 
-
+ can setup and control virtual machines connected by a virtual network topology.
+ Both tools use virtualization to run multiple virtual computers on a physical
+ host and they use tunnels to create a virtual network topology.
+ CORE and VIRCONEL are mainly created to allow a single user to setup an
+ experiment, so they lack the ability to handle multiple users or multiple
+ concurrent experiments and they show additional limitations when used across
+ multiple hosts.
 \end_layout
 
-\end_deeper
-\begin_layout Itemize
-Wisebed
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-special testbed for sensor networks
-\end_layout
-
-\begin_layout Itemize
-\begin_inset CommandInset citation
-LatexCommand cite
-key "DBLP:conf/ewsn/BaumgartnerCDKKMPP10"
-
-\end_inset
-
-
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-DES testbed
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-special testbed for wireless networks
-\end_layout
-
-\begin_layout Itemize
-\begin_inset CommandInset citation
-LatexCommand cite
-key "620"
-
-\end_inset
-
-
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Planetlab
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-high node numbers
-\end_layout
-
-\begin_layout Itemize
-no link emulation (Vini)
-\end_layout
-
-\begin_layout Itemize
-no hardware/limited kernel access
-\end_layout
-
-\begin_layout Itemize
+\begin_layout Standard
+On the other hand there are network research testbeds that allow multiple
+ researchers to run experiments concurrently.
+ The most well-known of them is probably Planet-Lab
 \begin_inset CommandInset citation
 LatexCommand cite
 key "DBLP:conf/osdi/PetersonBFM06"
 
 \end_inset
 
-
+ which uses a container-based virtualization to run multiple virtual computers
+ on a single host.
+ Planet-Lab has a very big number of distributed hosts and thus is perfect
+ for peer-to-peer experiments.
+ Due to its container-based approach Planet-Lab cannot support kernel-space
+ modifications or other operating systems.
+ Original Planet-Lab did not offer any way to configure the network to its
+ users.
+ An extension called Vini tries to improve in this area but the container-based
+ virtualization technology and the high distribution of the hosts pose limits
+ on that.
 \end_layout
 
-\end_deeper
-\begin_layout Itemize
-Emulab
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-needs complex cluster setup
-\end_layout
-
-\begin_layout Itemize
-access to physical hardware
-\end_layout
-
-\begin_layout Itemize
-also has a few virtual nodes (openvz) and wireless nodes (only core network
- regarded here)
-\end_layout
-
-\begin_layout Itemize
-scriptable events
-\end_layout
-
-\begin_layout Itemize
-not distributed
-\end_layout
-
-\begin_layout Itemize
-paper: An Integrated Experimental Environment for Distributed Systems and
- Networks
-\end_layout
-
-\begin_layout Itemize
+\begin_layout Standard
+Another well-known testbed is Emulab
 \begin_inset CommandInset citation
 LatexCommand cite
 key "DBLP:conf/osdi/WhiteLSRGNHBJ02"
 
 \end_inset
 
-
+.
+ Emulab is a highly heterogeneous testbed with wireless and radio components
+ as well as distributed nodes but the core is a computing cluster that allows
+ users to boot custom software on the cluster nodes and connect them with
+ virtual network topologies provided by dedicated hosts.
+ This setup allows researchers to access actual hardware and the virtual
+ networks offer high bandwidth.
+ On the other hand the testbed design does not support distribution of physical
+ hosts and the efficiency is low because all experiments use real hosts
+ and no virtualization is used.
 \end_layout
 
-\end_deeper
-\begin_layout Itemize
+\begin_layout Standard
 Seattle
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-testbed for modified python code
-\end_layout
-
-\begin_layout Itemize
-no hardware/kernel access
-\end_layout
-
-\begin_layout Itemize
 \begin_inset CommandInset citation
 LatexCommand cite
 key "DBLP:conf/sigcse/CapposBKA09"
 
 \end_inset
 
-
+ is a novel peer-to-peer testbed mainly targeted towards network algorithm
+ testing.
+ The testbed software consists of a custom python interpreter and management
+ modules, spread across the world by volunteer computing.
+ Users can run algorithms written in a custom python dialect on virtual
+ machines across the testbed.
+ Since Seattle only supports software that has been written in its custom
+ python dialect it is not capable to run any existing software.
 \end_layout
 
-\end_deeper
+\begin_layout Standard
+Wisebed
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/ewsn/BaumgartnerCDKKMPP10"
+
+\end_inset
+
+ and the DES testbed
+\begin_inset CommandInset citation
+LatexCommand cite
+key "620"
+
+\end_inset
+
+ are specialized experimental facilities for sensor networks and wireless
+ networks.
+ Their design is mostly defined by the special needs of the hardware.
+ Virtualization and distribution is limited by the capabilities of the physical
+ hosts.
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -468,13 +397,13 @@ ToMaTo design
 lines 0
 placement O
 overhang 0in
-width "40col%"
+width "50col%"
 status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename example1.png
-	width 40col%
+	width 50col%
 
 \end_inset
 
@@ -805,7 +734,7 @@ Evaluation
 \end_layout
 
 \begin_layout Standard
-Evaluating a sofware design is a complex task, one approach is to compare
+Evaluating a software design is a complex task, one approach is to compare
  the design goals or requirements with the actual capabilities of the resulting
  software.
  In case of experimental facility software the design goal is to support
@@ -960,7 +889,7 @@ Network layer experiments can be done easily in ToMaTo using KVM devices
  and switch connectors.
  The KVM devices offer all needed flexibility in kernel choice and modification
  required by this experiment class.
- Switched networks are layer-3-agnostic so any TCP/IP modification or substitude
+ Switched networks are layer-3-agnostic so any TCP/IP modification or substitute
  can be examined.
  Using the graphical editor even very complex topologies can be easily designed.
  The possibility to capture and download network traffic can very handy
@@ -982,7 +911,7 @@ Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
 \end_layout
 
 \begin_layout Standard
-ToMaTo also supports kegacy application experiments using KVM devices and
+ToMaTo also supports legacy application experiments using KVM devices and
  internet connectors.
  With KVM nearly all x86 operating systems (including Windows and BSD) can
  be run on a device.
@@ -991,135 +920,6 @@ ToMaTo also supports kegacy application experiments using KVM devices and
  internet connector.
  Traffic of the legacy application can be captured and analyzed using specialize
 d tools without any of the operating system.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Comment
-status open
-
-\begin_layout Itemize
-Access layer exp.
-\end_layout
-
-\begin_layout Itemize
-Wisebed/DES testbed perfect for sensors and wireless
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Emulab partially usable
-\end_layout
-
-\begin_layout Itemize
-Tomato, Planetlab and Seattle offer no access to physical hardware
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Network layer exp.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Emulab fits perfectly
-\end_layout
-
-\begin_layout Itemize
-Tomato fits perfectly
-\end_layout
-
-\begin_layout Itemize
-Planetlab and seattle unusable, they do not offer kernel access
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Protocol/Algorithm exp.
- 
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Emulab partially usable but does not offer high node numbers
-\end_layout
-
-\begin_layout Itemize
-Tomato fits perfectly (high node nunbers with openvz, pcap traces come handy)
-\end_layout
-
-\begin_layout Itemize
-Planetlab and Seattle usable but do not offer link emulation
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Legacy application exp.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Emulab usable but does not offer pcap traces
-\end_layout
-
-\begin_layout Itemize
-Tomato fits perfectly (custom operating systems with kvm, pcap traces come
- handy)
-\end_layout
-
-\begin_layout Itemize
-Planetlab and Seattle unusable because environment is fixed
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Parallel experiments
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Wisebed/DES testbed have no virtual resources -> exclusive resource usage
-\end_layout
-
-\begin_layout Itemize
-Emulab uses mostly physical resources -> exculsive resource usage
-\end_layout
-
-\begin_layout Itemize
-Tomato and Planetlab have only virtual resources -> highly scalable (Planetlab
- a little more)
-\end_layout
-
-\begin_layout Itemize
-Seattle is perfectly scalable
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Distributed testbed
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Wisebed and DES testbed distributrion is limited by sensor/wireless ranges
-\end_layout
-
-\begin_layout Itemize
-Emulab is not distributed and due to its complex setup not distributable
-\end_layout
-
-\begin_layout Itemize
-Tomato and Planetlab are well distributable but need powerfull dedicated
- nodes
-\end_layout
-
-\begin_layout Itemize
-Seattle is perfectly distributable, runs on nearly any computer
-\end_layout
-
-\end_deeper
-\end_inset
-
-
 \end_layout
 
 \begin_layout Subsection
