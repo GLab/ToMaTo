@@ -198,7 +198,7 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def encode_xml(self, dom, doc, internal):
 		dummynet.EmulatedConnection.encode_xml(self, dom, doc, internal)
-		if self.gateway:
+		if self.gateway and self.connector.type == "router":
 			dom.setAttribute("gateway", self.gateway)
 		if internal:
 			if self.tinc_port:
@@ -206,9 +206,12 @@ class TincConnection(dummynet.EmulatedConnection):
 		
 	def decode_xml(self, dom):
 		dummynet.EmulatedConnection.decode_xml(self, dom)
-		self.gateway = util.get_attr(dom, "gateway", default="10.1.1.254/24")
-		if not len(self.gateway.split("/")) == 2:
-			self.gateway = self.gateway + "/24"
+		self.gateway = util.get_attr(dom, "gateway", default=None)
+		if self.connector.type == "router":
+			if not self.gateway:
+				self.gateway = "10.1.1.254/24" 
+			if not len(self.gateway.split("/")) == 2:
+				self.gateway = self.gateway + "/24"
 		
 	def start_run(self, task):
 		dummynet.EmulatedConnection.start_run(self, task)
