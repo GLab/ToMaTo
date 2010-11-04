@@ -168,7 +168,7 @@ and
 
 
 \family typewriter
-{hock,trangia}@informatik.uni-wuerzburg.de
+{david.hock,trangia}@informatik.uni-wuerzburg.de
 \end_layout
 
 \begin_layout Section
@@ -193,7 +193,7 @@ s and algorithms from the 70ies and 80ies.
 
 \begin_layout Standard
 All of these research projects need ways to evaluate their ideas and results.
- In the beginning of the projects theoretical models and simulations might
+ In the beginning of the projects, theoretical models and simulations might
  be sufficient but at some stage a more realistic environment is needed.
  Real networks and real hardware show unforeseen effects that cannot be
  modeled.
@@ -205,9 +205,9 @@ All of these research projects need ways to evaluate their ideas and results.
 
 \begin_layout Standard
 Experimental facilities aim to provide a realistic environment for experiments
- using emulation technique.
- In experimental facilities, there is always a tradeoff between realism
- and concurrency and repeatability.
+ using emulation techniques.
+ In experimental facilities, there is always a tradeoff between realism,
+ concurrency and repeatability.
  Realistic environments show unforeseen and random effects that cannot be
  repeated.
  To be able to run concurrent experiments on the facility the access of
@@ -217,8 +217,7 @@ Experimental facilities aim to provide a realistic environment for experiments
 
 \begin_layout Standard
 A lot of software for experimental facilities has been developed and each
- one works at a certain range of realism, concurrency and repeatability
- but not at others.
+ one works at a certain level of realism, concurrency and repeatability.
  The German-Lab experimental facility allows its researchers to choose from
  various experimental facility software.
  The German-Lab project also developed an experimental facility software
@@ -315,8 +314,8 @@ key "DBLP:conf/osdi/PetersonBFM06"
  for peer-to-peer experiments.
  Due to its container-based approach Planet-Lab cannot support kernel-space
  modifications or other operating systems.
- Original Planet-Lab did not offer any way to configure the network to its
- users.
+ Original Planet-Lab did not offer any way to its users to configure the
+ network.
  An extension called Vini tries to improve in this area but the container-based
  virtualization technology and the high distribution of the hosts pose limits
  on that.
@@ -394,16 +393,25 @@ ToMaTo design
 
 \begin_layout Standard
 \begin_inset Wrap figure
-lines 0
+lines 11
 placement O
-overhang 0in
+overhang 30bp
 width "50col%"
 status open
+
+\begin_layout Plain Layout
+\begin_inset VSpace -0.5in
+\end_inset
+
+
+\end_layout
 
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename example1.png
 	width 50col%
+	BoundingBox 20bp 20bp 394bp 223bp
+	clip
 
 \end_inset
 
@@ -442,7 +450,7 @@ Architecture
 ToMaTo uses virtualization technologies to allow experiments to run concurrently
  in isolated environments spanning parts of the experimental facility.
  ToMaTo consists of three modules, the host hypervisor, the central back-end
- and the web-front-end.
+ and the web-based front-end.
 \end_layout
 
 \begin_layout Standard
@@ -539,7 +547,7 @@ Lightweight Directory Access Protocol
 
 \end_inset
 
- server existing user accounts could be easily integrated into the back-end.
+ server, existing user accounts could be easily integrated into the back-end.
 \end_layout
 
 \begin_layout Standard
@@ -640,7 +648,7 @@ ToMaTo currently supports two device types offered by PROXMOX: OpenVZ and
  The kernel can not be modified, extended using modules or configured using
  sysctl from a virtual machine.
  Also the kernel version limits the guest systems to Linux operation systems
- that are compatible to a current kernel.
+ that are compatible with a current kernel.
  Virtual network interfaces can be created on the OpenVZ host and exposed
  to the guest.
  Being a container-based virtualization, OpenVZ is very lightweight and
@@ -676,11 +684,10 @@ Kernel-based Virtual Machine
 For both virtualization solutions ToMaTo offers pre-built virtual machines
  called templates.
  The users can choose between various Linux distributions in 32 and 64 bit
- architectures when they choose OpenVZ.
- For KVM the template options are some Linux distributions and a pre-built
- FreeBSD.
+ architectures.
+ For KVM also a pre-installed FreeBSD template is available.
  Users can also download and upload images of their virtual machines.
- This can either be user for backup purposes, or to prepare an experiment
+ This can either be used for backup purposes, or to prepare an experiment
  first before actually running it or to build images containing a custom
  operating system that is not in the template list.
 \end_layout
@@ -703,20 +710,19 @@ internet
 .
  This connector simply connects the network interface to the Internet.
  Network configuration is done automatically using DHCP.
- Using this connector topologies can use external services, the user can
+ Using this connector, topologies can use external services, the user can
  access the exposed devices like normal servers over the Internet and even
  other testbed resources can be connected to ToMaTo topologies.
- As normal the Internet does not allow any QOS guarantees and due to technical
- reasons no QOS limitations can be set on this connector type.
+ The Internet does not allow any QOS guarantees and due to technical reasons
+ no QOS limitations can be set on this connector type.
 \end_layout
 
 \begin_layout Standard
-Other connector types use the Tinc VPN.
- Using this software devices can be connected in private networks that are
- not connected to each others nor to the Internet.
+Other connector types use the Tinc VPN with which devices can be connected
+ in private networks that are not connected to each others nor to the Internet.
  Users can choose between hub, switch and router semantics in this private
  network.
- On connections using these connectors network characteristics like packet
+ On connections using these connectors, network characteristics like packet
  loss, delay and bandwidth limitation can be emulated.
  Additionally users can select to capture network traffic at these connectors
  and download it as a pcap file to analyze or view the traffic using specialized
@@ -807,14 +813,14 @@ layer
 \begin_inset space ~
 \end_inset
 
-experiments: This experiment class considered the TCP/IP suite and its networkin
+experiments: This experiment class consideres the TCP/IP suite and its networkin
 g layers.
  Examples for this class are experiments with IPv6 extensions and TCP substitute
 s.
  This kind of experiment needs to run modified kernels.
- The resources that a single experiment needs is normally limited to a few
- devices but these devices have to be connected in complex network topologies
- with link emulation.
+ The resources that a single experiment needs are normally limited to a
+ few devices but these devices have to be connected in complex network topologie
+s with link emulation.
  
 \end_layout
 
@@ -824,7 +830,7 @@ Protocol/Algorithm
 \end_inset
 
 experiments: This class of experiments works on top of the the network layer
- and considered protocols and algorithms for bigger networks.
+ and consideres protocols and algorithms for bigger networks.
  Nearly all peer-to-peer experiments fall in this category.
  These experiments need a high number of devices but not much hardware access,
  especially no kernel access.
@@ -879,9 +885,9 @@ reference "sec:Types-of-experiments"
 \end_inset
 
  except for access layer experiments because these experiments need a specialize
-d experimental facility depending on the access type.
- Wisebed and the DES testbed are such specialized experimental facilities
- for sensor networks and wifi.
+d experimental facility depending on the access technology.
+ Wisebed and the DES testbed are specialized experimental facilities for
+ sensor networks and wifi.
 \end_layout
 
 \begin_layout Standard
@@ -892,7 +898,7 @@ Network layer experiments can be done easily in ToMaTo using KVM devices
  Switched networks are layer-3-agnostic so any TCP/IP modification or substitute
  can be examined.
  Using the graphical editor even very complex topologies can be easily designed.
- The possibility to capture and download network traffic can very handy
+ The possibility to capture and download network traffic can be very handy
  for this kind of experiment.
 \end_layout
 
@@ -904,8 +910,8 @@ Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
  Using an Internet connector even external resources like Planet-Lab nodes
  can be included in the experiment.
  The topology creator makes it very easy to design huge experiments with
- ring or star topology.
- Using the upload/download image feature users can prepare a device image
+ ring or star topologies.
+ Using the upload/download image feature, users can prepare a device image
  once and upload it to all of their devices.
  Capturing network traffic can be used to debug the protocols.
 \end_layout
@@ -913,13 +919,12 @@ Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
 \begin_layout Standard
 ToMaTo also supports legacy application experiments using KVM devices and
  internet connectors.
- With KVM nearly all x86 operating systems (including Windows and BSD) can
- be run on a device.
- This allows users to build a custom environment for their legacy applications.
+ KVM devices can run nearly all x86 operating systems including Windows
+ and BSD, so users can build a custom environment for their legacy applications.
  The legacy application can communicate with external services using the
  internet connector.
  Traffic of the legacy application can be captured and analyzed using specialize
-d tools without any of the operating system.
+d tools without any operating system support.
 \end_layout
 
 \begin_layout Subsection
