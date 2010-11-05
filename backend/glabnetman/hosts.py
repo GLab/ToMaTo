@@ -48,7 +48,6 @@ class Host(models.Model):
 		task.subtasks_total = 7
 		self.check(task)
 		self.save()
-		self.fetch_all_templates(task)
 		task.done()
 
 	def check(self, task):
@@ -85,6 +84,7 @@ class Host(models.Model):
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
+		self.fetch_all_templates(task)
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
@@ -427,3 +427,10 @@ def measure_physical_links():
 measurement_task = util.RepeatedTimer(3600, measure_physical_links)
 measurement_task.start()
 atexit.register(measurement_task.stop)
+
+def host_check(host):
+	import tasks
+	t = tasks.TaskStatus(host.check)
+	t.subtasks_total = 7
+	t.start()
+	return t.id

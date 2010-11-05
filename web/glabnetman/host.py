@@ -53,6 +53,11 @@ def edit(api, request):
 		return index(request)
 edit=wrap_rpc(edit)
 
+def check(api, request, hostname):
+	task = api.host_check(hostname)
+	return render_to_response("admin/host_index.html", {'host_list': api.host_list(), 'task': task, 'taskname': "Checking host %s" % hostname})
+check=wrap_rpc(check)
+
 def debug(api, request, hostname):
 	debug_info = api.host_debug(hostname)
 	debug = [(k, debug_info[k]) for k in debug_info]

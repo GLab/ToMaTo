@@ -158,6 +158,11 @@ def host_debug(host_name, user=None):
 	host = hosts.get_host(host_name)
 	return host.debug_info()
 
+def host_check(host_name, user=None):
+	_admin_access(user)
+	host = hosts.get_host(host_name)
+	return hosts.host_check(host)
+
 def host_groups(user=None):
 	return [h.name for h in hosts.get_host_groups()]
 
