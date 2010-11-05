@@ -390,6 +390,8 @@ class Connection(models.Model):
 		return self
 
 	def bridge_name(self):
+		if self.connector.is_internet():
+			self.bridge_special_name = self.interface.device.host.public_bridge
 		if self.bridge_special_name:
 			return self.bridge_special_name
 		return "gbr_%s" % self.bridge_id

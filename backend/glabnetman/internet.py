@@ -30,7 +30,6 @@ class InternetConnector(generic.Connector):
 	def add_connection(self, dom):
 		con = generic.Connection()
 		con.init (self, dom)
-		con.bridge_special_name = con.interface.device.host.public_bridge
 		self.connection_set.add ( con )
 		self.save()
 		return con
