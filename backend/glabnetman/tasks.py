@@ -60,7 +60,7 @@ class TaskStatus():
 	def start(self):
 		util.start_thread(self._run)
 	def check_delete(self):
-		if time.time() - self.started > 3600:
+		if (time.time() - self.started > 3600*24*3) or (time.time() - self.started > 3600 and self.status == TaskStatus.DONE):
 			if not os.path.exists(config.log_dir + "/tasks"):
 				os.makedirs(config.log_dir + "/tasks")
 			logger = log.get_logger(config.log_dir + "/tasks/%s"%self.id)
