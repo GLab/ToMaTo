@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Detail view of topology "{{top.name}}" [{{top.id}}] </h1>
 <!-- %%%GLABNETMAN%%%TOPOLOGY%%%{{top.id}}%%%{{task_id}}%%% -->
-<script src="/static/sorttable.js"></script>
+<script src="/static/enhancetable.js"></script>
 
 Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}">[permissions]</a>
 <br/>
@@ -37,7 +37,7 @@ function console (url) {
 }
 --></script>
 
-<table class="sortable">
+<table class="sortable,filterable">
 	<tr>
 		<th>Device ID</th>
 		<th>Type</th>
@@ -80,7 +80,7 @@ function console (url) {
 
 <br/><br/>
 
-<table class="sortable">
+<table class="sortable,filterable">
 	<tr>
 		<th>Connector ID</th>
 		<th>Type</th>
