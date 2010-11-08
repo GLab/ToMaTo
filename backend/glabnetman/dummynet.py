@@ -97,6 +97,9 @@ class EmulatedConnection(generic.Connection):
 	def start_run(self, task):
 		generic.Connection.start_run(self, task)
 		host = self.interface.device.host
+		if not self.bridge_id:
+			import fault
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, connection does not have a bridge_id: %s" % self)
 		pipe_id = int(self.bridge_id) * 10
 		host.execute("modprobe ipfw_mod", task)
 		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ), task)
