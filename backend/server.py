@@ -27,9 +27,31 @@ import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, reactor, ssl
 
+class Introspection():
+	def __init__(self, papi):
+		self.api=papi
+	def listMethods(self, user=None):
+		return [m for m in dir(self.api) if (callable(getattr(self.api, m)) and not m.startswith("_"))]
+	def methodSignature(self, method, user=None):
+		func = getattr(self.api, method)
+		if not func:
+			return "Unknown method: %s" % method
+		import inspect
+		argspec = inspect.getargspec(func)
+		return "%s(" % method + ", ".join(argspec.args[:-1]) + ")"
+	def methodHelp(self, method, user=None):
+		func = getattr(self.api, method)
+		if not func:
+			return "Unknown method: %s" % method
+		doc = func.__doc__
+		if not doc:
+			return "No documentation for: %s" % method
+		return doc
+		
 class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, papi):
 		self.api=papi
+		self.introspection=Introspection(self.api)
 		xmlrpc.XMLRPC.__init__(self)
 		self.logger = glabnetman.log.Logger(glabnetman.config.log_dir + "/api.log")
 
@@ -63,8 +85,14 @@ class APIServer(xmlrpc.XMLRPC):
 				return 'Authorization Failed!'
 		request.content.seek(0, 0)
 		args, functionPath=xmlrpclib.loads(request.content.read())
+		function = None
 		if hasattr(self.api, functionPath):
 			function=getattr(self.api, functionPath)
+		if functionPath.startswith("system."):
+			functionPath = functionPath[7:]
+		if hasattr(self.introspection, functionPath):
+			function=getattr(self.introspection, functionPath)			
+		if function:
 			request.setHeader("content-type", "text/xml")
 			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender, request)
 			return server.NOT_DONE_YET

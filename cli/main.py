@@ -3,146 +3,80 @@
 
 import sys, xmlrpclib, getpass
 
+if not len(sys.argv) == 2:
+  print "ToMaTo control tool\nUsage: %s URL" % sys.argv[0]
+  sys.exit(1)
+
+url=sys.argv[1]
 user=raw_input("Username: ")
 password=getpass.getpass("Password: ")
-api=xmlrpclib.ServerProxy('http://%s:%s@localhost:8000' % (user, password) )
+api=xmlrpclib.ServerProxy('https://%s:%s@%s' % (user, password, url), allow_none=1)
 
-def usage(argv):
-	print """Glab NetEm control tool
+def list():
+  return api.system.listMethods()
+  
+def help(method):
+  print "Signature: " + api.system.methodSignature(method)
+  print api.system.methodHelp(method)
 
-topology SUBCOMMAND [options]
-	list
-	print ID
-	import FILE
-	export ID FILE
-	status ID
-	remove ID
-	upload ID
-	prepare ID
-	destroy ID
-	start ID
-	stop ID
-host SUBCOMMAND [options]
-	list
-	add NAME
-	remove NAME
-	check NAME
-"""
+# Readline and tab completion support
+import atexit
+import readline
+import rlcompleter
+from traceback import print_exc
 
-def topology(argv):
-	if len(argv) == 0:
-		usage(None)
-		return
-	{"import": topology_import, "export": topology_export, "print": topology_print,
-	"remove": topology_remove, "upload": topology_upload, "prepare": topology_prepare,
-	"destroy": topology_destroy, "start": topology_start, "stop": topology_stop,
-	"list": topology_list, "status": topology_status}.get(argv[0],usage)(argv[1:])
+print 'Type "list()" or "help(method)" for more information.'
 
-def topology_list(argv):
-	if not len(argv) == 0:
-		usage(None)
-		return
-	for top in api.top_list():
-		print top['id'], top['state']
+prompt = user
 
-def topology_import(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	xml="".join(open(argv[0],"r").readlines())
-	id=api.top_import(xml)
-	print "Created ID %s " % id
+try:
+  while True:
+    command = ""
+    while True:
+      # Get line
+      try:
+        if command == "":
+          sep = ">>> "
+        else:
+          sep = "... "
+        line = raw_input(prompt + sep)
+        # Ctrl-C
+      except KeyboardInterrupt:
+        command = ""
+        print
+        break
 
-def topology_export(argv):
-	if not len(argv) == 2:
-		usage(None)
-		return
-	xml=api.top_get(int(argv[0]))
-	fd=open ( argv[1], "w" )
-	fd.write(xml)
-	fd.close()
+      # Build up multi-line command
+      command += line
 
-def topology_print(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	print api.top_get(int(argv[0]))
+      # Blank line or first line does not end in :
+      if line == "" or (command == line and line[-1] != ':'):
+        break
 
-def topology_status(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	print api.top_info(int(argv[0])).state
+      command += os.linesep
 
-def topology_remove(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	print api.top_remove(int(argv[0]))
+    # Blank line
+    if command == "":
+      continue
+    # Quit
+    elif command in ["q", "quit", "exit"]:
+      break
 
-def topology_upload(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.top_upload(int(argv[0]))
+    try:
+      try:
+        # Try evaluating as an expression and printing the result
+        result = eval(command)
+        if result is not None:
+          print result
+      except SyntaxError:
+        # Fall back to executing as a statement
+        exec command
+    except xmlrpclib.ProtocolError, err:
+      # Avaid revealing password in error url
+      print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+    except Exception, err:
+      print_exc()
 
-def topology_prepare(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.top_prepare(int(argv[0]))
-
-def topology_destroy(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.top_destroy(int(argv[0]))
-
-def topology_start(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.top_start(int(argv[0]))
-
-def topology_stop(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.top_stop(int(argv[0]))
-
-def host(argv):
-	if len(argv) == 0:
-		usage(None)
-		return
-	{"list": host_list, "add": host_add, "remove": host_remove}.get(argv[0],usage)(argv[1:])
-
-def host_list(argv):
-	if not len(argv) == 0:
-		usage(None)
-		return
-	for host in api.host_list():
-		print host['name']
-
-def host_add(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.host_add(argv[0])
-
-def host_remove(argv):
-	if not len(argv) == 1:
-		usage(None)
-		return
-	api.host_remove(argv[0])
-
-def main(argv):
-	if len(argv) == 0:
-		usage(None)
-		return
-	{"topology": topology, "host": host}.get(argv[0],usage)(argv[1:])
-
-if __name__ == "__main__":
-	#try:
-	main(sys.argv[1:])
-	#except Exception as ex:
-	#	print ex
+except EOFError:
+  print
+  pass
