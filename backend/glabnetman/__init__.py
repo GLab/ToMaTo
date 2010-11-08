@@ -119,15 +119,24 @@ def login(username, password):
 		return ldapauth.login(username, password)
 
 def account(user=None):
+	"""
+	Returns details of the user account.
+	"""
 	return user
 
 def host_info(hostname, user=None):
+	"""
+	Returns details about a host. If the host does not exist False is returned.
+	"""
 	try:
 		return _host_info(hosts.get_host(hostname))
 	except hosts.Host.DoesNotExist:
 		return False
 
 def host_list(group_filter="*", user=None):
+	"""
+	Returns details about all hosts as a list.
+	"""
 	res=[]
 	qs = hosts.Host.objects.all()
 	if not group_filter=="*":
