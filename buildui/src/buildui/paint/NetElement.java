@@ -25,13 +25,15 @@ package buildui.paint;
  */
 import buildui.Netbuild;
 import java.awt.*;
-import java.lang.Math;
 import java.util.*;
-import java.text.*;
+
+public abstract class NetElement {
+
+    public abstract void onNameChanged (String oldName, String newName);
+    public abstract void onPropertyChanged (String property, String oldValue, String newValue);
 
 // OLD CODE FROM HERE ON (owned by Emulab)
 
-public abstract class NetElement {
 	private boolean nameFixed;
 	private String name;
 	private int x, y;
@@ -92,10 +94,12 @@ public abstract class NetElement {
 	}
 
 	public synchronized void setProperty(String name, String value) {
-		if (0 == name.compareTo("name")) {
-			setName(new String(value));
+		if (name.equals("name")) {
+                        if (!value.equals(getName())) onNameChanged(getName(), value);
+			setName(value);
 		} else {
-			properties.put(new String(name), new String(value));
+                        if (!value.equals(properties.get(name))) onPropertyChanged(name, properties.get(name), value);
+			properties.put(name, value);
 		}
 	}
 

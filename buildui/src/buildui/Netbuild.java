@@ -414,20 +414,14 @@ public class Netbuild extends java.applet.Applet
         paintElement(sw);
       } else if (a instanceof Device && b instanceof Connector) {
         Connection con = ((Connector)b).createConnection((Device)a);
-        workArea.add(con);
         Interface iface = ((Device)a).createInterface(con);
         con.setIface(iface);
         workArea.add(iface);
+        workArea.add(con);
         paintElement(con);
         paintElement(iface);
       } else if (b instanceof Device && a instanceof Connector) {
-        Connection con = ((Connector)a).createConnection((Device)b);
-        workArea.add(con);
-        Interface iface = ((Device)b).createInterface(con);
-        con.setIface(iface);
-        workArea.add(iface);
-        paintElement(con);
-        paintElement(iface);
+        connect(b, a);
       } else if (a instanceof Connector && b instanceof Connector)
         Netbuild.setStatus("!Connector to connector connection not allowed.");
     }
@@ -623,6 +617,7 @@ public void mouseEntered (MouseEvent e) {
       Device.init(me);
       KvmDevice.init(me);
       OpenVzDevice.init(me);
+      Modification.clear();
 
       mouseDown = false;
 

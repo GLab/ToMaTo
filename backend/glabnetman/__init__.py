@@ -219,12 +219,12 @@ def top_import(xml, user=None):
 	top.logger().log("imported", user=user.name, bigmessage=xml)
 	return top.id
 	
-def top_change(top_id, xml, user=None):
+def top_modify(top_id, xml, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
-	top.logger().log("changing topology", user=user.name, bigmessage=xml)
+	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
 	dom = _parse_xml(xml)
-	task_id = top.change(dom)
+	task_id = top.modify(dom)
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
 

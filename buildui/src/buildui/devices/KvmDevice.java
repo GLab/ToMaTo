@@ -85,4 +85,9 @@ public class KvmDevice extends Device {
     dev.readAttributes(x_dev);
     return dev ;
   }
+
+    @Override
+    public String getType() {
+        return "kvm" ;
+    }
 }

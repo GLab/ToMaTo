@@ -23,6 +23,7 @@ package buildui.connectors;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import buildui.Modification;
 import buildui.devices.Device;
 import buildui.devices.Interface;
 import java.awt.*;
@@ -147,6 +148,14 @@ public class Connection extends NetElement {
    */
   public Device getDevice () {
     return dev;
+  }
+
+  public void onNameChanged(String oldName, String newName) {
+      //impossible, connections do not have names
+  }
+
+  public void onPropertyChanged(String property, String oldValue, String newValue) {
+      Modification.add(Modification.ConnectionConfigure(this, property, newValue));
   }
 
 }

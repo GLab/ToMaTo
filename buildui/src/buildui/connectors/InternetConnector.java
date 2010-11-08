@@ -74,4 +74,9 @@ public class InternetConnector extends Connector {
     return con ;
   }
 
+    @Override
+    public String getType() {
+        return "real";
+    }
+
 }

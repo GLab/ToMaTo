@@ -43,6 +43,7 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
   }
 
   public void focusLost (FocusEvent f) {
+    parent.valueChanged(this, getValue());
   }
 
   public MagicTextField(final PropertiesArea parent, String name, String pattern, final String def) {
@@ -105,7 +106,6 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
       if (wasAuto) wasAuto = false;
       if (!Pattern.matches(pattern, newText)) textField.setForeground(Color.RED);
     }
-    parent.valueChanged(this, newText);
   }
 
   public String getValue () {

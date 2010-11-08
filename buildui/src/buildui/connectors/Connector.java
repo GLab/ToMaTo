@@ -18,6 +18,7 @@ package buildui.connectors;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Modification;
 import buildui.devices.Device;
 import buildui.paint.IconElement;
 import java.awt.Color;
@@ -47,6 +48,8 @@ public abstract class Connector extends IconElement {
   public Connector (String newName, String iconName) {
     super(newName, true, iconName);
   }
+
+  public abstract String getType();
 
   public abstract Connection createConnection ( Device dev ) ;
   protected static int nextSubnetId = 1;
@@ -123,4 +126,13 @@ public abstract class Connector extends IconElement {
     checkImplicit();
     super.draw(g);
   }
+
+  public void onNameChanged(String oldName, String newName) {
+      Modification.add(Modification.ConnectorRename(oldName, newName));
+  }
+
+  public void onPropertyChanged(String property, String oldValue, String newValue) {
+      Modification.add(Modification.ConnectorConfigure(this, property, newValue));
+  }
+
 }

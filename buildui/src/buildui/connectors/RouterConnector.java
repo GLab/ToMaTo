@@ -76,4 +76,9 @@ public class RouterConnector extends Connector {
     return con ;
   }
 
+    @Override
+    public String getType() {
+        return "router" ;
+    }
+
 }

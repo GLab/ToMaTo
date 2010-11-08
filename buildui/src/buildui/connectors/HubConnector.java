@@ -77,4 +77,9 @@ public class HubConnector extends Connector {
     return con ;
   }
 
+    @Override
+    public String getType() {
+        return "hub" ;
+    }
+
 }

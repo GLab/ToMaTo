@@ -64,9 +64,9 @@ public class WorkArea {
   private Set<Device> devices = new HashSet<Device>() ;
   public Set<Device> getDevices() {
 	return devices;
-}
+  }
 
-private Set<Connector> connectors = new HashSet<Connector>() ;
+  private Set<Connector> connectors = new HashSet<Connector>() ;
   public TopologyPropertiesArea topologyProperties = new TopologyPropertiesArea();
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {
@@ -124,16 +124,20 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
     if (t instanceof Device) {
       devices.remove((Device)t);
       for (Interface iface: new HashSet<Interface>(((Device)t).interfaces())) remove(iface);
+      Modification.add(Modification.DeviceDelete((Device)t));
     } else if (t instanceof Connector) {
       connectors.remove((Connector)t);
       for (Connection c: new HashSet<Connection>(((Connector)t).connections())) remove(c);
+      Modification.add(Modification.ConnectorDelete((Connector)t));
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().removeInterface((Interface)t);
       Connection c = ((Interface)t).getCon();
       if ( c != null ) {
+        Modification.add(Modification.ConnectionDelete(c));
         c.setIface(null);
         remove(c);
       }
+      Modification.add(Modification.InterfaceDelete((Interface)t));
     } else if (t instanceof Connection) {
       ((Connection)t).getConnector().removeConnection((Connection)t);
       Interface iface = ((Connection)t).getIface();
@@ -147,12 +151,16 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
   public void add (NetElement t) {
     if (t instanceof Device) {
       devices.add((Device)t);
+      Modification.add(Modification.DeviceCreate((Device)t));
     } else if (t instanceof Connector) {
       connectors.add((Connector)t);
+      Modification.add(Modification.ConnectorCreate((Connector)t));
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().addInterface((Interface)t);
+      Modification.add(Modification.InterfaceCreate((Interface)t));
     } else if (t instanceof Connection) {
       ((Connection)t).getConnector().addConnection((Connection)t);
+      Modification.add(Modification.ConnectionCreate((Connection)t));
     }
   }
 

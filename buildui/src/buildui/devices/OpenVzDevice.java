@@ -90,4 +90,9 @@ public class OpenVzDevice extends Device {
     dev.readAttributes(x_dev);
     return dev ;
   }
+
+    @Override
+    public String getType() {
+        return "openvz";
+    }
 }

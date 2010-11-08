@@ -42,4 +42,14 @@ public class TopologyCreatorElement extends IconElement {
 		return null;
 	}
 
+    @Override
+    public void onNameChanged(String oldName, String newName) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void onPropertyChanged(String property, String oldValue, String newValue) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
 }
