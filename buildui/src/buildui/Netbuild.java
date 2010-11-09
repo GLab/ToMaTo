@@ -521,7 +521,10 @@ public class Netbuild extends java.applet.Applet
           }
         } else {
           for (NetElement el: NetElement.selectedElements()) {
-            if (el.moveable) el.move(el.getX() + lastDragX, el.getY() + lastDragY);
+            if (el.moveable) {
+                el.move(el.getX() + lastDragX, el.getY() + lastDragY);
+                el.onPropertyChanged("pos", "", el.getX()+","+el.getY());
+            }
             repaint();
           }
         }

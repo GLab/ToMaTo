@@ -230,6 +230,7 @@ def top_create(user=None):
 	return top.id
 
 def top_modify(top_id, xml, user=None):
+	print xml
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=xml)

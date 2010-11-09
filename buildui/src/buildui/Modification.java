@@ -89,6 +89,25 @@ public class Modification {
         }
     }
 
+    private Modification ( Type type, String element, String subelement, Map<String,String> parameters, String... parameters2) {
+        this.type = type ;
+        this.element = element;
+        this.subelement = subelement;
+        for ( Entry<String,String> entr: parameters.entrySet() ) {
+            String key = entr.getKey();
+            String value = entr.getValue();
+            if ( value.equals("<auto>") ) value = "*";
+            this.parameters.put(key, value);
+        }
+        int i = 0;
+        while ( i < parameters2.length ) {
+            String name = parameters2[i++];
+            String value = parameters2[i++];
+            if ( value.equals("<auto>") ) value = "*" ;
+            this.parameters.put(name, value);
+        }
+    }
+
     private static ArrayList<Modification> modifications = new ArrayList<Modification> ();
 
     public static void add (Modification mod) {
@@ -113,7 +132,7 @@ public class Modification {
     }
 
     public static Modification DeviceCreate ( Device dev ) {
-        return new Modification(Type.DeviceCreate, null, null, "name", dev.getName(), "type", dev.getType());
+        return new Modification(Type.DeviceCreate, null, null, dev.getProperties(), "name", dev.getName());
     }
 
     public static Modification DeviceConfigure ( Device dev, String property, String value) {
@@ -129,11 +148,11 @@ public class Modification {
     }
 
     public static Modification InterfaceCreate ( Interface iface ) {
-        return new Modification(Type.InterfaceCreate, iface.getDevice().getName(), null, "name", iface.getName());
+        return new Modification(Type.InterfaceCreate, iface.getDevice().getName(), null, iface.getProperties(), "name", iface.getName());
     }
 
     public static Modification InterfaceConfigure ( Interface iface, String property, String value) {
-        return new Modification(Type.InterfaceConfigure, iface.getName(), null, property, value);
+        return new Modification(Type.InterfaceConfigure, iface.getDevice().getName(), iface.getName(), property, value);
     }
 
     public static Modification InterfaceRename ( Interface iface, String oldname, String newname ) {
@@ -145,7 +164,7 @@ public class Modification {
     }
 
     public static Modification ConnectorCreate ( Connector con ) {
-        return new Modification(Type.ConnectorCreate, null, null, "name", con.getName(), "type", con.getType());
+        return new Modification(Type.ConnectorCreate, null, null, con.getProperties(), "name", con.getName());
     }
 
     public static Modification ConnectorConfigure ( Connector con, String property, String value) {
@@ -161,7 +180,7 @@ public class Modification {
     }
 
     public static Modification ConnectionCreate ( Connection con ) {
-        return new Modification(Type.ConnectionCreate, con.getConnector().getName(), null, "interface", con.getDevice().getName()+"."+con.getIface().getName());
+        return new Modification(Type.ConnectionCreate, con.getConnector().getName(), null, con.getProperties(), "interface", con.getDevice().getName()+"."+con.getIface().getName());
     }
 
     public static Modification ConnectionConfigure ( Connection con, String property, String value) {

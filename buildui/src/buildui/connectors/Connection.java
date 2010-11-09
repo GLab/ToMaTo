@@ -116,11 +116,7 @@ public class Connection extends NetElement {
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
   }
-
-  public void writeAttributes(Element xml) {
-    //nothing to do
-  }
-
+  
   public void readAttributes (Element xml) {
     //nothing to do
   }

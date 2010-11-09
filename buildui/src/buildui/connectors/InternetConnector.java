@@ -57,12 +57,6 @@ public class InternetConnector extends Connector {
     return new Connection("", this, dev);
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "real");
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
   }

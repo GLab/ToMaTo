@@ -70,16 +70,14 @@ public abstract class NetElement {
 
 	static private Set<String> names = new HashSet<String>();
 
-	protected Dictionary<String,String> properties;
+	protected HashMap<String,String> properties;
+
+        public Map<String,String> getProperties() {
+            return properties;
+        }
 
 	public void copyProps(NetElement t) {
-		Enumeration e = t.properties.keys();
-
-		while (e.hasMoreElements()) {
-			String s = (String) e.nextElement();
-
-			properties.put(new String(s), t.properties.get(s));
-		}
+		properties.putAll(t.properties);
 
 	}
 
@@ -94,13 +92,8 @@ public abstract class NetElement {
 	}
 
 	public synchronized void setProperty(String name, String value) {
-		if (name.equals("name")) {
-                        if (!value.equals(getName())) onNameChanged(getName(), value);
-			setName(value);
-		} else {
-                        if (!value.equals(properties.get(name))) onPropertyChanged(name, properties.get(name), value);
-			properties.put(name, value);
-		}
+		if (name.equals("name")) setName(value);
+		else properties.put(name, value);
 	}
 
 	public int getX() {
@@ -143,7 +136,7 @@ public abstract class NetElement {
 		name = new String(newName);
 		names.add(name);
     this.displayName = displayName ;
-		properties = new Hashtable<String,String>();
+		properties = new HashMap<String,String>();
 		stringWidth = 128;
 		stringWidthValid = false;
 		linkable = true;
@@ -156,6 +149,7 @@ public abstract class NetElement {
 	public void move(int nx, int ny) {
 		x = nx;
 		y = ny;
+                setProperty("pos", x+","+y) ;
 	}
 
 	public int size() {

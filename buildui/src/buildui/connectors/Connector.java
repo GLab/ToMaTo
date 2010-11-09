@@ -47,6 +47,7 @@ public abstract class Connector extends IconElement {
 
   public Connector (String newName, String iconName) {
     super(newName, true, iconName);
+    setProperty("type", getType());
   }
 
   public abstract String getType();
@@ -69,11 +70,6 @@ public abstract class Connector extends IconElement {
 
   public void removeConnection(Connection con) {
     connections.remove(con);
-  }
-
-  public void writeAttributes(Element xml) {
-    xml.setAttribute("id", getName());
-    xml.setAttribute("pos", getX()+","+getY()) ;
   }
 
   public void readAttributes (Element xml) {

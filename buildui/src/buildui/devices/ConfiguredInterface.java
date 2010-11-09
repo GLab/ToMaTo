@@ -28,8 +28,8 @@ public class ConfiguredInterface extends Interface {
   public ConfiguredInterface (String newName, Device dev, Connection con) {
     super(newName, dev, con);
     String ip = con.getInterfaceIpHint();
-    if ( ip != null ) setProperty("ip", ip);
-    else setProperty("usedhcp", "true");
+    if ( ip != null ) setProperty("ip4address", ip);
+    else setProperty("use_dhcp", "true");
   }
 
   static PropertiesArea propertiesArea ;
@@ -43,17 +43,10 @@ public class ConfiguredInterface extends Interface {
     return propertiesArea ;
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("ip4address", getProperty("ip", ""));
-    xml.setAttribute("use_dhcp", getProperty("usedhcp", "false"));
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
-    setProperty("ip", xml.getAttribute("ip4address"));
-    setProperty("usedhcp", xml.getAttribute("use_dhcp"));
+    setProperty("ip4address", xml.getAttribute("ip4address"));
+    setProperty("use_dhcp", xml.getAttribute("use_dhcp"));
   }
 
 }

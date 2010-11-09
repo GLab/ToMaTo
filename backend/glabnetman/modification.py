@@ -24,11 +24,15 @@ class Modification():
 		self.subelement = subelement
 		self.properties = properties
 		
+	def __str__(self):
+		return "%s %s %s (%s)" % (self.type, self.element, self.subelement, self.properties)
+		
 	def run(self, top, task):
-		if type == "topology-rename":
+		print "applying %s" % self
+		if self.type == "topology-rename":
 			top.name = self.properties["name"]
 			top.save()
-		elif type == "device-create":
+		elif self.type == "device-create":
 			type = self.properties["type"]
 			import kvm, openvz
 			if type == "kvm":
@@ -42,37 +46,38 @@ class Modification():
 			dev.name = self.properties["name"]
 			dev.configure(self.properties, task)
 			dev.save()
-		elif type == "device-rename":
+			top.devices_add(dev)
+		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
 			device = top.devices_get(self.element)
 			device.name = self.properties["name"]
 			device.save()
-		elif type == "device-configure":
+		elif self.type == "device-configure":
 			device = top.devices_get(self.element).upcast()
 			device.configure(self.properties, task)
-		elif type == "device-delete":
+		elif self.type == "device-delete":
 			device = top.devices_get(self.element).upcast()
 			assert device.state == generic.State.CREATED, "Cannot delete a running or prepared device"
 			device.delete()
 		
-		elif type == "interface-create":
+		elif self.type == "interface-create":
 			device = top.devices_get(self.element).upcast()
 			name = self.properties["name"]
 			device.interfaces_add(name, self.properties, task)
-		elif type == "interface-rename":
+		elif self.type == "interface-rename":
 			device = top.devices_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_rename(name, self.properties, task)
-		elif type == "interface-configure":
+		elif self.type == "interface-configure":
 			device = top.devices_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_configure(name, self.properties, task)
-		elif type == "interface-delete":
+		elif self.type == "interface-delete":
 			device = top.devices_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_delete(name, task)
 		
-		elif type == "connector-create":
+		elif self.type == "connector-create":
 			type = self.properties["type"]
 			import internet, tinc
 			if type == "real":
@@ -87,29 +92,30 @@ class Modification():
 			con.name = self.properties["name"]
 			con.configure(self.properties, task)
 			con.save()
-		elif type == "connector-rename":
+			top.connectors_add(con)
+		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
 			con = top.connectors_get(self.element)
 			con.name = self.properties["name"]
 			con.save()
-		elif type == "connector-configure":
+		elif self.type == "connector-configure":
 			con = top.connectors_get(self.element).upcast()
 			con.configure(self.properties, task)
-		elif type == "connector-delete":
+		elif self.type == "connector-delete":
 			con = top.connectors_get(self.element).upcast()
 			if not con.type == "real": 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		
-		elif type == "connection-create":
+		elif self.type == "connection-create":
 			con = top.connectors_get(self.element).upcast()
 			name = self.properties["name"]
 			con.connections_add(name, self.properties, task)
-		elif type == "connection-configure":
+		elif self.type == "connection-configure":
 			con = top.connectors_get(self.element).upcast()
 			name = self.subelement
 			con.connections_configure(name, self.properties, task)
-		elif type == "connection-delete":
+		elif self.type == "connection-delete":
 			con = top.connectors_get(self.element).upcast()
 			name = self.subelement
 			con.connections_delete(name, task)
@@ -121,9 +127,10 @@ def read_from_dom(dom):
 		element = util.get_attr(mod, "element", None)
 		subelement = util.get_attr(mod, "subelement", None)
 		properties = {}
-		for pr in dom.getElementsByTagName("properties"):
-			properties += [(k, v) for (k, v) in pr.attributes]
-	modlist.append(Modification(type, element, subelement, properties))
+		for pr in mod.getElementsByTagName("properties"):
+			for k in pr.attributes.keys():
+				properties[k] = pr.attributes[k].value
+		modlist.append(Modification(type, element, subelement, properties))
 	return modlist
 
 def convert_specification(dom):
@@ -132,10 +139,15 @@ def convert_specification(dom):
 		modlist.append(Modification("device-create", None, None, dev.attributes))
 	#FIXME: implement
 
-def modify_run(mods, top_id, task):
+def modify_run(top_id, mods, task):
 	for mod in mods:
 		top = topology.get(top_id)
-		mod.run(top, task)
+		try:
+			mod.run(top, task)
+		except:
+			import traceback
+			traceback.print_exc()
+			raise
 		task.subtasks_done = task.subtasks_done + 1
 	task.done()
 

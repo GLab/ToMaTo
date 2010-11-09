@@ -60,12 +60,6 @@ public class HubConnector extends Connector {
     return new EmulatedConnection("", this, dev);
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "hub");
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
   }

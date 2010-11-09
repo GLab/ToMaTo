@@ -59,12 +59,6 @@ public class RouterConnector extends Connector {
     return new EmulatedRouterConnection("", this, dev);
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "router");
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
   }

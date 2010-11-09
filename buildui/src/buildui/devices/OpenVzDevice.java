@@ -49,6 +49,8 @@ public class OpenVzDevice extends Device {
   public OpenVzDevice (String newName) {
     super(newName, "/icons/computer.png");
     num++;
+    setProperty("root_password", "glabroot" );
+    setProperty("gateway", "");
   }
 
   public NetElement createAnother () {
@@ -64,16 +66,6 @@ public class OpenVzDevice extends Device {
   @Override
   public Interface createInterface (String name, Connection con) {
     return new ConfiguredInterface(name, this, con);
-  }
-
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "openvz");
-    xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
-    xml.setAttribute("template", getProperty("template", ""));
-    xml.setAttribute("root_password", getProperty("root_password", "glabroot" ));
-    xml.setAttribute("gateway", getProperty("gateway", ""));
   }
 
   public void readAttributes (Element xml) {

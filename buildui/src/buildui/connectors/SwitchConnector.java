@@ -59,12 +59,6 @@ public class SwitchConnector extends Connector {
     return new EmulatedConnection("", this, dev);
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "switch");
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
   }

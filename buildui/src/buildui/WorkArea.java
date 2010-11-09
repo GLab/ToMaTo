@@ -164,6 +164,7 @@ public class WorkArea {
     }
   }
 
+  /*
   public void encodeSpecification (OutputStream out) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
@@ -214,7 +215,7 @@ public class WorkArea {
       Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
-
+  */
   public void decode (InputStream in) {
     try {
       Hashtable<String, Device> deviceMap = new Hashtable<String, Device> ();

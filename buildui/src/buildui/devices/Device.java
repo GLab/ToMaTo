@@ -48,6 +48,9 @@ public abstract class Device extends IconElement {
 
   public Device (String newName, String iconName) {
     super(newName, true, iconName);
+    setProperty("type", getType());
+    setProperty("hostgroup", "<auto>");
+    setProperty("template", "<auto>");
   }
 
   public abstract String getType();
@@ -77,11 +80,6 @@ public abstract class Device extends IconElement {
     return createInterface("eth"+ifaceNum, con);
   }
   public abstract Interface createInterface (String name, Connection con);
-
-  public void writeAttributes(Element xml) {
-    xml.setAttribute("id", getName());
-    xml.setAttribute("pos", getX()+","+getY()) ;
-  }
 
   public void readAttributes (Element xml) {
     String pos = xml.getAttribute("pos");

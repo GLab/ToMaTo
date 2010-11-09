@@ -49,7 +49,7 @@ public class TopologyCreatorElement extends IconElement {
 
     @Override
     public void onPropertyChanged(String property, String oldValue, String newValue) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        //ignore
     }
 
 }
