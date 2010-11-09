@@ -723,7 +723,7 @@ public void mouseEntered (MouseEvent e) {
       exportButton.setText("sending...");
       exportButton.repaint();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      workArea.encode(baos);
+      Modification.encodeModifications(baos);
       String xml = baos.toString();
 
       URL base = getDocumentBase();

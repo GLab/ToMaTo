@@ -164,7 +164,7 @@ public class WorkArea {
     }
   }
 
-  public void encode (OutputStream out) {
+  public void encodeSpecification (OutputStream out) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();

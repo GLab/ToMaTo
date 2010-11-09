@@ -23,30 +23,53 @@ import buildui.connectors.Connection;
 import buildui.connectors.Connector;
 import buildui.devices.Device;
 import buildui.devices.Interface;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class Modification {
 
     public enum Type {
-        TopologyRename,
-        DeviceCreate,
-        DeviceConfigure,
-        DeviceRename,
-        DeviceDelete,
-        InterfaceCreate,
-        InterfaceConfigure,
-        InterfaceRename,
-        InterfaceDelete,
-        ConnectorCreate,
-        ConnectorConfigure,
-        ConnectorRename,
-        ConnectorDelete,
-        ConnectionCreate,
-        ConnectionConfigure,
-        ConnectionDelete,
+        TopologyRename("topology-rename"),
+        DeviceCreate("device-create"),
+        DeviceConfigure("device-configure"),
+        DeviceRename("device-rename"),
+        DeviceDelete("device-delete"),
+        InterfaceCreate("interface-create"),
+        InterfaceConfigure("interface-configure"),
+        InterfaceRename("interface-rename"),
+        InterfaceDelete("interface-delete"),
+        ConnectorCreate("connector-create"),
+        ConnectorConfigure("connector-configure"),
+        ConnectorRename("connector-rename"),
+        ConnectorDelete("connector-delete"),
+        ConnectionCreate("connection-create"),
+        ConnectionConfigure("connection-configure"),
+        ConnectionDelete("connection-delete");
+
+        private String rep;
+        Type (String rep) {
+            this.rep = rep;
+        }
+        public String getRep() {
+            return rep;
+        }
     }
 
     public Type type ;
@@ -148,4 +171,41 @@ public class Modification {
     public static Modification ConnectionDelete ( Connection con ) {
         return new Modification(Type.ConnectionDelete, con.getConnector().getName(), con.getDevice().getName()+"."+con.getIface().getName());
     }
+
+    public static void encodeModifications (OutputStream out) {
+        try {
+          DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
+          DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
+          Document doc = docBuilder.newDocument();
+          Element root = doc.createElement("modifications");
+          doc.appendChild(root);
+          for ( Modification mod: modifications ) {
+            Element x_mod = doc.createElement("modification");
+            root.appendChild(x_mod);
+            x_mod.setAttribute("type", mod.type.getRep());
+            if ( mod.element != null ) x_mod.setAttribute("element", mod.element);
+            if ( mod.subelement != null ) x_mod.setAttribute("subelement", mod.subelement);
+            if ( ! mod.parameters.isEmpty() ) {
+                Element x_prop = doc.createElement("properties");
+                x_mod.appendChild(x_prop);
+                for ( Entry<String, String> entr: mod.parameters.entrySet() )
+                    x_prop.setAttribute(entr.getKey(), entr.getValue());
+            }
+          }
+          TransformerFactory transfac = TransformerFactory.newInstance();
+          Transformer trans = transfac.newTransformer();
+          trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+          trans.setOutputProperty(OutputKeys.INDENT, "yes");
+          StreamResult result = new StreamResult(out);
+          DOMSource source = new DOMSource(doc);
+          trans.transform(source, result);
+        } catch (TransformerException ex) {
+          Netbuild.exception (ex) ;
+          Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParserConfigurationException ex) {
+          Netbuild.exception (ex) ;
+          Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
 }
