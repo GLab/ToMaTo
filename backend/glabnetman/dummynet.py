@@ -26,12 +26,6 @@ class EmulatedConnection(generic.Connection):
 	lossratio = models.FloatField(null=True)
 	capture = models.BooleanField(default=False)
 	
-	def init(self, connector, dom):
-		self.connector = connector
-		self.decode_xml(dom)
-		self.bridge_id = self.interface.device.host.next_free_bridge()		
-		self.save()
-	
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnection
@@ -54,23 +48,33 @@ class EmulatedConnection(generic.Connection):
 			dom.setAttribute("lossratio", str(self.lossratio))
 		if self.capture:
 			dom.setAttribute("capture", str(self.capture))
-				
-	def decode_xml(self, dom):
-		generic.Connection.decode_xml(self, dom)
-		try:
-			self.delay = int(util.get_attr(dom, "delay", default="0"))
-		except:
-			self.delay = 0
-		try:
-			self.bandwidth = int(util.get_attr(dom, "bandwidth", default="0"))			
-		except:
-			self.bandwidth = 10000
-		try:
-			self.lossratio = float(util.get_attr(dom,"lossratio", default=0.0))
-		except:
-			self.lossratio = 0.0
-		self.capture = util.parse_bool(util.get_attr(dom, "capture", default="false"))
-
+			
+	def configure(self, properties, task):
+		if "delay" in properties:
+			try:
+				self.delay = int(properties["delay"])
+			except:
+				self.delay = 0
+		if "bandwidth" in properties:		
+			try:
+				self.bandwidth = int(properties["bandwidth"])			
+			except:
+				self.bandwidth = 10000
+		if "lossratio" in properties:
+			try:
+				self.lossratio = float(properties["lossratio"])
+			except:
+				self.lossratio = 0.0
+		if "capture" in properties:
+			old_capture = self.capture
+			self.capture = util.parse_bool(properties["capture"])
+		if self.connector.state == generic.State.STARTED:
+			self._config_link(task)
+			if old_capture and not self.capture:
+				self._stop_capture(task)
+			if self.capture and not old_capture:
+				self._start_capture(task)
+			
 	def _config_link(self, task):
 		host = self.interface.device.host
 		pipe_id = int(self.bridge_id) * 10
@@ -82,7 +86,7 @@ class EmulatedConnection(generic.Connection):
 		if self.lossratio:
 			pipe_config = pipe_config + " " + "plr %s" % self.lossratio
 		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
-
+		
 	def _capture_dir(self):
 		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id )
 
@@ -97,9 +101,10 @@ class EmulatedConnection(generic.Connection):
 	def start_run(self, task):
 		generic.Connection.start_run(self, task)
 		host = self.interface.device.host
-		if not self.bridge_id:
+		if not host:
 			import fault
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, connection does not have a bridge_id: %s" % self)
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
+		self.bridge_id = host.next_free_bridge()		
 		pipe_id = int(self.bridge_id) * 10
 		host.execute("modprobe ipfw_mod", task)
 		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ), task)
@@ -149,15 +154,3 @@ class EmulatedConnection(generic.Connection):
 		host.download("%s" % filename, filename)
 		host.execute("rm %s" % filename)
 		return filename
-
-	def change_run(self, dom, task):
-		cap = self.capture		
-		self.decode_xml(dom)
-		if self.connector.state == generic.State.STARTED:
-			generic.Connection.start_run(self, task)
-			self._config_link(task)
-			if cap and not self.capture:
-				self._stop_capture(task)
-			if self.capture and not cap:
-				self._start_capture(task)
-		self.save()

@@ -54,22 +54,15 @@ class Topology(models.Model):
 			os.makedirs(config.log_dir + "/top")
 		return log.get_logger(config.log_dir + "/top/%s"%self.id)
 
-	def init (self, dom, owner):
+	def init (self, owner):
 		"""
 		Creates a new topology
-		@param file the xml file to load the topology definition from
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
 		self.date_usage = datetime.datetime.now()
 		self.save()
-		try:
-			self.load_from(dom)
-		except:
-			self.delete()
-			raise
-		if not self.name:
-			self.name = "Topology_%s" % self.id
+		self.name = "Topology_%s" % self.id
 		self.save()
 
 	def renew(self):
@@ -137,20 +130,15 @@ class Topology(models.Model):
 	def devices_get(self, name):
 		return self.device_set.get(name=name)
 
+	def interfaces_get(self, iface_name):
+		iface_name = iface_name.split(".")
+		return self.topology.devices_get(iface_name[0]).interfaces_get(iface_name[1])
+
+
 	def devices_add(self, dev):
 		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0:
 			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
 		self.device_set.add(dev)
-
-	def devices_add_dom(self, dev):
-		import openvz, kvm
-		try:
-			Type = { "openvz": openvz.OpenVZDevice, "kvm": kvm.KVMDevice }[dev.getAttribute("type")]
-		except KeyError:
-			raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Malformed topology description: device type unknown: %s" % dev.getAttribute("type") )
-		d = Type()
-		d.init(self, dev)
-		self.devices_add ( d )		
 
 	def connectors_all(self):
 		return self.connector_set.all()
@@ -179,18 +167,6 @@ class Topology(models.Model):
 		"""
 		import hosts
 		return hosts.Host.objects.filter(device__topology=self).distinct()
-
-	def load_from(self, dom):
-		"""
-		Loads this topology from a file
-		@param dom the xml dom to load the topology definition from
-		"""
-		if dom.hasAttribute("name"):
-			self.name = dom.getAttribute("name")
-		for dev in dom.getElementsByTagName ( "device" ):
-			self.devices_add_dom(dev)
-		for con in dom.getElementsByTagName ( "connector" ):
-			self.connectors_add_dom(con)
 	
 	def save_to ( self, dom, doc, internal ):
 		"""
@@ -345,73 +321,7 @@ class Topology(models.Model):
 		self.destroy_run(task)
 		self.delete()
 		task.done()
-	
-	def change_run(self, dom, task):
-		devices=set()
-		if dom.getAttribute("name"):
-			self.name = dom.getAttribute("name")
-		self.save()
-		for x_dev in dom.getElementsByTagName("device"):
-			name = x_dev.getAttribute("id")
-			devices.add(name)
-			try:
-				dev = self.devices_get(name)
-				# changed device
-				dev.upcast().change_run(x_dev, task)
-			except generic.Device.DoesNotExist:
-				# new device
-				self.devices_add_dom(x_dev)
-		for dev in self.devices_all():
-			if not dev.name in devices:
-				#removed device
-				if dev.state == generic.State.STARTED:
-					dev.upcast().stop_run(task)
-				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
-					dev.upcast().destroy_run(task)
-				dev.delete()
-		connectors=set()	
-		for x_con in dom.getElementsByTagName("connector"):
-			name = x_con.getAttribute("id")
-			connectors.add(name)
-			try:
-				con = self.connectors_get(name)
-				# changed device
-				con.upcast().change_run(x_con, task)
-			except generic.Connector.DoesNotExist:
-				# new connector
-				self.connectors_add_dom(x_con)
-		for con in self.connectors_all():
-			if not con.name in connectors:
-				if con.state == generic.State.STARTED:
-					con.upcast().stop_run(task)
-				if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
-					con.upcast().destroy_run(task)
-				con.delete()				
-		task.done()
-
-	def change_possible(self, dom):
-		for x_dev in dom.getElementsByTagName("device"):
-			name = x_dev.getAttribute("id")
-			try:
-				dev = self.devices_get(name)
-				dev.upcast().change_possible(x_dev)
-			except generic.Device.DoesNotExist:
-				pass
-		for x_con in dom.getElementsByTagName("connector"):
-			name = x_con.getAttribute("id")
-			try:
-				con = self.connectors_get(name)
-				con.upcast().change_possible(x_con)
-			except generic.Connector.DoesNotExist:
-				pass
-	
-	def change(self, newtop):
-		self.renew()
-		self.change_possible(newtop)
-		task = self.start_task(self.change_run,newtop)
-		task.subtasks_total = 1
-		return task.id
-		
+			
 	def _log(self, task, output):
 		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
@@ -502,9 +412,9 @@ def get(id):
 def all():
 	return Topology.objects.all()
 
-def create(dom, owner):
+def create(owner):
 	top = Topology()
-	top.init(dom, owner)
+	top.init(owner)
 	return top
 
 def cleanup():

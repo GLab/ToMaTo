@@ -19,14 +19,6 @@ import generic, fault
 
 class InternetConnector(generic.Connector):
 
-	def init(self, topology, dom):
-		self.topology = topology
-		self.decode_xml(dom)
-		self.state = generic.State.STARTED
-		self.save()		
-		for connection in dom.getElementsByTagName ( "connection" ):
-			self.add_connection(connection)
-		
 	def add_connection(self, dom):
 		con = generic.Connection()
 		con.init (self, dom)
@@ -39,9 +31,6 @@ class InternetConnector(generic.Connector):
 
 	def encode_xml(self, dom, doc, internal):
 		generic.Connector.encode_xml(self, dom, doc, internal)
-		
-	def decode_xml(self, dom):
-		generic.Connector.decode_xml(self, dom)
 		
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)
@@ -62,7 +51,25 @@ class InternetConnector(generic.Connector):
 		generic.Connector.destroy_run(self, task)		
 		#not changing state
 		task.subtasks_done = task.subtasks_done + 1
+		
+	def configure(self, properties, task):
+		generic.Connector.configure(self, properties, task)
+				
+	def connections_add(self, iface_name, properties, task):
+		iface = self.topology.interfaces_get(iface_name)
+		if iface.device.state == generic.State.STARTED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
+		con = generic.Connection ()
+		con.connector = self
+		con.interface = iface
+		con.save()
 
-	def change_possible(self, dom):
+	def connections_configure(self, iface_name, properties, task):
 		pass
 	
+	def connections_delete(self, iface_name, task):
+		iface = self.topology.interfaces_get(iface_name)
+		if iface.device.state == generic.State.STARTED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
+		con = self.connections_get(iface)
+		con.delete()

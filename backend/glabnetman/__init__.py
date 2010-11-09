@@ -175,13 +175,13 @@ def host_check(host_name, user=None):
 def host_groups(user=None):
 	return [h.name for h in hosts.get_host_groups()]
 
-def _parse_xml(xml):
+def _parse_xml(xml, root_tag):
 	try:
 		from xml.dom import minidom
 		dom = minidom.parseString(xml)
-		return dom.getElementsByTagName ( "topology" )[0]
+		return dom.getElementsByTagName ( root_tag )[0]
 	except IndexError:
-		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed topology description: topology must contain a <topology> tag")
+		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
 	except Exception, exc:
 		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
 
@@ -213,18 +213,29 @@ def top_get(top_id, include_ids=False, user=None):
 def top_import(xml, user=None):
 	if not user.is_user:
 		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
-	dom = _parse_xml(xml)
-	top=topology.create(dom, user.name)
+	top=topology.create(user.name)
 	top.save()
+	import modification
+	dom = _parse_xml(xml, "topology")
+	modification.apply_spec(top.id, dom)
 	top.logger().log("imported", user=user.name, bigmessage=xml)
 	return top.id
 	
+def top_create(user=None):
+	if not user.is_user:
+		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
+	top=topology.create(user.name)
+	top.save()
+	top.logger().log("created", user=user.name)
+	return top.id
+
 def top_modify(top_id, xml, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
-	dom = _parse_xml(xml)
-	task_id = top.modify(dom)
+	dom = _parse_xml(xml, "modifications")
+	import modification
+	task_id = modification.modify(top, dom)
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
 

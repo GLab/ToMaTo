@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import hosts, util, fault, re
+import hosts, util, fault, re, generic
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -104,12 +104,6 @@ class Device(models.Model):
 			dom.appendChild(x_iface)
 		dom.setAttribute("pos", self.pos)
 		
-	def decode_xml(self, dom):
-		self.name = dom.getAttribute("id")
-		self.type = dom.getAttribute("type")
-		self.pos = dom.getAttribute("pos")
-		util.get_attr(dom, "hostgroup", default=None)
-		
 	def start(self):
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -170,17 +164,18 @@ class Device(models.Model):
 	def destroy_run(self, task):
 		pass
 
-	def change_run(self, dom, task):
-		self.pos = util.get_attr(dom, "pos", self.pos)
-
-	def change_possible(self, dom):
-		if self.hostgroup is None:
-			hostgroup = ""
-		else:
-			hostgroup = self.hostgroup.name
-		if not hostgroup == util.get_attr(dom, "hostgroup", hostgroup):
-			if self.state == State.PREPARED or self.state == State.STARTED: 
-				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Cannot change host of deployed device")
+	def configure(self, properties, task):
+		if "pos" in properties:
+			self.pos = properties["pos"]
+		if "template" in properties:
+			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			self.template = hosts.get_template_name(self.type, properties["template"])
+			if not self.template:
+				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
+		if "hostgroup" in properties:
+			assert self.state == generic.State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
+			self.hostgroup = properties["hostgroup"]
+		self.save()
 
 	def __unicode__(self):
 		return self.name
@@ -189,14 +184,7 @@ class Device(models.Model):
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
-	
-	def init(self, device, dom):
-		self.device = device
-		self.decode_xml(dom)
-		if not re.match("eth(\d+)", self.name):
-			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % self.name)
-		self.save()
-	
+
 	def is_configured(self):
 		try:
 			self.configuredinterface
@@ -212,9 +200,6 @@ class Interface(models.Model):
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("id", self.name)
 
-	def decode_xml(self, dom):
-		self.name = dom.getAttribute("id")
-		
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
@@ -263,11 +248,6 @@ class Connector(models.Model):
 			con.upcast().encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
 		dom.setAttribute("pos", self.pos)
-
-	def decode_xml(self, dom):
-		self.name = dom.getAttribute("id")
-		self.type = dom.getAttribute("type")
-		self.pos = dom.getAttribute("pos")
 
 	def start(self):
 		self.topology.renew()
@@ -335,35 +315,9 @@ class Connector(models.Model):
 	def __unicode__(self):
 		return self.name
 
-	def change_run(self, dom, task):
-		cons=set()
-		self.dom = util.get_attr(dom, "pos", self.pos)
-		for x_con in dom.getElementsByTagName("connection"):
-			try:
-				device_name = x_con.getAttribute("device")
-				device = self.topology.devices_get(device_name)
-				iface_name = x_con.getAttribute("interface")
-				iface = device.interfaces_get(iface_name)
-			except Device.DoesNotExist:
-				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
-			except Interface.DoesNotExist:
-				raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
-			try:
-				con = self.connections_get(iface)
-				con.upcast().change_run(x_con, task)
-				cons.add(con.interface)				
-			except Connection.DoesNotExist:
-				#new connection
-				con = self.add_connection(x_con)
-				if self.state == State.STARTED:
-					con.start_run(task)
-				cons.add(con.interface)
-		for con in self.connections_all():
-			if not con.interface in cons:
-				#deleted connection
-				if self.state == State.STARTED:
-					con.stop_run(task)
-				con.delete()
+	def configure(self, properties, task):
+		if "pos" in properties:
+			self.pos = properties["pos"]
 		self.save()
 				
 class Connection(models.Model):
@@ -371,11 +325,6 @@ class Connection(models.Model):
 	interface = models.OneToOneField(Interface)
 	bridge_id = models.IntegerField(null=True)
 	bridge_special_name = models.CharField(max_length=15, null=True)
-
-	def init (self, connector, dom):
-		self.connector = connector
-		self.decode_xml(dom)
-		self.save()
 
 	def is_emulated(self):
 		try:
@@ -399,22 +348,6 @@ class Connection(models.Model):
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("device", self.interface.device.name)
 		dom.setAttribute("interface", self.interface.name)
-
-	def decode_xml(self, dom):
-		try:
-			device_name = dom.getAttribute("device")
-			device = self.connector.topology.devices_get(device_name)
-			iface_name = dom.getAttribute("interface")
-			self.interface = device.interfaces_get(iface_name)
-			try:
-				if not str(self.interface.connection) == str(self):
-					raise fault.new(fault.DUPLICATE_INTERFACE_CONNECTION, "Interface %s is connected to %s and %s" % (self.interface, self.interface.connection, self) )
-			except Connection.DoesNotExist:
-				pass
-		except Device.DoesNotExist:
-			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection device %s" % device_name)
-		except Interface.DoesNotExist:
-			raise fault.new(fault.UNKNOWN_INTERFACE, "Unknown connection interface %s.%s" % (device_name, iface_name))
 					
 	def start_run(self, task):
 		host = self.interface.device.host
@@ -427,9 +360,6 @@ class Connection(models.Model):
 		if not self.bridge_special_name:
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 			#host.execute("brctl delbr %s" % self.bridge_name(), task)
-
-	def change_run(self, dom, task):
-		pass
 
 	def prepare_run(self, task):
 		if not self.bridge_id:

@@ -21,13 +21,6 @@ import dummynet, generic, config, hosts, os, subprocess, shutil, fault, util
 
 class TincConnector(generic.Connector):
 	
-	def init(self, topology, dom):
-		self.topology = topology
-		self.decode_xml(dom)
-		self.save()
-		for connection in dom.getElementsByTagName ( "connection" ):
-			self.add_connection(connection)
-
 	def add_connection(self, dom):
 		con = TincConnection()
 		con.init (self, dom)
@@ -42,9 +35,6 @@ class TincConnector(generic.Connector):
 	def encode_xml(self, dom, doc, internal):
 		generic.Connector.encode_xml(self, dom, doc, internal)
 		
-	def decode_xml(self, dom):
-		generic.Connector.decode_xml(self, dom)
-
 	def tincname(self, con):
 		return "tinc_%s" % con.id
 
@@ -160,38 +150,40 @@ class TincConnector(generic.Connector):
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
-	def change_possible(self, dom):
-		pass
+	def configure(self, properties, task):
+		generic.Connector.configure(self, properties, task)
 	
-	def change_run(self, dom, task):
-		oldcons = [con.interface for con in self.connections_all()]
-		generic.Connector.change_run(self, dom, task)
-		cons = [con.interface for con in self.connections_all()]
-		if not oldcons == cons:
-			oldstate = self.state
-			if self.state == generic.State.STARTED:
-				task.subtasks_total = task.subtasks_total + 1
-				self.stop_run(task)
-			if self.state == generic.State.PREPARED:
-				task.subtasks_total = task.subtasks_total + 1
-				self.destroy_run(task)
-			if oldstate == generic.State.STARTED or oldstate == generic.State.PREPARED:
-				task.subtasks_total = task.subtasks_total + 1
-				self.prepare_run(task)
-			if oldstate == generic.State.STARTED:
-				task.subtasks_total = task.subtasks_total + 1
-				self.start_run(task)
-		self.save()
+	def connections_add(self, iface_name, properties, task):
+		iface = self.topology.interfaces_get(iface_name)
+		if self.state == generic.State.STARTED or self.state == generic.State.PREPARED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
+		if iface.device.state == generic.State.STARTED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
+		con = TincConnection ()
+		con.connector = self
+		con.interface = iface
+		con.bridge_special_name = ""
+		con.configure(properties, task)
+		con.save()
+
+	def connections_configure(self, iface_name, properties, task):
+		iface = self.topology.interfaces_get(iface_name)
+		con = self.connections_get(iface)
+		con.configure(properties, task)
+		con.save()	
+	
+	def connections_delete(self, iface_name, task):
+		iface = self.topology.interfaces_get(iface_name)
+		if self.state == generic.State.STARTED or self.state == generic.State.PREPARED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
+		if iface.device.state == generic.State.STARTED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
+		con = self.connections_get(iface)
+		con.delete()
 
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_port = models.IntegerField(null=True)
 	gateway = models.CharField(max_length=18, null=True) 
-	
-	def init(self, connector, dom):
-		self.connector = connector
-		self.decode_xml(dom)
-		self.bridge_special_name = ""
-		self.save()
 	
 	def upcast(self):
 		return self
@@ -204,9 +196,11 @@ class TincConnection(dummynet.EmulatedConnection):
 			if self.tinc_port:
 				dom.setAttribute("tinc_port", str(self.tinc_port))
 		
-	def decode_xml(self, dom):
-		dummynet.EmulatedConnection.decode_xml(self, dom)
-		self.gateway = util.get_attr(dom, "gateway", default=None)
+	def configure(self, properties, task):
+		dummynet.EmulatedConnection.configure(self, properties, task)
+		if "gateway" in properties:
+			assert self.connector.state == generic.State.CREATED, "Cannot change gateways on prepared or started router: %s" % self
+			self.gateway = properties["gateway"]
 		if self.connector.type == "router":
 			if not self.gateway:
 				self.gateway = "10.1.1.254/24" 
@@ -232,8 +226,4 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.bridge_id=None
 		self.tinc_port=None
 		self.save()
-		dummynet.EmulatedConnection.destroy_run(self, task)				
-
-	def change_run(self, dom, task):
-		self.decode_xml(dom)
-		dummynet.EmulatedConnection.change_run(self, dom, task)
+		dummynet.EmulatedConnection.destroy_run(self, task)
