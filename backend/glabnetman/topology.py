@@ -128,12 +128,11 @@ class Topology(models.Model):
 		return self.device_set.all()
 	
 	def devices_get(self, name):
-		return self.device_set.get(name=name)
+		return self.device_set.get(name=name).upcast()
 
 	def interfaces_get(self, iface_name):
 		iface_name = iface_name.split(".")
-		return self.topology.devices_get(iface_name[0]).interfaces_get(iface_name[1])
-
+		return self.devices_get(iface_name[0]).interfaces_get(iface_name[1])
 
 	def devices_add(self, dev):
 		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0:
@@ -144,22 +143,12 @@ class Topology(models.Model):
 		return self.connector_set.all()
 	
 	def connectors_get(self, name):
-		return self.connector_set.get(name=name)
+		return self.connector_set.get(name=name).upcast()
 
 	def connectors_add(self, con):
 		if self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0:
 			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
 		self.connector_set.add(con)
-
-	def connectors_add_dom(self, con):
-		import tinc, internet
-		try:
-			Type = { "hub": tinc.TincConnector, "switch": tinc.TincConnector, "router": tinc.TincConnector, "real": internet.InternetConnector }[con.getAttribute("type")]
-		except KeyError:
-			raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Malformed topology description: connector type unknown: %s" % con.getAttribute("type") )
-		c = Type()
-		c.init(self, con)
-		self.connectors_add ( c )		
 
 	def affected_hosts (self):
 		"""

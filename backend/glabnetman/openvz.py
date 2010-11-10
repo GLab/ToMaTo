@@ -200,7 +200,7 @@ class OpenVZDevice(generic.Device):
 		self.save()
 
 	def interfaces_add(self, name, properties, task):
-		if self.state == "started":
+		if self.state == generic.State.STARTED:
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
 		import re
 		if not re.match("eth(\d+)", name):
@@ -208,17 +208,18 @@ class OpenVZDevice(generic.Device):
 		iface = ConfiguredInterface()
 		iface.name = name
 		iface.device = self
-		iface.prepare_run(task)
+		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			iface.prepare_run(task)
 		iface.configure(properties, task)
 		iface.save()
 		generic.Device.interfaces_add(self, iface)
 
 	def interfaces_configure(self, name, properties, task):
-		iface = self.interfaces_get(name)
+		iface = self.interfaces_get(name).upcast()
 		iface.configure(properties, task)
 
 	def interfaces_rename(self, name, properties, task):
-		iface = self.interfaces_get(name)
+		iface = self.interfaces_get(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 		iface.name = properties["name"]
@@ -229,7 +230,7 @@ class OpenVZDevice(generic.Device):
 		iface.save()
 
 	def interfaces_delete(self, name, task):
-		iface = self.interfaces_get(name)
+		iface = self.interfaces_get(name).upcast()
 		self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 		iface.delete()
 

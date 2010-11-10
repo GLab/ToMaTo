@@ -84,7 +84,7 @@ public class Modification {
         while ( i < parameters.length ) {
             String name = parameters[i++];
             String value = parameters[i++];
-            if ( value.equals("<auto>") ) value = "*" ;
+            if ( value.equals("<auto>") ) continue;
             this.parameters.put(name, value);
         }
     }
@@ -96,14 +96,14 @@ public class Modification {
         for ( Entry<String,String> entr: parameters.entrySet() ) {
             String key = entr.getKey();
             String value = entr.getValue();
-            if ( value.equals("<auto>") ) value = "*";
+            if ( value.equals("<auto>") ) continue;
             this.parameters.put(key, value);
         }
         int i = 0;
         while ( i < parameters2.length ) {
             String name = parameters2[i++];
             String value = parameters2[i++];
-            if ( value.equals("<auto>") ) value = "*" ;
+            if ( value.equals("<auto>") ) continue;
             this.parameters.put(name, value);
         }
     }
@@ -111,8 +111,11 @@ public class Modification {
     private static ArrayList<Modification> modifications = new ArrayList<Modification> ();
 
     public static void add (Modification mod) {
+        if ( ( mod.type == Type.DeviceConfigure || mod.type == Type.ConnectorConfigure
+            || mod.type == Type.InterfaceConfigure || mod.type == Type.ConnectionConfigure )
+          && mod.parameters.isEmpty() ) return;
         modifications.add(mod);
-        System.out.println(mod);
+        System.out.println(mod); //FIXME: remove
     }
     
     public static List<Modification> list() {
@@ -184,7 +187,7 @@ public class Modification {
     }
 
     public static Modification ConnectionConfigure ( Connection con, String property, String value) {
-        return new Modification(Type.ConnectionConfigure, con.getName(), null, property, value);
+        return new Modification(Type.ConnectionConfigure, con.getConnector().getName(), con.getDevice().getName()+"."+con.getIface().getName(), property, value);
     }
 
     public static Modification ConnectionDelete ( Connection con ) {

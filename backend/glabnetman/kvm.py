@@ -123,6 +123,10 @@ class KVMDevice(generic.Device):
 
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
+		if not self.host:
+			self.state = self.get_state(task)
+			self.save()
+			return
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
 		self.state = self.get_state(task)
 		assert self.state == generic.State.CREATED, "VM still exists"

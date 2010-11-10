@@ -90,9 +90,13 @@ public abstract class Connector extends IconElement {
     displayName = !isImplicit();
     if ( isImplicit() ) {
       Connection[] cons = connections.toArray(new Connection[2]) ;
+      int oldx = getX();
+      int oldy = getY();
       int x = ( cons[0].getDevice().getX() + cons[1].getDevice().getX() ) / 2 ;
       int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
+      if ( x == oldx && y == oldy ) return;
       super.move(x, y);
+      onPropertyChanged("pos", "", x+","+y);
     }
   }
 

@@ -51,7 +51,7 @@ class Device(models.Model):
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
 
 	def interfaces_get(self, name):
-		return self.interface_set.get(name=name)
+		return self.interface_set.get(name=name).upcast()
 
 	def interfaces_add(self, iface):
 		return self.interface_set.add(iface)
@@ -174,7 +174,7 @@ class Device(models.Model):
 				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		if "hostgroup" in properties:
 			assert self.state == generic.State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
-			self.hostgroup = properties["hostgroup"]
+			self.hostgroup = hosts.get_host_group(properties["hostgroup"])
 		self.save()
 
 	def __unicode__(self):
@@ -220,7 +220,7 @@ class Connector(models.Model):
 		return self.connection_set.all()
 
 	def connections_get(self, interface):
-		return self.connection_set.get(interface=interface)
+		return self.connection_set.get(interface=interface).upcast()
 
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
@@ -247,7 +247,8 @@ class Connector(models.Model):
 			x_con = doc.createElement ( "connection" )
 			con.upcast().encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
-		dom.setAttribute("pos", self.pos)
+		if self.pos:
+			dom.setAttribute("pos", self.pos)
 
 	def start(self):
 		self.topology.renew()
@@ -357,6 +358,8 @@ class Connection(models.Model):
 
 	def stop_run(self, task):
 		host = self.interface.device.host
+		if not host:
+			return
 		if not self.bridge_special_name:
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 			#host.execute("brctl delbr %s" % self.bridge_name(), task)

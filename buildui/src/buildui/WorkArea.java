@@ -228,7 +228,6 @@ public class WorkArea {
       for (int i = 0; i < x_devices.getLength(); i++) {
         Element x_dev = (Element)x_devices.item(i);
         Device dev = Device.readFrom(x_dev);
-        dev.fixName(true);
         add(dev);
         deviceMap.put(dev.getName(), dev);
       }
@@ -237,7 +236,6 @@ public class WorkArea {
       for (int i = 0; i < x_connectors.getLength(); i++) {
         Element x_con = (Element)x_connectors.item(i);
         Connector con = Connector.readFrom(x_con);
-        con.fixName(true);
         add(con);
         NodeList connections = x_con.getElementsByTagName("connection");
         for (int j = 0; j < connections.getLength(); j++) {
@@ -247,7 +245,6 @@ public class WorkArea {
           Device dev = deviceMap.get(devName);
           Connection c = con.createConnection(dev);
           c.readAttributes(x_c);
-          add(c);
           connectionMap.put(devName+"."+ifName, c);
         }
       }
@@ -265,9 +262,11 @@ public class WorkArea {
             c.setIface(iface);
             iface.readAttributes(x_iface);
             add(iface);
+            add(c);
           }
         }
       }
+      Modification.clear();
     } catch (SAXException ex) {
       Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);

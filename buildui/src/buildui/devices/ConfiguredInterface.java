@@ -46,7 +46,7 @@ public class ConfiguredInterface extends Interface {
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
     setProperty("ip4address", xml.getAttribute("ip4address"));
-    setProperty("use_dhcp", xml.getAttribute("use_dhcp"));
+    setProperty("use_dhcp", xml.getAttribute("use_dhcp").toLowerCase());
   }
 
 }

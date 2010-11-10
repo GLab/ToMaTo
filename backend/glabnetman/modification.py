@@ -44,9 +44,9 @@ class Modification():
 			dev.type = type
 			dev.topology = top
 			dev.name = self.properties["name"]
+			top.devices_add(dev)
 			dev.configure(self.properties, task)
 			dev.save()
-			top.devices_add(dev)
 		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
 			device = top.devices_get(self.element)
@@ -90,9 +90,9 @@ class Modification():
 			con.type = type
 			con.topology = top
 			con.name = self.properties["name"]
+			top.connectors_add(con)
 			con.configure(self.properties, task)
 			con.save()
-			top.connectors_add(con)
 		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
 			con = top.connectors_get(self.element)
@@ -109,8 +109,8 @@ class Modification():
 		
 		elif self.type == "connection-create":
 			con = top.connectors_get(self.element).upcast()
-			name = self.properties["name"]
-			con.connections_add(name, self.properties, task)
+			interface = self.properties["interface"]
+			con.connections_add(interface, self.properties, task)
 		elif self.type == "connection-configure":
 			con = top.connectors_get(self.element).upcast()
 			name = self.subelement

@@ -34,7 +34,8 @@ public class MagicTextField implements EditElement, TextListener, FocusListener 
 
   public static final String identifier_pattern = "(?:[0-9a-zA-Z_-]*)" ;
   public static final String numeric_pattern = "(?:[0-9]|[1-9][0-9]*)" ;
-  public static final String fp_numeric_pattern = numeric_pattern+"\\."+numeric_pattern ;
+  public static final String numeric_pattern_leading0 = "(?:[0-9]*)" ;
+  public static final String fp_numeric_pattern = "(?:[0-9]|[1-9][0-9]*)\\.(?:[0-9]*)" ;
   public static final String ip4_pattern = "(?:(?:(?:25[0-6]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}(?:25[0-6]|2[0-4][0-9]|[01]?[0-9]?[0-9]))" ;
   public static final String ip4_prefix_pattern = ip4_pattern + "/(?:3[0-2]|[12]?[0-9])" ;
 

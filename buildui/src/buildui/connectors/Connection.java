@@ -151,6 +151,7 @@ public class Connection extends NetElement {
   }
 
   public void onPropertyChanged(String property, String oldValue, String newValue) {
+      System.out.println(this + " " + property + " " + oldValue + "->" + newValue ) ; //FIXME: remove
       Modification.add(Modification.ConnectionConfigure(this, property, newValue));
   }
 
