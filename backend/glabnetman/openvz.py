@@ -140,53 +140,6 @@ class OpenVZDevice(generic.Device):
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
-	"""
-	def change_possible(self, dom):
-		generic.Device.change_possible(self, dom)
-		if self.state == generic.State.STARTED:
-			for x_iface in dom.getElementsByTagName("interface"):
-				try:
-					self.interfaces_get(x_iface.getAttribute("id"))
-				except generic.Interface.DoesNotExist:
-					raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
-		if not self.template == util.get_attr(dom, "template", self.template):
-			if self.state == "started" or self.state == "prepared":
-				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
-
-	def change_run(self, dom, task):
-		generic.Device.change_run(self, dom, task)
-		self.template = util.get_attr(dom, "template", self.template)
-		self.template = hosts.get_template_name("openvz", self.template)
-		self.root_password = util.get_attr(dom, "root_password")
-		if self.root_password and ( self.state == "prepared" or self.state == "started" ):
-			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ), task )
-		self.gateway = util.get_attr(dom, "gateway", self.gateway)
-		ifaces=set()
-		for x_iface in dom.getElementsByTagName("interface"):
-			name = x_iface.getAttribute("id")
-			ifaces.add(name)
-			try:
-				iface = self.interfaces_get(name)
-				iface = iface.upcast()
-				iface.decode_xml(x_iface)
-				iface.save()
-			except generic.Interface.DoesNotExist:
-				iface = ConfiguredInterface()
-				iface.init(self, x_iface)
-				iface.save()
-				self.interfaces_add(iface)
-				if self.state == "prepared" or self.state == "started":
-					iface.prepare_run(task)
-			if self.state == "started":
-				iface.start_run(task)
-		for iface in self.interfaces_all():
-			if not iface.name in ifaces:
-				if self.state == "prepared" or self.state == "started":
-					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
-				iface.delete()
-		self.save()
-	"""
-
 	def configure(self, properties, task):
 		generic.Device.configure(self, properties, task)
 		if "root_password" in properties:

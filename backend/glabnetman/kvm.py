@@ -135,51 +135,6 @@ class KVMDevice(generic.Device):
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
-	"""
-	def is_changed(self, dom):
-		if not self.template == util.get_attr(dom, "template", self.template):
-			return True
-		old_ifaces = [i.name for i in self.interfaces_all()]
-		new_ifaces = [i.getAttribute("id") for i in dom.getElementsByTagName("interface")]
-		return not old_ifaces == new_ifaces
-
-	def change_possible(self, dom):
-		generic.Device.change_possible(self, dom)
-		if not self.template == util.get_attr(dom, "template", self.template):
-			if self.state == "started" or self.state == "prepared":
-				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of kvm %s cannot be changed" % self.name)
-		if self.is_changed(dom) and self.state == "started":
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
-
-	def change_run(self, dom, task):
-		generic.Device.change_run(self, dom, task)
-		self.template = util.get_attr(dom, "template", self.template)
-		self.template = hosts.get_template_name("kvm", self.template)
-		ifaces=set()
-		for x_iface in dom.getElementsByTagName("interface"):
-			name = x_iface.getAttribute("id")
-			ifaces.add(name)
-			try:
-				iface = self.interfaces_get(name)
-			except generic.Interface.DoesNotExist:
-				#new interface
-				iface = generic.Interface()
-				iface.init(self, x_iface)
-				self.interfaces_add(iface)
-				if self.state == "prepared":
-					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					self.host.bridge_create("vmbr%s" % iface_id)
-					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
-		for iface in self.interfaces_all():
-			if not iface.name in ifaces:
-				#deleted interface
-				if self.state == "prepared":
-					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					#FIXME: find a way to delete interfaces
-				iface.delete()
-		self.save()
-	"""
-
 	def configure(self, properties, task):
 		generic.Device.configure(self, properties, task)
 			

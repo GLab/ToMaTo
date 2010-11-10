@@ -115,7 +115,6 @@ public class Modification {
             || mod.type == Type.InterfaceConfigure || mod.type == Type.ConnectionConfigure )
           && mod.parameters.isEmpty() ) return;
         modifications.add(mod);
-        System.out.println(mod); //FIXME: remove
     }
     
     public static List<Modification> list() {

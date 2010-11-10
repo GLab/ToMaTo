@@ -28,7 +28,7 @@ class Modification():
 		return "%s %s %s (%s)" % (self.type, self.element, self.subelement, self.properties)
 		
 	def run(self, top, task):
-		print "applying %s" % self
+		#print "applying %s" % self
 		if self.type == "topology-rename":
 			top.name = self.properties["name"]
 			top.save()
@@ -142,12 +142,7 @@ def convert_specification(dom):
 def modify_run(top_id, mods, task):
 	for mod in mods:
 		top = topology.get(top_id)
-		try:
-			mod.run(top, task)
-		except:
-			import traceback
-			traceback.print_exc()
-			raise
+		mod.run(top, task)
 		task.subtasks_done = task.subtasks_done + 1
 	task.done()
 

@@ -164,58 +164,6 @@ public class WorkArea {
     }
   }
 
-  /*
-  public void encodeSpecification (OutputStream out) {
-    try {
-      DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
-      DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-      Document doc = docBuilder.newDocument();
-      Element root = doc.createElement("topology");
-      root.setAttribute("name", topologyProperties.getNameValue());
-      doc.appendChild(root);
-      Element x_devices = doc.createElement("devices");
-      root.appendChild(x_devices);
-      Element x_connectors = doc.createElement("connectors");
-      root.appendChild(x_connectors);
-      for ( Device dev: devices) {
-        Element x_dev = doc.createElement("device") ;
-        dev.writeAttributes(x_dev);
-        for ( Interface iface: dev.interfaces() ) {
-          Element x_iface = doc.createElement("interface") ;
-          iface.writeAttributes(x_iface);
-          x_dev.appendChild(x_iface);
-        }
-        x_devices.appendChild(x_dev);
-      }
-      for ( Connector con: connectors) {
-        Element x_con = doc.createElement("connector") ;
-        con.writeAttributes(x_con);
-        for ( Connection c: con.connections() ) {
-          Element x_c = doc.createElement("connection") ;
-          c.writeAttributes(x_c);
-          Interface iface = c.getIface() ;
-          x_c.setAttribute("device", iface.getDevice().getName());
-          x_c.setAttribute("interface", iface.getName());
-          x_con.appendChild(x_c);
-        }
-        x_connectors.appendChild(x_con);
-      }
-      TransformerFactory transfac = TransformerFactory.newInstance();
-      Transformer trans = transfac.newTransformer();
-      trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-      trans.setOutputProperty(OutputKeys.INDENT, "yes");
-      StreamResult result = new StreamResult(out);
-      DOMSource source = new DOMSource(doc);
-      trans.transform(source, result);
-    } catch (TransformerException ex) {
-      Netbuild.exception (ex) ;
-      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
-    } catch (ParserConfigurationException ex) {
-      Netbuild.exception (ex) ;
-      Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
-    }
-  }
-  */
   public void decode (InputStream in) {
     try {
       Hashtable<String, Device> deviceMap = new Hashtable<String, Device> ();
