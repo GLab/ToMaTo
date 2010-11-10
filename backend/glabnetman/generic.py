@@ -90,7 +90,7 @@ class Device(models.Model):
 			return None		
 
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("id", self.name)
+		dom.setAttribute("name", self.name)
 		dom.setAttribute("type", self.type)
 		if self.hostgroup:
 			dom.setAttribute("hostgroup", self.hostgroup.name)
@@ -198,7 +198,7 @@ class Interface(models.Model):
 		return self
 
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("id", self.name)
+		dom.setAttribute("name", self.name)
 
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
@@ -239,7 +239,7 @@ class Connector(models.Model):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct()
 
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("id", self.name)
+		dom.setAttribute("name", self.name)
 		dom.setAttribute("type", self.type)
 		if internal:
 			dom.setAttribute("state", self.state)
@@ -347,8 +347,7 @@ class Connection(models.Model):
 		return "gbr_%s" % self.bridge_id
 
 	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("device", self.interface.device.name)
-		dom.setAttribute("interface", self.interface.name)
+		dom.setAttribute("interface", "%s.%s" % (self.interface.device.name, self.interface.name))
 					
 	def start_run(self, task):
 		host = self.interface.device.host

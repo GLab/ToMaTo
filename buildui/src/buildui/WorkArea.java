@@ -188,22 +188,22 @@ public class WorkArea {
         NodeList connections = x_con.getElementsByTagName("connection");
         for (int j = 0; j < connections.getLength(); j++) {
           Element x_c = (Element)connections.item(j);
-          String devName = x_c.getAttribute("device");
           String ifName = x_c.getAttribute("interface");
-          Device dev = deviceMap.get(devName);
+          String[] nameParts = ifName.split("\\.");
+          Device dev = deviceMap.get(nameParts[0]);
           Connection c = con.createConnection(dev);
           c.readAttributes(x_c);
-          connectionMap.put(devName+"."+ifName, c);
+          connectionMap.put(ifName, c);
         }
       }
       for (int i = 0; i < x_devices.getLength(); i++) {
         Element x_dev = (Element)x_devices.item(i);
-        String devName = x_dev.getAttribute("id");
+        String devName = x_dev.getAttribute("name");
         Device dev = deviceMap.get(devName);
         NodeList interfaces = x_dev.getElementsByTagName("interface");
         for (int j = 0; j < interfaces.getLength(); j++) {
           Element x_iface = (Element)interfaces.item(j);
-          String ifName = x_iface.getAttribute("id");
+          String ifName = x_iface.getAttribute("name");
           Connection c = connectionMap.get(dev.getName()+"."+ifName);
           if (c!=null) {
             Interface iface = dev.createInterface(ifName, c);

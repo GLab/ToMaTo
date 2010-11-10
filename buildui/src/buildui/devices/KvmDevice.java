@@ -72,7 +72,7 @@ public class KvmDevice extends Device {
   }
 
   public static Device readFrom (Element x_dev) {
-    String name = x_dev.getAttribute("id") ;
+    String name = x_dev.getAttribute("name") ;
     KvmDevice dev = new KvmDevice(name);
     dev.readAttributes(x_dev);
     return dev ;

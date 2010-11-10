@@ -65,7 +65,7 @@ public class HubConnector extends Connector {
   }
 
   public static Connector readFrom (Element x_con) {
-    String name = x_con.getAttribute("id") ;
+    String name = x_con.getAttribute("name") ;
     HubConnector con = new HubConnector(name);
     con.readAttributes(x_con);
     return con ;

@@ -50,8 +50,14 @@ def create(api, request):
 			editor = request.REQUEST["editor"]
 		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "edit": True})
 	xml=request.REQUEST["xml"]
-	top_id=api.top_create()
-	api.top_modify(top_id,xml)
+	format="spec"
+	if request.REQUEST.has_key("format"):
+		format=request.REQUEST["format"]
+	if format=="spec":
+		top_id=api.top_import(xml)
+	if format=="mod":
+		top_id=api.top_create()
+		api.top_modify(top_id,xml)
 	return _display_top(api, top_id)
 create=wrap_rpc(create)
 	

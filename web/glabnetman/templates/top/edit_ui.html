@@ -13,7 +13,7 @@
 <a href="{%url main.help "BuildUi"%}" target="_blank">Editor help</a><br/>
 <applet code="buildui/Netbuild.class" archive="/static/buildui.jar" width=800 height=600>
 {% if edit %}
-	<param name="upload_url" value="{% if top_id %}{%url top.edit top_id%}{% else %}{%url top.create%}{% endif %}">
+	<param name="upload_url" value="{% if top_id %}{%url top.edit top_id%}{% else %}{%url top.create%}?format=mod{% endif %}">
 {% endif %}
 {% if top_id %}
 	<param name="download_url" value="{%url top.show top_id%}?format=plain">

@@ -128,16 +128,29 @@ def read_from_dom(dom):
 		subelement = util.get_attr(mod, "subelement", None)
 		properties = {}
 		for pr in mod.getElementsByTagName("properties"):
-			for k in pr.attributes.keys():
-				properties[k] = pr.attributes[k].value
+			properties += _xml_attrs_to_dict(pr.attributes)
 		modlist.append(Modification(type, element, subelement, properties))
 	return modlist
+
+def _xml_attrs_to_dict(xml):
+	res = {}
+	for k in xml.keys():
+		res[k] = xml[k].value
+	return res
 
 def convert_specification(dom):
 	modlist = []
 	for dev in dom.getElementsByTagName("device"):
-		modlist.append(Modification("device-create", None, None, dev.attributes))
-	#FIXME: implement
+		devname = dev.getAttribute("name")
+		modlist.append(Modification("device-create", None, None, _xml_attrs_to_dict(dev.attributes)))
+		for iface in dev.getElementsByTagName("interface"):
+			modlist.append(Modification("interface-create", devname, None, _xml_attrs_to_dict(iface.attributes)))
+	for con in dom.getElementsByTagName("connector"):
+		conname = con.getAttribute("name")
+		modlist.append(Modification("connector-create", None, None, _xml_attrs_to_dict(con.attributes)))
+		for conn in con.getElementsByTagName("connection"):
+			modlist.append(Modification("connection-create", conname, None, _xml_attrs_to_dict(conn.attributes)))
+	return modlist
 
 def modify_run(top_id, mods, task):
 	for mod in mods:

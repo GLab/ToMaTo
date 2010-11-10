@@ -77,7 +77,7 @@ public class OpenVzDevice extends Device {
   }
 
   public static Device readFrom (Element x_dev) {
-    String name = x_dev.getAttribute("id") ;
+    String name = x_dev.getAttribute("name") ;
     OpenVzDevice dev = new OpenVzDevice(name);
     dev.readAttributes(x_dev);
     return dev ;

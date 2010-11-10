@@ -64,7 +64,7 @@ public class RouterConnector extends Connector {
   }
 
   public static Connector readFrom (Element x_con) {
-    String name = x_con.getAttribute("id") ;
+    String name = x_con.getAttribute("name") ;
     RouterConnector con = new RouterConnector(name);
     con.readAttributes(x_con);
     return con ;
