@@ -280,7 +280,8 @@ class Template(models.Model):
 		
 		def upload_to_host(self, host, task):
 			dst = self.get_filename()
-			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+			if self.download_url:
+				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
 
 		def __unicode__(self):
 			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
