@@ -65,8 +65,8 @@ class EmulatedConnection(generic.Connection):
 				self.lossratio = float(properties["lossratio"])
 			except:
 				self.lossratio = 0.0
+		old_capture = self.capture
 		if "capture" in properties:
-			old_capture = self.capture
 			self.capture = util.parse_bool(properties["capture"])
 		if self.connector.state == generic.State.STARTED:
 			self._config_link(task)
@@ -104,7 +104,8 @@ class EmulatedConnection(generic.Connection):
 		if not host:
 			import fault
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
-		self.bridge_id = host.next_free_bridge()		
+		if not self.bridge_id:
+			self.bridge_id = host.next_free_bridge()		
 		pipe_id = int(self.bridge_id) * 10
 		host.execute("modprobe ipfw_mod", task)
 		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ), task)
