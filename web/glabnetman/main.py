@@ -60,9 +60,10 @@ def resource_usage_by_topology(api, request):
 	usage=list()
 	import top
 	for t in tops:
-		t["resources"] = top._adapt_resources(t["resources"])
-		t["resources"]["top_id"] = t["id"]
-		usage.append((t["name"],t["resources"]))
+		if "resources" in t:
+			t["resources"] = top._adapt_resources(t["resources"])
+			t["resources"]["top_id"] = t["id"]
+			usage.append((t["name"],t["resources"]))
 	return render_to_response("admin/resource_usage.html", {"usage": usage})
 resource_usage_by_topology=wrap_rpc(resource_usage_by_topology)
 
