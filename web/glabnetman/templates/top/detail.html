@@ -132,7 +132,7 @@ No captures ready
 	</tr>
 {% for name, dev in top.devices %}
 	<tr>
-		<td>{{dev.id}}</td>
+		<td>{{dev.name}}</td>
 		<td>{{dev.resources.disk|floatformat}} MB</td>
 		<td>{{dev.resources.memory|floatformat}} MB</td>
 		<td>{{dev.resources.ports}}</td>
@@ -141,7 +141,7 @@ No captures ready
 {% endfor %}
 {% for name, con in top.connectors %}
 	<tr>
-		<td>{{con.id}}</td>
+		<td>{{con.name}}</td>
 		<td>{{con.resources.disk|floatformat}} MB</td>
 		<td>{{con.resources.memory|floatformat}} MB</td>
 		<td>{{con.resources.ports}}</td>
