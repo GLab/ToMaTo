@@ -223,7 +223,7 @@ class OpenVZDevice(generic.Device):
 		else:
 			disk = int(self.host.get_result("du -sb /var/lib/vz/private/%s | awk '{print $1}'" % self.openvz_id))
 		if self.state == generic.State.STARTED:
-			memory = int(self.host.get_result("grep -e '^[ ]*0:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.openvz_id))*256
+			memory = int(self.host.get_result("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.openvz_id))*256
 			ports = 1
 		else:
 			memory = 0
