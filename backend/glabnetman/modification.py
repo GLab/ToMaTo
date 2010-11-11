@@ -128,7 +128,7 @@ def read_from_dom(dom):
 		subelement = util.get_attr(mod, "subelement", None)
 		properties = {}
 		for pr in mod.getElementsByTagName("properties"):
-			properties += _xml_attrs_to_dict(pr.attributes)
+			properties.update(_xml_attrs_to_dict(pr.attributes))
 		modlist.append(Modification(type, element, subelement, properties))
 	return modlist
 

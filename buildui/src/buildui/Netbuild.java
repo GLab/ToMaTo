@@ -602,7 +602,9 @@ public void mouseEntered (MouseEvent e) {
     return me.readOnly;
   }
 
+    @Override
   public void init () {
+    System.out.println(super.isActive());
     try {
       status = versionstring;
 
@@ -728,7 +730,7 @@ public void mouseEntered (MouseEvent e) {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       Modification.encodeModifications(baos);
       String xml = baos.toString();
-
+      
       URL base = getDocumentBase();
       URL url = new URL ( base, getParameter("upload_url") );
       HttpURLConnection con = (HttpURLConnection)url.openConnection();
@@ -742,7 +744,7 @@ public void mouseEntered (MouseEvent e) {
       oStream.write("\n".getBytes());
       oStream.flush();
       oStream.close();
-
+      
       String[] reply = parseReply(con.getInputStream());
       if ( reply != null ) {
         String kind = reply[2] ;
@@ -753,9 +755,11 @@ public void mouseEntered (MouseEvent e) {
           backstr = backstr.replace("12345", id);
           con.disconnect();
           URL backurl = new URL ( base, backstr );
-          getAppletContext().showDocument(backurl);
-          removeAll();
-          setVisible(false);
+          while (isActive()) {
+            getAppletContext().showDocument(backurl);
+            Thread.sleep(100);
+          }
+          return;
         } else if ( kind.equals("ERROR") ) {
           String code = reply[3] ;
           String message = reply[4] ;
