@@ -65,14 +65,6 @@ public class KvmDevice extends Device {
     return new Interface(name, this, con);
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("type", "kvm");
-    xml.setAttribute("hostgroup", getProperty("hostgroup", ""));
-    xml.setAttribute("template", getProperty("template", ""));
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
     setProperty("hostgroup", xml.getAttribute("hostgroup"));
@@ -80,9 +72,14 @@ public class KvmDevice extends Device {
   }
 
   public static Device readFrom (Element x_dev) {
-    String name = x_dev.getAttribute("id") ;
+    String name = x_dev.getAttribute("name") ;
     KvmDevice dev = new KvmDevice(name);
     dev.readAttributes(x_dev);
     return dev ;
   }
+
+    @Override
+    public String getType() {
+        return "kvm" ;
+    }
 }

@@ -235,11 +235,9 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
           if (0 != s.compareTo("<multiple>")) {
             if (p.name.compareTo("name") == 0 && t.getName().compareTo(s) != 0)
               needRedraw = true;
-
-            // System.out.println(
-            //  "PA.upload(): Setting prop \"" +
-            //  p.name +
-            //  "\" to \"" + s + "\"." );
+            if (p.name.equals("name")) {
+                if (!s.equals(t.getName())) t.onNameChanged(t.getName(), s);
+            } else if (!s.equals(t.properties.get(p.name))) t.onPropertyChanged(p.name, t.properties.get(p.name), s);
             t.setProperty(p.name, s);
           }
         }

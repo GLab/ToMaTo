@@ -25,13 +25,15 @@ package buildui.paint;
  */
 import buildui.Netbuild;
 import java.awt.*;
-import java.lang.Math;
 import java.util.*;
-import java.text.*;
+
+public abstract class NetElement {
+
+    public abstract void onNameChanged (String oldName, String newName);
+    public abstract void onPropertyChanged (String property, String oldValue, String newValue);
 
 // OLD CODE FROM HERE ON (owned by Emulab)
 
-public abstract class NetElement {
 	private boolean nameFixed;
 	private String name;
 	private int x, y;
@@ -68,16 +70,14 @@ public abstract class NetElement {
 
 	static private Set<String> names = new HashSet<String>();
 
-	protected Dictionary<String,String> properties;
+	protected HashMap<String,String> properties;
+
+        public Map<String,String> getProperties() {
+            return properties;
+        }
 
 	public void copyProps(NetElement t) {
-		Enumeration e = t.properties.keys();
-
-		while (e.hasMoreElements()) {
-			String s = (String) e.nextElement();
-
-			properties.put(new String(s), t.properties.get(s));
-		}
+		properties.putAll(t.properties);
 
 	}
 
@@ -92,11 +92,8 @@ public abstract class NetElement {
 	}
 
 	public synchronized void setProperty(String name, String value) {
-		if (0 == name.compareTo("name")) {
-			setName(new String(value));
-		} else {
-			properties.put(new String(name), new String(value));
-		}
+		if (name.equals("name")) setName(value);
+		else properties.put(name, value);
 	}
 
 	public int getX() {
@@ -139,7 +136,7 @@ public abstract class NetElement {
 		name = new String(newName);
 		names.add(name);
     this.displayName = displayName ;
-		properties = new Hashtable<String,String>();
+		properties = new HashMap<String,String>();
 		stringWidth = 128;
 		stringWidthValid = false;
 		linkable = true;
@@ -152,6 +149,7 @@ public abstract class NetElement {
 	public void move(int nx, int ny) {
 		x = nx;
 		y = ny;
+                setProperty("pos", x+","+y) ;
 	}
 
 	public int size() {

@@ -18,6 +18,7 @@ package buildui.connectors;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Modification;
 import buildui.devices.Device;
 import buildui.paint.IconElement;
 import java.awt.Color;
@@ -46,7 +47,10 @@ public abstract class Connector extends IconElement {
 
   public Connector (String newName, String iconName) {
     super(newName, true, iconName);
+    setProperty("type", getType());
   }
+
+  public abstract String getType();
 
   public abstract Connection createConnection ( Device dev ) ;
   protected static int nextSubnetId = 1;
@@ -68,11 +72,6 @@ public abstract class Connector extends IconElement {
     connections.remove(con);
   }
 
-  public void writeAttributes(Element xml) {
-    xml.setAttribute("id", getName());
-    xml.setAttribute("pos", getX()+","+getY()) ;
-  }
-
   public void readAttributes (Element xml) {
     String pos = xml.getAttribute("pos");
     try {
@@ -91,9 +90,13 @@ public abstract class Connector extends IconElement {
     displayName = !isImplicit();
     if ( isImplicit() ) {
       Connection[] cons = connections.toArray(new Connection[2]) ;
+      int oldx = getX();
+      int oldy = getY();
       int x = ( cons[0].getDevice().getX() + cons[1].getDevice().getX() ) / 2 ;
       int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
+      if ( x == oldx && y == oldy ) return;
       super.move(x, y);
+      onPropertyChanged("pos", "", x+","+y);
     }
   }
 
@@ -123,4 +126,13 @@ public abstract class Connector extends IconElement {
     checkImplicit();
     super.draw(g);
   }
+
+  public void onNameChanged(String oldName, String newName) {
+      Modification.add(Modification.ConnectorRename(oldName, newName));
+  }
+
+  public void onPropertyChanged(String property, String oldValue, String newValue) {
+      Modification.add(Modification.ConnectorConfigure(this, property, newValue));
+  }
+
 }

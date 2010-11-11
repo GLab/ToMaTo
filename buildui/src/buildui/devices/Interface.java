@@ -18,6 +18,7 @@ package buildui.devices;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Modification;
 import buildui.connectors.Connection;
 import buildui.paint.PropertiesArea;
 import java.awt.*;
@@ -114,10 +115,6 @@ public class Interface extends NetElement {
     return propertiesArea ;
   }
 
-  public void writeAttributes(Element xml) {
-    xml.setAttribute("id", getName());
-  }
-
   public void readAttributes (Element xml) {
     //nothing to do
   }
@@ -134,6 +131,14 @@ public class Interface extends NetElement {
    */
   public void setCon (Connection con) {
     this.con = con;
+  }
+
+  public void onNameChanged(String oldName, String newName) {
+      Modification.add(Modification.InterfaceRename(this, oldName, newName));
+  }
+
+  public void onPropertyChanged(String property, String oldValue, String newValue) {
+      Modification.add(Modification.InterfaceConfigure(this, property, newValue));
   }
 
 }

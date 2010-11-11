@@ -24,18 +24,6 @@ class KVMDevice(generic.Device):
 	template = models.CharField(max_length=30)
 	vnc_port = models.IntegerField(null=True)
 	
-	def init(self, topology, dom):
-		self.topology = topology
-		self.decode_xml(dom)
-		self.template = hosts.get_template_name("kvm", self.template)
-		if not self.template:
-			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
-		self.save()		
-		for interface in dom.getElementsByTagName ( "interface" ):
-			iface = generic.Interface()
-			iface.init(self, interface)
-			self.interfaces_add(iface)
-	
 	def upcast(self):
 		return self
 
@@ -82,10 +70,6 @@ class KVMDevice(generic.Device):
 			if self.vnc_port:
 				dom.setAttribute("vnc_port", str(self.vnc_port))
 		
-	def decode_xml(self, dom):
-		generic.Device.decode_xml(self, dom)
-		self.template = dom.getAttribute("template")
-
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)
@@ -139,6 +123,10 @@ class KVMDevice(generic.Device):
 
 	def destroy_run(self, task):
 		generic.Device.destroy_run(self, task)
+		if not self.host:
+			self.state = self.get_state(task)
+			self.save()
+			return
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
 		self.state = self.get_state(task)
 		assert self.state == generic.State.CREATED, "VM still exists"
@@ -147,52 +135,35 @@ class KVMDevice(generic.Device):
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
-	def is_changed(self, dom):
-		if not self.template == util.get_attr(dom, "template", self.template):
-			return True
-		old_ifaces = [i.name for i in self.interfaces_all()]
-		new_ifaces = [i.getAttribute("id") for i in dom.getElementsByTagName("interface")]
-		return not old_ifaces == new_ifaces
-
-	def change_possible(self, dom):
-		generic.Device.change_possible(self, dom)
-		if not self.template == util.get_attr(dom, "template", self.template):
-			if self.state == "started" or self.state == "prepared":
-				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of kvm %s cannot be changed" % self.name)
-		if self.is_changed(dom) and self.state == "started":
+	def configure(self, properties, task):
+		generic.Device.configure(self, properties, task)
+			
+	def interfaces_add(self, name, properties, task):
+		if self.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
+		if not re.match("eth(\d+)", name):
+			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
+		iface = generic.Interface()
+		iface.name = name
+		iface.device = self
+		if self.state == "prepared":
+			iface_id = re.match("eth(\d+)", iface.name).group(1)
+			self.host.bridge_create("vmbr%s" % iface_id)
+			self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
+		iface.save()
+		generic.Device.interfaces_add(self, iface)
 
-	def change_run(self, dom, task):
-		"""
-		Adapt this device to the new device
-		"""
-		generic.Device.change_run(self, dom, task)
-		self.template = util.get_attr(dom, "template", self.template)
-		self.template = hosts.get_template_name("kvm", self.template)
-		ifaces=set()
-		for x_iface in dom.getElementsByTagName("interface"):
-			name = x_iface.getAttribute("id")
-			ifaces.add(name)
-			try:
-				iface = self.interfaces_get(name)
-			except generic.Interface.DoesNotExist:
-				#new interface
-				iface = generic.Interface()
-				iface.init(self, x_iface)
-				self.interfaces_add(iface)
-				if self.state == "prepared":
-					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					self.host.bridge_create("vmbr%s" % iface_id)
-					self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
-		for iface in self.interfaces_all():
-			if not iface.name in ifaces:
-				#deleted interface
-				if self.state == "prepared":
-					iface_id = re.match("eth(\d+)", iface.name).group(1)
-					#FIXME: find a way to delete interfaces
-				iface.delete()
-		self.save()
-		
+	def interfaces_configure(self, name, properties, task):
+		pass
+	
+	def interfaces_rename(self, name, properties, task):
+		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM does not support renaming interfaces: %s" % name)
+	
+	def interfaces_delete(self, name, task):
+		#FIXME: actually delete interface in VM
+		iface = self.interfaces_get(name)
+		iface.delete()
+	
 	def vnc_password(self):
 		if not self.kvm_id:
 			return "---"

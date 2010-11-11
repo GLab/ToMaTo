@@ -39,7 +39,7 @@ function console (url) {
 
 <table class="sortable,filterable">
 	<tr>
-		<th>Device ID</th>
+		<th>Device name</th>
 		<th>Type</th>
 		<th>Host</th>
 		<th>State</th>
@@ -47,31 +47,31 @@ function console (url) {
 	</tr>
 {% for name, dev in top.devices %}
 	<tr>
-		<td>{{dev.id}}</td>
+		<td>{{dev.name}}</td>
 		<td>{{dev.type}}</td>
 		<td>{{dev.host}}</td>
 		<td>{{dev.state}}</td>
 		<td>
 {% if dev.is_prepared %}
-		<a href="{%url top.dev_start top_id=top_id device_id=dev.id%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
+		<a href="{%url top.dev_start top_id=top_id device_id=dev.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
 {% if dev.is_prepared or dev.is_started %}
-		<a href="{%url top.dev_stop top_id=top_id device_id=dev.id%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
+		<a href="{%url top.dev_stop top_id=top_id device_id=dev.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
 {% if dev.is_created %}
-		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.id%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
 {% endif %}		
 {% if dev.is_prepared or dev.is_created %}
-		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.id%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
+		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 {% if dev.is_started and dev.vnc_port %}
-		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.id%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
+		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
 {% if dev.upload_supported %}
-		<a href="{%url top.upload_image top_id=top_id device_id=dev.id%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
+		<a href="{%url top.upload_image top_id=top_id device_id=dev.name%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
 {% endif %}
 {% if dev.download_supported %}
-		<a href="{%url top.download_image top_id=top_id device_id=dev.id%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
+		<a href="{%url top.download_image top_id=top_id device_id=dev.name%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
 {% endif %}
 		</td>		
 	</tr>
@@ -82,28 +82,28 @@ function console (url) {
 
 <table class="sortable,filterable">
 	<tr>
-		<th>Connector ID</th>
+		<th>Connector name</th>
 		<th>Type</th>
 		<th>State</th>
 		<th>Actions</th>
 	</tr>
 {% for name, con in top.connectors %}
 	<tr>
-		<td>{{con.id}}</td>
+		<td>{{con.name}}</td>
 		<td>{{con.type}}</td>
 		<td>{{con.state}}</td>
 		<td>
 {% if con.is_prepared %}
-		<a href="{%url top.con_start top_id=top_id connector_id=con.id%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
+		<a href="{%url top.con_start top_id=top_id connector_id=con.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
 {% if con.is_prepared or con.is_started %}
-		<a href="{%url top.con_stop top_id=top_id connector_id=con.id%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
+		<a href="{%url top.con_stop top_id=top_id connector_id=con.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
 {% if con.is_created %}
-		<a href="{%url top.con_prepare top_id=top_id connector_id=con.id%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+		<a href="{%url top.con_prepare top_id=top_id connector_id=con.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
 {% endif %}		
 {% if con.is_prepared or con.is_created %}
-		<a href="{%url top.con_destroy top_id=top_id connector_id=con.id%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
+		<a href="{%url top.con_destroy top_id=top_id connector_id=con.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 		</td>		
 	</tr>

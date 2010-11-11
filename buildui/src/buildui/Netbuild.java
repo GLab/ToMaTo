@@ -414,20 +414,14 @@ public class Netbuild extends java.applet.Applet
         paintElement(sw);
       } else if (a instanceof Device && b instanceof Connector) {
         Connection con = ((Connector)b).createConnection((Device)a);
-        workArea.add(con);
         Interface iface = ((Device)a).createInterface(con);
         con.setIface(iface);
         workArea.add(iface);
+        workArea.add(con);
         paintElement(con);
         paintElement(iface);
       } else if (b instanceof Device && a instanceof Connector) {
-        Connection con = ((Connector)a).createConnection((Device)b);
-        workArea.add(con);
-        Interface iface = ((Device)b).createInterface(con);
-        con.setIface(iface);
-        workArea.add(iface);
-        paintElement(con);
-        paintElement(iface);
+        connect(b, a);
       } else if (a instanceof Connector && b instanceof Connector)
         Netbuild.setStatus("!Connector to connector connection not allowed.");
     }
@@ -527,7 +521,10 @@ public class Netbuild extends java.applet.Applet
           }
         } else {
           for (NetElement el: NetElement.selectedElements()) {
-            if (el.moveable) el.move(el.getX() + lastDragX, el.getY() + lastDragY);
+            if (el.moveable) {
+                el.move(el.getX() + lastDragX, el.getY() + lastDragY);
+                el.onPropertyChanged("pos", "", el.getX()+","+el.getY());
+            }
             repaint();
           }
         }
@@ -605,7 +602,9 @@ public void mouseEntered (MouseEvent e) {
     return me.readOnly;
   }
 
+    @Override
   public void init () {
+    System.out.println(super.isActive());
     try {
       status = versionstring;
 
@@ -623,6 +622,7 @@ public void mouseEntered (MouseEvent e) {
       Device.init(me);
       KvmDevice.init(me);
       OpenVzDevice.init(me);
+      Modification.clear();
 
       mouseDown = false;
 
@@ -728,9 +728,9 @@ public void mouseEntered (MouseEvent e) {
       exportButton.setText("sending...");
       exportButton.repaint();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      workArea.encode(baos);
+      Modification.encodeModifications(baos);
       String xml = baos.toString();
-
+      
       URL base = getDocumentBase();
       URL url = new URL ( base, getParameter("upload_url") );
       HttpURLConnection con = (HttpURLConnection)url.openConnection();
@@ -744,7 +744,7 @@ public void mouseEntered (MouseEvent e) {
       oStream.write("\n".getBytes());
       oStream.flush();
       oStream.close();
-
+      
       String[] reply = parseReply(con.getInputStream());
       if ( reply != null ) {
         String kind = reply[2] ;
@@ -755,9 +755,11 @@ public void mouseEntered (MouseEvent e) {
           backstr = backstr.replace("12345", id);
           con.disconnect();
           URL backurl = new URL ( base, backstr );
-          getAppletContext().showDocument(backurl);
-          removeAll();
-          setVisible(false);
+          while (isActive()) {
+            getAppletContext().showDocument(backurl);
+            Thread.sleep(100);
+          }
+          return;
         } else if ( kind.equals("ERROR") ) {
           String code = reply[3] ;
           String message = reply[4] ;

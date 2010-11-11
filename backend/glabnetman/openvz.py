@@ -26,18 +26,6 @@ class OpenVZDevice(generic.Device):
 	vnc_port = models.IntegerField(null=True)
 	gateway = models.CharField(max_length=15, null=True)
 		
-	def init(self, topology, dom):
-		self.topology = topology
-		self.decode_xml(dom)
-		self.template = hosts.get_template_name("openvz", self.template)
-		if not self.template:
-			raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found for %s" % self)
-		self.save()
-		for interface in dom.getElementsByTagName ( "interface" ):
-			iface = ConfiguredInterface()
-			iface.init(self, interface)
-			self.interfaces_add(iface)
-	
 	def upcast(self):
 		return self
 
@@ -65,11 +53,13 @@ class OpenVZDevice(generic.Device):
 			if self.vnc_port:
 				dom.setAttribute("vnc_port", str(self.vnc_port))
 		
+	"""
 	def decode_xml(self, dom):
 		generic.Device.decode_xml(self, dom)
 		self.template = dom.getAttribute("template")
 		self.root_password = dom.getAttribute("root_password")
 		self.gateway = util.get_attr(dom, "gateway", default=None)
+	"""
 
 	def get_state(self, task):
 		if config.remote_dry_run:
@@ -150,53 +140,52 @@ class OpenVZDevice(generic.Device):
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
-	def change_possible(self, dom):
-		generic.Device.change_possible(self, dom)
-		if self.state == generic.State.STARTED:
-			for x_iface in dom.getElementsByTagName("interface"):
-				try:
-					self.interfaces_get(x_iface.getAttribute("id"))
-				except generic.Interface.DoesNotExist:
-					raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
-		if not self.template == util.get_attr(dom, "template", self.template):
-			if self.state == "started" or self.state == "prepared":
-				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Template of openvz vm %s cannot be changed" % self.name)
-
-	def change_run(self, dom, task):
-		"""
-		Adapt this device to the new device
-		"""
-		generic.Device.change_run(self, dom, task)
-		self.template = util.get_attr(dom, "template", self.template)
-		self.template = hosts.get_template_name("openvz", self.template)
-		self.root_password = util.get_attr(dom, "root_password")
-		if self.root_password and ( self.state == "prepared" or self.state == "started" ):
-			self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ), task )
-		self.gateway = util.get_attr(dom, "gateway", self.gateway)
-		ifaces=set()
-		for x_iface in dom.getElementsByTagName("interface"):
-			name = x_iface.getAttribute("id")
-			ifaces.add(name)
-			try:
-				iface = self.interfaces_get(name)
-				iface = iface.upcast()
-				iface.decode_xml(x_iface)
-				iface.save()
-			except generic.Interface.DoesNotExist:
-				iface = ConfiguredInterface()
-				iface.init(self, x_iface)
-				iface.save()
-				self.interfaces_add(iface)
-				if self.state == "prepared" or self.state == "started":
-					iface.prepare_run(task)
-			if self.state == "started":
-				iface.start_run(task)
-		for iface in self.interfaces_all():
-			if not iface.name in ifaces:
-				if self.state == "prepared" or self.state == "started":
-					self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
-				iface.delete()
+	def configure(self, properties, task):
+		generic.Device.configure(self, properties, task)
+		if "root_password" in properties:
+			self.root_password = properties["root_password"]
+			if self.state == "prepared" or self.state == "started":
+				self.host.execute("vzctl set %s --userpasswd root:%s --save\n" % ( self.openvz_id, self.root_password ), task )
+		if "gateway" in properties:
+			self.gateway = properties["gateway"]
+			if self.gateway and self.state == "started":
+				self.host.execute("vzctl exec %s route add default gw %s" % ( self.openvz_id, self.gateway), task)
 		self.save()
+
+	def interfaces_add(self, name, properties, task):
+		if self.state == generic.State.STARTED:
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
+		import re
+		if not re.match("eth(\d+)", name):
+			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
+		iface = ConfiguredInterface()
+		iface.name = name
+		iface.device = self
+		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			iface.prepare_run(task)
+		iface.configure(properties, task)
+		iface.save()
+		generic.Device.interfaces_add(self, iface)
+
+	def interfaces_configure(self, name, properties, task):
+		iface = self.interfaces_get(name).upcast()
+		iface.configure(properties, task)
+
+	def interfaces_rename(self, name, properties, task):
+		iface = self.interfaces_get(name).upcast()
+		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
+		iface.name = properties["name"]
+		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			iface.prepare_run(task)
+		if self.state == generic.State.STARTED:
+			iface.start_run(task)	
+		iface.save()
+
+	def interfaces_delete(self, name, task):
+		iface = self.interfaces_get(name).upcast()
+		self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
+		iface.delete()
 
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
@@ -263,10 +252,17 @@ class ConfiguredInterface(generic.Interface):
 	def interface_name(self):
 		return "veth%s.%s" % ( self.device.upcast().openvz_id, self.name )
 		
-	def decode_xml(self, dom):
-		generic.Interface.decode_xml(self, dom)
-		self.use_dhcp = util.parse_bool(util.get_attr(dom, "use_dhcp", default="false"))
-		self.ip4address = util.get_attr(dom, "ip4address", default=None)
+	def configure(self, properties, task):
+		if "use_dhcp" in properties:
+			self.use_dhcp = util.parse_bool(properties["use_dhcp"])
+			changed = True
+		if "ip4address" in properties:
+			self.ip4address = properties["ip4address"]
+			changed = True
+		if changed:
+			if self.device.state == generic.State.STARTED:
+				self.start_run(task)
+			self.save()
 		
 	def start_run(self, task):
 		openvz_id = self.device.upcast().openvz_id

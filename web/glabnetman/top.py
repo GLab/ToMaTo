@@ -60,7 +60,14 @@ def create(api, request):
 			editor = request.REQUEST["editor"]
 		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "edit": True})
 	xml=request.REQUEST["xml"]
-	top_id=api.top_import(xml)
+	format="spec"
+	if request.REQUEST.has_key("format"):
+		format=request.REQUEST["format"]
+	if format=="spec":
+		top_id=api.top_import(xml)
+	if format=="mod":
+		top_id=api.top_create()
+		api.top_modify(top_id,xml)
 	return _display_top(api, top_id)
 create=wrap_rpc(create)
 	
@@ -126,6 +133,7 @@ def vncview(api, request, top_id, device_id):
 vncview=wrap_rpc(vncview)
 
 def edit(api, request, top_id):
+	#FIXME: do not populate text editor with specification xml
 	if not request.REQUEST.has_key("xml"):
 		xml=api.top_get(int(top_id))
 		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
@@ -137,7 +145,7 @@ def edit(api, request, top_id):
 			editor = request.REQUEST["editor"]
 		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, 'edit':True} )
 	xml=request.REQUEST["xml"]
-	task_id=api.top_change(int(top_id), xml)
+	task_id=api.top_modify(int(top_id), xml)
 	return _display_top(api, top_id, task_id, "Change topology")
 edit=wrap_rpc(edit)
 

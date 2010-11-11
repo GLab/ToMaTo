@@ -18,6 +18,7 @@ package buildui.devices;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import buildui.Modification;
 import buildui.connectors.Connection;
 import buildui.paint.IconElement;
 import java.applet.Applet;
@@ -38,7 +39,6 @@ public abstract class Device extends IconElement {
     hostGroups.addAll(Arrays.asList(parent.getParameter("host_groups").split(",")));
   }
 
-
   public static Device readFrom (Element x_dev) {
     String type = x_dev.getAttribute("type");
     if ( type.equals("openvz") ) return OpenVzDevice.readFrom(x_dev);
@@ -48,7 +48,12 @@ public abstract class Device extends IconElement {
 
   public Device (String newName, String iconName) {
     super(newName, true, iconName);
+    setProperty("type", getType());
+    setProperty("hostgroup", "<auto>");
+    setProperty("template", "<auto>");
   }
+
+  public abstract String getType();
 
   private Set<Interface> interfaces = new HashSet<Interface> () ;
 
@@ -76,11 +81,6 @@ public abstract class Device extends IconElement {
   }
   public abstract Interface createInterface (String name, Connection con);
 
-  public void writeAttributes(Element xml) {
-    xml.setAttribute("id", getName());
-    xml.setAttribute("pos", getX()+","+getY()) ;
-  }
-
   public void readAttributes (Element xml) {
     String pos = xml.getAttribute("pos");
     try {
@@ -90,4 +90,12 @@ public abstract class Device extends IconElement {
     } catch ( NumberFormatException ex ) {}
   }
 
-};
+  public void onNameChanged(String oldName, String newName) {
+      Modification.add(Modification.DeviceRename(oldName, newName));
+  }
+
+  public void onPropertyChanged(String property, String oldValue, String newValue) {
+      Modification.add(Modification.DeviceConfigure(this, property, newValue));
+  }
+
+}

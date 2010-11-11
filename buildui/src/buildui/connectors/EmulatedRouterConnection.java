@@ -44,7 +44,7 @@ public class EmulatedRouterConnection extends EmulatedConnection {
 
 	public EmulatedRouterConnection(String newName, Connector con, Device dev) {
 		super(newName, con, dev);
-    setProperty("gateway", getGatewayIpHint());
+                setProperty("gateway", getGatewayIpHint());
 	}
 
   static PropertiesArea propertiesArea ;
@@ -55,12 +55,6 @@ public class EmulatedRouterConnection extends EmulatedConnection {
 
   public PropertiesArea getPropertiesArea() {
     return propertiesArea ;
-  }
-
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("gateway", getProperty("gateway", getGatewayIpHint()));
   }
 
   public void readAttributes (Element xml) {

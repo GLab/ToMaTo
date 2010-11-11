@@ -64,9 +64,9 @@ public class WorkArea {
   private Set<Device> devices = new HashSet<Device>() ;
   public Set<Device> getDevices() {
 	return devices;
-}
+  }
 
-private Set<Connector> connectors = new HashSet<Connector>() ;
+  private Set<Connector> connectors = new HashSet<Connector>() ;
   public TopologyPropertiesArea topologyProperties = new TopologyPropertiesArea();
 
   private void selectOneInRectangle (Rectangle r, NetElement t, boolean xor) {
@@ -124,16 +124,20 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
     if (t instanceof Device) {
       devices.remove((Device)t);
       for (Interface iface: new HashSet<Interface>(((Device)t).interfaces())) remove(iface);
+      Modification.add(Modification.DeviceDelete((Device)t));
     } else if (t instanceof Connector) {
       connectors.remove((Connector)t);
       for (Connection c: new HashSet<Connection>(((Connector)t).connections())) remove(c);
+      Modification.add(Modification.ConnectorDelete((Connector)t));
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().removeInterface((Interface)t);
       Connection c = ((Interface)t).getCon();
       if ( c != null ) {
+        Modification.add(Modification.ConnectionDelete(c));
         c.setIface(null);
         remove(c);
       }
+      Modification.add(Modification.InterfaceDelete((Interface)t));
     } else if (t instanceof Connection) {
       ((Connection)t).getConnector().removeConnection((Connection)t);
       Interface iface = ((Connection)t).getIface();
@@ -147,63 +151,16 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
   public void add (NetElement t) {
     if (t instanceof Device) {
       devices.add((Device)t);
+      Modification.add(Modification.DeviceCreate((Device)t));
     } else if (t instanceof Connector) {
       connectors.add((Connector)t);
+      Modification.add(Modification.ConnectorCreate((Connector)t));
     } else if (t instanceof Interface) {
       ((Interface)t).getDevice().addInterface((Interface)t);
+      Modification.add(Modification.InterfaceCreate((Interface)t));
     } else if (t instanceof Connection) {
       ((Connection)t).getConnector().addConnection((Connection)t);
-    }
-  }
-
-  public void encode (OutputStream out) {
-    try {
-      DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
-      DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-      Document doc = docBuilder.newDocument();
-      Element root = doc.createElement("topology");
-      root.setAttribute("name", topologyProperties.getNameValue());
-      doc.appendChild(root);
-      Element x_devices = doc.createElement("devices");
-      root.appendChild(x_devices);
-      Element x_connectors = doc.createElement("connectors");
-      root.appendChild(x_connectors);
-      for ( Device dev: devices) {
-        Element x_dev = doc.createElement("device") ;
-        dev.writeAttributes(x_dev);
-        for ( Interface iface: dev.interfaces() ) {
-          Element x_iface = doc.createElement("interface") ;
-          iface.writeAttributes(x_iface);
-          x_dev.appendChild(x_iface);
-        }
-        x_devices.appendChild(x_dev);
-      }
-      for ( Connector con: connectors) {
-        Element x_con = doc.createElement("connector") ;
-        con.writeAttributes(x_con);
-        for ( Connection c: con.connections() ) {
-          Element x_c = doc.createElement("connection") ;
-          c.writeAttributes(x_c);
-          Interface iface = c.getIface() ;
-          x_c.setAttribute("device", iface.getDevice().getName());
-          x_c.setAttribute("interface", iface.getName());
-          x_con.appendChild(x_c);
-        }
-        x_connectors.appendChild(x_con);
-      }
-      TransformerFactory transfac = TransformerFactory.newInstance();
-      Transformer trans = transfac.newTransformer();
-      trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-      trans.setOutputProperty(OutputKeys.INDENT, "yes");
-      StreamResult result = new StreamResult(out);
-      DOMSource source = new DOMSource(doc);
-      trans.transform(source, result);
-    } catch (TransformerException ex) {
-      Netbuild.exception (ex) ;
-      Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);
-    } catch (ParserConfigurationException ex) {
-      Netbuild.exception (ex) ;
-      Logger.getLogger(Netbuild.class.getName()).log(Level.SEVERE, null, ex);
+      Modification.add(Modification.ConnectionCreate((Connection)t));
     }
   }
 
@@ -219,7 +176,6 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
       for (int i = 0; i < x_devices.getLength(); i++) {
         Element x_dev = (Element)x_devices.item(i);
         Device dev = Device.readFrom(x_dev);
-        dev.fixName(true);
         add(dev);
         deviceMap.put(dev.getName(), dev);
       }
@@ -228,37 +184,37 @@ private Set<Connector> connectors = new HashSet<Connector>() ;
       for (int i = 0; i < x_connectors.getLength(); i++) {
         Element x_con = (Element)x_connectors.item(i);
         Connector con = Connector.readFrom(x_con);
-        con.fixName(true);
         add(con);
         NodeList connections = x_con.getElementsByTagName("connection");
         for (int j = 0; j < connections.getLength(); j++) {
           Element x_c = (Element)connections.item(j);
-          String devName = x_c.getAttribute("device");
           String ifName = x_c.getAttribute("interface");
-          Device dev = deviceMap.get(devName);
+          String[] nameParts = ifName.split("\\.");
+          Device dev = deviceMap.get(nameParts[0]);
           Connection c = con.createConnection(dev);
           c.readAttributes(x_c);
-          add(c);
-          connectionMap.put(devName+"."+ifName, c);
+          connectionMap.put(ifName, c);
         }
       }
       for (int i = 0; i < x_devices.getLength(); i++) {
         Element x_dev = (Element)x_devices.item(i);
-        String devName = x_dev.getAttribute("id");
+        String devName = x_dev.getAttribute("name");
         Device dev = deviceMap.get(devName);
         NodeList interfaces = x_dev.getElementsByTagName("interface");
         for (int j = 0; j < interfaces.getLength(); j++) {
           Element x_iface = (Element)interfaces.item(j);
-          String ifName = x_iface.getAttribute("id");
+          String ifName = x_iface.getAttribute("name");
           Connection c = connectionMap.get(dev.getName()+"."+ifName);
           if (c!=null) {
             Interface iface = dev.createInterface(ifName, c);
             c.setIface(iface);
             iface.readAttributes(x_iface);
             add(iface);
+            add(c);
           }
         }
       }
+      Modification.clear();
     } catch (SAXException ex) {
       Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);

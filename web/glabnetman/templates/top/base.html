@@ -13,6 +13,7 @@
 	<h2>Topologies</h2>
 	<ul>
 		<li><a href="{%url top.create%}">create new topology</a></li>
+		<li><a href="{%url top.create%}?editor=xml">import xml-spec</a></li>
 		<li><a href="{%url top.index%}">list of all topologies</a></li>
 	</ul>
 </div>
@@ -23,7 +24,7 @@
 	<ul>
 		<li><a href="{%url top.details top_id%}">details</a></li>
 		<li><a href="{%url top.show top_id%}">show</a> <a href="{%url top.show top_id%}?format=xml">(xml)</a></li>
-		<li><a href="{%url top.edit top_id%}">edit</a> <a href="{%url top.edit top_id%}?editor=xml">(xml)</a></li>
+		<li><a href="{%url top.edit top_id%}">edit</a></li>
 		<li><a href="{%url top.remove top_id%}" onclick="javascript:return confirm('Are you sure? The topology definition will be deleted!')">remove</a></li>
 	</ul>
 </div>

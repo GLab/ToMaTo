@@ -36,8 +36,8 @@ public class ConfiguredInterfacePropertiesArea extends PropertiesArea {
   public ConfiguredInterfacePropertiesArea () {
     super();
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
-    addBoolProperty("usedhcp", "use dhcp", false);
-    addTextProperty("ip", "ip/prefix:", MagicTextField.ip4_prefix_pattern, null);
+    addBoolProperty("use_dhcp", "use dhcp", false);
+    addTextProperty("ip4address", "ip/prefix:", MagicTextField.ip4_prefix_pattern, null);
   }
 
 };

@@ -44,6 +44,10 @@ public class EmulatedConnection extends Connection {
 
 	public EmulatedConnection(String newName, Connector con, Device dev) {
 		super(newName, con, dev);
+                setProperty("delay", "0");
+                setProperty("lossratio", "0.0");
+                setProperty("bandwidth", "10000");
+                setProperty("capture", "false");
 	}
 
   static PropertiesArea propertiesArea ;
@@ -56,21 +60,16 @@ public class EmulatedConnection extends Connection {
     return propertiesArea ;
   }
 
-  @Override
-  public void writeAttributes(Element xml) {
-    super.writeAttributes(xml);
-    xml.setAttribute("delay", getProperty("delay", "0"));
-    xml.setAttribute("lossratio", getProperty("lossratio", "0.0"));
-    xml.setAttribute("bandwidth", getProperty("bandwidth", "10000"));
-    xml.setAttribute("capture", getProperty("capture", "false"));
-  }
-
   public void readAttributes (Element xml) {
     super.readAttributes(xml);
     setProperty("delay", xml.getAttribute("delay"));
+    if ( getProperty("delay", "").equals("") ) setProperty("delay", "0");
     setProperty("lossratio", xml.getAttribute("lossratio"));
+    if ( getProperty("lossratio", "").equals("") ) setProperty("lossratio", "0.0");
     setProperty("bandwidth", xml.getAttribute("bandwidth"));
-    setProperty("capture", xml.getAttribute("capture"));
+    if ( getProperty("bandwidth", "").equals("") ) setProperty("bandwidth", "10000");
+    setProperty("capture", xml.getAttribute("capture").toLowerCase());
+    if ( getProperty("capture", "").equals("") ) setProperty("capture", "false");
   }
 
   public String getInterfaceIpHint () {
