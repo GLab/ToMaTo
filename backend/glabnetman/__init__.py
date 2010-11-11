@@ -32,34 +32,37 @@ import tinc, internet, kvm, openvz
 def _resources_info(res):
 	return {"disk": res.disk, "memory": res.memory, "ports": res.ports, "public_ips": res.public_ips}
 
-def _topology_info(top, auth):
-	try:
-		analysis = top.analysis()
-	except Exception, exc:
-		analysis = "Error in analysis: %s" % exc
-	res = {"id": top.id, "name": top.name, "state": top.max_state(),
-		"owner": str(top.owner), "analysis": analysis,
-		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
-		"connectors": [(v.name, _connector_info(v, auth)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
+def _topology_info(top, auth, detail):
+	res = {"id": top.id, "name": top.name, "state": top.max_state(), "owner": str(top.owner),
+		"device_count": len(top.devices_all()), "connector_count": len(top.connectors_all()),
 		"date_created": top.date_created, "date_modified": top.date_modified, "date_usage": top.date_usage
 		}
-	if auth:
-		task = top.get_task()
-		if top.resources:
-			res.update(resources=_resources_info(top.resources))
-		if task:
-			if task.is_active():
-				res.update(running_task=task.id)
-			else:
-				res.update(finished_task=task.id)
-		res.update(permissions=[p.dict() for p in top.permissions_all()])
-		captures = []
-		for con in top.connectors_all():
-			for c in con.connections_all():
-				c = c.upcast()
-				if hasattr(c, "download_supported") and c.download_supported():
-					captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
-		res.update(captures=captures)
+	if detail:
+		try:
+			analysis = top.analysis()
+		except Exception, exc:
+			analysis = "Error in analysis: %s" % exc
+		res.update({"analysis": analysis, 
+			"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()],
+			"connectors": [(v.name, _connector_info(v, auth)) for v in top.connectors_all()]
+			})
+		if auth:
+			task = top.get_task()
+			if top.resources:
+				res.update(resources=_resources_info(top.resources))
+			if task:
+				if task.is_active():
+					res.update(running_task=task.id)
+				else:
+					res.update(finished_task=task.id)
+			res.update(permissions=[p.dict() for p in top.permissions_all()])
+			captures = []
+			for con in top.connectors_all():
+				for c in con.connections_all():
+					c = c.upcast()
+					if hasattr(c, "download_supported") and c.download_supported():
+						captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
+			res.update(captures=captures)
 	return res
 
 def _device_info(dev, auth):
@@ -197,7 +200,7 @@ def _parse_xml(xml, root_tag):
 
 def top_info(id, user=None):
 	top = topology.get(id)
-	return _topology_info(top, top.check_access("user", user))
+	return _topology_info(top, top.check_access("user", user), True)
 
 def top_list(owner_filter, host_filter, access_filter, user=None):
 	tops=[]
@@ -208,7 +211,7 @@ def top_list(owner_filter, host_filter, access_filter, user=None):
 		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
 		if access_filter=="*" or t.check_access(access_filter, user):
-			tops.append(_topology_info(t, t.check_access("user", user)))
+			tops.append(_topology_info(t, t.check_access("user", user), False))
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
@@ -465,6 +468,16 @@ def resource_usage_by_user(user=None):
 		usage[owner]=_resources_info(usage[owner])
 	return usage
 		
+def resource_usage_by_topology(user=None):
+	_admin_access(user)
+	usage={}
+	for top in topology.all():
+		if top.resources:
+			d = _resources_info(top.resources)
+			d.update(top_id=top.id)
+			usage[top.name]=d
+	return usage
+
 def physical_links_get(src_group, dst_group, user=None):
 	return _physical_link_info(hosts.get_physical_link(src_group, dst_group))
 	
