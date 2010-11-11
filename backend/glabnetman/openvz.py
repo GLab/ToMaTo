@@ -225,6 +225,21 @@ class OpenVZDevice(generic.Device):
 		self.host.download("%s" % filename, filename)
 		self.host.execute("rm %s" % filename)
 		return filename
+	
+	def get_resource_usage(self):
+		if self.state == generic.State.CREATED:
+			disk = 0
+		elif self.state == generic.State.STARTED:
+			disk = int(self.host.get_result("grep -h -A 1 -E '^%s:' /proc/vz/vzquota | tail -n 1 | awk '{print $2}'" % self.openvz_id))*1024
+		else:
+			disk = int(self.host.get_result("du -sb /var/lib/vz/private/%s | awk '{print $1}'" % self.openvz_id))
+		if self.state == generic.State.STARTED:
+			memory = int(self.host.get_result("grep -e '^[ ]*0:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.openvz_id))*256
+			ports = 1
+		else:
+			memory = 0
+			ports = 0
+		return {"disk": disk, "memory": memory, "ports": ports, "public_ips": 0}		
 
 class ConfiguredInterface(generic.Interface):
 	use_dhcp = models.BooleanField()

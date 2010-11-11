@@ -37,6 +37,24 @@ class State():
 	PREPARED="prepared"
 	STARTED="started"
 
+class Resources(models.Model):
+	disk = models.IntegerField(default=0)
+	memory = models.IntegerField(default=0)
+	ports = models.IntegerField(default=0)
+	public_ips = models.IntegerField(default=0)
+	
+	def clean(self):
+		self.disk = 0
+		self.memory = 0
+		self.ports = 0
+		self.public_ips = 0
+	
+	def add(self, res):
+		self.disk += res.disk
+		self.memory += res.memory
+		self.ports += res.ports
+		self.public_ips += res.public_ips
+
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
@@ -49,6 +67,7 @@ class Device(models.Model):
 	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host, null=True)
 	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
+	resources = models.ForeignKey(Resources, null=True)
 
 	def interfaces_get(self, name):
 		return self.interface_set.get(name=name)
@@ -182,6 +201,20 @@ class Device(models.Model):
 			if self.state == State.PREPARED or self.state == State.STARTED: 
 				raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Cannot change host of deployed device")
 
+	def update_resource_usage(self):
+		res = self.upcast().get_resource_usage()
+		if not self.resources:
+			r = Resources()
+			r.save()
+			self.resources = r 
+			self.save()
+		self.resources.memory = res["memory"]
+		self.resources.disk = res["disk"]
+		self.resources.ports = res["ports"]
+		self.resources.public_ips = res["public_ips"]
+		self.resources.save()
+		return self.resources
+
 	def __unicode__(self):
 		return self.name
 		
@@ -227,6 +260,7 @@ class Connector(models.Model):
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	pos = models.CharField(max_length=10, null=True)
+	resources = models.ForeignKey(Resources, null=True)
 
 	def connections_add(self, con):
 		return self.connection_set.add(con)
@@ -366,6 +400,20 @@ class Connector(models.Model):
 				con.delete()
 		self.save()
 				
+	def update_resource_usage(self):
+		res = self.upcast().get_resource_usage()
+		if not self.resources:
+			r = Resources()
+			r.save()
+			self.resources = r 
+			self.save()
+		self.resources.memory = res["memory"]
+		self.resources.disk = res["disk"]
+		self.resources.ports = res["ports"]
+		self.resources.public_ips = res["public_ips"]
+		self.resources.save()
+		return self.resources
+
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)

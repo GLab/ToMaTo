@@ -55,5 +55,25 @@ def physical_links(api, request):
 	return render_to_response("admin/physical_links.html", {"links": links})
 physical_links=wrap_rpc(physical_links)
 
+def resource_usage_by_topology(api, request):
+	tops = api.top_list("*", "*", "user")
+	usage=list()
+	import top
+	for t in tops:
+		t["resources"] = top._adapt_resources(t["resources"])
+		t["resources"]["top_id"] = t["id"]
+		usage.append((t["name"],t["resources"]))
+	return render_to_response("admin/resource_usage.html", {"usage": usage})
+resource_usage_by_topology=wrap_rpc(resource_usage_by_topology)
+
+def resource_usage_by_user(api, request):
+	usage_by_user = api.resource_usage_by_user()
+	usage=list()
+	import top
+	for user in usage_by_user:
+		usage.append((user, top._adapt_resources(usage_by_user[user])))
+	return render_to_response("admin/resource_usage.html", {"by_user": True, "usage": usage})
+resource_usage_by_user=wrap_rpc(resource_usage_by_user)
+
 def help(request, page=""):
 	return HttpResponseRedirect(settings.help_url % page)

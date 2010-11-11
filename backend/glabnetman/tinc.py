@@ -183,6 +183,20 @@ class TincConnector(generic.Connector):
 				self.start_run(task)
 		self.save()
 
+	def get_resource_usage(self):
+		if self.state == generic.State.CREATED:
+			disk = 0
+		else:
+			disk = 10000   
+		if self.state == generic.State.STARTED:
+			ports = len(self.connections_all())
+			memory = ( 1200 + 250 * ports ) * 1024
+		else:
+			memory = 0
+			ports = 0
+		return {"disk": disk, "memory": memory, "ports": ports, "public_ips": 0}		
+
+
 class TincConnection(dummynet.EmulatedConnection):
 	tinc_port = models.IntegerField(null=True)
 	gateway = models.CharField(max_length=18, null=True) 

@@ -193,7 +193,6 @@ class KVMDevice(generic.Device):
 				iface.delete()
 		self.save()
 		
-
 	def vnc_password(self):
 		if not self.kvm_id:
 			return "---"
@@ -204,3 +203,16 @@ class KVMDevice(generic.Device):
 		m.update(str(self.vnc_port))
 		m.update(str(self.topology.owner))
 		return m.hexdigest()
+
+	def get_resource_usage(self):
+		if self.state == generic.State.CREATED:
+			disk = 0
+		else:
+			disk = int(self.host.get_result("stat -c %%s /var/lib/vz/images/%s/disk.qcow2" % self.kvm_id))
+		if self.state == generic.State.STARTED:
+			memory = int(self.host.get_result("[ -s /var/run/qemu-server/111.pid ] && cat /proc/`cat /var/run/qemu-server/111.pid`/stat | awk '{print ($24 * 4096)}'" % (self.kvm_id, self.kvm_id)))
+			ports = 1
+		else:
+			memory = 0
+			ports = 0
+		return {"disk": disk, "memory": memory, "ports": ports, "public_ips": 0}		

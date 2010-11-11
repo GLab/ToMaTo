@@ -29,6 +29,9 @@ db_migrate()
 import config, log, generic, topology, hosts, fault, tasks
 import tinc, internet, kvm, openvz
 
+def _resources_info(res):
+	return {"disk": res.disk, "memory": res.memory, "ports": res.ports, "public_ips": res.public_ips}
+
 def _topology_info(top, auth):
 	try:
 		analysis = top.analysis()
@@ -37,11 +40,13 @@ def _topology_info(top, auth):
 	res = {"id": top.id, "name": top.name, "state": top.max_state(),
 		"owner": str(top.owner), "analysis": analysis,
 		"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()], "device_count": len(top.devices_all()),
-		"connectors": [(v.name, _connector_info(v)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
+		"connectors": [(v.name, _connector_info(v, auth)) for v in top.connectors_all()], "connector_count": len(top.connectors_all()),
 		"date_created": top.date_created, "date_modified": top.date_modified, "date_usage": top.date_usage
 		}
 	if auth:
 		task = top.get_task()
+		if top.resources:
+			res.update(resources=_resources_info(top.resources))
 		if task:
 			if task.is_active():
 				res.update(running_task=task.id)
@@ -69,13 +74,15 @@ def _device_info(dev, auth):
 		}
 	if auth:
 		dev = dev.upcast()
+		if dev.resources:
+			res.update(resources=_resources_info(dev.resources))
 		if hasattr(dev, "vnc_port") and dev.vnc_port:
 			res.update(vnc_port=dev.vnc_port)
 		if hasattr(dev, "vnc_password"):
 			res.update(vnc_password=dev.vnc_password())
 	return res
 
-def _connector_info(con):
+def _connector_info(con, auth):
 	state = str(con.state)
 	res = {"id": con.name, "type": con.type,
 		"state": state,
@@ -83,6 +90,9 @@ def _connector_info(con):
 		"is_prepared": state == generic.State.PREPARED,
 		"is_started": state == generic.State.STARTED,
 		}
+	if auth:
+		if con.resources:
+			res.update(resources=_resources_info(con.resources))
 	return res
 
 def _host_info(host):
@@ -431,6 +441,18 @@ def permission_remove(top_id, user_name, user=None):
 	_top_access(top, "owner", user)
 	top.permissions_remove(user_name)
 	return True
+		
+def resource_usage_by_user(user=None):
+	_admin_access(user)
+	usage={}
+	for top in topology.all():
+		if not top.owner in usage:
+			usage[top.owner] = generic.Resources()
+		if top.resources:
+			usage[top.owner].add(top.resources)
+	for owner in usage:
+		usage[owner]=_resources_info(usage[owner])
+	return usage
 		
 def physical_links_get(src_group, dst_group, user=None):
 	return _physical_link_info(hosts.get_physical_link(src_group, dst_group))

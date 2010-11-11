@@ -45,6 +45,8 @@ class Topology(models.Model):
 
 	task = models.CharField(max_length=100, blank=True, null=True)
 
+	resources = models.ForeignKey(generic.Resources, null=True)
+
 	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.timeout_remove_weeks)
@@ -483,7 +485,20 @@ class Topology(models.Model):
 			return self.permissions_get(user.name) == Permission.ROLE_MANAGER
 		if type == Permission.ROLE_USER:
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
-		
+
+	def update_resource_usage(self):
+		if not self.resources:
+			r = generic.Resources()
+			r.save()
+			self.resources = r 
+			self.save()
+		self.resources.clean()
+		for dev in self.devices_all():
+			self.resources.add(dev.update_resource_usage())
+		for con in self.connectors_all():
+			self.resources.add(con.update_resource_usage())
+		self.resources.save()
+			
 class Permission(models.Model):
 	ROLE_USER="user"
 	ROLE_MANAGER="manager"
@@ -511,6 +526,13 @@ def cleanup():
 	for top in all():
 		top.check_timeout()
 
+def update_resource_usage():
+	for top in all():
+		top.update_resource_usage()
+
 cleanup_task = util.RepeatedTimer(300, cleanup)
 cleanup_task.start()
 atexit.register(cleanup_task.stop)
+update_resource_usage_task = util.RepeatedTimer(60, update_resource_usage)
+update_resource_usage_task.start()
+atexit.register(update_resource_usage_task.stop)

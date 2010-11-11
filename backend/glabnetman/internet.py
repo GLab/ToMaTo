@@ -66,3 +66,11 @@ class InternetConnector(generic.Connector):
 	def change_possible(self, dom):
 		pass
 	
+	def get_resource_usage(self):
+		ips = 0
+		for con in self.connections_all():
+			if con.interface.device.state == generic.State.STARTED:
+				ips += 1
+		return {"disk": 0, "memory": 0, "ports": 0, "public_ips": ips}		
+
+	
