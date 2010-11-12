@@ -407,6 +407,7 @@ class Connection(models.Model):
 		host = self.interface.device.host
 		if not host:
 			return
+		self.bridge_name()
 		if not self.bridge_special_name:
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 			#host.execute("brctl delbr %s" % self.bridge_name(), task)
