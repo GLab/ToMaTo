@@ -61,7 +61,7 @@ def run_shell(cmd, pretend=False):
 		cmd.insert(0,"echo")
 	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	res=proc.communicate()
-	return res[0]
+	return (proc.returncode,)+res
 
 def parse_bool(x):
 	"""

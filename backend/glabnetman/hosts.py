@@ -23,7 +23,7 @@ class HostGroup(models.Model):
 	name = models.CharField(max_length=10)
 	
 class Host(models.Model):
-	SSH_COMMAND = ["ssh", "-q", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
+	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
 	group = models.ForeignKey(HostGroup)
@@ -126,7 +126,10 @@ class Host(models.Model):
 			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
 	
 	def _exec(self, cmd):
-		return util.run_shell(cmd, config.remote_dry_run)
+		res = util.run_shell(cmd, config.remote_dry_run)
+		if res[0] == 255:
+			raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
+		return res[1]
 	
 	def execute(self, command, task=None):
 		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
