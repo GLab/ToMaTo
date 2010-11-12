@@ -131,6 +131,7 @@ No captures ready
 		<th>Public IPs</th>
 	</tr>
 {% for name, dev in top.devices %}
+{% if dev.resources %}
 	<tr>
 		<td>{{dev.name}}</td>
 		<td>{{dev.resources.disk|filesizeformat}}</td>
@@ -138,8 +139,10 @@ No captures ready
 		<td>{{dev.resources.ports}}</td>
 		<td>{{dev.resources.public_ips}}</td>
 	</tr>
+{% endif %}
 {% endfor %}
 {% for name, con in top.connectors %}
+{% if con.resources %}
 	<tr>
 		<td>{{con.name}}</td>
 		<td>{{con.resources.disk|filesizeformat}}</td>
@@ -147,7 +150,9 @@ No captures ready
 		<td>{{con.resources.ports}}</td>
 		<td>{{con.resources.public_ips}}</td>
 	</tr>
+{% endif %}
 {% endfor %}
+{% if top.resources %}
 	<tr>
 		<td><b>Total</b></td>
 		<td><b>{{top.resources.disk|filesizeformat}}</b></td>
@@ -155,6 +160,7 @@ No captures ready
 		<td><b>{{top.resources.ports}}</b></td>
 		<td><b>{{top.resources.public_ips}}</b></td>
 	</tr>
+{% endif %}
 </table>
 
 {% if action %}
