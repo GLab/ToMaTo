@@ -26,10 +26,14 @@ class RepeatedTimer(threading.Thread):
 		threading.Thread.__init__(self)
 		self.event = threading.Event()
 		self.daemon = True
+		self.firstRun = True
 	def run(self):
 		while not self.event.isSet():
 			try:
-				self.event.wait(self.timeout)
+				if self.firstRun:
+					self.firstRun = False
+				else:
+					self.event.wait(self.timeout)
 			except:
 				return
 			if not self.event.isSet():
