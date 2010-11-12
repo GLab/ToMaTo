@@ -133,8 +133,8 @@ No captures ready
 {% for name, dev in top.devices %}
 	<tr>
 		<td>{{dev.name}}</td>
-		<td>{{dev.resources.disk|floatformat}} MB</td>
-		<td>{{dev.resources.memory|floatformat}} MB</td>
+		<td>{{dev.resources.disk|filesizeformat}}</td>
+		<td>{{dev.resources.memory|filesizeformat}}</td>
 		<td>{{dev.resources.ports}}</td>
 		<td>{{dev.resources.public_ips}}</td>
 	</tr>
@@ -142,16 +142,16 @@ No captures ready
 {% for name, con in top.connectors %}
 	<tr>
 		<td>{{con.name}}</td>
-		<td>{{con.resources.disk|floatformat}} MB</td>
-		<td>{{con.resources.memory|floatformat}} MB</td>
+		<td>{{con.resources.disk|filesizeformat}}</td>
+		<td>{{con.resources.memory|filesizeformat}}</td>
 		<td>{{con.resources.ports}}</td>
 		<td>{{con.resources.public_ips}}</td>
 	</tr>
 {% endfor %}
 	<tr>
 		<td><b>Total</b></td>
-		<td><b>{{top.resources.disk|floatformat}} MB</b></td>
-		<td><b>{{top.resources.memory|floatformat}} MB</b></td>
+		<td><b>{{top.resources.disk|filesizeformat}}</b></td>
+		<td><b>{{top.resources.memory|filesizeformat}}</b></td>
 		<td><b>{{top.resources.ports}}</b></td>
 		<td><b>{{top.resources.public_ips}}</b></td>
 	</tr>

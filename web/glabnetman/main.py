@@ -57,19 +57,13 @@ physical_links=wrap_rpc(physical_links)
 
 def resource_usage_by_topology(api, request):
 	usage_by_top = api.resource_usage_by_topology()
-	usage=list()
-	import top
-	for t in usage_by_top:
-		usage.append((t, top._adapt_resources(usage_by_top[t])))
+	usage=[(user, usage_by_top[user]) for user in usage_by_top]
 	return render_to_response("admin/resource_usage.html", {"usage": usage})
 resource_usage_by_topology=wrap_rpc(resource_usage_by_topology)
 
 def resource_usage_by_user(api, request):
 	usage_by_user = api.resource_usage_by_user()
-	usage=list()
-	import top
-	for user in usage_by_user:
-		usage.append((user, top._adapt_resources(usage_by_user[user])))
+	usage=[(user, usage_by_user[user]) for user in usage_by_user]
 	return render_to_response("admin/resource_usage.html", {"by_user": True, "usage": usage})
 resource_usage_by_user=wrap_rpc(resource_usage_by_user)
 

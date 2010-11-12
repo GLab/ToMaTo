@@ -24,21 +24,8 @@ from django.core.servers.basehttp import FileWrapper
 from lib import *
 import xmlrpclib, tempfile
 
-def _adapt_resources(res):
-	res["disk"] /= float(1024*1024)
-	res["memory"] /= float(1024*1024)
-	return res
-
 def _display_top(api, top_id, task_id=None, action=None):
 	top=api.top_info(int(top_id))
-	if "resources" in top:
-		top["resources"] = _adapt_resources(top["resources"])
-		for k, dev in top["devices"]:
-			if "resources" in dev:
-				dev["resources"] = _adapt_resources(dev["resources"])
-		for k, con in top["connectors"]:
-			if "resources" in con:
-				con["resources"] = _adapt_resources(con["resources"])
 	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
 
 def index(api, request):
