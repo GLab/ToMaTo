@@ -134,8 +134,8 @@ No captures ready
 {% if dev.resources %}
 	<tr>
 		<td>{{dev.name}}</td>
-		<td>{{dev.resources.disk|filesizeformat}}</td>
-		<td>{{dev.resources.memory|filesizeformat}}</td>
+		<td enhancetable_customkey="{{dev.resources.disk}}">{{dev.resources.disk|filesizeformat}}</td>
+		<td enhancetable_customkey="{{dev.resources.memory}}">{{dev.resources.memory|filesizeformat}}</td>
 		<td>{{dev.resources.ports}}</td>
 		<td>{{dev.resources.public_ips}}</td>
 	</tr>
@@ -145,8 +145,8 @@ No captures ready
 {% if con.resources %}
 	<tr>
 		<td>{{con.name}}</td>
-		<td>{{con.resources.disk|filesizeformat}}</td>
-		<td>{{con.resources.memory|filesizeformat}}</td>
+		<td enhancetable_customkey="{{con.resources.disk}}">{{con.resources.disk|filesizeformat}}</td>
+		<td enhancetable_customkey="{{dev.resources.memory}}">{{con.resources.memory|filesizeformat}}</td>
 		<td>{{con.resources.ports}}</td>
 		<td>{{con.resources.public_ips}}</td>
 	</tr>
@@ -155,8 +155,8 @@ No captures ready
 {% if top.resources %}
 	<tr>
 		<td><b>Total</b></td>
-		<td><b>{{top.resources.disk|filesizeformat}}</b></td>
-		<td><b>{{top.resources.memory|filesizeformat}}</b></td>
+		<td enhancetable_customkey="{{top.resources.disk}}"><b>{{top.resources.disk|filesizeformat}}</b></td>
+		<td enhancetable_customkey="{{top.resources.disk}}"><b>{{top.resources.memory|filesizeformat}}</b></td>
 		<td><b>{{top.resources.ports}}</b></td>
 		<td><b>{{top.resources.public_ips}}</b></td>
 	</tr>
