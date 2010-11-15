@@ -72,16 +72,17 @@ class TincConnector(generic.Connector):
 		for con in self.connections_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			if self.type == "router":
-				table_in = 1000 + 2 * con.id
-				table_out = 1000 + 2 * con.id + 1 
-				host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ), task )
-				host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( con.bridge_name(), table_out ), task )
-				host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ), task )
-				host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ), task )
-				host.execute ( "ip route del table %s default dev %s" % ( table_in, con.bridge_name() ), task )
-				host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ), task )
-			host.execute ( "tincd --net=%s -k" % tincname, task)
+			if host:
+				if self.type == "router":
+					table_in = 1000 + 2 * con.id
+					table_out = 1000 + 2 * con.id + 1
+					host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ), task )
+					host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( con.bridge_name(), table_out ), task )
+					host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ), task )
+					host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ), task )
+					host.execute ( "ip route del table %s default dev %s" % ( table_in, con.bridge_name() ), task )
+					host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ), task )
+				host.execute ( "tincd --net=%s -k" % tincname, task)
 		self.state = generic.State.PREPARED
 		self.save()
 		task.subtasks_done = task.subtasks_done + 1
