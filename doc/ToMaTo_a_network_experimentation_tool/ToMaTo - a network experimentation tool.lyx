@@ -853,9 +853,9 @@ status open
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename ToMaTo1b.pdf
+	filename ToMaTo1b-swd.pdf
 	width 100text%
-	BoundingBox 5bp 3bp 421bp 190bp
+	BoundingBox 10bp 25bp 660bp 420bp
 	clip
 
 \end_inset
@@ -873,8 +873,8 @@ name "fig:top-creator"
 
 \end_inset
 
-Topology creator - Illustration of general structure and screenshot with
- example topology
+Topology creator - Screenshot with example topology and illustration of
+ structure
 \end_layout
 
 \end_inset
