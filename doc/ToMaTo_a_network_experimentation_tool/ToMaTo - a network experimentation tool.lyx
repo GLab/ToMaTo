@@ -852,11 +852,10 @@ sideways false
 status open
 
 \begin_layout Standard
+\align center
 \begin_inset Graphics
 	filename ToMaTo1b-swd.pdf
-	width 100text%
-	BoundingBox 10bp 25bp 660bp 420bp
-	clip
+	width 90text%
 
 \end_inset
 
