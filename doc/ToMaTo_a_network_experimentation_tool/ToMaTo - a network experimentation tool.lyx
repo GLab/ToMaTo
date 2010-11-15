@@ -112,7 +112,7 @@ inst{1}
 
 \end_inset
 
- and Phouc Tran-Gia
+ and Phuoc Tran-Gia
 \begin_inset ERT
 status open
 
@@ -169,6 +169,22 @@ and
 
 \family typewriter
 {david.hock,trangia}@informatik.uni-wuerzburg.de
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+setcounter{footnote}{0}
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -356,7 +372,7 @@ key "DBLP:conf/sigcse/CapposBKA09"
  Users can run algorithms written in a custom python dialect on virtual
  machines across the testbed.
  Since Seattle only supports software that has been written in its custom
- python dialect it is not capable to run any existing software.
+ python dialect, it is not capable to run any existing software.
 \end_layout
 
 \begin_layout Standard
@@ -580,7 +596,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Graphics
-	filename 10.png
+	filename example2.png
 	width 100col%
 
 \end_inset
@@ -589,6 +605,12 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Graphical-topology-editor"
+
+\end_inset
+
 Graphical topology editor
 \end_layout
 
@@ -729,6 +751,171 @@ Other connector types use the Tinc VPN with which devices can be connected
  tools like Wireshark.
 \end_layout
 
+\begin_layout Subsection
+Graphical editor and topology creator
+\end_layout
+
+\begin_layout Standard
+To create topologies consisting of the presented devices and connectors,
+ a graphical editor, see Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Graphical-topology-editor"
+
+\end_inset
+
+, has been included in the web-based front-end.
+ The editor provides a simple drag and drop interface for topology creation
+ as well as configuration menus for all properties of the single network
+ components.
+ Components can be added to the topology by selecting them from the panel
+ on the left hand side of the editor and dragging them to the working area.
+ Components in the topology can be connected to each other by holding down
+ the Ctrl+key and subsequently selecting all icons that should be connected.
+ For instance, two hosts can be connected by connecting both of them to
+ an intermediate hub, switch, or router.
+ The right hand side of the graphical editor provides a property menu where
+ the properties of the currently selected component or interface can be
+ configured.
+ Depending on the selected entity, these properties include among others
+ host IP-adresses, host names, network characteristics, and so on.
+\end_layout
+
+\begin_layout Standard
+Basically, the functionality of the graphical editor described so far is
+ enough to create any topology of any size and complexity.
+ However, if large topologies have to be created, a lot of manual configuration
+ work is necessary
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+For instance, each interface of a host in the topology has to be assigned
+ an IP-address, for each connection between two hosts a switch has to be
+ added.
+\end_layout
+
+\end_inset
+
+.
+ Furthermore, from an illustration point of view, if a network consists
+ of more than a few nodes, it becomes difficult to arrange the icons inside
+ the working area in a way so that the topology structure is still clearly
+ visible.
+ Therefore, the graphical editor has been equipped with an automatic topology
+ creator (TC).
+ The basic idea of TC is to take as much manual work as possible from the
+ user and to automate it.
+ TC allows to (1) automatically create a previously configured number of
+ identical hosts, (2) to arrange these hosts in an ordered way inside the
+ working area and to (3) connect these nodes to each other in a predefined
+ topology structure and with automatically assigned IP-adresses and host
+ names.
+ So far, TC can connect the hosts either in a star topology with a central
+ switch or host, in a ring, or fully-meshed, i.e.
+ each host connected to each of the other hosts.
+ Depending on the selected option, the IP-address subnets and netmasks are
+ automatically configured and the IP-addresses are assigned to the host
+ interfaces subsequently
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Please note that especially this last step is a real advantage of virtually
+ created topologies.
+ In reality, when a network is setup out of real physical nodes, there is
+ actually no possibility to remotely and automatically preconfigure all
+ IP-addresses.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename ToMaTo1b.pdf
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:top-creator"
+
+\end_inset
+
+Topology creator - Illustration of general structure and screenshot with
+ example topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With TC, it is not only possible to create new hosts and connect them, but
+ it is also possible to connect (and auto-configure) already existing nodes
+ in the network.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:top-creator"
+
+\end_inset
+
+ illustrates the benefits of this functionality both in a general structure
+ and in a concrete example topology.
+ TC allows to easily create any kind of hierarchically structured topology.
+ The procedure starts bottom-up by creating all of the subtopologies (subtopolog
+y 
+\begin_inset Formula $1,\,2,\,\dots,\, i,\,\dots,\, n$
+\end_inset
+
+) with desired node count, connection type and IP-subrange.
+ Hereby, TC allows to select the area of the working are where the subtopology
+ should be put.
+ In a second step (gateway) hosts of the different subtopologies are selected
+ and connected to each other to create a topology on top of the subtopologies.
+ These steps can be repeated arbitrarily often to design a final topology
+ of several hierarchical layers.
+ In the example displayed in the screenshot in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:top-creator"
+
+\end_inset
+
+, a 5-host star topology around a sixth host, a 4-host fullmesh, and a 6-host
+ ring are connected to each other by selecting one host of each subtopology
+ and fully meshing these hosts.
+ 
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -798,9 +985,9 @@ experiments: This kind of experiment considers the lower networking layers
  An example for this experiment class are mobile handover protocols.
  These experiments need access to real hardware, they often need to run
  custom operating systems (e.g.
- with real-time support) and they need heterogeneous access technology (3G,
- Wifi, Fiber, etc.).
- In most cases these requirements can only be fulfilled with custom testbeds
+ with real-time support) and they need heterogeneous access technologies
+ (3G, Wifi, Fiber, etc.).
+ In most cases, these requirements can only be fulfilled with custom testbeds,
  so supporting this kind of experiment was no design goal for ToMaTo.
 \end_layout
 
@@ -852,17 +1039,18 @@ experiments: These experiments contain legacy software, i.e.
  Examples of this software are Skype and Windows.
  The experiments with this software often need special operating system
  environments including Internet access and link emulation.
- In turn these experiments normally do not need big or complex network topologie
-s.
+ In turn, these experiments normally do not need big or complex network
+ topologies.
 \end_layout
 
 \begin_layout Standard
-Experience of the German-Lab experimental facility show that most experiments
+Experiences of the German-Lab experimental facility show that most experiments
  can be categorized fairly well with this scheme.
  Some few experiments have two experiment classes and thus have requirements
  of both classes.
  The requirements of the classes are very heterogeneous but a general trade-off
  between more resource access and access to more resources becomes evident.
+ {{Satz umformulieren}}
 \end_layout
 
 \begin_layout Subsection
@@ -886,8 +1074,8 @@ reference "sec:Types-of-experiments"
 
  except for access layer experiments because these experiments need a specialize
 d experimental facility depending on the access technology.
- Wisebed and the DES testbed are specialized experimental facilities for
- sensor networks and wifi.
+ Wisebed and the DES testbed for example are specialized experimental facilities
+ for sensor networks and wifi.
 \end_layout
 
 \begin_layout Standard
@@ -905,9 +1093,9 @@ Network layer experiments can be done easily in ToMaTo using KVM devices
 \begin_layout Standard
 Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
  and switch or router connectors.
- Since OpenVZ devices are very lightweight, high numbers of devices can
+ Since OpenVZ devices are very lightweight, a high number of devices can
  be used in topologies.
- Using an Internet connector even external resources like Planet-Lab nodes
+ Using an Internet connector, even external resources like Planet-Lab nodes
  can be included in the experiment.
  The topology creator makes it very easy to design huge experiments with
  ring or star topologies.
@@ -940,7 +1128,7 @@ Efficiency and scalability
 \begin_layout Standard
 With ToMaTo, users can choose between OpenVZ and KVM virtualization.
  This way users can get the level of access that is needed for their experiments
- and still use as less resources as possible.
+ and still use as few resources as possible.
  A modern cluster node can handle up to 250 OpenVZ devices and up to 50
  KVM devices, both depending on device usage.
  The connector components only pose a very small overhead and can handle
@@ -976,7 +1164,7 @@ Conclusion & future work
 \end_layout
 
 \begin_layout Standard
-As shown in section 
+{{ToMaTo nochmal in 1-2 Sätzen erklären}}As shown in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Evaluation"
@@ -994,8 +1182,8 @@ reference "sec:Evaluation"
 \begin_layout Standard
 In the German-Lab experimental facility currently 20 of 182 hosts are ToMaTo-ena
 bled.
- The goal is to increase this number to about 50 and thereby increase its
- usability.
+ The goal is to increase this number to about 50 and thereby increase the
+ usability of the testbed.
  Early plans exist to integrate support for Openflow hardware and software
  to allow even complexer network topologies.
 \end_layout
