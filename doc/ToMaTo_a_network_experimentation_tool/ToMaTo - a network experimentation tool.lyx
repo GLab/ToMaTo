@@ -466,7 +466,14 @@ Architecture
 ToMaTo uses virtualization technologies to allow experiments to run concurrently
  in isolated environments spanning parts of the experimental facility.
  ToMaTo consists of three modules, the host hypervisor, the central back-end
- and the web-based front-end.
+ and the web-based front-end as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:ToMaTo-structure"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -528,6 +535,12 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:ToMaTo-structure"
+
+\end_inset
+
 ToMaTo structure
 \end_layout
 
@@ -573,6 +586,22 @@ The back-end offers an XML interface to be used by front-end tools.
  The main ToMaTo front-end consists of a website that allows users to create
  and edit their topologies using a graphical editor and to manage the topologies
 , devices and connectors.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Graphical-topology-editor"
+
+\end_inset
+
+ shows the ToMaTo website icluding the graphical editor, which is described
+ in subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Graphical-editor-and"
+
+\end_inset
+
+.
  Users can also access their devices using a built-in VNC
 \begin_inset Foot
 status open
@@ -651,10 +680,6 @@ VNC access to a KVM device
 
 \end_layout
 
-\begin_layout Standard
-{{TODO Topology creator (David)}}
-\end_layout
-
 \begin_layout Subsection
 Device types & capabilities
 \end_layout
@@ -700,10 +725,7 @@ Kernel-based Virtual Machine
  it also has a higher cost in terms of memory usage and performance reduction.
  ToMaTo offers both virtualization choices to the users to allow maximal
  flexibility for their experiments.
-\end_layout
-
-\begin_layout Standard
-For both virtualization solutions ToMaTo offers pre-built virtual machines
+ For both virtualization solutions ToMaTo offers pre-built virtual machines
  called templates.
  The users can choose between various Linux distributions in 32 and 64 bit
  architectures.
@@ -737,10 +759,7 @@ internet
  other testbed resources can be connected to ToMaTo topologies.
  The Internet does not allow any QOS guarantees and due to technical reasons
  no QOS limitations can be set on this connector type.
-\end_layout
-
-\begin_layout Standard
-Other connector types use the Tinc VPN with which devices can be connected
+ Other connector types use the Tinc VPN with which devices can be connected
  in private networks that are not connected to each others nor to the Internet.
  Users can choose between hub, switch and router semantics in this private
  network.
@@ -752,12 +771,18 @@ Other connector types use the Tinc VPN with which devices can be connected
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Graphical-editor-and"
+
+\end_inset
+
 Graphical editor and topology creator
 \end_layout
 
 \begin_layout Standard
 To create topologies consisting of the presented devices and connectors,
- a graphical editor, see Figure 
+ a graphical editor, see figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Graphical-topology-editor"
@@ -778,26 +803,14 @@ reference "fig:Graphical-topology-editor"
  the properties of the currently selected component or interface can be
  configured.
  Depending on the selected entity, these properties include among others
- host IP-adresses, host names, network characteristics, and so on.
+ host IP-addresses, host names, network characteristics, and so on.
 \end_layout
 
 \begin_layout Standard
 Basically, the functionality of the graphical editor described so far is
  enough to create any topology of any size and complexity.
  However, if large topologies have to be created, a lot of manual configuration
- work is necessary
-\begin_inset Foot
-status open
-
-\begin_layout Plain Layout
-For instance, each interface of a host in the topology has to be assigned
- an IP-address, for each connection between two hosts a switch has to be
- added.
-\end_layout
-
-\end_inset
-
-.
+ work is necessary.
  Furthermore, from an illustration point of view, if a network consists
  of more than a few nodes, it becomes difficult to arrange the icons inside
  the working area in a way so that the topology structure is still clearly
@@ -806,11 +819,10 @@ For instance, each interface of a host in the topology has to be assigned
  creator (TC).
  The basic idea of TC is to take as much manual work as possible from the
  user and to automate it.
- TC allows to (1) automatically create a previously configured number of
- identical hosts, (2) to arrange these hosts in an ordered way inside the
- working area and to (3) connect these nodes to each other in a predefined
- topology structure and with automatically assigned IP-adresses and host
- names.
+ TC allows to automatically create a previously configured number of identical
+ hosts, to arrange these hosts in an ordered way inside the working area
+ and to connect these nodes to each other in a predefined topology structure
+ and with automatically assigned IP-addresses and host names.
  So far, TC can connect the hosts either in a star topology with a central
  switch or host, in a ring, or fully-meshed, i.e.
  each host connected to each of the other hosts.
@@ -843,6 +855,8 @@ status open
 \begin_inset Graphics
 	filename ToMaTo1b.pdf
 	width 100text%
+	BoundingBox 5bp 3bp 421bp 190bp
+	clip
 
 \end_inset
 
@@ -903,16 +917,16 @@ y
  and connected to each other to create a topology on top of the subtopologies.
  These steps can be repeated arbitrarily often to design a final topology
  of several hierarchical layers.
- In the example displayed in the screenshot in 
+ In the example displayed in the screenshot in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:top-creator"
 
 \end_inset
 
-, a 5-host star topology around a sixth host, a 4-host fullmesh, and a 6-host
- ring are connected to each other by selecting one host of each subtopology
- and fully meshing these hosts.
+, a 5-host star topology around a sixth host, a 4-host full mesh, and a
+ 6-host ring are connected to each other by selecting one host of each subtopolo
+gy and fully meshing these hosts.
  
 \end_layout
 
@@ -1050,7 +1064,7 @@ Experiences of the German-Lab experimental facility show that most experiments
  of both classes.
  The requirements of the classes are very heterogeneous but a general trade-off
  between more resource access and access to more resources becomes evident.
- {{Satz umformulieren}}
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -1164,14 +1178,9 @@ Conclusion & future work
 \end_layout
 
 \begin_layout Standard
-{{ToMaTo nochmal in 1-2 Sätzen erklären}}As shown in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:Evaluation"
-
-\end_inset
-
-, ToMaTo fits for a wide range of experiments identified as common in the
+ToMaTo allows its users to design, manage and use networking topologies
+ for use in network research.
+ ToMaTo fits for a wide range of experiments identified as common in the
  context of the German-Lab project.
  The design of the experimental facility software offers efficiency and
  scalability.
