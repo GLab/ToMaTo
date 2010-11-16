@@ -50,10 +50,10 @@ def edit(api, request):
 	action = request.REQUEST["action"] 
 	if action=="add":
 		task_id = api.host_add(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
-		return render_to_response("admin/host_detail.html", {"task_id": task_id, "hostname": hostname})
+		return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": hostname})
 	else:
 		api.host_change(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
-		return index(request)
+		return detail(request, hostname)
 edit=wrap_rpc(edit)
 
 def check(api, request, hostname):

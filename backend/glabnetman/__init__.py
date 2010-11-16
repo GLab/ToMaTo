@@ -87,7 +87,7 @@ def _device_info(dev, auth):
 
 def _connector_info(con, auth):
 	state = str(con.state)
-	res = {"name": con.name, "type": con.type,
+	res = {"name": con.name, "type": ("special: %s" % con.upcast().feature_type if con.is_special() else con.type),
 		"state": state,
 		"is_created": state == generic.State.CREATED,
 		"is_prepared": state == generic.State.PREPARED,

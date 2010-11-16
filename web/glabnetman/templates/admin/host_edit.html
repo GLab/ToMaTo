@@ -3,7 +3,7 @@
 {% block content %}
 {% if task_id %}
 <h1>Adding {{hostname}}</h1>
-<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}"></iframe>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url host.detail hostname=hostname%}"></iframe>
 {% else %}
 {% if host %}
 <h1>Edit host {{host.name}}</h1>

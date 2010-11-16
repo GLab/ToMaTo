@@ -341,9 +341,10 @@ def get_best_host(group, device=None):
 				sf = iface.connection.connector.upcast()
 				if sf.is_special():
 					if sf.feature_group:
-						all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group)
+						all = all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
 					else:
-						all.filter(specialfeature__feature_type=sf.feature_type)
+						all = all.filter(specialfeature__feature_type=sf.feature_type).distinct()
+					print all
 	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
