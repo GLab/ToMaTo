@@ -144,6 +144,11 @@ class KVMDevice(generic.Device):
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		iface = generic.Interface()
+		try:
+			if self.interfaces_get(name):
+				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
+		except:
+			pass
 		iface.name = name
 		iface.device = self
 		if self.state == "prepared":

@@ -257,11 +257,11 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				for (int i = 0; i < devices.size(); i++) {
 					Device d=devices.get(i);
 					Connection con = (el1).createConnection(d);
-					workArea.add(con);
 					Interface iface = (d).createInterface(con);
 					iface.setProperty("ip", ipPrefix.getText() + (i+1) + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
+					workArea.add(con);
 				}
 				break;
 				
@@ -280,20 +280,20 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					Device d1 = devices.get(i);
 					Device d2 = devices.get((i + 1) % number);
 					Connection con = (el1).createConnection(d1);
-					workArea.add(con);
 					Interface iface = (d1).createInterface(con);
 					iface
 							.setProperty("ip", ipPrefix.getText() + (i + 1)
 									+ ".1" + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
+					workArea.add(con);
 					Connection con2 = (el1).createConnection(d2);
-					workArea.add(con2);
 					Interface iface2 = (d2).createInterface(con2);
 					iface2.setProperty("ip", ipPrefix.getText() + (i + 1)
 							+ ".2" + "/24");
 					con2.setIface(iface2);
 					workArea.add(iface2);
+					workArea.add(con2);
 				}
 				break;
 
@@ -311,19 +311,19 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 						int d2i = j;
 						workArea.add(el1);
 						Connection con = (el1).createConnection(d1);
-						workArea.add(con);
 						Interface iface = (d1).createInterface(con);
 						iface.setProperty("ip", ipPrefix.getText()
 								+ Math.min(d1i * 16 + d2i, 254) + ".1" + "/24");
 						con.setIface(iface);
 						workArea.add(iface);
+						workArea.add(con);
 						Connection con2 = (el1).createConnection(d2);
-						workArea.add(con2);
 						Interface iface2 = (d2).createInterface(con2);
 						iface2.setProperty("ip", ipPrefix.getText()
 								+ Math.min(d1i * 16 + d2i, 254) + ".2" + "/24");
 						con2.setIface(iface2);
 						workArea.add(iface2);
+						workArea.add(con2);
 					}
 				}
 				break;
@@ -344,19 +344,19 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					el1.move(x, y);
 					workArea.add(el1);
 					Connection con = (el1).createConnection(d1);
-					workArea.add(con);
 					Interface iface = (d1).createInterface(con);
 					iface.setProperty("ip", ipPrefix.getText()
 							+ (i+1) + ".2" + "/24");
 					con.setIface(iface);
 					workArea.add(iface);
+					workArea.add(con);
 					Connection con2 = (el1).createConnection(el3);
-					workArea.add(con2);
 					Interface iface2 = (el3).createInterface(con2);
 					iface2.setProperty("ip", ipPrefix.getText()
 							+ (i+1) + ".1" + "/24");
 					con2.setIface(iface2);
 					workArea.add(iface2);
+					workArea.add(con2);
 				}
 				break;
 				
@@ -378,11 +378,11 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				for (int i = 0; i < devices.size(); i++) {
 					Device d = devices.get(i);
 					Connection con2 = (myinternet).createConnection(d);
-					workArea.add(con2);
 					Interface iface2 = (d).createInterface(con2);
 					iface2.setProperty("usedhcp", "true");
 					con2.setIface(iface2);
 					workArea.add(iface2);
+					workArea.add(con2);
 				}
 			}
 						
