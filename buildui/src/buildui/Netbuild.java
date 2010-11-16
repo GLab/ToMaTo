@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.util.*;
 import java.net.*;
 
-import buildui.connectors.InternetConnector;
 import buildui.connectors.Connection;
 import buildui.connectors.Connector;
 import buildui.connectors.EmulatedConnection;
@@ -617,7 +616,6 @@ public void mouseEntered (MouseEvent e) {
       HubConnector.init(me);
       SwitchConnector.init(me);
       RouterConnector.init(me);
-      InternetConnector.init(me);
       Interface.init(me);
       ConfiguredInterface.init(me);
       Device.init(me);

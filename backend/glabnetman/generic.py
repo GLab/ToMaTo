@@ -160,7 +160,7 @@ class Device(models.Model):
 	def destroy(self):
 		for iface in self.interfaces_all():
 			con = iface.connection.connector
-			if not con.type == "real" and not con.state == State.CREATED:
+			if not con.is_special() and not con.state == State.CREATED:
 				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -238,7 +238,7 @@ class Interface(models.Model):
 		
 
 class Connector(models.Model):
-	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('real', 'Real network') )
+	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('special', 'Special feature') )
 	name = models.CharField(max_length=20)
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
@@ -262,14 +262,9 @@ class Connector(models.Model):
 	def is_special(self):
 		return self.type=='special'
 
-	def is_internet(self):
-		return self.type=='real'
-
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnector.upcast()
-		if self.is_internet():
-			return self.internetconnector.upcast()
 		if self.is_special():
 			return self.specialfeatureconnector.upcast()
 		return self

@@ -74,7 +74,7 @@ class Topology(models.Model):
 	def max_state(self):
 		max_state = generic.State.CREATED
 		for con in self.connectors_all():
-			if not con.is_internet():
+			if not con.is_special():
 				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 					max_state = generic.State.PREPARED
 				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):

@@ -34,7 +34,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import buildui.connectors.Connection;
-import buildui.connectors.InternetConnector;
+import buildui.connectors.SpecialFeatureConnector;
 import buildui.connectors.SwitchConnector;
 import buildui.devices.Device;
 import buildui.devices.Interface;
@@ -51,7 +51,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 	private static WorkArea workArea;
 	private static ArrayList<Device> devices=new ArrayList<Device>();
 
-	private static InternetConnector myinternet;
+	private static SpecialFeatureConnector myinternet;
 
 	private static int middlex=275;
 	private static int middley=275;
@@ -371,7 +371,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 			if (((String) publicIP.getSelectedItem()).equals("yes")) {
 				if (myinternet==null)
 				{
-					myinternet = new InternetConnector("Internet");
+					myinternet = new SpecialFeatureConnector("Internet", "internet");
 					myinternet.move(275,275);
 					workArea.add(myinternet);
 					}

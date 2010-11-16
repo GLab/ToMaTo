@@ -32,7 +32,7 @@ TOP1 = '''
 		<interface id="eth2"/>
 		<interface id="eth3"/>
 	</device>
-	<connector id="internet" type="real">
+	<connector id="internet" type="special" feature_type="internet">
 		<connection device="ovz1" interface="eth0"/>
 		<connection device="kvm1" interface="eth0"/>
 	</connector>

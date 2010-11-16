@@ -79,11 +79,8 @@ class Modification():
 		
 		elif self.type == "connector-create":
 			type = self.properties["type"]
-			import internet, tinc, special
-			if type == "real":
-				con = internet.InternetConnector()
-				con.state = generic.State.STARTED
-			elif type == "special":
+			import tinc, special
+			if type == "special":
 				con = special.SpecialFeatureConnector()
 				con.state = generic.State.STARTED
 			elif type == "hub" or type =="switch" or type == "router":
@@ -106,7 +103,7 @@ class Modification():
 			con.configure(self.properties, task)
 		elif self.type == "connector-delete":
 			con = top.connectors_get(self.element).upcast()
-			if not con.type == "real": 
+			if not con.is_special(): 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		

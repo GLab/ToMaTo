@@ -27,7 +27,7 @@ def db_migrate():
 db_migrate()
 
 import config, log, generic, topology, hosts, fault, tasks
-import tinc, internet, kvm, openvz
+import tinc, kvm, openvz
 
 def _resources_info(res):
 	return {"disk": str(res.disk), "memory": str(res.memory), "ports": res.ports, "public_ips": res.public_ips}

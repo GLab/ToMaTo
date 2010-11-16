@@ -60,9 +60,13 @@ public class SpecialFeatureConnector extends Connector {
   }
 
   public SpecialFeatureConnector (String newName) {
+    this(newName, "special");
+  }
+
+  public SpecialFeatureConnector (String newName, String type) {
     super(newName, "/icons/special.png");
     num++;
-    setProperty("feature_type", "special");
+    setProperty("feature_type", type);
   }
 
   public NetElement createAnother () {

@@ -81,7 +81,7 @@ def _check_connectors_connection_count(top,res):
 	for connector in top.connectors_all():
 		if len(connector.connections_all())==0:
 			res.problems.append("Connector %s is not connected" % connector.name)
-		if len(connector.connections_all())==1 and not (connector.is_internet() or connector.is_special()):
+		if len(connector.connections_all())==1 and not connector.is_special():
 			res.warnings.append("Connector %s is only connected once" % connector.name)
 			
 def _check_connectors_ip_structure(top,res):
@@ -97,7 +97,7 @@ def _check_connectors_ip_structure(top,res):
 						ip_addresses.add(ip)
 				if connection.interface.configuredinterface.use_dhcp:
 					dhcp_clients.add(connection.interface.device.name)
-		if len(dhcp_clients)>0 and not (connector.is_internet() or connector.is_special()):
+		if len(dhcp_clients)>0 and not connector.is_special():
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, ", ".join(dhcp_clients) ) )
 				
 def _check_connection_performance(top,res):
