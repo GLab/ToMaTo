@@ -204,6 +204,9 @@ def special_features_remove(host_name, feature_type, feature_group, user=None):
 	host.special_features_remove(feature_type, feature_group)
 	return True
 
+def special_features_map(user=None):
+	return hosts.special_feature_map()
+
 def _parse_xml(xml, root_tag):
 	try:
 		from xml.dom import minidom

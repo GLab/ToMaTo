@@ -458,3 +458,12 @@ def host_check(host):
 	t.subtasks_total = 7
 	t.start()
 	return t.id
+
+def special_feature_map():
+	features={}
+	for sf in SpecialFeature.objects.all():
+		if not sf.feature_type in features:
+			features[sf.feature_type] = []
+		if not sf.feature_group in features[sf.feature_type]:
+			features[sf.feature_type].append(sf.feature_group)
+	return features

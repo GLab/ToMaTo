@@ -43,12 +43,14 @@ def create(api, request):
 	if not request.REQUEST.has_key("xml"):
 		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 		tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+		sf=api.special_features_map()
+		special_features=",".join([f+":"+("|".join(sf[f])) for f in sf])
 		host_groups=",".join(api.host_groups())
 		if not request.REQUEST.has_key("editor"):
 			editor = "ui"
 		else:
 			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "edit": True})
+		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, "edit": True})
 	xml=request.REQUEST["xml"]
 	format="spec"
 	if request.REQUEST.has_key("format"):
@@ -128,12 +130,14 @@ def edit(api, request, top_id):
 		xml=api.top_get(int(top_id))
 		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 		tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+		sf = api.special_features_map()
+		special_features=",".join([f+":"+("|".join(sf[f])) for f in sf])
 		host_groups=",".join(api.host_groups())
 		if not request.REQUEST.has_key("editor"):
 			editor = "ui"
 		else:
 			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, 'edit':True} )
+		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
 	xml=request.REQUEST["xml"]
 	task_id=api.top_modify(int(top_id), xml)
 	return _display_top(api, top_id, task_id, "Change topology")
@@ -151,7 +155,7 @@ def show(api, request, top_id):
 		format = request.REQUEST["format"]
 	if format == "plain":
 		return HttpResponse(xml, mimetype="text/plain")		
-	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': ""} )
+	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
 show=wrap_rpc(show)
 
 def remove(api, request, top_id):

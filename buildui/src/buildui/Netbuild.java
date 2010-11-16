@@ -40,6 +40,7 @@ import buildui.connectors.EmulatedConnection;
 import buildui.connectors.EmulatedRouterConnection;
 import buildui.connectors.HubConnector;
 import buildui.connectors.RouterConnector;
+import buildui.connectors.SpecialFeatureConnector;
 import buildui.connectors.SwitchConnector;
 import buildui.devices.ConfiguredInterface;
 import buildui.devices.Device;
@@ -622,6 +623,7 @@ public void mouseEntered (MouseEvent e) {
       Device.init(me);
       KvmDevice.init(me);
       OpenVzDevice.init(me);
+      SpecialFeatureConnector.init(me);
       Modification.clear();
 
       mouseDown = false;

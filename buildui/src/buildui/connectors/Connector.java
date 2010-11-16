@@ -34,6 +34,7 @@ public abstract class Connector extends IconElement {
 
   public static Connector readFrom (Element x_con) {
     String type = x_con.getAttribute("type");
+    if ( type.equals("special") ) return SpecialFeatureConnector.readFrom(x_con);
     if ( type.equals("real") ) return InternetConnector.readFrom(x_con);
     if ( type.equals("hub") ) return HubConnector.readFrom(x_con);
     if ( type.equals("switch") ) return SwitchConnector.readFrom(x_con);

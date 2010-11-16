@@ -33,7 +33,7 @@ import buildui.Netbuild;
 
 abstract public class IconElement extends NetElement implements ImageObserver {
 
-  Image icon;
+  protected Image icon;
 
   protected Image loadIcon (String iconName) {
     return Netbuild.getImage(iconName);
