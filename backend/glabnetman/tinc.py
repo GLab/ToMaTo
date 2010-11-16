@@ -191,7 +191,7 @@ class TincConnector(generic.Connector):
 		else:
 			memory = 0
 			ports = 0
-		return {"disk": disk, "memory": memory, "ports": ports, "public_ips": 0}		
+		return {"disk": disk, "memory": memory, "ports": ports, "special": 0}		
 
 
 class TincConnection(dummynet.EmulatedConnection):

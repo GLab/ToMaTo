@@ -98,12 +98,11 @@ class SpecialFeatureConnector(generic.Connector):
 		con.delete()
 
 	def get_resource_usage(self):
-		#FIXME: calculate depending on type
-		ips = 0
+		special = 0
 		for con in self.connections_all():
 			if con.interface.device.state == generic.State.STARTED:
-				ips += 1
-		return {"disk": 0, "memory": 0, "ports": 0, "public_ips": 0}		
+				special += 1
+		return {"disk": 0, "memory": 0, "ports": 0, "special": special}		
 
 	def bridge_name(self, interface):
 		if not interface.device.host:

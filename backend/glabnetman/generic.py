@@ -41,19 +41,19 @@ class Resources(models.Model):
 	disk = models.IntegerField(default=0)
 	memory = models.IntegerField(default=0)
 	ports = models.IntegerField(default=0)
-	public_ips = models.IntegerField(default=0)
+	special = models.IntegerField(default=0)
 	
 	def clean(self):
 		self.disk = 0
 		self.memory = 0
 		self.ports = 0
-		self.public_ips = 0
+		self.special = 0
 	
 	def add(self, res):
 		self.disk += res.disk
 		self.memory += res.memory
 		self.ports += res.ports
-		self.public_ips += res.public_ips
+		self.special += res.special
 
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
@@ -206,7 +206,7 @@ class Device(models.Model):
 		self.resources.memory = res["memory"]
 		self.resources.disk = res["disk"]
 		self.resources.ports = res["ports"]
-		self.resources.public_ips = res["public_ips"]
+		self.resources.special = res["special"]
 		self.resources.save()
 		return self.resources
 
@@ -365,7 +365,7 @@ class Connector(models.Model):
 		self.resources.memory = res["memory"]
 		self.resources.disk = res["disk"]
 		self.resources.ports = res["ports"]
-		self.resources.public_ips = res["public_ips"]
+		self.resources.special = res["special"]
 		self.resources.save()
 		return self.resources
 	
@@ -376,7 +376,6 @@ class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
 	bridge_id = models.IntegerField(null=True)
-	bridge_special_name = models.CharField(max_length=50, null=True)
 
 	def is_emulated(self):
 		try:

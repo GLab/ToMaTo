@@ -10,7 +10,7 @@
 		<th>Disk space</th>
 		<th>Memory</th>
 		<th>Ports</th>
-		<th>Public IPs</th>
+		<th>Special</th>
 	</tr>
 {% for name, res in usage %}
 	<tr>
@@ -18,7 +18,7 @@
 		<td enhancetable_customkey="{{res.disk}}">{{res.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.memory}}">{{res.memory|filesizeformat}}</td>
 		<td>{{res.ports}}</td>
-		<td>{{res.public_ips}}</td>
+		<td>{{res.special}}</td>
 	</tr>
 {% endfor %}
 </table>{% endblock %}

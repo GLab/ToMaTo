@@ -128,7 +128,7 @@ No captures ready
 		<th>Disk space</th>
 		<th>Memory</th>
 		<th>Ports</th>
-		<th>Public IPs</th>
+		<th>Special</th>
 	</tr>
 {% for name, dev in top.devices %}
 {% if dev.resources %}
@@ -137,7 +137,7 @@ No captures ready
 		<td enhancetable_customkey="{{dev.resources.disk}}">{{dev.resources.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{dev.resources.memory}}">{{dev.resources.memory|filesizeformat}}</td>
 		<td>{{dev.resources.ports}}</td>
-		<td>{{dev.resources.public_ips}}</td>
+		<td>{{dev.resources.special}}</td>
 	</tr>
 {% endif %}
 {% endfor %}
@@ -148,7 +148,7 @@ No captures ready
 		<td enhancetable_customkey="{{con.resources.disk}}">{{con.resources.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{dev.resources.memory}}">{{con.resources.memory|filesizeformat}}</td>
 		<td>{{con.resources.ports}}</td>
-		<td>{{con.resources.public_ips}}</td>
+		<td>{{con.resources.special}}</td>
 	</tr>
 {% endif %}
 {% endfor %}
@@ -158,7 +158,7 @@ No captures ready
 		<td enhancetable_customkey="{{top.resources.disk}}"><b>{{top.resources.disk|filesizeformat}}</b></td>
 		<td enhancetable_customkey="{{top.resources.disk}}"><b>{{top.resources.memory|filesizeformat}}</b></td>
 		<td><b>{{top.resources.ports}}</b></td>
-		<td><b>{{top.resources.public_ips}}</b></td>
+		<td><b>{{top.resources.special}}</b></td>
 	</tr>
 {% endif %}
 </table>

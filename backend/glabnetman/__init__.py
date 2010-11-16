@@ -30,7 +30,7 @@ import config, log, generic, topology, hosts, fault, tasks
 import tinc, kvm, openvz
 
 def _resources_info(res):
-	return {"disk": str(res.disk), "memory": str(res.memory), "ports": res.ports, "public_ips": res.public_ips}
+	return {"disk": str(res.disk), "memory": str(res.memory), "ports": res.ports, "special": res.special}
 
 def _topology_info(top, auth, detail):
 	res = {"id": top.id, "name": top.name, "state": top.max_state(), "owner": str(top.owner),
