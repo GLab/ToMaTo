@@ -1,8 +1,12 @@
 package buildui.connectors;
 
+import buildui.paint.DropDownField;
+import buildui.paint.EditElement;
 import buildui.paint.MagicTextField;
 import buildui.paint.PropertiesArea;
 import buildui.paint.NetElement;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
@@ -33,10 +37,23 @@ public class SpecialFeaturePropertiesArea extends PropertiesArea {
     return "Special feature properties";
   }
 
+  protected DropDownField groupDD ;
+  protected EditElement typeDD ;
+
   public SpecialFeaturePropertiesArea () {
     super();
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
-    addSelectProperty("feature_type", "type:", SpecialFeatureConnector.types, "");
-    addSelectProperty("feature_group", "group:", SpecialFeatureConnector.groups, "<auto>");
+    typeDD = addSelectProperty("feature_type", "type:", SpecialFeatureConnector.types, "");
+    groupDD = addSelectProperty("feature_group", "group:", new String[0], "<auto>");
+  }
+
+  @Override
+  public void valueChanged(EditElement el, String newValue) {
+    System.out.println (el);
+    if ( el.equals(typeDD) ) {
+        List<String> options = SpecialFeatureConnector.groups.get(newValue);
+        if (options == null) options = new ArrayList<String>();
+        groupDD.changeOptions(options);
+    }
   }
 };

@@ -24,8 +24,11 @@ import buildui.paint.NetElement;
 
 import buildui.paint.PropertiesArea;
 import java.applet.Applet;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import org.w3c.dom.Element;
 
 public class SpecialFeatureConnector extends Connector {
@@ -33,16 +36,19 @@ public class SpecialFeatureConnector extends Connector {
   static int num;
   static PropertiesArea propertiesArea ;
   static HashSet<String> types = new HashSet<String>();
-  static HashSet<String> groups = new HashSet<String>();
+  static HashMap<String, List<String>> groups = new HashMap<String, List<String>>();
 
   public static void init ( Applet parent ) {
     types.clear();
     groups.clear();
-    groups.add("<auto>");
     if (parent.getParameter("special_features").length() >= 2) {
         for (String f: parent.getParameter("special_features").split(",")) {
-            types.add(f.split(":")[0]);
-            groups.addAll(Arrays.asList(f.split(":")[1].split("\\|")));
+            String type = f.split(":")[0];
+            types.add(type);
+            ArrayList<String> list = new ArrayList<String> ();
+            list.add("<auto>");
+            list.addAll(Arrays.asList(f.split(":")[1].split("\\|")));
+            groups.put(type, list);
         }
     }
     num = 0;
@@ -102,14 +108,11 @@ public class SpecialFeatureConnector extends Connector {
   public void onPropertyChanged(String property, String oldValue, String newValue) {
       if (property.equals("feature_type")) {
           properties.put(property, newValue);
-          System.out.println (oldValue + "->" + newValue);
           String newName = getName().replace(oldValue, newValue);
           if ( ! getName().equals(newName) ) {
               super.onNameChanged(getName(), newName);
               setName(newName);
           }
-          System.out.println(getName());
-          System.out.println(getImage());
           icon = loadIcon(getImage());
           Netbuild.redrawAll();
       }

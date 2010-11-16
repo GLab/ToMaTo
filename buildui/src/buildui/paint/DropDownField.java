@@ -30,8 +30,10 @@ public class DropDownField implements EditElement, ItemListener {
   private boolean wasAuto;
   private static Color darkGreen = new Color(0.0f, 0.33f, 0.0f);
   private Collection<String> options ;
+  private PropertiesArea parent;
 
   public DropDownField(final PropertiesArea parent, String name, Collection<String> options, final String def) {
+    this.parent = parent;
     dropDown = new Choice();
     this.options = options ;
     dropDown.addItemListener(this);
@@ -85,6 +87,16 @@ public class DropDownField implements EditElement, ItemListener {
       dropDown.setForeground(Color.black);
       if (wasAuto) wasAuto = false;
     }
+    parent.valueChanged(this, getValue());
+  }
+
+  public void changeOptions(Collection<String> options) {
+    this.options = options;
+    dropDown.removeAll();
+    String t = getValue();
+    if ( ! options.contains(t) && t != null ) dropDown.add(t);
+    for ( String s : options ) dropDown.addItem(s);
+    dropDown.select(t);
   }
 
 }

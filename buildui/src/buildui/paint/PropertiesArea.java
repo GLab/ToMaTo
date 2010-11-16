@@ -95,33 +95,36 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
 
 // NEW CODE FROM HERE ON (owned by University of Kaiserslautern)
   
-  public void addTextProperty (String name, String desc, String pattern, String def) {
+  public EditElement addTextProperty (String name, String desc, String pattern, String def) {
     Property p = new Property();
     p.name = name;
     p.def = def;
     p.editElement = new MagicTextField(this, desc, pattern, def);
     if (0 == name.compareTo("name")) nameEdit = (MagicTextField)p.editElement;
     propertyList.addElement(p);
+    return p.editElement;
   }
 
-  public void addSelectProperty (String name, String desc, String[] options, String def) {
-    addSelectProperty(name, desc, Arrays.asList(options), def);
+  public DropDownField addSelectProperty (String name, String desc, String[] options, String def) {
+    return addSelectProperty(name, desc, Arrays.asList(options), def);
   }
 
-  public void addSelectProperty (String name, String desc, Collection<String> options, String def) {
+  public DropDownField addSelectProperty (String name, String desc, Collection<String> options, String def) {
     Property p = new Property();
     p.name = name;
     p.def = def;
     p.editElement = new DropDownField(this, desc, options, def);
     propertyList.addElement(p);
+    return (DropDownField) p.editElement;
   }
 
-  public void addBoolProperty (String name, String desc, boolean def) {
+  public EditElement addBoolProperty (String name, String desc, boolean def) {
     Property p = new Property();
     p.name = name;
     p.def = def ? "true" : "false" ;
     p.editElement = new CheckboxField(this, desc, def);
     propertyList.addElement(p);
+    return p.editElement;
   }
 
 // OLD CODE FROM HERE ON (owned by Emulab)
