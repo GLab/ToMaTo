@@ -29,7 +29,6 @@ class Host(models.Model):
 	group = models.ForeignKey(HostGroup)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	public_bridge = models.CharField(max_length=10)
 	port_range_start = models.PositiveSmallIntegerField(default=7000)
 	port_range_count = models.PositiveSmallIntegerField(default=1000)
 	vmid_range_start = models.PositiveSmallIntegerField(default=1000)
@@ -332,10 +331,19 @@ def get_host_group(name):
 def get_host_groups():
 	return HostGroup.objects.all()
 	
-def get_best_host(group):
+def get_best_host(group, device=None):
 	all = Host.objects.filter(enabled=True)
 	if group:
 		all = all.filter(group__name=group)
+	if device:
+		for iface in device.interfaces_all():
+			if iface.connection:
+				sf = iface.connection.connector.upcast()
+				if sf.is_special():
+					if sf.feature_group:
+						all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group)
+					else:
+						all.filter(specialfeature__feature_type=sf.feature_type)
 	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
@@ -375,12 +383,12 @@ def get_default_template(type):
 	else:
 		return None
 	
-def create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+def create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
 	try:
 		group = HostGroup.objects.get(name=group_name)
 	except HostGroup.DoesNotExist:
 		group = HostGroup.objects.create(name=group_name)
-	host = Host(name=host_name, enabled=enabled, public_bridge=public_bridge, group=group,
+	host = Host(name=host_name, enabled=enabled, group=group,
 			vmid_range_start=vmid_start, vmid_range_count=vmid_count,
 			port_range_start=port_start, port_range_count=port_count,
 			bridge_range_start=bridge_start, bridge_range_count=bridge_count)
@@ -390,11 +398,10 @@ def create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count
 	t.start()
 	return t.id
 
-def change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
 	host = get_host(host_name)
 	oldgroup = host.group.name
 	host.enabled=enabled
-	host.public_bridge=public_bridge
 	try:
 		group = HostGroup.objects.get(name=group_name)
 	except HostGroup.DoesNotExist:

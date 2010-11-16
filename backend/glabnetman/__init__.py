@@ -103,7 +103,7 @@ def _special_feature_info(sf):
 
 def _host_info(host):
 	return {"name": host.name, "group": host.group.name, "enabled": host.enabled, 
-		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count(),
+		"device_count": host.device_set.count(),
 		"vmid_start": host.vmid_range_start, "vmid_count": host.vmid_range_count,
 		"port_start": host.port_range_start, "port_count": host.port_range_count,
 		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count,
@@ -162,13 +162,13 @@ def host_list(group_filter="*", user=None):
 		res.append(_host_info(h))
 	return res
 
-def host_add(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
+def host_add(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
 	_admin_access(user)
-	return hosts.create(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+	return hosts.create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 
-def host_change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
+def host_change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
 	_admin_access(user)
-	hosts.change(host_name, group_name, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+	hosts.change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 	return True
 
 def host_remove(host_name, user=None):

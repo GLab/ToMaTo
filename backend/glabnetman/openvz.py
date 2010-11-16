@@ -113,7 +113,7 @@ class OpenVZDevice(generic.Device):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template_name("openvz", self.template)
 		if not self.host:
-			self.host = hosts.get_best_host(self.hostgroup)
+			self.host = hosts.get_best_host(self.hostgroup, self)
 		if not self.openvz_id:
 			self.openvz_id = self.host.next_free_vm_id()
 			self.save()				

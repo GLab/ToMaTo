@@ -67,6 +67,7 @@ public class SpecialFeatureConnector extends Connector {
     super(newName, "/icons/special.png");
     num++;
     setProperty("feature_type", type);
+    icon = loadIcon(getImage());
   }
 
   public NetElement createAnother () {

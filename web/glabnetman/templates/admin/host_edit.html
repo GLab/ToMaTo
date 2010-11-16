@@ -19,7 +19,6 @@
 	{% endif %}
 	Group: <input name="group" value="{{host.group}}"/><br/>
 	Enabled: <input type="checkbox" name="enabled" {% if host.enabled %}checked="true"{% endif %}/><br/>
-	public bridge: <input name="public_bridge" value="{% if host %}{{host.public_bridge}}{% else %}vmbr0{% endif %}"/><br/>
 	Port range start: <input name="port_start" value="{% if host %}{{host.port_start}}{% else %}7000{% endif %}"/><br/>
 	Port range count: <input name="port_count" value="{% if host %}{{host.port_count}}{% else %}1000{% endif %}"/><br/>
 	VMID range start: <input name="vmid_start" value="{% if host %}{{host.vmid_start}}{% else %}1000{% endif %}"/><br/>

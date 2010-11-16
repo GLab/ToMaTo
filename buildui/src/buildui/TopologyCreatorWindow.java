@@ -372,7 +372,6 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				if (myinternet==null)
 				{
 					myinternet = new SpecialFeatureConnector("Internet", "internet");
-					myinternet.move(275,275);
 					workArea.add(myinternet);
 					}
 				for (int i = 0; i < devices.size(); i++) {
@@ -384,6 +383,7 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 					workArea.add(iface2);
 					workArea.add(con2);
 				}
+                                myinternet.move(275,275);
 			}
 						
 			parent.setWorkArea(workArea);

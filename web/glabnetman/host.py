@@ -41,7 +41,6 @@ def edit(api, request):
 	hostname=request.REQUEST["hostname"]
 	group=request.REQUEST["group"]
 	enabled=request.REQUEST.has_key("enabled")
-	public_bridge=request.REQUEST["public_bridge"]
 	vmid_start=request.REQUEST["vmid_start"]
 	vmid_count=request.REQUEST["vmid_count"]
 	port_start=request.REQUEST["port_start"]
@@ -50,10 +49,10 @@ def edit(api, request):
 	bridge_count=request.REQUEST["bridge_count"]
 	action = request.REQUEST["action"] 
 	if action=="add":
-		task_id = api.host_add(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+		task_id = api.host_add(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 		return render_to_response("admin/host_detail.html", {"task_id": task_id, "hostname": hostname})
 	else:
-		api.host_change(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+		api.host_change(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 		return index(request)
 edit=wrap_rpc(edit)
 

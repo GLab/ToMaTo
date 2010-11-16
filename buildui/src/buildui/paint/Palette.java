@@ -59,6 +59,7 @@ public class Palette {
 		y += 30;
 		addElement(new SpecialFeatureConnector("Special"));
 		y += 60;
+		y += 30;
 		addElement(new HubConnector("Hub"));
 		y += 50;
 		addElement(new SwitchConnector("Switch"));
