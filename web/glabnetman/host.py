@@ -27,6 +27,10 @@ def index(api, request):
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list()})
 index=wrap_rpc(index)
 
+def detail(api, request, hostname):
+	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname)})
+detail=wrap_rpc(detail)
+
 def edit(api, request):
 	host = None
 	if request.REQUEST.has_key("hostname"):
@@ -47,7 +51,7 @@ def edit(api, request):
 	action = request.REQUEST["action"] 
 	if action=="add":
 		task_id = api.host_add(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
-		return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": hostname})
+		return render_to_response("admin/host_detail.html", {"task_id": task_id, "hostname": hostname})
 	else:
 		api.host_change(hostname, group, enabled, public_bridge, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 		return index(request)
@@ -68,3 +72,18 @@ def remove(api, request, hostname):
 	api.host_remove(hostname)
 	return index(request)
 remove=wrap_rpc(remove)
+
+def special_feature_add(api, request, hostname):
+	type = request.REQUEST["type"]
+	group = request.REQUEST["group"]
+	bridge = request.REQUEST["bridge"]		
+	api.special_features_add(hostname, type, group, bridge)
+	return detail(request, hostname)
+special_feature_add=wrap_rpc(special_feature_add)
+
+def special_feature_remove(api, request, hostname):
+	type = request.REQUEST["type"]
+	group = request.REQUEST["group"]
+	api.special_features_remove(hostname, type, group)
+	return detail(request, hostname)
+special_feature_remove=wrap_rpc(special_feature_remove)

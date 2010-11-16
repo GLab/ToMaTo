@@ -98,12 +98,16 @@ def _connector_info(con, auth):
 			res.update(resources=_resources_info(con.resources))
 	return res
 
+def _special_feature_info(sf):
+	return {"type": sf.feature_type, "group": sf.feature_group, "bridge": sf.bridge}
+
 def _host_info(host):
 	return {"name": host.name, "group": host.group.name, "enabled": host.enabled, 
 		"public_bridge": str(host.public_bridge), "device_count": host.device_set.count(),
 		"vmid_start": host.vmid_range_start, "vmid_count": host.vmid_range_count,
 		"port_start": host.port_range_start, "port_count": host.port_range_count,
-		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count}
+		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count,
+		"special_features": [_special_feature_info(sf) for sf in host.special_features()]}
 
 def _template_info(template):
 	return {"name": template.name, "type": template.type, "default": template.default, "url": template.download_url}
@@ -187,6 +191,18 @@ def host_check(host_name, user=None):
 
 def host_groups(user=None):
 	return [h.name for h in hosts.get_host_groups()]
+
+def special_features_add(host_name, feature_type, feature_group, bridge, user=None):
+	_admin_access(user)
+	host = hosts.get_host(host_name)
+	host.special_features_add(feature_type, feature_group, bridge)
+	return True
+
+def special_features_remove(host_name, feature_type, feature_group, user=None):
+	_admin_access(user)
+	host = hosts.get_host(host_name)
+	host.special_features_remove(feature_type, feature_group)
+	return True
 
 def _parse_xml(xml, root_tag):
 	try:

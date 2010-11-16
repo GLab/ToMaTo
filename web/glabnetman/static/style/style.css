@@ -5,8 +5,8 @@ body
  margin:0px;
 }
 
-h1 {font-size:1.5em;color:#000000;margin-bottom:0px;}
-h2 {font-size:1.1em;color:#000000;}
+h1 {font-size:1.5em;color:#000000;margin-bottom:5mm;}
+h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
 
 code {font-size:0.9px;color:#0000ff;}

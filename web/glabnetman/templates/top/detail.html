@@ -49,7 +49,7 @@ function console (url) {
 	<tr>
 		<td>{{dev.name}}</td>
 		<td>{{dev.type}}</td>
-		<td>{{dev.host}}</td>
+		<td>{% if not dev.host == "None" %}<a href="{% url host.detail hostname=dev.host %}">{{dev.host}}</a>{% else %}-{% endif %}</td>
 		<td>{{dev.state}}</td>
 		<td>
 {% if dev.is_prepared %}

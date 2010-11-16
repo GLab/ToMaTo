@@ -253,6 +253,20 @@ class Host(models.Model):
 		result["netstat"] = self.get_result("netstat -tulpen")		
 		return result
 	
+	def special_features(self):
+		return self.specialfeature_set.all()
+	
+	def special_features_add(self, feature_type, feature_group, bridge):
+		sf = SpecialFeature(host=self, feature_type=feature_type, feature_group=feature_group, bridge=bridge)
+		sf.save()
+		self.specialfeature_set.add(sf)
+		
+	def special_features_remove(self, feature_type, feature_group):
+		for sf in self.special_features():
+			if sf.feature_type == feature_type and sf.feature_group == feature_group:
+				sf.delete()
+				self.specialfeature_set.delete(sf)
+	
 class Template(models.Model):
 		name = models.CharField(max_length=100)
 		type = models.CharField(max_length=12)
@@ -303,6 +317,12 @@ class PhysicalLink(models.Model):
 		self.delay_avg = ( 1.0 - self.sliding_factor ) * self.delay_avg + self.sliding_factor * delay_avg
 		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
+	
+class SpecialFeature(models.Model):
+	host = models.ForeignKey(Host)
+	feature_type = models.CharField(max_length=50)
+	feature_group = models.CharField(max_length=50)
+	bridge = models.CharField(max_length=10)
 	
 def get_host(name):
 	return Host.objects.get(name=name)
