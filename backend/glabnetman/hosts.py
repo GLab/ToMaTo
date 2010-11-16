@@ -127,8 +127,8 @@ class Host(models.Model):
 	
 	def _exec(self, cmd):
 		res = util.run_shell(cmd, config.remote_dry_run)
-		if res[0] == 255:
-			raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
+		#if res[0] == 255:
+		#	raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
 		return res[1]
 	
 	def execute(self, command, task=None):
@@ -265,7 +265,6 @@ class Host(models.Model):
 		for sf in self.special_features():
 			if sf.feature_type == feature_type and sf.feature_group == feature_group:
 				sf.delete()
-				self.specialfeature_set.delete(sf)
 	
 class Template(models.Model):
 		name = models.CharField(max_length=100)

@@ -32,7 +32,6 @@ def analyze(top):
 	_check_fully_connected(top, res)
 	_check_interface_connection_count(top, res)
 	_check_connectors_connection_count(top, res)
-	_check_real_connectors(top, res)
 	_check_connectors_ip_structure(top, res)
 	_check_connection_performance(top, res)
 	return res.res()
@@ -82,19 +81,9 @@ def _check_connectors_connection_count(top,res):
 	for connector in top.connectors_all():
 		if len(connector.connections_all())==0:
 			res.problems.append("Connector %s is not connected" % connector.name)
-		if len(connector.connections_all())==1 and not connector.type == "real":
+		if len(connector.connections_all())==1 and not (connector.is_internet() or connector.is_special()):
 			res.warnings.append("Connector %s is only connected once" % connector.name)
 			
-def _check_real_connectors(top,res):
-	real=[]
-	for connector in top.connectors_all():
-		if connector.type == "real":
-			real.append(connector)
-	if len(real)==0:
-		res.warnings.append("No real network connector used")
-	if len(real)>1:
-		res.hints.append("Multiple real world connectors can be joined")
-
 def _check_connectors_ip_structure(top,res):
 	for connector in top.connectors_all():
 		ip_addresses=set()
@@ -108,7 +97,7 @@ def _check_connectors_ip_structure(top,res):
 						ip_addresses.add(ip)
 				if connection.interface.configuredinterface.use_dhcp:
 					dhcp_clients.add(connection.interface.device.name)
-		if len(dhcp_clients)>0 and not connector.type=="real":
+		if len(dhcp_clients)>0 and not (connector.is_internet() or connector.is_special()):
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, ", ".join(dhcp_clients) ) )
 				
 def _check_connection_performance(top,res):

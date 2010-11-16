@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from django.db import models
 import generic, fault
 
-class InternetConnector(generic.Connector):
+class SpecialFeatureConnector(generic.Connector):
+	feature_type = models.CharField(max_length=50)
+	feature_group = models.CharField(max_length=50, blank=True)
 
 	def add_connection(self, dom):
 		con = generic.Connection()
@@ -31,6 +34,9 @@ class InternetConnector(generic.Connector):
 
 	def encode_xml(self, dom, doc, internal):
 		generic.Connector.encode_xml(self, dom, doc, internal)
+		dom.setAttribute("feature_type", self.feature_type)
+		if self.feature_group:
+			dom.setAttribute("feature_group", self.feature_group)
 		
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)
@@ -54,6 +60,23 @@ class InternetConnector(generic.Connector):
 		
 	def configure(self, properties, task):
 		generic.Connector.configure(self, properties, task)
+		fixed = False
+		for c in self.connections_all():
+			if c.interface:
+				dev = c.interface.device
+				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
+					fixed = True
+		if "feature_type" in properties:
+			if fixed:
+				raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of special feature with prepared connections: %s" % self.name )
+			else:
+				self.feature_type = properties["feature_type"]
+		if "feature_group" in properties:
+			if fixed:
+				raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of special feature with prepared connections: %s" % self.name )
+			else:
+				self.feature_group = properties["feature_group"]
+		self.save()		
 				
 	def connections_add(self, iface_name, properties, task):
 		iface = self.topology.interfaces_get(iface_name)
@@ -75,13 +98,17 @@ class InternetConnector(generic.Connector):
 		con.delete()
 
 	def get_resource_usage(self):
+		#FIXME: calculate depending on type
 		ips = 0
 		for con in self.connections_all():
 			if con.interface.device.state == generic.State.STARTED:
 				ips += 1
-		return {"disk": 0, "memory": 0, "ports": 0, "public_ips": ips}		
+		return {"disk": 0, "memory": 0, "ports": 0, "public_ips": 0}		
 
 	def bridge_name(self, interface):
 		if not interface.device.host:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE, "Interface is not prepared: %s" % interface)
-		return interface.device.host.public_bridge
+		for sf in interface.device.host.special_features():
+			if sf.feature_type == self.feature_type and (not self.feature_group or sf.feature_group == self.feature_group):
+				return sf.bridge
+		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.feature_type, self.feature_group, interface.device.host))

@@ -757,7 +757,7 @@ public void mouseEntered (MouseEvent e) {
           backstr = backstr.replace("12345", id);
           con.disconnect();
           URL backurl = new URL ( base, backstr );
-          while (isActive()) {
+          if (isActive()) {
             getAppletContext().showDocument(backurl);
             Thread.sleep(100);
           }

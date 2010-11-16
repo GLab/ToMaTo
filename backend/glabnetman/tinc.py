@@ -24,7 +24,6 @@ class TincConnector(generic.Connector):
 	def add_connection(self, dom):
 		con = TincConnection()
 		con.init (self, dom)
-		con.bridge_special_name = None
 		self.connection_set.add ( con )
 		self.save()
 		return con
@@ -162,7 +161,6 @@ class TincConnector(generic.Connector):
 		con = TincConnection ()
 		con.connector = self
 		con.interface = iface
-		con.bridge_special_name = ""
 		con.configure(properties, task)
 		con.save()
 

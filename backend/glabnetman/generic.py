@@ -259,6 +259,9 @@ class Connector(models.Model):
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
 
+	def is_special(self):
+		return self.type=='special'
+
 	def is_internet(self):
 		return self.type=='real'
 
@@ -267,6 +270,8 @@ class Connector(models.Model):
 			return self.tincconnector.upcast()
 		if self.is_internet():
 			return self.internetconnector.upcast()
+		if self.is_special():
+			return self.specialfeatureconnector.upcast()
 		return self
 
 	def affected_hosts(self):
@@ -368,12 +373,15 @@ class Connector(models.Model):
 		self.resources.public_ips = res["public_ips"]
 		self.resources.save()
 		return self.resources
+	
+	def bridge_name(self, interface):
+		return "gbr_%s" % interface.connection.bridge_id
 
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
 	bridge_id = models.IntegerField(null=True)
-	bridge_special_name = models.CharField(max_length=15, null=True)
+	bridge_special_name = models.CharField(max_length=50, null=True)
 
 	def is_emulated(self):
 		try:
@@ -388,29 +396,23 @@ class Connection(models.Model):
 		return self
 
 	def bridge_name(self):
-		if self.connector.is_internet():
-			self.bridge_special_name = self.interface.device.host.public_bridge
-		if self.bridge_special_name:
-			return self.bridge_special_name
-		return "gbr_%s" % self.bridge_id
+		return self.connector.upcast().bridge_name(self.interface)
 
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("interface", "%s.%s" % (self.interface.device.name, self.interface.name))
 					
 	def start_run(self, task):
 		host = self.interface.device.host
-		host.bridge_create(self.bridge_name())
-		if not self.bridge_special_name:
+		if not self.connector.is_special():
+			host.bridge_create(self.bridge_name())
 			host.execute("ip link set %s up" % self.bridge_name(), task)
 
 	def stop_run(self, task):
 		host = self.interface.device.host
 		if not host:
 			return
-		self.bridge_name()
-		if not self.bridge_special_name:
+		if not self.connector.is_special():
 			host.execute("ip link set %s down" % self.bridge_name(), task)
-			#host.execute("brctl delbr %s" % self.bridge_name(), task)
 
 	def prepare_run(self, task):
 		if not self.bridge_id:

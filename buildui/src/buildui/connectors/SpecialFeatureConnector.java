@@ -39,9 +39,11 @@ public class SpecialFeatureConnector extends Connector {
     types.clear();
     groups.clear();
     groups.add("<auto>");
-    for (String f: parent.getParameter("special_features").split(",")) {
-        types.add(f.split(":")[0]);
-        groups.addAll(Arrays.asList(f.split(":")[1].split("\\|")));
+    if (parent.getParameter("special_features").length() >= 2) {
+        for (String f: parent.getParameter("special_features").split(",")) {
+            types.add(f.split(":")[0]);
+            groups.addAll(Arrays.asList(f.split(":")[1].split("\\|")));
+        }
     }
     num = 0;
     propertiesArea = new SpecialFeaturePropertiesArea();
@@ -89,6 +91,7 @@ public class SpecialFeatureConnector extends Connector {
     setProperty("feature_type", getProperty("feature_type", "special"));
     setProperty("feature_group", xml.getAttribute("feature_group"));
     setProperty("feature_group", getProperty("feature_group", "<auto>"));
+    icon = loadIcon(getImage());
   }
 
   public void onPropertyChanged(String property, String oldValue, String newValue) {
@@ -96,7 +99,10 @@ public class SpecialFeatureConnector extends Connector {
           properties.put(property, newValue);
           System.out.println (oldValue + "->" + newValue);
           String newName = getName().replace(oldValue, newValue);
-          if ( ! getName().equals(newName) ) setName(newName);
+          if ( ! getName().equals(newName) ) {
+              super.onNameChanged(getName(), newName);
+              setName(newName);
+          }
           System.out.println(getName());
           System.out.println(getImage());
           icon = loadIcon(getImage());

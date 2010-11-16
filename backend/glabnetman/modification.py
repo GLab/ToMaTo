@@ -79,9 +79,12 @@ class Modification():
 		
 		elif self.type == "connector-create":
 			type = self.properties["type"]
-			import internet, tinc
+			import internet, tinc, special
 			if type == "real":
 				con = internet.InternetConnector()
+				con.state = generic.State.STARTED
+			elif type == "special":
+				con = special.SpecialFeatureConnector()
 				con.state = generic.State.STARTED
 			elif type == "hub" or type =="switch" or type == "router":
 				con = tinc.TincConnector()

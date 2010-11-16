@@ -36,7 +36,7 @@ public class SpecialFeaturePropertiesArea extends PropertiesArea {
   public SpecialFeaturePropertiesArea () {
     super();
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
-    addSelectProperty("feature_type", "type:", SpecialFeatureConnector.types, SpecialFeatureConnector.types.iterator().next());
+    addSelectProperty("feature_type", "type:", SpecialFeatureConnector.types, "");
     addSelectProperty("feature_group", "group:", SpecialFeatureConnector.groups, "<auto>");
   }
 };
