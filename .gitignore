@@ -12,3 +12,4 @@ buildui/dist
 buildui/build
 *.lyx~
 *.lyx#
+*.dia~
