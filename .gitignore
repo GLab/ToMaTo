@@ -13,3 +13,4 @@ buildui/build
 *.lyx~
 *.lyx#
 *.dia~
+*.png~

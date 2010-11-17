@@ -236,8 +236,8 @@ A lot of software for experimental facilities has been developed and each
  one works at a certain level of realism, concurrency and repeatability.
  The German-Lab experimental facility allows its researchers to choose from
  various experimental facility software.
- The German-Lab project also developed an experimental facility software
- called Topology Management Tool (ToMaTo).
+ An experimental facility software called Topology Management Tool (ToMaTo)
+ has been developed in the German-Lab project.
  ToMaTo allows researchers to create virtual network topologies populated
  by virtual nodes running standard software.
 \end_layout
@@ -252,7 +252,8 @@ reference "sec:Related-work"
 
 \end_inset
 
- lists other experimental facility software and comparable solutions.
+ gives and overview of other experimental facility software and comparable
+ solutions.
  The design of ToMaTo is described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -308,10 +309,11 @@ key "CORE"
  can setup and control virtual machines connected by a virtual network topology.
  Both tools use virtualization to run multiple virtual computers on a physical
  host and they use tunnels to create a virtual network topology.
+ CORE also allows to configure emulated link characteristics.
  CORE and VIRCONEL are mainly created to allow a single user to setup an
  experiment, so they lack the ability to handle multiple users or multiple
- concurrent experiments and they show additional limitations when used across
- multiple hosts.
+ concurrent experiment topologies and they show additional limitations when
+ used across multiple hosts.
 \end_layout
 
 \begin_layout Standard
@@ -326,12 +328,12 @@ key "DBLP:conf/osdi/PetersonBFM06"
 
  which uses a container-based virtualization to run multiple virtual computers
  on a single host.
- Planet-Lab has a very big number of distributed hosts and thus is perfect
+ Planet-Lab has a very big number of distributed hosts and thus is well-fitting
  for peer-to-peer experiments.
  Due to its container-based approach Planet-Lab cannot support kernel-space
  modifications or other operating systems.
- Original Planet-Lab did not offer any way to its users to configure the
- network.
+ Original Planet-Lab does not offer any way to its users to configure the
+ network topology.
  An extension called Vini tries to improve in this area but the container-based
  virtualization technology and the high distribution of the hosts pose limits
  on that.
@@ -397,6 +399,13 @@ key "620"
  hosts.
 \end_layout
 
+\begin_layout Standard
+ToMaTo allows its users to configure and use multiple concurrent network
+ topologies.
+ Also ToMaTo aims to allow lightweight virtualization and full operating
+ system access for the experiments.
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -409,14 +418,14 @@ ToMaTo design
 
 \begin_layout Standard
 \begin_inset Wrap figure
-lines 11
+lines 9
 placement O
-overhang 30bp
-width "50col%"
+overhang 0in
+width "40col%"
 status open
 
 \begin_layout Plain Layout
-\begin_inset VSpace -0.5in
+\begin_inset VSpace -0.7in
 \end_inset
 
 
@@ -435,6 +444,12 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-Topology"
+
+\end_inset
+
 Example Topology
 \end_layout
 
@@ -454,8 +469,17 @@ The goal of ToMaTo is to enable users to create and use network topologies
  A network topology consists of two types of components.
  Devices are active components like computers that run the software of the
  experiment and are the only sources and sinks of data.
- Connectors are middle-boxes that connect devices and transport their data
- exhibiting certain configurable characteristics.
+ Connectors are network components that connect devices and transport their
+ data exhibiting certain configurable characteristics.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-Topology"
+
+\end_inset
+
+ shows a topology with four client devices, one server device, two switch
+ connectors and one internet connector.
 \end_layout
 
 \begin_layout Subsection
@@ -463,9 +487,11 @@ Architecture
 \end_layout
 
 \begin_layout Standard
-ToMaTo uses virtualization technologies to allow experiments to run concurrently
- in isolated environments spanning parts of the experimental facility.
- ToMaTo consists of three modules, the host hypervisor, the central back-end
+{{Nathan fragen wegen back-end vs.
+ backend}}ToMaTo uses virtualization technologies to allow experiments to
+ run concurrently in isolated environments spanning parts of the experimental
+ facility.
+ ToMaTo consists of three modules, the host system, the central back-end
  and the web-based front-end as shown in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -474,10 +500,7 @@ reference "fig:ToMaTo-structure"
 \end_inset
 
 .
-\end_layout
-
-\begin_layout Standard
-The host hypervisor runs on all hosts of the experimental facility and offers
+ The host system runs on all hosts of the experimental facility and offers
  virtualized resources to be controlled by the central back-end.
  The host hypervisor consists of a Linux operating system with additional
  components installed:
@@ -485,9 +508,13 @@ The host hypervisor runs on all hosts of the experimental facility and offers
 
 \begin_layout Itemize
 PROXMOX VE
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Proxmox"
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+PROXMOX VE is a product of Proxmox Server Solutions GmbH, see http://pve.proxmox.c
+om
+\end_layout
 
 \end_inset
 
@@ -496,9 +523,12 @@ key "Proxmox"
 
 \begin_layout Itemize
 Tinc
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Tinc"
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Tinc is a VPN software project by Tilburg university, see http://tinc-vpn.org
+\end_layout
 
 \end_inset
 
@@ -527,7 +557,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset Graphics
 	filename structure1.dia
-	width 60text%
+	width 50text%
 
 \end_inset
 
@@ -593,7 +623,7 @@ reference "fig:Graphical-topology-editor"
 
 \end_inset
 
- shows the ToMaTo website icluding the graphical editor, which is described
+ shows the ToMaTo website including the graphical editor, which is described
  in subsection 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -686,14 +716,28 @@ Device types & capabilities
 
 \begin_layout Standard
 ToMaTo currently supports two device types offered by PROXMOX: OpenVZ and
- KVM virtual machines.
+ KVM
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Kernel-based Virtual Machine
+\end_layout
+
+\end_inset
+
+ virtual machines.
  OpenVZ is a container-based virtualization solution for Linux.
- OpenVZ virtual machines can run nearly all flavors of Linux and provide
- an environment similar to a physical machine from a user-space perspective.
+ OpenVZ virtual machines can run nearly all Linux systems and provide an
+ environment similar to a physical machine from a user-space perspective.
  Since OpenVZ does only run a single kernel for all virtual machines some
  limitations arise.
  The kernel can not be modified, extended using modules or configured using
- sysctl from a virtual machine.
+ 
+\shape italic
+sysctl
+\shape default
+ from a virtual machine.
  Also the kernel version limits the guest systems to Linux operation systems
  that are compatible with a current kernel.
  Virtual network interfaces can be created on the OpenVZ host and exposed
@@ -705,18 +749,8 @@ ToMaTo currently supports two device types offered by PROXMOX: OpenVZ and
 \end_layout
 
 \begin_layout Standard
-KVM
-\begin_inset Foot
-status open
-
-\begin_layout Plain Layout
-Kernel-based Virtual Machine
-\end_layout
-
-\end_inset
-
- offers a full virtualization including running one kernel per virtual machine
- and exposing emulated hardware to the VMs.
+KVM offers a full virtualization including running one kernel per virtual
+ machine and exposing emulated hardware to the VMs.
  Using KVM allows to run any x86-based operating system (even Windows and
  BSD) and to configure the operating system as needed.
  All hardware that is needed by the operating system including main board,
@@ -755,10 +789,20 @@ internet
  This connector simply connects the network interface to the Internet.
  Network configuration is done automatically using DHCP.
  Using this connector, topologies can use external services, the user can
- access the exposed devices like normal servers over the Internet and even
- other testbed resources can be connected to ToMaTo topologies.
- The Internet does not allow any QOS guarantees and due to technical reasons
- no QOS limitations can be set on this connector type.
+ access the exposed devices like servers over the Internet and even other
+ testbed resources can be connected to ToMaTo topologies.
+ The Internet does not allow any QoS
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Quality of service
+\end_layout
+
+\end_inset
+
+ guarantees and due to technical reasons no QoS limitations can be set on
+ this connector type.
  Other connector types use the Tinc VPN with which devices can be connected
  in private networks that are not connected to each others nor to the Internet.
  Users can choose between hub, switch and router semantics in this private
@@ -767,7 +811,17 @@ internet
  loss, delay and bandwidth limitation can be emulated.
  Additionally users can select to capture network traffic at these connectors
  and download it as a pcap file to analyze or view the traffic using specialized
- tools like Wireshark.
+ tools like Wireshark
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Wireshark is a free and open-source packet analyzer, see http://www.wireshark.org
+\end_layout
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -777,7 +831,7 @@ name "sub:Graphical-editor-and"
 
 \end_inset
 
-Graphical editor and topology creator
+Graphical editor & topology creator
 \end_layout
 
 \begin_layout Standard
@@ -851,7 +905,7 @@ wide false
 sideways false
 status open
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \align center
 \begin_inset Graphics
 	filename ToMaTo1b-swd.pdf
