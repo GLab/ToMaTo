@@ -194,12 +194,12 @@ name "sec:Motivation"
 
 \end_inset
 
-Motivation
+Introduction
 \end_layout
 
 \begin_layout Standard
-Today's Internet has a large economic influence but is based on legacy mechanism
-s and algorithms from the 70ies and 80ies.
+The Internet has a large economic influence but is based on legacy mechanisms
+ and algorithms from the 70's and 80's.
  The rapid evolution of applications and transport technologies demands
  for changes even of core technologies of the Internet.
  A lot of research work has been done on improving isolated aspects of the
@@ -226,7 +226,7 @@ Experimental facilities aim to provide a realistic environment for experiments
  concurrency and repeatability.
  Realistic environments show unforeseen and random effects that cannot be
  repeated.
- To be able to run concurrent experiments on the facility the access of
+ To be able to run concurrent experiments on the facility, the access of
  each experiment must be restricted to sharable or virtualized resources
  which in turn limits the realism.
 \end_layout
@@ -310,10 +310,10 @@ key "CORE"
  Both tools use virtualization to run multiple virtual computers on a physical
  host and they use tunnels to create a virtual network topology.
  CORE also allows to configure emulated link characteristics.
- CORE and VIRCONEL are mainly created to allow a single user to setup an
- experiment, so they lack the ability to handle multiple users or multiple
- concurrent experiment topologies and they show additional limitations when
- used across multiple hosts.
+ CORE and VIRCONEL were created to allow a single user to setup an experiment,
+ so they lack the ability to handle multiple users or multiple concurrent
+ experiment topologies and they show additional limitations when used across
+ multiple hosts.
 \end_layout
 
 \begin_layout Standard
@@ -326,16 +326,16 @@ key "DBLP:conf/osdi/PetersonBFM06"
 
 \end_inset
 
- which uses a container-based virtualization to run multiple virtual computers
+, which uses a container-based virtualization to run multiple virtual computers
  on a single host.
- Planet-Lab has a very big number of distributed hosts and thus is well-fitting
- for peer-to-peer experiments.
- Due to its container-based approach Planet-Lab cannot support kernel-space
+ Planet-Lab has a very large number of distributed hosts and thus is well-fittin
+g for peer-to-peer experiments.
+ Due to its container-based approach, Planet-Lab cannot support kernel-space
  modifications or other operating systems.
- Original Planet-Lab does not offer any way to its users to configure the
- network topology.
+ Originally Planet-Lab does not offer any way to its users to configure
+ the network topology.
  An extension called Vini tries to improve in this area but the container-based
- virtualization technology and the high distribution of the hosts pose limits
+ virtualization technology and high distribution of the hosts pose limits
  on that.
 \end_layout
 
@@ -356,7 +356,7 @@ key "DBLP:conf/osdi/WhiteLSRGNHBJ02"
  networks offer high bandwidth.
  On the other hand the testbed design does not support distribution of physical
  hosts and the efficiency is low because all experiments use real hosts
- and no virtualization is used.
+ as no virtualization is used.
 \end_layout
 
 \begin_layout Standard
@@ -601,7 +601,33 @@ Lightweight Directory Access Protocol
 
 \end_inset
 
- server, existing user accounts could be easily integrated into the back-end.
+ server, existing user accounts can be easily integrated into the back-end.
+\end_layout
+
+\begin_layout Standard
+The back-end offers an XML interface to be used by front-end tools.
+ Currently only one front-end exists, but the API is generic enough to allow
+ other front-ends as well.
+ The main ToMaTo front-end consists of a website that allows users to create
+ and edit their topologies using a graphical editor and to manage the topologies
+, devices and connectors.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Graphical-topology-editor"
+
+\end_inset
+
+ shows the ToMaTo website including the graphical editor, which is described
+ in subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Graphical-editor-and"
+
+\end_inset
+
+.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -637,29 +663,7 @@ Graphical topology editor
 
 \end_inset
 
-The back-end offers an XML interface to be used by front-end tools.
- Currently only one front-end exists but the API is generic enough to allow
- other front-ends as well.
- The main ToMaTo front-end consists of a website that allows users to create
- and edit their topologies using a graphical editor and to manage the topologies
-, devices and connectors.
- Figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Graphical-topology-editor"
 
-\end_inset
-
- shows the ToMaTo website including the graphical editor, which is described
- in subsection 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Graphical-editor-and"
-
-\end_inset
-
-.
- 
 \end_layout
 
 \begin_layout Standard
@@ -737,8 +741,8 @@ Kernel-based Virtual Machine
  OpenVZ is a container-based virtualization solution for Linux.
  OpenVZ virtual machines can run nearly all Linux systems and provide an
  environment similar to a physical machine from a user-space perspective.
- Since OpenVZ does only run a single kernel for all virtual machines some
- limitations arise.
+ Since OpenVZ only runs a single kernel for all virtual machines some limitation
+s arise.
  The kernel can not be modified, extended using modules or configured using
  
 \shape italic
@@ -782,8 +786,8 @@ Connector types & capabilities
 \end_layout
 
 \begin_layout Standard
-To connect the devices and thus form a network topology ToMaTo offers different
- options the user can choose from.
+To connect the devices, and thus form a network topology, ToMaTo offers
+ different options the user can choose from.
  The simplest option is the connector type 
 \begin_inset Quotes eld
 \end_inset
@@ -798,7 +802,7 @@ internet
  Using this connector, topologies can use external services, the user can
  access the exposed devices like servers over the Internet and even other
  testbed resources can be connected to ToMaTo topologies.
- The Internet does not allow any QoS
+ The Internet connector does not allow any QoS
 \begin_inset Foot
 status open
 
@@ -808,8 +812,8 @@ Quality of service
 
 \end_inset
 
- guarantees and due to technical reasons no QoS limitations can be set on
- this connector type.
+ guarantees and, due to technical reasons, no QoS limitations can be set
+ on this connector type.
  Other connector types use the Tinc VPN with which devices can be connected
  in private networks that are not connected to each others nor to the Internet.
  Users can choose between hub, switch and router semantics in this private
@@ -857,7 +861,7 @@ reference "fig:Graphical-topology-editor"
  Components can be added to the topology by selecting them from the panel
  on the left hand side of the editor and dragging them to the working area.
  Components in the topology can be connected to each other by holding down
- the Ctrl+key and subsequently selecting all icons that should be connected.
+ the Ctrl-key and subsequently selecting all icons that should be connected.
  For instance, two hosts can be connected by connecting both of them to
  an intermediate hub, switch, or router.
  The right hand side of the graphical editor provides a property menu where
@@ -868,8 +872,8 @@ reference "fig:Graphical-topology-editor"
 \end_layout
 
 \begin_layout Standard
-Basically, the functionality of the graphical editor described so far is
- enough to create any topology of any size and complexity.
+The graphical editor described so far is enough to create topologies of
+ any size and complexity.
  However, if large topologies have to be created, a lot of manual configuration
  work is necessary.
  Furthermore, from an illustration point of view, if a network consists
@@ -880,7 +884,7 @@ Basically, the functionality of the graphical editor described so far is
  creator (TC).
  The basic idea of TC is to take as much manual work as possible from the
  user and to automate it.
- TC allows to automatically create a previously configured number of identical
+ TC allows automatic creation of a previously configured number of identical
  hosts, to arrange these hosts in an ordered way inside the working area
  and to connect these nodes to each other in a predefined topology structure
  and with automatically assigned IP-addresses and host names.
@@ -953,8 +957,7 @@ Topology creator - Screenshot with example topology and illustration of
 
 \begin_layout Standard
 With TC, it is not only possible to create new hosts and connect them, but
- it is also possible to connect (and auto-configure) already existing nodes
- in the network.
+ to connect (and auto-configure) already existing nodes in the network.
  Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -964,17 +967,16 @@ reference "fig:top-creator"
 
  illustrates the benefits of this functionality both in a general structure
  and in a concrete example topology.
- TC allows to easily create any kind of hierarchically structured topology.
+ TC allows easy creation of any kind of hierarchically structured topology.
  The procedure starts bottom-up by creating all of the subtopologies (subtopolog
 y 
 \begin_inset Formula $1,\,2,\,\dots,\, i,\,\dots,\, n$
 \end_inset
 
-) with desired node count, connection type and IP-subrange.
- Hereby, TC allows to select the area of the working are where the subtopology
- should be put.
- In a second step (gateway) hosts of the different subtopologies are selected
- and connected to each other to create a topology on top of the subtopologies.
+) with desired node counts, connection types and IP-subranges and place
+ them in the working area.
+ Then (gateway) hosts of the different subtopologies are selected and connected
+ to each other to create a topology on top of the subtopologies.
  These steps can be repeated arbitrarily often to design a final topology
  of several hierarchical layers.
  In the example displayed in the screenshot in figure 
@@ -1062,7 +1064,7 @@ experiments: This kind of experiment considers the lower networking layers
  with real-time support) and they need heterogeneous access technologies
  (3G, Wifi, Fiber, etc.).
  In most cases, these requirements can only be fulfilled with custom testbeds,
- so supporting this kind of experiment was no design goal for ToMaTo.
+ so supporting this kind of experiment was not a design goal for ToMaTo.
 \end_layout
 
 \begin_layout Description
@@ -1120,7 +1122,7 @@ experiments: These experiments contain legacy software, i.e.
 \begin_layout Standard
 Experiences of the German-Lab experimental facility show that most experiments
  can be categorized fairly well with this scheme.
- Some few experiments have two experiment classes and thus have requirements
+ A few experiments have two experiment classes, and thus have requirements
  of both classes.
  The requirements of the classes are very heterogeneous but a general trade-off
  between more resource access and access to more resources becomes evident.
@@ -1148,8 +1150,8 @@ reference "sec:Types-of-experiments"
 
  except for access layer experiments because these experiments need a specialize
 d experimental facility depending on the access technology.
- Wisebed and the DES testbed for example are specialized experimental facilities
- for sensor networks and wifi.
+ The Wisebed and DES testbeds for example are specialized experimental facilitie
+s for sensor networks and wifi.
 \end_layout
 
 \begin_layout Standard
@@ -1169,8 +1171,8 @@ Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
  and switch or router connectors.
  Since OpenVZ devices are very lightweight, a high number of devices can
  be used in topologies.
- Using an Internet connector, even external resources like Planet-Lab nodes
- can be included in the experiment.
+ Using an Internet connector, external resources like Planet-Lab nodes can
+ be included in the experiment.
  The topology creator makes it very easy to design huge experiments with
  ring or star topologies.
  Using the upload/download image feature, users can prepare a device image
@@ -1234,7 +1236,7 @@ name "sec:Conclusion-&-future"
 
 \end_inset
 
-Conclusion & future work
+Conclusion
 \end_layout
 
 \begin_layout Standard
