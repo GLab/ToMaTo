@@ -25,47 +25,47 @@ import xmlrpclib, settings
 def index(request):
 	return render_to_response("main/start.html")
 
+@wrap_rpc
 def error_list(api, request):
 	errors = api.errors_all()
 	return render_to_response("admin/error_list.html", {'errors': errors})
-error_list=wrap_rpc(error_list)
 
+@wrap_rpc
 def error_remove(api, request, error_id):
 	api.errors_remove(error_id)
 	return error_list(request)
-error_remove=wrap_rpc(error_remove)
 
+@wrap_rpc
 def task_list(api, request):
 	tasks = api.task_list()
 	return render_to_response("admin/task_list.html", {'tasks': tasks})
-task_list=wrap_rpc(task_list)
 
+@wrap_rpc
 def task_status(api, request, task_id):
 	task = api.task_status(task_id)
 	backurl=""
 	if request.REQUEST.has_key("backurl"):
 		backurl=request.REQUEST["backurl"]
 	return render_to_response("main/task.html", {'task': task, 'backurl': backurl})
-task_status=wrap_rpc(task_status)
 
+@wrap_rpc
 def physical_links(api, request):
 	links = api.physical_links_get_all()
 	for l in links:
 		l["loss"] = l["loss"] * 100.0
 	return render_to_response("admin/physical_links.html", {"links": links})
-physical_links=wrap_rpc(physical_links)
 
+@wrap_rpc
 def resource_usage_by_topology(api, request):
 	usage_by_top = api.resource_usage_by_topology()
 	usage=[(user, usage_by_top[user]) for user in usage_by_top]
 	return render_to_response("admin/resource_usage.html", {"usage": usage})
-resource_usage_by_topology=wrap_rpc(resource_usage_by_topology)
 
+@wrap_rpc
 def resource_usage_by_user(api, request):
 	usage_by_user = api.resource_usage_by_user()
 	usage=[(user, usage_by_user[user]) for user in usage_by_user]
 	return render_to_response("admin/resource_usage.html", {"by_user": True, "usage": usage})
-resource_usage_by_user=wrap_rpc(resource_usage_by_user)
 
 def help(request, page=""):
 	return HttpResponseRedirect(settings.help_url % page)

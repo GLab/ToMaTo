@@ -23,10 +23,11 @@ from django.http import Http404
 from lib import *
 import xmlrpclib
 
+@wrap_rpc
 def index(api, request):
 	return render_to_response("admin/template_index.html", {'templates': api.template_list("*")})
-index=wrap_rpc(index)
 
+@wrap_rpc
 def add(api, request):
 	if request.REQUEST.has_key("name"):
 		name=request.REQUEST["name"]
@@ -36,14 +37,13 @@ def add(api, request):
 		return render_to_response("admin/template_index.html", {'templates': api.template_list("*"), "task": task})
 	else:
 		return render_to_response("admin/template_add.html")
-add=wrap_rpc(add)
 
+@wrap_rpc
 def remove(api, request, name):
 	api.template_remove(name)
 	return index(request)
-remove=wrap_rpc(remove)
 
+@wrap_rpc
 def set_default(api, request, type, name):
 	api.template_set_default(type, name)
 	return index(request)
-set_default=wrap_rpc(set_default)

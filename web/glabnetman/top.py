@@ -28,6 +28,7 @@ def _display_top(api, top_id, task_id=None, action=None):
 	top=api.top_info(int(top_id))
 	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
 
+@wrap_rpc
 def index(api, request):
 	host_filter = "*"
 	if request.REQUEST.has_key("host_filter"):
@@ -37,8 +38,8 @@ def index(api, request):
 		owner_filter=request.REQUEST["owner_filter"]
 	toplist=api.top_list(owner_filter, host_filter, "user")
 	return render_to_response("top/index.html", {'top_list': toplist})
-index=wrap_rpc(index)
 
+@wrap_rpc
 def create(api, request):
 	if not request.REQUEST.has_key("xml"):
 		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
@@ -61,8 +62,8 @@ def create(api, request):
 		top_id=api.top_create()
 		api.top_modify(top_id,xml)
 	return _display_top(api, top_id)
-create=wrap_rpc(create)
 	
+@wrap_rpc
 def upload_image(api, request, top_id, device_id):
 	if not request.FILES.has_key("image"):
 		top=api.top_info(int(top_id))
@@ -73,8 +74,8 @@ def upload_image(api, request, top_id, device_id):
 		api.upload_chunk(upload_id,xmlrpclib.Binary(chunk))
 	task_id = api.upload_image(top_id, device_id, upload_id)
 	return _display_top(api, top_id, task_id, "Upload image")
-upload_image=wrap_rpc(upload_image)
 
+@wrap_rpc
 def download_image(api, request, top_id, device_id):
 	top=api.top_info(int(top_id))
 	download_id=api.download_image(top_id, device_id)
@@ -92,8 +93,8 @@ def download_image(api, request, top_id, device_id):
 	filename_ext = {'openvz': 'tgz', 'kvm': 'qcow2'}[dict(top['devices'])[device_id]['type']]
 	response['Content-Disposition'] = 'attachment; filename=%s_%s.%s' % ( top["name"], device_id, filename_ext )
 	return response
-download_image=wrap_rpc(download_image)
 
+@wrap_rpc
 def download_capture(api, request, top_id, connector_id, device_id, interface_id):
 	top=api.top_info(int(top_id))
 	download_id=api.download_capture(top_id, connector_id, device_id, interface_id)
@@ -110,20 +111,20 @@ def download_capture(api, request, top_id, connector_id, device_id, interface_id
 	response['Content-Length'] = size
 	response['Content-Disposition'] = 'attachment; filename=capture_%s_%s_%s_%s.tar.gz' % ( top["name"], connector_id, device_id, interface_id )
 	return response
-download_capture=wrap_rpc(download_capture)
 
+@wrap_rpc
 def renew(api, request, top_id):
 	api.top_renew(int(top_id))
 	return _display_top(api, top_id)
-renew=wrap_rpc(renew)
 
+@wrap_rpc
 def vncview(api, request, top_id, device_id):
 	api.top_renew(int(top_id))
 	top=api.top_info(int(top_id))
 	device=dict(top["devices"])[device_id]
 	return render_to_response("top/vncview.html", {'top': top, 'device': device})
-vncview=wrap_rpc(vncview)
 
+@wrap_rpc
 def edit(api, request, top_id):
 	#FIXME: do not populate text editor with specification xml
 	if not request.REQUEST.has_key("xml"):
@@ -141,12 +142,12 @@ def edit(api, request, top_id):
 	xml=request.REQUEST["xml"]
 	task_id=api.top_modify(int(top_id), xml)
 	return _display_top(api, top_id, task_id, "Change topology")
-edit=wrap_rpc(edit)
 
+@wrap_rpc
 def details(api, request, top_id):
 	return _display_top(api, top_id)
-details=wrap_rpc(details)
 	
+@wrap_rpc
 def show(api, request, top_id):
 	xml=api.top_get(int(top_id), True)
 	if not request.REQUEST.has_key("format"):
@@ -156,86 +157,85 @@ def show(api, request, top_id):
 	if format == "plain":
 		return HttpResponse(xml, mimetype="text/plain")		
 	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
-show=wrap_rpc(show)
 
+@wrap_rpc
 def remove(api, request, top_id):
 	api.top_remove(int(top_id))
 	return index(request)
-remove=wrap_rpc(remove)
 
+@wrap_rpc
 def prepare(api, request, top_id):
 	task_id=api.top_prepare(int(top_id))
 	return _display_top(api, top_id, task_id, "Prepare topology")
-prepare=wrap_rpc(prepare)
 
+@wrap_rpc
 def destroy(api, request, top_id):
 	task_id=api.top_destroy(int(top_id))
 	return _display_top(api, top_id, task_id, "Destroy topology")
-destroy=wrap_rpc(destroy)
 
+@wrap_rpc
 def start(api, request, top_id):
 	task_id=api.top_start(int(top_id))
 	return _display_top(api, top_id, task_id, "Start topology")
-start=wrap_rpc(start)
 
+@wrap_rpc
 def stop(api, request, top_id):
 	task_id=api.top_stop(int(top_id))
 	return _display_top(api, top_id, task_id, "Stop topology")
-stop=wrap_rpc(stop)
 
+@wrap_rpc
 def dev_prepare(api, request, top_id, device_id):
 	task_id=api.device_prepare(int(top_id), device_id)
 	return _display_top(api, top_id, task_id, "Prepare device")
-dev_prepare=wrap_rpc(dev_prepare)
 
+@wrap_rpc
 def dev_destroy(api, request, top_id, device_id):
 	task_id=api.device_destroy(int(top_id), device_id)
 	return _display_top(api, top_id, task_id, "Destroy device")
-dev_destroy=wrap_rpc(dev_destroy)
 
+@wrap_rpc
 def dev_start(api, request, top_id, device_id):
 	task_id=api.device_start(int(top_id), device_id)
 	return _display_top(api, top_id, task_id, "Start device")
-dev_start=wrap_rpc(dev_start)
 
+@wrap_rpc
 def dev_stop(api, request, top_id, device_id):
 	task_id=api.device_stop(int(top_id), device_id)
 	return _display_top(api, top_id, task_id, "Stop device")
-dev_stop=wrap_rpc(dev_stop)
 
+@wrap_rpc
 def con_prepare(api, request, top_id, connector_id):
 	task_id=api.connector_prepare(int(top_id), connector_id)
 	return _display_top(api, top_id, task_id, "Prepare connector")
-con_prepare=wrap_rpc(con_prepare)
 
+@wrap_rpc
 def con_destroy(api, request, top_id, connector_id):
 	task_id=api.connector_destroy(int(top_id), connector_id)
 	return _display_top(api, top_id, task_id, "Destroy connector")
-con_destroy=wrap_rpc(con_destroy)
 
+@wrap_rpc
 def con_start(api, request, top_id, connector_id):
 	task_id=api.connector_start(int(top_id), connector_id)
 	return _display_top(api, top_id, task_id, "Start connector")
-con_start=wrap_rpc(con_start)
 
+@wrap_rpc
 def con_stop(api, request, top_id, connector_id):
 	task_id=api.connector_stop(int(top_id), connector_id)
 	return _display_top(api, top_id, task_id, "Stop connector")
-con_stop=wrap_rpc(con_stop)
 
+@wrap_rpc
 def permission_list(api, request, top_id):
 	top=api.top_info(int(top_id))
 	return render_to_response("top/permissions.html", {'top_id': top_id, 'top': top })
-permission_list=wrap_rpc(permission_list)
 
+@wrap_rpc
 def permission_remove(api, request, top_id, user):
 	api.permission_remove(top_id, user)
 	return permission_list(request, top_id)
-permission_remove=wrap_rpc(permission_remove)
 
+@wrap_rpc
 def permission_add(api, request, top_id):
 	user=request.REQUEST["user"]
 	role=request.REQUEST["role"]
 	api.permission_add(top_id, user, role)
 	return permission_list(request, top_id)
-permission_add=wrap_rpc(permission_add)

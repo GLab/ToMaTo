@@ -400,10 +400,12 @@ key "620"
 \end_layout
 
 \begin_layout Standard
-ToMaTo allows its users to configure and use multiple concurrent network
+ToMaTo goal is to overcome limitations found in experimental facility software
+ so that the user has maximal flexibility for his experiments.
+ ToMaTo allows its users to configure and use multiple concurrent network
  topologies.
- Also ToMaTo aims to allow lightweight virtualization and full operating
- system access for the experiments.
+ Also it aims to allow lightweight virtualization and full operating system
+ access for the experiments.
 \end_layout
 
 \begin_layout Section
@@ -418,18 +420,11 @@ ToMaTo design
 
 \begin_layout Standard
 \begin_inset Wrap figure
-lines 9
+lines 0
 placement O
 overhang 0in
 width "40col%"
 status open
-
-\begin_layout Plain Layout
-\begin_inset VSpace -0.7in
-\end_inset
-
-
-\end_layout
 
 \begin_layout Plain Layout
 \begin_inset Graphics
@@ -610,44 +605,6 @@ Lightweight Directory Access Protocol
 \end_layout
 
 \begin_layout Standard
-The back-end offers an XML interface to be used by front-end tools.
- Currently only one front-end exists but the API is generic enough to allow
- other front-ends as well.
- The main ToMaTo front-end consists of a website that allows users to create
- and edit their topologies using a graphical editor and to manage the topologies
-, devices and connectors.
- Figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Graphical-topology-editor"
-
-\end_inset
-
- shows the ToMaTo website including the graphical editor, which is described
- in subsection 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Graphical-editor-and"
-
-\end_inset
-
-.
- Users can also access their devices using a built-in VNC
-\begin_inset Foot
-status open
-
-\begin_layout Plain Layout
-Virtual Network Computing
-\end_layout
-
-\end_inset
-
- viewer.
- Administrators can use a special section to access debugging information,
- manage the physical hosts and carry out various administrative tasks.
-\end_layout
-
-\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -680,7 +637,32 @@ Graphical topology editor
 
 \end_inset
 
+The back-end offers an XML interface to be used by front-end tools.
+ Currently only one front-end exists but the API is generic enough to allow
+ other front-ends as well.
+ The main ToMaTo front-end consists of a website that allows users to create
+ and edit their topologies using a graphical editor and to manage the topologies
+, devices and connectors.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Graphical-topology-editor"
 
+\end_inset
+
+ shows the ToMaTo website including the graphical editor, which is described
+ in subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Graphical-editor-and"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -697,6 +679,12 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:VNC-access-to"
+
+\end_inset
+
 VNC access to a KVM device
 \end_layout
 
@@ -707,7 +695,26 @@ VNC access to a KVM device
 
 \end_inset
 
+Users can also access their devices using a built-in VNC
+\begin_inset Foot
+status open
 
+\begin_layout Plain Layout
+Virtual Network Computing
+\end_layout
+
+\end_inset
+
+ viewer as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:VNC-access-to"
+
+\end_inset
+
+.
+ Administrators can use a special section to access debugging information,
+ manage the physical hosts and carry out various administrative tasks.
 \end_layout
 
 \begin_layout Subsection

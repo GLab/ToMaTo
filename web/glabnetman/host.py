@@ -23,14 +23,15 @@ from django.http import Http404
 from lib import *
 import xmlrpclib
 
+@wrap_rpc
 def index(api, request):
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list()})
-index=wrap_rpc(index)
 
+@wrap_rpc
 def detail(api, request, hostname):
 	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname)})
-detail=wrap_rpc(detail)
 
+@wrap_rpc
 def edit(api, request):
 	host = None
 	if request.REQUEST.has_key("hostname"):
@@ -54,35 +55,34 @@ def edit(api, request):
 	else:
 		api.host_change(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
 		return detail(request, hostname)
-edit=wrap_rpc(edit)
 
+@wrap_rpc
 def check(api, request, hostname):
 	task = api.host_check(hostname)
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list(), 'task': task, 'taskname': "Checking host %s" % hostname})
-check=wrap_rpc(check)
 
+@wrap_rpc
 def debug(api, request, hostname):
 	debug_info = api.host_debug(hostname)
 	debug = [(k, debug_info[k]) for k in debug_info]
 	return render_to_response("admin/host_debug.html", {"host_name": hostname, "debug": debug})
-debug=wrap_rpc(debug)
 
+@wrap_rpc
 def remove(api, request, hostname):
 	api.host_remove(hostname)
 	return index(request)
-remove=wrap_rpc(remove)
 
+@wrap_rpc
 def special_feature_add(api, request, hostname):
 	type = request.REQUEST["type"]
 	group = request.REQUEST["group"]
 	bridge = request.REQUEST["bridge"]		
 	api.special_features_add(hostname, type, group, bridge)
 	return detail(request, hostname)
-special_feature_add=wrap_rpc(special_feature_add)
 
+@wrap_rpc
 def special_feature_remove(api, request, hostname):
 	type = request.REQUEST["type"]
 	group = request.REQUEST["group"]
 	api.special_features_remove(hostname, type, group)
 	return detail(request, hostname)
-special_feature_remove=wrap_rpc(special_feature_remove)
