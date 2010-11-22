@@ -14,3 +14,5 @@ buildui/build
 *.lyx#
 *.dia~
 *.png~
+*Thumbs.db*
+~$*.pptx
