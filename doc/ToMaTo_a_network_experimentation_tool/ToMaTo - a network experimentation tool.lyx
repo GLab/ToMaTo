@@ -142,14 +142,6 @@ Integrated Communication Systems Lab, University of Kaiserslautern, Germany
 \end_inset
 
 
-\begin_inset space ~
-\end_inset
-
-
-\begin_inset Newline newline
-\end_inset
-
-
 \begin_inset ERT
 status open
 
@@ -185,6 +177,25 @@ setcounter{footnote}{0}
 \end_inset
 
 
+\end_layout
+
+\begin_layout Abstract
+Networks are an important field of research in information technology and
+ experimental facilities are key instruments to enable practical research
+ in this area.
+ In the context of the German-Lab project, the topology management tool
+ 
+\begin_inset Quotes eld
+\end_inset
+
+ToMaTo
+\begin_inset Quotes erd
+\end_inset
+
+ has been developed to be used as experimental facility software.
+ This paper describes the features and the design of ToMaTo and evaluates
+ it by identifying common experiment types and matching their requirements
+ to the properties of ToMaTo.
 \end_layout
 
 \begin_layout Section
@@ -252,7 +263,7 @@ reference "sec:Related-work"
 
 \end_inset
 
- gives and overview of other experimental facility software and comparable
+ gives an overview of other experimental facility software and comparable
  solutions.
  The design of ToMaTo is described in section 
 \begin_inset CommandInset ref
@@ -312,8 +323,8 @@ key "CORE"
  CORE also allows to configure emulated link characteristics.
  CORE and VIRCONEL were created to allow a single user to setup an experiment,
  so they lack the ability to handle multiple users or multiple concurrent
- experiment topologies and they show additional limitations when used across
- multiple hosts.
+ experiment topologies.
+ They have additional limitations when used across multiple hosts.
 \end_layout
 
 \begin_layout Standard
@@ -348,7 +359,7 @@ key "DBLP:conf/osdi/WhiteLSRGNHBJ02"
 \end_inset
 
 .
- Emulab is a highly heterogeneous testbed with wireless and radio components
+ Emulab is a highly heterogeneous testbed with wifi and radio components
  as well as distributed nodes but the core is a computing cluster that allows
  users to boot custom software on the cluster nodes and connect them with
  virtual network topologies provided by dedicated hosts.
@@ -400,8 +411,8 @@ key "620"
 \end_layout
 
 \begin_layout Standard
-ToMaTo goal is to overcome limitations found in experimental facility software
- so that the user has maximal flexibility for his experiments.
+ToMaTo's goal is to overcome limitations found in experimental facility
+ software so that the user has maximal flexibility for his experiments.
  ToMaTo allows its users to configure and use multiple concurrent network
  topologies.
  Also it aims to allow lightweight virtualization and full operating system
@@ -420,13 +431,17 @@ ToMaTo design
 
 \begin_layout Standard
 \begin_inset Wrap figure
-lines 0
+lines 10
 placement O
 overhang 0in
 width "40col%"
 status open
 
 \begin_layout Plain Layout
+\begin_inset VSpace -1.5cm
+\end_inset
+
+
 \begin_inset Graphics
 	filename example1.png
 	width 50col%
@@ -482,10 +497,42 @@ Architecture
 \end_layout
 
 \begin_layout Standard
-{{Nathan fragen wegen back-end vs.
- backend}}ToMaTo uses virtualization technologies to allow experiments to
- run concurrently in isolated environments spanning parts of the experimental
- facility.
+\begin_inset Wrap figure
+lines 11
+placement O
+overhang 0in
+width "50text%"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename structure1.dia
+	width 50text%
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:ToMaTo-structure"
+
+\end_inset
+
+ToMaTo structure
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ToMaTo uses virtualization technologies to allow experiments to run concurrently
+ in isolated environments spanning parts of the experimental facility.
  ToMaTo consists of three modules, the host system, the central back-end
  and the web-based front-end as shown in figure 
 \begin_inset CommandInset ref
@@ -542,44 +589,6 @@ key "DBLP:journals/ccr/CarboneR10"
 \end_layout
 
 \begin_layout Standard
-\begin_inset Wrap figure
-lines 11
-placement O
-overhang 0in
-width "60col%"
-status open
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename structure1.dia
-	width 50text%
-
-\end_inset
-
-
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:ToMaTo-structure"
-
-\end_inset
-
-ToMaTo structure
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
 The host component allows the central back-end to configure and control
  these tools via a secure communication channel.
  This back-end is realized as a central component to allow easy resource
@@ -589,8 +598,8 @@ The host component allows the central back-end to configure and control
  To keep the host environment as simple as possible the back-end contains
  all program logic and uses a secure communication channel to execute commands
  on the hosts.
- The back-end also manages user authentication and authorization and a very
- basic accounting.
+ The back-end also manages user authentication and authorization and provides
+ a very basic accounting.
  Using an LDAP
 \begin_inset Foot
 status open
@@ -602,32 +611,6 @@ Lightweight Directory Access Protocol
 \end_inset
 
  server, existing user accounts can be easily integrated into the back-end.
-\end_layout
-
-\begin_layout Standard
-The back-end offers an XML interface to be used by front-end tools.
- Currently only one front-end exists, but the API is generic enough to allow
- other front-ends as well.
- The main ToMaTo front-end consists of a website that allows users to create
- and edit their topologies using a graphical editor and to manage the topologies
-, devices and connectors.
- Figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Graphical-topology-editor"
-
-\end_inset
-
- shows the ToMaTo website including the graphical editor, which is described
- in subsection 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Graphical-editor-and"
-
-\end_inset
-
-.
- 
 \end_layout
 
 \begin_layout Standard
@@ -663,7 +646,29 @@ Graphical topology editor
 
 \end_inset
 
+The back-end offers an XML interface to be used by front-end tools.
+ Currently only one front-end exists, but the API is generic enough to allow
+ other front-ends as well.
+ The main ToMaTo front-end consists of a website that allows users to create
+ and edit their topologies using a graphical editor and to manage the topologies
+, devices and connectors.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Graphical-topology-editor"
 
+\end_inset
+
+ shows the ToMaTo website including the graphical editor, which is described
+ in subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Graphical-editor-and"
+
+\end_inset
+
+.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -755,8 +760,7 @@ sysctl
  to the guest.
  Being a container-based virtualization, OpenVZ is very lightweight and
  offers flexible resource management (i.e.
- the external memory usage of a VM equals the internal usage inside the
- VM).
+ the external memory usage of a VM equals the usage inside the VM).
 \end_layout
 
 \begin_layout Standard
@@ -768,8 +772,8 @@ KVM offers a full virtualization including running one kernel per virtual
  hard disks and network interfaces is emulated by KVM.
  This offers maximal flexibility in choosing and configuring the VM but
  it also has a higher cost in terms of memory usage and performance reduction.
- ToMaTo offers both virtualization choices to the users to allow maximal
- flexibility for their experiments.
+ ToMaTo offers both virtualization choices to the users so they can choose
+ the optimal setups for their experiments.
  For both virtualization solutions ToMaTo offers pre-built virtual machines
  called templates.
  The users can choose between various Linux distributions in 32 and 64 bit
@@ -777,7 +781,7 @@ KVM offers a full virtualization including running one kernel per virtual
  For KVM also a pre-installed FreeBSD template is available.
  Users can also download and upload images of their virtual machines.
  This can either be used for backup purposes, or to prepare an experiment
- first before actually running it or to build images containing a custom
+ first before actually running it, or to build images containing a custom
  operating system that is not in the template list.
 \end_layout
 
@@ -821,8 +825,11 @@ Quality of service
  On connections using these connectors, network characteristics like packet
  loss, delay and bandwidth limitation can be emulated.
  Additionally users can select to capture network traffic at these connectors
- and download it as a pcap file to analyze or view the traffic using specialized
- tools like Wireshark
+ and download it as a 
+\shape italic
+pcap
+\shape default
+ file to analyze or view the traffic using specialized tools like Wireshark
 \begin_inset Foot
 status open
 
@@ -865,10 +872,10 @@ reference "fig:Graphical-topology-editor"
  For instance, two hosts can be connected by connecting both of them to
  an intermediate hub, switch, or router.
  The right hand side of the graphical editor provides a property menu where
- the properties of the currently selected component or interface can be
- configured.
- Depending on the selected entity, these properties include among others
- host IP-addresses, host names, network characteristics, and so on.
+ the properties of the currently selected component, interface or link can
+ be configured.
+ Depending on the selected entity, these properties include IP-addresses,
+ host names, network characteristics, and so on.
 \end_layout
 
 \begin_layout Standard
@@ -893,21 +900,7 @@ The graphical editor described so far is enough to create topologies of
  each host connected to each of the other hosts.
  Depending on the selected option, the IP-address subnets and netmasks are
  automatically configured and the IP-addresses are assigned to the host
- interfaces subsequently
-\begin_inset Foot
-status open
-
-\begin_layout Plain Layout
-Please note that especially this last step is a real advantage of virtually
- created topologies.
- In reality, when a network is setup out of real physical nodes, there is
- actually no possibility to remotely and automatically preconfigure all
- IP-addresses.
-\end_layout
-
-\end_inset
-
-.
+ interfaces subsequently.
 \end_layout
 
 \begin_layout Standard
@@ -1047,17 +1040,13 @@ Types of experiments
 The following experiment types have been identified in the German-Lab project.
 \end_layout
 
-\begin_layout Description
-Access
-\begin_inset space ~
-\end_inset
+\begin_layout Standard
 
-layer
-\begin_inset space ~
-\end_inset
-
-experiments: This kind of experiment considers the lower networking layers
- and examines the usage of hardware for networking.
+\series bold
+Access layer experiments
+\series default
+ consider the lower networking layers and examine the usage of hardware
+ for networking.
  An example for this experiment class are mobile handover protocols.
  These experiments need access to real hardware, they often need to run
  custom operating systems (e.g.
@@ -1067,17 +1056,12 @@ experiments: This kind of experiment considers the lower networking layers
  so supporting this kind of experiment was not a design goal for ToMaTo.
 \end_layout
 
-\begin_layout Description
-Network
-\begin_inset space ~
-\end_inset
+\begin_layout Standard
 
-layer
-\begin_inset space ~
-\end_inset
-
-experiments: This experiment class consideres the TCP/IP suite and its networkin
-g layers.
+\series bold
+Network layer experiments
+\series default
+ consider the TCP/IP suite and its networking layers.
  Examples for this class are experiments with IPv6 extensions and TCP substitute
 s.
  This kind of experiment needs to run modified kernels.
@@ -1087,29 +1071,25 @@ s with link emulation.
  
 \end_layout
 
-\begin_layout Description
-Protocol/Algorithm
-\begin_inset space ~
-\end_inset
+\begin_layout Standard
 
-experiments: This class of experiments works on top of the the network layer
- and consideres protocols and algorithms for bigger networks.
+\series bold
+Protocol/Algorithm experiments
+\series default
+ work on top of the network layer and consider protocols and algorithms
+ for bigger networks.
  Nearly all peer-to-peer experiments fall in this category.
  These experiments need a high number of devices but not much hardware access,
  especially no kernel access.
  They only need simple network topologies with link emulation.
 \end_layout
 
-\begin_layout Description
-Legacy
-\begin_inset space ~
-\end_inset
+\begin_layout Standard
 
-application
-\begin_inset space ~
-\end_inset
-
-experiments: These experiments contain legacy software, i.e.
+\series bold
+Legacy application experiments
+\series default
+ contain legacy software, i.e.
  widespread software that cannot be modeled because of its unspecified or
  unpublished behavior.
  Examples of this software are Skype and Windows.
@@ -1120,8 +1100,14 @@ experiments: These experiments contain legacy software, i.e.
 \end_layout
 
 \begin_layout Standard
-Experiences of the German-Lab experimental facility show that most experiments
- can be categorized fairly well with this scheme.
+Experiences of the German-Lab experimental facility
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:conf/fis/SchwerdelGHRM10"
+
+\end_inset
+
+ show that most experiments can be categorized fairly well with this scheme.
  A few experiments have two experiment classes, and thus have requirements
  of both classes.
  The requirements of the classes are very heterogeneous but a general trade-off
@@ -1148,15 +1134,22 @@ reference "sec:Types-of-experiments"
 
 \end_inset
 
- except for access layer experiments because these experiments need a specialize
-d experimental facility depending on the access technology.
+ except for 
+\series bold
+access layer experiments
+\series default
+ because these experiments need a specialized experimental facility depending
+ on the access technology.
  The Wisebed and DES testbeds for example are specialized experimental facilitie
 s for sensor networks and wifi.
 \end_layout
 
 \begin_layout Standard
-Network layer experiments can be done easily in ToMaTo using KVM devices
- and switch connectors.
+
+\series bold
+Network layer experiments
+\series default
+ can be done easily in ToMaTo using KVM devices and switch connectors.
  The KVM devices offer all needed flexibility in kernel choice and modification
  required by this experiment class.
  Switched networks are layer-3-agnostic so any TCP/IP modification or substitute
@@ -1167,8 +1160,11 @@ Network layer experiments can be done easily in ToMaTo using KVM devices
 \end_layout
 
 \begin_layout Standard
-Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
- and switch or router connectors.
+
+\series bold
+Protocol/Algorithm experiments
+\series default
+ are supported in ToMaTo using OpenVZ devices and switch or router connectors.
  Since OpenVZ devices are very lightweight, a high number of devices can
  be used in topologies.
  Using an Internet connector, external resources like Planet-Lab nodes can
@@ -1181,10 +1177,13 @@ Protocol/Algorithm experiments are supported in ToMaTo using OpenVZ devices
 \end_layout
 
 \begin_layout Standard
-ToMaTo also supports legacy application experiments using KVM devices and
- internet connectors.
+ToMaTo also supports 
+\series bold
+legacy application experiments
+\series default
+ using KVM devices and internet connectors.
  KVM devices can run nearly all x86 operating systems including Windows
- and BSD, so users can build a custom environment for their legacy applications.
+ and BSD, so users can build custom environments for their legacy applications.
  The legacy application can communicate with external services using the
  internet connector.
  Traffic of the legacy application can be captured and analyzed using specialize
@@ -1240,7 +1239,7 @@ Conclusion
 \end_layout
 
 \begin_layout Standard
-ToMaTo allows its users to design, manage and use networking topologies
+ToMaTo allows its users to design, manage and control networking topologies
  for use in network research.
  ToMaTo fits for a wide range of experiments identified as common in the
  context of the German-Lab project.
