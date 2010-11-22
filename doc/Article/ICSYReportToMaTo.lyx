@@ -1,0 +1,219 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options true
+\begin_modules
+theorems-ams
+eqs-within-sections
+figs-within-sections
+\end_modules
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize a4paper
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine natbib_authoryear
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Next generation testbed software developed at ICSY
+\end_layout
+
+\begin_layout Author
+Dennis Schwerdel
+\end_layout
+
+\begin_layout Abstract
+ToMaTo - the topology management tool, a novel experimentation software
+ for network research is being developed at ICSY in the German-Lab context.
+ The tool enables easy setup and control of networking experiments.
+\end_layout
+
+\begin_layout Standard
+As part of the German-Lab project, ICSY runs a server cluster that is part
+ of the German-Lab experimental facility, consisting of over 180 nodes at
+ 10 sites all over Germany.
+ Work package 7 of German-Lab is responsible for running and maintaining
+ the experimental facility.
+ As member of this work package as well as some projects related to the
+ experimental facility, ICSY developed ToMaTo in cooperation with its German-Lab
+ partners.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename logo.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+ToMaTo allows researchers to design topologies for network experiments,
+ consisting of devices, i.e.
+ active components that produce and consume networking data like computers,
+ and connectors, i.e.
+ networking components that transport and manipulate networking data like
+ switches or routers.
+ 
+\end_layout
+
+\begin_layout Standard
+Researchers can run their experiment software on the devices like on virtual
+ machines and can connect them via hubs, switches, routers or via the Internet.
+ A graphical editor allows to create topologies in seconds, so researchers
+ can focus on the experiment and not on how to set it up.
+ To build huge topologies the built-in topology creator can be used.
+ The topology creator allows researchers to create star, ring or full mesh
+ topologies consisting of large numbers of devices.
+ The devices are automatically connected, configured and arranged to form
+ the selected topology.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename example1.png
+	scale 64
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+ToMaTo helps researchers to configure their topologies by automatically
+ configuring network interfaces so that all devices can communicate.
+ The users are free to adapt this setup to their needs, of course.
+ ToMaTo also supports link emulation, i.e.
+ researchers can configure common networking characteristics like packet
+ loss, latency and bandwidth limitations for the network connections between
+ their devices.
+ Packet capturing allows researchers to track what packets are sent and
+ received by their devices.
+ Using tools like Wireshark, the users can analyze the network traffic after
+ the experiment.
+ A built-in console viewer allows researchers to get command line access
+ to their devices with a single click.
+\end_layout
+
+\begin_layout Standard
+All this is realized by a host component, a backend and a frontend component.
+ The host component is installed on all physical hosts and provides virtualizati
+on features.
+ The backend component contains all the program logic and manages resources
+ and user accounts.
+ The frontend consists of a website including a graphical editor and a console
+ viewer.
+\end_layout
+
+\begin_layout Standard
+ToMaTo stays lightweight and efficient in resource usage, i.e physical hosts
+ can hold up to hundreds of virtual devices.
+ This allows researchers to build large topologies or run multiple concurrent
+ experiments while the resource usage stays low.
+ A low number of physical nodes is needed to build large experiments.
+ The German-Lab experimental facility already contains 20 ToMaTo-enabled
+ hosts and plans exist to increase this number to 50.
+ Via 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://tomato.german-lab.de
+\end_layout
+
+\end_inset
+
+ all German-Lab users can access and use ToMaTo for their own network research
+ experiments.
+\end_layout
+
+\begin_layout Standard
+The goal of ToMaTo is to support network research and to help researchers
+ focus on the experiment.
+ With its contribution to this software, ICSY helps to enable networking
+ research in general and future internet research like the ICSY SONATE project
+ in particular.
+\end_layout
+
+\end_body
+\end_document
