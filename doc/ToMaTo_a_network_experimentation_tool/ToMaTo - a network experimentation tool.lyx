@@ -215,7 +215,14 @@ The Internet has a large economic influence but is based on legacy mechanisms
  for changes even of core technologies of the Internet.
  A lot of research work has been done on improving isolated aspects of the
  Internet but in the last years also a lot of holistic research efforts
- investigate concepts and technologies for future networks in general.
+ investigate concepts and technologies for future networks in general
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DBLP:journals/it/MullerR08"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
