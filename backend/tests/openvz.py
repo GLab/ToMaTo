@@ -5,7 +5,7 @@ Created on Aug 30, 2010
 '''
 import unittest
 import tests
-import glabnetman as api
+import tomato as api
 
 TOP1 = '''
 <topology name="test1">

@@ -1,0 +1,9 @@
+exit 0 #do not execute
+
+for i in $(sqlite3 db.sqlite .tables); do
+  echo $i
+done | fgrep glabnetman_ | while read old; do
+  new=$(echo $old | sed -e 's/glabnetman/tomato/g')
+  echo "ALTER TABLE $old RENAME TO $new;"
+done | sqlite3 db.sqlite
+sqlite3 db.sqlite 'DELETE FROM south_migrationhistory WHERE app_name="glabnetman"; INSERT INTO south_migrationhistory (app_name, migration, applied) VALUES ("tomato", "0001_initial", "2010-08-31 07:55:45.734725");'

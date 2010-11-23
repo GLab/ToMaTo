@@ -16,7 +16,7 @@
 
 import unittest
 import tests
-import glabnetman as api
+import tomato as api
 
 class Test(unittest.TestCase):
 

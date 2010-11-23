@@ -23,7 +23,7 @@ import ConfigParser, os
 This class represents the configuration
 """
 config = ConfigParser.SafeConfigParser()
-config.read(['glabnetman.conf', '/etc/glabnetman.conf', os.path.expanduser('~/.glabnetman.conf')])
+config.read(['tomato.conf', '/etc/tomato.conf', os.path.expanduser('~/.tomato.conf')])
 
 def get(section, option, default):
     """
@@ -46,14 +46,14 @@ auth_ldap_identity_base = get("auth_ldap", "identity_base", 'ou=identities,dc=ge
 auth_ldap_user_group = get("auth_ldap", "user_group", 'cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de')
 auth_ldap_admin_group = get("auth_ldap", "admin_group", 'cn=admin,ou=management,ou=groups,dc=german-lab,dc=de')
 
-local_control_dir = get("local", "control_dir", "/tmp/glabnetem")
+local_control_dir = get("local", "control_dir", "/tmp/tomato")
 """
 The local directory to use for preparing control scripts before they are uploaded to the hosts.
 """
 
 log_dir = get("local", "log_dir", "logs")
 
-remote_control_dir = get("remote", "control_dir", "/root/glabnetman")
+remote_control_dir = get("remote", "control_dir", "/root/tomato")
 """
 The remote directory to use for control scripts
 """
@@ -63,7 +63,7 @@ remote_dry_run = parse_bool(get("remote", "dry_run", True))
 If this is true all remote commands are just printed but not executed
 """
 
-password_salt = get("local", "password_salt", "glabnetman")
+password_salt = get("local", "password_salt", "tomato")
 
 auth_dry_run = parse_bool(get("auth", "dry_run", True))
 
@@ -81,9 +81,9 @@ DATABASE_NAME = get("local", "database_name", 'db.sqlite')
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 
-INSTALLED_APPS = ('glabnetman', 'south')
+INSTALLED_APPS = ('tomato', 'south')
 
-if os.environ.has_key('GLABNETMAN_TESTING'):
+if os.environ.has_key('TOMATO_TESTING'):
     print "Running in testing mode"
     DATABASE_ENGINE = "sqlite3"
     DATABASE_NAME = "testing.db.sqlite"

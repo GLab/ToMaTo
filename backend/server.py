@@ -21,7 +21,7 @@
 Requires python-ldap, python-twisted-web
 """
 
-import glabnetman
+import tomato
 
 import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
@@ -53,7 +53,7 @@ class APIServer(xmlrpc.XMLRPC):
 		self.api=papi
 		self.introspection=Introspection(self.api)
 		xmlrpc.XMLRPC.__init__(self)
-		self.logger = glabnetman.log.Logger(glabnetman.config.log_dir + "/api.log")
+		self.logger = tomato.log.Logger(tomato.config.log_dir + "/api.log")
 
 	def log(self, function, args, user):
 		if len(str(args)) < 50:
@@ -69,9 +69,9 @@ class APIServer(xmlrpc.XMLRPC):
 			raise
 		except Exception, exc:
 			traceback.print_exc()
-			glabnetman.fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+			tomato.fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.logger.log("Exception: %s" % exc, user=user.name)
-			raise glabnetman.fault.new(glabnetman.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
+			raise tomato.fault.new(tomato.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
 
 	def render(self, request):
 		username=request.getUser()
@@ -98,10 +98,10 @@ class APIServer(xmlrpc.XMLRPC):
 			return server.NOT_DONE_YET
 
 if __name__ == "__main__":
-	api_server=APIServer(glabnetman)
-	if glabnetman.config.server_ssl:
-		sslContext = ssl.DefaultOpenSSLContextFactory(glabnetman.config.server_ssl_private_key, glabnetman.config.server_ssl_ca_key) 
-		reactor.listenSSL(glabnetman.config.server_port, server.Site(api_server), contextFactory = sslContext)
+	api_server=APIServer(tomato)
+	if tomato.config.server_ssl:
+		sslContext = ssl.DefaultOpenSSLContextFactory(tomato.config.server_ssl_private_key, tomato.config.server_ssl_ca_key) 
+		reactor.listenSSL(tomato.config.server_port, server.Site(api_server), contextFactory = sslContext)
 	else:
-		reactor.listenTCP(glabnetman.config.server_port, server.Site(api_server))
+		reactor.listenTCP(tomato.config.server_port, server.Site(api_server))
 	reactor.run()

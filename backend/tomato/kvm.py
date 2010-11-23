@@ -46,7 +46,7 @@ class KVMDevice(generic.Device):
 
 	def download_image(self):
 		tmp_id = uuid.uuid1()
-		filename = "/tmp/glabnetman-%s" % tmp_id
+		filename = "/tmp/tomato-%s" % tmp_id
 		self.host.download("/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id, filename)
 		return filename
 

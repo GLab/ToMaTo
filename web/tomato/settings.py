@@ -66,7 +66,7 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.RemoteUserAuthBackend',)
 
-ROOT_URLCONF = 'glabnetman.urls'
+ROOT_URLCONF = 'tomato.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -85,5 +85,5 @@ INSTALLED_APPS = (
 server_protocol = "https"
 server_host = "localhost"
 server_port = "8000"
-server_httprealm="Glab Network Manager"
+server_httprealm="G-Lab ToMaTo"
 help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"

@@ -203,7 +203,7 @@ class OpenVZDevice(generic.Device):
 	def upload_image(self, filename, task):
 		task.subtasks_total=2
 		tmp_id = uuid.uuid1()
-		remote_filename= "/tmp/glabnetman-%s" % tmp_id
+		remote_filename= "/tmp/tomato-%s" % tmp_id
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("rm -rf /var/lib/vz/private/%s" % self.openvz_id, task)
@@ -219,7 +219,7 @@ class OpenVZDevice(generic.Device):
 
 	def download_image(self):
 		tmp_id = uuid.uuid1()
-		filename = "/tmp/glabnetman-%s" % tmp_id
+		filename = "/tmp/tomato-%s" % tmp_id
 		self.host.execute("tar --numeric-owner -czf %s -C /var/lib/vz/private/%s . " % ( filename, self.openvz_id ) )
 		self.host.download("%s" % filename, filename)
 		self.host.execute("rm %s" % filename)

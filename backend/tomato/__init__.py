@@ -16,14 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys
-os.environ['DJANGO_SETTINGS_MODULE']="glabnetman.config"
+os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 def db_migrate():
 	from django.core.management import call_command
 	call_command('syncdb', verbosity=0)
 	from south.management.commands import migrate
 	cmd = migrate.Command()
-	cmd.handle(app="glabnetman", verbosity=1)
+	cmd.handle(app="tomato", verbosity=1)
 db_migrate()
 
 import config, log, generic, topology, hosts, fault, tasks

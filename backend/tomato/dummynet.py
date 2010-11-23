@@ -149,7 +149,7 @@ class EmulatedConnection(generic.Connection):
 
 	def download_capture(self):
 		tmp_id = uuid.uuid1()
-		filename = "/tmp/glabnetman-%s" % tmp_id
+		filename = "/tmp/tomato-%s" % tmp_id
 		host = self.interface.device.host
 		host.execute("tar -czf %s -C %s . " % ( filename, self._capture_dir() ) )
 		host.download("%s" % filename, filename)

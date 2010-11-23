@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, glabnetman
+import sys, tomato
 
 try:
 	from south.management.commands import schemamigration
 	cmd = schemamigration.Command()
-	initial = sys.argv[1] == "initial"
-	cmd.handle(app="glabnetman", name=sys.argv[1], initial=initial, auto=True)
+	if sys.argv[1] == "initial":
+		cmd.handle(app="tomato", name=sys.argv[1], initial=True)
+	else:
+		cmd.handle(app="tomato", name=sys.argv[1], initial=False, auto=True)
 except:
 	from south.management.commands import startmigration
 	cmd = startmigration.Command()
 	initial = sys.argv[1] == "initial"
-	cmd.handle(app="glabnetman", name=sys.argv[1], initial=initial, auto=True)
+	cmd.handle(app="tomato", name=sys.argv[1], initial=initial, auto=True)
