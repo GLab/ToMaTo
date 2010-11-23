@@ -233,8 +233,8 @@ All of these research projects need ways to evaluate their ideas and results.
  modeled.
  New protocols and architectures will have to work with legacy components,
  i.e.
- currently widespread hardware and software, often with unpublished behavior
- details.
+ currently widespread hardware and software, which have often unpublished
+ behavior details.
 \end_layout
 
 \begin_layout Standard
@@ -373,8 +373,8 @@ key "DBLP:conf/osdi/WhiteLSRGNHBJ02"
  This setup allows researchers to access actual hardware and the virtual
  networks offer high bandwidth.
  On the other hand the testbed design does not support distribution of physical
- hosts and the efficiency is low because all experiments use real hosts
- as no virtualization is used.
+ hosts and efficiency is low because all experiments use real hosts as no
+ virtualization is used.
 \end_layout
 
 \begin_layout Standard
@@ -422,7 +422,7 @@ ToMaTo's goal is to overcome limitations found in experimental facility
  software so that the user has maximal flexibility for his experiments.
  ToMaTo allows its users to configure and use multiple concurrent network
  topologies.
- Also it aims to allow lightweight virtualization and full operating system
+ It also aims to allow lightweight virtualization and full operating system
  access for the experiments.
 \end_layout
 
@@ -551,8 +551,8 @@ reference "fig:ToMaTo-structure"
 .
  The host system runs on all hosts of the experimental facility and offers
  virtualized resources to be controlled by the central back-end.
- The host hypervisor consists of a Linux operating system with additional
- components installed:
+ The host hypervisor consists of a Linux operating system with the following
+ additional components installed:
 \end_layout
 
 \begin_layout Itemize
@@ -606,7 +606,7 @@ The host component allows the central back-end to configure and control
  all program logic and uses a secure communication channel to execute commands
  on the hosts.
  The back-end also manages user authentication and authorization and provides
- a very basic accounting.
+ very basic accounting.
  Using an LDAP
 \begin_inset Foot
 status open
@@ -787,9 +787,9 @@ KVM offers a full virtualization including running one kernel per virtual
  architectures.
  For KVM also a pre-installed FreeBSD template is available.
  Users can also download and upload images of their virtual machines.
- This can either be used for backup purposes, or to prepare an experiment
- first before actually running it, or to build images containing a custom
- operating system that is not in the template list.
+ This can be used for backup purposes, to prepare an experiment first before
+ actually running it or to build images containing a custom operating system
+ that is not in the template list.
 \end_layout
 
 \begin_layout Subsection
@@ -825,14 +825,14 @@ Quality of service
 
  guarantees and, due to technical reasons, no QoS limitations can be set
  on this connector type.
- Other connector types use the Tinc VPN with which devices can be connected
- in private networks that are not connected to each others nor to the Internet.
+ Other connector types use the Tinc VPN which connects devices in private
+ networks that are not connected to each other nor to the Internet.
  Users can choose between hub, switch and router semantics in this private
  network.
  On connections using these connectors, network characteristics like packet
  loss, delay and bandwidth limitation can be emulated.
- Additionally users can select to capture network traffic at these connectors
- and download it as a 
+ Additionally users can capture network traffic at these connectors and
+ download it as a 
 \shape italic
 pcap
 \shape default
@@ -979,7 +979,7 @@ y
  to each other to create a topology on top of the subtopologies.
  These steps can be repeated arbitrarily often to design a final topology
  of several hierarchical layers.
- In the example displayed in the screenshot in figure 
+ In the example displayed in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:top-creator"
