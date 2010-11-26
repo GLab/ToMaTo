@@ -20,68 +20,50 @@ import tomato as api
 
 TOP1 = '''
 <topology name="test1">
-	<device id="ovz1" type="openvz" root_password="test">
-		<interface id="eth0" use_dhcp="true"/>
-		<interface id="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
-		<interface id="eth2" use_dhcp="true"/>
-		<interface id="eth3" use_dhcp="true"/>
+	<device name="ovz1" type="openvz" root_password="test">
+		<interface name="eth0" use_dhcp="true"/>
+		<interface name="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
+		<interface name="eth2" use_dhcp="true"/>
+		<interface name="eth3" use_dhcp="true"/>
 	</device>
-	<device id="kvm1" type="kvm">
-		<interface id="eth0"/>
-		<interface id="eth1"/>
-		<interface id="eth2"/>
-		<interface id="eth3"/>
+	<device name="kvm1" type="kvm">
+		<interface name="eth0"/>
+		<interface name="eth1"/>
+		<interface name="eth2"/>
+		<interface name="eth3"/>
 	</device>
-	<connector id="internet" type="special" feature_type="internet">
-		<connection device="ovz1" interface="eth0"/>
-		<connection device="kvm1" interface="eth0"/>
+	<connector name="internet" type="special" feature_type="internet">
+		<connection interface="ovz1.eth0"/>
+		<connection interface="kvm1.eth0"/>
 	</connector>
-	<connector id="hub1" type="hub">
-		<connection device="ovz1" interface="eth1" lossratio="0.1" delay="50" bandwidth="200"/>
-		<connection device="kvm1" interface="eth1"/>
+	<connector name="hub1" type="hub">
+		<connection interface="ovz1.eth1" lossratio="0.1" delay="50" bandwidth="200"/>
+		<connection interface="kvm1.eth1"/>
 	</connector>
-		<connector id="switch1" type="switch">
-				<connection device="ovz1" interface="eth2" lossratio="0.1" delay="50" bandwidth="200"/>
-				<connection device="kvm1" interface="eth2"/>
-		</connector>
-		<connector id="router1" type="router">
-				<connection device="ovz1" interface="eth3" gateway="10.1.1.254/24" lossratio="0.1" delay="50" bandwidth="200"/>
-				<connection device="kvm1" interface="eth3" gateway="10.1.2.254/24"/>
-		</connector>
+	<connector name="switch1" type="switch">
+		<connection interface="ovz1.eth2" lossratio="0.1" delay="50" bandwidth="200"/>
+		<connection interface="kvm1.eth2"/>
+	</connector>
+	<connector name="router1" type="router">
+		<connection interface="ovz1.eth3" gateway="10.1.1.254/24" lossratio="0.1" delay="50" bandwidth="200"/>
+		<connection interface="kvm1.eth3" gateway="10.1.2.254/24"/>
+	</connector>
 </topology>
 '''
 
 class Test(unittest.TestCase):
 
 	def setUp(self):
-		admin = api.login("admin", "123")
-		api.host_add("host1a", "group1", "vmbr0", user=admin)
-		api.host_add("host1b", "group1", "vmbr0", user=admin)
-		api.host_add("host2a", "group2", "vmbr0", user=admin)
-		api.host_add("host2b", "group2", "vmbr0", user=admin)
-		api.template_add("tpl_openvz_1", "openvz", user=admin)
-		api.template_add("tpl_openvz_2", "openvz", user=admin)
-		api.template_set_default("openvz", "tpl_openvz_1", user=admin)
-		api.template_add("tpl_kvm_1", "kvm", user=admin)
-		api.template_add("tpl_kvm_2", "kvm", user=admin)
-		api.template_set_default("kvm", "tpl_kvm_1", user=admin)
-		tests.wait_for_tasks(api, admin)
+		tests.default_setUp()
 		
  	def tearDown(self):
-		admin = api.login("admin", "123")
-		tests.wait_for_tasks(api, admin)		
-		for top in api.top_list("*", "*", user=admin):
-			api.top_remove(top["id"], user=admin)
-		for host in api.host_list("*", user=admin):
-			api.host_remove(host["name"], user=admin)
-		for template in api.template_list("*", user=admin):
-			api.template_remove(template["name"], user=admin)
+		tests.default_tearDown()
 
 	def testImport(self):
 		admin = api.login("admin", "123")
 		id = api.top_import(TOP1, user=admin)
 		assert id
-		list = api.top_list("*", "*", user=admin)
+		list = api.top_list("*", "*", "*", user=admin)
 		assert len(list) == 1
 		assert list[0]["name"] == "test1"
 

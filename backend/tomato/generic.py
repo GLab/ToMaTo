@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import hosts, util, fault, re, generic
+import hosts, util, fault, re
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -121,7 +121,8 @@ class Device(models.Model):
 			x_iface = doc.createElement ( "interface" )
 			iface.upcast().encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
-		dom.setAttribute("pos", self.pos)
+		if self.pos:
+			dom.setAttribute("pos", self.pos)
 		
 	def start(self):
 		self.topology.renew()
@@ -159,9 +160,10 @@ class Device(models.Model):
 
 	def destroy(self):
 		for iface in self.interfaces_all():
-			con = iface.connection.connector
-			if not con.is_special() and not con.state == State.CREATED:
-				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
+			if iface.is_connected():
+				con = iface.connection.connector
+				if not con.is_special() and not con.state == State.CREATED:
+					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -187,12 +189,12 @@ class Device(models.Model):
 		if "pos" in properties:
 			self.pos = properties["pos"]
 		if "template" in properties:
-			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
 			self.template = hosts.get_template_name(self.type, properties["template"])
 			if not self.template:
 				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		if "hostgroup" in properties:
-			assert self.state == generic.State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
+			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
 			self.hostgroup = properties["hostgroup"]
 		self.save()
 
@@ -224,6 +226,13 @@ class Interface(models.Model):
 			return True
 		except:
 			return False
+	
+	def is_connected(self):
+		try:
+			self.connection
+			return True
+		except:
+			return False	
 	
 	def upcast(self):
 		if self.is_configured():

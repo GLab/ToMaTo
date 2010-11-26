@@ -30,3 +30,40 @@ def tasks_running(api, user):
 		if t["active"]:
 			count+=1
 	return count
+
+def default_setUp():
+	import tomato as api
+	admin = api.login("admin", "123")
+	api.host_add("host1a", "group1", True, 0, 10, 0, 10, 0, 10, user=admin)
+	api.host_add("host1b", "group1", True, 0, 10, 0, 10, 0, 10, user=admin)
+	api.host_add("host2a", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
+	api.host_add("host2b", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
+	api.host_add("host2c", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
+	api.template_add("tpl_openvz_1", "openvz", "", user=admin)
+	api.template_add("tpl_openvz_2", "openvz", "", user=admin)
+	api.template_set_default("openvz", "tpl_openvz_1", user=admin)
+	api.template_add("tpl_kvm_1", "kvm", "", user=admin)
+	api.template_add("tpl_kvm_2", "kvm", "", user=admin)
+	api.template_set_default("kvm", "tpl_kvm_1", user=admin)
+	wait_for_tasks(api, admin)
+	api.special_features_add("host1a", "internet", "internet1", "vmbr0", user=admin)
+	wait_for_tasks(api, admin)
+	
+def default_tearDown():
+	import tomato as api
+	admin = api.login("admin", "123")
+	wait_for_tasks(api, admin)		
+	for top in api.top_list("*", "*", "*", user=admin):
+		api.top_remove(top["id"], user=admin)
+	for host in api.host_list("*", user=admin):
+		api.host_remove(host["name"], user=admin)
+	for template in api.template_list("*", user=admin):
+		api.template_remove(template["name"], user=admin)
+		
+def encode_modification(type, element, subelement, attributes):
+	prop = ""
+	if attributes:
+		prop = "<properties %s />" % ( " ".join ("%s=\"%s\"" % (k, v) for k, v in attributes.items() ) ) 
+	mod = "<modification type=\"%s\" element=\"%s\" subelement=\"%s\">%s</modification>" % (type, element, subelement, prop)
+	mods = "<modifications>%s</modifications>" % mod
+	return mods

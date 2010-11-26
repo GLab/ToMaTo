@@ -33,18 +33,18 @@ class Test(unittest.TestCase):
 	def testTemplates(self):
 		admin = api.login("admin", "123")
 		assert api.template_list("*", user=admin) == []
-		api.template_add("tpl_1", "openvz", user=admin)
-		api.template_add("tpl_2", "kvm", user=admin)
+		api.template_add("tpl_1", "openvz", "url1", user=admin)
+		api.template_add("tpl_2", "kvm", "url2", user=admin)
 		assert len(api.template_list("*", user=admin)) == 2
 		api.template_remove("tpl_1", user=admin)
 		assert len(api.template_list("kvm", user=admin)) == 1
 
 	def testTemplateDefaults(self):
 		admin = api.login("admin", "123")
-		api.template_add("tpl_1", "openvz", user=admin)
-		api.template_add("tpl_2", "openvz", user=admin)
-		api.template_add("tpl_3", "kvm", user=admin)
-		api.template_add("tpl_4", "kvm", user=admin)
+		api.template_add("tpl_1", "openvz", "url1", user=admin)
+		api.template_add("tpl_2", "openvz", "url2", user=admin)
+		api.template_add("tpl_3", "kvm", "url3", user=admin)
+		api.template_add("tpl_4", "kvm", "url4", user=admin)
 		api.template_set_default("kvm", "tpl_3", user=admin)
 		api.template_set_default("openvz", "tpl_1", user=admin)
 		

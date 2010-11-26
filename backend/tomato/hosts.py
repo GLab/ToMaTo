@@ -50,6 +50,8 @@ class Host(models.Model):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		"""
+		if config.remote_dry_run:
+			return True
 		task.output.write("checking for openvz...\n")
 		res = self.get_result("vzctl --version; echo $?")
 		task.output.write(res)
@@ -334,14 +336,13 @@ def get_best_host(group, device=None):
 		all = all.filter(group=group)
 	if device:
 		for iface in device.interfaces_all():
-			if iface.connection:
+			if iface.is_connected():
 				sf = iface.connection.connector.upcast()
 				if sf.is_special():
 					if sf.feature_group:
 						all = all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
 					else:
 						all = all.filter(specialfeature__feature_type=sf.feature_type).distinct()
-					print all
 	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
@@ -439,10 +440,11 @@ def measure_physical_links():
 					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev)
 				except fault.Fault:
 					pass
-				
-measurement_task = util.RepeatedTimer(3600, measure_physical_links)
-measurement_task.start()
-atexit.register(measurement_task.stop)
+
+if not config.TESTING:				
+	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
+	measurement_task.start()
+	atexit.register(measurement_task.stop)
 
 def host_check(host):
 	import tasks

@@ -119,6 +119,9 @@ class Modification():
 			con = top.connectors_get(self.element).upcast()
 			name = self.subelement
 			con.connections_delete(name, task)
+			
+		else:
+			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
 							
 def read_from_dom(dom):
 	modlist = []
@@ -140,6 +143,8 @@ def _xml_attrs_to_dict(xml):
 
 def convert_specification(dom):
 	modlist = []
+	if "name" in dom.attributes.keys():
+		modlist.append(Modification("topology-rename", None, None, {"name": dom.attributes["name"].value}))
 	for dev in dom.getElementsByTagName("device"):
 		devname = dev.getAttribute("name")
 		modlist.append(Modification("device-create", None, None, _xml_attrs_to_dict(dev.attributes)))

@@ -54,6 +54,8 @@ class TaskStatus():
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
 		except Exception, exc:
+			if config.TESTING:
+				traceback.print_exc()
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 			self.failed()
@@ -119,6 +121,7 @@ def cleanup():
 	for task in UploadTask.tasks.values():
 		task.check_delete()
 	
-cleanup_task = util.RepeatedTimer(3, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
+if not config.TESTING:	
+	cleanup_task = util.RepeatedTimer(3, cleanup)
+	cleanup_task.start()
+	atexit.register(cleanup_task.stop)

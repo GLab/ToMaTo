@@ -429,9 +429,10 @@ def update_resource_usage():
 	for top in all():
 		top.update_resource_usage()
 
-cleanup_task = util.RepeatedTimer(300, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
-update_resource_usage_task = util.RepeatedTimer(10000, update_resource_usage)
-update_resource_usage_task.start()
-atexit.register(update_resource_usage_task.stop)
+if not config.TESTING:
+	cleanup_task = util.RepeatedTimer(300, cleanup)
+	cleanup_task.start()
+	atexit.register(cleanup_task.stop)
+	update_resource_usage_task = util.RepeatedTimer(10000, update_resource_usage)
+	update_resource_usage_task.start()
+	atexit.register(update_resource_usage_task.stop)

@@ -20,44 +20,22 @@ import tomato as api
 
 TOP1 = '''
 <topology name="test1">
-	<device id="openvz1" type="openvz" root_password="test123">
-		<interface id="eth0" use_dhcp="true"/>
-		<interface id="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
-		<interface id="eth2" use_dhcp="true"/>
+	<device name="openvz1" type="openvz" root_password="test123">
+		<interface name="eth0" use_dhcp="true"/>
+		<interface name="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
+		<interface name="eth2" use_dhcp="true"/>
 	</device>
-	<device id="kvm1" type="kvm">
-		<interface id="eth0"/>
-		<interface id="eth1"/>
+	<device name="kvm1" type="kvm">
+		<interface name="eth0"/>
+		<interface name="eth1"/>
 	</device>
-	<connector id="switch1" type="switch">
-		<connection device="openvz1" interface="eth0"/>
-		<connection device="kvm1" interface="eth0"/>
+	<connector name="switch1" type="switch">
+		<connection interface="openvz1.eth0"/>
+		<connection interface="kvm1.eth0"/>
 	</connector> 
-	<connector id="router1" type="router">
-		<connection device="openvz1" interface="eth1" gateway="10.1.1.254/24"/>
-		<connection device="kvm1" interface="eth1" gateway="10.1.2.254/24"/>
-	</connector> 
-</topology>
-'''
-
-TOP2 = '''
-<topology name="test1">
-	<device id="openvz1" type="openvz" root_password="test123">
-		<interface id="eth0" use_dhcp="true"/>
-		<interface id="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
-		<interface id="eth2" use_dhcp="true"/>
-	</device>
-	<device id="kvm1" type="kvm">
-		<interface id="eth0"/>
-		<interface id="eth1"/>
-	</device>
-	<connector id="switch1" type="switch">
-		<connection device="openvz1" interface="eth2"/>
-		<connection device="kvm1" interface="eth0"/>
-	</connector> 
-	<connector id="router1" type="router">
-		<connection device="openvz1" interface="eth1" gateway="10.1.2.254/24"/>
-		<connection device="kvm1" interface="eth1" gateway="10.1.1.254/24"/>
+	<connector name="router1" type="router">
+		<connection interface="openvz1.eth1" gateway="10.1.1.254/24"/>
+		<connection interface="kvm1.eth1" gateway="10.1.2.254/24"/>
 	</connector> 
 </topology>
 '''
@@ -65,32 +43,18 @@ TOP2 = '''
 class Test(unittest.TestCase):
 
 	def setUp(self):
-		admin = api.login("admin", "123")
-		api.host_add("host1a", "group1", "vmbr0", user=admin)
-		api.host_add("host1b", "group1", "vmbr0", user=admin)
-		api.host_add("host2a", "group2", "vmbr0", user=admin)
-		api.host_add("host2b", "group2", "vmbr0", user=admin)
-		api.template_add("tpl_openvz_1", "openvz", user=admin)
-		api.template_add("tpl_openvz_2", "openvz", user=admin)
-		api.template_set_default("openvz", "tpl_openvz_1", user=admin)
-		api.template_add("tpl_kvm_1", "kvm", user=admin)
-		api.template_add("tpl_kvm_2", "kvm", user=admin)
-		api.template_set_default("kvm", "tpl_kvm_1", user=admin)
-		tests.wait_for_tasks(api, admin)
+		tests.default_setUp()
 		
-	def tearDown(self):
-		admin = api.login("admin", "123")
-		tests.wait_for_tasks(api, admin)		
-		for top in api.top_list("*", "*", user=admin):
-			api.top_remove(top["id"], user=admin)
-		for host in api.host_list("*", user=admin):
-			api.host_remove(host["name"], user=admin)
-		for template in api.template_list("*", user=admin):
-			api.template_remove(template["name"], user=admin)
+ 	def tearDown(self):
+		tests.default_tearDown()
 
 	def testLifecycle(self):
 		admin = api.login("admin", "123")
 		id = api.top_import(TOP1, user=admin)
+		api.device_prepare(id, "openvz1", user=admin)
+		tests.wait_for_tasks(api, admin)
+		api.device_prepare(id, "kvm1", user=admin)
+		tests.wait_for_tasks(api, admin)
 		api.connector_prepare(id, "switch1", user=admin)
 		tests.wait_for_tasks(api, admin)
 		api.connector_start(id, "switch1", user=admin)
@@ -111,27 +75,19 @@ class Test(unittest.TestCase):
 	def testChange(self):
 		admin = api.login("admin", "123")
 		id = api.top_import(TOP1, user=admin)
-		api.top_change(id, TOP2, user=admin)
+		api.top_modify(id, tests.encode_modification("connector-rename", "switch1", None, {"name": "switch2"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP1, user=admin)
+		api.top_modify(id, tests.encode_modification("connector-configure", "router1", None, {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.connector_prepare(id, "switch1", user=admin)
-		api.connector_prepare(id, "router1", user=admin)
+		api.top_modify(id, tests.encode_modification("connection-delete", "router1", "openvz1.eth1", {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP2, user=admin)
+		api.top_modify(id, tests.encode_modification("connection-delete", "router1", "kvm1.eth1", {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP1, user=admin)
+		api.top_modify(id, tests.encode_modification("connector-delete", "router1", None, {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.connector_start(id, "switch1", user=admin)
-		api.connector_start(id, "router1", user=admin)
+		api.top_modify(id, tests.encode_modification("connector-create", None, None, {"type": "switch", "name": "switch1"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP2, user=admin)
+		api.top_modify(id, tests.encode_modification("connection-create", "switch1", None, {"interface": "openvz1.eth1"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_change(id, TOP1, user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_stop(id, "switch1", user=admin)
-		api.connector_stop(id, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_destroy(id, "switch1", user=admin)
-		api.connector_destroy(id, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
+		api.top_modify(id, tests.encode_modification("connection-create", "switch1", None, {"interface": "kvm1.eth1"}), user=admin)
+		tests.wait_for_tasks(api, admin)		

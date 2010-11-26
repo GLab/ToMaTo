@@ -84,6 +84,7 @@ class KVMDevice(generic.Device):
 			self.save()
 		self.host.free_port(self.vnc_port, task)		
 		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.kvm_id, self.vnc_password(), self.name ), task)
+		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.STARTED, "VM is not started"
@@ -94,6 +95,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name, task)
 		self.vnc_port=None
 		self.host.execute("qm stop %s" % self.kvm_id, task)
+		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
@@ -116,6 +118,7 @@ class KVMDevice(generic.Device):
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
+		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
@@ -128,6 +131,7 @@ class KVMDevice(generic.Device):
 			self.save()
 			return
 		self.host.execute("qm destroy %s" % self.kvm_id, task)
+		self.state = generic.State.CREATED #for dry-run
 		self.state = self.get_state(task)
 		assert self.state == generic.State.CREATED, "VM still exists"
 		self.kvm_id=None

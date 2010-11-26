@@ -159,6 +159,8 @@ class TincConnector(generic.Connector):
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
+		if iface.is_connected():
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to connected interface: %s -> %s" % (iface_name, self.name) )
 		con = TincConnection ()
 		con.connector = self
 		con.interface = iface

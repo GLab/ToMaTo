@@ -34,11 +34,11 @@ class Test(unittest.TestCase):
 	def testHosts(self):
 		admin=api.login("admin","123")
 		assert api.host_list("*", user=admin) == []
-		api.host_add("host1a", "group1", "vmbr0", user=admin)
-		api.host_add("host1b", "group1", "vmbr0", user=admin)
-		api.host_add("host2a", "group2", "vmbr0", user=admin)
-		api.host_add("host2b", "group2", "vmbr0", user=admin)
-		api.host_add("host2c", "group2", "vmbr0", user=admin)
+		api.host_add("host1a", "group1", True, 0, 10, 0, 10, 0, 10, user=admin)
+		api.host_add("host1b", "group1", True, 0, 10, 0, 10, 0, 10, user=admin)
+		api.host_add("host2a", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
+		api.host_add("host2b", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
+		api.host_add("host2c", "group2", True, 0, 10, 0, 10, 0, 10, user=admin)
 		tests.wait_for_tasks(api, admin)
 		assert len(api.host_list("*", user=admin)) == 5
 		assert len(api.host_list("group1", user=admin)) == 2 

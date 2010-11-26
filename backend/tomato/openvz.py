@@ -86,7 +86,7 @@ class OpenVZDevice(generic.Device):
 			if iface.is_configured():
 				iface = iface.upcast()
 				iface.start_run(task)
-				assert self.host.interface_bridge(iface.interface_name()) == self.bridge_name(iface), "Interface %s not connect to bridge %s" % (iface.interface_name(), self.bridge_name(iface))
+				assert config.remote_dry_run or self.host.interface_bridge(iface.interface_name()) == self.bridge_name(iface), "Interface %s not connected to bridge %s" % (iface.interface_name(), self.bridge_name(iface))
 		if self.gateway:
 			self.host.execute("vzctl exec %s route add default gw %s" % ( self.openvz_id, self.gateway), task) 
 		if not self.vnc_port:
@@ -94,6 +94,7 @@ class OpenVZDevice(generic.Device):
 			self.save()		
 		self.host.free_port(self.vnc_port, task)		
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.vnc_port, self.vnc_password(), self.openvz_id, self.name ), task)
+		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.STARTED, "VM is not running"
@@ -104,6 +105,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name, task)
 		self.vnc_port=None
 		self.host.execute("vzctl stop %s" % self.openvz_id, task)
+		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
@@ -124,6 +126,7 @@ class OpenVZDevice(generic.Device):
 		self.host.execute("vzctl set %s --hostname %s-%s --save" % ( self.openvz_id, self.topology.name.replace("_","-"), self.name ), task)
 		for iface in self.interfaces_all():
 			iface.upcast().prepare_run(task)
+		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state(task)
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
@@ -133,6 +136,7 @@ class OpenVZDevice(generic.Device):
 		generic.Device.destroy_run(self, task)
 		if self.openvz_id:
 			self.host.execute("vzctl destroy %s" % self.openvz_id, task)
+		self.state = generic.State.CREATED #for dry-run
 		self.state = self.get_state(task)
 		assert self.state == generic.State.CREATED, "VM still exists"
 		self.openvz_id=None
@@ -194,7 +198,8 @@ class OpenVZDevice(generic.Device):
 
 	def interfaces_delete(self, name, task):
 		iface = self.interfaces_get(name).upcast()
-		self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
+		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 		iface.delete()
 
 	def upload_supported(self):
@@ -263,6 +268,7 @@ class ConfiguredInterface(generic.Interface):
 		return "veth%s.%s" % ( self.device.upcast().openvz_id, self.name )
 		
 	def configure(self, properties, task):
+		changed=False
 		if "use_dhcp" in properties:
 			self.use_dhcp = util.parse_bool(properties["use_dhcp"])
 			changed = True

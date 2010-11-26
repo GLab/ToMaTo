@@ -83,7 +83,9 @@ LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('tomato', 'south')
 
-if os.environ.has_key('TOMATO_TESTING'):
+TESTING = os.environ.has_key('TOMATO_TESTING')
+
+if TESTING:
     print "Running in testing mode"
     DATABASE_ENGINE = "sqlite3"
     DATABASE_NAME = "testing.db.sqlite"

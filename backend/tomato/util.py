@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import subprocess, threading, thread
+import subprocess, threading, thread, traceback
 
 class RepeatedTimer(threading.Thread):
 	def __init__(self, timeout, func, *args, **kwargs):
@@ -40,7 +40,6 @@ class RepeatedTimer(threading.Thread):
 				try:
 					self.func(*self.args, **self.kwargs)
 				except Exception, exc:
-					import traceback
 					from tomato import fault
 					fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def stop(self):
@@ -50,10 +49,9 @@ def print_except_helper(func, args, kwargs):
 	try:
 		return func(*args, **kwargs)
 	except Exception, exc:
-		import traceback
 		from tomato import fault
+		traceback.print_exc()
 		fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
-		print exc
 		raise
 
 def print_except(func, *args, **kwargs):
