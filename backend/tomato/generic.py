@@ -66,7 +66,7 @@ class Device(models.Model):
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host, null=True)
-	hostgroup = models.ForeignKey(hosts.HostGroup, null=True)
+	hostgroup = models.CharField(max_length=10, null=True)
 	resources = models.ForeignKey(Resources, null=True)
 
 	def interfaces_get(self, name):
@@ -112,7 +112,7 @@ class Device(models.Model):
 		dom.setAttribute("name", self.name)
 		dom.setAttribute("type", self.type)
 		if self.hostgroup:
-			dom.setAttribute("hostgroup", self.hostgroup.name)
+			dom.setAttribute("hostgroup", self.hostgroup)
 		if internal:
 			if self.host:
 				dom.setAttribute("host", self.host.name)
@@ -193,7 +193,7 @@ class Device(models.Model):
 				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		if "hostgroup" in properties:
 			assert self.state == generic.State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
-			self.hostgroup = hosts.get_host_group(properties["hostgroup"])
+			self.hostgroup = properties["hostgroup"]
 		self.save()
 
 	def update_resource_usage(self):

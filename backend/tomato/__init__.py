@@ -102,7 +102,7 @@ def _special_feature_info(sf):
 	return {"type": sf.feature_type, "group": sf.feature_group, "bridge": sf.bridge}
 
 def _host_info(host):
-	return {"name": host.name, "group": host.group.name, "enabled": host.enabled, 
+	return {"name": host.name, "group": host.group, "enabled": host.enabled, 
 		"device_count": host.device_set.count(),
 		"vmid_start": host.vmid_range_start, "vmid_count": host.vmid_range_count,
 		"port_start": host.port_range_start, "port_count": host.port_range_count,
@@ -113,7 +113,7 @@ def _template_info(template):
 	return {"name": template.name, "type": template.type, "default": template.default, "url": template.download_url}
 
 def _physical_link_info(link):
-	return {"src": link.src_group.name, "dst": link.dst_group.name, "loss": link.loss, "delay_avg": link.delay_avg, "delay_stddev": link.delay_stddev}
+	return {"src": link.src_group, "dst": link.dst_group, "loss": link.loss, "delay_avg": link.delay_avg, "delay_stddev": link.delay_stddev}
 
 def _top_access(top, role, user):
 	if not top.check_access(role, user):
@@ -157,7 +157,7 @@ def host_list(group_filter="*", user=None):
 	res=[]
 	qs = hosts.Host.objects.all()
 	if not group_filter=="*":
-		qs=qs.filter(group__name=group_filter)
+		qs=qs.filter(group=group_filter)
 	for h in qs:
 		res.append(_host_info(h))
 	return res
@@ -174,8 +174,6 @@ def host_change(host_name, group_name, enabled, vmid_start, vmid_count, port_sta
 def host_remove(host_name, user=None):
 	_admin_access(user)
 	host = hosts.get_host(host_name)
-	if host.group.host_set.count()==1:
-		host.group.delete()
 	host.delete()
 	return True
 
@@ -190,7 +188,7 @@ def host_check(host_name, user=None):
 	return hosts.host_check(host)
 
 def host_groups(user=None):
-	return [h.name for h in hosts.get_host_groups()]
+	return hosts.get_host_groups()
 
 def special_features_add(host_name, feature_type, feature_group, bridge, user=None):
 	_admin_access(user)

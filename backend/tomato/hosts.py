@@ -19,14 +19,11 @@ from django.db import models
 
 import config, fault, util, sys, atexit
 
-class HostGroup(models.Model):
-	name = models.CharField(max_length=10)
-	
 class Host(models.Model):
 	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
-	group = models.ForeignKey(HostGroup)
+	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
 	port_range_start = models.PositiveSmallIntegerField(default=7000)
@@ -302,8 +299,8 @@ class Template(models.Model):
 			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
 class PhysicalLink(models.Model):
-	src_group = models.ForeignKey(HostGroup)
-	dst_group = models.ForeignKey(HostGroup, related_name="reverselink")
+	src_group = models.CharField(max_length=10)
+	dst_group = models.CharField(max_length=10)
 	loss = models.FloatField()
 	delay_avg = models.FloatField()
 	delay_stddev = models.FloatField()
@@ -322,19 +319,19 @@ class SpecialFeature(models.Model):
 	feature_group = models.CharField(max_length=50)
 	bridge = models.CharField(max_length=10)
 	
+def get_host_groups():
+	groups = []
+	for h in Host.objects.all():
+		if not h.group in groups:
+			groups.apend(h.group)
+	
 def get_host(name):
 	return Host.objects.get(name=name)
 
-def get_host_group(name):
-	return HostGroup.objects.get(name=name)
-	
-def get_host_groups():
-	return HostGroup.objects.all()
-	
 def get_best_host(group, device=None):
 	all = Host.objects.filter(enabled=True)
 	if group:
-		all = all.filter(group__name=group)
+		all = all.filter(group=group)
 	if device:
 		for iface in device.interfaces_all():
 			if iface.connection:
@@ -385,11 +382,7 @@ def get_default_template(type):
 		return None
 	
 def create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
-	try:
-		group = HostGroup.objects.get(name=group_name)
-	except HostGroup.DoesNotExist:
-		group = HostGroup.objects.create(name=group_name)
-	host = Host(name=host_name, enabled=enabled, group=group,
+	host = Host(name=host_name, enabled=enabled, group=group_name,
 			vmid_range_start=vmid_start, vmid_range_count=vmid_count,
 			port_range_start=port_start, port_range_count=port_count,
 			bridge_range_start=bridge_start, bridge_range_count=bridge_count)
@@ -401,13 +394,8 @@ def create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, p
 
 def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
 	host = get_host(host_name)
-	oldgroup = host.group.name
 	host.enabled=enabled
-	try:
-		group = HostGroup.objects.get(name=group_name)
-	except HostGroup.DoesNotExist:
-		group = HostGroup.objects.create(name=group_name)
-	host.group=group
+	host.group=group_name
 	host.vmid_range_start=vmid_start
 	host.vmid_range_count=vmid_count
 	host.port_range_start=port_start
@@ -415,12 +403,9 @@ def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, p
 	host.bridge_range_start=bridge_start
 	host.bridge_range_count=bridge_count
 	host.save()
-	oldgroup = get_host_group(oldgroup)
-	if oldgroup.host_set.count() == 0:
-		oldgroup.delete()
 		
 def get_physical_link(srcg_name, dstg_name):
-	return PhysicalLink.objects.get(src_group__name = srcg_name, dst_group__name = dstg_name)		
+	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name)		
 		
 def get_all_physical_links():
 	return PhysicalLink.objects.all()		
@@ -445,10 +430,10 @@ def measure_physical_links():
 		for dstg in get_host_groups():
 			if not srcg == dstg:
 				try:
-					src = get_best_host(srcg.name)
-					dst = get_best_host(dstg.name)
+					src = get_best_host(srcg)
+					dst = get_best_host(dstg)
 					(loss, delay_avg, delay_stddev) = measure_link_properties(src, dst)
-					link = get_physical_link(srcg.name, dstg.name)
+					link = get_physical_link(srcg, dstg)
 					link.adapt(loss, delay_avg, delay_stddev) 
 				except PhysicalLink.DoesNotExist:
 					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev)
