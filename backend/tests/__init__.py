@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os
-os.environ['GLABNETMAN_TESTING']="true"
+os.environ['TOMATO_TESTING']="true"
 
 import hosts, templates, kvm, openvz, tinc, topology
 
