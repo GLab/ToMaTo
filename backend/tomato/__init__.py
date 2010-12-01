@@ -29,9 +29,6 @@ db_migrate()
 import config, log, generic, topology, hosts, fault, tasks
 import tinc, kvm, openvz
 
-def _resources_info(res):
-	return {"disk": str(res.disk), "memory": str(res.memory), "ports": res.ports, "special": res.special}
-
 def _topology_info(top, auth, detail):
 	res = {"id": top.id, "name": top.name, "state": top.max_state(), "owner": str(top.owner),
 		"device_count": len(top.devices_all()), "connector_count": len(top.connectors_all()),
@@ -48,8 +45,8 @@ def _topology_info(top, auth, detail):
 			})
 		if auth:
 			task = top.get_task()
-			if top.resources:
-				res.update(resources=_resources_info(top.resources))
+			if top.has_resources():
+				res.update(resources=top.resources.encode())
 			if task:
 				if task.is_active():
 					res.update(running_task=task.id)
@@ -77,8 +74,8 @@ def _device_info(dev, auth):
 		}
 	if auth:
 		dev = dev.upcast()
-		if dev.resources:
-			res.update(resources=_resources_info(dev.resources))
+		if dev.has_resources():
+			res.update(resources=dev.resources.encode())
 		if hasattr(dev, "vnc_port") and dev.vnc_port:
 			res.update(vnc_port=dev.vnc_port)
 		if hasattr(dev, "vnc_password"):
@@ -94,8 +91,8 @@ def _connector_info(con, auth):
 		"is_started": state == generic.State.STARTED,
 		}
 	if auth:
-		if con.resources:
-			res.update(resources=_resources_info(con.resources))
+		if con.has_resources():
+			res.update(resources=con.resources.encode())
 	return res
 
 def _special_feature_info(sf):
@@ -477,20 +474,19 @@ def resource_usage_by_user(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if not top.owner in usage:
-			usage[top.owner] = generic.Resources()
-		if top.resources:
-			usage[top.owner].add(top.resources)
-	for owner in usage:
-		usage[owner]=_resources_info(usage[owner])
+		if top.has_resources():
+			if not top.owner in usage:
+				usage[top.owner] = top.resources.encode()
+			else:
+				usage[top.owner] = generic.add_encoded_resources(usage[top.owner], top.resources.encode())
 	return usage
 		
 def resource_usage_by_topology(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if top.resources:
-			d = _resources_info(top.resources)
+		if top.has_resources():
+			d = top.resources.encode()
 			d.update(top_id=top.id)
 			usage[top.name]=d
 	return usage

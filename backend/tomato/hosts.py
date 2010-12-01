@@ -325,7 +325,8 @@ def get_host_groups():
 	groups = []
 	for h in Host.objects.all():
 		if not h.group in groups:
-			groups.apend(h.group)
+			groups.append(h.group)
+	return groups
 	
 def get_host(name):
 	return Host.objects.get(name=name)

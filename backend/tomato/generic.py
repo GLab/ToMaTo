@@ -37,23 +37,65 @@ class State():
 	PREPARED="prepared"
 	STARTED="started"
 
-class Resources(models.Model):
+class ResourceSet(models.Model):
 	disk = models.IntegerField(default=0)
 	memory = models.IntegerField(default=0)
 	ports = models.IntegerField(default=0)
 	special = models.IntegerField(default=0)
-	
+
 	def clean(self):
-		self.disk = 0
-		self.memory = 0
-		self.ports = 0
-		self.special = 0
+		for r in self.resourceentry_set.all():
+			r.delete()
+
+	def add(self, set):
+		for r in set.resourceentry_set.all():
+			self.set(r.type, self.get(r.type) + r.value)
+
+	def set(self, type, value):
+		if len(self.resourceentry_set.filter(type=type)) == 0:
+			res = ResourceEntry(resource_set=self, type=type, value=value)
+			res.save()
+			self.resourceentry_set.add(res)
+		else:
+			res = self.resourceentry_set.all().get(type=type)
+			res.value = value
+			res.save()
 	
-	def add(self, res):
-		self.disk += res.disk
-		self.memory += res.memory
-		self.ports += res.ports
-		self.special += res.special
+	def get(self, type):
+		if len(self.resourceentry_set.filter(type=type)) == 0:
+			return 0
+		else:
+			res = self.resourceentry_set.get(type=type)
+			return res.value
+		
+	def decode(self, dict):
+		for k, v in dict.items():
+			self.set(k, v)
+			
+	def encode(self):
+		dict = {}
+		for r in self.resourceentry_set.all():
+			dict[r.type] = r.value
+		return dict
+
+def add_encoded_resources(r1, r2):
+	res = {}
+	for k, v in r1.items():
+		if k in res:
+			res[k] = res[k] + v
+		else:
+			res[k] = v
+	for k, v in r2.items():
+		if k in res:
+			res[k] = res[k] + v
+		else:
+			res[k] = v
+	return res
+
+class ResourceEntry(models.Model):
+	resource_set = models.ForeignKey(ResourceSet)
+	type = models.CharField(max_length=20)
+	value = models.BigIntegerField()
 
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
@@ -67,7 +109,7 @@ class Device(models.Model):
 	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host, null=True)
 	hostgroup = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(Resources, null=True)
+	resources = models.ForeignKey(ResourceSet, null=True)
 
 	def interfaces_get(self, name):
 		return self.interface_set.get(name=name).upcast()
@@ -200,18 +242,21 @@ class Device(models.Model):
 
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = Resources()
+		if not self.has_resources():
+			r = ResourceSet()
 			r.save()
 			self.resources = r 
 			self.save()
-		self.resources.memory = res["memory"]
-		self.resources.disk = res["disk"]
-		self.resources.ports = res["ports"]
-		self.resources.special = res["special"]
-		self.resources.save()
+		self.resources.decode(res)
 		return self.resources
 
+	def has_resources(self):
+		try:
+			self.resources
+			return True
+		except:
+			return False
+		
 	def __unicode__(self):
 		return self.name
 		
@@ -254,7 +299,7 @@ class Connector(models.Model):
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	pos = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(Resources, null=True)
+	resources = models.ForeignKey(ResourceSet, null=True)
 
 	def connections_add(self, con):
 		return self.connection_set.add(con)
@@ -366,18 +411,21 @@ class Connector(models.Model):
 				
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = Resources()
+		if not self.has_resources():
+			r = ResourceSet()
 			r.save()
 			self.resources = r 
 			self.save()
-		self.resources.memory = res["memory"]
-		self.resources.disk = res["disk"]
-		self.resources.ports = res["ports"]
-		self.resources.special = res["special"]
-		self.resources.save()
+		self.resources.decode(res)
 		return self.resources
 	
+	def has_resources(self):
+		try:
+			self.resources
+			return True
+		except:
+			return False
+			
 	def bridge_name(self, interface):
 		return "gbr_%s" % interface.connection.bridge_id
 

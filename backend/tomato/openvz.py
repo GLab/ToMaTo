@@ -243,7 +243,11 @@ class OpenVZDevice(generic.Device):
 		else:
 			memory = 0
 			ports = 0
-		return {"disk": disk, "memory": memory, "ports": ports, "special": 0}		
+		return {"disk": disk, "memory": memory, "ports": ports}		
+
+	def interface_device(self, iface):
+		return "veth%s.%s" % ( self.upcast().openvz_id, iface.name )
+
 
 class ConfiguredInterface(generic.Interface):
 	use_dhcp = models.BooleanField()
@@ -265,7 +269,7 @@ class ConfiguredInterface(generic.Interface):
 			dom.setAttribute("ip4address", self.ip4address)
 
 	def interface_name(self):
-		return "veth%s.%s" % ( self.device.upcast().openvz_id, self.name )
+		return self.device.interface_device(self)
 		
 	def configure(self, properties, task):
 		changed=False

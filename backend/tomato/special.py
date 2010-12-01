@@ -99,10 +99,16 @@ class SpecialFeatureConnector(generic.Connector):
 
 	def get_resource_usage(self):
 		special = 0
+		traffic = 0
 		for con in self.connections_all():
 			if con.interface.device.state == generic.State.STARTED:
 				special += 1
-		return {"disk": 0, "memory": 0, "ports": 0, "special": special}		
+			dev = con.interface.device
+			if dev.host:
+				iface = dev.upcast().interface_device(con.interface)
+				traffic += int(dev.host.get_result("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
+				traffic += int(dev.host.get_result("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
+		return {"special": special, "traffic": traffic}		
 
 	def bridge_name(self, interface):
 		if not interface.device.host:

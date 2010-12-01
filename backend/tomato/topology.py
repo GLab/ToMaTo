@@ -45,7 +45,7 @@ class Topology(models.Model):
 
 	task = models.CharField(max_length=100, blank=True, null=True)
 
-	resources = models.ForeignKey(generic.Resources, null=True)
+	resources = models.ForeignKey(generic.ResourceSet, null=True)
 
 	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
@@ -386,8 +386,8 @@ class Topology(models.Model):
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
 	def update_resource_usage(self):
-		if not self.resources:
-			r = generic.Resources()
+		if not self.has_resources():
+			r = generic.ResourceSet()
 			r.save()
 			self.resources = r 
 			self.save()
@@ -397,6 +397,13 @@ class Topology(models.Model):
 		for con in self.connectors_all():
 			self.resources.add(con.update_resource_usage())
 		self.resources.save()
+			
+	def has_resources(self):
+		try:
+			self.resources
+			return True
+		except:
+			return False
 			
 class Permission(models.Model):
 	ROLE_USER="user"

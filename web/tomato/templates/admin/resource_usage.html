@@ -9,6 +9,7 @@
 		<th>{% if by_user %}User{% else %}Topology{% endif %}</th>
 		<th>Disk space</th>
 		<th>Memory</th>
+		<th>Traffic</th>
 		<th>Ports</th>
 		<th>Special</th>
 	</tr>
@@ -17,8 +18,10 @@
 		<td><a href="{% if by_user %}{%url top.index%}?owner_filter={{name}}{%else%}{%url top.details res.top_id%}{%endif%}">{{name}}</a></td>
 		<td enhancetable_customkey="{{res.disk}}">{{res.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.memory}}">{{res.memory|filesizeformat}}</td>
+		<td enhancetable_customkey="{{res.traffic}}">{{res.traffic|filesizeformat}}</td>
 		<td>{{res.ports}}</td>
 		<td>{{res.special}}</td>
 	</tr>
 {% endfor %}
-</table>{% endblock %}
+</table>
+{% endblock %}

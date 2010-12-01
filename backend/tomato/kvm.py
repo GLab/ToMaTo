@@ -195,4 +195,9 @@ class KVMDevice(generic.Device):
 		else:
 			memory = 0
 			ports = 0
-		return {"disk": disk, "memory": memory, "ports": ports, "special": 0}		
+		return {"disk": disk, "memory": memory, "ports": ports}		
+	
+	def interface_device(self, iface):
+		iface_id = re.match("eth(\d+)", iface.name).group(1)
+		return "vmtab%si%s" % ( self.upcast().kvm_id, iface_id )
+
