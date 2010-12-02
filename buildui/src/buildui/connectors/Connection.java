@@ -24,6 +24,7 @@ package buildui.connectors;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import buildui.Modification;
+import buildui.Netbuild;
 import buildui.devices.Device;
 import buildui.devices.Interface;
 import java.awt.*;
@@ -57,6 +58,10 @@ public class Connection extends NetElement {
      (con.getY() + dev.getY()) / 2);
   }
 
+  protected void configureLine (Graphics g) {
+    g.setColor(Color.darkGray);
+  }
+
   public void move (int nx, int ny) {
     // nope. can't allow this.
   }
@@ -84,8 +89,9 @@ public class Connection extends NetElement {
   public void draw (Graphics g) {
     super.move((con.getX() + dev.getX()) / 2,
      (con.getY() + dev.getY()) / 2);
-    g.setColor(Color.darkGray);
+    configureLine(g);
     g.drawLine(con.getX(), con.getY(), dev.getX(), dev.getY());
+    ((Graphics2D)g).setStroke(new BasicStroke(1.0f));
     super.draw(g);
   }
 
@@ -151,7 +157,7 @@ public class Connection extends NetElement {
   }
 
   public void onPropertyChanged(String property, String oldValue, String newValue) {
-      System.out.println(this + " " + property + " " + oldValue + "->" + newValue ) ; //FIXME: remove
+      Netbuild.redrawAll();
       Modification.add(Modification.ConnectionConfigure(this, property, newValue));
   }
 

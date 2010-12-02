@@ -74,6 +74,28 @@ public class WorkArea {
 
 // NEW CODE FROM HERE ON (owned by University of Kaiserslautern)
 
+  public void ensureNonOverlapping () {
+    ArrayList<NetElement> elements = new ArrayList<NetElement>();
+    elements.addAll(devices);
+    elements.addAll(connectors);
+    boolean changed = false;
+    for (NetElement el: elements) {
+        for (NetElement el2: elements) {
+            if ( el == el2 ) continue;
+            int posdiff = Math.abs(el.getX() - el2.getX()) + Math.abs(el.getY() - el2.getY()) ;
+            double dir = Math.random() * Math.PI ;
+            while ( posdiff < 25 ) {
+                System.out.println(posdiff + " " + el.getX() + "x" + el.getY() + " " + el2.getX() + "x" + el2.getY() ) ;
+                changed = true;
+                el.setPos(el.getX()+(int)Math.ceil(Math.sin(dir)*4), el.getY()+(int)Math.ceil(Math.cos(dir)*4));
+                el2.setPos(el2.getX()-(int)Math.ceil(Math.sin(dir)*4), el2.getY()-(int)Math.ceil(Math.cos(dir)*4));
+                posdiff = Math.abs(el.getX() - el2.getX()) + Math.abs(el.getY() - el2.getY()) ;
+            }
+        }
+    }
+    if ( changed ) Netbuild.redrawAll();
+  }
+
   public void selectRectangle (Rectangle r, boolean xor) {
     for (Device dev: devices) {
       selectOneInRectangle(r, dev, xor);
@@ -91,7 +113,6 @@ public class WorkArea {
 
   public void paint (Graphics g) {
     for (Connector con: connectors) {
-      con.checkImplicit();
       for (Connection c: con.connections()) c.draw(g);
       con.draw(g);
     }

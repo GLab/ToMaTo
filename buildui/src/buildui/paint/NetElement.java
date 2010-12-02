@@ -122,8 +122,6 @@ public abstract class NetElement {
 	}
 
 	public void setName(String newName) {
-		// System.out.println("NetElement.setName(): Renamed from \"" + name +
-		// "\" to \"" + newName + "\"" );
 		if (!nameFixed) {
 			names.remove(name);
 			name = new String(newName);
@@ -146,10 +144,15 @@ public abstract class NetElement {
 		nameFixed = false;
 	}
 
-	public void move(int nx, int ny) {
+        public void setPos(int nx, int ny) {
 		x = nx;
 		y = ny;
                 setProperty("pos", x+","+y) ;
+        }
+
+	public void move(int nx, int ny) {
+            setPos(nx, ny);
+            Netbuild.ensureNonOverlapping();
 	}
 
 	public int size() {

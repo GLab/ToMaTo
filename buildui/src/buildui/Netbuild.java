@@ -168,6 +168,10 @@ public class Netbuild extends java.applet.Applet
     return false;
   }
 
+  public static void ensureNonOverlapping() {
+    me.workArea.ensureNonOverlapping();
+  }
+
   private void startAppropriatePropertiesArea () {
     Set<PropertiesArea> oldPanels = new HashSet<PropertiesArea>();
     for (Component c: propertiesPanel.getComponents())
@@ -427,6 +431,10 @@ public class Netbuild extends java.applet.Applet
     }
   }
 
+  public static void repaintElement (NetElement t) {
+    me.paintElement(t);
+  }
+
   private void paintElement (NetElement t) {
     Rectangle r = t.getRectangle();
 
@@ -528,6 +536,7 @@ public class Netbuild extends java.applet.Applet
             repaint();
           }
         }
+        ensureNonOverlapping();
       }
     } else { // if clickedonsomething
       // dragrect
@@ -604,7 +613,6 @@ public void mouseEntered (MouseEvent e) {
 
     @Override
   public void init () {
-    System.out.println(super.isActive());
     try {
       status = versionstring;
 

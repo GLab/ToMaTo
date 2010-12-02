@@ -193,8 +193,6 @@ public class TopologyCreatorWindow extends JFrame implements ActionListener{
 				break;
 			}
 		} else if (arg0.getSource().equals(deviceType)) {
-			// System.out.println(deviceType.getSelectedItem().toString() + " "
-			// + deviceType.getSelectedIndex());
 			template.removeAllItems();
 			if (deviceType.getSelectedIndex() == 0) {
 				for (Object t : OpenVzDevice.templates.toArray()) {

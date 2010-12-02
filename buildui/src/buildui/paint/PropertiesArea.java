@@ -212,23 +212,19 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
     }
 
     currentThingees = elements;
-    //	System.out.println( "PropertiesArea.download(): Ending");
     if ( Netbuild.isReadOnly() ) for (Property p: propertyList) p.editElement.setEnabled(false);
 
   }
 
   public synchronized void upload () {
-    //	System.out.println("Upload begins..");
     if (currentThingees == null || Netbuild.isReadOnly()) return;
 
     Enumeration et = currentThingees.elements();
 
     boolean needRedraw = false;
     while (et.hasMoreElements()) {
-      //	    System.out.println( "PropertiesArea.upload(): Regarding a thingee.");
       NetElement t = (NetElement)et.nextElement();
 
-      //if (iCare(t)) {
       Enumeration e = propertyList.elements();
 
       while (e.hasMoreElements()) {
@@ -245,11 +241,9 @@ public abstract class PropertiesArea extends Panel implements ActionListener {
           }
         }
       }
-      //}
     }
     if (needRedraw)
       Netbuild.redrawAll();
-    //	System.out.println("Upload ends..");
   }
 
   public void refresh () {

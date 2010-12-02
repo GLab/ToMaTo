@@ -76,4 +76,26 @@ public class EmulatedConnection extends Connection {
     return "10."+getConnector().subnetId+".1."+hostIp+"/24" ;
   }
 
+  protected void configureLine ( Graphics g ) {
+    Graphics2D g2 = (Graphics2D)g;
+    int delay = 1000;
+    int bandwidth = 1000000 ;
+    float lossratio = 0.0f ;
+    try {
+      bandwidth = Integer.parseInt(getProperty("bandwidth", "10000"));
+      lossratio = Float.parseFloat(getProperty("lossratio", "0"));
+      delay = Integer.parseInt(getProperty("delay", "0"));
+    } catch ( Exception ex ) {}
+    if ( delay == 0 ) g2.setColor(Color.DARK_GRAY);
+    else {
+      double reldelay = Math.min(Math.pow(delay,0.7)/Math.pow(1000,0.7), 1.0);
+      double red = 0.75f + 0.25f*reldelay;
+      double green = 0.75f - 0.75f*reldelay;
+      System.out.println(delay + " " + reldelay + " " + red + " " + green);
+      g2.setColor(new Color((float)red,(float)green, 0.0f));
+    }
+    double relbandwidth = Math.min(1.0,Math.pow(Math.log1p(bandwidth)/Math.log1p(1000000), 1.5)) ;
+    g2.setStroke(new BasicStroke((float)relbandwidth*2.5f+0.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER, 10.0f, new float[]{20.0f*(1.25f-lossratio),lossratio*50.0f+(lossratio==0.0?0.0f:5.0f)}, 0.0f));
+  }
+
 }

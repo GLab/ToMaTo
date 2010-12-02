@@ -19,6 +19,7 @@ package buildui.connectors;
  */
 
 import buildui.Modification;
+import buildui.Netbuild;
 import buildui.devices.Device;
 import buildui.paint.IconElement;
 import java.awt.Color;
@@ -66,10 +67,12 @@ public abstract class Connector extends IconElement {
 
   public void addConnection(Connection con) {
     connections.add(con);
+    checkImplicit();
   }
 
   public void removeConnection(Connection con) {
     connections.remove(con);
+    checkImplicit() ;
   }
 
   public void readAttributes (Element xml) {
@@ -85,18 +88,24 @@ public abstract class Connector extends IconElement {
     return connections.size() == 2;
   }
 
+  public void onConnectionMoved() {
+    if ( ! isImplicit() ) return;
+    Connection[] cons = connections.toArray(new Connection[2]) ;
+    int oldx = getX();
+    int oldy = getY();
+    int x = ( cons[0].getDevice().getX() + cons[1].getDevice().getX() ) / 2 ;
+    int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
+    if ( x == oldx && y == oldy ) return;
+    super.move(x, y);
+    onPropertyChanged("pos", "", x+","+y);
+  }
+
   public void checkImplicit () {
     moveable = !isImplicit() ;
     displayName = !isImplicit();
     if ( isImplicit() ) {
-      Connection[] cons = connections.toArray(new Connection[2]) ;
-      int oldx = getX();
-      int oldy = getY();
-      int x = ( cons[0].getDevice().getX() + cons[1].getDevice().getX() ) / 2 ;
-      int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
-      if ( x == oldx && y == oldy ) return;
-      super.move(x, y);
-      onPropertyChanged("pos", "", x+","+y);
+        onConnectionMoved();
+        Netbuild.ensureNonOverlapping();
     }
   }
 
@@ -123,7 +132,6 @@ public abstract class Connector extends IconElement {
 
   @Override
   public void draw(Graphics g) {
-    checkImplicit();
     super.draw(g);
   }
 

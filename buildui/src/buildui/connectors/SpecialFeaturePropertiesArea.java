@@ -49,7 +49,6 @@ public class SpecialFeaturePropertiesArea extends PropertiesArea {
 
   @Override
   public void valueChanged(EditElement el, String newValue) {
-    System.out.println (el);
     if ( el.equals(typeDD) ) {
         List<String> options = SpecialFeatureConnector.groups.get(newValue);
         if (options == null) options = new ArrayList<String>();

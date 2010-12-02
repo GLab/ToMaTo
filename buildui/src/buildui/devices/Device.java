@@ -61,6 +61,12 @@ public abstract class Device extends IconElement {
     return interfaces ;
   }
 
+  @Override
+  public void move(int x, int y) {
+    super.move(x, y);
+    for (Interface in: interfaces) in.getCon().getConnector().onConnectionMoved();
+  }
+
   public void addInterface(Interface iface) {
     interfaces.add(iface);
   }
