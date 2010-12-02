@@ -68,12 +68,9 @@ AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.RemoteUserAuthBackend',
 
 ROOT_URLCONF = 'tomato.urls'
 
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    "templates"
-)
+import os
+CURRENT_DIR = os.path.dirname(__file__)
+TEMPLATE_DIRS = os.path.join(CURRENT_DIR, 'templates')
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -87,3 +84,10 @@ server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
 help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"
+
+#Must be after last config entries
+try:
+    from localsettings import *
+except ImportError:
+    print 'localsettings could not be imported'
+    pass
