@@ -75,19 +75,19 @@ class ResourceSet(models.Model):
 	def encode(self):
 		dict = {}
 		for r in self.resourceentry_set.all():
-			dict[r.type] = r.value
+			dict[r.type] = str(r.value)
 		return dict
 
 def add_encoded_resources(r1, r2):
 	res = {}
 	for k, v in r1.items():
 		if k in res:
-			res[k] = res[k] + v
+			res[k] = str(int(res[k]) + int(v))
 		else:
 			res[k] = v
 	for k, v in r2.items():
 		if k in res:
-			res[k] = res[k] + v
+			res[k] = str(int(res[k]) + int(v))
 		else:
 			res[k] = v
 	return res
