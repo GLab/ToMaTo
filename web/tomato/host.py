@@ -19,9 +19,21 @@
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.http import Http404
+from django import forms
 
 from lib import *
 import xmlrpclib
+
+class HostForm(forms.Form):
+	name = forms.CharField(max_length=255)
+	group = forms.CharField(max_length=10)
+	enabled = forms.BooleanField(required=False)
+	vmid_start = forms.IntegerField(label="VMID range start", initial=1000, min_value=1000)
+	vmid_count = forms.IntegerField(label="VMID range count", initial=200, min_value=0)
+	port_start = forms.IntegerField(label="Port range start", initial=7000, min_value=1025, max_value=30000)
+	port_count = forms.IntegerField(label="Port range count", initial=1000, min_value=0, max_value=5000)
+	bridge_start = forms.IntegerField(label="Bridge range start", initial=1000)
+	bridge_count = forms.IntegerField(label="Bridge range count", initial=1000, min_value=0)
 
 @wrap_rpc
 def index(api, request):
@@ -32,30 +44,27 @@ def detail(api, request, hostname):
 	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname)})
 
 @wrap_rpc
-def edit(api, request):
-	host = None
-	if request.REQUEST.has_key("hostname"):
-		hostname = request.REQUEST["hostname"]
-		host = api.host_info(hostname)
-	if not request.REQUEST.has_key("action"):
-		return render_to_response("admin/host_edit.html", {"host": host})
-	hostname=request.REQUEST["hostname"]
-	group=request.REQUEST["group"]
-	enabled=request.REQUEST.has_key("enabled")
-	vmid_start=request.REQUEST["vmid_start"]
-	vmid_count=request.REQUEST["vmid_count"]
-	port_start=request.REQUEST["port_start"]
-	port_count=request.REQUEST["port_count"]
-	bridge_start=request.REQUEST["bridge_start"]
-	bridge_count=request.REQUEST["bridge_count"]
-	action = request.REQUEST["action"] 
-	if action=="add":
-		task_id = api.host_add(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
-		return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": hostname})
+def edit(api, request, hostname):
+	if request.method == 'POST':
+		form = HostForm(request.POST)
+		if form.is_valid(): 
+			if not hostname:
+				d = form.cleaned_data
+				task_id = api.host_add(d["name"], d["group"], d["enabled"], d["vmid_start"], d["vmid_count"], d["port_start"], d["port_count"], d["bridge_start"], d["bridge_count"])
+				return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": d["name"]})
+			else:
+				d = form.cleaned_data
+				api.host_change(hostname, d["group"], d["enabled"], d["vmid_start"], d["vmid_count"], d["port_start"], d["port_count"], d["bridge_start"], d["bridge_count"])
+				return detail(request, hostname)
 	else:
-		api.host_change(hostname, group, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
-		return detail(request, hostname)
-
+		if hostname:
+			host_info = api.host_info(hostname)
+			form = HostForm(host_info)
+			form.fields["name"].widget = forms.widgets.HiddenInput()
+		else:
+			form = HostForm()
+	return render_to_response("admin/host_edit.html", {"form": form, "edit_host": hostname})
+		
 @wrap_rpc
 def check(api, request, hostname):
 	task = api.host_check(hostname)

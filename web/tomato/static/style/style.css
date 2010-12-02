@@ -249,3 +249,23 @@ div.tx_sevenpack-list_container { margin: 0; }
 .hint {
 	color:orange;
 }
+
+form table th {
+	text-align: left;
+	font-weight: normal;
+	font-size:0.85em;
+	vertical-align:top;
+}
+
+
+form table ul.errorlist {
+	padding: 0;
+	margin: 0;
+	list-style-type: none;
+}
+
+form table ul.errorlist li {
+	font-size:0.6em;
+	color:red;
+	font-weight:bold;
+}

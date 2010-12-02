@@ -9,7 +9,7 @@
 <a href="{%url host.debug host.name%}"><img src="/static/icons/chart_bar.png" alt="debug info" title="debug info"/> debug info</a><br/>
 <a href="{%url host.check host.name%}"><img src="/static/icons/magnifier.png" alt="check host" title="check host"/> check host</a><br/>
 
-<h2>Settings <a href="{%url host.edit%}?hostname={{host.name}}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
+<h2>Settings <a href="{%url host.edit hostname=host.name%}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
 <table>
   <tr><td>Group:</td><td>{{host.group}}</td></tr>
   <tr><td>Enabled:</td><td>{{host.enabled}}</td></tr>

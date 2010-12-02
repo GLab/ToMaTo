@@ -5,26 +5,15 @@
 <h1>Adding {{hostname}}</h1>
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task_id%}?backurl={%url host.detail hostname=hostname%}"></iframe>
 {% else %}
-{% if host %}
-<h1>Edit host {{host.name}}</h1>
+{% if edit_host %}
+<h1>Edit host {{edit_host}}</h1>
 {% else %}
 <h1>Add new host</h1>
 {% endif %}
-<form action="{%url host.edit%}" method="POST">
-	<input type="hidden" name="action" value="{% if host %}edit{% else %}add{% endif %}"/>
-	{% if host %}
-	<input type="hidden" name="hostname" value="{{host.name}}"/>
-	{% else %}
-	Hostname: <input name="hostname" value=""/><br/>
-	{% endif %}
-	Group: <input name="group" value="{{host.group}}"/><br/>
-	Enabled: <input type="checkbox" name="enabled" {% if host.enabled %}checked="true"{% endif %}/><br/>
-	Port range start: <input name="port_start" value="{% if host %}{{host.port_start}}{% else %}7000{% endif %}"/><br/>
-	Port range count: <input name="port_count" value="{% if host %}{{host.port_count}}{% else %}1000{% endif %}"/><br/>
-	VMID range start: <input name="vmid_start" value="{% if host %}{{host.vmid_start}}{% else %}1000{% endif %}"/><br/>
-	VMID range count: <input name="vmid_count" value="{% if host %}{{host.vmid_count}}{% else %}200{% endif %}"/><br/>
-	Bridge range start: <input name="bridge_start" value="{% if host %}{{host.bridge_start}}{% else %}1000{% endif %}"/><br/>
-	Bridge range count: <input name="bridge_count" value="{% if host %}{{host.bridge_count}}{% else %}1000{% endif %}"/><br/>
+<form method="POST">
+<table>
+{{form.as_table}}
+</table>
 	<input type="submit"/>
 </form>
 {% endif %}

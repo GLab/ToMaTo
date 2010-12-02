@@ -3,12 +3,9 @@
 {% block content %}
 <h1>Add new template</h1>
 <form action="{%url template.add%}" method="POST">
-	Name: <input name="name"/><br/>
-	Type: <select name="type">
-	<option value="openvz">OpenVZ</option>
-	<option value="kvm">KVM</option>
-	</select><br/>
-	Download URL: <input name="url"/><br/>
-	<input type="submit"/>
+<table>
+{{form}}
+</table>
+<input type="submit"/>
 </form>
 {% endblock %}
