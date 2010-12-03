@@ -386,7 +386,7 @@ class Topology(models.Model):
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
 	def update_resource_usage(self):
-		if not self.has_resources():
+		if not self.resources:
 			r = generic.ResourceSet()
 			r.save()
 			self.resources = r 
@@ -397,14 +397,7 @@ class Topology(models.Model):
 		for con in self.connectors_all():
 			self.resources.add(con.update_resource_usage())
 		self.resources.save()
-			
-	def has_resources(self):
-		try:
-			self.resources
-			return True
-		except:
-			return False
-			
+						
 class Permission(models.Model):
 	ROLE_USER="user"
 	ROLE_MANAGER="manager"

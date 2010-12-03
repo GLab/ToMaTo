@@ -242,7 +242,7 @@ class Device(models.Model):
 
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.has_resources():
+		if not self.resources:
 			r = ResourceSet()
 			r.save()
 			self.resources = r 
@@ -250,13 +250,6 @@ class Device(models.Model):
 		self.resources.decode(res)
 		return self.resources
 
-	def has_resources(self):
-		try:
-			self.resources
-			return True
-		except:
-			return False
-		
 	def __unicode__(self):
 		return self.name
 		
@@ -411,7 +404,7 @@ class Connector(models.Model):
 				
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.has_resources():
+		if not self.resources:
 			r = ResourceSet()
 			r.save()
 			self.resources = r 
@@ -419,13 +412,6 @@ class Connector(models.Model):
 		self.resources.decode(res)
 		return self.resources
 	
-	def has_resources(self):
-		try:
-			self.resources
-			return True
-		except:
-			return False
-			
 	def bridge_name(self, interface):
 		return "gbr_%s" % interface.connection.bridge_id
 
