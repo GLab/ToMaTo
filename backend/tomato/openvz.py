@@ -269,7 +269,7 @@ class ConfiguredInterface(generic.Interface):
 			dom.setAttribute("ip4address", self.ip4address)
 
 	def interface_name(self):
-		return self.device.interface_device(self)
+		return self.device.upcast().interface_device(self)
 		
 	def configure(self, properties, task):
 		changed=False
