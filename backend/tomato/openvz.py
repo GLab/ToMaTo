@@ -236,7 +236,10 @@ class OpenVZDevice(generic.Device):
 		elif self.state == generic.State.STARTED:
 			disk = int(self.host.get_result("grep -h -A 1 -E '^%s:' /proc/vz/vzquota | tail -n 1 | awk '{print $2}'" % self.openvz_id))*1024
 		else:
-			disk = int(self.host.get_result("du -sb /var/lib/vz/private/%s | awk '{print $1}'" % self.openvz_id))
+			try:
+				disk = int(self.host.get_result("du -sb /var/lib/vz/private/%s | awk '{print $1}'" % self.openvz_id))
+			except:
+				disk = 0
 		if self.state == generic.State.STARTED:
 			memory = int(self.host.get_result("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.openvz_id))*4*1024
 			ports = 1
@@ -269,7 +272,7 @@ class ConfiguredInterface(generic.Interface):
 			dom.setAttribute("ip4address", self.ip4address)
 
 	def interface_name(self):
-		return self.device.interface_device(self)
+		return self.device.upcast().interface_device(self)
 		
 	def configure(self, properties, task):
 		changed=False

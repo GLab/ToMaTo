@@ -97,7 +97,7 @@ class APIServer(xmlrpc.XMLRPC):
 			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender, request)
 			return server.NOT_DONE_YET
 
-if __name__ == "__main__":
+def runserver():
 	api_server=APIServer(tomato)
 	if tomato.config.server_ssl:
 		sslContext = ssl.DefaultOpenSSLContextFactory(tomato.config.server_ssl_private_key, tomato.config.server_ssl_ca_key) 
@@ -105,3 +105,6 @@ if __name__ == "__main__":
 	else:
 		reactor.listenTCP(tomato.config.server_port, server.Site(api_server))
 	reactor.run()
+	
+if __name__ == "__main__":
+	runserver()

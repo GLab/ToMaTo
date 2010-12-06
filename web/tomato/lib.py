@@ -41,7 +41,11 @@ def getapi(request):
 		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port) )
 		api.account()
 		return api
-	except:
+	except Exception, exc:
+		import socket
+		if isinstance(exc, socket.error):
+			import os
+			raise xmlrpclib.Fault(exc.errno, os.strerror(exc.errno))
 		raise xmlrpclib.Fault("-1", "Unauthorized")
 	return True
 

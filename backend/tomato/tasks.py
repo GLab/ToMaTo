@@ -121,7 +121,20 @@ def cleanup():
 	for task in UploadTask.tasks.values():
 		task.check_delete()
 	
+def running_tasks():
+	tasks = []
+	for task in TaskStatus.tasks.values():
+		if task.is_active():
+			tasks.append(task)
+	return tasks
+	
+def keep_running():
+	while running_tasks():
+		print "%s tasks still running" % len(running_tasks())
+		time.sleep(1)
+		
 if not config.TESTING:	
 	cleanup_task = util.RepeatedTimer(3, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)
+	atexit.register(keep_running)

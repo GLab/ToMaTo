@@ -45,5 +45,10 @@ public class TopologyPropertiesArea extends PropertiesArea {
     super();
     addTextProperty("name", "name:", MagicTextField.identifier_pattern, null);
   }
+
+  @Override
+  public void valueChanged(EditElement el, String newName) {
+    Modification.add(Modification.TopologyRename(newName));
+  }
   
 };

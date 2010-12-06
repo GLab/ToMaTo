@@ -45,7 +45,7 @@ def _topology_info(top, auth, detail):
 			})
 		if auth:
 			task = top.get_task()
-			if top.has_resources():
+			if top.resources:
 				res.update(resources=top.resources.encode())
 			if task:
 				if task.is_active():
@@ -74,7 +74,7 @@ def _device_info(dev, auth):
 		}
 	if auth:
 		dev = dev.upcast()
-		if dev.has_resources():
+		if dev.resources:
 			res.update(resources=dev.resources.encode())
 		if hasattr(dev, "vnc_port") and dev.vnc_port:
 			res.update(vnc_port=dev.vnc_port)
@@ -91,7 +91,7 @@ def _connector_info(con, auth):
 		"is_started": state == generic.State.STARTED,
 		}
 	if auth:
-		if con.has_resources():
+		if con.resources:
 			res.update(resources=con.resources.encode())
 	return res
 
@@ -474,7 +474,7 @@ def resource_usage_by_user(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if top.has_resources():
+		if top.resources:
 			if not top.owner in usage:
 				usage[top.owner] = top.resources.encode()
 			else:
@@ -485,7 +485,7 @@ def resource_usage_by_topology(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if top.has_resources():
+		if top.resources:
 			d = top.resources.encode()
 			d.update(top_id=top.id)
 			usage[top.name]=d
