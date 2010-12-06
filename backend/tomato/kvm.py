@@ -190,7 +190,10 @@ class KVMDevice(generic.Device):
 		else:
 			disk = int(self.host.get_result("[ -s /var/lib/vz/images/%s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%s/disk.qcow2 || echo 0" % (self.kvm_id, self.kvm_id)))
 		if self.state == generic.State.STARTED:
-			memory = int(self.host.get_result("[ -s /var/run/qemu-server/%s.pid ] && PROC=`cat /var/run/qemu-server/%s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % (self.kvm_id, self.kvm_id)))
+			try:
+				memory = int(self.host.get_result("[ -s /var/run/qemu-server/%s.pid ] && PROC=`cat /var/run/qemu-server/%s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % (self.kvm_id, self.kvm_id)))
+			except:
+				memory = 0
 			ports = 1
 		else:
 			memory = 0
