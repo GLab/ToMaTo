@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ToMaTo (Topology management software) 
-# Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+# Copyright (C) 2010 Andreas Teuchert, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

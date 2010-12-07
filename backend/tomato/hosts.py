@@ -49,6 +49,7 @@ class Host(models.Model):
 	def check(self, task):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
+		@todo: check for true first to check login
 		"""
 		if config.remote_dry_run:
 			return True
