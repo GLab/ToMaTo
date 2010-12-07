@@ -232,9 +232,10 @@ class Device(models.Model):
 			self.pos = properties["pos"]
 		if "template" in properties:
 			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
-			self.template = hosts.get_template_name(self.type, properties["template"])
-			if not self.template:
-				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
+			if not self.template.startswith("***"):
+				self.template = hosts.get_template_name(self.type, properties["template"])
+				if not self.template:
+					raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
 			self.hostgroup = properties["hostgroup"]

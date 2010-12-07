@@ -19,6 +19,7 @@ from django.db import models
 
 import dummynet, generic, config, hosts, os, subprocess, shutil, fault, util
 
+# Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
 	
 	def add_connection(self, dom):

@@ -59,6 +59,8 @@ class KVMDevice(generic.Device):
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
 		os.remove(filename)
+		self.template = "***custom***"
+		self.save()
 		task.done()
 
 	def encode_xml(self, dom, doc, internal):

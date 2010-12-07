@@ -217,6 +217,8 @@ class OpenVZDevice(generic.Device):
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("rm %s" % remote_filename, task)
 		os.remove(filename)
+		self.template = "***custom***"
+		self.save()
 		task.done()
 
 	def download_supported(self):
