@@ -23,7 +23,7 @@ class Error(models.Model):
 	title = models.CharField(max_length=255)
 	message = models.TextField(blank=True)
 	
-	def dict(self):
+	def to_dict(self):
 		return {"id": self.id, "date": self.date, "title": self.title, "message": self.message}
 
 def errors_all():

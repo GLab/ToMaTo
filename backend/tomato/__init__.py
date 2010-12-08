@@ -26,8 +26,6 @@ discouraged as it is likely to break tomato.
 
 Note: since xml-rpc does not support None values all methods must return 
 something and all return values must not contain None.
-
-@todo: move dict encoders to their classes 
 """
 
 def db_migrate():
@@ -42,155 +40,9 @@ def db_migrate():
 	cmd.handle(app="tomato", verbosity=1)
 db_migrate()
 
-import config, log, generic, topology, hosts, fault, tasks
+import config, util
+import log, generic, topology, hosts, fault, tasks
 import tinc, kvm, openvz
-
-def _topology_info(top, auth, detail):
-	"""
-	Prepares a topology for serialization.
-	
-	@type top: topology.Topology
-	@param top: The topology to encode
-	@type auth: boolean
-	@param auth: Whether to include confidential information
-	@type detail: boolean
-	@param detail: Whether to include details of topology elements  
-	@return: a dict containing information about the topology
-	@rtype: dict
-	"""
-	res = {"id": top.id, "name": top.name, "state": top.max_state(), "owner": str(top.owner),
-		"device_count": len(top.devices_all()), "connector_count": len(top.connectors_all()),
-		"date_created": top.date_created, "date_modified": top.date_modified, "date_usage": top.date_usage
-		}
-	if detail:
-		try:
-			analysis = top.analysis()
-		except Exception, exc:
-			analysis = "Error in analysis: %s" % exc
-		res.update({"analysis": analysis, 
-			"devices": [(v.name, _device_info(v, auth)) for v in top.devices_all()],
-			"connectors": [(v.name, _connector_info(v, auth)) for v in top.connectors_all()]
-			})
-		if auth:
-			task = top.get_task()
-			if top.resources:
-				res.update(resources=top.resources.encode())
-			if task:
-				if task.is_active():
-					res.update(running_task=task.id)
-				else:
-					res.update(finished_task=task.id)
-			res.update(permissions=[p.dict() for p in top.permissions_all()])
-			captures = []
-			for con in top.connectors_all():
-				for c in con.connections_all():
-					c = c.upcast()
-					if hasattr(c, "download_supported") and c.download_supported():
-						captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
-			res.update(captures=captures)
-	return res
-
-def _device_info(dev, auth):
-	"""
-	Prepares a device for serialization.
-	
-	@type dev: generic.Device
-	@param dev: The device to encode
-	@type auth: boolean
-	@param auth: Whether to include confidential information
-	@return: a dict containing information about the device
-	@rtype: dict
-	"""
-	state = str(dev.state)
-	res = {"name": dev.name, "type": dev.type, "host": str(dev.host),
-		"state": state,
-		"is_created": state == generic.State.CREATED,
-		"is_prepared": state == generic.State.PREPARED,
-		"is_started": state == generic.State.STARTED,
-		"upload_supported": dev.upcast().upload_supported(),
-		"download_supported": dev.upcast().download_supported(),
-		}
-	if auth:
-		dev = dev.upcast()
-		if dev.resources:
-			res.update(resources=dev.resources.encode())
-		if hasattr(dev, "vnc_port") and dev.vnc_port:
-			res.update(vnc_port=dev.vnc_port)
-		if hasattr(dev, "vnc_password"):
-			res.update(vnc_password=dev.vnc_password())
-	return res
-
-def _connector_info(con, auth):
-	"""
-	Prepares a connector for serialization.
-	
-	@type con: generic.Connector
-	@param con: The connector to encode
-	@type auth: boolean
-	@param auth: Whether to include confidential information
-	@return: a dict containing information about the connector
-	@rtype: dict
-	"""
-	state = str(con.state)
-	res = {"name": con.name, "type": ("special: %s" % con.upcast().feature_type if con.is_special() else con.type),
-		"state": state,
-		"is_created": state == generic.State.CREATED,
-		"is_prepared": state == generic.State.PREPARED,
-		"is_started": state == generic.State.STARTED,
-		}
-	if auth:
-		if con.resources:
-			res.update(resources=con.resources.encode())
-	return res
-
-def _special_feature_info(sf):
-	"""
-	Prepares a special feature for serialization.
-	
-	@type sf: hosts.SpecialFeature
-	@param sf: The special feature to encode
-	@return: a dict containing information about the special feature
-	@rtype: dict
-	"""
-	return {"type": sf.feature_type, "group": sf.feature_group, "bridge": sf.bridge}
-
-def _host_info(host):
-	"""
-	Prepares a host for serialization.
-	
-	@type host: hosts.Host
-	@param host: The host to encode
-	@return: a dict containing information about the host
-	@rtype: dict
-	"""
-	return {"name": host.name, "group": host.group, "enabled": host.enabled, 
-		"device_count": host.device_set.count(),
-		"vmid_start": host.vmid_range_start, "vmid_count": host.vmid_range_count,
-		"port_start": host.port_range_start, "port_count": host.port_range_count,
-		"bridge_start": host.bridge_range_start, "bridge_count": host.bridge_range_count,
-		"special_features": [_special_feature_info(sf) for sf in host.special_features()]}
-
-def _template_info(template):
-	"""
-	Prepares a template for serialization.
-	
-	@type template: hosts.Template
-	@param template: The template to encode
-	@return: a dict containing information about the template
-	@rtype: dict
-	"""
-	return {"name": template.name, "type": template.type, "default": template.default, "url": template.download_url}
-
-def _physical_link_info(link):
-	"""
-	Prepares a physical link object for serialization.
-	
-	@type sf: hosts.PhysicalLink
-	@param sf: The physical link object to encode
-	@return: a dict containing information about the physical link
-	@rtype: dict
-	"""
-	return {"src": link.src_group, "dst": link.dst_group, "loss": link.loss, "delay_avg": link.delay_avg, "delay_stddev": link.delay_stddev}
 
 def _top_access(top, role, user):
 	"""
@@ -268,16 +120,14 @@ def host_info(hostname, user=None):
 	@return: a dict of host details if host exists or False otherwise
 	"""
 	try:
-		return _host_info(hosts.get_host(hostname))
+		return hosts.get_host(hostname).to_dict()
 	except hosts.Host.DoesNotExist:
 		return False
 
-def host_list(group_filter="*", user=None):
+def host_list(group_filter="", user=None):
 	"""
-	Returns details about all hosts as a list. If group filter is "*" all hosts
+	Returns details about all hosts as a list. If group filter is "" all hosts
 	will be returned otherwise only the hosts within the group (exact match) .
-	
-	@todo: Change "*" to ""
 	
 	@type user: generic.User  
 	@param user: current user
@@ -286,10 +136,10 @@ def host_list(group_filter="*", user=None):
 	"""
 	res=[]
 	qs = hosts.Host.objects.all()
-	if not group_filter=="*":
+	if group_filter:
 		qs=qs.filter(group=group_filter)
 	for h in qs:
-		res.append(_host_info(h))
+		res.append(h.to_dict())
 	return res
 
 def host_add(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
@@ -478,30 +328,6 @@ def special_features_map(user=None):
 	"""
 	return hosts.special_feature_map()
 
-def _parse_xml(xml, root_tag):
-	"""
-	Parses an xml document. The input must be a string containing a well-formed
-	xml document containing the given root tag.
-	
-	@todo: move to util
-	
-	@param xml: well-formed xml document to be parsed
-	@type xml: string
-	@param root_tag: the name of the expected root tag
-	@type root_tag: string
-	@return: the parsed xml element of the root tag
-	@rtype: minidom.Element
-	@raise fault.Error: if the input is not well-formed or the root tag is not found      
-	""" 
-	try:
-		from xml.dom import minidom
-		dom = minidom.parseString(xml)
-		return dom.getElementsByTagName ( root_tag )[0]
-	except IndexError:
-		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
-	except Exception, exc:
-		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
-
 def top_info(id, user=None):
 	"""
 	Returns detailed information about a topology. The information will vary
@@ -516,37 +342,35 @@ def top_info(id, user=None):
 	@raise fault.Error: if the topology is not found      
 	""" 
 	top = topology.get(id)
-	return _topology_info(top, top.check_access("user", user), True)
+	return top.to_dict(top.check_access("user", user), True)
 
 def top_list(owner_filter, host_filter, access_filter, user=None):
 	"""
 	Returns brief information about topologies. The set of topologies that will
 	be returned can be filtered by owner, by host (affected by the topology) 
 	and by access level of the current user. All filters apply subtractively.
-	If a filter has the value "*" it is not applied.
+	If a filter has the value "" it is not applied.
 	
-	@todo: substitude "*" by ""
-	
-	@param owner_filter: name of the owner to filter by or "*"
+	@param owner_filter: name of the owner to filter by or ""
 	@type owner_filter: string
-	@param host_filter: name of the host to filter by or "*"
+	@param host_filter: name of the host to filter by or ""
 	@type host_filter: string
-	@param access_filter: access level to filter by (either "user" or "manager") or "*"
+	@param access_filter: access level to filter by (either "user" or "manager") or ""
 	@type access_filter: string
 	@param user: current user
 	@type user: generic.User
-	@return: a list of breif information about topologies
+	@return: a list of brief information about topologies
 	@rtype: list of dict
 	""" 
 	tops=[]
 	all = topology.all()
-	if not owner_filter=="*":
+	if owner_filter:
 		all = all.filter(owner=owner_filter)
-	if not host_filter=="*":
+	if host_filter:
 		all = all.filter(device__host__name=host_filter).distinct()
 	for t in all:
-		if access_filter=="*" or t.check_access(access_filter, user):
-			tops.append(_topology_info(t, t.check_access("user", user), False))
+		if (not access_filter) or t.check_access(access_filter, user):
+			tops.append(t.to_dict(t.check_access("user", user), False))
 	return tops
 	
 def top_get(top_id, include_ids=False, user=None):
@@ -580,8 +404,6 @@ def top_import(xml, user=None):
 	applies the modifications. The user must be a regular user to create 
 	topologies.
 
-	@todo: make this method return a task instead
-	
 	@param xml: xml specification of the topology
 	@type xml: string
 	@param user: current user
@@ -594,8 +416,8 @@ def top_import(xml, user=None):
 	top=topology.create(user.name)
 	top.save()
 	import modification
-	dom = _parse_xml(xml, "topology")
-	modification.apply_spec(top.id, dom)
+	dom = util.parse_xml(xml, "topology")
+	modification.apply_spec(top, dom)
 	top.logger().log("imported", user=user.name, bigmessage=xml)
 	return top.id
 	
@@ -635,7 +457,7 @@ def top_modify(top_id, xml, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
-	dom = _parse_xml(xml, "modifications")
+	dom = util.parse_xml(xml, "modifications")
 	import modification
 	task_id = modification.modify(top, dom)
 	top.logger().log("started task %s" % task_id, user=user.name)
@@ -973,14 +795,12 @@ def task_list(user=None):
 	"""
 	Returns a list of all tasks.
 	
-	@todo: require admin privileges as tasks might contain sensitive 
-	information like passwords
-	
 	@param user: current user
 	@type user: generic.User
 	@return: a list of all tasks
 	@rtype: list of dict
 	"""
+	_admin_access(user)
 	return [t.dict() for t in tasks.TaskStatus.tasks.values()]
 
 def task_status(id, user=None):
@@ -1015,20 +835,18 @@ def upload_chunk(upload_id, chunk, user=None):
 	"""
 	Appends a data chunk to the upload task.
 	
-	@todo: change return value to True
-	
 	@param upload_id: id of the upload task
 	@type upload_id: string
 	@param chunk: data chunk
 	@type chunk: bytes   
 	@param user: current user
 	@type user: generic.User
-	@return: 0
-	@rtype: int
+	@return: True
+	@rtype: boolean
 	"""
 	task = tasks.UploadTask.tasks[upload_id]
 	task.chunk(chunk.data)
-	return 0
+	return True
 
 def upload_image(top_id, device_id, upload_id, user=None):
 	"""
@@ -1121,14 +939,12 @@ def download_chunk(download_id, user=None):
 	import xmlrpclib
 	return xmlrpclib.Binary(data)
 
-def template_list(type, user=None):
+def template_list(type="", user=None):
 	"""
 	Lists all available templates. The list can be filtered by template type.
-	If type is set to "*" all templates will be listed, otherwise only 
+	If type is set to "" all templates will be listed, otherwise only 
 	templates matching the given type will be listed.
 
-	@todo: change "*" to ""
-	
 	@param type: template tpye filter
 	@type type: string
 	@param user: current user
@@ -1136,9 +952,9 @@ def template_list(type, user=None):
 	@return: list of templates
 	@rtype: list of dict
 	"""
-	if type=="*":
+	if not type:
 		type = None
-	return [_template_info(t) for t in hosts.get_templates(type)]
+	return [t.to_dict() for t in hosts.get_templates(type)]
 
 def template_add(name, type, url, user=None):
 	"""
@@ -1198,15 +1014,13 @@ def errors_all(user=None):
 	Returns a list of all errors in the backend. This method requires admin 
 	access.
 
-	@todo: change dict() to _dict()
-
 	@param user: current user
 	@type user: generic.User
 	@return: list of all errors
 	@rtype: list of dict
 	"""
 	_admin_access(user)
-	return [f.dict() for f in fault.errors_all()]
+	return [f.to_dict() for f in fault.errors_all()]
 
 def errors_remove(id, user=None):
 	"""
@@ -1315,7 +1129,7 @@ def physical_links_get(src_group, dst_group, user=None):
 	@return: physical link statistics
 	@rtype: dict
 	"""
-	return _physical_link_info(hosts.get_physical_link(src_group, dst_group))
+	return hosts.get_physical_link(src_group, dst_group).to_dict()
 	
 def physical_links_get_all(user=None):
 	"""
@@ -1326,4 +1140,4 @@ def physical_links_get_all(user=None):
 	@return: list of all physical link statistics
 	@rtype: list of dict
 	"""
-	return [_physical_link_info(l) for l in hosts.get_all_physical_links()]
+	return [l.to_dict() for l in hosts.get_all_physical_links()]

@@ -31,7 +31,7 @@ class TemplateForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/template_index.html", {'templates': api.template_list("*")})
+	return render_to_response("admin/template_index.html", {'templates': api.template_list("")})
 
 @wrap_rpc
 def add(api, request):
@@ -40,7 +40,7 @@ def add(api, request):
 		if form.is_valid(): 
 			d = form.cleaned_data
 			task = api.template_add(d["name"], d["type"], d["url"])
-			return render_to_response("admin/template_index.html", {'templates': api.template_list("*"), "task": task})
+			return render_to_response("admin/template_index.html", {'templates': api.template_list(""), "task": task})
 	else:
 		form = TemplateForm()
 	return render_to_response("admin/template_add.html", {"form": form})

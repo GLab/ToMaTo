@@ -265,41 +265,66 @@ class Host(models.Model):
 			if sf.feature_type == feature_type and sf.feature_group == feature_group:
 				sf.delete()
 	
+	def to_dict(self):
+		"""
+		Prepares a host for serialization.
+		
+		@return: a dict containing information about the host
+		@rtype: dict
+		"""
+		return {"name": self.name, "group": self.group, "enabled": self.enabled, 
+			"device_count": self.device_set.count(),
+			"vmid_start": self.vmid_range_start, "vmid_count": self.vmid_range_count,
+			"port_start": self.port_range_start, "port_count": self.port_range_count,
+			"bridge_start": self.bridge_range_start, "bridge_count": self.bridge_range_count,
+			"special_features": [sf.to_dict() for sf in self.special_features()]}
+
+	
 class Template(models.Model):
-		name = models.CharField(max_length=100)
-		type = models.CharField(max_length=12)
-		default = models.BooleanField(default=False)
-		download_url = models.CharField(max_length=255, default="")
+	name = models.CharField(max_length=100)
+	type = models.CharField(max_length=12)
+	default = models.BooleanField(default=False)
+	download_url = models.CharField(max_length=255, default="")
 		
-		def init(self, name, type, download_url):
-			self.name = name
-			self.type = type
-			self.download_url = download_url
-			self.save()
+	def init(self, name, type, download_url):
+		self.name = name
+		self.type = type
+		self.download_url = download_url
+		self.save()
 
-		def set_default(self):
-			Template.objects.filter(type=self.type).update(default=False)
-			self.default=True
-			self.save()
+	def set_default(self):
+		Template.objects.filter(type=self.type).update(default=False)
+		self.default=True
+		self.save()
 		
-		def get_filename(self):
-			if self.type == "kvm":
-				return "/var/lib/vz/template/qemu/%s" % self.name
-			if self.type == "openvz":
-				return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+	def get_filename(self):
+		if self.type == "kvm":
+			return "/var/lib/vz/template/qemu/%s" % self.name
+		if self.type == "openvz":
+			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+	
+	def upload_to_all(self, task):
+		dst = self.get_filename()
+		for host in Host.objects.all():
+			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
 		
-		def upload_to_all(self, task):
-			dst = self.get_filename()
-			for host in Host.objects.all():
-				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
-		
-		def upload_to_host(self, host, task):
-			dst = self.get_filename()
-			if self.download_url:
-				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+	def upload_to_host(self, host, task):
+		dst = self.get_filename()
+		if self.download_url:
+			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
 
-		def __unicode__(self):
-			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
+	def __unicode__(self):
+		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
+			
+	def to_dict(self):
+		"""
+		Prepares a template for serialization.
+			
+		@return: a dict containing information about the template
+		@rtype: dict
+		"""
+		return {"name": self.name, "type": self.type, "default": self.default, "url": self.download_url}
+
 			
 class PhysicalLink(models.Model):
 	src_group = models.CharField(max_length=10)
@@ -316,11 +341,32 @@ class PhysicalLink(models.Model):
 		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
 	
+	def to_dict(self):
+		"""
+		Prepares a physical link object for serialization.
+		
+		@return: a dict containing information about the physical link
+		@rtype: dict
+		"""
+		return {"src": self.src_group, "dst": self.dst_group, "loss": self.loss,
+			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
+	
+	
 class SpecialFeature(models.Model):
 	host = models.ForeignKey(Host)
 	feature_type = models.CharField(max_length=50)
 	feature_group = models.CharField(max_length=50)
 	bridge = models.CharField(max_length=10)
+
+	def to_dict(self):
+		"""
+		Prepares a special feature for serialization.
+		
+		@return: a dict containing information about the special feature
+		@rtype: dict
+		"""
+		return {"type": self.feature_type, "group": self.feature_group, "bridge": self.bridge}
+
 	
 def get_host_groups():
 	groups = []

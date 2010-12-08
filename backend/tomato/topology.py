@@ -397,6 +397,50 @@ class Topology(models.Model):
 		for con in self.connectors_all():
 			self.resources.add(con.update_resource_usage())
 		self.resources.save()
+
+	def to_dict(self, auth, detail):
+		"""
+		Prepares a topology for serialization.
+		
+		@type auth: boolean
+		@param auth: Whether to include confidential information
+		@type detail: boolean
+		@param detail: Whether to include details of topology elements  
+		@return: a dict containing information about the topology
+		@rtype: dict
+		"""
+		res = {"id": self.id, "name": self.name, "state": self.max_state(), "owner": str(self.owner),
+			"device_count": len(self.devices_all()), "connector_count": len(self.connectors_all()),
+			"date_created": self.date_created, "date_modified": self.date_modified, "date_usage": self.date_usage
+			}
+		if detail:
+			try:
+				analysis = self.analysis()
+			except Exception, exc:
+				analysis = "Error in analysis: %s" % exc
+			res.update({"analysis": analysis, 
+				"devices": [(v.name, v.to_dict(auth)) for v in self.devices_all()],
+				"connectors": [(v.name, v.to_dict(auth)) for v in self.connectors_all()]
+				})
+			if auth:
+				task = self.get_task()
+				if self.resources:
+					res.update(resources=self.resources.encode())
+				if task:
+					if task.is_active():
+						res.update(running_task=task.id)
+					else:
+						res.update(finished_task=task.id)
+				res.update(permissions=[p.to_dict() for p in self.permissions_all()])
+				captures = []
+				for con in self.connectors_all():
+					for c in con.connections_all():
+						c = c.upcast()
+						if hasattr(c, "download_supported") and c.download_supported():
+							captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
+				res.update(captures=captures)
+		return res
+
 						
 class Permission(models.Model):
 	ROLE_USER="user"
@@ -404,7 +448,7 @@ class Permission(models.Model):
 	topology = models.ForeignKey(Topology)
 	user = models.CharField(max_length=30)
 	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))
-	def dict(self):
+	def to_dict(self):
 		return {"user": self.user, "role": self.role}
 
 def get(id):

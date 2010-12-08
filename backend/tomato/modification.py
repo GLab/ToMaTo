@@ -164,14 +164,16 @@ def modify_run(top_id, mods, task):
 		task.subtasks_done = task.subtasks_done + 1
 	task.done()
 
-def apply_spec(top_id, dom):
-	for mod in convert_specification(dom):
-		top = topology.get(top_id)
-		mod.run(top, None)
-
 def modify(top, dom):
 	top.renew()
 	mods = read_from_dom(dom)
+	task = top.start_task(modify_run, top.id, mods)
+	task.subtasks_total = len(mods)
+	return task.id
+
+def apply_spec(top, dom):
+	top.renew()
+	mods = convert_specification(dom)
 	task = top.start_task(modify_run, top.id, mods)
 	task.subtasks_total = len(mods)
 	return task.id
