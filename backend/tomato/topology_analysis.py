@@ -29,12 +29,34 @@ def analyze(top):
 	res = Result()
 	if len(top.devices_all()) == 0:
 		res.problems.append("No devices specified")
+	_check_timeout(top, res)
 	_check_fully_connected(top, res)
 	_check_interface_connection_count(top, res)
 	_check_connectors_connection_count(top, res)
 	_check_connectors_ip_structure(top, res)
 	_check_connection_performance(top, res)
 	return res.res()
+
+def _check_timeout(top, res):
+	import datetime, generic
+	now = datetime.datetime.now()
+	week = datetime.timedelta(weeks=4)
+	print top.date_usage + top.STOP_TIMEOUT
+	print now + week
+	print now + week > top.date_usage + top.STOP_TIMEOUT
+	if now + week > top.date_usage + top.REMOVE_TIMEOUT:
+		res.warnings.append("Removing topology at %s due to timeout" % (top.date_usage + top.REMOVE_TIMEOUT))
+	elif now + week > top.date_usage + top.DESTROY_TIMEOUT:
+		max_state = top.max_state()
+		if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
+			res.warnings.append("Destroying topology at %s due to timeout" % (top.date_usage + top.DESTROY_TIMEOUT))
+	elif now + week > top.date_usage + top.STOP_TIMEOUT:
+		if top.max_state() == generic.State.STARTED:
+			res.warnings.append("Stopping topology at %s due to timeout" % (top.date_usage + top.STOP_TIMEOUT))
+	if now > top.date_usage + top.DESTROY_TIMEOUT:
+		res.hints.append("Topology has already been destroyed due to timeout")
+	elif now > top.date_usage + top.STOP_TIMEOUT:
+		res.hints.append("Topology has already been stopped due to timeout")
 
 def _check_fully_connected(top, res):
 	reachable=set()

@@ -418,6 +418,8 @@ class Topology(models.Model):
 				analysis = self.analysis()
 			except Exception, exc:
 				analysis = "Error in analysis: %s" % exc
+				import traceback
+				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			res.update({"analysis": analysis, 
 				"devices": [(v.name, v.to_dict(auth)) for v in self.devices_all()],
 				"connectors": [(v.name, v.to_dict(auth)) for v in self.connectors_all()]
