@@ -144,7 +144,7 @@ def _check_connectors_ip_structure(top,res):
 					dhcp_clients.add(connection.interface.device.name)
 		if len(dhcp_clients)>0 and not connector.is_special():
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, ", ".join(dhcp_clients) ) )
-				
+						
 def _check_connection_performance(top,res):
 	for connector in top.connectors_all():
 		for connection in connector.connections_all():

@@ -38,28 +38,28 @@ class ResourceSet(models.Model):
 	special = models.IntegerField(default=0)
 
 	def clean(self):
-		for r in self.resourceentry_set.all():
+		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
 			r.delete()
 
 	def add(self, set):
-		for r in set.resourceentry_set.all():
+		for r in set.resourceentry_set.all(): # pylint: disable-msg=E1101
 			self.set(r.type, self.get(r.type) + r.value)
 
 	def set(self, type, value):
-		if len(self.resourceentry_set.filter(type=type)) == 0:
+		if len(self.resourceentry_set.filter(type=type)) == 0: # pylint: disable-msg=E1101
 			res = ResourceEntry(resource_set=self, type=type, value=value)
 			res.save()
-			self.resourceentry_set.add(res)
+			self.resourceentry_set.add(res) # pylint: disable-msg=E1101
 		else:
-			res = self.resourceentry_set.all().get(type=type)
+			res = self.resourceentry_set.all().get(type=type) # pylint: disable-msg=E1101
 			res.value = value
 			res.save()
 	
 	def get(self, type):
-		if len(self.resourceentry_set.filter(type=type)) == 0:
+		if len(self.resourceentry_set.filter(type=type)) == 0: # pylint: disable-msg=E1101
 			return 0
 		else:
-			res = self.resourceentry_set.get(type=type)
+			res = self.resourceentry_set.get(type=type) # pylint: disable-msg=E1101
 			return res.value
 		
 	def decode(self, dict):
@@ -68,7 +68,7 @@ class ResourceSet(models.Model):
 			
 	def encode(self):
 		dict = {}
-		for r in self.resourceentry_set.all():
+		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
 			dict[r.type] = str(r.value)
 		return dict
 
@@ -106,19 +106,19 @@ class Device(models.Model):
 	resources = models.ForeignKey(ResourceSet, null=True)
 
 	def interfaces_get(self, name):
-		return self.interface_set.get(name=name).upcast()
+		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
 	def interfaces_add(self, iface):
-		return self.interface_set.add(iface)
+		return self.interface_set.add(iface) # pylint: disable-msg=E1101
 
 	def interfaces_all(self):
-		return self.interface_set.all()
+		return self.interface_set.all() # pylint: disable-msg=E1101
 
 	def upcast(self):
 		if self.is_kvm():
-			return self.kvmdevice.upcast()
+			return self.kvmdevice.upcast() # pylint: disable-msg=E1101
 		if self.is_openvz():
-			return self.openvzdevice.upcast()
+			return self.openvzdevice.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def is_openvz(self):
@@ -220,13 +220,13 @@ class Device(models.Model):
 
 	def destroy_run(self, task):
 		pass
-
+	
 	def configure(self, properties, task):
 		if "pos" in properties:
 			self.pos = properties["pos"]
 		if "template" in properties:
 			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
-			if not self.template.startswith("***"):
+			if not self.template.startswith("***"): # pylint: disable-msg=E0203
 				self.template = hosts.get_template_name(self.type, properties["template"])
 				if not self.template:
 					raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
@@ -282,21 +282,21 @@ class Interface(models.Model):
 
 	def is_configured(self):
 		try:
-			self.configuredinterface
+			self.configuredinterface # pylint: disable-msg=E1101
 			return True
 		except:
 			return False
 	
 	def is_connected(self):
 		try:
-			self.connection
+			self.connection # pylint: disable-msg=E1101
 			return True
 		except:
 			return False	
 	
 	def upcast(self):
 		if self.is_configured():
-			return self.configuredinterface.upcast()
+			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def encode_xml(self, dom, doc, internal):
@@ -317,13 +317,13 @@ class Connector(models.Model):
 	resources = models.ForeignKey(ResourceSet, null=True)
 
 	def connections_add(self, con):
-		return self.connection_set.add(con)
+		return self.connection_set.add(con) # pylint: disable-msg=E1101
 
 	def connections_all(self):
-		return self.connection_set.all()
+		return self.connection_set.all() # pylint: disable-msg=E1101
 
 	def connections_get(self, interface):
-		return self.connection_set.get(interface=interface).upcast()
+		return self.connection_set.get(interface=interface).upcast() # pylint: disable-msg=E1101
 
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
@@ -333,13 +333,13 @@ class Connector(models.Model):
 
 	def upcast(self):
 		if self.is_tinc():
-			return self.tincconnector.upcast()
+			return self.tincconnector.upcast() # pylint: disable-msg=E1101
 		if self.is_special():
-			return self.specialfeatureconnector.upcast()
+			return self.specialfeatureconnector.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def affected_hosts(self):
-		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct()
+		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
 	def encode_xml(self, dom, doc, internal):
 		dom.setAttribute("name", self.name)
@@ -466,14 +466,14 @@ class Connection(models.Model):
 
 	def is_emulated(self):
 		try:
-			self.emulatedconnection
+			self.emulatedconnection # pylint: disable-msg=E1101
 			return True
 		except:
 			return False
 
 	def upcast(self):
 		if self.is_emulated():
-			return self.emulatedconnection.upcast()
+			return self.emulatedconnection.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def bridge_name(self):

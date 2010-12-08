@@ -174,7 +174,7 @@ class KVMDevice(generic.Device):
 		#FIXME: actually delete interface in VM
 		iface = self.interfaces_get(name)
 		iface.delete()
-	
+		
 	def vnc_password(self):
 		if not self.kvm_id:
 			return "---"

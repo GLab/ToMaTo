@@ -22,13 +22,6 @@ class SpecialFeatureConnector(generic.Connector):
 	feature_type = models.CharField(max_length=50)
 	feature_group = models.CharField(max_length=50, blank=True)
 
-	def add_connection(self, dom):
-		con = generic.Connection()
-		con.init (self, dom)
-		self.connection_set.add ( con )
-		self.save()
-		return con
-
 	def upcast(self):
 		return self
 
@@ -96,7 +89,7 @@ class SpecialFeatureConnector(generic.Connector):
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
 		con = self.connections_get(iface)
 		con.delete()
-
+		
 	def get_resource_usage(self):
 		special = 0
 		traffic = 0

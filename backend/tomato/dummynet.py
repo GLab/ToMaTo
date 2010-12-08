@@ -28,12 +28,12 @@ class EmulatedConnection(generic.Connection):
 	
 	def upcast(self):
 		if self.is_tinc():
-			return self.tincconnection
+			return self.tincconnection # pylint: disable-msg=E1101
 		return self
 
 	def is_tinc(self):
 		try:
-			self.tincconnection
+			self.tincconnection # pylint: disable-msg=E1101
 			return True
 		except:
 			return False
@@ -88,7 +88,7 @@ class EmulatedConnection(generic.Connection):
 		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ), task)
 		
 	def _capture_dir(self):
-		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id )
+		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id ) # pylint: disable-msg=E1101
 
 	def _start_capture(self, task):
 		host = self.interface.device.host
@@ -130,7 +130,7 @@ class EmulatedConnection(generic.Connection):
 			host.execute("ipfw delete %d" % ( pipe_id + 1 ), task)
 		if self.capture:
 			self._stop_capture(task)
-			
+
 	def prepare_run(self, task):
 		host = self.interface.device.host
 		host.bridge_create("dummy")

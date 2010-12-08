@@ -120,7 +120,7 @@ def cleanup():
 		task.check_delete()
 	for task in UploadTask.tasks.values():
 		task.check_delete()
-	
+		
 def running_tasks():
 	tasks = []
 	for task in TaskStatus.tasks.values():

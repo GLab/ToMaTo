@@ -41,7 +41,7 @@ def db_migrate():
 db_migrate()
 
 import config, util
-from auth import login
+from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
 
 import log, generic, topology, hosts, fault, tasks
 import tinc, kvm, openvz
@@ -101,7 +101,7 @@ def host_info(hostname, user=None):
 	"""
 	try:
 		return hosts.get_host(hostname).to_dict()
-	except hosts.Host.DoesNotExist:
+	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
 def host_list(group_filter="", user=None):
@@ -115,7 +115,7 @@ def host_list(group_filter="", user=None):
 	@param group_filter: host filter by group 
 	"""
 	res=[]
-	qs = hosts.Host.objects.all()
+	qs = hosts.Host.objects.all() # pylint: disable-msg=E1101
 	if group_filter:
 		qs=qs.filter(group=group_filter)
 	for h in qs:

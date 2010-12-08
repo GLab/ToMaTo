@@ -127,37 +127,37 @@ class Topology(models.Model):
 		return topology_analysis.analyze(self)
 
 	def devices_all(self):
-		return self.device_set.all()
+		return self.device_set.all() # pylint: disable-msg=E1101
 	
 	def devices_get(self, name):
-		return self.device_set.get(name=name).upcast()
+		return self.device_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
 	def interfaces_get(self, iface_name):
 		iface_name = iface_name.split(".")
 		return self.devices_get(iface_name[0]).interfaces_get(iface_name[1])
 
 	def devices_add(self, dev):
-		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0:
+		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0: # pylint: disable-msg=E1101
 			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
-		self.device_set.add(dev)
+		self.device_set.add(dev) # pylint: disable-msg=E1101
 
 	def connectors_all(self):
-		return self.connector_set.all()
+		return self.connector_set.all() # pylint: disable-msg=E1101
 	
 	def connectors_get(self, name):
-		return self.connector_set.get(name=name).upcast()
+		return self.connector_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
 	def connectors_add(self, con):
-		if self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0:
+		if self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0: # pylint: disable-msg=E1101
 			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
-		self.connector_set.add(con)
+		self.connector_set.add(con) # pylint: disable-msg=E1101
 
 	def affected_hosts (self):
 		"""
 		The set of all hosts that this topology has devices on.
 		"""
 		import hosts
-		return hosts.Host.objects.filter(device__topology=self).distinct()
+		return hosts.Host.objects.filter(device__topology=self).distinct() # pylint: disable-msg=E1101
 	
 	def save_to ( self, dom, doc, internal ):
 		"""
@@ -357,19 +357,19 @@ class Topology(models.Model):
 
 	def permissions_add(self, user_name, role):
 		self.renew()
-		self.permission_set.add(Permission(user=user_name, role=role))
+		self.permission_set.add(Permission(user=user_name, role=role)) # pylint: disable-msg=E1101
 		self.save()
 	
 	def permissions_all(self):
-		return self.permission_set.all()
+		return self.permission_set.all() # pylint: disable-msg=E1101
 	
 	def permissions_remove(self, user_name):
 		self.renew()
-		self.permission_set.filter(user=user_name).delete()
+		self.permission_set.filter(user=user_name).delete() # pylint: disable-msg=E1101
 		self.save()
 		
 	def permissions_get(self, user_name):
-		set = self.permission_set.filter(user=user_name)
+		set = self.permission_set.filter(user=user_name) # pylint: disable-msg=E1101
 		if set.count() > 0:
 			return set[0].role
 		else:
@@ -455,12 +455,12 @@ class Permission(models.Model):
 
 def get(id):
 	try:
-		return Topology.objects.get(id=id)
-	except Topology.DoesNotExist:
+		return Topology.objects.get(id=id) # pylint: disable-msg=E1101
+	except Topology.DoesNotExist: # pylint: disable-msg=E1101
 		raise fault.new(fault.NO_SUCH_TOPOLOGY, "No such topology: %s" % id)
 
 def all():
-	return Topology.objects.all()
+	return Topology.objects.all() # pylint: disable-msg=E1101
 
 def create(owner):
 	top = Topology()

@@ -22,13 +22,6 @@ import dummynet, generic, config, hosts, os, subprocess, shutil, fault, util
 # Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
 	
-	def add_connection(self, dom):
-		con = TincConnection()
-		con.init (self, dom)
-		self.connection_set.add ( con )
-		self.save()
-		return con
-	
 	def upcast(self):
 		return self
 
@@ -232,7 +225,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		
 	def start_run(self, task):
 		dummynet.EmulatedConnection.start_run(self, task)
-
+		
 	def stop_run(self, task):
 		dummynet.EmulatedConnection.stop_run(self, task)
 

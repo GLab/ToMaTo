@@ -258,11 +258,6 @@ class ConfiguredInterface(generic.Interface):
 	use_dhcp = models.BooleanField()
 	ip4address = models.CharField(max_length=18, null=True)
 
-	def init(self, device, dom):
-		self.device = device
-		self.decode_xml(dom)
-		self.save()
-
 	def upcast(self):
 		return self
 
@@ -288,7 +283,7 @@ class ConfiguredInterface(generic.Interface):
 			if self.device.state == generic.State.STARTED:
 				self.start_run(task)
 			self.save()
-		
+			
 	def start_run(self, task):
 		openvz_id = self.device.upcast().openvz_id
 		bridge = self.device.upcast().bridge_name(self)

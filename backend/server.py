@@ -101,10 +101,10 @@ def runserver():
 	api_server=APIServer(tomato)
 	if tomato.config.server_ssl:
 		sslContext = ssl.DefaultOpenSSLContextFactory(tomato.config.server_ssl_private_key, tomato.config.server_ssl_ca_key) 
-		reactor.listenSSL(tomato.config.server_port, server.Site(api_server), contextFactory = sslContext)
+		reactor.listenSSL(tomato.config.server_port, server.Site(api_server), contextFactory = sslContext) #@UndefinedVariable, pylint: disable-msg=E1101
 	else:
-		reactor.listenTCP(tomato.config.server_port, server.Site(api_server))
-	reactor.run()
+		reactor.listenTCP(tomato.config.server_port, server.Site(api_server)) #@UndefinedVariable, pylint: disable-msg=E1101
+	reactor.run() #@UndefinedVariable, pylint: disable-msg=E1101
 	
 if __name__ == "__main__":
 	runserver()
