@@ -18,7 +18,7 @@
 from django.db import models
 
 import uuid
-import generic, hosts, util
+import generic, util
 
 class EmulatedConnection(generic.Connection):
 	delay = models.IntegerField(null=True)
@@ -33,9 +33,9 @@ class EmulatedConnection(generic.Connection):
 
 	def is_tinc(self):
 		try:
-			self.tincconnection # pylint: disable-msg=E1101
+			self.tincconnection # pylint: disable-msg=E1101,W0104
 			return True
-		except:
+		except: #pylint: disable-msg=W0702
 			return False
 	
 	def encode_xml(self, dom, doc, internal):
@@ -53,17 +53,17 @@ class EmulatedConnection(generic.Connection):
 		if "delay" in properties:
 			try:
 				self.delay = int(properties["delay"])
-			except:
+			except: #pylint: disable-msg=W0702
 				self.delay = 0
 		if "bandwidth" in properties:		
 			try:
 				self.bandwidth = int(properties["bandwidth"])			
-			except:
+			except: #pylint: disable-msg=W0702
 				self.bandwidth = 10000
 		if "lossratio" in properties:
 			try:
 				self.lossratio = float(properties["lossratio"])
-			except:
+			except: #pylint: disable-msg=W0702
 				self.lossratio = 0.0
 		old_capture = self.capture
 		if "capture" in properties:
@@ -92,11 +92,11 @@ class EmulatedConnection(generic.Connection):
 
 	def _start_capture(self, task):
 		host = self.interface.device.host
-		dir = self._capture_dir()
-		host.execute("mkdir -p %s" % dir, task )
+		dirrectory = self._capture_dir()
+		host.execute("mkdir -p %s" % dirrectory, task )
 		host.bridge_create(self.bridge_name())
 		host.execute("ip link set up %s" % self.bridge_name(), task)
-		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), dir, dir ), task )		
+		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), dirrectory, dirrectory ), task )		
 
 	def start_run(self, task):
 		generic.Connection.start_run(self, task)
@@ -116,9 +116,9 @@ class EmulatedConnection(generic.Connection):
 
 	def _stop_capture(self, task):
 		host = self.interface.device.host
-		dir = self._capture_dir()
-		host.execute("cat %s.pid | xargs -r kill" % dir, task )
-		host.execute("rm %s.pid" % dir, task )
+		directory = self._capture_dir()
+		host.execute("cat %s.pid | xargs -r kill" % directory, task )
+		host.execute("rm %s.pid" % directory, task )
 
 	def stop_run(self, task):
 		generic.Connection.stop_run(self, task)
@@ -140,9 +140,9 @@ class EmulatedConnection(generic.Connection):
 	def destroy_run(self, task):
 		generic.Connection.destroy_run(self, task)
 		host = self.interface.device.host
-		dir = self._capture_dir()
+		directory = self._capture_dir()
 		if host:
-			host.execute("rm -r %s %s.pid" % (dir, dir), task )
+			host.execute("rm -r %s %s.pid" % (directory, directory), task )
 
 	def download_supported(self):
 		return not self.connector.state == generic.State.CREATED and self.capture

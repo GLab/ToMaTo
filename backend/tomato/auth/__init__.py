@@ -23,4 +23,4 @@ class User():
 		self.is_user = is_user
 		self.is_admin = is_admin
 		
-exec("from %s_provider import login" % config.auth_provider)
+exec("from %s_provider import login" % config.auth_provider) #pylint: disable-msg=W0122

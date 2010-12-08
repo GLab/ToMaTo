@@ -32,38 +32,38 @@ class Test(unittest.TestCase):
 	def setUp(self):
 		tests.default_setUp()
 		
- 	def tearDown(self):
+	def tearDown(self):
 		tests.default_tearDown()
 
 	def testLifecycle(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		api.device_prepare(id, "kvm1", user=admin)
+		tid = api.top_import(TOP1, user=admin)
+		api.device_prepare(tid, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.device_start(id, "kvm1", user=admin)
+		api.device_start(tid, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.device_stop(id, "kvm1", user=admin)
+		api.device_stop(tid, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.device_destroy(id, "kvm1", user=admin)
+		api.device_destroy(tid, "kvm1", user=admin)
 		tests.wait_for_tasks(api, admin)
 
 	def testChange(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		api.top_modify(id, tests.encode_modification("device-rename", "kvm1", None, {"name": "kvm2"}), user=admin)
+		tid = api.top_import(TOP1, user=admin)
+		api.top_modify(tid, tests.encode_modification("device-rename", "kvm1", None, {"name": "kvm2"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("device-configure", "kvm2", None, {"hostgroup": "test"}), user=admin)
+		api.top_modify(tid, tests.encode_modification("device-configure", "kvm2", None, {"hostgroup": "test"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("device-delete", "kvm2", None, {}), user=admin)
+		api.top_modify(tid, tests.encode_modification("device-delete", "kvm2", None, {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("device-create", None, None, {"type": "kvm", "name": "kvm1"}), user=admin)
+		api.top_modify(tid, tests.encode_modification("device-create", None, None, {"type": "kvm", "name": "kvm1"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("interface-create", "kvm1", None, {"name": "eth0"}), user=admin)
+		api.top_modify(tid, tests.encode_modification("interface-create", "kvm1", None, {"name": "eth0"}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("interface-configure", "kvm1", "eth0", {}), user=admin)
+		api.top_modify(tid, tests.encode_modification("interface-configure", "kvm1", "eth0", {}), user=admin)
 		tests.wait_for_tasks(api, admin)
-		#api.top_modify(id, tests.encode_modification("interface-rename", "kvm1", "eth0", {"name": "eth1"}), user=admin)
+		#api.top_modify(tid, tests.encode_modification("interface-rename", "kvm1", "eth0", {"name": "eth1"}), user=admin)
 		#tests.wait_for_tasks(api, admin)
-		api.top_modify(id, tests.encode_modification("interface-delete", "kvm1", "eth0", {}), user=admin)
+		api.top_modify(tid, tests.encode_modification("interface-delete", "kvm1", "eth0", {}), user=admin)
 		tests.wait_for_tasks(api, admin)
 		

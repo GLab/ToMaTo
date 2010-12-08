@@ -56,27 +56,27 @@ class Test(unittest.TestCase):
 	def setUp(self):
 		tests.default_setUp()
 		
- 	def tearDown(self):
+	def tearDown(self):
 		tests.default_tearDown()
 
 	def testImport(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		assert id
-		list = api.top_list("*", "*", "*", user=admin)
-		assert len(list) == 1
-		assert list[0]["name"] == "test1"
+		tid = api.top_import(TOP1, user=admin)
+		assert tid
+		tlist = api.top_list("", "", "", user=admin)
+		assert len(tlist) == 1
+		assert tlist[0]["name"] == "test1"
 
 	def testExport(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		assert len(api.top_get(id, user=admin)) > 100
+		tid = api.top_import(TOP1, user=admin)
+		assert len(api.top_get(tid, user=admin)) > 100
 
 	def testInfo(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		info = api.top_info(id, user=admin)
-		assert info["id"] == id
+		tid = api.top_import(TOP1, user=admin)
+		info = api.top_info(tid, user=admin)
+		assert info["id"] == tid
 		assert info["name"] == "test1"
 		assert info["owner"] == "admin"
 		assert info["analysis"]["problems"] == []
@@ -87,18 +87,18 @@ class Test(unittest.TestCase):
 
 	def testLifecycle(self):
 		admin = api.login("admin", "123")
-		id = api.top_import(TOP1, user=admin)
-		api.top_prepare(id, user=admin)
+		tid = api.top_import(TOP1, user=admin)
+		api.top_prepare(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_start(id, user=admin)
+		api.top_start(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_stop(id, user=admin)
+		api.top_stop(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_destroy(id, user=admin)
+		api.top_destroy(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_start(id, user=admin)
+		api.top_start(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_destroy(id, user=admin)
+		api.top_destroy(tid, user=admin)
 		tests.wait_for_tasks(api, admin)
-		api.top_remove(id, user=admin)
+		api.top_remove(tid, user=admin)
 		tests.wait_for_tasks(api, admin)

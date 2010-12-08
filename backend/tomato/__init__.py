@@ -19,14 +19,13 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-"""
-This is the main tomato api file. All access to tomato must use the following 
-methods. Direct import and usage of other classes of tomato is strongly 
-discouraged as it is likely to break tomato.
 
-Note: since xml-rpc does not support None values all methods must return 
-something and all return values must not contain None.
-"""
+# This is the main tomato api file. All access to tomato must use the following 
+# methods. Direct import and usage of other classes of tomato is strongly 
+# discouraged as it is likely to break tomato.
+#
+# Note: since xml-rpc does not support None values all methods must return 
+# something and all return values must not contain None.
 
 def db_migrate():
 	"""
@@ -88,7 +87,7 @@ def account(user=None):
 	"""
 	return user
 
-def host_info(hostname, user=None):
+def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns details about a host. If the host does not exist False is returned.
 	
@@ -104,7 +103,7 @@ def host_info(hostname, user=None):
 	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
-def host_list(group_filter="", user=None):
+def host_list(group_filter="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns details about all hosts as a list. If group filter is "" all hosts
 	will be returned otherwise only the hosts within the group (exact match) .
@@ -241,7 +240,7 @@ def host_check(host_name, user=None):
 	host = hosts.get_host(host_name)
 	return hosts.host_check(host)
 
-def host_groups(user=None):
+def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns a list of all host groups.
 	
@@ -296,7 +295,7 @@ def special_features_remove(host_name, feature_type, feature_group, user=None):
 	host.special_features_remove(feature_type, feature_group)
 	return True
 
-def special_features_map(user=None):
+def special_features_map(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns a map of all special features.
 	
@@ -308,20 +307,20 @@ def special_features_map(user=None):
 	"""
 	return hosts.special_feature_map()
 
-def top_info(id, user=None):
+def top_info(top_id, user=None):
 	"""
 	Returns detailed information about a topology. The information will vary
 	depending on the access level of the user.
 	
-	@param id: id of the topology
-	@type id: int
+	@param top_id: id of the topology
+	@type top_id: int
 	@param user: current user
 	@type user: generic.User
 	@return: information about the topology
 	@rtype: dict
 	@raise fault.Error: if the topology is not found      
 	""" 
-	top = topology.get(id)
+	top = topology.get(top_id)
 	return top.to_dict(top.check_access("user", user), True)
 
 def top_list(owner_filter, host_filter, access_filter, user=None):
@@ -343,12 +342,12 @@ def top_list(owner_filter, host_filter, access_filter, user=None):
 	@rtype: list of dict
 	""" 
 	tops=[]
-	all = topology.all()
+	all_tops = topology.all()
 	if owner_filter:
-		all = all.filter(owner=owner_filter)
+		all_tops = all_tops.filter(owner=owner_filter)
 	if host_filter:
-		all = all.filter(device__host__name=host_filter).distinct()
-	for t in all:
+		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
+	for t in all_tops:
 		if (not access_filter) or t.check_access(access_filter, user):
 			tops.append(t.to_dict(t.check_access("user", user), False))
 	return tops
@@ -591,7 +590,7 @@ def device_prepare(top_id, device_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("preparing device %s" % device_name, user=user.name)
-	device = top.devices_get(device_name)
+	device = top.device_set_get(device_name)
 	task_id = device.prepare()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -616,7 +615,7 @@ def device_destroy(top_id, device_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("destroying device %s" % device_name, user=user.name)
-	device = top.devices_get(device_name)
+	device = top.device_set_get(device_name)
 	task_id = device.destroy()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -641,7 +640,7 @@ def device_start(top_id, device_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("starting device %s" % device_name, user=user.name)
-	device = top.devices_get(device_name)
+	device = top.device_set_get(device_name)
 	task_id = device.start()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -666,7 +665,7 @@ def device_stop(top_id, device_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("stopping device %s" % device_name, user=user.name)
-	device = top.devices_get(device_name)
+	device = top.device_set_get(device_name)
 	task_id = device.stop()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -691,7 +690,7 @@ def connector_prepare(top_id, connector_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("preparing connector %s" % connector_name, user=user.name)
-	connector = top.connectors_get(connector_name)
+	connector = top.connector_set_get(connector_name)
 	task_id = connector.prepare()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -716,7 +715,7 @@ def connector_destroy(top_id, connector_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("destroying connector %s" % connector_name, user=user.name)
-	connector = top.connectors_get(connector_name)
+	connector = top.connector_set_get(connector_name)
 	task_id = connector.destroy()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -741,7 +740,7 @@ def connector_start(top_id, connector_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("starting connector %s" % connector_name, user=user.name)
-	connector = top.connectors_get(connector_name)
+	connector = top.connector_set_get(connector_name)
 	task_id = connector.start()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -766,7 +765,7 @@ def connector_stop(top_id, connector_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	top.logger().log("stopping connector %s" % connector_name, user=user.name)
-	connector = top.connectors_get(connector_name)
+	connector = top.connector_set_get(connector_name)
 	task_id = connector.stop()
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
@@ -783,21 +782,21 @@ def task_list(user=None):
 	_admin_access(user)
 	return [t.dict() for t in tasks.TaskStatus.tasks.values()]
 
-def task_status(id, user=None):
+def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns the details of a speficic task. The task is identified by a unique
 	(and random) id that is assumed to be secure.
 	
-	@param id: task id
-	@type id: string
+	@param task_id: task id
+	@type task_id: string
 	@param user: current user
 	@type user: generic.User
 	@return: task details
 	@rtype: dict  
 	"""
-	return tasks.TaskStatus.tasks[id].dict()
+	return tasks.TaskStatus.tasks[task_id].dict()
 	
-def upload_start(user=None):
+def upload_start(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Start a new upload. This method registers a new upload and returns a
 	unique id. The user should upload data chunks using upload_chunk and then
@@ -811,7 +810,7 @@ def upload_start(user=None):
 	task = tasks.UploadTask()
 	return task.id
 
-def upload_chunk(upload_id, chunk, user=None):
+def upload_chunk(upload_id, chunk, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Appends a data chunk to the upload task.
 	
@@ -900,7 +899,7 @@ def download_capture(top_id, connector_id, device_id, interface_id, user=None):
 	task = tasks.DownloadTask(filename)
 	return task.id
 
-def download_chunk(download_id, user=None):
+def download_chunk(download_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Downloads one chunk of data from the download task. Each chunhk contains up
 	to 1MB of data. The last chunk is always empty, all others will contain 
@@ -919,32 +918,32 @@ def download_chunk(download_id, user=None):
 	import xmlrpclib
 	return xmlrpclib.Binary(data)
 
-def template_list(type="", user=None):
+def template_list(template_type="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Lists all available templates. The list can be filtered by template type.
-	If type is set to "" all templates will be listed, otherwise only 
+	If template_type is set to "" all templates will be listed, otherwise only 
 	templates matching the given type will be listed.
 
-	@param type: template tpye filter
-	@type type: string
+	@param template_type: template type filter
+	@type template_type: string
 	@param user: current user
 	@type user: generic.User
 	@return: list of templates
 	@rtype: list of dict
 	"""
-	if not type:
-		type = None
-	return [t.to_dict() for t in hosts.get_templates(type)]
+	if not template_type:
+		template_type = None
+	return [t.to_dict() for t in hosts.get_templates(template_type)]
 
-def template_add(name, type, url, user=None):
+def template_add(name, template_type, url, user=None):
 	"""
 	Adds a template to the template repository. The template will be fetched 
 	from the given url by all hosts. This method requires admin access.
 
 	@param name: template name
 	@type name: string
-	@param type: template type
-	@type type: string
+	@param template_type: template type
+	@type template_type: string
 	@param url: template download url
 	@type url: string
 	@param user: current user
@@ -953,7 +952,7 @@ def template_add(name, type, url, user=None):
 	@rtype: string
 	"""
 	_admin_access(user)
-	return hosts.add_template(name, type, url)
+	return hosts.add_template(name, template_type, url)
 
 def template_remove(name, user=None):
 	"""
@@ -971,13 +970,13 @@ def template_remove(name, user=None):
 	hosts.remove_template(name)
 	return True
 
-def template_set_default(type, name, user=None):
+def template_set_default(template_type, name, user=None):
 	"""
 	Selects a template to be the default template for the given type. This
 	method requires admin access.
 
-	@param type: template type
-	@type type: string
+	@param template_type: template type
+	@type template_type: string
 	@param name: template name
 	@type name: string
 	@param user: current user
@@ -986,7 +985,7 @@ def template_set_default(type, name, user=None):
 	@rtype: boolean
 	"""
 	_admin_access(user)
-	hosts.get_template(type, name).set_default()
+	hosts.get_template(template_type, name).set_default()
 	return True
 
 def errors_all(user=None):
@@ -1002,19 +1001,19 @@ def errors_all(user=None):
 	_admin_access(user)
 	return [f.to_dict() for f in fault.errors_all()]
 
-def errors_remove(id, user=None):
+def errors_remove(error_id, user=None):
 	"""
 	Removes an error from the error list. This method requires admin access.
 
-	@param id: id of the error
-	@type id: number
+	@param error_id: id of the error
+	@type error_id: number
 	@param user: current user
 	@type user: generic.User
 	@return: True
 	@rtype: boolean
 	"""
 	_admin_access(user)
-	fault.errors_remove(id)
+	fault.errors_remove(error_id)
 	return True
 
 def permission_add(top_id, user_name, role, user=None):
@@ -1096,7 +1095,7 @@ def resource_usage_by_topology(user=None):
 			usage[top.name]=d
 	return usage
 
-def physical_links_get(src_group, dst_group, user=None):
+def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns the statistics of a dictinct physical link.
 
@@ -1111,7 +1110,7 @@ def physical_links_get(src_group, dst_group, user=None):
 	"""
 	return hosts.get_physical_link(src_group, dst_group).to_dict()
 	
-def physical_links_get_all(user=None):
+def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns the statistics of all physical links.
 

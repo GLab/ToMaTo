@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util, fault, hosts, topology, generic
+import util, fault, topology, generic
 
 class Modification():
-	def __init__(self, type, element, subelement, properties):
-		self.type = type
+	def __init__(self, mtype, element, subelement, properties):
+		self.type = mtype
 		self.element = element
 		self.subelement = subelement
 		self.properties = properties
@@ -33,90 +33,90 @@ class Modification():
 			top.name = self.properties["name"]
 			top.save()
 		elif self.type == "device-create":
-			type = self.properties["type"]
+			dtype = self.properties["type"]
 			import kvm, openvz
-			if type == "kvm":
+			if dtype == "kvm":
 				dev = kvm.KVMDevice()
-			elif type == "openvz":
+			elif dtype == "openvz":
 				dev = openvz.OpenVZDevice()
 			else:
 				raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Unknown device type: %s" % type )
 			dev.type = type
 			dev.topology = top
 			dev.name = self.properties["name"]
-			top.devices_add(dev)
+			top.device_set_add(dev)
 			dev.configure(self.properties, task)
 			dev.save()
 		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
-			device = top.devices_get(self.element)
+			device = top.device_set_get(self.element)
 			device.name = self.properties["name"]
 			device.save()
 		elif self.type == "device-configure":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			device.configure(self.properties, task)
 		elif self.type == "device-delete":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			assert device.state == generic.State.CREATED, "Cannot delete a running or prepared device"
 			device.delete()
 		
 		elif self.type == "interface-create":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			name = self.properties["name"]
 			device.interfaces_add(name, self.properties, task)
 		elif self.type == "interface-rename":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_rename(name, self.properties, task)
 		elif self.type == "interface-configure":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_configure(name, self.properties, task)
 		elif self.type == "interface-delete":
-			device = top.devices_get(self.element).upcast()
+			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
 			device.interfaces_delete(name, task)
 		
 		elif self.type == "connector-create":
-			type = self.properties["type"]
+			ctype = self.properties["type"]
 			import tinc, special
-			if type == "special":
+			if ctype == "special":
 				con = special.SpecialFeatureConnector()
 				con.state = generic.State.STARTED
-			elif type == "hub" or type =="switch" or type == "router":
+			elif ctype == "hub" or ctype =="switch" or ctype == "router":
 				con = tinc.TincConnector()
 			else:
 				raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Unknown connector type: %s" % type )
 			con.type = type
 			con.topology = top
 			con.name = self.properties["name"]
-			top.connectors_add(con)
+			top.connector_set_add(con)
 			con.configure(self.properties, task)
 			con.save()
 		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
-			con = top.connectors_get(self.element)
+			con = top.connector_set_get(self.element)
 			con.name = self.properties["name"]
 			con.save()
 		elif self.type == "connector-configure":
-			con = top.connectors_get(self.element).upcast()
+			con = top.connector_set_get(self.element).upcast()
 			con.configure(self.properties, task)
 		elif self.type == "connector-delete":
-			con = top.connectors_get(self.element).upcast()
+			con = top.connector_set_get(self.element).upcast()
 			if not con.is_special(): 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		
 		elif self.type == "connection-create":
-			con = top.connectors_get(self.element).upcast()
+			con = top.connector_set_get(self.element).upcast()
 			interface = self.properties["interface"]
 			con.connections_add(interface, self.properties, task)
 		elif self.type == "connection-configure":
-			con = top.connectors_get(self.element).upcast()
+			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
 			con.connections_configure(name, self.properties, task)
 		elif self.type == "connection-delete":
-			con = top.connectors_get(self.element).upcast()
+			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
 			con.connections_delete(name, task)
 			
@@ -126,13 +126,13 @@ class Modification():
 def read_from_dom(dom):
 	modlist = []
 	for mod in dom.getElementsByTagName("modification"):
-		type = mod.getAttribute("type")
+		mtype = mod.getAttribute("type")
 		element = util.get_attr(mod, "element", None)
 		subelement = util.get_attr(mod, "subelement", None)
 		properties = {}
 		for pr in mod.getElementsByTagName("properties"):
 			properties.update(_xml_attrs_to_dict(pr.attributes))
-		modlist.append(Modification(type, element, subelement, properties))
+		modlist.append(Modification(mtype, element, subelement, properties))
 	return modlist
 
 def _xml_attrs_to_dict(xml):

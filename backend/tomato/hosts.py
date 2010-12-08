@@ -149,37 +149,37 @@ class Host(models.Model):
 	
 	def execute(self, command, task=None):
 		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
-		str = self.name + ": " + command + "\n"
+		log_str = self.name + ": " + command + "\n"
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
 	
 	def upload(self, local_file, remote_file, task=None):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
-		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
+		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
 	
 	def download(self, remote_file, local_file, task=None):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
-		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
+		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
@@ -187,14 +187,14 @@ class Host(models.Model):
 	def get_result(self, command):
 		return self._exec(Host.SSH_COMMAND+["root@%s" % self.name, command])
 
-	def _first_line(self, str):
-		if not str:
-			return str
-		str = str.splitlines()
-		if len(str) == 0:
+	def _first_line(self, line):
+		if not line:
+			return line
+		line = line.splitlines()
+		if len(line) == 0:
 			return ""
 		else:
-			return str[0]
+			return line[0]
 
 	def free_port(self, port, task):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
@@ -303,9 +303,9 @@ class Template(models.Model):
 	default = models.BooleanField(default=False)
 	download_url = models.CharField(max_length=255, default="")
 		
-	def init(self, name, type, download_url):
+	def init(self, name, ttype, download_url):
 		self.name = name
-		self.type = type
+		self.type = ttype
 		self.download_url = download_url
 		self.save()
 
@@ -396,41 +396,41 @@ def get_host(name):
 	return Host.objects.get(name=name) # pylint: disable-msg=E1101
 
 def get_best_host(group, device=None):
-	all = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
+	all_hosts = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
 	if group:
-		all = all.filter(group=group)
+		all_hosts = all_hosts.filter(group=group)
 	if device:
 		for iface in device.interfaces_all():
 			if iface.is_connected():
 				sf = iface.connection.connector.upcast()
 				if sf.is_special():
 					if sf.feature_group:
-						all = all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
+						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
 					else:
-						all = all.filter(specialfeature__feature_type=sf.feature_type).distinct() # pylint: disable-msg=E1101
-	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
+						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type).distinct() # pylint: disable-msg=E1101
+	hosts = all_hosts.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
 	else:
 		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
 
-def get_templates(type=None):
-	list = Template.objects.all() # pylint: disable-msg=E1101
+def get_templates(ttype=None):
+	tpls = Template.objects.all() # pylint: disable-msg=E1101
 	if type:
-		list = list.filter(type=type)
-	return list
+		tpls = tpls.filter(type=ttype)
+	return tpls
 
-def get_template_name(type, name):
+def get_template_name(ttype, name):
 	try:
-		return Template.objects.get(type=type, name=name).name # pylint: disable-msg=E1101
-	except Exception:
-		return get_default_template(type)
+		return Template.objects.get(type=ttype, name=name).name # pylint: disable-msg=E1101
+	except: #pylint: disable-msg=W0702
+		return get_default_template(ttype)
 
-def get_template(type, name):
-	return Template.objects.get(type=type, name=name) # pylint: disable-msg=E1101
+def get_template(ttype, name):
+	return Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
 
-def add_template(name, type, url):
-	tpl = Template.objects.create(name=name, type=type, download_url=url) # pylint: disable-msg=E1101
+def add_template(name, template_type, url):
+	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
 	import tasks
 	t = tasks.TaskStatus(tpl.upload_to_all)
 	t.subtasks_total = 1
@@ -440,10 +440,10 @@ def add_template(name, type, url):
 def remove_template(name):
 	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
 	
-def get_default_template(type):
-	list = Template.objects.filter(type=type, default=True) # pylint: disable-msg=E1101
-	if list.count() >= 1:
-		return list[0].name
+def get_default_template(ttype):
+	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101
+	if tpls.count() >= 1:
+		return tpls[0].name
 	else:
 		return None
 	

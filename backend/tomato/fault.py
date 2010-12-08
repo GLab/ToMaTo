@@ -32,8 +32,8 @@ def errors_all():
 def errors_add(title, message):
 	Error.objects.create(title=title, message=message) # pylint: disable-msg=E1101
 
-def errors_remove(id):
-	Error.objects.get(id=id).delete() # pylint: disable-msg=E1101
+def errors_remove(error_id):
+	Error.objects.get(id=error_id).delete() # pylint: disable-msg=E1101
 
 class Fault(xmlrpclib.Fault):
 	pass

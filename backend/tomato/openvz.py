@@ -53,14 +53,6 @@ class OpenVZDevice(generic.Device):
 			if self.vnc_port:
 				dom.setAttribute("vnc_port", str(self.vnc_port))
 		
-	"""
-	def decode_xml(self, dom):
-		generic.Device.decode_xml(self, dom)
-		self.template = dom.getAttribute("template")
-		self.root_password = dom.getAttribute("root_password")
-		self.gateway = util.get_attr(dom, "gateway", default=None)
-	"""
-
 	def get_state(self, task):
 		if config.remote_dry_run:
 			return self.state
@@ -74,15 +66,15 @@ class OpenVZDevice(generic.Device):
 		if "deleted" in res:
 			return generic.State.CREATED
 		raise fault.new(fault.UNKNOWN, "Unable to determine openvz state for %s: %s" % ( self, res ) )
-
+	
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
 			self.host.execute("ip link set %s up" % bridge, task)
 		self.host.execute("timeout 10 vzctl start %s --wait" % self.openvz_id, task)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			if iface.is_configured():
 				iface = iface.upcast()
 				iface.start_run(task)
@@ -124,7 +116,7 @@ class OpenVZDevice(generic.Device):
 		if self.root_password:
 			self.host.execute("vzctl set %s --userpasswd root:%s --save" % ( self.openvz_id, self.root_password ), task)
 		self.host.execute("vzctl set %s --hostname %s-%s --save" % ( self.openvz_id, self.topology.name.replace("_","-"), self.name ), task)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			iface.upcast().prepare_run(task)
 		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state(task)
@@ -163,9 +155,9 @@ class OpenVZDevice(generic.Device):
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		try:
-			if self.interfaces_get(name):
+			if self.interface_set_get(name):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
-		except:
+		except: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
 		iface.name = name
@@ -174,20 +166,20 @@ class OpenVZDevice(generic.Device):
 			iface.prepare_run(task)
 		iface.configure(properties, task)
 		iface.save()
-		generic.Device.interfaces_add(self, iface)
+		generic.Device.interface_set_add(self, iface)
 
 	def interfaces_configure(self, name, properties, task):
-		iface = self.interfaces_get(name).upcast()
+		iface = self.interface_set_get(name).upcast()
 		iface.configure(properties, task)
 
 	def interfaces_rename(self, name, properties, task):
-		iface = self.interfaces_get(name).upcast()
+		iface = self.interface_set_get(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 		try:
-			if self.interfaces_get(properties["name"]):
+			if self.interface_set_get(properties["name"]):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % properties["name"])
-		except:
+		except: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
@@ -197,7 +189,7 @@ class OpenVZDevice(generic.Device):
 		iface.save()
 
 	def interfaces_delete(self, name, task):
-		iface = self.interfaces_get(name).upcast()
+		iface = self.interface_set_get(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
 		iface.delete()
@@ -240,7 +232,7 @@ class OpenVZDevice(generic.Device):
 		else:
 			try:
 				disk = int(self.host.get_result("du -sb /var/lib/vz/private/%s | awk '{print $1}'" % self.openvz_id))
-			except:
+			except: #pylint: disable-msg=W0702
 				disk = 0
 		if self.state == generic.State.STARTED:
 			memory = int(self.host.get_result("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.openvz_id))*4*1024

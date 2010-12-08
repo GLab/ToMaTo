@@ -53,7 +53,7 @@ class TaskStatus():
 		try:
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
-		except Exception, exc:
+		except Exception, exc: #pylint: disable-msg=W0703
 			if config.TESTING:
 				traceback.print_exc()
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())

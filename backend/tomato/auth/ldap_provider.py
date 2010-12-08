@@ -45,6 +45,7 @@ class LdapUser(object):
 	def __init__(self, username):
 		self.username = username
 		self.userdn = ''
+		self.email = None
 
 	def verify(self):
 		"""
@@ -52,14 +53,14 @@ class LdapUser(object):
 		"""
 		try:
 			conn = ldap_conn()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log(str(e))
 			return False
-
+		
 		try:
 			user = conn.search_s(config.auth_ldap_identity_base,
 								 ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('LDAP search for user %s failed: %s' % (self.username, e))
 			return False
 
@@ -71,7 +72,7 @@ class LdapUser(object):
 
 		try:
 			conn.unbind_s()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('Error closing connection to LDAP server: %s' % e)
 
 		return ret
@@ -83,7 +84,7 @@ class LdapUser(object):
 		if self.verify():
 			try:
 				conn = ldap_conn()
-			except Exception, e:
+			except Exception, e: #pylint: disable-msg=W0703
 				log(str(e))
 				return False
 
@@ -100,7 +101,7 @@ class LdapUser(object):
 
 			try:
 				conn.unbind_s()
-			except Exception, e:
+			except Exception, e: #pylint: disable-msg=W0703
 				log('Error closing connection to LDAP server: %s' % e)
 		else:
 			log('User %s not found.' % self.username)
@@ -111,14 +112,14 @@ class LdapUser(object):
 	def get_email_addr(self):
 		try:
 			conn = ldap_conn()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log(str(e))
 			return False
 
 		try:
 			user = conn.search_s(config.auth_ldap_identity_base,
 								 ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('LDAP search for user %s failed: %s' % (self.username, e))
 			return False
 
@@ -129,7 +130,7 @@ class LdapUser(object):
 
 		try:
 			conn.unbind_s()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('Error closing connection to LDAP server: %s' % e)
 
 		return ret
@@ -144,13 +145,13 @@ class LdapUser(object):
 
 		try:
 			conn = ldap_conn()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log(str(e))
 			return False
 
 		try:
 			members = conn.search_s(dn, ldap.SCOPE_SUBTREE, attrlist=['member'])
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('LDAP search for group %s failed: %s' % (group, e))
 			ret = False
 		else:
@@ -165,7 +166,7 @@ class LdapUser(object):
 
 		try:
 			conn.unbind_s()
-		except Exception, e:
+		except Exception, e: #pylint: disable-msg=W0703
 			log('Error closing connection to LDAP server: %s' % e)
 
 		return ret

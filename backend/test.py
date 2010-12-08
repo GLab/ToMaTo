@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tests import *
+from tests import * #@UnusedWildImport, pylint: disable-msg=W0614,W0401
 
 import sys, unittest
 loader = unittest.TestLoader()

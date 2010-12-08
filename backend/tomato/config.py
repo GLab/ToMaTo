@@ -19,9 +19,8 @@ from util import parse_bool
 
 import ConfigParser, os
 
-"""
-This class represents the configuration
-"""
+# This class represents the configuration
+
 config = ConfigParser.SafeConfigParser()
 config.read(['tomato.conf', '/etc/tomato.conf', os.path.expanduser('~/.tomato.conf')])
 
@@ -47,21 +46,15 @@ auth_ldap_user_group = get("auth_ldap", "user_group", 'cn=users,ou=projectstruct
 auth_ldap_admin_group = get("auth_ldap", "admin_group", 'cn=admin,ou=management,ou=groups,dc=german-lab,dc=de')
 
 local_control_dir = get("local", "control_dir", "/tmp/tomato")
-"""
-The local directory to use for preparing control scripts before they are uploaded to the hosts.
-"""
+# The local directory to use for preparing control scripts before they are uploaded to the hosts.
 
 log_dir = get("local", "log_dir", "logs")
 
 remote_control_dir = get("remote", "control_dir", "/root/tomato")
-"""
-The remote directory to use for control scripts
-"""
+# The remote directory to use for control scripts
 
 remote_dry_run = parse_bool(get("remote", "dry_run", True))
-"""
-If this is true all remote commands are just printed but not executed
-"""
+# If this is true all remote commands are just printed but not executed
 
 password_salt = get("local", "password_salt", "tomato")
 

@@ -30,16 +30,19 @@ from twisted.internet import defer, reactor, ssl
 class Introspection():
 	def __init__(self, papi):
 		self.api=papi
-	def listMethods(self, user=None):
+
+	def listMethods(self, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		return [m for m in dir(self.api) if (callable(getattr(self.api, m)) and not m.startswith("_"))]
-	def methodSignature(self, method, user=None):
+
+	def methodSignature(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		func = getattr(self.api, method)
 		if not func:
 			return "Unknown method: %s" % method
 		import inspect
 		argspec = inspect.getargspec(func)
 		return "%s(" % method + ", ".join(argspec.args[:-1]) + ")"
-	def methodHelp(self, method, user=None):
+
+	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		func = getattr(self.api, method)
 		if not func:
 			return "Unknown method: %s" % method
@@ -64,7 +67,7 @@ class APIServer(xmlrpc.XMLRPC):
 	def execute(self, function, args, user):
 		try:
 			self.log(function, args, user)
-			return function(*args, user=user)
+			return function(*args, user=user) #pylint: disable-msg=W0142
 		except xmlrpc.Fault:
 			raise
 		except Exception, exc:

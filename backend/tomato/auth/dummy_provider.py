@@ -17,7 +17,7 @@
 
 from tomato.auth import User
 
-def login(username, password):
+def login(username, password): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Authenticates a user.
 	

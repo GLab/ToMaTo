@@ -17,9 +17,9 @@
 
 from django.db import models
 
-import hosts, util, fault, re
+import hosts, fault
 
-class State():
+class State(): #pylint: disable-msg=W0232
 	"""
 	The state of the element, this is an assigned value. The states are considered to be in order:
 	created -> prepared -> started
@@ -41,36 +41,36 @@ class ResourceSet(models.Model):
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
 			r.delete()
 
-	def add(self, set):
-		for r in set.resourceentry_set.all(): # pylint: disable-msg=E1101
+	def add(self, res):
+		for r in res.resourceentry_set.all(): # pylint: disable-msg=E1101
 			self.set(r.type, self.get(r.type) + r.value)
 
-	def set(self, type, value):
-		if len(self.resourceentry_set.filter(type=type)) == 0: # pylint: disable-msg=E1101
-			res = ResourceEntry(resource_set=self, type=type, value=value)
+	def set(self, rtype, value):
+		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
+			res = ResourceEntry(resource_set=self, type=rtype, value=value)
 			res.save()
 			self.resourceentry_set.add(res) # pylint: disable-msg=E1101
 		else:
-			res = self.resourceentry_set.all().get(type=type) # pylint: disable-msg=E1101
+			res = self.resourceentry_set.all().get(type=rtype) # pylint: disable-msg=E1101
 			res.value = value
 			res.save()
 	
-	def get(self, type):
-		if len(self.resourceentry_set.filter(type=type)) == 0: # pylint: disable-msg=E1101
+	def get(self, rtype):
+		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
 			return 0
 		else:
-			res = self.resourceentry_set.get(type=type) # pylint: disable-msg=E1101
+			res = self.resourceentry_set.get(type=rtype) # pylint: disable-msg=E1101
 			return res.value
 		
-	def decode(self, dict):
-		for k, v in dict.items():
+	def decode(self, res):
+		for k, v in res.items():
 			self.set(k, v)
 			
 	def encode(self):
-		dict = {}
+		res = {}
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			dict[r.type] = str(r.value)
-		return dict
+			res[r.type] = str(r.value)
+		return res
 
 def add_encoded_resources(r1, r2):
 	res = {}
@@ -105,13 +105,13 @@ class Device(models.Model):
 	hostgroup = models.CharField(max_length=10, null=True)
 	resources = models.ForeignKey(ResourceSet, null=True)
 
-	def interfaces_get(self, name):
+	def interface_set_get(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
-	def interfaces_add(self, iface):
+	def interface_set_add(self, iface):
 		return self.interface_set.add(iface) # pylint: disable-msg=E1101
 
-	def interfaces_all(self):
+	def interface_set_all(self):
 		return self.interface_set.all() # pylint: disable-msg=E1101
 
 	def upcast(self):
@@ -141,7 +141,7 @@ class Device(models.Model):
 		"""
 		try:
 			return interface.connection.bridge_name()
-		except:
+		except: #pylint: disable-msg=W0702
 			return None		
 
 	def encode_xml(self, dom, doc, internal):
@@ -153,7 +153,7 @@ class Device(models.Model):
 			if self.host:
 				dom.setAttribute("host", self.host.name)
 			dom.setAttribute("state", self.state)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			x_iface = doc.createElement ( "interface" )
 			iface.upcast().encode_xml(x_iface, doc, internal)
 			dom.appendChild(x_iface)
@@ -195,7 +195,7 @@ class Device(models.Model):
 		return task.id
 
 	def destroy(self):
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			if iface.is_connected():
 				con = iface.connection.connector
 				if not con.is_special() and not con.state == State.CREATED:
@@ -221,13 +221,13 @@ class Device(models.Model):
 	def destroy_run(self, task):
 		pass
 	
-	def configure(self, properties, task):
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if "pos" in properties:
 			self.pos = properties["pos"]
 		if "template" in properties:
 			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
-			if not self.template.startswith("***"): # pylint: disable-msg=E0203
-				self.template = hosts.get_template_name(self.type, properties["template"])
+			if (not self.template) or (not self.template.startswith("***")): # pylint: disable-msg=E0203
+				self.template = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
 				if not self.template:
 					raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		if "hostgroup" in properties:
@@ -282,16 +282,16 @@ class Interface(models.Model):
 
 	def is_configured(self):
 		try:
-			self.configuredinterface # pylint: disable-msg=E1101
+			self.configuredinterface # pylint: disable-msg=E1101,W0104
 			return True
-		except:
+		except: #pylint: disable-msg=W0702
 			return False
 	
 	def is_connected(self):
 		try:
-			self.connection # pylint: disable-msg=E1101
+			self.connection # pylint: disable-msg=E1101,W0104
 			return True
-		except:
+		except: #pylint: disable-msg=W0702
 			return False	
 	
 	def upcast(self):
@@ -299,7 +299,7 @@ class Interface(models.Model):
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def encode_xml(self, dom, doc, internal):
+	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
 		dom.setAttribute("name", self.name)
 
 	def __unicode__(self):
@@ -316,13 +316,13 @@ class Connector(models.Model):
 	pos = models.CharField(max_length=10, null=True)
 	resources = models.ForeignKey(ResourceSet, null=True)
 
-	def connections_add(self, con):
+	def connection_set_add(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
 
-	def connections_all(self):
+	def connection_set_all(self):
 		return self.connection_set.all() # pylint: disable-msg=E1101
 
-	def connections_get(self, interface):
+	def connection_set_get(self, interface):
 		return self.connection_set.get(interface=interface).upcast() # pylint: disable-msg=E1101
 
 	def is_tinc(self):
@@ -346,7 +346,7 @@ class Connector(models.Model):
 		dom.setAttribute("type", self.type)
 		if internal:
 			dom.setAttribute("state", self.state)
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			x_con = doc.createElement ( "connection" )
 			con.upcast().encode_xml(x_con, doc, internal)
 			dom.appendChild(x_con)
@@ -398,28 +398,28 @@ class Connector(models.Model):
 		return task.id
 
 	def start_run(self, task):
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			con.upcast().start_run(task)
 
 	def stop_run(self, task):
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			con.upcast().stop_run(task)
 
 	def prepare_run(self, task):
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			if con.interface.device.state == State.CREATED:
 				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			con.upcast().prepare_run(task)
 
 	def destroy_run(self, task):
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			con.upcast().destroy_run(task)
 
 	def __unicode__(self):
 		return self.name
 
-	def configure(self, properties, task):
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if "pos" in properties:
 			self.pos = properties["pos"]
 		self.save()
@@ -466,9 +466,9 @@ class Connection(models.Model):
 
 	def is_emulated(self):
 		try:
-			self.emulatedconnection # pylint: disable-msg=E1101
+			self.emulatedconnection # pylint: disable-msg=E1101,W0104
 			return True
-		except:
+		except: #pylint: disable-msg=W0702
 			return False
 
 	def upcast(self):
@@ -479,7 +479,7 @@ class Connection(models.Model):
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
 
-	def encode_xml(self, dom, doc, internal):
+	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
 		dom.setAttribute("interface", "%s.%s" % (self.interface.device.name, self.interface.name))
 					
 	def start_run(self, task):
@@ -495,12 +495,12 @@ class Connection(models.Model):
 		if not self.connector.is_special():
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 
-	def prepare_run(self, task):
+	def prepare_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if not self.bridge_id:
 			self.bridge_id = self.interface.device.host.next_free_bridge()
 			self.save()		
 
-	def destroy_run(self, task):
+	def destroy_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
 		self.bridge_id=None
 		self.save()
 

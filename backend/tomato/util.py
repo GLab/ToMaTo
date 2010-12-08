@@ -34,12 +34,12 @@ class RepeatedTimer(threading.Thread):
 					self.firstRun = False
 				else:
 					self.event.wait(self.timeout)
-			except:
+			except: #pylint: disable-msg=W0702
 				return
 			if not self.event.isSet():
 				try:
 					self.func(*self.args, **self.kwargs)
-				except Exception, exc:
+				except Exception, exc: #pylint: disable-msg=W0703
 					from tomato import fault
 					fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def stop(self):
@@ -47,8 +47,8 @@ class RepeatedTimer(threading.Thread):
 
 def print_except_helper(func, args, kwargs):
 	try:
-		return func(*args, **kwargs)
-	except Exception, exc:
+		return func(*args, **kwargs) #pylint: disable-msg=W0142
+	except Exception, exc: #pylint: disable-msg=W0703
 		from tomato import fault
 		traceback.print_exc()
 		fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
@@ -98,7 +98,7 @@ class curry:
 			kw.update(kwargs)
 		else:
 			kw = kwargs or self.kwargs
-		return self.fun(selfref, *(self.pending + args), **kw)
+		return self.fun(selfref, *(self.pending + args), **kw) #pylint: disable-msg=W0142
 
 def get_attr(obj, name, default=None, res_type=None):
 	"""
@@ -142,13 +142,12 @@ def parse_xml(xml, root_tag):
 	@rtype: minidom.Element
 	@raise fault.Error: if the input is not well-formed or the root tag is not found      
 	""" 
+	import fault
 	try:
 		from xml.dom import minidom
 		dom = minidom.parseString(xml)
 		return dom.getElementsByTagName ( root_tag )[0]
 	except IndexError:
-		import fault
 		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
 	except Exception, exc:
-		import fault
 		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
