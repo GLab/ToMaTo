@@ -41,6 +41,8 @@ def db_migrate():
 db_migrate()
 
 import config, util
+from auth import login
+
 import log, generic, topology, hosts, fault, tasks
 import tinc, kvm, openvz
 
@@ -72,28 +74,6 @@ def _admin_access(user):
 	if not user.is_admin:
 		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "admin access denied")
 	
-def login(username, password):
-	"""
-	Authenticates a user.
-	
-	@type username: string
-	@param username: The users name  
-	@type password: string
-	@param password: The users password  
-	@rtype: generic.User
-	@raise fault.Error: when the user does not exist or the password is wrong 
-	"""
-	if config.auth_dry_run:
-		if username=="guest":
-			return generic.User(username, False, False)
-		elif username=="admin":
-			return generic.User(username, True, True)
-		else:
-			return generic.User(username, True, False)
-	else:
-		import ldapauth
-		return ldapauth.login(username, password)
-
 def account(user=None):
 	"""
 	Returns details of the user account. In fact this just returns the given

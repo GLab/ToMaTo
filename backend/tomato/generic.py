@@ -19,12 +19,6 @@ from django.db import models
 
 import hosts, util, fault, re
 
-class User():
-	def __init__ (self, name, is_user, is_admin):
-		self.name = name
-		self.is_user = is_user
-		self.is_admin = is_admin
-
 class State():
 	"""
 	The state of the element, this is an assigned value. The states are considered to be in order:

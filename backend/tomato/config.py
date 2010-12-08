@@ -65,7 +65,7 @@ If this is true all remote commands are just printed but not executed
 
 password_salt = get("local", "password_salt", "tomato")
 
-auth_dry_run = parse_bool(get("auth", "dry_run", True))
+auth_provider = get("auth", "provider", "ldap")
 
 timeout_stop_weeks = int(get("timeout", "stop", 4))
 timeout_destroy_weeks = int(get("timeout", "destroy", 12))
