@@ -147,6 +147,8 @@ def parse_xml(xml, root_tag):
 		dom = minidom.parseString(xml)
 		return dom.getElementsByTagName ( root_tag )[0]
 	except IndexError:
+		import fault
 		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
 	except Exception, exc:
+		import fault
 		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
