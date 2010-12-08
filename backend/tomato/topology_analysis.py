@@ -21,11 +21,25 @@ class Result():
 		self.warnings=[]
 		self.hints=[]
 		
-	def res(self):
+	def to_dict(self):
+		"""
+		Prepares the result object for serialization
+		
+		@return: dict of analysis results
+		@rtype: dict
+		"""
 		return {"problems": self.problems, "warnings": self.warnings, "hints": self.hints}
 	
 
 def analyze(top):
+	"""
+	Checks for various problems in a topology and warns the user.
+	
+	@param top: Topology to check
+	@type top: topology.Topology
+	@param res: Analysis result
+	@type res: dict
+	"""
 	res = Result()
 	if len(top.devices_all()) == 0:
 		res.problems.append("No devices specified")
@@ -35,9 +49,18 @@ def analyze(top):
 	_check_connectors_connection_count(top, res)
 	_check_connectors_ip_structure(top, res)
 	_check_connection_performance(top, res)
-	return res.res()
+	return res.to_dict()
 
 def _check_timeout(top, res):
+	"""
+	Checks for near timeouts (within 1 week) or already happened timeouts.
+	
+	@param top: Topology to check
+	@type top: topology.Topology
+	@param res: Analysis result object
+	@type res: Result
+	@rtype: None     
+	"""
 	import datetime, generic
 	now = datetime.datetime.now()
 	week = datetime.timedelta(weeks=4)
