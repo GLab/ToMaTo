@@ -41,7 +41,7 @@ class Host(models.Model):
 			tpl.upload_to_host(self, task)
 
 	def check_save(self, task):
-		task.subtasks_total = 7
+		task.subtasks_total = 8
 		self.check(task)
 		self.save()
 		task.done()
@@ -49,41 +49,58 @@ class Host(models.Model):
 	def check(self, task):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
-		@todo: check for true first to check login
+		
+		@param task: the task object to use
+		@type task: tasks.TaskStatus
+		@raise AssertionError: is something looks wrong
+		@rtype: None   
 		"""
 		if config.remote_dry_run:
 			return True
+		task.output.write("checking login...\n")
+		res = self.get_result("true; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "Login error"
+		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for openvz...\n")
 		res = self.get_result("vzctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for kvm...\n")
 		res = self.get_result("qm list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for bridge utils...\n")
 		res = self.get_result("brctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for dummynet...\n")
 		res = self.get_result("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for tinc...\n")
 		res = self.get_result("tincd --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for timeout...\n")
 		res = self.get_result("timeout 1 true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		self.fetch_all_templates(task)
+				
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
