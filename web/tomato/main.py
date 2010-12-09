@@ -69,3 +69,6 @@ def resource_usage_by_user(api, request):
 
 def help(request, page=""):
 	return HttpResponseRedirect(settings.help_url % page)
+
+def ticket(request, page=""):
+	return HttpResponseRedirect(settings.ticket_url % page)
