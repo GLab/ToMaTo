@@ -203,8 +203,7 @@ def host_remove(host_name, user=None):
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.get_host(host_name)
-	host.delete()
+	hosts.remove(host_name)
 	return True
 
 def host_debug(host_name, user=None):

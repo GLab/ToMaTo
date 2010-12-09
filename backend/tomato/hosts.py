@@ -469,6 +469,11 @@ def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, p
 	host.bridge_range_start=bridge_start
 	host.bridge_range_count=bridge_count
 	host.save()
+	
+def remove(host_name):
+	host = get_host(host_name)
+	assert len(host.device_set.all()) == 0, "Cannot remove hosts that are used"
+	host.delete()
 		
 def get_physical_link(srcg_name, dstg_name):
 	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name) # pylint: disable-msg=E1101		
