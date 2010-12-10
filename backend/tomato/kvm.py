@@ -76,10 +76,9 @@ class KVMDevice(generic.Device):
 		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)
 		for iface in self.interface_set_all():
-			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
-			self.host.bridge_connect(bridge, "vmtab%si%s" % ( self.kvm_id, iface_id ) )
+			self.host.bridge_connect(bridge, self.interface_device(iface) )
 			self.host.execute("ip link set %s up" % bridge, task)
 		if not self.vnc_port:
 			self.vnc_port = self.host.next_free_port()
@@ -203,6 +202,24 @@ class KVMDevice(generic.Device):
 		return {"disk": disk, "memory": memory, "ports": ports}		
 	
 	def interface_device(self, iface):
+		"""
+		Returns the name of the host device for the given interface
+		
+		Note: due to a naming change between version 1.1-22 and 1.1-25 of
+		qemu-server the name must determined on the host with a command, so
+		this can only be determined for started devices.
+		The old version named devices like "vmtab1000i0" (vmid 1000, interface eth0)
+		while the new version names devices like "vmtab1000i0d0". The additional
+		"d0" is fixed when used like ToMaTo does.
+		
+		@param iface: interface object
+		@type iface: generic.Interface
+		@return: name of host device
+		@rtype: string
+		"""
 		iface_id = re.match("eth(\d+)", iface.name).group(1)
-		return "vmtab%si%s" % ( self.upcast().kvm_id, iface_id )
+		assert self.host, "Cannot determine KVM host device names when not running"
+		#  not asserting state == started here, because this method will be used during start
+		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%si%s*)" % ( self.upcast().kvm_id, iface_id ) ).strip()
+		return name
 
