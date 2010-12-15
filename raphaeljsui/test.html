@@ -1,0 +1,73 @@
+<html>
+<body>
+<script src="raphael-min.js"></script>
+<script><!--
+function Connection(paper, obj1, obj2) {
+  this.getPath = function(){
+    return "M"+this.obj1.getPos()+"L"+this.obj2.getPos()
+  }
+  this.update = function(){
+    this.path.attr({path: this.getPath()});
+  }
+  this.paint = function(){
+    if (this.path) this.path.remove();
+    this.path = paper.path(this.getPath());
+  }
+  this.paper = paper;
+  this.obj1 = obj1;
+  this.obj2 = obj2;
+  this.paint();
+  obj1.addConnection(this);
+  obj2.addConnection(this);
+}
+function Device(paper, name, x, y) {
+  this.move = function(x,y) {
+    this.x = x;
+    this.y = y;
+    this.icon.attr({x: x-16, y: y-16});
+    this.text.attr({x: x, y: y+16});
+    for (var c in this.connections) {
+      this.connections[c].update();
+    }
+    
+  }
+  this.paint = function() {
+    if (this.text) this.text.remove();
+    this.text = paper.text(this.x, this.y+16, this.name);
+    if (this.icon) this.icon.remove();
+    this.icon = paper.image("images/computer.png", x-16, y-16, 32, 32);
+    this.icon.parent = this;
+    this.icon.drag(function (dx, dy) {
+      //move
+      this.parent.move(this.ox + dx, this.oy + dy);
+    }, function () {
+      //start
+      this.ox = this.parent.x;
+      this.oy = this.parent.y;
+      this.animate({opacity: .5}, 250);
+    }, function () {
+      //stop
+      this.animate({opacity: 1}, 250);
+    });
+  }
+  this.getPos = function() {
+    return this.x + " " + this.y;
+  }
+  this.addConnection = function(con) {
+    this.connections.push(con);
+    this.paint();
+  }
+  this.connections = [];
+  this.paper = paper;
+  this.name = name;
+  this.x = x;
+  this.y = y;
+  this.paint();
+}
+paper = Raphael(0, 0, 1000, 1000);
+dev1 = new Device(paper, "Dev1", 50, 50);
+dev2 = new Device(paper, "Dev2", 70, 70);
+con1 = new Connection(paper, dev1, dev2);
+--></script>
+</body>
+</html>
