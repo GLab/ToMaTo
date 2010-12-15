@@ -8,7 +8,7 @@
 Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}">[permissions]</a>
 <br/>
 Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
-Last usage: {{top.date_usage}} [<a href="{%url top.renew top_id=top_id %}">renew</a>]<br/>
+Last usage: {{top.date_usage}} [<a href="{%url top.renew top_id=top_id %}">renew</a>] <a href="{%url main.help page="TopologyTimeout" %}" target="_help">(info)</a><br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
 {% if top.finished_task %}
