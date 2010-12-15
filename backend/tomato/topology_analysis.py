@@ -64,9 +64,6 @@ def _check_timeout(top, res):
 	import datetime, generic
 	now = datetime.datetime.now()
 	week = datetime.timedelta(weeks=4)
-	print top.date_usage + top.STOP_TIMEOUT
-	print now + week
-	print now + week > top.date_usage + top.STOP_TIMEOUT
 	if now + week > top.date_usage + top.REMOVE_TIMEOUT:
 		res.warnings.append("Removing topology at %s due to timeout" % (top.date_usage + top.REMOVE_TIMEOUT))
 	elif now + week > top.date_usage + top.DESTROY_TIMEOUT:
