@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import generic, hosts, fault, config, hashlib, re, util, uuid, os
+import generic, hosts, fault, config, hashlib, re, uuid, os
 
 class KVMDevice(generic.Device):
 	kvm_id = models.IntegerField(null=True)
@@ -59,6 +59,8 @@ class KVMDevice(generic.Device):
 		self.host.upload(filename, remote_filename, task)
 		task.subtasks_done = task.subtasks_done + 1
 		os.remove(filename)
+		self.template = "***custom***"
+		self.save()
 		task.done()
 
 	def encode_xml(self, dom, doc, internal):
@@ -69,11 +71,11 @@ class KVMDevice(generic.Device):
 				dom.setAttribute("kvm_id", str(self.kvm_id))
 			if self.vnc_port:
 				dom.setAttribute("vnc_port", str(self.vnc_port))
-		
+
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
 			self.host.bridge_connect(bridge, self.interface_device(iface) )
@@ -113,7 +115,7 @@ class KVMDevice(generic.Device):
 		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.template, self.kvm_id), task)
 		self.host.execute("qm set %s --ide0 local:%s/disk.qcow2" % (self.kvm_id, self.kvm_id), task)
 		self.host.execute("qm set %s --name \"%s_%s\"" % (self.kvm_id, self.topology.name, self.name), task)
-		for iface in self.interfaces_all():
+		for iface in self.interface_set_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
 			self.host.execute("qm set %s --vlan%s e1000" % ( self.kvm_id, iface_id ), task)
@@ -141,16 +143,16 @@ class KVMDevice(generic.Device):
 	def configure(self, properties, task):
 		generic.Device.configure(self, properties, task)
 			
-	def interfaces_add(self, name, properties, task):
+	def interfaces_add(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		iface = generic.Interface()
 		try:
-			if self.interfaces_get(name):
+			if self.interface_set_get(name):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
-		except:
+		except: #pylint: disable-msg=W0702
 			pass
 		iface.name = name
 		iface.device = self
@@ -159,19 +161,19 @@ class KVMDevice(generic.Device):
 			self.host.bridge_create("vmbr%s" % iface_id)
 			self.host.execute("qm set %s --vlan%s e1000\n" % ( self.kvm_id, iface_id ), task )
 		iface.save()
-		generic.Device.interfaces_add(self, iface)
+		generic.Device.interface_set_add(self, iface)
 
 	def interfaces_configure(self, name, properties, task):
 		pass
 	
-	def interfaces_rename(self, name, properties, task):
+	def interfaces_rename(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM does not support renaming interfaces: %s" % name)
 	
-	def interfaces_delete(self, name, task):
+	def interfaces_delete(self, name, task): #@UnusedVariable, pylint: disable-msg=W0613
 		#FIXME: actually delete interface in VM
-		iface = self.interfaces_get(name)
+		iface = self.interface_set_get(name)
 		iface.delete()
-	
+		
 	def vnc_password(self):
 		if not self.kvm_id:
 			return "---"
@@ -191,7 +193,7 @@ class KVMDevice(generic.Device):
 		if self.state == generic.State.STARTED:
 			try:
 				memory = int(self.host.get_result("[ -s /var/run/qemu-server/%s.pid ] && PROC=`cat /var/run/qemu-server/%s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % (self.kvm_id, self.kvm_id)))
-			except:
+			except: #pylint: disable-msg=W0702
 				memory = 0
 			ports = 1
 		else:

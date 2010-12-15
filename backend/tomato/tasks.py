@@ -53,7 +53,7 @@ class TaskStatus():
 		try:
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
-		except Exception, exc:
+		except Exception, exc: #pylint: disable-msg=W0703
 			if config.TESTING:
 				traceback.print_exc()
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
@@ -120,7 +120,7 @@ def cleanup():
 		task.check_delete()
 	for task in UploadTask.tasks.values():
 		task.check_delete()
-	
+		
 def running_tasks():
 	tasks = []
 	for task in TaskStatus.tasks.values():

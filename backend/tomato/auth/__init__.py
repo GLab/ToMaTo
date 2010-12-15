@@ -1,6 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-    
-
+# -*- coding: utf-8 -*-
 # ToMaTo (Topology management software) 
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
@@ -17,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tests import * #@UnusedWildImport, pylint: disable-msg=W0614,W0401
+import tomato.config as config
 
-import sys, unittest
-loader = unittest.TestLoader()
-sys.argv.insert(1, '-v')
-if len(sys.argv)==2:
-    sys.argv += ["hosts", "templates", "kvm", "openvz", "tinc", "topology"]
-for test in sys.argv[2:]:
-    loader.loadTestsFromName("tests."+test)
-unittest.main()
-
+class User():
+	def __init__ (self, name, is_user, is_admin):
+		self.name = name
+		self.is_user = is_user
+		self.is_admin = is_admin
+		
+exec("from %s_provider import login" % config.auth_provider) #pylint: disable-msg=W0122

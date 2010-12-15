@@ -1,6 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-    
-
+# -*- coding: utf-8 -*-
 # ToMaTo (Topology management software) 
 # Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
 #
@@ -17,14 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tests import * #@UnusedWildImport, pylint: disable-msg=W0614,W0401
+from tomato.auth import User
 
-import sys, unittest
-loader = unittest.TestLoader()
-sys.argv.insert(1, '-v')
-if len(sys.argv)==2:
-    sys.argv += ["hosts", "templates", "kvm", "openvz", "tinc", "topology"]
-for test in sys.argv[2:]:
-    loader.loadTestsFromName("tests."+test)
-unittest.main()
-
+def login(username, password): #@UnusedVariable, pylint: disable-msg=W0613
+	"""
+	Authenticates a user.
+	
+	@type username: string
+	@param username: The users name  
+	@type password: string
+	@param password: The users password  
+	@rtype: generic.User
+	@raise fault.Error: when the user does not exist or the password is wrong 
+	"""
+	if username=="guest":
+		return User(username, False, False)
+	elif username=="admin":
+		return User(username, True, True)
+	else:
+		return User(username, True, False)

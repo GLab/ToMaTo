@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, tomato
+import sys, tomato #@UnusedImport, pylint: disable-msg=W0611
 
 try:
 	from south.management.commands import schemamigration
@@ -25,7 +25,7 @@ try:
 		cmd.handle(app="tomato", name=sys.argv[1], initial=True)
 	else:
 		cmd.handle(app="tomato", name=sys.argv[1], initial=False, auto=True)
-except:
+except: #pylint: disable-msg=W0702
 	from south.management.commands import startmigration
 	cmd = startmigration.Command()
 	initial = sys.argv[1] == "initial"

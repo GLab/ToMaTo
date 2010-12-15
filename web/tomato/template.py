@@ -19,24 +19,31 @@
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.http import Http404
+from django import forms
 
 from lib import *
 import xmlrpclib
 
+class TemplateForm(forms.Form):
+	name = forms.CharField(max_length=255)
+	type = forms.ChoiceField(choices=[("openvz", "OpenVZ"), ("kvm", "KVM")])
+	url = forms.URLField(label="Download URL", verify_exists=True)
+
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/template_index.html", {'templates': api.template_list("*")})
+	return render_to_response("admin/template_index.html", {'templates': api.template_list("")})
 
 @wrap_rpc
 def add(api, request):
-	if request.REQUEST.has_key("name"):
-		name=request.REQUEST["name"]
-		type=request.REQUEST["type"]
-		url=request.REQUEST["url"]
-		task = api.template_add(name, type, url)
-		return render_to_response("admin/template_index.html", {'templates': api.template_list("*"), "task": task})
+	if request.method == 'POST':
+		form = TemplateForm(request.POST)
+		if form.is_valid(): 
+			d = form.cleaned_data
+			task = api.template_add(d["name"], d["type"], d["url"])
+			return render_to_response("admin/template_index.html", {'templates': api.template_list(""), "task": task})
 	else:
-		return render_to_response("admin/template_add.html")
+		form = TemplateForm()
+	return render_to_response("admin/template_add.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, name):

@@ -37,11 +37,11 @@ class Host(models.Model):
 		return self.name
 
 	def fetch_all_templates(self, task):
-		for tpl in Template.objects.all():
+		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
 			tpl.upload_to_host(self, task)
 
 	def check_save(self, task):
-		task.subtasks_total = 7
+		task.subtasks_total = 8
 		self.check(task)
 		self.save()
 		task.done()
@@ -49,48 +49,66 @@ class Host(models.Model):
 	def check(self, task):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
+		
+		@param task: the task object to use
+		@type task: tasks.TaskStatus
+		@raise AssertionError: is something looks wrong
+		@rtype: None   
 		"""
 		if config.remote_dry_run:
 			return True
+		task.output.write("checking login...\n")
+		res = self.get_result("true; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "Login error"
+		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for openvz...\n")
 		res = self.get_result("vzctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for kvm...\n")
 		res = self.get_result("qm list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for bridge utils...\n")
 		res = self.get_result("brctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for dummynet...\n")
 		res = self.get_result("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for tinc...\n")
 		res = self.get_result("tincd --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for timeout...\n")
 		res = self.get_result("timeout 1 true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
+		
 		self.fetch_all_templates(task)
+				
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False):
+		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(dev.openvz_id)
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False):
+		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(dev.kvm_id)
 		try:
 			return ids[0]
@@ -100,13 +118,13 @@ class Host(models.Model):
 	def next_free_port(self):
 		ids = range(self.port_range_start,self.port_range_start+self.port_range_count)
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False):
+		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(dev.vnc_port)
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, vnc_port__isnull=False):
+		for dev in kvm.KVMDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(dev.vnc_port)
 		import tinc
-		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False):
+		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(con.tinc_port)
 		try:
 			return ids[0]
@@ -116,7 +134,7 @@ class Host(models.Model):
 	def next_free_bridge(self):
 		ids = range(self.bridge_range_start,self.bridge_range_start+self.bridge_range_count)
 		import generic
-		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False):
+		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False): # pylint: disable-msg=E1101
 			ids.remove(con.bridge_id)
 		try:
 			return ids[0]
@@ -131,37 +149,37 @@ class Host(models.Model):
 	
 	def execute(self, command, task=None):
 		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
-		str = self.name + ": " + command + "\n"
+		log_str = self.name + ": " + command + "\n"
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
 	
 	def upload(self, local_file, remote_file, task=None):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
-		str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
+		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
 	
 	def download(self, remote_file, local_file, task=None):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
-		str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
+		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if task:
 			fd = task.output
 		else:
 			fd = sys.stdout
-		fd.write(str)
+		fd.write(log_str)
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
@@ -169,14 +187,14 @@ class Host(models.Model):
 	def get_result(self, command):
 		return self._exec(Host.SSH_COMMAND+["root@%s" % self.name, command])
 
-	def _first_line(self, str):
-		if not str:
-			return str
-		str = str.splitlines()
-		if len(str) == 0:
+	def _first_line(self, line):
+		if not line:
+			return line
+		line = line.splitlines()
+		if len(line) == 0:
 			return ""
 		else:
-			return str[0]
+			return line[0]
 
 	def free_port(self, port, task):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
@@ -252,53 +270,78 @@ class Host(models.Model):
 		return result
 	
 	def special_features(self):
-		return self.specialfeature_set.all()
+		return self.specialfeature_set.all() # pylint: disable-msg=E1101
 	
 	def special_features_add(self, feature_type, feature_group, bridge):
 		sf = SpecialFeature(host=self, feature_type=feature_type, feature_group=feature_group, bridge=bridge)
 		sf.save()
-		self.specialfeature_set.add(sf)
+		self.specialfeature_set.add(sf) # pylint: disable-msg=E1101
 		
 	def special_features_remove(self, feature_type, feature_group):
 		for sf in self.special_features():
 			if sf.feature_type == feature_type and sf.feature_group == feature_group:
 				sf.delete()
 	
+	def to_dict(self):
+		"""
+		Prepares a host for serialization.
+		
+		@return: a dict containing information about the host
+		@rtype: dict
+		"""
+		return {"name": self.name, "group": self.group, "enabled": self.enabled, 
+			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
+			"vmid_start": self.vmid_range_start, "vmid_count": self.vmid_range_count,
+			"port_start": self.port_range_start, "port_count": self.port_range_count,
+			"bridge_start": self.bridge_range_start, "bridge_count": self.bridge_range_count,
+			"special_features": [sf.to_dict() for sf in self.special_features()]}
+
+	
 class Template(models.Model):
-		name = models.CharField(max_length=100)
-		type = models.CharField(max_length=12)
-		default = models.BooleanField(default=False)
-		download_url = models.CharField(max_length=255, default="")
+	name = models.CharField(max_length=100)
+	type = models.CharField(max_length=12)
+	default = models.BooleanField(default=False)
+	download_url = models.CharField(max_length=255, default="")
 		
-		def init(self, name, type, download_url):
-			self.name = name
-			self.type = type
-			self.download_url = download_url
-			self.save()
+	def init(self, name, ttype, download_url):
+		self.name = name
+		self.type = ttype
+		self.download_url = download_url
+		self.save()
 
-		def set_default(self):
-			Template.objects.filter(type=self.type).update(default=False)
-			self.default=True
-			self.save()
+	def set_default(self):
+		Template.objects.filter(type=self.type).update(default=False) # pylint: disable-msg=E1101
+		self.default=True
+		self.save()
 		
-		def get_filename(self):
-			if self.type == "kvm":
-				return "/var/lib/vz/template/qemu/%s" % self.name
-			if self.type == "openvz":
-				return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+	def get_filename(self):
+		if self.type == "kvm":
+			return "/var/lib/vz/template/qemu/%s" % self.name
+		if self.type == "openvz":
+			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+	
+	def upload_to_all(self, task):
+		dst = self.get_filename()
+		for host in Host.objects.all(): # pylint: disable-msg=E1101
+			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
 		
-		def upload_to_all(self, task):
-			dst = self.get_filename()
-			for host in Host.objects.all():
-				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
-		
-		def upload_to_host(self, host, task):
-			dst = self.get_filename()
-			if self.download_url:
-				host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+	def upload_to_host(self, host, task):
+		dst = self.get_filename()
+		if self.download_url:
+			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
 
-		def __unicode__(self):
-			return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
+	def __unicode__(self):
+		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
+			
+	def to_dict(self):
+		"""
+		Prepares a template for serialization.
+			
+		@return: a dict containing information about the template
+		@rtype: dict
+		"""
+		return {"name": self.name, "type": self.type, "default": self.default, "url": self.download_url}
+
 			
 class PhysicalLink(models.Model):
 	src_group = models.CharField(max_length=10)
@@ -315,58 +358,79 @@ class PhysicalLink(models.Model):
 		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
 	
+	def to_dict(self):
+		"""
+		Prepares a physical link object for serialization.
+		
+		@return: a dict containing information about the physical link
+		@rtype: dict
+		"""
+		return {"src": self.src_group, "dst": self.dst_group, "loss": self.loss,
+			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
+	
+	
 class SpecialFeature(models.Model):
 	host = models.ForeignKey(Host)
 	feature_type = models.CharField(max_length=50)
 	feature_group = models.CharField(max_length=50)
 	bridge = models.CharField(max_length=10)
+
+	def to_dict(self):
+		"""
+		Prepares a special feature for serialization.
+		
+		@return: a dict containing information about the special feature
+		@rtype: dict
+		"""
+		return {"type": self.feature_type, "group": self.feature_group, "bridge": self.bridge}
+
 	
 def get_host_groups():
 	groups = []
-	for h in Host.objects.all():
+	for h in Host.objects.all(): # pylint: disable-msg=E1101
 		if not h.group in groups:
 			groups.append(h.group)
 	return groups
 	
 def get_host(name):
-	return Host.objects.get(name=name)
+	return Host.objects.get(name=name) # pylint: disable-msg=E1101
 
 def get_best_host(group, device=None):
-	all = Host.objects.filter(enabled=True)
+	all_hosts = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
 	if group:
-		all = all.filter(group=group)
+		all_hosts = all_hosts.filter(group=group)
 	if device:
 		for iface in device.interfaces_all():
 			if iface.is_connected():
 				sf = iface.connection.connector.upcast()
 				if sf.is_special():
 					if sf.feature_group:
-						all = all.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
+						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
 					else:
-						all = all.filter(specialfeature__feature_type=sf.feature_type).distinct()
-	hosts = all.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
+						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type).distinct() # pylint: disable-msg=E1101
+	hosts = all_hosts.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
 	else:
 		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
 
-def get_templates(type=None):
-	list = Template.objects.all()
+def get_templates(ttype=None):
+	tpls = Template.objects.all() # pylint: disable-msg=E1101
 	if type:
-		list = list.filter(type=type)
-	return list
+		tpls = tpls.filter(type=ttype)
+	return tpls
 
-def get_template_name(type, name):
+def get_template_name(ttype, name):
 	try:
-		return Template.objects.get(type=type, name=name).name
-	except Exception:
-		return get_default_template(type)
+		return Template.objects.get(type=ttype, name=name).name # pylint: disable-msg=E1101
+	except: #pylint: disable-msg=W0702
+		return get_default_template(ttype)
 
-def get_template(type, name):
-	return Template.objects.get(type=type, name=name)
+def get_template(ttype, name):
+	return Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
 
-def add_template(name, type, url):
-	tpl = Template.objects.create(name=name, type=type, download_url=url)
+def add_template(name, template_type, url):
+	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
 	import tasks
 	t = tasks.TaskStatus(tpl.upload_to_all)
 	t.subtasks_total = 1
@@ -374,12 +438,12 @@ def add_template(name, type, url):
 	return t.id
 	
 def remove_template(name):
-	Template.objects.filter(name=name).delete()
+	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
 	
-def get_default_template(type):
-	list = Template.objects.filter(type=type, default=True)
-	if list.count() >= 1:
-		return list[0].name
+def get_default_template(ttype):
+	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101
+	if tpls.count() >= 1:
+		return tpls[0].name
 	else:
 		return None
 	
@@ -405,12 +469,17 @@ def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, p
 	host.bridge_range_start=bridge_start
 	host.bridge_range_count=bridge_count
 	host.save()
+	
+def remove(host_name):
+	host = get_host(host_name)
+	assert len(host.device_set.all()) == 0, "Cannot remove hosts that are used"
+	host.delete()
 		
 def get_physical_link(srcg_name, dstg_name):
-	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name)		
+	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name) # pylint: disable-msg=E1101		
 		
 def get_all_physical_links():
-	return PhysicalLink.objects.all()		
+	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 		
 def measure_link_properties(src, dst):
 	res = src.get_result("ping -A -c 500 -n -q -w 300 %s" % dst.name)
@@ -437,8 +506,8 @@ def measure_physical_links():
 					(loss, delay_avg, delay_stddev) = measure_link_properties(src, dst)
 					link = get_physical_link(srcg, dstg)
 					link.adapt(loss, delay_avg, delay_stddev) 
-				except PhysicalLink.DoesNotExist:
-					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev)
+				except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
+					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
 				except fault.Fault:
 					pass
 
@@ -456,7 +525,7 @@ def host_check(host):
 
 def special_feature_map():
 	features={}
-	for sf in SpecialFeature.objects.all():
+	for sf in SpecialFeature.objects.all(): # pylint: disable-msg=E1101
 		if not sf.feature_type in features:
 			features[sf.feature_type] = []
 		if not sf.feature_group in features[sf.feature_type]:

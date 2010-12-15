@@ -17,16 +17,10 @@
 
 from django.db import models
 
-import dummynet, generic, config, hosts, os, subprocess, shutil, fault, util
+import dummynet, generic, config, os, subprocess, shutil, fault, util
 
+# Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
-	
-	def add_connection(self, dom):
-		con = TincConnection()
-		con.init (self, dom)
-		self.connection_set.add ( con )
-		self.save()
-		return con
 	
 	def upcast(self):
 		return self
@@ -39,7 +33,7 @@ class TincConnector(generic.Connector):
 
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			host.free_port(con.upcast().tinc_port, task)		
@@ -68,7 +62,7 @@ class TincConnector(generic.Connector):
 
 	def stop_run(self, task):
 		generic.Connector.stop_run(self, task)
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			if host:
@@ -88,7 +82,7 @@ class TincConnector(generic.Connector):
 
 	def prepare_run(self, task):
 		generic.Connector.prepare_run(self, task)
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			tincport = con.upcast().tinc_port 
@@ -112,23 +106,23 @@ class TincConnector(generic.Connector):
 			tinc_conf_fd.write ( "Mode=%s\n" % self.type )
 			tinc_conf_fd.write ( "Name=%s\n" % tincname )
 			tinc_conf_fd.write ( "AddressFamily=ipv4\n" )
-			for con2 in self.connections_all():
+			for con2 in self.connection_set_all():
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
 				if not tincname == tincname2:
 					tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 			tinc_conf_fd.close()
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
-			for con2 in self.connections_all():
+			for con2 in self.connection_set_all():
 				host2 = con2.interface.device.host
 				tincname2 = self.tincname(con2)
 				path2 = self.topology.get_control_dir(host2.name) + "/" + tincname2
 				if not tincname == tincname2:
 					shutil.copy(path+"/hosts/"+tincname, path2+"/hosts/"+tincname)
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname + "/"
@@ -140,7 +134,7 @@ class TincConnector(generic.Connector):
 
 	def destroy_run(self, task):
 		generic.Connector.destroy_run(self, task)		
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			if host:
@@ -169,17 +163,17 @@ class TincConnector(generic.Connector):
 
 	def connections_configure(self, iface_name, properties, task):
 		iface = self.topology.interfaces_get(iface_name)
-		con = self.connections_get(iface)
+		con = self.connection_set_get(iface)
 		con.configure(properties, task)
 		con.save()	
 	
-	def connections_delete(self, iface_name, task):
+	def connections_delete(self, iface_name, task): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if self.state == generic.State.STARTED or self.state == generic.State.PREPARED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
-		con = self.connections_get(iface)
+		con = self.connection_set_get(iface)
 		con.delete()
 
 	def get_resource_usage(self):
@@ -188,13 +182,13 @@ class TincConnector(generic.Connector):
 		else:
 			disk = 10000   
 		if self.state == generic.State.STARTED:
-			ports = len(self.connections_all())
+			ports = len(self.connection_set_all())
 			memory = ( 1200 + 250 * ports ) * 1024
 		else:
 			memory = 0
 			ports = 0
 		traffic = 0
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			dev = con.interface.device
 			if dev.host:
 				br = self.bridge_name(con.interface)
@@ -231,7 +225,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		
 	def start_run(self, task):
 		dummynet.EmulatedConnection.start_run(self, task)
-
+		
 	def stop_run(self, task):
 		dummynet.EmulatedConnection.stop_run(self, task)
 

@@ -21,27 +21,72 @@ class Result():
 		self.warnings=[]
 		self.hints=[]
 		
-	def res(self):
+	def to_dict(self):
+		"""
+		Prepares the result object for serialization
+		
+		@return: dict of analysis results
+		@rtype: dict
+		"""
 		return {"problems": self.problems, "warnings": self.warnings, "hints": self.hints}
 	
 
 def analyze(top):
+	"""
+	Checks for various problems in a topology and warns the user.
+	
+	@param top: Topology to check
+	@type top: topology.Topology
+	@param res: Analysis result
+	@type res: dict
+	"""
 	res = Result()
-	if len(top.devices_all()) == 0:
+	if len(top.device_set_all()) == 0:
 		res.problems.append("No devices specified")
+	_check_timeout(top, res)
 	_check_fully_connected(top, res)
 	_check_interface_connection_count(top, res)
 	_check_connectors_connection_count(top, res)
 	_check_connectors_ip_structure(top, res)
 	_check_connection_performance(top, res)
-	return res.res()
+	return res.to_dict()
+
+def _check_timeout(top, res):
+	"""
+	Checks for near timeouts (within 1 week) or already happened timeouts.
+	
+	@param top: Topology to check
+	@type top: topology.Topology
+	@param res: Analysis result object
+	@type res: Result
+	@rtype: None     
+	"""
+	import datetime, generic
+	now = datetime.datetime.now()
+	week = datetime.timedelta(weeks=4)
+	print top.date_usage + top.STOP_TIMEOUT
+	print now + week
+	print now + week > top.date_usage + top.STOP_TIMEOUT
+	if now + week > top.date_usage + top.REMOVE_TIMEOUT:
+		res.warnings.append("Removing topology at %s due to timeout" % (top.date_usage + top.REMOVE_TIMEOUT))
+	elif now + week > top.date_usage + top.DESTROY_TIMEOUT:
+		max_state = top.max_state()
+		if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
+			res.warnings.append("Destroying topology at %s due to timeout" % (top.date_usage + top.DESTROY_TIMEOUT))
+	elif now + week > top.date_usage + top.STOP_TIMEOUT:
+		if top.max_state() == generic.State.STARTED:
+			res.warnings.append("Stopping topology at %s due to timeout" % (top.date_usage + top.STOP_TIMEOUT))
+	if now > top.date_usage + top.DESTROY_TIMEOUT:
+		res.hints.append("Topology has already been destroyed due to timeout")
+	elif now > top.date_usage + top.STOP_TIMEOUT:
+		res.hints.append("Topology has already been stopped due to timeout")
 
 def _check_fully_connected(top, res):
 	reachable=set()
 	todo=set()
 	unreachable=set()
 	#put everything in unreachable
-	for device in top.devices_all():
+	for device in top.device_set_all():
 		unreachable.add(device)
 	if len(unreachable)==0:
 		return
@@ -54,9 +99,9 @@ def _check_fully_connected(top, res):
 		reachable.add(cur)
 		unreachable.remove(cur)
 		todo.remove(cur)
-		for interface in cur.interfaces_all():
+		for interface in cur.interface_set_all():
 			if interface.connection:
-				for connection in interface.connection.connector.connections_all():
+				for connection in interface.connection.connector.connection_set_all():
 					dev=connection.interface.device
 					if not dev in reachable:
 						todo.add(dev)
@@ -65,11 +110,11 @@ def _check_fully_connected(top, res):
 	
 def _check_interface_connection_count(top,res):
 	con={}
-	for device in top.devices_all():
-		for interface in device.interfaces_all():
+	for device in top.device_set_all():
+		for interface in device.interface_set_all():
 			con[repr(interface)]=[]
-	for connector in top.connectors_all():
-		for connection in connector.connections_all():
+	for connector in top.connector_set_all():
+		for connection in connector.connection_set_all():
 			con[repr(connection.interface)].append(connector)
 	for interface, connectors in con.iteritems():
 		if len(connectors)==0:
@@ -78,17 +123,17 @@ def _check_interface_connection_count(top,res):
 			res.problems.append("Interface %s is connected multiple times" % interface)
 				
 def _check_connectors_connection_count(top,res):
-	for connector in top.connectors_all():
-		if len(connector.connections_all())==0:
+	for connector in top.connector_set_all():
+		if len(connector.connection_set_all())==0:
 			res.problems.append("Connector %s is not connected" % connector.name)
-		if len(connector.connections_all())==1 and not connector.is_special():
+		if len(connector.connection_set_all())==1 and not connector.is_special():
 			res.warnings.append("Connector %s is only connected once" % connector.name)
 			
 def _check_connectors_ip_structure(top,res):
-	for connector in top.connectors_all():
+	for connector in top.connector_set_all():
 		ip_addresses=set()
 		dhcp_clients=set()
-		for connection in connector.connections_all():
+		for connection in connector.connection_set_all():
 			if connection.interface.is_configured():
 				if connection.interface.configuredinterface.ip4address:
 					ip=connection.interface.configuredinterface.ip4address
@@ -99,10 +144,10 @@ def _check_connectors_ip_structure(top,res):
 					dhcp_clients.add(connection.interface.device.name)
 		if len(dhcp_clients)>0 and not connector.is_special():
 			res.hints.append("No dhcp server configured on %s but clients configured to use dhcpd: %s" % ( connector.name, ", ".join(dhcp_clients) ) )
-				
+						
 def _check_connection_performance(top,res):
-	for connector in top.connectors_all():
-		for connection in connector.connections_all():
+	for connector in top.connector_set_all():
+		for connection in connector.connection_set_all():
 			if connection.is_emulated():
 				if connection.emulatedconnection.lossratio:
 					r=connection.emulatedconnection.lossratio

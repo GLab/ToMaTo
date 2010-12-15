@@ -34,12 +34,12 @@ class RepeatedTimer(threading.Thread):
 					self.firstRun = False
 				else:
 					self.event.wait(self.timeout)
-			except:
+			except: #pylint: disable-msg=W0702
 				return
 			if not self.event.isSet():
 				try:
 					self.func(*self.args, **self.kwargs)
-				except Exception, exc:
+				except Exception, exc: #pylint: disable-msg=W0703
 					from tomato import fault
 					fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def stop(self):
@@ -47,8 +47,8 @@ class RepeatedTimer(threading.Thread):
 
 def print_except_helper(func, args, kwargs):
 	try:
-		return func(*args, **kwargs)
-	except Exception, exc:
+		return func(*args, **kwargs) #pylint: disable-msg=W0142
+	except Exception, exc: #pylint: disable-msg=W0703
 		from tomato import fault
 		traceback.print_exc()
 		fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
@@ -98,7 +98,7 @@ class curry:
 			kw.update(kwargs)
 		else:
 			kw = kwargs or self.kwargs
-		return self.fun(selfref, *(self.pending + args), **kw)
+		return self.fun(selfref, *(self.pending + args), **kw) #pylint: disable-msg=W0142
 
 def get_attr(obj, name, default=None, res_type=None):
 	"""
@@ -128,3 +128,26 @@ def calculate_subnet(ip_with_prefix):
 		ip.insert(0, str(ip_num % 256))
 		ip_num = ip_num // 256
 	return ".".join(ip)+"/"+prefix
+
+def parse_xml(xml, root_tag):
+	"""
+	Parses an xml document. The input must be a string containing a well-formed
+	xml document containing the given root tag.
+	
+	@param xml: well-formed xml document to be parsed
+	@type xml: string
+	@param root_tag: the name of the expected root tag
+	@type root_tag: string
+	@return: the parsed xml element of the root tag
+	@rtype: minidom.Element
+	@raise fault.Error: if the input is not well-formed or the root tag is not found      
+	""" 
+	import fault
+	try:
+		from xml.dom import minidom
+		dom = minidom.parseString(xml)
+		return dom.getElementsByTagName ( root_tag )[0]
+	except IndexError:
+		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
+	except Exception, exc:
+		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )

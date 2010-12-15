@@ -23,17 +23,17 @@ class Error(models.Model):
 	title = models.CharField(max_length=255)
 	message = models.TextField(blank=True)
 	
-	def dict(self):
-		return {"id": self.id, "date": self.date, "title": self.title, "message": self.message}
+	def to_dict(self):
+		return {"id": self.id, "date": self.date, "title": self.title, "message": self.message} # pylint: disable-msg=E1101
 
 def errors_all():
-	return Error.objects.all()
+	return Error.objects.all() # pylint: disable-msg=E1101
 
 def errors_add(title, message):
-	Error.objects.create(title=title, message=message)
+	Error.objects.create(title=title, message=message) # pylint: disable-msg=E1101
 
-def errors_remove(id):
-	Error.objects.get(id=id).delete()
+def errors_remove(error_id):
+	Error.objects.get(id=error_id).delete() # pylint: disable-msg=E1101
 
 class Fault(xmlrpclib.Fault):
 	pass

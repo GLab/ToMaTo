@@ -30,10 +30,10 @@ def _display_top(api, top_id, task_id=None, action=None):
 
 @wrap_rpc
 def index(api, request):
-	host_filter = "*"
+	host_filter = ""
 	if request.REQUEST.has_key("host_filter"):
 		host_filter=request.REQUEST["host_filter"]
-	owner_filter = "*"
+	owner_filter = ""
 	if request.REQUEST.has_key("owner_filter"):
 		owner_filter=request.REQUEST["owner_filter"]
 	toplist=api.top_list(owner_filter, host_filter, "user")

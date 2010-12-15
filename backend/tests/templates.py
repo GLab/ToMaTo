@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import unittest
-import tests
 import tomato as api
 
 class Test(unittest.TestCase):

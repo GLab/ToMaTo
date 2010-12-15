@@ -22,13 +22,6 @@ class SpecialFeatureConnector(generic.Connector):
 	feature_type = models.CharField(max_length=50)
 	feature_group = models.CharField(max_length=50, blank=True)
 
-	def add_connection(self, dom):
-		con = generic.Connection()
-		con.init (self, dom)
-		self.connection_set.add ( con )
-		self.save()
-		return con
-
 	def upcast(self):
 		return self
 
@@ -61,7 +54,7 @@ class SpecialFeatureConnector(generic.Connector):
 	def configure(self, properties, task):
 		generic.Connector.configure(self, properties, task)
 		fixed = False
-		for c in self.connections_all():
+		for c in self.connection_set_all():
 			if c.interface:
 				dev = c.interface.device
 				if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
@@ -77,8 +70,8 @@ class SpecialFeatureConnector(generic.Connector):
 			else:
 				self.feature_group = properties["feature_group"]
 		self.save()		
-				
-	def connections_add(self, iface_name, properties, task):
+	
+	def connections_add(self, iface_name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
@@ -90,17 +83,17 @@ class SpecialFeatureConnector(generic.Connector):
 	def connections_configure(self, iface_name, properties, task):
 		pass
 	
-	def connections_delete(self, iface_name, task):
+	def connections_delete(self, iface_name, task): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
-		con = self.connections_get(iface)
+		con = self.connection_set_get(iface)
 		con.delete()
-
+		
 	def get_resource_usage(self):
 		special = 0
 		traffic = 0
-		for con in self.connections_all():
+		for con in self.connection_set_all():
 			if con.interface.device.state == generic.State.STARTED:
 				special += 1
 			dev = con.interface.device

@@ -41,7 +41,7 @@ class Logger():
 		try:
 			self.fd.close()
 			del loggers[self.filename]
-		except:
+		except: #pylint: disable-msg=W0702
 			pass
 		
 loggers={}		
