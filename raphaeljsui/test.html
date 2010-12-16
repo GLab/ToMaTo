@@ -3,13 +3,14 @@
 <script src="raphael-min.js"></script>
 <script src="util.js"></script>
 <script src="editor.js"></script>
+<div id="editor" style="width:800px;height:600px;border:2px solid #911A20;"></div>
 <script><!--
-init(Raphael(0, 0, 1000, 1000));
-con1 = new Connector("Con1", {x:100, y: 100});
-dev1 = new Device("Dev1", {x: 50, y: 50});
-dev2 = new Device("Dev2", {x: 170, y: 170});
-connect (con1, dev1);
-connect (con1, dev2);
+editor = new Editor({x:800, y:600});
+con1 = new SwitchConnector(editor, "Con1", {x:200, y: 100});
+dev1 = new OpenVZDevice(editor, "Dev1", {x: 150, y: 50});
+dev2 = new KVMDevice(editor, "Dev2", {x: 270, y: 170});
+editor.connect (con1, dev1);
+editor.connect (con1, dev2);
 --></script>
 </body>
 </html>
