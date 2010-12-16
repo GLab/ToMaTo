@@ -142,6 +142,13 @@ class KVMDevice(generic.Device):
 
 	def configure(self, properties, task):
 		generic.Device.configure(self, properties, task)
+		if "template" in properties:
+			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			if (not self.template) or (not self.template.startswith("***")): # pylint: disable-msg=E0203
+				self.template = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
+				if not self.template:
+					raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
+		self.save()
 			
 	def interfaces_add(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.state == "started":
