@@ -224,6 +224,15 @@ var Connector = IconElement.extend({
   }
 });
 
+var SpecialConnector = Connector.extend({
+  init: function(editor, name, pos) {
+    this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
+  },
+  createAnother: function(pos) {
+    return new SpecialConnector(this.editor, "special", pos);
+  }
+});
+
 var HubConnector = Connector.extend({
   init: function(editor, name, pos) {
     this._super(editor, name, "images/hub.png", {x: 32, y: 16}, pos);
@@ -310,7 +319,7 @@ var Editor = Class.extend({
   init: function(size) {
     this.g = Raphael("editor", size.x, size.y);
     this.size = size;
-    this.paletteWidth = 100;
+    this.paletteWidth = 60;
     this.glabColor = "#911A20";
     this.elements = [];
     this.paintPalette();
@@ -321,11 +330,13 @@ var Editor = Class.extend({
     this.openVZPrototype.paletteItem = true;
     this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: 100});
     this.kvmPrototype.paletteItem = true;
-    this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: 200});
+    this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: 200});
+    this.specialPrototype.paletteItem = true;
+    this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: 250});
     this.hubPrototype.paletteItem = true;
-    this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: 250});
+    this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: 290});
     this.switchPrototype.paletteItem = true;
-    this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 300});
+    this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 330});
     this.routerPrototype.paletteItem = true;
   },
   connect: function(connector, device) {
