@@ -65,40 +65,47 @@ var IconElement = NetElement.extend({
     this.pos = pos;
     this.paletteItem = false;
   },
+  _dragMove: function (dx, dy) {
+    p = this.parent;
+    if (p.paletteItem) p.shadow.attr({x: p.opos.x + dx-p.iconsize.x/2, y: p.opos.y + dy-p.iconsize.y/2});
+    else p.move({x: p.opos.x + dx, y: p.opos.y + dy});
+  }, 
+  _dragStart: function () {
+    p = this.parent;
+    p.opos = p.pos;
+    if (p.paletteItem) p.shadow = p.icon.clone().attr({opacity:0.5});
+  },
+  _dragStop: function () {
+    p = this.parent;
+    if (p.paletteItem) {
+      pos = {x: p.shadow.attr("x")+p.iconsize.x/2, y: p.shadow.attr("y")+p.iconsize.y/2};
+      element = p.createAnother(pos);
+      element.move(pos);
+      p.shadow.remove();
+    }
+    if (p.pos != p.opos) p.lastMoved = new Date();
+  },
+  _click: function(event){
+    p = this.parent;
+    if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
+    p.onClick(event);
+  },
   paint: function(){
     this._super();
     if (this.text) this.text.remove();
-    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+5, this.name);
+    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+5, this.name).attr({"font-size":12});
+    this.text.parent = this;
+    this.text.drag(this._dragMove, this._dragStart, this._dragStop);
     if (this.icon) this.icon.remove();
     this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
     this.icon.parent = this;
-    this.icon.drag(function (dx, dy) {
-      //move
-      if (this.parent.paletteItem) this.shadow.attr({x: this.opos.x + dx-this.parent.iconsize.x/2, y: this.opos.y + dy-this.parent.iconsize.y/2});
-      else this.parent.move({x: this.opos.x + dx, y: this.opos.y + dy});
-    }, function () {
-      //start
-      this.opos = this.parent.pos;
-      if (this.parent.paletteItem) this.shadow = this.clone().attr({opacity:0.5});
-    }, function () {
-      //stop
-      if (this.parent.paletteItem) {
-	pos = {x: this.shadow.attr("x")+this.parent.iconsize.x/2, y: this.shadow.attr("y")+this.parent.iconsize.y/2};
-	element = this.parent.createAnother(pos);
-	element.move(pos);
-        this.shadow.remove();
-      }
-      if (this.parent.pos != this.opos) this.parent.lastMoved = new Date();
-    });
-    this.icon.click(function(event){
-      if (this.parent.lastMoved && this.parent.lastMoved.getTime() + 1 > new Date().getTime()) return;
-      this.parent.onClick(event);
-    });
+    this.icon.drag(this._dragMove, this._dragStart, this._dragStop);
+    this.icon.click(this._click);
   },
   paintUpdate: function() {
-    this._super();
     this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
     this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+5});
+    this._super(); //must be at end, so rect has already been updated
   },
   move: function(pos) {
     if (pos.x + this.iconsize.x/2 > this.editor.g.width) pos.x = this.editor.g.width - this.iconsize.x/2;
@@ -150,10 +157,12 @@ var Connection = NetElement.extend({
     if (this.handle) this.handle.remove();
     this.handle = this.editor.g.rect(this.getX()-8, this.getY()-8, 16, 16).attr({fill: "#A0A0A0"});
     this.handle.parent = this;
-    this.handle.click(function(event){
-      if (this.parent.lastMoved && this.parent.lastMoved.getTime() + 1 > new Date().getTime()) return;
-      this.parent.onClick(event);
-    });
+    this.handle.click(this._click);
+  },
+  _click: function(event){
+    p = this.parent;
+    if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
+    p.onClick(event);
   }
 });
 
@@ -185,9 +194,7 @@ var Interface = NetElement.extend({
     if (this.circle) this.circle.remove();
     this.circle = this.editor.g.circle(this.getX(), this.getY(), 8).attr({fill: "#CDCDB3"});
     this.circle.parent = this;
-    this.circle.click(function(event){
-      this.parent.onClick(event);
-    });
+    this.circle.click(this._click);
   },
   paintUpdate: function(){
     this._super();
@@ -196,6 +203,10 @@ var Interface = NetElement.extend({
   showAttributes: function() {
     alert("Interface of " + this.dev.name + " clicked");
     //this.editor.disable();
+  },
+  _click: function(event) {
+    p = this.parent;
+    p.onClick(event);
   }
 });
 
