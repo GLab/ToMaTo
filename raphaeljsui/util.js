@@ -61,3 +61,22 @@
     return Class;
   };
 })(); 
+
+compoundBBox = function (list) {
+  minX = -1;
+  maxX = -1;
+  minY = -1;
+  maxY = -1;
+  for (i in list) {
+    box = list[i].getBBox();
+    if (minX<0) minX = box.x;
+    minX = Math.min(minX, box.x);
+    if (maxX<0) maxX = box.x+box.width;
+    maxX = Math.max(maxX, box.x+box.width);
+    if (minY<0) minY = box.y;
+    minY = Math.min(minY, box.y);
+    if (maxY<0) maxY = box.y+box.height;
+    maxY = Math.max(maxY, box.y+box.height);
+  }
+  return {x: minX, y: minY, width: maxX-minX, height: maxY-minY};
+}

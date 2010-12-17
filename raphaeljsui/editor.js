@@ -7,16 +7,42 @@
 var NetElement = Class.extend({
   init: function(editor){
     this.editor = editor;
+    this.selected = false;
   },
   paint: function(){
   },
   paintUpdate: function(){
+    if (this.selected) {
+      rect = this.getRect();
+      rect = {x: rect.x-5, y: rect.y-5, width: rect.width+10, height: rect.height+10};
+      if (!this.selectionFrame) this.selectionFrame = this.editor.g.rect(rect.x, rect.y, rect.width, rect.height).attr({stroke:this.editor.glabColor, "stroke-width": 2});
+      this.selectionFrame.attr(rect);
+    } else {
+      if (this.selectionFrame) this.selectionFrame.remove();
+      this.selectionFrame = false;
+    }
   },
   getX: function() {
     return this.getPos().x;
   },
   getY: function() {
     return this.getPos().y;
+  },
+  getWidth: function() {
+    return this.getSize().x;
+  },
+  getHeight: function() {
+    return this.getSize().y;
+  },
+  getRect: function() {
+    return {x: this.getX()-this.getWidth()/2, y: this.getY()-this.getHeight()/2, width: this.getWidth(), height: this.getHeight()};
+  },
+  setSelected: function(isSelected) {
+    this.selected = isSelected;
+    this.paintUpdate();
+  },
+  isSelected: function() {
+    return this.selected;
   }
 });
 
@@ -47,7 +73,9 @@ var IconElement = NetElement.extend({
     }, function () {
       //stop
       if (this.parent.paletteItem) {
-	element = this.parent.createAnother({x: this.shadow.attr("x")+this.parent.iconsize.x/2, y: this.shadow.attr("y")+this.parent.iconsize.y/2});
+	pos = {x: this.shadow.attr("x")+this.parent.iconsize.x/2, y: this.shadow.attr("y")+this.parent.iconsize.y/2};
+	element = this.parent.createAnother(pos);
+	element.move(pos);
         this.shadow.remove();
       }
       if (this.parent.pos != this.opos) this.parent.lastMoved = new Date();
@@ -72,11 +100,18 @@ var IconElement = NetElement.extend({
   getPos: function() {
     return this.pos;
   },
+  getSize: function() {
+    return {x: Math.max(this.text.getBBox().width,this.iconsize.x), y: this.iconsize.y + this.text.getBBox().height};
+  },
+  getRect: function() {
+    return compoundBBox([this.text, this.icon]);
+  },
   createAnother: function(pos) {
   },
   onclick: function() {
     if (this.lastMoved && this.lastMoved.getTime() + 1 > new Date().getTime()) return;
-    alert(this.name+" clicked");
+    this.setSelected(!this.isSelected());
+    //alert(this.name+" clicked");
   }
 });
 
@@ -89,6 +124,9 @@ var Connection = NetElement.extend({
   },
   getPos: function(){
     return {x: (this.con.getX()+this.dev.getX())/2, y: (this.con.getY()+this.dev.getY())/2};
+  },
+  getSize: function() {
+    return {x: 16, y: 16};
   },
   getPath: function(){
     return "M"+this.con.getX()+" "+this.con.getY()+"L"+this.dev.getX()+" "+this.dev.getY();
@@ -111,7 +149,8 @@ var Connection = NetElement.extend({
     });
   },
   onclick: function() {
-    alert(this.con.name+"<->"+this.dev.name+" clicked");
+    this.setSelected(!this.isSelected());
+    //alert(this.con.name+"<->"+this.dev.name+" clicked");
   }
 });
 
@@ -129,6 +168,9 @@ var Interface = NetElement.extend({
     mag = 14.0 / Math.sqrt(magSquared);
     return {x: this.dev.getX() + (xd * mag), y: this.dev.getY() + (yd * mag)};
   },
+  getSize: function() {
+    return {x: 16, y: 16};
+  },
   paint: function(){
     if (this.circle) this.circle.remove();
     this.circle = this.editor.g.circle(this.getX(), this.getY(), 8).attr({fill: "#CDCDB3"});
@@ -142,8 +184,9 @@ var Interface = NetElement.extend({
     this.circle.attr({cx: this.getX(), cy: this.getY()});
   },
   onclick: function() {
+    this.setSelected(!this.isSelected());
     //alert("Interface of "+this.dev.name+" clicked");
-    this.showAttributes();
+    //this.showAttributes();
   },
   showAttributes: function() {
     alert("Interface of " + this.dev.name + " clicked");
