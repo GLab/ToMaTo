@@ -8,6 +8,7 @@ var NetElement = Class.extend({
   init: function(editor){
     this.editor = editor;
     this.selected = false;
+    this.editor.addElement(this);
   },
   paint: function(){
   },
@@ -81,7 +82,8 @@ var IconElement = NetElement.extend({
       if (this.parent.pos != this.opos) this.parent.lastMoved = new Date();
     });
     this.icon.click(function(event){
-      this.parent.onclick();
+      if (this.parent.lastMoved && this.parent.lastMoved.getTime() + 1 > new Date().getTime()) return;
+      this.parent.onClick(event);
     });
   },
   paintUpdate: function() {
@@ -108,10 +110,8 @@ var IconElement = NetElement.extend({
   },
   createAnother: function(pos) {
   },
-  onclick: function() {
-    if (this.lastMoved && this.lastMoved.getTime() + 1 > new Date().getTime()) return;
+  onClick: function(event) {
     this.setSelected(!this.isSelected());
-    //alert(this.name+" clicked");
   }
 });
 
@@ -145,12 +145,12 @@ var Connection = NetElement.extend({
     this.handle = this.editor.g.rect(this.getX()-8, this.getY()-8, 16, 16).attr({fill: "#A0A0A0"});
     this.handle.parent = this;
     this.handle.click(function(event){
-      this.parent.onclick();
+      if (this.parent.lastMoved && this.parent.lastMoved.getTime() + 1 > new Date().getTime()) return;
+      this.parent.onClick(event);
     });
   },
-  onclick: function() {
+  onClick: function(event) {
     this.setSelected(!this.isSelected());
-    //alert(this.con.name+"<->"+this.dev.name+" clicked");
   }
 });
 
@@ -176,17 +176,15 @@ var Interface = NetElement.extend({
     this.circle = this.editor.g.circle(this.getX(), this.getY(), 8).attr({fill: "#CDCDB3"});
     this.circle.parent = this;
     this.circle.click(function(event){
-      this.parent.onclick();
+      this.parent.onClick(event);
     });
   },
   paintUpdate: function(){
     this._super();
     this.circle.attr({cx: this.getX(), cy: this.getY()});
   },
-  onclick: function() {
+  onClick: function(event) {
     this.setSelected(!this.isSelected());
-    //alert("Interface of "+this.dev.name+" clicked");
-    //this.showAttributes();
   },
   showAttributes: function() {
     alert("Interface of " + this.dev.name + " clicked");
@@ -199,6 +197,7 @@ var Connector = IconElement.extend({
     this._super(editor, name, iconsrc, iconsize, pos);
     this.connections = [];
     this.paint();
+    this.isConnector = true;
   },
   move: function(pos) {
     this._super(pos);
@@ -209,6 +208,16 @@ var Connector = IconElement.extend({
   },
   addConnection: function(con) {
     this.connections.push(con);
+  },
+  onClick: function(event) {
+    this._super(event);
+    if (event.ctrlKey) {
+      selectedElements = this.editor.selectedElements();
+      for (i in selectedElements) {
+	el = selectedElements[i];
+	if (el.isDevice) this.editor.connect(this, el);
+      }
+    }
   }
 });
 
@@ -245,6 +254,7 @@ var Device = IconElement.extend({
     this._super(editor, name, iconsrc, iconsize, pos);
     this.interfaces = [];
     this.paint();
+    this.isDevice = true;
   },
   move: function(pos) {
     this._super(pos);
@@ -260,6 +270,16 @@ var Device = IconElement.extend({
   },
   addInterface: function(iface) {
     this.interfaces.push(iface);
+  },
+  onClick: function(event) {
+    this._super(event);
+    if (event.ctrlKey) {
+      selectedElements = this.editor.selectedElements();
+      for (i in selectedElements) {
+	el = selectedElements[i];
+	if (el.isConnector) this.editor.connect(el, this);
+      }
+    }
   }
 });
 
@@ -287,6 +307,7 @@ var Editor = Class.extend({
     this.size = size;
     this.paletteWidth = 100;
     this.glabColor = "#911A20";
+    this.elements = [];
     this.paintPalette();
   },
   paintPalette: function() {
@@ -313,5 +334,13 @@ var Editor = Class.extend({
   },
   enable: function() {
     if (this.disableRect) this.disableRect.remove();
+  },
+  selectedElements: function() {
+    sel = [];
+    for (i in this.elements) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
+    return sel;
+  },
+  addElement: function(el) {
+    this.elements.push(el);
   }
 });
