@@ -44,6 +44,15 @@ var NetElement = Class.extend({
   },
   isSelected: function() {
     return this.selected;
+  },
+  onClick: function(event) {
+    if (event.shiftKey) this.setSelected(!this.isSelected());
+    else {
+      oldSelected = this.isSelected();
+      sel = this.editor.selectedElements();
+      for (i in sel) sel[i].setSelected(false);
+      this.setSelected(!oldSelected | sel.length>1);
+    }
   }
 });
 
@@ -109,9 +118,6 @@ var IconElement = NetElement.extend({
     return compoundBBox([this.text, this.icon]);
   },
   createAnother: function(pos) {
-  },
-  onClick: function(event) {
-    this.setSelected(!this.isSelected());
   }
 });
 
@@ -148,9 +154,6 @@ var Connection = NetElement.extend({
       if (this.parent.lastMoved && this.parent.lastMoved.getTime() + 1 > new Date().getTime()) return;
       this.parent.onClick(event);
     });
-  },
-  onClick: function(event) {
-    this.setSelected(!this.isSelected());
   }
 });
 
@@ -183,9 +186,6 @@ var Interface = NetElement.extend({
     this._super();
     this.circle.attr({cx: this.getX(), cy: this.getY()});
   },
-  onClick: function(event) {
-    this.setSelected(!this.isSelected());
-  },
   showAttributes: function() {
     alert("Interface of " + this.dev.name + " clicked");
     //this.editor.disable();
@@ -210,14 +210,17 @@ var Connector = IconElement.extend({
     this.connections.push(con);
   },
   onClick: function(event) {
-    this._super(event);
     if (event.ctrlKey) {
       selectedElements = this.editor.selectedElements();
       for (i in selectedElements) {
 	el = selectedElements[i];
-	if (el.isDevice) this.editor.connect(this, el);
+	if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
       }
-    }
+    } else this._super(event);
+  },
+  isConnectedWith: function(dev) {
+    for (i in this.connections) if (this.connections[i].dev == dev) return true;
+    return false;
   }
 });
 
@@ -248,7 +251,6 @@ var RouterConnector = Connector.extend({
   }
 });
 
-
 var Device = IconElement.extend({
   init: function(editor, name, iconsrc, iconsize, pos) {
     this._super(editor, name, iconsrc, iconsize, pos);
@@ -272,14 +274,17 @@ var Device = IconElement.extend({
     this.interfaces.push(iface);
   },
   onClick: function(event) {
-    this._super(event);
     if (event.ctrlKey) {
       selectedElements = this.editor.selectedElements();
       for (i in selectedElements) {
 	el = selectedElements[i];
-	if (el.isConnector) this.editor.connect(el, this);
+	if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
       }
-    }
+    } else this._super(event);
+  },
+  isConnectedWith: function(con) {
+    for (i in this.interfaces) if (this.interfaces[i].con.con == con) return true;
+    return false;
   }
 });
 
