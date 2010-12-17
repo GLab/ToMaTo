@@ -1,7 +1,9 @@
 /********************************************************************************
  * Browser quirks:
  * - IE8 does not like a komma after the last function in a class
- * - IE8 does not like colors defined as words, so only traditional colors
+ * - IE8 does not like colors defined as words, so only traditional #RRGGBB colors
+ * - Firefox opens new tabs/windows when icons are clicked with shift or ctrl key
+ *   hold, so all icons are overlayed with a transparent rectangular
  ********************************************************************************/ 
 
 var NetElement = Class.extend({
@@ -95,16 +97,20 @@ var IconElement = NetElement.extend({
     if (this.text) this.text.remove();
     this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+5, this.name).attr({"font-size":12});
     this.text.parent = this;
-    this.text.drag(this._dragMove, this._dragStart, this._dragStop);
     if (this.icon) this.icon.remove();
     this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
     this.icon.parent = this;
-    this.icon.drag(this._dragMove, this._dragStart, this._dragStop);
-    this.icon.click(this._click);
+    r = this.getRect();
+    if (this.rect) this.rect.remove();
+    this.rect = this.editor.g.rect(r.x, r.y, r.width, r.height).attr({opacity:0, fill:"#FFFFFF"});
+    this.rect.parent = this;
+    this.rect.drag(this._dragMove, this._dragStart, this._dragStop);
+    this.rect.click(this._click);    
   },
   paintUpdate: function() {
     this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
     this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+5});
+    this.rect.attr(this.getRect());
     this._super(); //must be at end, so rect has already been updated
   },
   move: function(pos) {
