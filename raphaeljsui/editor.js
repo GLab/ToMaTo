@@ -157,6 +157,13 @@ var Connection = NetElement.extend({
   }
 });
 
+var EmulatedConnection = Connection.extend({
+  init: function(editor, dev, con){
+    this._super(editor, dev, con);
+    this.handle.attr({fill: this.editor.glabColor})
+  }
+});
+
 var Interface = NetElement.extend({
   init: function(editor, dev, con){
     this._super(editor);
@@ -192,6 +199,12 @@ var Interface = NetElement.extend({
   }
 });
 
+var ConfiguredInterface = Interface.extend({
+  init: function(editor, dev, con){
+    this._super(editor, dev, con);
+  }
+});
+
 var Connector = IconElement.extend({
   init: function(editor, name, iconsrc, iconsize, pos) {
     this._super(editor, name, iconsrc, iconsize, pos);
@@ -206,9 +219,6 @@ var Connector = IconElement.extend({
       this.connections[i].dev.paintUpdateInterfaces();
     }    
   },
-  addConnection: function(con) {
-    this.connections.push(con);
-  },
   onClick: function(event) {
     if (event.ctrlKey) {
       selectedElements = this.editor.selectedElements();
@@ -221,6 +231,11 @@ var Connector = IconElement.extend({
   isConnectedWith: function(dev) {
     for (i in this.connections) if (this.connections[i].dev == dev) return true;
     return false;
+  },
+  createConnection: function(dev) {
+    con = new Connection(this.editor, this, dev);
+    this.connections.push(con);
+    return con;
   }
 });
 
@@ -239,6 +254,11 @@ var HubConnector = Connector.extend({
   },
   createAnother: function(pos) {
     return new HubConnector(this.editor, "hub", pos);
+  },
+  createConnection: function(dev) {
+    con = new EmulatedConnection(this.editor, this, dev);
+    this.connections.push(con);
+    return con;
   }
 });
 
@@ -248,6 +268,11 @@ var SwitchConnector = Connector.extend({
   },
   createAnother: function(pos) {
     return new SwitchConnector(this.editor, "switch", pos);
+  },
+  createConnection: function(dev) {
+    con = new EmulatedConnection(this.editor, this, dev);
+    this.connections.push(con);
+    return con;
   }
 });
 
@@ -257,6 +282,11 @@ var RouterConnector = Connector.extend({
   },
   createAnother: function(pos) {
     return new RouterConnector(this.editor, "router", pos);
+  },
+  createConnection: function(dev) {
+    con = new EmulatedConnection(this.editor, this, dev);
+    this.connections.push(con);
+    return con;
   }
 });
 
@@ -279,9 +309,6 @@ var Device = IconElement.extend({
   paintUpdateInterfaces: function() {
     for (var i in this.interfaces) this.interfaces[i].paintUpdate();
   },
-  addInterface: function(iface) {
-    this.interfaces.push(iface);
-  },
   onClick: function(event) {
     if (event.ctrlKey) {
       selectedElements = this.editor.selectedElements();
@@ -294,6 +321,11 @@ var Device = IconElement.extend({
   isConnectedWith: function(con) {
     for (i in this.interfaces) if (this.interfaces[i].con.con == con) return true;
     return false;
+  },
+  createInterface: function(con) {
+    iface = new Interface(this.editor, this, con);
+    this.interfaces.push(iface);
+    return iface;
   }
 });
 
@@ -303,6 +335,11 @@ var OpenVZDevice = Device.extend({
   },
   createAnother: function(pos) {
     return new OpenVZDevice(this.editor, "openvz", pos);
+  },
+  createInterface: function(con) {
+    iface = new ConfiguredInterface(this.editor, this, con);
+    this.interfaces.push(iface);
+    return iface;
   }
 });
 
@@ -340,10 +377,8 @@ var Editor = Class.extend({
     this.routerPrototype.paletteItem = true;
   },
   connect: function(connector, device) {
-    con = new Connection(editor, connector, device);
-    connector.addConnection(con);
-    iface = new Interface(editor, device, con);
-    device.addInterface(iface);
+    con = connector.createConnection(device);
+    iface = device.createInterface(con);
   },
   disable: function() {
     this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
