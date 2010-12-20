@@ -131,6 +131,9 @@ var IconElement = NetElement.extend({
     return compoundBBox([this.text, this.icon]);
   },
   createAnother: function(pos) {
+  },
+  setSelected: function(isSelected) {
+    this._super(isSelected & !this.paletteItem);
   }
 });
 
@@ -377,7 +380,42 @@ var Editor = Class.extend({
     this.glabColor = "#911A20";
     this.elements = [];
     this.paintPalette();
+    this.paintBackground();
   },
+  getPosition: function () { 
+    var node = document.getElementById("editor");
+    var pos = {x:0,y:0}; 
+    if (node.getBoundingClientRect) { // IE 
+      box = node.getBoundingClientRect(); 
+      var scrollTop = document.documentElement.scrollTop; 
+      var scrollLeft = document.documentElement.scrollLeft; 
+      pos.x = box.left + scrollLeft; 
+      pos.y = box.top + scrollTop; 
+    } else if (document.getBoxObjectFor) { 
+      var box = document.getBoxObjectFor(node); 
+      var vpBox = document.getBoxObjectFor(document.documentElement); 
+      pos.x = box.screenX - vpBox.screenX; 
+      pos.y = box.screenY - vpBox.screenY; 
+    } else { 
+      pos.x = node.offsetLeft; 
+      pos.y = node.offsetTop; 
+      parent = node.offsetParent; 
+      if (parent != node) { 
+        while (parent) { 
+          pos.x += parent.offsetLeft; 
+          pos.y += parent.offsetTop; 
+          parent = parent.offsetParent; 
+        } 
+      } 
+      parent = node.offsetParent; 
+      while (parent && parent != document.body) { 
+        pos.x -= parent.scrollLeft; 
+        pos.y -= parent.scrollTop; 
+        parent = parent.offsetParent; 
+      } 
+    } 
+    return pos; 
+  }, 
   paintPalette: function() {
     this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
     this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: 50});
@@ -393,6 +431,37 @@ var Editor = Class.extend({
     this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 330});
     this.routerPrototype.paletteItem = true;
   },
+  paintBackground: function() {
+    this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
+    this.background.attr({fill: "#FFFFFF", opacity: 0});
+    this.background.toBack();
+    this.background.parent = this;
+    this.background.drag(this._dragMove, this._dragStart, this._dragStop);
+    this.background.click(this._click);
+  },
+  _dragMove: function (dx, dy) {
+    p = this.parent;
+    p.selectionFrame.attr({x: Math.min(p.opos.x, p.opos.x+dx), y: Math.min(p.opos.y, p.opos.y+dy), width: Math.abs(dx), height: Math.abs(dy)});
+  }, 
+  _dragStart: function (x, y) {
+    p = this.parent;
+    var startPos = p.getPosition();
+    p.opos = {x: x - startPos.x, y: y - startPos.y};
+    p.selectionFrame = p.g.rect(p.opos.x, p.opos.y, 0, 0);
+    p.selectionFrame.attr({stroke:"#000000", "stroke-dasharray": "- ", "stroke-width": 2});
+  },
+  _dragStop: function () {
+    p = this.parent;
+    var f = p.selectionFrame;
+    p.selectAllInArea({x: f.attr("x"), y: f.attr("y"), width: f.attr("width"), height: f.attr("height")});
+    p.selectionFrame.remove();
+    if (p.pos != p.opos) p.lastMoved = new Date();
+  },
+  _click: function(event){
+    p = this.parent;
+    if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
+    p.unselectAll();
+  },
   connect: function(connector, device) {
     con = connector.createConnection(device);
     iface = device.createInterface(con);
@@ -407,6 +476,18 @@ var Editor = Class.extend({
     sel = [];
     for (i in this.elements) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
     return sel;
+  },
+  unselectAll: function() {
+    for (i in this.elements) this.elements[i].setSelected(false);
+  },
+  selectAllInArea: function(area) {
+    for (i in this.elements) {
+      var el = this.elements[i]
+      var rect = el.getRect();
+      var mid = {x: rect.x+rect.width/2, y: rect.y+rect.height/2};
+      var isin = mid.x <= area.x + area.width && mid.x >= area.x && mid.y <= area.y + area.height && mid.y >= area.y;
+      el.setSelected(isin);
+    }
   },
   addElement: function(el) {
     this.elements.push(el);

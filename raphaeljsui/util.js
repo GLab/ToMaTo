@@ -80,3 +80,4 @@ compoundBBox = function (list) {
   }
   return {x: minX, y: minY, width: maxX-minX, height: maxY-minY};
 }
+
