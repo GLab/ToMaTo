@@ -95,7 +95,7 @@ var IconElement = NetElement.extend({
   paint: function(){
     this._super();
     if (this.text) this.text.remove();
-    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+5, this.name).attr({"font-size":12});
+    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name).attr({"font-size":12, "font": "Verdana"});
     this.text.parent = this;
     if (this.icon) this.icon.remove();
     this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
@@ -109,13 +109,13 @@ var IconElement = NetElement.extend({
   },
   paintUpdate: function() {
     this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
-    this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+5});
+    this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7});
     this.rect.attr(this.getRect());
     this._super(); //must be at end, so rect has already been updated
   },
   move: function(pos) {
     if (pos.x + this.iconsize.x/2 > this.editor.g.width) pos.x = this.editor.g.width - this.iconsize.x/2;
-    if (pos.y + this.iconsize.y/2 + 10 > this.editor.g.height) pos.y = this.editor.g.height - this.iconsize.y/2 - 10;
+    if (pos.y + this.iconsize.y/2 + 11 > this.editor.g.height) pos.y = this.editor.g.height - this.iconsize.y/2 - 11;
     if (pos.x - this.iconsize.x/2 < this.editor.paletteWidth) pos.x = this.editor.paletteWidth + this.iconsize.x/2;
     if (pos.y - this.iconsize.y/2 < 0) pos.y = this.iconsize.y/2;
     this.pos = pos;
@@ -418,17 +418,18 @@ var Editor = Class.extend({
   }, 
   paintPalette: function() {
     this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
-    this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: 50});
+    this.icon = this.g.image("images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
+    this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: 75});
     this.openVZPrototype.paletteItem = true;
-    this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: 100});
+    this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: 125});
     this.kvmPrototype.paletteItem = true;
     this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: 200});
     this.specialPrototype.paletteItem = true;
-    this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: 250});
+    this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: 245});
     this.hubPrototype.paletteItem = true;
-    this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: 290});
+    this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: 285});
     this.switchPrototype.paletteItem = true;
-    this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 330});
+    this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 325});
     this.routerPrototype.paletteItem = true;
   },
   paintBackground: function() {
@@ -447,6 +448,7 @@ var Editor = Class.extend({
     p = this.parent;
     var startPos = p.getPosition();
     p.opos = {x: x - startPos.x, y: y - startPos.y};
+    if (p.selectionFrame) p.selectionFrame.remove();
     p.selectionFrame = p.g.rect(p.opos.x, p.opos.y, 0, 0);
     p.selectionFrame.attr({stroke:"#000000", "stroke-dasharray": "- ", "stroke-width": 2});
   },
