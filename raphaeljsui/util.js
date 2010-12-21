@@ -79,5 +79,11 @@ compoundBBox = function (list) {
     maxY = Math.max(maxY, box.y+box.height);
   }
   return {x: minX, y: minY, width: maxX-minX, height: maxY-minY};
-}
+};
 
+arrayRemove = function(array, item){
+  var pos = -1;
+  for (i in array) if (array[i] == item) pos = i;
+  array[i] = array[length-1];
+  return array.pop();
+};

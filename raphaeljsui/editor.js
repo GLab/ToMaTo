@@ -12,6 +12,10 @@ var NetElement = Class.extend({
     this.selected = false;
     this.editor.addElement(this);
   },
+  remove: function(){
+    this.editor.removeElement(this);
+    if (this.selectionFrame) this.selectionFrame.remove();
+  },
   paint: function(){
   },
   paintUpdate: function(){
@@ -82,20 +86,26 @@ var IconElement = NetElement.extend({
     if (p.paletteItem) {
       pos = {x: p.shadow.attr("x")+p.iconsize.x/2, y: p.shadow.attr("y")+p.iconsize.y/2};
       element = p.createAnother(pos);
-      element.move(pos);
+      element.move(element.correctPos(pos));
       p.shadow.remove();
     }
-    if (p.pos != p.opos) p.lastMoved = new Date();
+    if (p.pos != p.opos) {
+      p.move(p.correctPos(p.pos));
+      p.lastMoved = new Date();
+    }
   },
   _click: function(event){
     p = this.parent;
     if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
     p.onClick(event);
   },
+  _dblclick: function(event){
+    alert("double click");
+  },
   paint: function(){
     this._super();
     if (this.text) this.text.remove();
-    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name).attr({"font-size":12, "font": "Verdana"});
+    this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name).attr(this.editor.defaultFont);
     this.text.parent = this;
     if (this.icon) this.icon.remove();
     this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
@@ -106,6 +116,7 @@ var IconElement = NetElement.extend({
     this.rect.parent = this;
     this.rect.drag(this._dragMove, this._dragStart, this._dragStop);
     this.rect.click(this._click);    
+    this.rect.dblclick(this._dblclick);
   },
   paintUpdate: function() {
     this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
@@ -113,11 +124,20 @@ var IconElement = NetElement.extend({
     this.rect.attr(this.getRect());
     this._super(); //must be at end, so rect has already been updated
   },
-  move: function(pos) {
+  remove: function(){
+    this._super();
+    if (this.icon) this.icon.remove();
+    if (this.text) this.text.remove();
+    if (this.rect) this.rect.remove();
+  },
+  correctPos: function(pos) {
     if (pos.x + this.iconsize.x/2 > this.editor.g.width) pos.x = this.editor.g.width - this.iconsize.x/2;
     if (pos.y + this.iconsize.y/2 + 11 > this.editor.g.height) pos.y = this.editor.g.height - this.iconsize.y/2 - 11;
     if (pos.x - this.iconsize.x/2 < this.editor.paletteWidth) pos.x = this.editor.paletteWidth + this.iconsize.x/2;
     if (pos.y - this.iconsize.y/2 < 0) pos.y = this.iconsize.y/2;
+    return pos;
+  },
+  move: function(pos) {
     this.pos = pos;
     this.paintUpdate();
   },
@@ -143,6 +163,8 @@ var Connection = NetElement.extend({
     this.con = con;
     this.dev = dev;
     this.paint();
+    this.isConnection = true ;
+    this.iface = false;
   },
   getPos: function(){
     return {x: (this.con.getX()+this.dev.getX())/2, y: (this.con.getY()+this.dev.getY())/2};
@@ -166,12 +188,29 @@ var Connection = NetElement.extend({
     if (this.handle) this.handle.remove();
     this.handle = this.editor.g.rect(this.getX()-8, this.getY()-8, 16, 16).attr({fill: "#A0A0A0"});
     this.handle.parent = this;
+    this.handle.drag(this._dragMove, this._dragStart, this._dragStop);
     this.handle.click(this._click);
+    this.handle.dblclick(this._dblclick);
+  },
+  remove: function(){
+    this._super();
+    if (this.path) this.path.remove();
+    if (this.handle) this.handle.remove();
+    this.con.removeConnection(this);
+    if (this.iface) {
+      var tmp = this.iface;
+      delete this.iface;
+      tmp.remove();
+    }
+    delete this.con;
+    delete this.dev;
   },
   _click: function(event){
     p = this.parent;
-    if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
     p.onClick(event);
+  },
+  _dblclick: function(event){
+    alert("double click");
   }
 });
 
@@ -188,6 +227,7 @@ var Interface = NetElement.extend({
     this.dev = dev;
     this.con = con;
     this.paint();
+    this.isInterface = true;
   },
   getPos: function() {
     xd = this.con.getX() - this.dev.getX();
@@ -204,18 +244,25 @@ var Interface = NetElement.extend({
     this.circle = this.editor.g.circle(this.getX(), this.getY(), 8).attr({fill: "#CDCDB3"});
     this.circle.parent = this;
     this.circle.click(this._click);
+    this.circle.dblclick(this._dblclick);
   },
   paintUpdate: function(){
     this._super();
     this.circle.attr({cx: this.getX(), cy: this.getY()});
   },
-  showAttributes: function() {
-    alert("Interface of " + this.dev.name + " clicked");
-    //this.editor.disable();
+  remove: function(){
+    this._super();
+    if (this.circle) this.circle.remove();
+    this.dev.removeInterface(this);
+    delete this.con;
+    delete this.dev;
   },
   _click: function(event) {
     p = this.parent;
     p.onClick(event);
+  },
+  _dblclick: function(event){
+    alert("double click");
   }
 });
 
@@ -231,6 +278,10 @@ var Connector = IconElement.extend({
     this.connections = [];
     this.paint();
     this.isConnector = true;
+  },
+  remove: function(){
+    this._super();
+    for (i in this.connections) this.connections[i].remove();
   },
   move: function(pos) {
     this._super(pos);
@@ -256,6 +307,9 @@ var Connector = IconElement.extend({
     con = new Connection(this.editor, this, dev);
     this.connections.push(con);
     return con;
+  },
+  removeConnection: function(con) {
+    arrayRemove(this.connections,con);
   }
 });
 
@@ -317,6 +371,13 @@ var Device = IconElement.extend({
     this.paint();
     this.isDevice = true;
   },
+  remove: function(){
+    this._super();
+    for (i in this.interfaces) {
+      this.interfaces[i].con.remove();
+      this.interfaces[i].remove();
+    }
+  },
   move: function(pos) {
     this._super(pos);
     for (var i in this.interfaces) this.interfaces[i].con.paintUpdate();
@@ -346,6 +407,9 @@ var Device = IconElement.extend({
     iface = new Interface(this.editor, this, con);
     this.interfaces.push(iface);
     return iface;
+  },
+  removeInterface: function(iface) {
+    arrayRemove(this.interfaces,iface);
   }
 });
 
@@ -378,6 +442,7 @@ var Editor = Class.extend({
     this.size = size;
     this.paletteWidth = 60;
     this.glabColor = "#911A20";
+    this.defaultFont = {"font-size":12, "font": "Verdana"};
     this.elements = [];
     this.paintPalette();
     this.paintBackground();
@@ -431,6 +496,11 @@ var Editor = Class.extend({
     this.switchPrototype.paletteItem = true;
     this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 325});
     this.routerPrototype.paletteItem = true;
+    this.trash = this.g.image("images/trash.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
+    this.trashText = this.g.text(this.paletteWidth/2, this.size.y-13, "Trash").attr(this.defaultFont);
+    this.trashRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
+    this.trashRect.parent = this;
+    this.trashRect.click(this._trashClick);
   },
   paintBackground: function() {
     this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
@@ -464,9 +534,14 @@ var Editor = Class.extend({
     if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
     p.unselectAll();
   },
+  _trashClick: function(event){
+    p = this.parent;
+    p.removeSelectedElements();
+  },
   connect: function(connector, device) {
     con = connector.createConnection(device);
     iface = device.createInterface(con);
+    con.iface = iface;
   },
   disable: function() {
     this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
@@ -493,5 +568,16 @@ var Editor = Class.extend({
   },
   addElement: function(el) {
     this.elements.push(el);
+  },
+  removeElement: function(el) {
+    arrayRemove(this.elements, el);
+  },
+  removeSelectedElements: function() {
+    sel = this.selectedElements();
+    for (i in sel) {
+      el = sel[i];
+      if (el.isInterface) continue;
+      el.remove();
+    }
   }
 });
