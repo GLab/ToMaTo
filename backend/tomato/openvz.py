@@ -160,11 +160,8 @@ class OpenVZDevice(generic.Device):
 		import re
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
-		try:
-			if self.interface_set_get(name):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
-		except: #pylint: disable-msg=W0702
-			pass
+		if self.interface_set_get(name):
+			raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
 		iface = ConfiguredInterface()
 		iface.name = name
 		iface.device = self
@@ -182,11 +179,8 @@ class OpenVZDevice(generic.Device):
 		iface = self.interface_set_get(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self.host.execute("vzctl set %s --netif_del %s --save\n" % ( self.openvz_id, iface.name ), task )
-		try:
-			if self.interface_set_get(properties["name"]):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % properties["name"])
-		except: #pylint: disable-msg=W0702
-			pass
+		if self.interface_set_get(properties["name"]):
+			raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % properties["name"])
 		iface.name = properties["name"]
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			iface.prepare_run(task)

@@ -1034,6 +1034,7 @@ def permission_add(top_id, user_name, role, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	top.permissions_add(user_name, role)
+	top.logger().log("added permission: %s=%s" % (user_name, role))
 	return True
 	
 def permission_remove(top_id, user_name, user=None):
@@ -1053,6 +1054,7 @@ def permission_remove(top_id, user_name, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	top.permissions_remove(user_name)
+	top.logger().log("removed permission: %s" % user_name)
 	return True
 		
 def resource_usage_by_user(user=None):
