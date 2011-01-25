@@ -88,8 +88,7 @@ public abstract class Connector extends IconElement {
     return connections.size() == 2;
   }
 
-  public void onConnectionMoved() {
-    if ( ! isImplicit() ) return;
+  private void moveToMiddle() {
     Connection[] cons = connections.toArray(new Connection[2]) ;
     int oldx = getX();
     int oldy = getY();
@@ -97,7 +96,12 @@ public abstract class Connector extends IconElement {
     int y = ( cons[0].getDevice().getY() + cons[1].getDevice().getY() ) / 2 ;
     if ( x == oldx && y == oldy ) return;
     super.move(x, y);
-    onPropertyChanged("pos", "", x+","+y);
+  }
+
+  public void onConnectionMoved() {
+    if ( ! isImplicit() ) return;
+    moveToMiddle();
+    onPropertyChanged("pos", "", getX()+","+getY());
   }
 
   public void checkImplicit () {
@@ -112,6 +116,7 @@ public abstract class Connector extends IconElement {
   @Override
   public void move(int x, int y) {
     if ( ! isImplicit() ) super.move(x, y);
+    else moveToMiddle();
   }
 
   @Override

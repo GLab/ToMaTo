@@ -33,6 +33,7 @@ import buildui.devices.Device;
 import buildui.devices.Interface;
 import buildui.paint.NetElement;
 import java.io.InputStream;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
@@ -194,10 +195,12 @@ public class WorkArea {
         deviceMap.put(dev.getName(), dev);
       }
       Hashtable<String, Connection> connectionMap = new Hashtable<String, Connection> ();
+      Hashtable<Connector, Element> connectorElements = new Hashtable<Connector, Element>();
       NodeList x_connectors = topology.getElementsByTagName("connector");
       for (int i = 0; i < x_connectors.getLength(); i++) {
         Element x_con = (Element)x_connectors.item(i);
         Connector con = Connector.readFrom(x_con);
+        connectorElements.put(con, x_con);
         add(con);
         NodeList connections = x_con.getElementsByTagName("connection");
         for (int j = 0; j < connections.getLength(); j++) {
@@ -209,6 +212,7 @@ public class WorkArea {
           c.readAttributes(x_c);
           connectionMap.put(ifName, c);
         }
+        
       }
       ArrayList<String[]> orphanInterfaces = new ArrayList<String[]>();
       for (int i = 0; i < x_devices.getLength(); i++) {
@@ -229,6 +233,7 @@ public class WorkArea {
           } else orphanInterfaces.add(new String[]{devName, ifName});
         }
       }
+      for (Entry<Connector,Element> entr: connectorElements.entrySet() ) entr.getKey().readAttributes(entr.getValue());
       Modification.clear();
       // Orphaned interfaces are interfaces that are not connected
       // these interfaces are artefacts that can only exist if the connection
