@@ -210,6 +210,7 @@ public class WorkArea {
           connectionMap.put(ifName, c);
         }
       }
+      ArrayList<String[]> orphanInterfaces = new ArrayList<String[]>();
       for (int i = 0; i < x_devices.getLength(); i++) {
         Element x_dev = (Element)x_devices.item(i);
         String devName = x_dev.getAttribute("name");
@@ -225,10 +226,15 @@ public class WorkArea {
             iface.readAttributes(x_iface);
             add(iface);
             add(c);
-          }
+          } else orphanInterfaces.add(new String[]{devName, ifName});
         }
       }
       Modification.clear();
+      // Orphaned interfaces are interfaces that are not connected
+      // these interfaces are artefacts that can only exist if the connection
+      // could not be created due to an error. Since the interface is useless
+      // and this editor can not handle it, just delete it.
+      for (String[] o: orphanInterfaces) Modification.add(Modification.InterfaceDeleteByName(o[0], o[1]));
     } catch (SAXException ex) {
       Netbuild.exception (ex) ;
       Logger.getLogger(WorkArea.class.getName()).log(Level.SEVERE, null, ex);

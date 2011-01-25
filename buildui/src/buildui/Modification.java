@@ -165,6 +165,10 @@ public class Modification {
         return new Modification(Type.InterfaceDelete, iface.getDevice().getName(), iface.getName());
     }
 
+    public static Modification InterfaceDeleteByName(String dev, String iface) {
+        return new Modification(Type.InterfaceDelete, dev, iface);
+    }
+
     public static Modification ConnectorCreate ( Connector con ) {
         return new Modification(Type.ConnectorCreate, null, null, con.getProperties(), "name", con.getName());
     }
