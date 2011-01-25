@@ -181,6 +181,7 @@ public class Netbuild extends java.applet.Applet
     for (NetElement el: NetElement.selectedElements()) {
       if (el.propertyEditable) newPanels.add(el.getPropertiesArea());
     }
+    workArea.topologyProperties.refresh();
     boolean exp = newPanels.size() <= 3;
     propertiesPanel.setVisible(false);
     for (PropertiesArea pa: newPanels) doittoit(true, pa, exp);
@@ -188,6 +189,12 @@ public class Netbuild extends java.applet.Applet
         doittoit(false, pa, exp);
     propertiesPanel.doLayout();
     propertiesPanel.setVisible(true);
+  }
+
+  private void unselectAll() {
+    NetElement.deselectAll();
+    paintSelChange();
+    startAppropriatePropertiesArea();
   }
 
 // OLD CODE FROM HERE ON (owned by Emulab)
@@ -735,6 +742,9 @@ public void mouseEntered (MouseEvent e) {
       exportButton.setEnabled(false);
       exportButton.setText("sending...");
       exportButton.repaint();
+
+      unselectAll();
+
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       Modification.encodeModifications(baos);
       String xml = baos.toString();
