@@ -642,8 +642,8 @@ var Editor = Class.extend({
 var Form = Class.extend({
 	init: function(title) {
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
-			resizable: false, height:"auto", width:"auto", 
-			show: "slide,,fast", hide: "slide,,fast", title: title});
+			resizable: false, height:"auto", width:"auto", title: title,
+			show: "slide", hide: "slide"});
 		this.table = $('<table/>');
 		this.div.append(this.table);
 		this.attributes = {};
@@ -668,9 +668,11 @@ var Form = Class.extend({
 	addNameField: function(obj) {
 		var input = $('<input type="text" name="name" value="'+obj.name+'" size=10/>');
 		input[0].obj = obj;
+		input[0].fdiv = this.div;
 		input.change(function(){
-			obj.name = this.value;
-			obj.paintUpdate();
+			this.obj.name = this.value;
+			this.obj.paintUpdate();
+			this.fdiv.dialog("option", "title", "Attributes of " + this.value);
 		});
 		this.attributes[name]=input;
 		this.addField(input, "name");
