@@ -199,7 +199,7 @@ var Connection = NetElement.extend({
 		this._super();
 		if (this.path) this.path.remove();
 		if (this.handle) this.handle.remove();
-		this.con.removeConnection(this);
+		if (this.con) this.con.removeConnection(this);
 		if (this.iface) {
 			var tmp = this.iface;
 			delete this.iface;
@@ -260,7 +260,7 @@ var Interface = NetElement.extend({
 	remove: function(){
 		this._super();
 		if (this.circle) this.circle.remove();
-		this.dev.removeInterface(this);
+		if (this.dev) this.dev.removeInterface(this);
 		delete this.con;
 		delete this.dev;
 	},
@@ -415,9 +415,10 @@ var Device = IconElement.extend({
 	},
 	remove: function(){
 		this._super();
-		for (i in this.interfaces) {
-			this.interfaces[i].con.remove();
-			this.interfaces[i].remove();
+		var ifs = this.interfaces.slice(0);
+		for (i in ifs) {
+			if(ifs[i].con) ifs[i].con.remove();
+			ifs[i].remove();
 		}
 	},
 	move: function(pos) {
