@@ -87,3 +87,5 @@ arrayRemove = function(array, item){
   array[i] = array[length-1];
   return array.pop();
 };
+
+computedStyle = document.defaultView.getComputedStyle;

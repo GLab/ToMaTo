@@ -1,6 +1,6 @@
 /********************************************************************************
  * Browser quirks:
- * - IE8 does not like a komma after the last function in a class
+ * - IE8 does not like a comma after the last function in a class
  * - IE8 does not like colors defined as words, so only traditional #RRGGBB colors
  * - Firefox opens new tabs/windows when icons are clicked with shift or ctrl key
  *   hold, so all icons are overlayed with a transparent rectangular
@@ -100,7 +100,8 @@ var IconElement = NetElement.extend({
 		p.onClick(event);
 	},
 	_dblclick: function(event){
-		alert("double click");
+		var p = this.parent;
+		p.form.show();
 	},
 	paint: function(){
 		this._super();
@@ -165,6 +166,7 @@ var Connection = NetElement.extend({
 		this.paint();
 		this.isConnection = true ;
 		this.iface = false;
+		this.form = new ConnectionForm(this);
 	},
 	getPos: function(){
 		return {x: (this.con.getX()+this.dev.getX())/2, y: (this.con.getY()+this.dev.getY())/2};
@@ -210,7 +212,8 @@ var Connection = NetElement.extend({
 		p.onClick(event);
 	},
 	_dblclick: function(event){
-		alert("double click");
+		var p = this.parent;
+		p.form.show();
 	}
 });
 
@@ -218,6 +221,7 @@ var EmulatedConnection = Connection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.handle.attr({fill: this.editor.glabColor});
+		this.form = new EmulatedConnectionForm(this);
 	}
 });
 
@@ -229,6 +233,7 @@ var Interface = NetElement.extend({
 		this.paint();
 		this.isInterface = true;
 		this.name = "eth" + dev.interfaces.length;
+		this.form = new InterfaceForm(this);
 	},
 	getPos: function() {
 		var xd = this.con.getX() - this.dev.getX();
@@ -263,13 +268,15 @@ var Interface = NetElement.extend({
 		p.onClick(event);
 	},
 	_dblclick: function(event){
-		alert("double click");
+		var p = this.parent;
+		p.form.show();
 	}
 });
 
 var ConfiguredInterface = Interface.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
+		this.form = new ConfiguredInterfaceForm(this);
 	}
 });
 
@@ -324,6 +331,7 @@ var Connector = IconElement.extend({
 var SpecialConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
+		this.form = new SpecialConnectorForm(this);
 	},
 	baseName: function() {
 		return "special";
@@ -336,6 +344,7 @@ var SpecialConnector = Connector.extend({
 var HubConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/hub.png", {x: 32, y: 16}, pos);
+		this.form = new HubConnectorForm(this);
 	},
 	baseName: function() {
 		return "hub";
@@ -357,6 +366,7 @@ var SwitchConnector = Connector.extend({
 			name = this.nextName();
 		}
 		this._super(editor, name, "images/switch.png", {x: 32, y: 16}, pos);
+		this.form = new SwitchConnectorForm(this);
 	},
 	baseName: function() {
 		return "switch";
@@ -374,6 +384,7 @@ var SwitchConnector = Connector.extend({
 var RouterConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/router.png", {x: 32, y: 16}, pos);
+		this.form = new RouterConnectorForm(this);
 	},
 	baseName: function() {
 		return "router";
@@ -452,6 +463,7 @@ var Device = IconElement.extend({
 var OpenVZDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/computer.png", {x: 32, y: 32}, pos);
+		this.form = new OpenVZDeviceForm(this);
 	},
 	baseName: function() {
 		return "openvz";
@@ -469,6 +481,7 @@ var OpenVZDevice = Device.extend({
 var KVMDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/pc_green.png", {x: 32, y: 32}, pos);
+		this.form = new KVMDeviceForm(this);
 	},
 	baseName: function() {
 		return "kvm";
@@ -622,4 +635,58 @@ var Editor = Class.extend({
 			el.remove();
 		}
 	}
+});
+
+var Form = Class.extend({
+	init: function(title) {
+		this.div = $('<div></div>').dialog({autoOpen: false, draggable: false, resizable: false, show: "slide,,fast", hide: "slide,,fast", title: title});
+	},
+	show: function() {
+		this.div.dialog("open");
+	},
+	hide: function() {
+		this.div.dialog("close");
+	}
+});
+
+var AttributeForm = Form.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this._super("Attributes of "+obj.name);
+	},
+	show: function() {
+		var rect = this.obj.getRect();
+		this.div.dialog({position: [rect.x+rect.width+8, rect.y]});
+		this._super();
+	}
+});
+
+var OpenVZDeviceForm = AttributeForm.extend({
+});
+
+var KVMDeviceForm = AttributeForm.extend({
+});
+
+var SpecialConnectorForm = AttributeForm.extend({
+});
+
+var HubConnectorForm = AttributeForm.extend({
+});
+
+var SwitchConnectorForm = AttributeForm.extend({
+});
+
+var RouterConnectorForm = AttributeForm.extend({
+});
+
+var InterfaceForm = AttributeForm.extend({
+});
+
+var ConfiguredInterfaceForm = AttributeForm.extend({
+});
+
+var ConnectionForm = AttributeForm.extend({
+});
+
+var EmulatedConnectionForm = AttributeForm.extend({
 });

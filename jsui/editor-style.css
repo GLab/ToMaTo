@@ -1,0 +1,16 @@
+/* Colors:
+ * gray: #999999
+ * glab-brown: #911a20
+ */
+
+div#editor {
+  position: absolute;
+  width:800px;
+  height:600px;
+  border:2px solid #911A20;
+}
+
+div.editor-form {
+  border: 2px solid #911a20;
+  position: absolute;
+}
