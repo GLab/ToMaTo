@@ -280,8 +280,9 @@ var Connector = IconElement.extend({
 		this.isConnector = true;
 	},
 	remove: function(){
+		var cons = this.connections.slice(0);
+		for (i in cons) cons[i].remove();
 		this._super();
-		for (i in this.connections) this.connections[i].remove();
 	},
 	move: function(pos) {
 		this._super(pos);
