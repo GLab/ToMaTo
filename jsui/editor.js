@@ -166,6 +166,7 @@ var Connection = NetElement.extend({
 		this.paint();
 		this.isConnection = true ;
 		this.iface = false;
+		this.name = "connection";
 		this.form = new ConnectionForm(this);
 	},
 	getPos: function(){
@@ -639,13 +640,50 @@ var Editor = Class.extend({
 
 var Form = Class.extend({
 	init: function(title) {
-		this.div = $('<div></div>').dialog({autoOpen: false, draggable: false, resizable: false, show: "slide,,fast", hide: "slide,,fast", title: title});
+		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
+			resizable: false, height:"auto", width:"auto", 
+			show: "slide,,fast", hide: "slide,,fast", title: title});
+		this.table = $('<table/>');
+		this.div.append(this.table);
+		this.attributes = {};
 	},
 	show: function() {
 		this.div.dialog("open");
 	},
 	hide: function() {
 		this.div.dialog("close");
+	},
+	addField: function(field, desc) {
+		var tr = $('<tr/>');
+		tr.append($('<td>'+desc+'</td>'));
+		tr.append($('<td/>').append(field));
+		this.table.append(tr);
+	},
+	addTextField: function(name, deflt, desc) {
+		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
+		this.attributes[name]=input;
+		this.addField(input, desc);
+	},
+	addMagicTextField: function(name, pattern, deflt, desc) {
+		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
+		input[0].pat = pattern;
+		input.change(function (){
+			if (this.pat.test(this.value)) this.style.color="";
+			else this.style.color="red";
+		});
+		this.attributes[name]=input;
+		this.addField(input, desc);
+	},
+	addPasswordField: function(name, deflt, desc) {
+		var input = $('<input type="password" name="'+name+'" value="'+deflt+'" size=10/>');
+		this.attributes[name]=input;
+		this.addField(input, desc);
+	},
+	addSelectField: function(name, options, deflt, desc) {
+		var input = $('<select name="'+name+'"/>');
+		for (i in options) input.append($('<option value="'+options[i]+'">'+options[i]+'</option>'));
+		this.attributes[name]=input;
+		this.addField(input, desc);
 	}
 });
 
@@ -661,32 +699,67 @@ var AttributeForm = Form.extend({
 	}
 });
 
-var OpenVZDeviceForm = AttributeForm.extend({
+var DeviceForm = AttributeForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addTextField("name", "", "name");
+		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
+		this.addSelectField("template", ["auto", "debian", "ubuntu"], "auto", "template");
+	}
 });
 
-var KVMDeviceForm = AttributeForm.extend({
+var OpenVZDeviceForm = DeviceForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addPasswordField("root_password", "", "root&nbsp;password");
+		this.addMagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, "", "gateway");
+	}
 });
 
-var SpecialConnectorForm = AttributeForm.extend({
+var KVMDeviceForm = DeviceForm.extend({});
+
+var ConnectorForm = AttributeForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addTextField("name", "", "name");
+	}
 });
 
-var HubConnectorForm = AttributeForm.extend({
+var SpecialConnectorForm = ConnectorForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addSelectField("type", ["auto", "internet", "openflow"], "auto", "hostgroup");
+		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
+	}
 });
 
-var SwitchConnectorForm = AttributeForm.extend({
-});
+var HubConnectorForm = ConnectorForm.extend({});
 
-var RouterConnectorForm = AttributeForm.extend({
-});
+var SwitchConnectorForm = ConnectorForm.extend({});
+
+var RouterConnectorForm = ConnectorForm.extend({});
 
 var InterfaceForm = AttributeForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addTextField("name", "", "name");
+	}
 });
 
-var ConfiguredInterfaceForm = AttributeForm.extend({
+var ConfiguredInterfaceForm = InterfaceForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addMagicTextField("ipaddress", /^\d+\.\d+\.\d+\.\d+\/\d+$/, "", "ip/prefix");
+	}
 });
 
-var ConnectionForm = AttributeForm.extend({
-});
+var ConnectionForm = AttributeForm.extend({});
 
-var EmulatedConnectionForm = AttributeForm.extend({
+var EmulatedConnectionForm = ConnectionForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addMagicTextField("bandwidth", /^\d+$/, "10000", "bandwidth");
+		this.addMagicTextField("latency", /^\d+$/, "0", "latency&nbsp;in&nbsp;ms)");
+		this.addMagicTextField("loss", /^\d+\.\d+$/, "0.0", "packet&nbsp;loss");
+	}
 });
