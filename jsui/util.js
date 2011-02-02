@@ -88,4 +88,9 @@ arrayRemove = function(array, item){
   return array.pop();
 };
 
-computedStyle = document.defaultView.getComputedStyle;
+computedStyle = function(el){
+    if (el.currentStyle) return el.currentStyle;
+    else return document.defaultView.getComputedStyle(el);
+}
+
+isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);

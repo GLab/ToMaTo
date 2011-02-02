@@ -2,6 +2,7 @@
  * Browser quirks:
  * - IE8 does not like a comma after the last function in a class
  * - IE8 does not like colors defined as words, so only traditional #RRGGBB colors
+ * - IE8 does not like texts with specified fonts, etc.
  * - Firefox opens new tabs/windows when icons are clicked with shift or ctrl key
  *   hold, so all icons are overlayed with a transparent rectangular
  ********************************************************************************/ 
@@ -106,7 +107,8 @@ var IconElement = NetElement.extend({
 	paint: function(){
 		this._super();
 		if (this.text) this.text.remove();
-		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name).attr(this.editor.defaultFont);
+		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name)
+		if (! isIE) this.text.attr(this.editor.defaultFont);
 		this.text.parent = this;
 		if (this.icon) this.icon.remove();
 		this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
@@ -289,9 +291,9 @@ var Connector = IconElement.extend({
 		this.isConnector = true;
 	},
 	nextName: function() {
-		var num = this.__proto__.num;
+		var num = this.editor.elementNums[this.baseName()];
 		if (!num) num = 1;
-		this.__proto__.num = num+1;
+		this.editor.elementNums[this.baseName()] = num+1;
 		return this.baseName() + num;
 	},
 	remove: function(){
@@ -408,9 +410,9 @@ var Device = IconElement.extend({
 		this.isDevice = true;
 	},
 	nextName: function() {
-		var num = this.__proto__.num;
+		var num = this.editor.elementNums[this.baseName()];
 		if (!num) num = 1;
-		this.__proto__.num = num+1;
+		this.editor.elementNums[this.baseName()] = num+1;
 		return this.baseName() + num;
 	},
 	remove: function(){
@@ -501,6 +503,7 @@ var Editor = Class.extend({
 		this.glabColor = "#911A20";
 		this.defaultFont = {"font-size":12, "font": "Verdana"};
 		this.elements = [];
+		this.elementNums = {};
 		this.paintPalette();
 		this.paintBackground();
 	},
