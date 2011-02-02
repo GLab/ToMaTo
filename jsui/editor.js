@@ -121,7 +121,7 @@ var IconElement = NetElement.extend({
 	},
 	paintUpdate: function() {
 		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
-		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7});
+		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
 	},
@@ -664,6 +664,16 @@ var Form = Class.extend({
 		this.attributes[name]=input;
 		this.addField(input, desc);
 	},
+	addNameField: function(obj) {
+		var input = $('<input type="text" name="name" value="'+obj.name+'" size=10/>');
+		input[0].obj = obj;
+		input.change(function(){
+			obj.name = this.value;
+			obj.paintUpdate();
+		});
+		this.attributes[name]=input;
+		this.addField(input, "name");
+	},
 	addMagicTextField: function(name, pattern, deflt, desc) {
 		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
 		input[0].pat = pattern;
@@ -702,7 +712,7 @@ var AttributeForm = Form.extend({
 var DeviceForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addTextField("name", "", "name");
+		this.addNameField(obj);
 		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
 		this.addSelectField("template", ["auto", "debian", "ubuntu"], "auto", "template");
 	}
@@ -721,7 +731,7 @@ var KVMDeviceForm = DeviceForm.extend({});
 var ConnectorForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addTextField("name", "", "name");
+		this.addNameField(obj);
 	}
 });
 
@@ -742,7 +752,7 @@ var RouterConnectorForm = ConnectorForm.extend({});
 var InterfaceForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addTextField("name", "", "name");
+		this.addNameField(obj);
 	}
 });
 
