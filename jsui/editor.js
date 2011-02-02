@@ -228,6 +228,7 @@ var Interface = NetElement.extend({
 		this.con = con;
 		this.paint();
 		this.isInterface = true;
+		this.name = "eth" + dev.interfaces.length;
 	},
 	getPos: function() {
 		var xd = this.con.getX() - this.dev.getX();
@@ -279,6 +280,12 @@ var Connector = IconElement.extend({
 		this.paint();
 		this.isConnector = true;
 	},
+	nextName: function() {
+		var num = this.__proto__.num;
+		if (!num) num = 1;
+		this.__proto__.num = num+1;
+		return this.baseName() + num;
+	},
 	remove: function(){
 		var cons = this.connections.slice(0);
 		for (i in cons) cons[i].remove();
@@ -318,8 +325,11 @@ var SpecialConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
 	},
+	baseName: function() {
+		return "special";
+	},
 	createAnother: function(pos) {
-		return new SpecialConnector(this.editor, "special", pos);
+		return new SpecialConnector(this.editor, this.nextName(), pos);
 	}
 });
 
@@ -327,8 +337,11 @@ var HubConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/hub.png", {x: 32, y: 16}, pos);
 	},
+	baseName: function() {
+		return "hub";
+	},
 	createAnother: function(pos) {
-		return new HubConnector(this.editor, "hub", pos);
+		return new HubConnector(this.editor, this.nextName(), pos);
 	},
 	createConnection: function(dev) {
 		var con = new EmulatedConnection(this.editor, this, dev);
@@ -339,10 +352,17 @@ var HubConnector = Connector.extend({
 
 var SwitchConnector = Connector.extend({
 	init: function(editor, name, pos) {
+		if (!pos) { //called with 2 parameters
+			pos = name;
+			name = this.nextName();
+		}
 		this._super(editor, name, "images/switch.png", {x: 32, y: 16}, pos);
 	},
+	baseName: function() {
+		return "switch";
+	},
 	createAnother: function(pos) {
-		return new SwitchConnector(this.editor, "switch", pos);
+		return new SwitchConnector(this.editor, this.nextName(), pos);
 	},
 	createConnection: function(dev) {
 		var con = new EmulatedConnection(this.editor, this, dev);
@@ -355,8 +375,11 @@ var RouterConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/router.png", {x: 32, y: 16}, pos);
 	},
+	baseName: function() {
+		return "router";
+	},
 	createAnother: function(pos) {
-		return new RouterConnector(this.editor, "router", pos);
+		return new RouterConnector(this.editor, this.nextName(), pos);
 	},
 	createConnection: function(dev) {
 		var con = new EmulatedConnection(this.editor, this, dev);
@@ -371,6 +394,12 @@ var Device = IconElement.extend({
 		this.interfaces = [];
 		this.paint();
 		this.isDevice = true;
+	},
+	nextName: function() {
+		var num = this.__proto__.num;
+		if (!num) num = 1;
+		this.__proto__.num = num+1;
+		return this.baseName() + num;
 	},
 	remove: function(){
 		this._super();
@@ -399,7 +428,7 @@ var Device = IconElement.extend({
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
 				if (el.isDevice) {
 					var middle = {x: (this.getPos().x + el.getPos().x) / 2, y: (this.getPos().y + el.getPos().y) / 2}; 
-					var con = new SwitchConnector(this.editor, "switch", middle);
+					var con = new SwitchConnector(this.editor, middle);
 					this.editor.connect(con, el);
 					this.editor.connect(con, this);
 				}
@@ -424,8 +453,11 @@ var OpenVZDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/computer.png", {x: 32, y: 32}, pos);
 	},
+	baseName: function() {
+		return "openvz";
+	},
 	createAnother: function(pos) {
-		return new OpenVZDevice(this.editor, "openvz", pos);
+		return new OpenVZDevice(this.editor, this.nextName(), pos);
 	},
 	createInterface: function(con) {
 		var iface = new ConfiguredInterface(this.editor, this, con);
@@ -438,8 +470,11 @@ var KVMDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/pc_green.png", {x: 32, y: 32}, pos);
 	},
+	baseName: function() {
+		return "kvm";
+	},
 	createAnother: function(pos) {
-		return new KVMDevice(this.editor, "kvm", pos);
+		return new KVMDevice(this.editor, this.nextName(), pos);
 	}
 });
 
