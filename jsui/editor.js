@@ -439,7 +439,7 @@ var Device = IconElement.extend({
 			for (i in selectedElements) {
 				var el = selectedElements[i];
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
-				if (el.isDevice) {
+				if (el.isDevice && el != this) {
 					var middle = {x: (this.getPos().x + el.getPos().x) / 2, y: (this.getPos().y + el.getPos().y) / 2}; 
 					var con = new SwitchConnector(this.editor, middle);
 					this.editor.connect(con, el);
