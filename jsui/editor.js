@@ -5,6 +5,8 @@
  * - IE8 does not like texts with specified fonts, etc.
  * - Firefox opens new tabs/windows when icons are clicked with shift or ctrl key
  *   hold, so all icons are overlayed with a transparent rectangular
+ * - Opera zooms in when ctrl is hold while pressing the left mouse button and
+ *   reacts sometines strangely when alt key is hold.
  ********************************************************************************/ 
 
 var NetElement = Class.extend({
@@ -349,7 +351,7 @@ var Connector = IconElement.extend({
 		}    
 	},
 	onClick: function(event) {
-		if (event.ctrlKey) {
+		if (event.ctrlKey || event.altKey) {
 			var selectedElements = this.editor.selectedElements();
 			for (var i in selectedElements) {
 				var el = selectedElements[i];
@@ -487,14 +489,14 @@ var Device = IconElement.extend({
 		for (var i in this.interfaces) this.interfaces[i].paintUpdate();
 	},
 	onClick: function(event) {
-		if (event.ctrlKey) {
+		if (event.ctrlKey || event.altKey) {
 			var selectedElements = this.editor.selectedElements();
 			for (var i in selectedElements) {
 				var el = selectedElements[i];
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
 				if (el.isDevice && el != this) {
 					var middle = {x: (this.getPos().x + el.getPos().x) / 2, y: (this.getPos().y + el.getPos().y) / 2}; 
-					var con = new SwitchConnector(this.editor, middle);
+					var con = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
 					this.editor.connect(con, el);
 					this.editor.connect(con, this);
 				}
