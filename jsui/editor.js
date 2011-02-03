@@ -58,7 +58,7 @@ var NetElement = Class.extend({
 		else {
 			var oldSelected = this.isSelected();
 			var sel = this.editor.selectedElements();
-			for (i in sel) sel[i].setSelected(false);
+			for (var i in sel) sel[i].setSelected(false);
 			this.setSelected(!oldSelected | sel.length>1);
 		}
 	},
@@ -69,7 +69,7 @@ var NetElement = Class.extend({
 		return this.attributes[name];
 	},
 	setAttributes: function(attrs) {
-		for (key in attrs) this.setAttribute(key, attrs[key]);
+		for (var key in attrs) this.setAttribute(key, attrs[key]);
 	}
 });
 
@@ -338,7 +338,7 @@ var Connector = IconElement.extend({
 	},
 	remove: function(){
 		var cons = this.connections.slice(0);
-		for (i in cons) cons[i].remove();
+		for (var i in cons) cons[i].remove();
 		this._super();
 	},
 	move: function(pos) {
@@ -351,14 +351,14 @@ var Connector = IconElement.extend({
 	onClick: function(event) {
 		if (event.ctrlKey) {
 			var selectedElements = this.editor.selectedElements();
-			for (i in selectedElements) {
+			for (var i in selectedElements) {
 				var el = selectedElements[i];
 				if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
 			}
 		} else this._super(event);
 	},
 	isConnectedWith: function(dev) {
-		for (i in this.connections) if (this.connections[i].dev == dev) return true;
+		for (var i in this.connections) if (this.connections[i].dev == dev) return true;
 		return false;
 	},
 	createConnection: function(dev) {
@@ -469,7 +469,7 @@ var Device = IconElement.extend({
 	remove: function(){
 		this._super();
 		var ifs = this.interfaces.slice(0);
-		for (i in ifs) {
+		for (var i in ifs) {
 			if(ifs[i].con) ifs[i].con.remove();
 			ifs[i].remove();
 		}
@@ -489,7 +489,7 @@ var Device = IconElement.extend({
 	onClick: function(event) {
 		if (event.ctrlKey) {
 			var selectedElements = this.editor.selectedElements();
-			for (i in selectedElements) {
+			for (var i in selectedElements) {
 				var el = selectedElements[i];
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
 				if (el.isDevice && el != this) {
@@ -502,7 +502,7 @@ var Device = IconElement.extend({
 		} else this._super(event);
 	},
 	isConnectedWith: function(con) {
-		for (i in this.interfaces) if (this.interfaces[i].con.con == con) return true;
+		for (var i in this.interfaces) if (this.interfaces[i].con.con == con) return true;
 		return false;
 	},
 	createInterface: function(con) {
@@ -723,14 +723,14 @@ var Editor = Class.extend({
 	},
 	selectedElements: function() {
 		var sel = [];
-		for (i in this.elements) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
+		for (var i in this.elements) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
 		return sel;
 	},
 	unselectAll: function() {
-		for (i in this.elements) this.elements[i].setSelected(false);
+		for (var i in this.elements) this.elements[i].setSelected(false);
 	},
 	selectAllInArea: function(area) {
-		for (i in this.elements) {
+		for (var i in this.elements) {
 			var el = this.elements[i];
 			var rect = el.getRect();
 			var mid = {x: rect.x+rect.width/2, y: rect.y+rect.height/2};
@@ -755,7 +755,7 @@ var Editor = Class.extend({
 	},
 	removeSelectedElements: function() {
 		var sel = this.selectedElements();
-		for (i in sel) {
+		for (var i in sel) {
 			var el = sel[i];
 			if (el.isInterface) continue;
 			el.remove();
@@ -839,7 +839,7 @@ var SelectField = EditElement.extend({
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
 		if (!(dflt in options)) this.input.append($('<option value="'+dflt+'">'+dflt+'</option>'));
-		for (i in options) {
+		for (var i in options) {
 			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
 			if (options[i] == dflt) option.attr({selected: true});
 			this.input.append(option);
@@ -894,7 +894,7 @@ var Form = Class.extend({
 		this.fields = {};
 	},
 	show: function() {
-		for (name in this.fields) {
+		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
 		}
