@@ -12,6 +12,7 @@ var NetElement = Class.extend({
 		this.editor = editor;
 		this.selected = false;
 		this.editor.addElement(this);
+		this.attributes = {};
 	},
 	remove: function(){
 		this.editor.removeElement(this);
@@ -60,6 +61,9 @@ var NetElement = Class.extend({
 			for (i in sel) sel[i].setSelected(false);
 			this.setSelected(!oldSelected | sel.length>1);
 		}
+	},
+	attributeChanged: function(name, value) {
+		this.attributes[name]=value;
 	}
 });
 
@@ -122,10 +126,17 @@ var IconElement = NetElement.extend({
 		this.rect.dblclick(this._dblclick);
 	},
 	paintUpdate: function() {
-		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2});
+		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: this.iconsrc});
 		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
+	},
+	attributeChanged: function(name, value) {
+		this._super(name, value);
+		if (name == "name") {
+			this.name = value;
+			this.paintUpdate();
+		}
 	},
 	remove: function(){
 		this._super();
@@ -335,6 +346,14 @@ var SpecialConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
 		this.form = new SpecialConnectorForm(this);
+	},
+	attributeChanged: function(name, value) {
+		this._super(name, value);
+		if (name == "type") {
+			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
+			else this.iconsrc="images/special.png";
+			this.paintUpdate();
+		}
 	},
 	baseName: function() {
 		return "special";
@@ -665,6 +684,10 @@ var Form = Class.extend({
 	},
 	addTextField: function(name, deflt, desc) {
 		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
+		input[0].obj = this.obj;
+		input.change(function (){
+			this.obj.attributeChanged(name, this.value);
+		});
 		this.attributes[name]=input;
 		this.addField(input, desc);
 	},
@@ -673,6 +696,7 @@ var Form = Class.extend({
 		input[0].obj = obj;
 		input[0].fdiv = this.div;
 		input.change(function(){
+			this.obj.attributeChanged("name", this.value);
 			this.obj.name = this.value;
 			this.obj.paintUpdate();
 			this.fdiv.dialog("option", "title", "Attributes of " + this.value);
@@ -682,8 +706,10 @@ var Form = Class.extend({
 	},
 	addMagicTextField: function(name, pattern, deflt, desc) {
 		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
+		input[0].obj = this.obj;
 		input[0].pat = pattern;
 		input.change(function (){
+			this.obj.attributeChanged(name, this.value);
 			if (this.pat.test(this.value)) this.style.color="";
 			else this.style.color="red";
 		});
@@ -692,12 +718,20 @@ var Form = Class.extend({
 	},
 	addPasswordField: function(name, deflt, desc) {
 		var input = $('<input type="password" name="'+name+'" value="'+deflt+'" size=10/>');
+		input[0].obj = this.obj;
+		input.change(function (){
+			this.obj.attributeChanged(name, this.value);
+		});
 		this.attributes[name]=input;
 		this.addField(input, desc);
 	},
 	addSelectField: function(name, options, deflt, desc) {
 		var input = $('<select name="'+name+'"/>');
 		for (i in options) input.append($('<option value="'+options[i]+'">'+options[i]+'</option>'));
+		input[0].obj = this.obj;
+		input.change(function (){
+			this.obj.attributeChanged(name, this.value);
+		});
 		this.attributes[name]=input;
 		this.addField(input, desc);
 	}
@@ -744,7 +778,7 @@ var ConnectorForm = AttributeForm.extend({
 var SpecialConnectorForm = ConnectorForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addSelectField("type", ["auto", "internet", "openflow"], "auto", "hostgroup");
+		this.addSelectField("type", ["auto", "internet", "openflow"], "auto", "type");
 		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
 	}
 });
