@@ -64,6 +64,9 @@ var NetElement = Class.extend({
 	},
 	attributeChanged: function(name, value) {
 		this.attributes[name]=value;
+	},
+	getAttribute: function(name) {
+		return this.attributes[name];
 	}
 });
 
@@ -111,7 +114,7 @@ var IconElement = NetElement.extend({
 	paint: function(){
 		this._super();
 		if (this.text) this.text.remove();
-		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name)
+		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name);
 		if (! isIE) this.text.attr(this.editor.defaultFont);
 		this.text.parent = this;
 		if (this.icon) this.icon.remove();
@@ -236,6 +239,13 @@ var EmulatedConnection = Connection.extend({
 		this._super(editor, dev, con);
 		this.handle.attr({fill: this.editor.glabColor});
 		this.form = new EmulatedConnectionForm(this);
+	}
+});
+
+var EmulatedRouterConnection = EmulatedConnection.extend({
+	init: function(editor, dev, con){
+		this._super(editor, dev, con);
+		this.form = new EmulatedRouterConnectionForm(this);
 	}
 });
 
@@ -415,7 +425,7 @@ var RouterConnector = Connector.extend({
 		return new RouterConnector(this.editor, this.nextName(), pos);
 	},
 	createConnection: function(dev) {
-		var con = new EmulatedConnection(this.editor, this, dev);
+		var con = new EmulatedRouterConnection(this.editor, this, dev);
 		this.connections.push(con);
 		return con;
 	}
@@ -732,22 +742,25 @@ var PasswordField = TextField.extend({
 
 var SelectField = EditElement.extend({
 	init: function(name, options, dflt) {
-		//TODO implement default
 		this._super(name);
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
-		for (i in options) this.input.append($('<option value="'+options[i]+'">'+options[i]+'</option>'));
+		for (i in options) {
+			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
+			if (options[i] == dflt) option.attr({selected: true});
+			this.input.append(option);
+		}
 		this.input[0].fld = this;
 		this.input.change(function (){
 			this.fld.onChanged(this.value);
 		});
 	},
 	setValue: function(value) {
-		this.input.value = value;
+		this.input[0].value = value;
 	},
 	getValue: function() {
-		return this.input.value;
+		return this.input[0].value;
 	},
 	getInputElement: function() {
 		return this.input;
@@ -764,6 +777,10 @@ var Form = Class.extend({
 		this.fields = {};
 	},
 	show: function() {
+		for (name in this.fields) {
+			var val = this.obj.attributes[name];
+			if (val) this.fields[name].setValue(val);
+		}
 		this.div.dialog("open");
 	},
 	hide: function() {
@@ -776,7 +793,7 @@ var Form = Class.extend({
 		tr.append($('<td/>').append(field.getInputElement()));
 		this.table.append(tr);
 		this.fields[field.name]=field;
-	},
+	}
 });
 
 var AttributeForm = Form.extend({
@@ -850,8 +867,14 @@ var ConnectionForm = AttributeForm.extend({});
 var EmulatedConnectionForm = ConnectionForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth");
-		this.addField(new MagicTextField("latency", /^\d+$/, "0"), "latency&nbsp;in&nbsp;ms)");
+		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
+		this.addField(new MagicTextField("latency", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
 		this.addField(new MagicTextField("loss", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
 	}
+});
+
+var EmulatedRouterConnectionForm = EmulatedConnectionForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");	}
 });
