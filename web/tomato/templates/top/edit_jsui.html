@@ -31,12 +31,12 @@ $("head").append($('<link href="'+basepath+'smoothness/jquery-ui-1.8.9.custom.cs
 
 editor = new Editor({x:800, y:600});
 
-editor.setTemplatesOpenVZ("{{tpl_openvz}}".split(","));
-editor.setTemplatesKVM("{{tpl_kvm}}".split(","));
-editor.setHostGroups("{{host_groups}}".split(","));
+editor.setTemplatesOpenVZ({% if tpl_openvz %}"{{tpl_openvz}}".split(","){% else %}[]{% endif %});
+editor.setTemplatesKVM({% if tpl_kvm %}"{{tpl_kvm}}".split(","){% else %}[]{% endif %});
+editor.setHostGroups({% if host_groups %}"{{host_groups}}".split(","){% else %}[]{% endif %});
 
 var special_features = {};
-var sf_data = "{{special_features}}".split(",");
+var sf_data = {% if special_features %}"{{special_features}}".split(","){% else %}[]{% endif %};
 for (i in sf_data) special_features[sf_data[i].split(":")[0]] = sf_data[i].split(":")[1].split("|");
 editor.setSpecialFeatures(special_features);
 

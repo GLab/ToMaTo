@@ -67,6 +67,9 @@ var NetElement = Class.extend({
 	},
 	getAttribute: function(name) {
 		return this.attributes[name];
+	},
+	setAttributes: function(attrs) {
+		for (key in attrs) this.attributeChanged(key, attrs[key]);
 	}
 });
 
@@ -359,7 +362,7 @@ var SpecialConnector = Connector.extend({
 	},
 	attributeChanged: function(name, value) {
 		this._super(name, value);
-		if (name == "type") {
+		if (name == "feature_type") {
 			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
 			else this.iconsrc="images/special.png";
 			this.paintUpdate();
@@ -566,10 +569,11 @@ var Editor = Class.extend({
 			var connectors = {};
 			var connections = {};
 			var f = function(){
-				var name = $(this).attr("name");
-				var pos = $(this).attr("pos").split(",");
+				var attrs = getAttributesDOM(this);
+				var name = attrs["name"];
+				var pos = attrs["pos"].split(",");
 				var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
-				var type = $(this).attr("type");
+				var type = attrs["type"];
 				var el;
 				switch (type) {
 					case "openvz":
@@ -597,23 +601,28 @@ var Editor = Class.extend({
 						connectors[name] = el;
 						break;
 				}
+				el.setAttributes(attrs);
 				editor.addElement(el);
 			};
 			$(this).find('device').each(f);
 			$(this).find('connector').each(f);
 			$(this).find('connection').each(function(){
+				var attrs = getAttributesDOM(this);
 				var con = connectors[$(this).parent().attr("name")];
-				var ifname = $(this).attr("interface");
+				var ifname = attrs["interface"];
 				var device = devices[ifname.split(".")[0]];
 				var c = con.createConnection(device);
+				c.setAttributes(attrs);
 				connections[ifname] = c;
 				editor.addElement(c);
 			});
 			$(this).find('interface').each(function(){
+				var attrs = getAttributesDOM(this);
 				var device = devices[$(this).parent().attr("name")];
-				var name = $(this).attr("name");
+				var name = attrs["name"];
 				var con = connections[device.name+"."+name];
 				var iface = device.createInterface(con);
+				iface.setAttributes(attrs);
 				editor.addElement(iface);
 			});
 		});
@@ -798,7 +807,7 @@ var SelectField = EditElement.extend({
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
-		if (!(dflt in options)) this.input.append($('<option value="'+dflt+'" selected>'+dflt+'</option>'));
+		if (!(dflt in options)) this.input.append($('<option value="'+dflt+'">'+dflt+'</option>'));
 		for (i in options) {
 			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
 			if (options[i] == dflt) option.attr({selected: true});
@@ -810,10 +819,34 @@ var SelectField = EditElement.extend({
 		});
 	},
 	setValue: function(value) {
-		this.input[0].value = value;
+		this.input.find("option").each(function(){
+			$(this).attr({selected: $(this).attr("value") == value});
+		});
 	},
 	getValue: function() {
 		return this.input[0].value;
+	},
+	getInputElement: function() {
+		return this.input;
+	}
+});
+
+var CheckField = EditElement.extend({
+	init: function(name, dflt) {
+		this._super(name);
+		this.dflt = dflt;
+		this.input = $('<input type="checkbox" name="'+name+'"/>');
+		if (dflt) this.input.attr({checked: true});
+		this.input[0].fld = this;
+		this.input.change(function (){
+			this.fld.onChanged(this.checked);
+		});
+	},
+	setValue: function(value) {
+		this.input[0].checked = Boolean(value);
+	},
+	getValue: function() {
+		return this.input[0].checked;
 	},
 	getInputElement: function() {
 		return this.input;
@@ -897,7 +930,7 @@ var ConnectorForm = AttributeForm.extend({
 var SpecialConnectorForm = ConnectorForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new SelectField("type", getKeys(this.editor.specialFeatures), "auto"), "type");
+		this.addField(new SelectField("feature_type", getKeys(this.editor.specialFeatures), "auto"), "type");
 		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "hostgroup");
 	}
 });
@@ -918,7 +951,8 @@ var InterfaceForm = AttributeForm.extend({
 var ConfiguredInterfaceForm = InterfaceForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new MagicTextField("ipaddress", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");
+		this.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
+		this.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");		
 	}
 });
 
@@ -930,6 +964,7 @@ var EmulatedConnectionForm = ConnectionForm.extend({
 		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
 		this.addField(new MagicTextField("latency", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
 		this.addField(new MagicTextField("loss", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
+		this.addField(new CheckField("capture", false), "capture&nbsp;packets");
 	}
 });
 

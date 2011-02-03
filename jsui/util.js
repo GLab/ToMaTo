@@ -91,12 +91,21 @@ arrayRemove = function(array, item){
 computedStyle = function(el){
     if (el.currentStyle) return el.currentStyle;
     else return document.defaultView.getComputedStyle(el);
-}
+};
 
 getKeys = function(assAr) {
 	var keys = [];
-	for (key in assAr) keys.push(key);
+	for (var key in assAr) keys.push(key);
 	return keys;
-}
+};
+
+getAttributesDOM = function(dom) {
+	var map = {};
+	for (var i in dom.attributes) {
+		var attr = dom.attributes[i];
+		if (attr.value) map[attr.name]=attr.value;
+	}
+	return map;
+};
 
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);
