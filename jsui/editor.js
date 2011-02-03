@@ -552,6 +552,72 @@ var Editor = Class.extend({
 	setSpecialFeatures: function(sfmap) {
 		this.specialFeatures = sfmap;
 	},
+	loadTopologyURL: function(url) {
+		var req = $.ajax({type: "GET", url: url, dataType: "xml"});
+		var editor = this;
+		req.success(function(xml) {
+			editor.loadTopologyDOM(xml);
+		});
+	},
+	loadTopologyDOM: function(xml) {
+		var editor = this;
+		$(xml).find("topology").each(function(){
+			var devices = {};
+			var connectors = {};
+			var connections = {};
+			var f = function(){
+				var name = $(this).attr("name");
+				var pos = $(this).attr("pos").split(",");
+				var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
+				var type = $(this).attr("type");
+				var el;
+				switch (type) {
+					case "openvz":
+						el = new OpenVZDevice(editor, name, pos);
+						devices[name] = el;
+						break;
+					case "kvm": 
+						el = new KVMDevice(editor, name, pos);
+						devices[name] = el;
+						break;
+					case "hub": 
+						el = new HubConnector(editor, name, pos);
+						connectors[name] = el;
+						break;
+					case "switch": 
+						el = new SwitchConnector(editor, name, pos);
+						connectors[name] = el;
+						break;
+					case "router": 
+						el = new RouterConnector(editor, name, pos);
+						connectors[name] = el;
+						break;
+					case "special": 
+						el = new SpecialConnector(editor, name, pos);
+						connectors[name] = el;
+						break;
+				}
+				editor.addElement(el);
+			};
+			$(this).find('device').each(f);
+			$(this).find('connector').each(f);
+			$(this).find('connection').each(function(){
+				var con = connectors[$(this).parent().attr("name")];
+				var ifname = $(this).attr("interface");
+				var device = devices[ifname.split(".")[0]];
+				var c = con.createConnection(device);
+				connections[ifname] = c;
+				editor.addElement(c);
+			});
+			$(this).find('interface').each(function(){
+				var device = devices[$(this).parent().attr("name")];
+				var name = $(this).attr("name");
+				var con = connections[device.name+"."+name];
+				var iface = device.createInterface(con);
+				editor.addElement(iface);
+			});
+		});
+	},
 	getPosition: function () { 
 		var pos = $("#editor").position();
 		return {x: pos.left, y: pos.top};
