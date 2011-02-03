@@ -16,14 +16,28 @@
 <script src="/static/jsui/raphael-min.js"></script>
 <script src="/static/jsui/util.js"></script>
 <script src="/static/jsui/editor.js"></script>
+
 <div id="javascript-error">
 	Please enable javascript in your browser!
 </div>
+<script><!-- 
+$("#javascript-error").hide();
+//--></script> 
+
 <div id="editor" style="position: absolute;width:800px;height:600px;border:2px solid #911A20;"></div>
 <script><!--
 basepath="/static/jsui/";
-$("#javascript-error").hide();
 $("head").append($('<link href="'+basepath+'smoothness/jquery-ui-1.8.9.custom.css" rel="stylesheet" type="text/css" />'));
+
 editor = new Editor({x:800, y:600});
---></script>
+
+data_url = "{%url top.show top_id%}?format=plain";
+editor.setTemplatesOpenVZ("{{tpl_openvz}}".split(","));
+editor.setTemplatesKVM("{{tpl_kvm}}".split(","));
+editor.setHostGroups("{{host_groups}}".split(","));
+var special_features = {};
+var sf_data = "{{special_features}}".split(",");
+for (i in sf_data) special_features[sf_data[i].split(":")[0]] = sf_data[i].split(":")[1].split("|");
+editor.setSpecialFeatures(special_features);
+//--></script>
 {% endblock %}

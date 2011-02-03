@@ -93,4 +93,10 @@ computedStyle = function(el){
     else return document.defaultView.getComputedStyle(el);
 }
 
+getKeys = function(assAr) {
+	var keys = [];
+	for (key in assAr) keys.push(key);
+	return keys;
+}
+
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);

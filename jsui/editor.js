@@ -536,6 +536,18 @@ var Editor = Class.extend({
 		this.paintPalette();
 		this.paintBackground();
 	},
+	setHostGroups: function(groups) {
+		this.hostGroups = groups;
+	},
+	setTemplatesOpenVZ: function(tpls) {
+		this.templatesOpenVZ = tpls;
+	},
+	setTemplatesKVM: function(tpls) {
+		this.templatesKVM = tpls;
+	},
+	setSpecialFeatures: function(sfmap) {
+		this.specialFeatures = sfmap;
+	},
 	getPosition: function () { 
 		var node = document.getElementById("editor");
 		var pos = {x:0,y:0}; 
@@ -746,6 +758,7 @@ var SelectField = EditElement.extend({
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
+		if (options && !(dflt in options)) this.input.append($('<option value="'+dflt+'" selected>'+dflt+'</option>'));
 		for (i in options) {
 			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
 			if (options[i] == dflt) option.attr({selected: true});
@@ -799,6 +812,7 @@ var Form = Class.extend({
 var AttributeForm = Form.extend({
 	init: function(obj) {
 		this.obj = obj;
+		this.editor = obj.editor;
 		this._super("Attributes of "+obj.name);
 	},
 	show: function() {
@@ -813,20 +827,25 @@ var DeviceForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new NameField(obj), "name");
-		this.addField(new SelectField("hostgroup", ["auto", "ukl"], "auto"), "hostgroup");
-		this.addField(new SelectField("template", ["auto", "debian", "ubuntu"], "auto"), "template");
+		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "hostgroup");
 	}
 });
 
 var OpenVZDeviceForm = DeviceForm.extend({
 	init: function(obj) {
 		this._super(obj);
+		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "template");
 		this.addField(new PasswordField("root_password", ""), "root&nbsp;password");
 		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
 	}
 });
 
-var KVMDeviceForm = DeviceForm.extend({});
+var KVMDeviceForm = DeviceForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addField(new SelectField("template", this.editor.templatesKVM, "auto"), "template");
+	}	
+});
 
 var ConnectorForm = AttributeForm.extend({
 	init: function(obj) {
@@ -838,8 +857,8 @@ var ConnectorForm = AttributeForm.extend({
 var SpecialConnectorForm = ConnectorForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new SelectField("type", ["auto", "internet", "openflow"], "auto"), "type");
-		this.addField(new SelectField("hostgroup", ["auto", "ukl"], "auto"), "hostgroup");
+		this.addField(new SelectField("type", getKeys(this.editor.specialFeatures), "auto"), "type");
+		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "hostgroup");
 	}
 });
 
