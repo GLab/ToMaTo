@@ -91,6 +91,7 @@ var IconElement = NetElement.extend({
 	}, 
 	_dragStart: function () {
 		var p = this.parent;
+		if (! p.editor.editable) return false;
 		p.opos = p.pos;
 		if (p.paletteItem) p.shadow = p.icon.clone().attr({opacity:0.5});
 	},
@@ -237,6 +238,7 @@ var Connection = NetElement.extend({
 	},
 	_click: function(event){
 		var p = this.parent;
+		if (!p.editor.editable) return false;
 		p.onClick(event);
 	},
 	_dblclick: function(event){
@@ -308,6 +310,7 @@ var Interface = NetElement.extend({
 	},
 	_click: function(event) {
 		var p = this.parent;
+		if (!p.editor.editable) return false;
 		p.onClick(event);
 	},
 	_dblclick: function(event){
@@ -549,10 +552,11 @@ var KVMDevice = Device.extend({
 });
 
 var Editor = Class.extend({
-	init: function(size) {
+	init: function(size, editable) {
 		this.g = Raphael("editor", size.x, size.y);
+		this.editable = editable;
 		this.size = size;
-		this.paletteWidth = 60;
+		this.paletteWidth = editable ? 60 : 0;
 		this.glabColor = "#911A20";
 		this.defaultFont = {"font-size":12, "font": "Verdana"};
 		this.elements = [];
@@ -563,7 +567,7 @@ var Editor = Class.extend({
 		this.templatesKVM = [];
 		this.specialFeatures = {};
 		this.nextIPHintNumber = 0;
-		this.paintPalette();
+		if (editable) this.paintPalette();
 		this.paintBackground();
 	},
 	setHostGroups: function(groups) {
@@ -776,6 +780,8 @@ var EditElement = Class.extend({
 	},
 	getValue: function() {
 	},
+	setEditable: function(editable) {
+	},
 	setForm: function(form) {
 		this.form = form;
 	},
@@ -793,6 +799,9 @@ var TextField = EditElement.extend({
 		this.input.change(function (){
 			this.fld.onChanged(this.value);
 		});
+	},
+	setEditable: function(editable) {
+		this.input.attr({disabled: !editable});
 	},
 	setValue: function(value) {
 		this.input[0].value = value;
@@ -851,10 +860,16 @@ var SelectField = EditElement.extend({
 			this.fld.onChanged(this.value);
 		});
 	},
+	setEditable: function(editable) {
+		this.input.attr({disabled: !editable});
+	},
 	setValue: function(value) {
+		var found = false;
 		this.input.find("option").each(function(){
 			$(this).attr({selected: $(this).attr("value") == value});
+			found |= $(this).attr("value") == value; 		
 		});
+		if (!found) this.input.append($('<option value="'+value+'" selected>'+value+'</option>'));
 	},
 	getValue: function() {
 		return this.input[0].value;
@@ -875,6 +890,9 @@ var CheckField = EditElement.extend({
 			this.fld.onChanged(this.checked);
 		});
 	},
+	setEditable: function(editable) {
+		this.input.attr({disabled: !editable});
+	},
 	setValue: function(value) {
 		this.input[0].checked = Boolean(value);
 	},
@@ -886,19 +904,25 @@ var CheckField = EditElement.extend({
 	}
 });
 
-var Form = Class.extend({
-	init: function(title) {
+var AttributeForm = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.editor = obj.editor;
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
-			resizable: false, height:"auto", width:"auto", title: title,
+			resizable: false, height:"auto", width:"auto", title: "Attributes of "+obj.name,
 			show: "slide", hide: "slide"});
 		this.table = $('<table/>');
 		this.div.append(this.table);
 		this.fields = {};
 	},
 	show: function() {
+		var rect = this.obj.getRect();
+		var ed = this.editor.getPosition();
+		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
+			this.fields[name].setEditable(this.editor.editable);
 		}
 		this.div.dialog("open");
 	},
@@ -916,20 +940,6 @@ var Form = Class.extend({
 		tr.append($('<td/>').append(field.getInputElement()));
 		this.table.append(tr);
 		this.fields[field.name]=field;
-	}
-});
-
-var AttributeForm = Form.extend({
-	init: function(obj) {
-		this.obj = obj;
-		this.editor = obj.editor;
-		this._super("Attributes of "+obj.name);
-	},
-	show: function() {
-		var rect = this.obj.getRect();
-		var ed = this.editor.getPosition();
-		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
-		this._super();
 	}
 });
 
