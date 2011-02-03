@@ -661,6 +661,99 @@ var Editor = Class.extend({
 	}
 });
 
+var EditElement = Class.extend({
+	init: function(name) {
+		this.name = name;
+	},
+	onChanged: function(value) {
+		this.form.obj.attributeChanged(this.name, value);
+	},
+	setValue: function(value) {
+	},
+	getValue: function() {
+	},
+	setForm: function(form) {
+		this.form = form;
+	},
+	getInputElement: function() {
+		return null;
+	}
+});
+
+var TextField = EditElement.extend({
+	init: function(name, dflt) {
+		this._super(name);
+		this.dflt = dflt;
+		this.input = $('<input type="text" name="'+name+'" value="'+dflt+'" size=10/>');
+		this.input[0].fld = this;
+		this.input.change(function (){
+			this.fld.onChanged(this.value);
+		});
+	},
+	setValue: function(value) {
+		this.input[0].value = value;
+	},
+	getValue: function() {
+		return this.input[0].value;
+	},
+	getInputElement: function() {
+		return this.input;
+	}
+});
+
+var NameField = TextField.extend({
+	init: function(obj) {
+		this._super("name", obj.name);
+	},
+	onChanged: function(value) {
+		this._super(value);
+		this.form.div.dialog("option", "title", "Attributes of " + value);
+	}
+});
+
+var MagicTextField = TextField.extend({
+	init: function(name, pattern, dflt) {
+		this._super(name, dflt);
+		this.pattern = pattern;
+	},
+	onChanged: function(value) {
+		this._super(value);
+		if (this.pattern.test(this.getValue())) this.input[0].style.color="";
+		else this.input[0].style.color="red";
+	}
+});
+
+var PasswordField = TextField.extend({
+	init: function(name, dflt) {
+		this._super(name, dflt);
+		this.input[0].type = "password";
+	}
+});
+
+var SelectField = EditElement.extend({
+	init: function(name, options, dflt) {
+		//TODO implement default
+		this._super(name);
+		this.options = options;
+		this.dflt = dflt;
+		this.input = $('<select name="'+name+'"/>');
+		for (i in options) this.input.append($('<option value="'+options[i]+'">'+options[i]+'</option>'));
+		this.input[0].fld = this;
+		this.input.change(function (){
+			this.fld.onChanged(this.value);
+		});
+	},
+	setValue: function(value) {
+		this.input.value = value;
+	},
+	getValue: function() {
+		return this.input.value;
+	},
+	getInputElement: function() {
+		return this.input;
+	}
+});
+
 var Form = Class.extend({
 	init: function(title) {
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
@@ -668,7 +761,7 @@ var Form = Class.extend({
 			show: "slide", hide: "slide"});
 		this.table = $('<table/>');
 		this.div.append(this.table);
-		this.attributes = {};
+		this.fields = {};
 	},
 	show: function() {
 		this.div.dialog("open");
@@ -677,64 +770,13 @@ var Form = Class.extend({
 		this.div.dialog("close");
 	},
 	addField: function(field, desc) {
+		field.setForm(this);
 		var tr = $('<tr/>');
 		tr.append($('<td>'+desc+'</td>'));
-		tr.append($('<td/>').append(field));
+		tr.append($('<td/>').append(field.getInputElement()));
 		this.table.append(tr);
+		this.fields[field.name]=field;
 	},
-	addTextField: function(name, deflt, desc) {
-		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
-		input[0].obj = this.obj;
-		input.change(function (){
-			this.obj.attributeChanged(name, this.value);
-		});
-		this.attributes[name]=input;
-		this.addField(input, desc);
-	},
-	addNameField: function(obj) {
-		var input = $('<input type="text" name="name" value="'+obj.name+'" size=10/>');
-		input[0].obj = obj;
-		input[0].fdiv = this.div;
-		input.change(function(){
-			this.obj.attributeChanged("name", this.value);
-			this.obj.name = this.value;
-			this.obj.paintUpdate();
-			this.fdiv.dialog("option", "title", "Attributes of " + this.value);
-		});
-		this.attributes[name]=input;
-		this.addField(input, "name");
-	},
-	addMagicTextField: function(name, pattern, deflt, desc) {
-		var input = $('<input type="text" name="'+name+'" value="'+deflt+'" size=10/>');
-		input[0].obj = this.obj;
-		input[0].pat = pattern;
-		input.change(function (){
-			this.obj.attributeChanged(name, this.value);
-			if (this.pat.test(this.value)) this.style.color="";
-			else this.style.color="red";
-		});
-		this.attributes[name]=input;
-		this.addField(input, desc);
-	},
-	addPasswordField: function(name, deflt, desc) {
-		var input = $('<input type="password" name="'+name+'" value="'+deflt+'" size=10/>');
-		input[0].obj = this.obj;
-		input.change(function (){
-			this.obj.attributeChanged(name, this.value);
-		});
-		this.attributes[name]=input;
-		this.addField(input, desc);
-	},
-	addSelectField: function(name, options, deflt, desc) {
-		var input = $('<select name="'+name+'"/>');
-		for (i in options) input.append($('<option value="'+options[i]+'">'+options[i]+'</option>'));
-		input[0].obj = this.obj;
-		input.change(function (){
-			this.obj.attributeChanged(name, this.value);
-		});
-		this.attributes[name]=input;
-		this.addField(input, desc);
-	}
 });
 
 var AttributeForm = Form.extend({
@@ -752,17 +794,17 @@ var AttributeForm = Form.extend({
 var DeviceForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addNameField(obj);
-		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
-		this.addSelectField("template", ["auto", "debian", "ubuntu"], "auto", "template");
+		this.addField(new NameField(obj), "name");
+		this.addField(new SelectField("hostgroup", ["auto", "ukl"], "auto"), "hostgroup");
+		this.addField(new SelectField("template", ["auto", "debian", "ubuntu"], "auto"), "template");
 	}
 });
 
 var OpenVZDeviceForm = DeviceForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addPasswordField("root_password", "", "root&nbsp;password");
-		this.addMagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, "", "gateway");
+		this.addField(new PasswordField("root_password", ""), "root&nbsp;password");
+		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
 	}
 });
 
@@ -771,15 +813,15 @@ var KVMDeviceForm = DeviceForm.extend({});
 var ConnectorForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addNameField(obj);
+		this.addField(new NameField(obj), "name");
 	}
 });
 
 var SpecialConnectorForm = ConnectorForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addSelectField("type", ["auto", "internet", "openflow"], "auto", "type");
-		this.addSelectField("hostgroup", ["auto", "ukl"], "auto", "hostgroup");
+		this.addField(new SelectField("type", ["auto", "internet", "openflow"], "auto"), "type");
+		this.addField(new SelectField("hostgroup", ["auto", "ukl"], "auto"), "hostgroup");
 	}
 });
 
@@ -792,14 +834,14 @@ var RouterConnectorForm = ConnectorForm.extend({});
 var InterfaceForm = AttributeForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addNameField(obj);
+		this.addField(new NameField(obj), "name");
 	}
 });
 
 var ConfiguredInterfaceForm = InterfaceForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addMagicTextField("ipaddress", /^\d+\.\d+\.\d+\.\d+\/\d+$/, "", "ip/prefix");
+		this.addField(new MagicTextField("ipaddress", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");
 	}
 });
 
@@ -808,8 +850,8 @@ var ConnectionForm = AttributeForm.extend({});
 var EmulatedConnectionForm = ConnectionForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addMagicTextField("bandwidth", /^\d+$/, "10000", "bandwidth");
-		this.addMagicTextField("latency", /^\d+$/, "0", "latency&nbsp;in&nbsp;ms)");
-		this.addMagicTextField("loss", /^\d+\.\d+$/, "0.0", "packet&nbsp;loss");
+		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth");
+		this.addField(new MagicTextField("latency", /^\d+$/, "0"), "latency&nbsp;in&nbsp;ms)");
+		this.addField(new MagicTextField("loss", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
 	}
 });
