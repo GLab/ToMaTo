@@ -75,8 +75,8 @@ var NetElement = Class.extend({
 
 var IconElement = NetElement.extend({
 	init: function(editor, name, iconsrc, iconsize, pos) {
-		this._super(editor);
 		this.name = name;
+		this._super(editor);
 		this.iconsrc = iconsrc;
 		this.iconsize = iconsize;
 		this.pos = pos;
@@ -112,7 +112,7 @@ var IconElement = NetElement.extend({
 	},
 	_dblclick: function(event){
 		var p = this.parent;
-		p.form.show();
+		p.form.toggle();
 	},
 	paint: function(){
 		this._super();
@@ -140,8 +140,11 @@ var IconElement = NetElement.extend({
 	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "name") {
+			//TODO: check for duplicates
+			arrayRemove(this.editor.elementNames, this.name);
 			this.name = value;
 			this.paintUpdate();
+			this.editor.elementNames.push(value);
 		}
 	},
 	remove: function(){
@@ -236,7 +239,7 @@ var Connection = NetElement.extend({
 	},
 	_dblclick: function(event){
 		var p = this.parent;
-		p.form.show();
+		p.form.toggle();
 	}
 });
 
@@ -307,7 +310,7 @@ var Interface = NetElement.extend({
 	},
 	_dblclick: function(event){
 		var p = this.parent;
-		p.form.show();
+		p.form.toggle();
 	}
 });
 
@@ -331,10 +334,7 @@ var Connector = IconElement.extend({
 		this.nextIPHintNumber = 1;
 	},
 	nextName: function() {
-		var num = this.editor.elementNums[this.baseName()];
-		if (!num) num = 1;
-		this.editor.elementNums[this.baseName()] = num+1;
-		return this.baseName() + num;
+		return this.editor.getNameHint(this.baseName());
 	},
 	remove: function(){
 		var cons = this.connections.slice(0);
@@ -464,10 +464,7 @@ var Device = IconElement.extend({
 		this.isDevice = true;
 	},
 	nextName: function() {
-		var num = this.editor.elementNums[this.baseName()];
-		if (!num) num = 1;
-		this.editor.elementNums[this.baseName()] = num+1;
-		return this.baseName() + num;
+		return this.editor.getNameHint(this.baseName());
 	},
 	remove: function(){
 		this._super();
@@ -557,6 +554,7 @@ var Editor = Class.extend({
 		this.glabColor = "#911A20";
 		this.defaultFont = {"font-size":12, "font": "Verdana"};
 		this.elements = [];
+		this.elementNames = [];
 		this.elementNums = {};
 		this.hostGroups = [];
 		this.templatesOpenVZ = [];
@@ -740,11 +738,20 @@ var Editor = Class.extend({
 			el.setSelected(isin);
 		}
 	},
+	getNameHint: function(type) {
+		var num = this.elementNums[type];
+		if (!num) num = 1;
+		while($.inArray(type+num, this.elementNames) >= 0) num++;
+		this.elementNums[type]=num;
+		return type+num;
+	},
 	addElement: function(el) {
 		this.elements.push(el);
+		if (el.name) this.elementNames.push(el.name);
 	},
 	removeElement: function(el) {
 		arrayRemove(this.elements, el);
+		if (el.name) arrayRemove(this.elementNames, el.name);
 	},
 	removeSelectedElements: function() {
 		var sel = this.selectedElements();
@@ -896,6 +903,10 @@ var Form = Class.extend({
 	hide: function() {
 		this.div.dialog("close");
 	},
+	toggle: function() {
+		if (this.div.dialog("isOpen")) this.hide();
+		else this.show();
+	},
 	addField: function(field, desc) {
 		field.setForm(this);
 		var tr = $('<tr/>');
@@ -932,7 +943,7 @@ var OpenVZDeviceForm = DeviceForm.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "template");
-		this.addField(new PasswordField("root_password", ""), "root&nbsp;password");
+		this.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
 		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
 	}
 });
