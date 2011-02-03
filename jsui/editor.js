@@ -533,6 +533,10 @@ var Editor = Class.extend({
 		this.defaultFont = {"font-size":12, "font": "Verdana"};
 		this.elements = [];
 		this.elementNums = {};
+		this.hostGroups = [];
+		this.templatesOpenVZ = [];
+		this.templatesKVM = [];
+		this.specialFeatures = {};
 		this.paintPalette();
 		this.paintBackground();
 	},
@@ -549,38 +553,8 @@ var Editor = Class.extend({
 		this.specialFeatures = sfmap;
 	},
 	getPosition: function () { 
-		var node = document.getElementById("editor");
-		var pos = {x:0,y:0}; 
-		if (node.getBoundingClientRect) { // IE 
-			var box = node.getBoundingClientRect(); 
-			var scrollTop = document.documentElement.scrollTop; 
-			var scrollLeft = document.documentElement.scrollLeft; 
-			pos.x = box.left + scrollLeft; 
-			pos.y = box.top + scrollTop; 
-		} else if (document.getBoxObjectFor) { 
-			var box = document.getBoxObjectFor(node); 
-			var vpBox = document.getBoxObjectFor(document.documentElement); 
-			pos.x = box.screenX - vpBox.screenX; 
-			pos.y = box.screenY - vpBox.screenY; 
-		} else { 
-			pos.x = node.offsetLeft; 
-			pos.y = node.offsetTop; 
-			var parent = node.offsetParent; 
-			if (parent != node) { 
-				while (parent) { 
-					pos.x += parent.offsetLeft; 
-					pos.y += parent.offsetTop; 
-					parent = parent.offsetParent; 
-				} 
-			} 
-			var parent = node.offsetParent; 
-			while (parent && parent != document.body) { 
-				pos.x -= parent.scrollLeft; 
-				pos.y -= parent.scrollTop; 
-				parent = parent.offsetParent; 
-			} 
-		} 
-		return pos; 
+		var pos = $("#editor").position();
+		return {x: pos.left, y: pos.top};
 	}, 
 	paintPalette: function() {
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
@@ -758,7 +732,7 @@ var SelectField = EditElement.extend({
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
-		if (options && !(dflt in options)) this.input.append($('<option value="'+dflt+'" selected>'+dflt+'</option>'));
+		if (!(dflt in options)) this.input.append($('<option value="'+dflt+'" selected>'+dflt+'</option>'));
 		for (i in options) {
 			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
 			if (options[i] == dflt) option.attr({selected: true});
@@ -817,8 +791,8 @@ var AttributeForm = Form.extend({
 	},
 	show: function() {
 		var rect = this.obj.getRect();
-		var ed = $("#editor").position();
-		this.div.dialog({position: [ed.left+rect.x+rect.width+8, ed.top+rect.y]});
+		var ed = this.editor.getPosition();
+		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
 		this._super();
 	}
 });
