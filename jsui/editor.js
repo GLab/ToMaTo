@@ -62,14 +62,14 @@ var NetElement = Class.extend({
 			this.setSelected(!oldSelected | sel.length>1);
 		}
 	},
-	attributeChanged: function(name, value) {
+	setAttribute: function(name, value) {
 		this.attributes[name]=value;
 	},
 	getAttribute: function(name) {
 		return this.attributes[name];
 	},
 	setAttributes: function(attrs) {
-		for (key in attrs) this.attributeChanged(key, attrs[key]);
+		for (key in attrs) this.setAttribute(key, attrs[key]);
 	}
 });
 
@@ -137,7 +137,7 @@ var IconElement = NetElement.extend({
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
 	},
-	attributeChanged: function(name, value) {
+	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "name") {
 			this.name = value;
@@ -188,6 +188,9 @@ var Connection = NetElement.extend({
 		this.name = "connection";
 		this.form = new ConnectionForm(this);
 	},
+	getIPHint: function() {
+		return "dhcp";
+	},	
 	getPos: function(){
 		return {x: (this.con.getX()+this.dev.getX())/2, y: (this.con.getY()+this.dev.getY())/2};
 	},
@@ -242,14 +245,22 @@ var EmulatedConnection = Connection.extend({
 		this._super(editor, dev, con);
 		this.handle.attr({fill: this.editor.glabColor});
 		this.form = new EmulatedConnectionForm(this);
-	}
+		this.IPHintNumber = this.con.nextIPHintNumber++;
+	},
+	getIPHint: function() {
+		return "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24";
+	}	
 });
 
 var EmulatedRouterConnection = EmulatedConnection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.form = new EmulatedRouterConnectionForm(this);
-	}
+		this.setAttribute("gateway", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+	},
+	getIPHint: function() {
+		return "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24";
+	}	
 });
 
 var Interface = NetElement.extend({
@@ -304,6 +315,9 @@ var ConfiguredInterface = Interface.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.form = new ConfiguredInterfaceForm(this);
+		var ipHint = con.getIPHint();
+		this.setAttribute("use_dhcp", ipHint == "dhcp");
+		if (ipHint != "dhcp" ) this.setAttribute("ip4address", ipHint);
 	}
 });
 
@@ -313,6 +327,8 @@ var Connector = IconElement.extend({
 		this.connections = [];
 		this.paint();
 		this.isConnector = true;
+		this.IPHintNumber = this.editor.nextIPHintNumber++;
+		this.nextIPHintNumber = 1;
 	},
 	nextName: function() {
 		var num = this.editor.elementNums[this.baseName()];
@@ -360,7 +376,10 @@ var SpecialConnector = Connector.extend({
 		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
 		this.form = new SpecialConnectorForm(this);
 	},
-	attributeChanged: function(name, value) {
+	nextIPHint: function() {
+		return "dhcp";
+	},
+	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "feature_type") {
 			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
@@ -420,6 +439,9 @@ var RouterConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/router.png", {x: 32, y: 16}, pos);
 		this.form = new RouterConnectorForm(this);
+	},
+	nextIPHint: function() {
+		return "10."+this.IPHintNumber+"."+(this.nextIPHintNumber++)+".1/24";
 	},
 	baseName: function() {
 		return "router";
@@ -540,6 +562,7 @@ var Editor = Class.extend({
 		this.templatesOpenVZ = [];
 		this.templatesKVM = [];
 		this.specialFeatures = {};
+		this.nextIPHintNumber = 0;
 		this.paintPalette();
 		this.paintBackground();
 	},
@@ -651,6 +674,7 @@ var Editor = Class.extend({
 		this.trashRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.trashRect.parent = this;
 		this.trashRect.click(this._trashClick);
+		this.nextIPHintNumber = 0; //reset to 0
 	},
 	paintBackground: function() {
 		this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
@@ -737,7 +761,7 @@ var EditElement = Class.extend({
 		this.name = name;
 	},
 	onChanged: function(value) {
-		this.form.obj.attributeChanged(this.name, value);
+		this.form.obj.setAttribute(this.name, value);
 	},
 	setValue: function(value) {
 	},
