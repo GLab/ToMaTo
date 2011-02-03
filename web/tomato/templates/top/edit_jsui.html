@@ -1,0 +1,29 @@
+{% extends "top/base.html" %}
+
+{% block content %}
+{% if top_id %}
+{% if edit %}
+<h1>Edit topology {{top_id}}</h1>
+{% else %}
+<h1>Definition of topology {{top_id}}</h1>
+{% endif %}
+{% else %}
+<h1>Creation of new topology</h1>
+{% endif %}
+<a href="{%url main.help "BuildUi"%}" target="_help">Editor help</a><br/>
+<script src="/static/jsui/jQuery-min.js"></script>
+<script src="/static/jsui/jQuery-ui-min.js"></script>
+<script src="/static/jsui/raphael-min.js"></script>
+<script src="/static/jsui/util.js"></script>
+<script src="/static/jsui/editor.js"></script>
+<div id="javascript-error">
+	Please enable javascript in your browser!
+</div>
+<div id="editor" style="position: absolute;width:800px;height:600px;border:2px solid #911A20;"></div>
+<script><!--
+basepath="/static/jsui/";
+$("#javascript-error").hide();
+$("head").append($('<link href="'+basepath+'smoothness/jquery-ui-1.8.9.custom.css" rel="stylesheet" type="text/css" />'));
+editor = new Editor({x:800, y:600});
+--></script>
+{% endblock %}

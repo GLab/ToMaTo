@@ -118,7 +118,7 @@ var IconElement = NetElement.extend({
 		if (! isIE) this.text.attr(this.editor.defaultFont);
 		this.text.parent = this;
 		if (this.icon) this.icon.remove();
-		this.icon = this.editor.g.image(this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
+		this.icon = this.editor.g.image(basepath+this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
 		this.icon.parent = this;
 		var r = this.getRect();
 		if (this.rect) this.rect.remove();
@@ -129,7 +129,7 @@ var IconElement = NetElement.extend({
 		this.rect.dblclick(this._dblclick);
 	},
 	paintUpdate: function() {
-		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: this.iconsrc});
+		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: basepath+this.iconsrc});
 		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
@@ -572,7 +572,7 @@ var Editor = Class.extend({
 	}, 
 	paintPalette: function() {
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
-		this.icon = this.g.image("images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
+		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
 		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: 75});
 		this.openVZPrototype.paletteItem = true;
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: 125});
@@ -585,7 +585,7 @@ var Editor = Class.extend({
 		this.switchPrototype.paletteItem = true;
 		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 325});
 		this.routerPrototype.paletteItem = true;
-		this.trash = this.g.image("images/trash.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
+		this.trash = this.g.image(basepath+"images/trash.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
 		this.trashText = this.g.text(this.paletteWidth/2, this.size.y-13, "Trash").attr(this.defaultFont);
 		this.trashRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.trashRect.parent = this;
@@ -803,7 +803,8 @@ var AttributeForm = Form.extend({
 	},
 	show: function() {
 		var rect = this.obj.getRect();
-		this.div.dialog({position: [rect.x+rect.width+8, rect.y]});
+		var ed = $("#editor").position();
+		this.div.dialog({position: [ed.left+rect.x+rect.width+8, ed.top+rect.y]});
 		this._super();
 	}
 });
