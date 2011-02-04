@@ -585,8 +585,10 @@ var Editor = Class.extend({
 		this.templatesKVM = [];
 		this.specialFeatures = {};
 		this.nextIPHintNumber = 0;
-		if (editable) this.paintPalette();
-		this.paintBackground();
+		if (editable) {
+			this.paintPalette();
+			this.paintBackground();
+		}
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
