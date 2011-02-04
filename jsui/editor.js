@@ -585,10 +585,9 @@ var Editor = Class.extend({
 		this.templatesKVM = [];
 		this.specialFeatures = {};
 		this.nextIPHintNumber = 0;
-		if (editable) {
-			this.paintPalette();
-			this.paintBackground();
-		}
+		if (editable) this.paintPalette();
+		else this.topology = new Topology(this, "Topology", {x: 25, y: 16});
+		this.paintBackground();
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -709,8 +708,9 @@ var Editor = Class.extend({
 		this.background.attr({fill: "#FFFFFF", opacity: 0});
 		this.background.toBack();
 		this.background.parent = this;
-		this.background.drag(this._dragMove, this._dragStart, this._dragStop);
+		if (this.editable) this.background.drag(this._dragMove, this._dragStart, this._dragStop);
 		this.background.click(this._click);
+		this.background.dblclick(this._dblclick);
 	},
 	_dragMove: function (dx, dy) {
 		var p = this.parent;
@@ -735,6 +735,10 @@ var Editor = Class.extend({
 		var p = this.parent;
 		if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
 		p.unselectAll();
+	},
+	_dblclick: function(event){
+		var p = this.parent;
+		p.topology.form.toggle();
 	},
 	_trashClick: function(event){
 		var p = this.parent;
