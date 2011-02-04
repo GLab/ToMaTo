@@ -128,6 +128,8 @@ var IconElement = NetElement.extend({
 		if (this.icon) this.icon.remove();
 		this.icon = this.editor.g.image(basepath+this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
 		this.icon.parent = this;
+		this.stateIcon = this.editor.g.image("", this.pos.x+5, this.pos.y+5, 16, 16);
+		this.stateIcon.attr({opacity: 0.0});
 		var r = this.getRect();
 		if (this.rect) this.rect.remove();
 		this.rect = this.editor.g.rect(r.x, r.y, r.width, r.height).attr({opacity:0, fill:"#FFFFFF"});
@@ -138,11 +140,13 @@ var IconElement = NetElement.extend({
 	},
 	paintUpdate: function() {
 		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: basepath+this.iconsrc});
+		this.stateIcon.attr({x: this.pos.x+5, y: this.pos.y+5});
 		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
 	},
 	setAttribute: function(name, value) {
+		console.log(name + " " + value);
 		this._super(name, value);
 		if (name == "name") {
 			//TODO: check for duplicates
@@ -150,6 +154,17 @@ var IconElement = NetElement.extend({
 			this.name = value;
 			this.paintUpdate();
 			this.editor.elementNames.push(value);
+		}
+		if (name == "state") {
+			switch (value) {
+				case "started":
+				case "prepared":
+					this.stateIcon.attr({src: basepath+"images/"+value+".png"});
+					this.stateIcon.attr({opacity: 1.0});
+					break;
+				default:
+					this.stateIcon.attr({opacity: 0.0});
+			}
 		}
 	},
 	remove: function(){
@@ -197,7 +212,10 @@ var Topology = IconElement.extend({
 		this.attributes[name]=value;
 	},
 	_dragStart: function () {
-		return false;
+	},
+	_dragMove: function (dx, dy) {
+	},
+	_dragStop: function () {
 	}
 });
 
