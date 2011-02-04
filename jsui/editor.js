@@ -56,6 +56,10 @@ var NetElement = Class.extend({
 		return this.selected;
 	},
 	onClick: function(event) {
+		if (!this.editor.editable) {
+			this.form.toggle();
+			return;
+		}
 		if (event.shiftKey) this.setSelected(!this.isSelected());
 		else {
 			var oldSelected = this.isSelected();
@@ -86,6 +90,7 @@ var IconElement = NetElement.extend({
 	},
 	_dragMove: function (dx, dy) {
 		var p = this.parent;
+		if (! p.editor.editable) return false;
 		if (p.paletteItem) p.shadow.attr({x: p.opos.x + dx-p.iconsize.x/2, y: p.opos.y + dy-p.iconsize.y/2});
 		else p.move({x: p.opos.x + dx, y: p.opos.y + dy});
 	}, 
@@ -97,6 +102,7 @@ var IconElement = NetElement.extend({
 	},
 	_dragStop: function () {
 		var p = this.parent;
+		if (! p.editor.editable) return false;
 		if (p.paletteItem) {
 			var pos = {x: p.shadow.attr("x")+p.iconsize.x/2, y: p.shadow.attr("y")+p.iconsize.y/2};
 			if (pos.x != p.opos.x || pos.y != p.opos.y) {
@@ -146,7 +152,6 @@ var IconElement = NetElement.extend({
 		this._super(); //must be at end, so rect has already been updated
 	},
 	setAttribute: function(name, value) {
-		console.log(name + " " + value);
 		this._super(name, value);
 		if (name == "name") {
 			//TODO: check for duplicates
@@ -274,7 +279,6 @@ var Connection = NetElement.extend({
 	},
 	_click: function(event){
 		var p = this.parent;
-		if (!p.editor.editable) return false;
 		p.onClick(event);
 	},
 	_dblclick: function(event){
@@ -346,7 +350,6 @@ var Interface = NetElement.extend({
 	},
 	_click: function(event) {
 		var p = this.parent;
-		if (!p.editor.editable) return false;
 		p.onClick(event);
 	},
 	_dblclick: function(event){
@@ -950,6 +953,63 @@ var CheckField = EditElement.extend({
 	}
 });
 
+var Button = EditElement.extend({
+	init: function(text, func) {
+		this._super("button-"+text);
+		this.func = func;
+		this.input = $('<input type="button" value="'+text+'"/>');
+		this.input[0].fld = this;
+		this.input.click(function (){
+			this.fld.func(this.fld);
+		});
+	},
+	setEditable: function(editable) {
+		this.input.attr({disabled: !editable});
+	},
+	setValue: function(value) {
+	},
+	getValue: function() {
+		return "";
+	},
+	getInputElement: function() {
+		return this.input;
+	}
+});
+
+var Button = EditElement.extend({
+	init: function(name, text, func) {
+		this._super(name);
+		this.func = func;
+		this.input = $('<input type="button" value="'+text+'"/>');
+		this.input[0].fld = this;
+		this.input.click(function (){
+			this.fld.func(this.fld);
+		});
+	},
+	setEditable: function(editable) {
+		this.input.attr({disabled: !editable});
+	},
+	setValue: function(value) {
+	},
+	getValue: function() {
+		return "";
+	},
+	getInputElement: function() {
+		return this.input;
+	}
+});
+
+var IconButton = Button.extend({
+	init: function(name, src, func) {
+		this._super(name, src, func);
+		this.input = $('<input type="image" src="'+src+'"/>');
+		this.input[0].fld = this;
+		this.input.click(function (){
+			this.fld.func(this.fld);
+		});
+	}
+});
+
 var AttributeForm = Class.extend({
 	init: function(obj) {
 		this.obj = obj;
@@ -986,6 +1046,19 @@ var AttributeForm = Class.extend({
 		tr.append($('<td/>').append(field.getInputElement()));
 		this.table.append(tr);
 		this.fields[field.name]=field;
+	},
+	addMultipleFields: function(fields) {
+		var tr = $('<tr/>');
+		var td = $('<td/>');
+		td.attr({colspan: "2", align: "center"});
+		for (var i in fields) {
+			var field = fields[i];
+			field.setForm(this);
+			this.fields[field.name]=field;
+			td.append(field.getInputElement());
+		}
+		tr.append(td);
+		this.table.append(tr);
 	}
 });
 
