@@ -99,8 +99,10 @@ var IconElement = NetElement.extend({
 		var p = this.parent;
 		if (p.paletteItem) {
 			var pos = {x: p.shadow.attr("x")+p.iconsize.x/2, y: p.shadow.attr("y")+p.iconsize.y/2};
-			var element = p.createAnother(pos);
-			element.move(element.correctPos(pos));
+			if (pos.x != p.opos.x || pos.y != p.opos.y) {
+				var element = p.createAnother(pos);
+				element.move(element.correctPos(pos));
+			}
 			p.shadow.remove();
 		}
 		if (p.pos != p.opos) {
@@ -183,6 +185,22 @@ var IconElement = NetElement.extend({
 	}
 });
 	
+var Topology = IconElement.extend({
+	init: function(editor, name, pos) {
+		this._super(editor, name, "images/topology.png", {x: 32, y: 32}, pos);
+		this.paletteItem = true;
+		this.paint();
+		this.form = new TopologyForm(this);
+	},
+	setAttribute: function(name, value) {
+		//ignore name changes
+		this.attributes[name]=value;
+	},
+	_dragStart: function () {
+		return false;
+	}
+});
+
 var Connection = NetElement.extend({
 	init: function(editor, con, dev) {
 		this._super(editor);
@@ -659,19 +677,23 @@ var Editor = Class.extend({
 		return {x: pos.left, y: pos.top};
 	}, 
 	paintPalette: function() {
+		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
-		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: 75});
+		this.topology = new Topology(this, "Topology", {x: this.paletteWidth/2, y: y+=50});
+		y+=30;
+		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: y+=50});
 		this.openVZPrototype.paletteItem = true;
-		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: 125});
+		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
 		this.kvmPrototype.paletteItem = true;
-		this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: 200});
+		y+=30;
+		this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: y+=50});
 		this.specialPrototype.paletteItem = true;
-		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: 245});
+		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=45});
 		this.hubPrototype.paletteItem = true;
-		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: 285});
+		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: y+=40});
 		this.switchPrototype.paletteItem = true;
-		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: 325});
+		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: y+=40});
 		this.routerPrototype.paletteItem = true;
 		this.trash = this.g.image(basepath+"images/trash.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
 		this.trashText = this.g.text(this.paletteWidth/2, this.size.y-13, "Trash").attr(this.defaultFont);
@@ -940,6 +962,13 @@ var AttributeForm = Class.extend({
 		tr.append($('<td/>').append(field.getInputElement()));
 		this.table.append(tr);
 		this.fields[field.name]=field;
+	}
+});
+
+var TopologyForm = AttributeForm.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.addField(new TextField("name", "Topology"), "name");
 	}
 });
 
