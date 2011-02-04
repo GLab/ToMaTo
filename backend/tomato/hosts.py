@@ -416,7 +416,7 @@ def get_best_host(group, device=None):
 
 def get_templates(ttype=None):
 	tpls = Template.objects.all() # pylint: disable-msg=E1101
-	if type:
+	if ttype:
 		tpls = tpls.filter(type=ttype)
 	return tpls
 
