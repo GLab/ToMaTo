@@ -144,6 +144,14 @@ def edit(api, request, top_id):
 	return _display_top(api, top_id, task_id, "Change topology")
 
 @wrap_rpc
+def modify_ajax(api, request, top_id):
+	import simplejson as json;
+	mods = json.loads(request.REQUEST["mods"]);
+	print mods
+	result = {success:True}
+	return HttpResponse(json.dumps(result));
+
+@wrap_rpc
 def details(api, request, top_id):
 	return _display_top(api, top_id)
 	

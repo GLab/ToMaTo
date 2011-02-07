@@ -27,6 +27,8 @@ $("#javascript-error").hide();
 <div id="editor" style="position: absolute;width:800px;height:600px;{% if edit %}border:2px solid #911A20;{% endif %}"></div>
 <script><!--
 basepath="/static/jsui/";
+ajaxpath="/ajax/";
+topid="{{top_id}}";
 $("head").append($('<link href="'+basepath+'smoothness/jquery-ui-1.8.9.custom.css" rel="stylesheet" type="text/css" />'));
 
 editor = new Editor({x:800, y:600}, {% if edit %}true{% else %}false{% endif %});

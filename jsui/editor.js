@@ -68,14 +68,29 @@ var NetElement = Class.extend({
 			this.setSelected(!oldSelected | sel.length>1);
 		}
 	},
+	modification: function(type, attr) {
+		return {"type": this.getElementType() + "-" + type, "element": this.getElementName(), "subelement": this.getSubElementName(), "attributes": attr};
+	},
 	setAttribute: function(name, value) {
 		this.attributes[name]=value;
+		var attr = {};
+		attr[name]=value;
+		this.editor.ajaxModify([this.modification("configure", attr)], function(res) {});
 	},
 	getAttribute: function(name) {
 		return this.attributes[name];
 	},
 	setAttributes: function(attrs) {
 		for (var key in attrs) this.setAttribute(key, attrs[key]);
+	},
+	getElementType: function() {
+		return "";
+	},
+	getElementName: function() {
+		return "";
+	},
+	getSubElementName: function() {
+		return "";
 	}
 });
 
@@ -114,6 +129,7 @@ var IconElement = NetElement.extend({
 		if (p.pos != p.opos) {
 			p.move(p.correctPos(p.pos));
 			p.lastMoved = new Date();
+			p.setAttribute("pos", p.pos.x+","+p.pos.y);
 		}
 	},
 	_click: function(event){
@@ -154,13 +170,12 @@ var IconElement = NetElement.extend({
 	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "name") {
-			//TODO: check for duplicates
 			arrayRemove(this.editor.elementNames, this.name);
+			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 			this.name = value;
 			this.paintUpdate();
 			this.editor.elementNames.push(value);
-		}
-		if (name == "state") {
+		} else if (name == "state") {
 			switch (value) {
 				case "started":
 				case "prepared":
@@ -202,6 +217,9 @@ var IconElement = NetElement.extend({
 	},
 	setSelected: function(isSelected) {
 		this._super(isSelected & !this.paletteItem);
+	},
+	getElementName: function() {
+		return this.name;
 	}
 });
 	
@@ -221,6 +239,9 @@ var Topology = IconElement.extend({
 	_dragMove: function (dx, dy) {
 	},
 	_dragStop: function () {
+	},
+	getElementType: function () {
+		return "topology";
 	}
 });
 
@@ -233,7 +254,20 @@ var Connection = NetElement.extend({
 		this.isConnection = true ;
 		this.iface = false;
 		this.name = "connection";
-		this.form = new ConnectionForm(this);
+		this.form = new ConnectionForm(this);		
+	},
+	connect: function(iface) {
+		this.iface = iface;
+		this.editor.ajaxModify([this.modification("create", {"interface": this.getSubElementName()})], function(res) {});
+	},
+	getElementType: function () {
+		return "connection";
+	},
+	getElementName: function () {
+		return this.con.name;
+	},
+	getSubElementName : function() {
+		return this.dev.name + "." + this.iface.name;
 	},
 	getIPHint: function() {
 		return "dhcp";
@@ -319,6 +353,16 @@ var Interface = NetElement.extend({
 		this.isInterface = true;
 		this.name = "eth" + dev.interfaces.length;
 		this.form = new InterfaceForm(this);
+		this.editor.ajaxModify([this.modification("create", {name: this.name})], function(res) {});
+	},
+	getElementType: function () {
+		return "interface";
+	},
+	getElementName: function () {
+		return this.dev.name;
+	},
+	getSubElementName : function() {
+		return this.name;
 	},
 	getPos: function() {
 		var xd = this.con.getX() - this.dev.getX();
@@ -376,6 +420,13 @@ var Connector = IconElement.extend({
 		this.isConnector = true;
 		this.IPHintNumber = this.editor.nextIPHintNumber++;
 		this.nextIPHintNumber = 1;
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:pos.x+","+pos.y, name: name})], function(res) {});
+	},
+	getElementType: function () {
+		return "connector";
+	},
+	getElementName: function () {
+		return this.name;
 	},
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
@@ -506,6 +557,13 @@ var Device = IconElement.extend({
 		this.interfaces = [];
 		this.paint();
 		this.isDevice = true;
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:pos.x+","+pos.y, name: name})], function(res) {});
+	},
+	getElementType: function () {
+		return "device";
+	},
+	getElementName: function () {
+		return this.name;
 	},
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
@@ -606,9 +664,15 @@ var Editor = Class.extend({
 		this.templatesKVM = [];
 		this.specialFeatures = {};
 		this.nextIPHintNumber = 0;
+		this.isLoading = false;
 		if (editable) this.paintPalette();
 		else this.topology = new Topology(this, "Topology", {x: 25, y: 16});
 		this.paintBackground();
+	},
+	ajaxModify: function(mods, func) {
+		if (this.isLoading) return;
+		var data = {"mods": JSON.stringify(mods)};
+		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", data: data, complete: func});
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -630,6 +694,7 @@ var Editor = Class.extend({
 		});
 	},
 	loadTopologyDOM: function(xml) {
+		this.isLoading = true;
 		var editor = this;
 		$(xml).find("topology").each(function(){
 			var devices = {};
@@ -693,12 +758,14 @@ var Editor = Class.extend({
 				editor.addElement(iface);
 			});
 		});
+		this.isLoading = false;
 	},
 	getPosition: function () { 
 		var pos = $("#editor").position();
 		return {x: pos.left, y: pos.top};
 	}, 
 	paintPalette: function() {
+		this.isLoading = true;
 		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
@@ -723,6 +790,7 @@ var Editor = Class.extend({
 		this.trashRect.parent = this;
 		this.trashRect.click(this._trashClick);
 		this.nextIPHintNumber = 0; //reset to 0
+		this.isLoading = false;
 	},
 	paintBackground: function() {
 		this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
@@ -768,7 +836,7 @@ var Editor = Class.extend({
 	connect: function(connector, device) {
 		var con = connector.createConnection(device);
 		var iface = device.createInterface(con);
-		con.iface = iface;
+		con.connect(iface);
 	},
 	disable: function() {
 		this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
