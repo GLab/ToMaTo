@@ -19,6 +19,7 @@ var NetElement = Class.extend({
 	remove: function(){
 		this.editor.removeElement(this);
 		if (this.selectionFrame) this.selectionFrame.remove();
+		this.editor.ajaxModify([this.modification("delete", {})], function(res) {});
 	},
 	paint: function(){
 	},
@@ -150,7 +151,7 @@ var IconElement = NetElement.extend({
 		if (this.icon) this.icon.remove();
 		this.icon = this.editor.g.image(basepath+this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
 		this.icon.parent = this;
-		this.stateIcon = this.editor.g.image("", this.pos.x+5, this.pos.y+5, 16, 16);
+		this.stateIcon = this.editor.g.image(basepath+"images/started.png", this.pos.x+5, this.pos.y+5, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		var r = this.getRect();
 		if (this.rect) this.rect.remove();
@@ -264,10 +265,12 @@ var Connection = NetElement.extend({
 		return "connection";
 	},
 	getElementName: function () {
-		return this.con.name;
+		if (this.con) return this.con.name;
+		else return "";
 	},
 	getSubElementName : function() {
-		return this.dev.name + "." + this.iface.name;
+		if (this.dev && this.iface) return this.dev.name + "." + this.iface.name;
+		else return "";
 	},
 	getIPHint: function() {
 		return "dhcp";
