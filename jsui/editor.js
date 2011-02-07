@@ -193,6 +193,7 @@ var IconElement = NetElement.extend({
 		if (this.icon) this.icon.remove();
 		if (this.text) this.text.remove();
 		if (this.rect) this.rect.remove();
+		if (this.stateIcon) this.stateIcon.remove();
 	},
 	correctPos: function(pos) {
 		if (pos.x + this.iconsize.x/2 > this.editor.g.width) pos.x = this.editor.g.width - this.iconsize.x/2;
