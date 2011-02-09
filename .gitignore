@@ -3,9 +3,6 @@
 *.pyc
 web/apache.conf
 *.komodoproject
-.project
-.pydevproject
-.settings
 *.sqlite
 buildui/nbproject/private
 buildui/dist

@@ -1,0 +1,26 @@
+#Wed Dec 08 12:35:55 CET 2010
+eclipse.preferences.version=1
+encoding//tomato/__init__.py=utf-8
+encoding//tomato/auth/__init__.py=utf-8
+encoding//tomato/auth/dummy_provider.py=utf-8
+encoding//tomato/auth/ldap_provider.py=utf-8
+encoding//tomato/config.py=utf-8
+encoding//tomato/dummynet.py=utf-8
+encoding//tomato/fault.py=utf-8
+encoding//tomato/generic.py=utf-8
+encoding//tomato/hosts.py=utf-8
+encoding//tomato/kvm.py=utf-8
+encoding//tomato/log.py=utf-8
+encoding//tomato/migrations/0001_initial.py=utf-8
+encoding//tomato/migrations/0002_removed_hostgroup.py=utf-8
+encoding//tomato/migrations/0003_resource_set.py=utf-8
+encoding//tomato/modification.py=utf-8
+encoding//tomato/openvz.py=utf-8
+encoding//tomato/special.py=utf-8
+encoding//tomato/tasks.py=utf-8
+encoding//tomato/tinc.py=utf-8
+encoding//tomato/topology.py=utf-8
+encoding//tomato/topology_analysis.py=utf-8
+encoding//tomato/util.py=utf-8
+encoding/server.py=utf-8
+encoding/test.py=utf-8
