@@ -70,13 +70,13 @@ var NetElement = Class.extend({
 		}
 	},
 	modification: function(type, attr) {
-		return {"type": this.getElementType() + "-" + type, "element": this.getElementName(), "subelement": this.getSubElementName(), "attributes": attr};
+		return {"type": this.getElementType() + "-" + type, "element": this.getElementName(), "subelement": this.getSubElementName(), "properties": attr};
 	},
 	setAttribute: function(name, value) {
 		this.attributes[name]=value;
 		var attr = {};
 		attr[name]=value;
-		this.editor.ajaxModify([this.modification("configure", attr)], function(res) {});
+		this.editor.ajaxModify([this.modification("configure", attr)]);
 	},
 	getAttribute: function(name) {
 		return this.attributes[name];
@@ -130,7 +130,7 @@ var IconElement = NetElement.extend({
 		if (p.pos != p.opos) {
 			p.move(p.correctPos(p.pos));
 			p.lastMoved = new Date();
-			p.setAttribute("pos", p.pos.x+","+p.pos.y);
+			p.setAttribute("pos", (p.pos.x-p.editor.paletteWidth)+","+p.pos.y);
 		}
 	},
 	_click: function(event){
@@ -203,6 +203,8 @@ var IconElement = NetElement.extend({
 		return pos;
 	},
 	move: function(pos) {
+		pos.x = pos.x || 0;
+		pos.y = pos.y || 0;
 		this.pos = pos;
 		this.paintUpdate();
 	},
@@ -424,7 +426,7 @@ var Connector = IconElement.extend({
 		this.isConnector = true;
 		this.IPHintNumber = this.editor.nextIPHintNumber++;
 		this.nextIPHintNumber = 1;
-		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:pos.x+","+pos.y, name: name})], function(res) {});
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
 	},
 	getElementType: function () {
 		return "connector";
@@ -561,7 +563,7 @@ var Device = IconElement.extend({
 		this.interfaces = [];
 		this.paint();
 		this.isDevice = true;
-		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:pos.x+","+pos.y, name: name})], function(res) {});
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
 	},
 	getElementType: function () {
 		return "device";
@@ -573,12 +575,12 @@ var Device = IconElement.extend({
 		return this.editor.getNameHint(this.baseName());
 	},
 	remove: function(){
-		this._super();
 		var ifs = this.interfaces.slice(0);
 		for (var i in ifs) {
 			if(ifs[i].con) ifs[i].con.remove();
-			ifs[i].remove();
+			else ifs[i].remove();
 		}
+		this._super();
 	},
 	move: function(pos) {
 		this._super(pos);
@@ -675,8 +677,16 @@ var Editor = Class.extend({
 	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;
+		console.log("AJAX MOD:");
+		for (var i in mods) console.log(mods[i]);
 		var data = {"mods": JSON.stringify(mods)};
-		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", data: data, complete: func});
+		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", data: data, complete: function(res){
+			if (res.status == 200) {
+				var msg = JSON.parse(res.responseText);
+				if (! msg.success) alert("Request failed: " + msg.output);
+				if (func) func(msg);
+			} else alert("AJAX request failed: " + res.statusText);
+		}});
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -700,6 +710,7 @@ var Editor = Class.extend({
 	loadTopologyDOM: function(xml) {
 		this.isLoading = true;
 		var editor = this;
+		var dangling_interfaces_mods = [];
 		$(xml).find("topology").each(function(){
 			var devices = {};
 			var connectors = {};
@@ -755,12 +766,18 @@ var Editor = Class.extend({
 				var device = devices[$(this).parent().attr("name")];
 				var name = attrs["name"];
 				var con = connections[device.name+"."+name];
-				var iface = device.createInterface(con);
-				con.connect(iface);
-				iface.setAttributes(attrs);
+				if (con) {
+					var iface = device.createInterface(con);
+					con.connect(iface);
+					iface.setAttributes(attrs);
+				} else {
+					console.log(con);
+					dangling_interfaces_mods.push({type: "interface-delete", element: device.name, subelement: name, properties: {}});
+				}
 			});
 		});
 		this.isLoading = false;
+		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 	},
 	getPosition: function () { 
 		var pos = $("#editor").position();

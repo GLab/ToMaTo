@@ -27,7 +27,8 @@ from lib import *
 @wrap_rpc
 def modify(api, request, top_id):
 	if not request.REQUEST.has_key("mods"):
-		return HttpResponse(json.dumps({"success": False, "errorMessage": "mods not found"})); 
-	mods = json.loads(request.REQUEST["mods"]);
+		return HttpResponse(json.dumps({"success": False, "errorMessage": "mods not found"})) 
+	mods = json.loads(request.REQUEST["mods"])
 	print mods
-	return HttpResponse(json.dumps({"success": True}));
+	res = api.top_modify(top_id, mods, True)
+	return HttpResponse(json.dumps({"success": res["done"], "output": res["output"]}))

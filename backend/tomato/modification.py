@@ -41,7 +41,7 @@ class Modification():
 				dev = openvz.OpenVZDevice()
 			else:
 				raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Unknown device type: %s" % type )
-			dev.type = type
+			dev.type = dtype
 			dev.topology = top
 			dev.name = self.properties["name"]
 			top.device_set_add(dev)
@@ -87,7 +87,7 @@ class Modification():
 				con = tinc.TincConnector()
 			else:
 				raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Unknown connector type: %s" % type )
-			con.type = type
+			con.type = ctype
 			con.topology = top
 			con.name = self.properties["name"]
 			top.connector_set_add(con)
@@ -135,6 +135,12 @@ def read_from_dom(dom):
 		modlist.append(Modification(mtype, element, subelement, properties))
 	return modlist
 
+def read_from_list(mods):
+	modlist = []
+	for mod in mods:
+		modlist.append(Modification(mod["type"], mod["element"], mod["subelement"], mod["properties"]))
+	return modlist
+
 def _xml_attrs_to_dict(xml):
 	res = {}
 	for k in xml.keys():
@@ -157,23 +163,37 @@ def convert_specification(dom):
 			modlist.append(Modification("connection-create", conname, None, _xml_attrs_to_dict(conn.attributes)))
 	return modlist
 
-def modify_run(top_id, mods, task):
+def modify_task_run(top_id, mods, task):
 	for mod in mods:
 		top = topology.get(top_id)
 		mod.run(top, task)
 		task.subtasks_done = task.subtasks_done + 1
 	task.done()
 
-def modify(top, dom):
+def modify(top, mods, direct):
 	top.renew()
+	if direct:
+		import tasks
+		task = tasks.TaskStatus(modify_task_run, top.id, mods)
+		top.task = task.id
+		task._run()
+		return task.dict() 
+	else:
+		task = top.start_task(modify_task_run, top.id, mods)
+		task.subtasks_total = len(mods)
+		return task.id
+
+def modify_list(top, mods, direct):
+	mods = read_from_list(mods)
+	return modify(top, mods, direct)
+	
+def modify_dom(top, dom):
 	mods = read_from_dom(dom)
-	task = top.start_task(modify_run, top.id, mods)
-	task.subtasks_total = len(mods)
-	return task.id
+	return modify(top, mods, False)
 
 def apply_spec(top, dom):
 	top.renew()
 	mods = convert_specification(dom)
-	task = top.start_task(modify_run, top.id, mods)
+	task = top.start_task(modify_task_run, top.id, mods)
 	task.subtasks_total = len(mods)
 	return task.id

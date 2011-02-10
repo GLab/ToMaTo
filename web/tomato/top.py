@@ -60,7 +60,7 @@ def create(api, request):
 		top_id=api.top_import(xml)
 	if format=="mod":
 		top_id=api.top_create()
-		api.top_modify(top_id,xml)
+		api.top_modify_xml(top_id,xml)
 	return _display_top(api, top_id)
 	
 @wrap_rpc
@@ -140,16 +140,8 @@ def edit(api, request, top_id):
 			editor = request.REQUEST["editor"]
 		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
 	xml=request.REQUEST["xml"]
-	task_id=api.top_modify(int(top_id), xml)
+	task_id=api.top_modify_xml(int(top_id), xml)
 	return _display_top(api, top_id, task_id, "Change topology")
-
-@wrap_rpc
-def modify_ajax(api, request, top_id):
-	import simplejson as json;
-	mods = json.loads(request.REQUEST["mods"]);
-	print mods
-	result = {success:True}
-	return HttpResponse(json.dumps(result));
 
 @wrap_rpc
 def details(api, request, top_id):

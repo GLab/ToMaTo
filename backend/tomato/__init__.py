@@ -416,7 +416,7 @@ def top_create(user=None):
 	top.logger().log("created", user=user.name)
 	return top.id
 
-def top_modify(top_id, xml, user=None):
+def top_modify_xml(top_id, xml, user=None):
 	"""
 	Applies the modifications encoded as xml to the topology. The user must
 	have at least manager access to the topology. The result of this method
@@ -426,7 +426,7 @@ def top_modify(top_id, xml, user=None):
 	@param top_id: the id of the topology
 	@type top_id: int
 	@param xml: the modifications encoded as xml
-	@type xml: int
+	@type xml: string
 	@param user: current user
 	@type user: generic.User
 	@return: the id of the modification task
@@ -437,9 +437,36 @@ def top_modify(top_id, xml, user=None):
 	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
 	dom = util.parse_xml(xml, "modifications")
 	import modification
-	task_id = modification.modify(top, dom)
+	task_id = modification.modify_dom(top, dom)
 	top.logger().log("started task %s" % task_id, user=user.name)
 	return task_id
+
+def top_modify(top_id, mods, direct, user=None):
+	"""
+	Applies the list of modifications to the topology. The user must
+	have at least manager access to the topology. The result of this method
+	is a task id that runs the modifications.
+	This method implicitly renews the topology.
+	
+	@param top_id: the id of the topology
+	@type top_id: int
+	@param mods: the modifications list
+	@type mods: list of dict
+	@param direct: whether to execute the modification directly
+	@type direct: boolean
+	@param user: current user
+	@type user: generic.User
+	@return: the id of the modification task
+	@rtype: string
+	""" 
+	top = topology.get(top_id)
+	_top_access(top, "manager", user)
+	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
+	import modification
+	res = modification.modify_list(top, mods, direct)
+	if not direct:
+		top.logger().log("started task %s" % res, user=user.name)
+	return res
 
 def top_remove(top_id, user=None):
 	"""
