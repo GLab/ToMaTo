@@ -237,6 +237,7 @@ var Topology = IconElement.extend({
 	setAttribute: function(name, value) {
 		//ignore name changes
 		this.attributes[name]=value;
+		if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 	},
 	_dragStart: function () {
 	},
@@ -675,17 +676,30 @@ var Editor = Class.extend({
 		else this.topology = new Topology(this, "Topology", {x: 25, y: 16});
 		this.paintBackground();
 	},
+	infoMessage: function(title, message) {
+		var div = $('<div/>').dialog({autoOpen: true, draggable: false, modal: true,
+			resizable: false, height:"auto", width:"auto", title: title, dialogClass: "ui-state-highlight"});
+		div.append(""+message);
+		return div; 
+	},
+	errorMessage: function(title, message) {
+		var div = $('<div/>').dialog({autoOpen: true, draggable: false, modal: true,
+			resizable: false, height:"auto", width:"auto", title: title, dialogClass: "ui-state-error"});
+		div.append(""+message);
+		return div; 
+	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;
 		console.log("AJAX MOD:");
 		for (var i in mods) console.log(mods[i]);
 		var data = {"mods": JSON.stringify(mods)};
-		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", data: data, complete: function(res){
+		var editor = this;
+		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: false, data: data, complete: function(res){
 			if (res.status == 200) {
 				var msg = JSON.parse(res.responseText);
-				if (! msg.success) alert("Request failed: " + msg.output);
+				if (! msg.success) editor.errorMessage("Request failed", msg.output);
 				if (func) func(msg);
-			} else alert("AJAX request failed: " + res.statusText);
+			} else editor.errorMessage("AJAX request failed", res.statusText);
 		}});
 	},
 	setHostGroups: function(groups) {
@@ -712,6 +726,8 @@ var Editor = Class.extend({
 		var editor = this;
 		var dangling_interfaces_mods = [];
 		$(xml).find("topology").each(function(){
+			var attrs = getAttributesDOM(this);
+			editor.topology.setAttributes(attrs);
 			var devices = {};
 			var connectors = {};
 			var connections = {};
