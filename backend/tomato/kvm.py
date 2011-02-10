@@ -142,6 +142,12 @@ class KVMDevice(generic.Device):
 
 	def configure(self, properties, task):
 		generic.Device.configure(self, properties, task)
+		if "template" in properties:
+			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			self.template = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
+			if not self.template:
+				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
+		self.save()
 			
 	def interfaces_add(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.state == "started":
@@ -149,11 +155,8 @@ class KVMDevice(generic.Device):
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		iface = generic.Interface()
-		try:
-			if self.interface_set_get(name):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
-		except: #pylint: disable-msg=W0702
-			pass
+		if self.interface_set_get(name):
+			raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
 		iface.name = name
 		iface.device = self
 		if self.state == "prepared":

@@ -400,7 +400,7 @@ def get_best_host(group, device=None):
 	if group:
 		all_hosts = all_hosts.filter(group=group)
 	if device:
-		for iface in device.interfaces_all():
+		for iface in device.interface_set_all():
 			if iface.is_connected():
 				sf = iface.connection.connector.upcast()
 				if sf.is_special():
@@ -416,7 +416,7 @@ def get_best_host(group, device=None):
 
 def get_templates(ttype=None):
 	tpls = Template.objects.all() # pylint: disable-msg=E1101
-	if type:
+	if ttype:
 		tpls = tpls.filter(type=ttype)
 	return tpls
 

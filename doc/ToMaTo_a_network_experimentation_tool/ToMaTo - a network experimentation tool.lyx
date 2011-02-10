@@ -541,7 +541,8 @@ ToMaTo structure
 ToMaTo uses virtualization technologies to allow experiments to run concurrently
  in isolated environments spanning parts of the experimental facility.
  ToMaTo consists of three modules, the host system, the central back-end
- and the web-based front-end as shown in figure 
+ and the web-based front-end (http://tomato.german-lab.de) as shown in figure
+ 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:ToMaTo-structure"
