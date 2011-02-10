@@ -177,7 +177,7 @@ def modify(top, mods, direct):
 		task = tasks.TaskStatus(modify_task_run, top.id, mods)
 		top.task = task.id
 		task._run()
-		return task.dict() 
+		return task.dict()
 	else:
 		task = top.start_task(modify_task_run, top.id, mods)
 		task.subtasks_total = len(mods)

@@ -694,10 +694,12 @@ var Editor = Class.extend({
 		for (var i in mods) console.log(mods[i]);
 		var data = {"mods": JSON.stringify(mods)};
 		var editor = this;
-		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: false, data: data, complete: function(res){
+		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
 			if (res.status == 200) {
 				var msg = JSON.parse(res.responseText);
-				if (! msg.success) editor.errorMessage("Request failed", msg.output);
+				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+					window.location.reload();						
+				});
 				if (func) func(msg);
 			} else editor.errorMessage("AJAX request failed", res.statusText);
 		}});
