@@ -83,9 +83,10 @@ compoundBBox = function (list) {
 
 arrayRemove = function(array, item){
   var pos = -1;
-  for (i in array) if (array[i] == item) pos = i;
-  array[i] = array[length-1];
-  return array.pop();
+  for (var i in array) if (array[i] == item) pos = i;
+  array.splice(pos, 1);
+  //array[pos] = array[length-1];
+  //return array.pop();
 };
 
 computedStyle = function(el){

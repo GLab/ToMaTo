@@ -738,7 +738,6 @@ var Editor = Class.extend({
 						break;
 				}
 				el.setAttributes(attrs);
-				editor.addElement(el);
 			};
 			$(this).find('device').each(f);
 			$(this).find('connector').each(f);
@@ -750,7 +749,6 @@ var Editor = Class.extend({
 				var c = con.createConnection(device);
 				c.setAttributes(attrs);
 				connections[ifname] = c;
-				editor.addElement(c);
 			});
 			$(this).find('interface').each(function(){
 				var attrs = getAttributesDOM(this);
@@ -758,8 +756,8 @@ var Editor = Class.extend({
 				var name = attrs["name"];
 				var con = connections[device.name+"."+name];
 				var iface = device.createInterface(con);
+				con.connect(iface);
 				iface.setAttributes(attrs);
-				editor.addElement(iface);
 			});
 		});
 		this.isLoading = false;
@@ -1028,29 +1026,6 @@ var CheckField = EditElement.extend({
 var Button = EditElement.extend({
 	init: function(text, func) {
 		this._super("button-"+text);
-		this.func = func;
-		this.input = $('<input type="button" value="'+text+'"/>');
-		this.input[0].fld = this;
-		this.input.click(function (){
-			this.fld.func(this.fld);
-		});
-	},
-	setEditable: function(editable) {
-		this.input.attr({disabled: !editable});
-	},
-	setValue: function(value) {
-	},
-	getValue: function() {
-		return "";
-	},
-	getInputElement: function() {
-		return this.input;
-	}
-});
-
-var Button = EditElement.extend({
-	init: function(name, text, func) {
-		this._super(name);
 		this.func = func;
 		this.input = $('<input type="button" value="'+text+'"/>');
 		this.input[0].fld = this;
