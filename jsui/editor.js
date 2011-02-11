@@ -698,10 +698,8 @@ var Editor = Class.extend({
 	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;
-		if (console) {
-			console.log("AJAX MOD:");
-			for (var i = 0; i < mods.length; i++) console.log(mods[i]);
-		}
+		log("AJAX MOD:");
+		for (var i = 0; i < mods.length; i++) log(mods[i]);
 		var data = {"mods": JSON.stringify(mods)};
 		var editor = this;
 		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){

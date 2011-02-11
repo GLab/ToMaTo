@@ -122,4 +122,8 @@ if (!Array.prototype.indexOf) {
   };
 }
 
+log = function(msg) {
+	if (typeof(console)!="undefined") console.log(msg);
+};
+
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);
