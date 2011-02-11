@@ -1143,7 +1143,9 @@ var AttributeForm = Class.extend({
 		this.fields = {};
 	},
 	show: function() {
-		this.div.dialog({position:{my: "left top", at: "right top", of: $(this.obj.rect.node), offset: "55 0"}});
+		var rect = this.obj.getRect();
+		var ed = this.editor.getPosition();
+		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
