@@ -673,7 +673,7 @@ var Editor = Class.extend({
 		this.nextIPHintNumber = 0;
 		this.isLoading = false;
 		if (editable) this.paintPalette();
-		else this.topology = new Topology(this, "Topology", {x: 25, y: 16});
+		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
 		this.paintBackground();
 	},
 	infoMessage: function(title, message) {
@@ -807,8 +807,6 @@ var Editor = Class.extend({
 		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
-		this.topology = new Topology(this, "Topology", {x: this.paletteWidth/2, y: y+=50});
-		y+=30;
 		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: y+=50});
 		this.openVZPrototype.paletteItem = true;
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
