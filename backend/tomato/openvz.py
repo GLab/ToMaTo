@@ -159,8 +159,11 @@ class OpenVZDevice(generic.Device):
 		import re
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
-		if self.interface_set_get(name):
-			raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
+		try:
+			if self.interface_set_get(name):
+				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
+		except generic.Interface.DoesNotExist:
+			pass
 		iface = ConfiguredInterface()
 		iface.name = name
 		iface.device = self
