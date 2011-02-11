@@ -65,7 +65,7 @@ var NetElement = Class.extend({
 		else {
 			var oldSelected = this.isSelected();
 			var sel = this.editor.selectedElements();
-			for (var i in sel) sel[i].setSelected(false);
+			for (var i = 0; i < sel.length; i++) sel[i].setSelected(false);
 			this.setSelected(!oldSelected | sel.length>1);
 		}
 	},
@@ -145,7 +145,7 @@ var IconElement = NetElement.extend({
 	paint: function(){
 		this._super();
 		if (this.text) this.text.remove();
-		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+7, this.name);
+		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+6, this.name);
 		if (! isIE) this.text.attr(this.editor.defaultFont);
 		this.text.parent = this;
 		if (this.icon) this.icon.remove();
@@ -164,14 +164,14 @@ var IconElement = NetElement.extend({
 	paintUpdate: function() {
 		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: basepath+this.iconsrc});
 		this.stateIcon.attr({x: this.pos.x+5, y: this.pos.y+5});
-		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+7, text: this.name});
+		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+6, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
 	},
 	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "name") {
-			arrayRemove(this.editor.elementNames, this.name);
+			this.editor.elementNames.remove(this.name);
 			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 			this.name = value;
 			this.paintUpdate();
@@ -440,12 +440,12 @@ var Connector = IconElement.extend({
 	},
 	remove: function(){
 		var cons = this.connections.slice(0);
-		for (var i in cons) cons[i].remove();
+		for (var i = 0; i < cons.length; i++) cons[i].remove();
 		this._super();
 	},
 	move: function(pos) {
 		this._super(pos);
-		for (var i in this.connections) {
+		for (var i = 0; i < this.connections.length; i++) {
 			this.connections[i].paintUpdate();
 			this.connections[i].dev.paintUpdateInterfaces();
 		}    
@@ -453,14 +453,14 @@ var Connector = IconElement.extend({
 	onClick: function(event) {
 		if (event.ctrlKey || event.altKey) {
 			var selectedElements = this.editor.selectedElements();
-			for (var i in selectedElements) {
+			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
 				if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
 			}
 		} else this._super(event);
 	},
 	isConnectedWith: function(dev) {
-		for (var i in this.connections) if (this.connections[i].dev == dev) return true;
+		for (var i = 0; i < this.connections.length; i++) if (this.connections[i].dev == dev) return true;
 		return false;
 	},
 	createConnection: function(dev) {
@@ -469,7 +469,7 @@ var Connector = IconElement.extend({
 		return con;
 	},
 	removeConnection: function(con) {
-		arrayRemove(this.connections,con);
+		this.connections.remove(con);
 	}
 });
 
@@ -577,7 +577,7 @@ var Device = IconElement.extend({
 	},
 	remove: function(){
 		var ifs = this.interfaces.slice(0);
-		for (var i in ifs) {
+		for (var i = 0; i < ifs.length; i++) {
 			if(ifs[i].con) ifs[i].con.remove();
 			else ifs[i].remove();
 		}
@@ -585,20 +585,20 @@ var Device = IconElement.extend({
 	},
 	move: function(pos) {
 		this._super(pos);
-		for (var i in this.interfaces) this.interfaces[i].con.paintUpdate();
+		for (var i = 0; i < this.interfaces.length; i++) this.interfaces[i].con.paintUpdate();
 		this.paintUpdateInterfaces();   
 	},
 	paint: function() {
 		this._super();
-		for (var i in this.interfaces) this.interfaces[i].paint();    
+		for (var i = 0; i < this.interfaces.length; i++) this.interfaces[i].paint();    
 	},
 	paintUpdateInterfaces: function() {
-		for (var i in this.interfaces) this.interfaces[i].paintUpdate();
+		for (var i = 0; i < this.interfaces.length; i++) this.interfaces[i].paintUpdate();
 	},
 	onClick: function(event) {
 		if (event.ctrlKey || event.altKey) {
 			var selectedElements = this.editor.selectedElements();
-			for (var i in selectedElements) {
+			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
 				if (el.isDevice && el != this) {
@@ -611,7 +611,7 @@ var Device = IconElement.extend({
 		} else this._super(event);
 	},
 	isConnectedWith: function(con) {
-		for (var i in this.interfaces) if (this.interfaces[i].con.con == con) return true;
+		for (var i = 0; i < this.interfaces.length; i++) if (this.interfaces[i].con.con == con) return true;
 		return false;
 	},
 	createInterface: function(con) {
@@ -620,7 +620,7 @@ var Device = IconElement.extend({
 		return iface;
 	},
 	removeInterface: function(iface) {
-		arrayRemove(this.interfaces,iface);
+		this.interfaces.remove(iface);
 	}
 });
 
@@ -657,7 +657,8 @@ var KVMDevice = Device.extend({
 
 var Editor = Class.extend({
 	init: function(size, editable) {
-		this.g = Raphael("editor", size.x, size.y);
+		this.div = $("#editor");
+		this.g = Raphael(this.div[0], size.x, size.y);
 		this.editable = editable;
 		this.size = size;
 		this.paletteWidth = editable ? 60 : 0;
@@ -674,25 +675,33 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (editable) this.paintPalette();
 		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
+		this.creatorForm = new CreatorForm(this);
 		this.paintBackground();
 	},
 	infoMessage: function(title, message) {
-		var div = $('<div/>').dialog({autoOpen: true, draggable: false, modal: true,
-			resizable: false, height:"auto", width:"auto", title: title, dialogClass: "ui-state-highlight"});
+		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
+			resizable: false, height:"auto", width:"auto", title: title, 
+			position:{my: "center center", at: "center center", of: editor.div},
+			dialogClass: "ui-state-highlight"});
 		div.append(""+message);
+		div.dialog("open");
 		return div; 
 	},
 	errorMessage: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
-			resizable: false, height:"auto", width:"auto", title: title, dialogClass: "ui-state-error"});
+			resizable: false, height:"auto", width:"auto", title: title, 
+			position:{my: "center center", at: "center center", of: editor.div},
+			dialogClass: "ui-state-error"});
 		div.append(""+message);
 		div.dialog("open");
 		return div; 
 	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;
-		console.log("AJAX MOD:");
-		for (var i in mods) console.log(mods[i]);
+		if (console) {
+			console.log("AJAX MOD:");
+			for (var i = 0; i < mods.length; i++) console.log(mods[i]);
+		}
 		var data = {"mods": JSON.stringify(mods)};
 		var editor = this;
 		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
@@ -789,10 +798,7 @@ var Editor = Class.extend({
 					var iface = device.createInterface(con);
 					con.connect(iface);
 					iface.setAttributes(attrs);
-				} else {
-					console.log(con);
-					dangling_interfaces_mods.push({type: "interface-delete", element: device.name, subelement: name, properties: {}});
-				}
+				} else dangling_interfaces_mods.push({type: "interface-delete", element: device.name, subelement: name, properties: {}});
 			});
 		});
 		this.isLoading = false;
@@ -807,6 +813,12 @@ var Editor = Class.extend({
 		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
+		this.creator = this.g.image(basepath+"images/tc3.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
+		this.creatorText = this.g.text(this.paletteWidth/2, y+=20, "Creator").attr(this.defaultFont);
+		this.creatorRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
+		this.creatorRect.parent = this;
+		this.creatorRect.click(this._creatorClick);
+		y+=20;
 		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: y+=50});
 		this.openVZPrototype.paletteItem = true;
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
@@ -814,7 +826,7 @@ var Editor = Class.extend({
 		y+=30;
 		this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: y+=50});
 		this.specialPrototype.paletteItem = true;
-		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=45});
+		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=50});
 		this.hubPrototype.paletteItem = true;
 		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: y+=40});
 		this.switchPrototype.paletteItem = true;
@@ -869,6 +881,10 @@ var Editor = Class.extend({
 		var p = this.parent;
 		p.removeSelectedElements();
 	},
+	_creatorClick: function(event){
+		var p = this.parent;
+		p.creatorForm.toggle();
+	},
 	connect: function(connector, device) {
 		var con = connector.createConnection(device);
 		var iface = device.createInterface(con);
@@ -882,14 +898,14 @@ var Editor = Class.extend({
 	},
 	selectedElements: function() {
 		var sel = [];
-		for (var i in this.elements) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
+		for (var i = 0; i < this.elements.length; i++) if (this.elements[i].isSelected()) sel.push(this.elements[i]);
 		return sel;
 	},
 	unselectAll: function() {
-		for (var i in this.elements) this.elements[i].setSelected(false);
+		for (var i = 0; i < this.elements.length; i++) this.elements[i].setSelected(false);
 	},
 	selectAllInArea: function(area) {
-		for (var i in this.elements) {
+		for (var i = 0; i < this.elements.length; i++) {
 			var el = this.elements[i];
 			var rect = el.getRect();
 			var mid = {x: rect.x+rect.width/2, y: rect.y+rect.height/2};
@@ -909,12 +925,12 @@ var Editor = Class.extend({
 		if (el.name) this.elementNames.push(el.name);
 	},
 	removeElement: function(el) {
-		arrayRemove(this.elements, el);
-		if (el.name) arrayRemove(this.elementNames, el.name);
+		this.elements.remove(el);
+		if (el.name) this.elementNames.remove(el.name);
 	},
 	removeSelectedElements: function() {
 		var sel = this.selectedElements();
-		for (var i in sel) {
+		for (var i = 0; i < sel.length; i++) {
 			var el = sel[i];
 			if (el.isInterface) continue;
 			el.remove();
@@ -927,7 +943,7 @@ var EditElement = Class.extend({
 		this.name = name;
 	},
 	onChanged: function(value) {
-		this.form.obj.setAttribute(this.name, value);
+		this.form.onChanged(this.name, value);
 	},
 	setValue: function(value) {
 	},
@@ -1002,8 +1018,8 @@ var SelectField = EditElement.extend({
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
-		if (!(dflt in options)) this.input.append($('<option value="'+dflt+'">'+dflt+'</option>'));
-		for (var i in options) {
+		if (options.indexOf(dflt) < 0) this.input.append($('<option value="'+dflt+'">'+dflt+'</option>'));
+		for (var i = 0; i < options.length; i++) {
 			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
 			if (options[i] == dflt) option.attr({selected: true});
 			this.input.append(option);
@@ -1103,9 +1119,7 @@ var AttributeForm = Class.extend({
 		this.fields = {};
 	},
 	show: function() {
-		var rect = this.obj.getRect();
-		var ed = this.editor.getPosition();
-		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
+		this.div.dialog({position:{my: "left top", at: "right top", of: $(this.obj.rect.node), offset: "55 0"}});
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
@@ -1132,7 +1146,7 @@ var AttributeForm = Class.extend({
 		var tr = $('<tr/>');
 		var td = $('<td/>');
 		td.attr({colspan: "2", align: "center"});
-		for (var i in fields) {
+		for (var i = 0; i < fields.length; i++) {
 			var field = fields[i];
 			field.setForm(this);
 			this.fields[field.name]=field;
@@ -1140,6 +1154,9 @@ var AttributeForm = Class.extend({
 		}
 		tr.append(td);
 		this.table.append(tr);
+	},
+	onChanged: function(name, value) {
+		this.obj.setAttribute(name, value);
 	}
 });
 
@@ -1225,5 +1242,61 @@ var EmulatedConnectionForm = ConnectionForm.extend({
 var EmulatedRouterConnectionForm = EmulatedConnectionForm.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");	}
+		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");
+	}
+});
+
+var CreatorForm = Class.extend({
+	init: function(editor) {
+		this.editor = editor;
+		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
+			resizable: false, height:"auto", width:"auto", title: "Topology Creator",
+			show: "slide", hide: "slide", position:{my: "center center", at: "center center", of: editor.div}});
+		this.table = $('<table/>');
+		this.div.append(this.table);
+		this.fields = {};
+		this.addField(new SelectField("type", ["Star", "Ring", "Full mesh", "Star around host", "Loose nodes"], "Star"), "Topology type");		
+		this.addField(new MagicTextField("number", /^\d+$/, "5"), "Number of nmodes");
+		this.addField(new SelectField("device_type", ["OpenVZ", "KVM"], "OpenVZ"), "Device type");		
+		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "Device template");		
+		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
+		this.addField(new CheckField("internet", false), "Additional internet connection");
+		this.addMultipleFields([new Button("create", function(btn){
+			alert("Topology creator does not work yet");
+		})]);
+	},
+	show: function() {
+		this.div.dialog("open");
+	},
+	hide: function() {
+		this.div.dialog("close");
+	},
+	toggle: function() {
+		if (this.div.dialog("isOpen")) this.hide();
+		else this.show();
+	},
+	addField: function(field, desc) {
+		field.setForm(this);
+		var tr = $('<tr/>');
+		tr.append($('<td>'+desc+'</td>'));
+		tr.append($('<td/>').append(field.getInputElement()));
+		this.table.append(tr);
+		this.fields[field.name]=field;
+	},
+	addMultipleFields: function(fields) {
+		var tr = $('<tr/>');
+		var td = $('<td/>');
+		td.attr({colspan: "2", align: "center"});
+		for (var i = 0; i < fields.length; i++) {
+			var field = fields[i];
+			field.setForm(this);
+			this.fields[field.name]=field;
+			td.append(field.getInputElement());
+		}
+		tr.append(td);
+		this.table.append(tr);
+	},
+	onChanged: function(name, value) {
+		//ignore
+	}
 });

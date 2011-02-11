@@ -67,7 +67,7 @@ compoundBBox = function (list) {
   maxX = -1;
   minY = -1;
   maxY = -1;
-  for (i in list) {
+  for (var i = 0; i < list.length; i++) {
     box = list[i].getBBox();
     if (minX<0) minX = box.x;
     minX = Math.min(minX, box.x);
@@ -81,13 +81,13 @@ compoundBBox = function (list) {
   return {x: minX, y: minY, width: maxX-minX, height: maxY-minY};
 };
 
-arrayRemove = function(array, item){
-  var pos = -1;
-  for (var i in array) if (array[i] == item) pos = i;
-  array.splice(pos, 1);
-  //array[pos] = array[length-1];
-  //return array.pop();
-};
+if (!Array.prototype.remove) {
+	Array.prototype.remove = function(item) {
+		var pos = -1;
+		for (var i in this) if (this[i] == item) pos = i;
+		this.splice(pos, 1);
+	};
+}
 
 computedStyle = function(el){
     if (el.currentStyle) return el.currentStyle;
@@ -108,5 +108,18 @@ getAttributesDOM = function(dom) {
 	}
 	return map;
 };
+
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function(elt /*, from*/) {
+    var len = this.length;
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0) ? Math.ceil(from) : Math.floor(from);
+    if (from < 0) from += len;
+    for (; from < len; from++) {
+      if (from in this && this[from] === elt) return from;
+    }
+    return -1;
+  };
+}
 
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);
