@@ -708,6 +708,7 @@ var Editor = Class.extend({
 		return true;
 	},
 	ajaxModifyCommit: function() {
+		if (!this.ajaxModifyTransaction) return false;
 		this.ajaxModifyExecute(this.ajaxModifyTransaction);
 		delete this.ajaxModifyTransaction;
 	},
@@ -715,6 +716,7 @@ var Editor = Class.extend({
 		var data = {"mods": JSON.stringify(transaction.mods)};
 		var editor = this;
 		if (transaction.mods.length == 0) return;
+		log("AJAX MOD SEND: " + transaction.mods.length);
 		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
 			if (res.status == 200) {
 				var msg = JSON.parse(res.responseText);
