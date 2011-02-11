@@ -606,12 +606,7 @@ var Device = IconElement.extend({
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
 				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
-				if (el.isDevice && el != this) {
-					var middle = {x: (this.getPos().x + el.getPos().x) / 2, y: (this.getPos().y + el.getPos().y) / 2}; 
-					var con = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
-					this.editor.connect(con, el);
-					this.editor.connect(con, this);
-				}
+				if (el.isDevice && el != this) this.editor.connect(el, this);
 			}
 			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
@@ -910,9 +905,17 @@ var Editor = Class.extend({
 		p.creatorForm.toggle();
 	},
 	connect: function(connector, device) {
-		var con = connector.createConnection(device);
-		var iface = device.createInterface(con);
-		con.connect(iface);
+		if (connector.isConnector && device.isDevice) {
+			var con = connector.createConnection(device);
+			var iface = device.createInterface(con);
+			con.connect(iface);
+		} else if (connector.isDevice && device.isConnector ) this.connect(device, connector);
+		else if (connector.isDevice && device.isDevice ) {
+			var middle = {x: (connector.getPos().x + device.getPos().x) / 2, y: (connector.getPos().y + device.getPos().y) / 2}; 
+			var con = new SwitchConnector(this, this.getNameHint("switch"), middle);
+			this.connect(con, connector);
+			this.connect(con, device);
+		}
 	},
 	disable: function() {
 		this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
@@ -1294,7 +1297,54 @@ var CreatorForm = Class.extend({
 	},
 	create: function() {
 		var tr = this.editor.ajaxModifyBegin();
-		alert("Topology creator does not work yet");
+		var size = this.editor.size;
+		var middle = {x: (size.x-this.editor.paletteWidth)/2+this.editor.paletteWidth, y: size.y/2-10};
+		var radius = {x: (size.x-this.editor.paletteWidth)/2-25, y: size.y/2-25};
+		var number = this.fields.number.getValue();
+		var nodes = [];
+		for (var i=0; i<number; i++) {
+			var pos = {x: middle.x - Math.cos((i/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
+			           y: middle.y - Math.sin((i/number) * 2 * Math.PI - Math.PI / 2) * radius.y};
+			switch (this.fields.device_type.getValue()) {
+				case "OpenVZ":
+					nodes[i] = new OpenVZDevice(this.editor, this.editor.getNameHint("openvz"), pos);
+					nodes[i].setAttribute("root_password", this.fields.root_password.getValue());
+					break;
+				case "KVM":
+					nodes[i] = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), pos);
+					break;
+			}
+			nodes[i].setAttribute("template", this.fields.template.getValue());
+		}
+		switch (this.fields.type.getValue()) {
+			case "Star":
+				var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
+				for (var i=0; i<number; i++) this.editor.connect(sw, nodes[i]);
+				break;
+			case "Ring":
+				for (var i=0; i<number; i++) {
+					var pos = {x: middle.x - Math.cos(((i+0.5)/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
+					           y: middle.y - Math.sin(((i+0.5)/number) * 2 * Math.PI - Math.PI / 2) * radius.y};
+					var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), pos);
+					this.editor.connect(sw, nodes[i]);
+					this.editor.connect(sw, nodes[(i+1)%number]);
+				}
+				break;
+			case "Full mesh":
+				for (var i=0; i<number; i++) for (var j=i+1; j<number; j++) this.editor.connect(nodes[i], nodes[j]);
+				break;
+			case "Star around host":
+				var nd = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), middle);
+				for (var i=0; i<number; i++) this.editor.connect(nd, nodes[i]);
+				break;				
+			case "Loose nodes":
+				break;
+		}
+		if (this.fields.internet.getValue()) {
+			var internet = new SpecialConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
+			internet.setAttribute("feature_type", "internet");
+			for (var i=0; i<number; i++) this.editor.connect(internet, nodes[i]);
+		}
 		if (tr) this.editor.ajaxModifyCommit();
 	},
 	show: function() {
