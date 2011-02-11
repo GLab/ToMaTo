@@ -39,7 +39,7 @@ editor.setHostGroups({% if host_groups %}"{{host_groups}}".split(","){% else %}[
 
 var special_features = {};
 var sf_data = {% if special_features %}"{{special_features}}".split(","){% else %}[]{% endif %};
-for (i in sf_data) special_features[sf_data[i].split(":")[0]] = sf_data[i].split(":")[1].split("|");
+for (var i=0; i < sf_data.length; i++) special_features[sf_data[i].split(":")[0]] = sf_data[i].split(":")[1].split("|");
 editor.setSpecialFeatures(special_features);
 
 editor.loadTopologyURL("{%url top.show top_id%}?format=plain");

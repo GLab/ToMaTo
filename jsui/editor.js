@@ -122,8 +122,10 @@ var IconElement = NetElement.extend({
 		if (p.paletteItem) {
 			var pos = {x: p.shadow.attr("x")+p.iconsize.x/2, y: p.shadow.attr("y")+p.iconsize.y/2};
 			if (pos.x != p.opos.x || pos.y != p.opos.y) {
+				var tr =p.editor.ajaxModifyBegin();
 				var element = p.createAnother(pos);
 				element.move(element.correctPos(pos));
+				if (tr) p.editor.ajaxModifyCommit();
 			}
 			p.shadow.remove();
 		}
@@ -452,11 +454,13 @@ var Connector = IconElement.extend({
 	},
 	onClick: function(event) {
 		if (event.ctrlKey || event.altKey) {
+			var tr = this.editor.ajaxModifyBegin();
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
 				if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
 			}
+			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
 	},
 	isConnectedWith: function(dev) {
@@ -597,6 +601,7 @@ var Device = IconElement.extend({
 	},
 	onClick: function(event) {
 		if (event.ctrlKey || event.altKey) {
+			var tr = this.editor.ajaxModifyBegin();
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
@@ -608,6 +613,7 @@ var Device = IconElement.extend({
 					this.editor.connect(con, this);
 				}
 			}
+			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
 	},
 	isConnectedWith: function(con) {
@@ -696,21 +702,37 @@ var Editor = Class.extend({
 		div.dialog("open");
 		return div; 
 	},
-	ajaxModify: function(mods, func) {
-		if (this.isLoading) return;
-		log("AJAX MOD:");
-		for (var i = 0; i < mods.length; i++) log(mods[i]);
-		var data = {"mods": JSON.stringify(mods)};
+	ajaxModifyBegin: function() {
+		if (this.ajaxModifyTransaction) return false;
+		this.ajaxModifyTransaction = {mods:[], func:[]};
+		return true;
+	},
+	ajaxModifyCommit: function() {
+		this.ajaxModifyExecute(this.ajaxModifyTransaction);
+		delete this.ajaxModifyTransaction;
+	},
+	ajaxModifyExecute: function(transaction) {
+		var data = {"mods": JSON.stringify(transaction.mods)};
 		var editor = this;
+		if (transaction.mods.length == 0) return;
 		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
 			if (res.status == 200) {
 				var msg = JSON.parse(res.responseText);
 				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
 					window.location.reload();						
 				});
-				if (func) func(msg);
+				for (var i = 0; i < transaction.func.length; i++) transaction.func[i](msg);
 			} else editor.errorMessage("AJAX request failed", res.statusText);
 		}});
+	},
+	ajaxModify: function(mods, func) {
+		if (this.isLoading) return;
+		log("AJAX MOD:");
+		for (var i = 0; i < mods.length; i++) log(mods[i]);
+		if (this.ajaxModifyTransaction) {
+			for (var i = 0; i < mods.length; i++) this.ajaxModifyTransaction.mods.push(mods[i]);
+			if (func) this.ajaxModifyTransaction.func.push(func);
+		} else this.ajaxModifyExecute({mods: mods, func:[func]});
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -877,7 +899,9 @@ var Editor = Class.extend({
 	},
 	_trashClick: function(event){
 		var p = this.parent;
+		var tr = p.ajaxModifyBegin();
 		p.removeSelectedElements();
+		if (tr) p.ajaxModifyCommit();
 	},
 	_creatorClick: function(event){
 		var p = this.parent;
@@ -1260,8 +1284,14 @@ var CreatorForm = Class.extend({
 		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
 		this.addField(new CheckField("internet", false), "Additional internet connection");
 		this.addMultipleFields([new Button("create", function(btn){
-			alert("Topology creator does not work yet");
+			btn.form.hide();
+			btn.form.create();
 		})]);
+	},
+	create: function() {
+		var tr = this.editor.ajaxModifyBegin();
+		alert("Topology creator does not work yet");
+		if (tr) this.editor.ajaxModifyCommit();
 	},
 	show: function() {
 		this.div.dialog("open");
