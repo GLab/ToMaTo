@@ -1285,7 +1285,7 @@ var CreatorForm = Class.extend({
 		this.div.append(this.table);
 		this.fields = {};
 		this.addField(new SelectField("type", ["Star", "Ring", "Full mesh", "Star around host", "Loose nodes"], "Star"), "Topology type");		
-		this.addField(new MagicTextField("number", /^\d+$/, "5"), "Number of nmodes");
+		this.addField(new MagicTextField("number", /^\d+$/, "5"), "Number of nodes");
 		this.addField(new SelectField("device_type", ["OpenVZ", "KVM"], "OpenVZ"), "Device type");		
 		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "Device template");		
 		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
@@ -1297,45 +1297,47 @@ var CreatorForm = Class.extend({
 	},
 	create: function() {
 		var tr = this.editor.ajaxModifyBegin();
-		var size = this.editor.size;
-		var middle = {x: (size.x-this.editor.paletteWidth)/2+this.editor.paletteWidth, y: size.y/2-10};
-		var radius = {x: (size.x-this.editor.paletteWidth)/2-25, y: size.y/2-25};
-		var number = this.fields.number.getValue();
 		var nodes = [];
-		for (var i=0; i<number; i++) {
-			var pos = {x: middle.x - Math.cos((i/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
-			           y: middle.y - Math.sin((i/number) * 2 * Math.PI - Math.PI / 2) * radius.y};
-			switch (this.fields.device_type.getValue()) {
-				case "OpenVZ":
-					nodes[i] = new OpenVZDevice(this.editor, this.editor.getNameHint("openvz"), pos);
-					nodes[i].setAttribute("root_password", this.fields.root_password.getValue());
-					break;
-				case "KVM":
-					nodes[i] = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), pos);
-					break;
+		var selectedElements = this.editor.selectedElements();
+		if (selectedElements.length > 0) {
+			for (var i=0; i<selectedElements.length; i++) if(selectedElements[i].isDevice) nodes.push(selectedElements[i]);
+			var rect = compoundBBox(nodes);
+			var middle = {x: rect.x+rect.width/2, y: rect.y+rect.height/2};
+			var radius = {x: rect.width, y: rect.height};
+		} else {
+			var size = this.editor.size;
+			var middle = {x: (size.x-this.editor.paletteWidth)/2+this.editor.paletteWidth, y: size.y/2-10};
+			var radius = {x: (size.x-this.editor.paletteWidth)/2-25, y: size.y/2-25};
+			var number = this.fields.number.getValue();
+			for (var i=0; i<number; i++) {
+				var pos = {x: middle.x - Math.cos((i/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
+						   y: middle.y - Math.sin((i/number) * 2 * Math.PI - Math.PI / 2) * radius.y};
+				switch (this.fields.device_type.getValue()) {
+					case "OpenVZ":
+						nodes[i] = new OpenVZDevice(this.editor, this.editor.getNameHint("openvz"), pos);
+						nodes[i].setAttribute("root_password", this.fields.root_password.getValue());
+						break;
+					case "KVM":
+						nodes[i] = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), pos);
+						break;
+				}
+				nodes[i].setAttribute("template", this.fields.template.getValue());
 			}
-			nodes[i].setAttribute("template", this.fields.template.getValue());
 		}
 		switch (this.fields.type.getValue()) {
 			case "Star":
 				var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
-				for (var i=0; i<number; i++) this.editor.connect(sw, nodes[i]);
+				for (var i=0; i<nodes.length; i++) this.editor.connect(sw, nodes[i]);
 				break;
 			case "Ring":
-				for (var i=0; i<number; i++) {
-					var pos = {x: middle.x - Math.cos(((i+0.5)/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
-					           y: middle.y - Math.sin(((i+0.5)/number) * 2 * Math.PI - Math.PI / 2) * radius.y};
-					var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), pos);
-					this.editor.connect(sw, nodes[i]);
-					this.editor.connect(sw, nodes[(i+1)%number]);
-				}
+				for (var i=0; i<nodes.length; i++) this.editor.connect(nodes[i], nodes[(i+1)%nodes.length]);
 				break;
 			case "Full mesh":
-				for (var i=0; i<number; i++) for (var j=i+1; j<number; j++) this.editor.connect(nodes[i], nodes[j]);
+				for (var i=0; i<nodes.length; i++) for (var j=i+1; j<nodes.length; j++) this.editor.connect(nodes[i], nodes[j]);
 				break;
 			case "Star around host":
 				var nd = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), middle);
-				for (var i=0; i<number; i++) this.editor.connect(nd, nodes[i]);
+				for (var i=0; i<nodes.length; i++) this.editor.connect(nd, nodes[i]);
 				break;				
 			case "Loose nodes":
 				break;
@@ -1348,6 +1350,11 @@ var CreatorForm = Class.extend({
 		if (tr) this.editor.ajaxModifyCommit();
 	},
 	show: function() {
+		var sel = this.editor.selectedElements().length > 0;
+		this.fields.number.setEditable(!sel);
+		this.fields.device_type.setEditable(!sel);
+		this.fields.root_password.setEditable(!sel);
+		this.fields.template.setEditable(!sel);
 		this.div.dialog("open");
 	},
 	hide: function() {
