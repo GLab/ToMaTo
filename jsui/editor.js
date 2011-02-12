@@ -856,6 +856,9 @@ var Editor = Class.extend({
 		this.eraserRect.click(this._eraserClick);
 		this.nextIPHintNumber = 0; //reset to 0
 		this.isLoading = false;
+		this.help = this.g.image(basepath+"images/help.png", this.size.x-24, 2, 22, 22);
+		this.help.parent = this;
+		this.help.click(this._helpClick);
 	},
 	paintBackground: function() {
 		this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
@@ -893,6 +896,10 @@ var Editor = Class.extend({
 	_dblclick: function(event){
 		var p = this.parent;
 		p.topology.form.toggle();
+	},
+	_helpClick: function(event){
+		var p = this.parent;
+		p.infoMessage("Editor help", '<iframe src="'+basepath+'help.html" style="border:0;width:'+(p.size.x-100)+';height:'+(p.size.y-100)+';"/>');
 	},
 	_eraserClick: function(event){
 		var p = this.parent;
