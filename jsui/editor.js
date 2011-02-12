@@ -1046,12 +1046,7 @@ var SelectField = EditElement.extend({
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
-		if (options.indexOf(dflt) < 0) this.input.append($('<option value="'+dflt+'">'+dflt+'</option>'));
-		for (var i = 0; i < options.length; i++) {
-			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
-			if (options[i] == dflt) option.attr({selected: true});
-			this.input.append(option);
-		}
+		this.setOptions(options);
 		this.input[0].fld = this;
 		this.input.change(function (){
 			this.fld.onChanged(this.value);
@@ -1059,6 +1054,17 @@ var SelectField = EditElement.extend({
 	},
 	setEditable: function(editable) {
 		this.input.attr({disabled: !editable});
+	},
+	setOptions: function(options) {
+		var val = this.getValue();
+		$(this.input).find("option").remove();
+		if (options.indexOf(this.dflt) < 0) this.input.append($('<option value="'+this.dflt+'">'+this.dflt+'</option>'));
+		for (var i = 0; i < options.length; i++) {
+			var option = $('<option value="'+options[i]+'">'+options[i]+'</option>');
+			if (options[i] == this.dflt) option.attr({selected: true});
+			this.input.append(option);
+		}
+		if (val) this.setValue(val);
 	},
 	setValue: function(value) {
 		var found = false;
@@ -1229,11 +1235,17 @@ var ConnectorForm = AttributeForm.extend({
 });
 
 var SpecialConnectorForm = ConnectorForm.extend({
-	//FIXME: change hostgroup options depending on feature type
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new SelectField("feature_type", getKeys(this.editor.specialFeatures), "auto"), "type");
-		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "hostgroup");
+		this.addField(new SelectField("hostgroup", [], "auto"), "hostgroup");
+	},
+	_featureChanged: function() {
+		this.fields.hostgroup.setOptions(this.editor.specialFeatures[this.fields.feature_type.getValue()]);
+	},
+	onChanged: function(name, value) {
+		this._super(name, value);
+		if (name == "feature_type") this._featureChanged();
 	}
 });
 
@@ -1360,9 +1372,19 @@ var CreatorForm = Class.extend({
 		if (sel) this.fields.number.setValue(selNum);
 		this.fields.device_type.setEditable(!sel);
 		this.fields.root_password.setEditable(!sel);
-		//FIXME: set template list
+		this._onTypeChange();
 		this.fields.template.setEditable(!sel);
 		this.div.dialog("open");
+	},
+	_onTypeChange: function() {
+		switch (this.fields.device_type.getValue()) {
+			case "OpenVZ":
+				this.fields.template.setOptions(this.editor.templatesOpenVZ);
+				break;
+			case "KVM":
+				this.fields.template.setOptions(this.editor.templatesKVM);
+				break;
+		}
 	},
 	hide: function() {
 		this.div.dialog("close");
@@ -1393,7 +1415,6 @@ var CreatorForm = Class.extend({
 		this.table.append(tr);
 	},
 	onChanged: function(name, value) {
-		//FIXME: set template list depending on device type
-		//ignore
+		if (name == "device_type" ) this._onTypeChange();
 	}
 });
