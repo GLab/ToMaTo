@@ -1148,7 +1148,7 @@ var AttributeForm = Class.extend({
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
 			resizable: false, height:"auto", width:"auto", title: "Attributes of "+obj.name,
 			show: "slide", hide: "slide"});
-		this.table = $('<table/>');
+		this.table = $('<table/>').attr({"class": "ui-widget"});
 		this.div.append(this.table);
 		this.fields = {};
 	},
@@ -1295,7 +1295,7 @@ var CreatorForm = Class.extend({
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
 			resizable: false, height:"auto", width:"auto", title: "Topology Creator",
 			show: "slide", hide: "slide", position:{my: "center center", at: "center center", of: editor.div}});
-		this.table = $('<table/>');
+		this.table = $('<table/>').attr({"class": "ui-widget"});
 		this.div.append(this.table);
 		this.fields = {};
 		this.addField(new SelectField("type", ["Star", "Ring", "Full mesh", "Star around host", "Loose nodes"], "Star"), "Topology type");		
