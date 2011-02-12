@@ -627,7 +627,7 @@ var Device = IconElement.extend({
 
 var OpenVZDevice = Device.extend({
 	init: function(editor, name, pos) {
-		this._super(editor, name, "images/computer.png", {x: 32, y: 32}, pos);
+		this._super(editor, name, "images/openvz.png", {x: 32, y: 32}, pos);
 		this.form = new OpenVZDeviceForm(this);
 	},
 	baseName: function() {
@@ -645,7 +645,7 @@ var OpenVZDevice = Device.extend({
 
 var KVMDevice = Device.extend({
 	init: function(editor, name, pos) {
-		this._super(editor, name, "images/pc_green.png", {x: 32, y: 32}, pos);
+		this._super(editor, name, "images/kvm.png", {x: 32, y: 32}, pos);
 		this.form = new KVMDeviceForm(this);
 	},
 	baseName: function() {
@@ -676,7 +676,7 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (editable) this.paintPalette();
 		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
-		this.creatorForm = new CreatorForm(this);
+		this.wizardForm = new WizardForm(this);
 		this.paintBackground();
 	},
 	infoMessage: function(title, message) {
@@ -830,11 +830,11 @@ var Editor = Class.extend({
 		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
-		this.creator = this.g.image(basepath+"images/tc3.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
-		this.creatorText = this.g.text(this.paletteWidth/2, y+=20, "Creator").attr(this.defaultFont);
-		this.creatorRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
-		this.creatorRect.parent = this;
-		this.creatorRect.click(this._creatorClick);
+		this.wizard = this.g.image(basepath+"images/wizard.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
+		this.wizardText = this.g.text(this.paletteWidth/2, y+=20, "Wizard").attr(this.defaultFont);
+		this.wizardRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
+		this.wizardRect.parent = this;
+		this.wizardRect.click(this._wizardClick);
 		y+=20;
 		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: y+=50});
 		this.openVZPrototype.paletteItem = true;
@@ -849,11 +849,11 @@ var Editor = Class.extend({
 		this.switchPrototype.paletteItem = true;
 		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: y+=40});
 		this.routerPrototype.paletteItem = true;
-		this.trash = this.g.image(basepath+"images/trash.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
-		this.trashText = this.g.text(this.paletteWidth/2, this.size.y-13, "Trash").attr(this.defaultFont);
-		this.trashRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
-		this.trashRect.parent = this;
-		this.trashRect.click(this._trashClick);
+		this.eraser = this.g.image(basepath+"images/eraser.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
+		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-13, "Remove").attr(this.defaultFont);
+		this.eraserRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
+		this.eraserRect.parent = this;
+		this.eraserRect.click(this._eraserClick);
 		this.nextIPHintNumber = 0; //reset to 0
 		this.isLoading = false;
 	},
@@ -894,15 +894,15 @@ var Editor = Class.extend({
 		var p = this.parent;
 		p.topology.form.toggle();
 	},
-	_trashClick: function(event){
+	_eraserClick: function(event){
 		var p = this.parent;
 		var tr = p.ajaxModifyBegin();
 		p.removeSelectedElements();
 		if (tr) p.ajaxModifyCommit();
 	},
-	_creatorClick: function(event){
+	_wizardClick: function(event){
 		var p = this.parent;
-		p.creatorForm.toggle();
+		p.wizardForm.toggle();
 	},
 	connect: function(connector, device) {
 		if (connector.isConnector && device.isDevice) {
@@ -1289,11 +1289,11 @@ var EmulatedRouterConnectionForm = EmulatedConnectionForm.extend({
 	}
 });
 
-var CreatorForm = Class.extend({
+var WizardForm = Class.extend({
 	init: function(editor) {
 		this.editor = editor;
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
-			resizable: false, height:"auto", width:"auto", title: "Topology Creator",
+			resizable: false, height:"auto", width:"auto", title: "Topology Wizard",
 			show: "slide", hide: "slide", position:{my: "center center", at: "center center", of: editor.div}});
 		this.table = $('<table/>').attr({"class": "ui-widget"});
 		this.div.append(this.table);
