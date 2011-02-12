@@ -906,6 +906,7 @@ var Editor = Class.extend({
 	},
 	connect: function(connector, device) {
 		if (connector.isConnector && device.isDevice) {
+			if (device.isConnectedWith(con)) return;
 			var con = connector.createConnection(device);
 			var iface = device.createInterface(con);
 			con.connect(iface);
@@ -1228,6 +1229,7 @@ var ConnectorForm = AttributeForm.extend({
 });
 
 var SpecialConnectorForm = ConnectorForm.extend({
+	//FIXME: change hostgroup options depending on feature type
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new SelectField("feature_type", getKeys(this.editor.specialFeatures), "auto"), "type");
@@ -1324,23 +1326,25 @@ var CreatorForm = Class.extend({
 				nodes[i].setAttribute("template", this.fields.template.getValue());
 			}
 		}
-		switch (this.fields.type.getValue()) {
-			case "Star":
-				var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
-				for (var i=0; i<nodes.length; i++) this.editor.connect(sw, nodes[i]);
-				break;
-			case "Ring":
-				for (var i=0; i<nodes.length; i++) this.editor.connect(nodes[i], nodes[(i+1)%nodes.length]);
-				break;
-			case "Full mesh":
-				for (var i=0; i<nodes.length; i++) for (var j=i+1; j<nodes.length; j++) this.editor.connect(nodes[i], nodes[j]);
-				break;
-			case "Star around host":
-				var nd = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), middle);
-				for (var i=0; i<nodes.length; i++) this.editor.connect(nd, nodes[i]);
-				break;				
-			case "Loose nodes":
-				break;
+		if (nodes.length > 1) {
+			switch (this.fields.type.getValue()) {
+				case "Star":
+					var sw = new SwitchConnector(this.editor, this.editor.getNameHint("switch"), middle);
+					for (var i=0; i<nodes.length; i++) this.editor.connect(sw, nodes[i]);
+					break;
+				case "Ring":
+					for (var i=0; i<nodes.length; i++) this.editor.connect(nodes[i], nodes[(i+1)%nodes.length]);
+					break;
+				case "Full mesh":
+					for (var i=0; i<nodes.length; i++) for (var j=i+1; j<nodes.length; j++) this.editor.connect(nodes[i], nodes[j]);
+					break;
+				case "Star around host":
+					var nd = new KVMDevice(this.editor, this.editor.getNameHint("kvm"), middle);
+					for (var i=0; i<nodes.length; i++) this.editor.connect(nd, nodes[i]);
+					break;				
+				case "Loose nodes":
+					break;
+			}
 		}
 		if (this.fields.internet.getValue()) {
 			var internet = new SpecialConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
@@ -1350,10 +1354,13 @@ var CreatorForm = Class.extend({
 		if (tr) this.editor.ajaxModifyCommit();
 	},
 	show: function() {
-		var sel = this.editor.selectedElements().length > 0;
+		var selNum = this.editor.selectedElements().length;
+		var sel = selNum > 0;
 		this.fields.number.setEditable(!sel);
+		if (sel) this.fields.number.setValue(selNum);
 		this.fields.device_type.setEditable(!sel);
 		this.fields.root_password.setEditable(!sel);
+		//FIXME: set template list
 		this.fields.template.setEditable(!sel);
 		this.div.dialog("open");
 	},
@@ -1386,6 +1393,7 @@ var CreatorForm = Class.extend({
 		this.table.append(tr);
 	},
 	onChanged: function(name, value) {
+		//FIXME: set template list depending on device type
 		//ignore
 	}
 });
