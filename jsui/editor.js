@@ -1306,22 +1306,14 @@ var CreatorForm = Class.extend({
 		this.addField(new CheckField("internet", false), "Additional internet connection");
 		this.addMultipleFields([new Button("create", function(btn){
 			btn.form.hide();
-			btn.form.create();
+			btn.form._createClicked();
 		})]);
 	},
-	create: function() {
+	create: function(nodes, region) {
 		var tr = this.editor.ajaxModifyBegin();
-		var nodes = [];
-		var selectedElements = this.editor.selectedElements();
-		if (selectedElements.length > 0) {
-			for (var i=0; i<selectedElements.length; i++) if(selectedElements[i].isDevice) nodes.push(selectedElements[i]);
-			var rect = compoundBBox(nodes);
-			var middle = {x: rect.x+rect.width/2, y: rect.y+rect.height/2};
-			var radius = {x: rect.width, y: rect.height};
-		} else {
-			var size = this.editor.size;
-			var middle = {x: (size.x-this.editor.paletteWidth)/2+this.editor.paletteWidth, y: size.y/2-10};
-			var radius = {x: (size.x-this.editor.paletteWidth)/2-25, y: size.y/2-25};
+		var middle = {x: region.x+region.width/2, y: region.y+region.height/2};
+		var radius = {x: region.width/2, y: region.height/2};
+		if (nodes.length == 0) {
 			var number = this.fields.number.getValue();
 			for (var i=0; i<number; i++) {
 				var pos = {x: middle.x - Math.cos((i/number) * 2 * Math.PI - Math.PI / 2) * radius.x,
@@ -1364,6 +1356,44 @@ var CreatorForm = Class.extend({
 			for (var i=0; i<number; i++) this.editor.connect(internet, nodes[i]);
 		}
 		if (tr) this.editor.ajaxModifyCommit();
+	},
+	_createClicked: function() {
+		var nodes = [];
+		var selectedElements = this.editor.selectedElements();
+		if (selectedElements.length > 0) {
+			for (var i=0; i<selectedElements.length; i++) if(selectedElements[i].isDevice) nodes.push(selectedElements[i]);
+			var rect = compoundBBox(nodes);
+			this.create(nodes, rect);
+		} else {
+			var t = this;
+			var container = $("<div/>");
+			container.attr({style: "position: absolute;"});
+			container.width(this.editor.size.x-this.editor.paletteWidth);
+			container.height(this.editor.size.y);
+			container.position({my: "right", at: "right", of: $(this.editor.div)});
+			this.editor.div.append(container);
+			var div = $("<div/>");
+			div.attr({style: "border: 1px dashed black; text-align: center;"});
+			div.resizable({containment: container, minWidth: 175, minHeight: 175}).draggable({containment: container});
+			div.append("<p>Please select the region for the new topology, by positioning and resizing this frame.</p>");
+			div.append($("<div>Create topology</div>").button().click(function(){
+				var region = {};
+				var offset = div.offset();
+				region.x = offset.left - t.editor.getPosition().x + 20;
+				region.y = offset.top - t.editor.getPosition().y + 20;
+				region.width = div.width() - 40 ;
+				region.height = div.height() - 40 ;
+				container.remove();
+				t.create([], region);
+			}));
+			div.append($("<div>cancel</div>").button().click(function(){
+				container.remove();
+			}));
+			div.width(this.editor.size.x-this.editor.paletteWidth-50);
+			div.height(this.editor.size.y-50);
+			container.append(div);
+			div.position({my: "center center", at: "center center", of: container});
+		}
 	},
 	show: function() {
 		var selNum = this.editor.selectedElements().length;
