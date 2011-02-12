@@ -1370,8 +1370,8 @@ var CreatorForm = Class.extend({
 			container.attr({style: "position: absolute;"});
 			container.width(this.editor.size.x-this.editor.paletteWidth);
 			container.height(this.editor.size.y);
-			container.position({my: "right", at: "right", of: $(this.editor.div)});
 			this.editor.div.append(container);
+			container.position({my: "right", at: "right", of: $(this.editor.div)});
 			var div = $("<div/>");
 			div.attr({style: "border: 1px dashed black; text-align: center;"});
 			div.resizable({containment: container, minWidth: 175, minHeight: 175}).draggable({containment: container});
