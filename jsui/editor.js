@@ -152,7 +152,7 @@ var IconElement = NetElement.extend({
 	},
 	_click: function(event){
 		var p = this.parent;
-		if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
+		if (p.lastMoved && p.lastMoved.getTime() + 100 > new Date().getTime()) return;
 		p.onClick(event);
 	},
 	_dblclick: function(event){
@@ -901,12 +901,12 @@ var Editor = Class.extend({
 		var p = this.parent;
 		var f = p.selectionFrame;
 		p.selectAllInArea({x: f.attr("x"), y: f.attr("y"), width: f.attr("width"), height: f.attr("height")});
+		if (f.attr("width") > 0 && f.attr("height") > 0) p.lastMoved = new Date();
 		p.selectionFrame.remove();
-		if (p.pos != p.opos) p.lastMoved = new Date();
 	},
 	_click: function(event){
 		var p = this.parent;
-		if (p.lastMoved && p.lastMoved.getTime() + 1 > new Date().getTime()) return;
+		if (p.lastMoved && p.lastMoved.getTime() + 100 > new Date().getTime()) return;
 		p.unselectAll();
 	},
 	_dblclick: function(event){
