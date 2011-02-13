@@ -682,8 +682,7 @@ var Editor = Class.extend({
 	infoMessage: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
 			resizable: false, height:"auto", width:"auto", title: title, 
-			position:{my: "center center", at: "center center", of: editor.div},
-			dialogClass: "ui-state-highlight"});
+			position:{my: "center center", at: "center center", of: editor.div}});
 		div.append(""+message);
 		div.dialog("open");
 		return div; 
@@ -1121,13 +1120,13 @@ var CheckField = EditElement.extend({
 });
 
 var Button = EditElement.extend({
-	init: function(text, func) {
-		this._super("button-"+text);
+	init: function(name, content, func) {
+		this._super("button-"+name);
 		this.func = func;
-		this.input = $('<input type="button" value="'+text+'"/>');
-		this.input[0].fld = this;
-		this.input.click(function (){
-			this.fld.func(this.fld);
+		this.input = $('<div>'+content+'<div/>');
+		var t = this;
+		this.input.button().click(function (){
+			t.func(t);
 		});
 	},
 	setEditable: function(editable) {
@@ -1140,17 +1139,6 @@ var Button = EditElement.extend({
 	},
 	getInputElement: function() {
 		return this.input;
-	}
-});
-
-var IconButton = Button.extend({
-	init: function(name, src, func) {
-		this._super(name, src, func);
-		this.input = $('<input type="image" src="'+src+'"/>');
-		this.input[0].fld = this;
-		this.input.click(function (){
-			this.fld.func(this.fld);
-		});
 	}
 });
 
@@ -1317,7 +1305,7 @@ var WizardForm = Class.extend({
 		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "Device template");		
 		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
 		this.addField(new CheckField("internet", false), "Additional internet connection");
-		this.addMultipleFields([new Button("create", function(btn){
+		this.addMultipleFields([new Button("create", "create", function(btn){
 			btn.form.hide();
 			btn.form._createClicked();
 		})]);
