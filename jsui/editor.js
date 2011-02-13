@@ -830,6 +830,8 @@ var Editor = Class.extend({
 		var y = 25;
 		this.g.path("M"+this.paletteWidth+" 0L"+this.paletteWidth+" "+this.g.height).attr({"stroke-width": 2, stroke: this.glabColor});
 		this.icon = this.g.image(basepath+"images/glablogo.jpg", 1, 5, this.paletteWidth-6, 79/153*(this.paletteWidth-6));
+		this.icon.parent = this;
+		this.icon.click(this._iconClick);
 		this.wizard = this.g.image(basepath+"images/wizard.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
 		this.wizardText = this.g.text(this.paletteWidth/2, y+=20, "Wizard").attr(this.defaultFont);
 		this.wizardRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
@@ -900,6 +902,10 @@ var Editor = Class.extend({
 	_helpClick: function(event){
 		var p = this.parent;
 		p.infoMessage("Editor help", '<iframe src="'+basepath+'help.html" style="border:0;width:'+(p.size.x-100)+';height:'+(p.size.y-100)+';"/>');
+	},
+	_iconClick: function(event){
+		var p = this.parent;
+		p.infoMessage("Editor info", '<iframe src="'+basepath+'info.html" style="border:0;width:'+(p.size.x-100)+';height:'+(p.size.y-100)+';"/>');
 	},
 	_eraserClick: function(event){
 		var p = this.parent;
