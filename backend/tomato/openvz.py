@@ -150,7 +150,7 @@ class OpenVZDevice(generic.Device):
 			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
 			self.template = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
 			if not self.template:
-				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
+				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found: %s" % properties["template"])
 		self.save()
 
 	def interfaces_add(self, name, properties, task):

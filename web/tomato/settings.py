@@ -79,7 +79,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
 )
 
-server_protocol = "https"
+server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"

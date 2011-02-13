@@ -178,6 +178,9 @@ var IconElement = NetElement.extend({
 		this.rect.click(this._click);    
 		this.rect.dblclick(this._dblclick);
 	},
+	getRectObj: function() {
+		return this.rect[0];
+	},
 	paintUpdate: function() {
 		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: basepath+this.iconsrc});
 		this.stateIcon.attr({x: this.pos.x+5, y: this.pos.y+5});
@@ -322,6 +325,9 @@ var Connection = NetElement.extend({
 		this.handle.click(this._click);
 		this.handle.dblclick(this._dblclick);
 	},
+	getRectObj: function(){
+		return this.handle[0];
+	},
 	remove: function(){
 		this._super();
 		if (this.path) this.path.remove();
@@ -408,6 +414,9 @@ var Interface = NetElement.extend({
 	paintUpdate: function(){
 		this._super();
 		this.circle.attr({cx: this.getX(), cy: this.getY()});
+	},
+	getRectObj: function(){
+		return this.circle[0];
 	},
 	remove: function(){
 		this._super();
@@ -1032,7 +1041,7 @@ var Editor = Class.extend({
 		var middle = new Vector({x: (this.size.x-this.paletteWidth)/2+this.paletteWidth, y: this.size.y/2});
 		var els = [];
 		for (var i=0; i<this.elements.length; i++) 
-			if(this.elements[i].isDevice || this.elements[i].isConnector) els.push(this.elements[i]);
+			if((this.elements[i].isDevice || this.elements[i].isConnector) && ! this.elements[i].paletteItem) els.push(this.elements[i]);
 		for (var i=0; i<els.length;i++) els[i].velocity = new Vector({x: 0, y: 0});
 		var totalForce = 0.0;
 		var totalForceChange = 1.0;
@@ -1041,11 +1050,11 @@ var Editor = Class.extend({
 		while (totalForceChange > 0.001 && start.getTime() + 5000 > new Date().getTime()) {
 			totalForceChange = totalForce;
 			totalForce = 0.0;
-			for (var i=0; i<els.length;i++) if (! els[i].paletteItem){
+			for (var i=0; i<els.length;i++) {
 				var el = els[i];
 				var elPos = new Vector(el.pos);
 				var force = new Vector({x: 0.0, y: 0.0});
-				for (var j=0; j<els.length;j++) if (i!=j && !els[j].paletteItem) {
+				for (var j=0; j<els.length;j++) if (i!=j) {
 					var oPos = new Vector(els[j].pos);
 					var path = oPos.clone().sub(elPos);
 					var dist = path.length();
@@ -1248,9 +1257,7 @@ var AttributeForm = Class.extend({
 		this.fields = {};
 	},
 	show: function() {
-		var rect = this.obj.getRect();
-		var ed = this.editor.getPosition();
-		this.div.dialog({position: [ed.x+rect.x+rect.width+8, ed.y+rect.y]});
+		this.div.dialog({position: {my: "left top", at: "right top", of: this.obj.getRectObj(), offset: this.obj.getRect().width+5+" 0"}});
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
