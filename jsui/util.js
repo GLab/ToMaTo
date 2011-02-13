@@ -123,6 +123,41 @@ if (!Array.prototype.indexOf) {
   };
 }
 
+var Vector = Class.extend({
+	init: function(coord) {
+		this.c = coord;
+	},
+	length: function() {
+		return Math.sqrt(this.c.x*this.c.x+this.c.y*this.c.y);
+	},
+	sub: function(v) {
+		this.c.x -= v.c.x;
+		this.c.y -= v.c.y;
+		return this;
+	},
+	add: function(v) {
+		this.c.x += v.c.x;
+		this.c.y += v.c.y;
+		return this;
+	},
+	mult: function(d) {
+		this.c.x *= d;
+		this.c.y *= d;
+		return this;
+	},
+	div: function(d) {
+		this.c.x /= d;
+		this.c.y /= d;
+		return this;
+	},
+	clone: function() {
+		return new Vector({x: this.c.x, y: this.c.y});
+	},
+	str: function() {
+		return this.c.x + "," + this.c.y;
+	}
+});
+
 log = function(msg) {
 	if (typeof(console)!="undefined") console.log(msg);
 };

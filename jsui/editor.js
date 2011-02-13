@@ -694,11 +694,29 @@ var Editor = Class.extend({
 		this.wizardForm = new WizardForm(this);
 		this.paintBackground();
 	},
+	showIframe: function(title, url){
+		var div = $('<div style="text-align:center;"/>') ;
+		div.append('<iframe src="'+url+'" style="border:0;width:'+(this.size.x-100)+';height:'+(this.size.y-100)+';"/><br/>');
+		div.append($('<div>close</div>').button().click(function(){
+			msg.dialog("close");
+		}));
+		var msg = this.infoMessage(title, div);
+	},
+	_layoutClick: function(event){
+		var p = this.parent;
+		var div = $("<div/>") ;
+		div.append("<p>The editor will automatically layout your topology.<br/>his might take some time, please be patient.</p>");
+		div.append($("<div>Begin automatic layout</div>").button().click(function(){
+			p.springForceLayout();
+			msg.dialog("close");
+		}));
+		var msg = p.infoMessage("Auto-Layout", div);
+	},
 	infoMessage: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
 			resizable: false, height:"auto", width:"auto", title: title, 
 			position:{my: "center center", at: "center center", of: editor.div}});
-		div.append(""+message);
+		div.append(message);
 		div.dialog("open");
 		return div; 
 	},
@@ -707,7 +725,7 @@ var Editor = Class.extend({
 			resizable: false, height:"auto", width:"auto", title: title, 
 			position:{my: "center center", at: "center center", of: editor.div},
 			dialogClass: "ui-state-error"});
-		div.append(""+message);
+		div.append(message);
 		div.dialog("open");
 		return div; 
 	},
@@ -865,6 +883,12 @@ var Editor = Class.extend({
 		this.switchPrototype.paletteItem = true;
 		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: y+=40});
 		this.routerPrototype.paletteItem = true;
+		y+=30;
+		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-120, 32, 32);
+		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-83, "Layout").attr(this.defaultFont);
+		this.layoutRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-120, 32, 42).attr({fill:"#FFFFFF", opacity:0});
+		this.layoutRect.parent = this;
+		this.layoutRect.click(this._layoutClick);
 		this.eraser = this.g.image(basepath+"images/eraser.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
 		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-13, "Remove").attr(this.defaultFont);
 		this.eraserRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
@@ -915,11 +939,21 @@ var Editor = Class.extend({
 	},
 	_helpClick: function(event){
 		var p = this.parent;
-		p.infoMessage("Editor help", '<iframe src="'+basepath+'help.html" style="border:0;width:'+(p.size.x-100)+';height:'+(p.size.y-100)+';"/>');
+		p.showIframe("Editor help", basepath+"help.html");
 	},
 	_iconClick: function(event){
 		var p = this.parent;
-		p.infoMessage("Editor info", '<iframe src="'+basepath+'info.html" style="border:0;width:'+(p.size.x-100)+';height:'+(p.size.y-100)+';"/>');
+		p.showIframe("Editor info", basepath+"info.html");
+	},
+	_layoutClick: function(event){
+		var p = this.parent;
+		var div = $('<div style="text-align:center;"/>') ;
+		div.append("<p>The editor will automatically layout your topology.<br/>This might take some time, please be patient.</p>");
+		div.append($("<div>Begin automatic layout</div>").button().click(function(){
+			p.springForceLayout();
+			msg.dialog("close");
+		}));
+		var msg = p.infoMessage("Automatic Layout", div);
 	},
 	_eraserClick: function(event){
 		var p = this.parent;
@@ -990,6 +1024,51 @@ var Editor = Class.extend({
 			if (el.isInterface) continue;
 			el.remove();
 		}
+	},
+	springForceLayout: function() {
+		var damping = 0.7;
+		var d = 100;
+		var timestep = 0.25;
+		var middle = new Vector({x: (this.size.x-this.paletteWidth)/2+this.paletteWidth, y: this.size.y/2});
+		var els = [];
+		for (var i=0; i<this.elements.length; i++) 
+			if(this.elements[i].isDevice || this.elements[i].isConnector) els.push(this.elements[i]);
+		for (var i=0; i<els.length;i++) els[i].velocity = new Vector({x: 0, y: 0});
+		var totalForce = 0.0;
+		var totalForceChange = 1.0;
+		var r = 0;
+		var start = new Date();
+		while (totalForceChange > 0.001 && start.getTime() + 5000 > new Date().getTime()) {
+			totalForceChange = totalForce;
+			totalForce = 0.0;
+			for (var i=0; i<els.length;i++) if (! els[i].paletteItem){
+				var el = els[i];
+				var elPos = new Vector(el.pos);
+				var force = new Vector({x: 0.0, y: 0.0});
+				for (var j=0; j<els.length;j++) if (i!=j && !els[j].paletteItem) {
+					var oPos = new Vector(els[j].pos);
+					var path = oPos.clone().sub(elPos);
+					var dist = path.length();
+					if (dist == 0) continue;
+					var dir = path.clone().div(dist);
+					force.add(dir.clone().mult(d*d).div(-dist*dist));
+					if (el.isConnectedWith(els[j])) force.add(dir.clone().mult(dist-d));
+				}
+				force.add(middle.clone().sub(elPos).div(100));
+				el.velocity.add(force.clone().mult(timestep)).mult(damping);
+				el.move(el.correctPos(elPos.add(el.velocity.clone().mult(timestep)).c));
+				totalForce += force.length();
+			}
+			totalForceChange = Math.abs(totalForce-totalForceChange);
+			r++;
+		}
+		log("auto-layout took " + r + " rounds");
+		var tr = this.ajaxModifyBegin();
+		for (var i=0; i<els.length;i++) {
+			delete els[i].velocity;
+			els[i].setAttribute("pos", (els[i].pos.x-this.paletteWidth)+","+els[i].pos.y);
+		}
+		if (tr) this.ajaxModifyCommit();
 	}
 });
 
