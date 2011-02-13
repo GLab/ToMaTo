@@ -108,12 +108,18 @@ var IconElement = NetElement.extend({
 		var p = this.parent;
 		if (! p.editor.editable) return false;
 		if (p.paletteItem) p.shadow.attr({x: p.opos.x + dx-p.iconsize.x/2, y: p.opos.y + dy-p.iconsize.y/2});
-		else p.move({x: p.opos.x + dx, y: p.opos.y + dy});
+		else {
+			var sel = p.editor.selectedElements();
+			if (sel.length == 0 || sel.indexOf(p) < 0) p.move({x: p.opos.x + dx, y: p.opos.y + dy});
+			else for (var i = 0; i < sel.length; i++) if(sel[i].isDevice || sel[i].isConnector) sel[i].move({x: sel[i].opos.x + dx, y: sel[i].opos.y + dy});
+		}
 	}, 
 	_dragStart: function () {
 		var p = this.parent;
 		if (! p.editor.editable) return false;
-		p.opos = p.pos;
+		var sel = p.editor.selectedElements();
+		if (sel.length == 0 || sel.indexOf(p) < 0) p.opos = p.pos;
+		else for (var i = 0; i < sel.length; i++) if(sel[i].isDevice || sel[i].isConnector) sel[i].opos = sel[i].pos;
 		if (p.paletteItem) p.shadow = p.icon.clone().attr({opacity:0.5});
 	},
 	_dragStop: function () {
@@ -130,9 +136,18 @@ var IconElement = NetElement.extend({
 			p.shadow.remove();
 		}
 		if (p.pos != p.opos) {
-			p.move(p.correctPos(p.pos));
-			p.lastMoved = new Date();
-			p.setAttribute("pos", (p.pos.x-p.editor.paletteWidth)+","+p.pos.y);
+			var tr = p.editor.ajaxModifyBegin();
+			var sel = p.editor.selectedElements();
+			if (sel.length == 0 || sel.indexOf(p) < 0) {
+				p.move(p.correctPos(p.pos));
+				p.lastMoved = new Date();
+				p.setAttribute("pos", (p.pos.x-p.editor.paletteWidth)+","+p.pos.y);
+			} else for (var i = 0; i < sel.length; i++) if(sel[i].isDevice || sel[i].isConnector) {
+				sel[i].move(sel[i].correctPos(sel[i].pos));
+				sel[i].lastMoved = new Date();
+				sel[i].setAttribute("pos", (sel[i].pos.x-sel[i].editor.paletteWidth)+","+sel[i].pos.y);
+			}
+			if(tr) p.editor.ajaxModifyCommit();
 		}
 	},
 	_click: function(event){
