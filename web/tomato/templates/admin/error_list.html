@@ -2,6 +2,7 @@
 
 {% block content %}
 <h1>Error list</h1>
+<a href="{%url main.error_remove "" %}">[remove all errors]</a>
 {% for error in errors %}
 <h2>{{error.title}}</h2>
 Date: {{error.date}} <a href="{%url main.error_remove error.id %}"><img src="/static/icons/bug_delete.png" alt="remove" title="remove"/></a><br/>

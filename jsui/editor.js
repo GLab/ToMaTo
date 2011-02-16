@@ -753,15 +753,19 @@ var Editor = Class.extend({
 		var editor = this;
 		if (transaction.mods.length == 0) return;
 		log("AJAX MOD SEND: " + transaction.mods.length);
-		return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
-			if (res.status == 200) {
-				var msg = JSON.parse(res.responseText);
-				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
-					window.location.reload();						
-				});
-				for (var i = 0; i < transaction.func.length; i++) transaction.func[i](msg);
-			} else editor.errorMessage("AJAX request failed", res.statusText);
-		}});
+		try {
+			return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
+				if (res.status == 200) {
+					var msg = JSON.parse(res.responseText);
+					if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+						window.location.reload();						
+					});
+					for (var i = 0; i < transaction.func.length; i++) transaction.func[i](msg);
+				} else editor.errorMessage("AJAX request failed", res.statusText);
+			}});
+		} catch (e) {
+			editor.errorMessage("AJAX request failed", e);
+		}
 	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;

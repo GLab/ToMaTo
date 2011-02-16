@@ -97,8 +97,8 @@ class DownloadTask():
 		self.filename = filename
 		self.id = str(uuid.uuid1())
 		DownloadTask.tasks[self.id]=self
-		self.fd = open(self.filename, "rb")
 		self.started = time.time()
+		self.fd = open(self.filename, "rb")
 	def chunk(self):
 		size=1024*1024
 		data = self.fd.read(size)
