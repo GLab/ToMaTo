@@ -84,7 +84,7 @@ server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
 help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"
-ticket_url="http://fileserver.german-lab.de/trac/glabnetman/newticket%s"
+ticket_url="http://fileserver.german-lab.de/trac/glabnetman/report/1%s"
 
 #Must be after last config entries
 try:
