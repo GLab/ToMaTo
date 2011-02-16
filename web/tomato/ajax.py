@@ -29,6 +29,6 @@ def modify(api, request, top_id):
 	if not request.REQUEST.has_key("mods"):
 		return HttpResponse(json.dumps({"success": False, "errorMessage": "mods not found"})) 
 	mods = json.loads(request.REQUEST["mods"])
-	print mods
+	#print mods
 	res = api.top_modify(top_id, mods, True)
 	return HttpResponse(json.dumps({"success": res["done"], "output": res["output"]}))
