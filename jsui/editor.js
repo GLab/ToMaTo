@@ -19,7 +19,7 @@ var NetElement = Class.extend({
 	remove: function(){
 		this.editor.removeElement(this);
 		if (this.selectionFrame) this.selectionFrame.remove();
-		this.editor.ajaxModify([this.modification("delete", {})], function(res) {});
+		if (this.getElementName()) this.editor.ajaxModify([this.modification("delete", {})], function(res) {});
 	},
 	paint: function(){
 	},

@@ -41,28 +41,14 @@ def index(api, request):
 
 @wrap_rpc
 def create(api, request):
-	if not request.REQUEST.has_key("xml"):
-		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
-		tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
-		sf=api.special_features_map()
-		special_features=",".join([f+":"+("|".join(sf[f])) for f in sf])
-		host_groups=",".join(api.host_groups())
-		if not request.REQUEST.has_key("editor"):
-			editor = "ui"
-		else:
-			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, "edit": True})
-	xml=request.REQUEST["xml"]
-	format="spec"
-	if request.REQUEST.has_key("format"):
-		format=request.REQUEST["format"]
-	if format=="spec":
+	if request.REQUEST.has_key("xml"):
+		xml=request.REQUEST["xml"]
 		top_id=api.top_import(xml)
-	if format=="mod":
+		return _display_top(api, top_id)
+	else:
 		top_id=api.top_create()
-		api.top_modify_xml(top_id,xml)
-	return _display_top(api, top_id)
-	
+		return edit(request, top_id)
+
 @wrap_rpc
 def upload_image(api, request, top_id, device_id):
 	if not request.FILES.has_key("image"):
@@ -135,7 +121,7 @@ def edit(api, request, top_id):
 		special_features=",".join([f+":"+("|".join(sf[f])) for f in sf])
 		host_groups=",".join(api.host_groups())
 		if not request.REQUEST.has_key("editor"):
-			editor = "ui"
+			editor = "jsui"
 		else:
 			editor = request.REQUEST["editor"]
 		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
@@ -151,7 +137,7 @@ def details(api, request, top_id):
 def show(api, request, top_id):
 	xml=api.top_get(int(top_id), True)
 	if not request.REQUEST.has_key("format"):
-		format = "ui"
+		format = "jsui"
 	else:
 		format = request.REQUEST["format"]
 	if format == "plain":
