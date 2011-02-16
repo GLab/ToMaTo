@@ -129,9 +129,11 @@ def running_tasks():
 	return tasks
 	
 def keep_running():
-	while running_tasks():
+	i = 0;
+	while running_tasks() and i < 300:
 		print "%s tasks still running" % len(running_tasks())
 		time.sleep(1)
+		i=i+1
 		
 if not config.TESTING:	
 	cleanup_task = util.RepeatedTimer(3, cleanup)

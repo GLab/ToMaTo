@@ -164,6 +164,7 @@ def convert_specification(dom):
 	return modlist
 
 def modify_task_run(top_id, mods, task):
+	raise fault.new(404, "blah")
 	for mod in mods:
 		top = topology.get(top_id)
 		mod.run(top, task)
