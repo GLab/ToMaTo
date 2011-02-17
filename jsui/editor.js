@@ -1392,8 +1392,8 @@ var EmulatedConnectionForm = ConnectionForm.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.addField(new MagicTextField("latency", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
-		this.addField(new MagicTextField("loss", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
+		this.addField(new MagicTextField("delay", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
+		this.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
 		this.addField(new CheckField("capture", false), "capture&nbsp;packets");
 	}
 });
