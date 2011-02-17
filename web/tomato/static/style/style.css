@@ -250,6 +250,10 @@ div.tx_sevenpack-list_container { margin: 0; }
 	color:orange;
 }
 
+td {
+	vertical-align:top;
+}
+
 form table th {
 	text-align: left;
 	font-weight: normal;
