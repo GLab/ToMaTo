@@ -6,7 +6,10 @@
  * - Firefox opens new tabs/windows when icons are clicked with shift or ctrl key
  *   hold, so all icons are overlayed with a transparent rectangular
  * - Opera zooms in when ctrl is hold while pressing the left mouse button and
- *   reacts sometines strangely when alt key is hold.
+ *   reacts sometimes strangely when alt key is hold.
+ * - IE8 does not support auto-sizing of dialogs, so dialogs look awful.
+ * - IE8 does not correctly support transparecy in svg but transparent images can
+ * 	 be used
  ********************************************************************************/ 
 
 var NetElement = Class.extend({
@@ -168,7 +171,7 @@ var IconElement = NetElement.extend({
 		if (this.icon) this.icon.remove();
 		this.icon = this.editor.g.image(basepath+this.iconsrc, this.pos.x-this.iconsize.x/2, this.pos.y-this.iconsize.y/2, this.iconsize.x, this.iconsize.y);
 		this.icon.parent = this;
-		this.stateIcon = this.editor.g.image(basepath+"images/started.png", this.pos.x+5, this.pos.y+5, 16, 16);
+		this.stateIcon = this.editor.g.image(basepath+"images/pixel.png", this.pos.x+5, this.pos.y+5, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		var r = this.getRect();
 		if (this.rect) this.rect.remove();
@@ -204,7 +207,7 @@ var IconElement = NetElement.extend({
 					this.stateIcon.attr({opacity: 1.0});
 					break;
 				default:
-					this.stateIcon.attr({opacity: 0.0});
+					this.stateIcon.attr({src: basepath+"images/pixel.png", opacity: 0.0});
 			}
 		}
 	},
@@ -702,6 +705,10 @@ var Editor = Class.extend({
 		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
 		this.wizardForm = new WizardForm(this);
 		this.paintBackground();
+		this.checkBrowser();
+	},
+	checkBrowser: function() {
+		if (! $.support.ajax) this.errorMessage("Browser incompatibility", "Your browser does not support ajax, so you will not be able to use this editor.");
 	},
 	showIframe: function(title, url){
 		var div = $('<div style="text-align:center;"/>') ;
@@ -749,14 +756,14 @@ var Editor = Class.extend({
 		delete this.ajaxModifyTransaction;
 	},
 	ajaxModifyExecute: function(transaction) {
-		var data = {"mods": JSON.stringify(transaction.mods)};
+		var data = {"mods": $.toJSON(transaction.mods)};
 		var editor = this;
 		if (transaction.mods.length == 0) return;
 		log("AJAX MOD SEND: " + transaction.mods.length);
 		try {
 			return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
 				if (res.status == 200) {
-					var msg = JSON.parse(res.responseText);
+					var msg = $.parseJSON(res.responseText);
 					if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
 						window.location.reload();						
 					});
@@ -878,7 +885,8 @@ var Editor = Class.extend({
 		this.icon.parent = this;
 		this.icon.click(this._iconClick);
 		this.wizard = this.g.image(basepath+"images/wizard.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
-		this.wizardText = this.g.text(this.paletteWidth/2, y+=20, "Wizard").attr(this.defaultFont);
+		this.wizardText = this.g.text(this.paletteWidth/2, y+=20, "Wizard");
+		if (! isIE) this.wizardText.attr(this.defaultFont);
 		this.wizardRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.wizardRect.parent = this;
 		this.wizardRect.click(this._wizardClick);
@@ -898,12 +906,14 @@ var Editor = Class.extend({
 		this.routerPrototype.paletteItem = true;
 		y+=30;
 		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-120, 32, 32);
-		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-83, "Layout").attr(this.defaultFont);
+		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-83, "Layout");
+		if (! isIE) this.layoutText.attr(this.defaultFont);
 		this.layoutRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-120, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.layoutRect.parent = this;
 		this.layoutRect.click(this._layoutClick);
 		this.eraser = this.g.image(basepath+"images/eraser.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
-		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-13, "Remove").attr(this.defaultFont);
+		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-13, "Remove");
+		if (! isIE) this.eraserText.attr(this.defaultFont);
 		this.eraserRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.eraserRect.parent = this;
 		this.eraserRect.click(this._eraserClick);
