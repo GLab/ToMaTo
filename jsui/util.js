@@ -94,13 +94,13 @@ throw new SyntaxError("Error parsing JSON, source is not valid.");};$.quoteStrin
 return'"'+string+'"';};var _escapeable=/["\\\x00-\x1f\x7f-\x9f]/g;var _meta={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'};})(jQuery);
 
 compoundBBox = function (list) {
-  minX = -1;
-  maxX = -1;
-  minY = -1;
-  maxY = -1;
+  var minX = -1;
+  var maxX = -1;
+  var minY = -1;
+  var maxY = -1;
   for (var i = 0; i < list.length; i++) {
-	  if (list[i].getBBox) var box = list[i].getBBox();
-	  if (list[i].getRect) var box = list[i].getRect();
+	if (list[i].getBBox) var box = list[i].getBBox();
+	if (list[i].getRect) var box = list[i].getRect();
     if (minX<0) minX = box.x;
     minX = Math.min(minX, box.x);
     if (maxX<0) maxX = box.x+box.width;
