@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.http import Http404
 from django.core.servers.basehttp import FileWrapper
+from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib, tempfile
@@ -47,7 +48,7 @@ def create(api, request):
 		return _display_top(api, top_id)
 	else:
 		top_id=api.top_create()
-		return edit(request, top_id)
+		return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
 
 @wrap_rpc
 def upload_image(api, request, top_id, device_id):
