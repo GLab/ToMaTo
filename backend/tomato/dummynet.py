@@ -22,7 +22,7 @@ import generic, util
 
 class EmulatedConnection(generic.Connection):
 	delay = models.IntegerField(null=True)
-	bandwidth = models.IntegerField(null=True)
+	bandwidth = models.IntegerField(null=True, default=10000)
 	lossratio = models.FloatField(null=True)
 	capture = models.BooleanField(default=False)
 	
