@@ -1077,7 +1077,7 @@ var Editor = Class.extend({
 					force.add(dir.clone().mult(d*d).div(-dist*dist));
 					if (el.isConnectedWith(els[j])) force.add(dir.clone().mult(dist-d));
 				}
-				force.add(middle.clone().sub(elPos).div(100));
+				//force.add(middle.clone().sub(elPos).div(100));
 				el.velocity.add(force.clone().mult(timestep)).mult(damping);
 				el.move(el.correctPos(elPos.add(el.velocity.clone().mult(timestep)).c));
 				totalForce += force.length();
