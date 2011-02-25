@@ -18,6 +18,7 @@
 from django.db import models
 
 import config, fault, util, sys, atexit
+from django.db.models import Q, Sum
 
 class Host(models.Model):
 	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
@@ -368,11 +369,43 @@ class PhysicalLink(models.Model):
 		return {"src": self.src_group, "dst": self.dst_group, "loss": self.loss,
 			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
 	
+
+class SpecialFeatureGroup(models.Model):
+	feature_type = models.CharField(max_length=50)
+	group_name = models.CharField(max_length=50)
+	max_devices = models.IntegerField(null=True)
+	avoid_duplicates = models.BooleanField(default=False)
+
+	def usage_count(self):
+		import special
+		connectors = special.SpecialFeatureConnector.objects.filter(Q(feature_type=self.feature_type) & (Q(feature_group=None) | Q(feature_group=self.group_name)) & ~Q(state="created"))
+		return connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
+		
+	def topologies(self):
+		#FIXME: makes no sense here, avoid_duplicates should of course still use the same group
+		import special
+		connectors = special.SpecialFeatureConnector.objects.filter(Q(feature_type=self.feature_type) & (Q(feature_group=None) | Q(feature_group=self.group_name)) & ~Q(state="created"))
+		tops = set()
+		for c in connectors:
+			tops.add(c.topology)
+		return tops
+
+	def to_dict(self, instances=False):
+		"""
+		Prepares a special feature group for serialization.
+		
+		@return: a dict containing information about the special feature group
+		@rtype: dict
+		"""
+		data = {"type": self.feature_type, "name": self.group_name, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
+		if instances:
+			data["instances"] = [sf.to_dict() for sf in self.specialfeature_set.all()]
+		return data
+
 	
 class SpecialFeature(models.Model):
 	host = models.ForeignKey(Host)
-	feature_type = models.CharField(max_length=50)
-	feature_group = models.CharField(max_length=50)
+	feature_group = models.ForeignKey(SpecialFeatureGroup)
 	bridge = models.CharField(max_length=10)
 
 	def to_dict(self):
@@ -382,7 +415,7 @@ class SpecialFeature(models.Model):
 		@return: a dict containing information about the special feature
 		@rtype: dict
 		"""
-		return {"type": self.feature_type, "group": self.feature_group, "bridge": self.bridge}
+		return {"host": self.host.name, "type": self.feature_group.feature_type, "group": self.feature_group.group_name, "bridge": self.bridge}
 
 	
 def get_host_groups():
