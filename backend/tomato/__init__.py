@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys
+
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
@@ -250,6 +251,79 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return hosts.get_host_groups()
 
+def special_feature_group_add(feature_type, group_name, params, user=None):
+	"""
+	Adds a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param params: dict of all additional parameters
+	@type params: dict 
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	if not params.has_key("max_devices"):
+		params["max_devices"] = None
+	if not params.has_key("avoid_duplicates"):
+		params["avoid_duplicates"] = False
+	hosts.SpecialFeatureGroup.objects.create(feature_type=feature_type, group_name=group_name, max_devices=params["max_devices"], avoid_duplicates=params["avoid_duplicates"])
+	return True
+
+def special_feature_group_change(feature_type, group_name, params, user=None):
+	"""
+	Changes a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param params: dict of all additional parameters
+	@type params: dict 
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+	if not params.has_key("max_devices"):
+		params["max_devices"] = None
+	if not params.has_key("avoid_duplicates"):
+		params["avoid_duplicates"] = False
+	sfg.max_devices = params["max_devices"]
+	sfg.avoid_duplicates = params["avoid_duplicates"]
+	sfg.save()
+	return True
+
+def special_feature_group_remove(feature_type, group_name, user=None):
+	"""
+	Removes a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+	if len(sfg.special_feature_set):
+		raise fault.new(0, "Special feature group is not empty")
+	sfg.remove()
+	return True
+
+
 def special_features_add(host_name, feature_type, feature_group, bridge, user=None):
 	"""
 	Adds a special feature to a host. This operation needs admin access.
@@ -294,17 +368,17 @@ def special_features_remove(host_name, feature_type, feature_group, user=None):
 	host.special_features_remove(feature_type, feature_group)
 	return True
 
-def special_features_map(user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def special_features(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Returns a map of all special features.
+	Returns a list of all special features.
 	
 	@param user: current user
 	@type user: generic.User
-	@return: a map of all feature types to the available groups of this type
-	@rtype: dict of string->string
+	@return: a list of all feature groups with all instances
+	@rtype: list of dict
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
-	return hosts.special_feature_map()
+	return hosts.special_features()
 
 def top_info(top_id, user=None):
 	"""

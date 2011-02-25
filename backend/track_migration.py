@@ -19,12 +19,15 @@
 import sys, tomato #@UnusedImport, pylint: disable-msg=W0611
 
 try:
-	from south.management.commands import schemamigration
-	cmd = schemamigration.Command()
-	if sys.argv[1] == "initial":
-		cmd.handle(app="tomato", name=sys.argv[1], initial=True)
-	else:
-		cmd.handle(app="tomato", name=sys.argv[1], initial=False, auto=True)
+	from south.management.commands import schemamigration, datamigration
+	opt = sys.argv[1]
+	name = sys.argv[2]
+	if opt == "--initial":
+		schemamigration.Command().handle(app="tomato", name=name, initial=True)
+	elif opt == "--schema":
+		schemamigration.Command().handle(app="tomato", name=name, initial=False, auto=True)
+	elif opt == "--data":
+		datamigration.Command().handle(app="tomato", name=name)		
 except: #pylint: disable-msg=W0702
 	from south.management.commands import startmigration
 	cmd = startmigration.Command()

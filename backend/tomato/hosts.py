@@ -273,14 +273,16 @@ class Host(models.Model):
 	def special_features(self):
 		return self.specialfeature_set.all() # pylint: disable-msg=E1101
 	
-	def special_features_add(self, feature_type, feature_group, bridge):
-		sf = SpecialFeature(host=self, feature_type=feature_type, feature_group=feature_group, bridge=bridge)
+	def special_features_add(self, feature_type, group_name, bridge):
+		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+		sf = SpecialFeature(host=self, feature_group=sfg, bridge=bridge)
 		sf.save()
 		self.specialfeature_set.add(sf) # pylint: disable-msg=E1101
 		
-	def special_features_remove(self, feature_type, feature_group):
+	def special_features_remove(self, feature_type, group_name):
+		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
 		for sf in self.special_features():
-			if sf.feature_type == feature_type and sf.feature_group == feature_group:
+			if sf.feature_group == sfg:
 				sf.delete()
 	
 	def to_dict(self):
@@ -556,11 +558,5 @@ def host_check(host):
 	t.start()
 	return t.id
 
-def special_feature_map():
-	features={}
-	for sf in SpecialFeature.objects.all(): # pylint: disable-msg=E1101
-		if not sf.feature_type in features:
-			features[sf.feature_type] = []
-		if not sf.feature_group in features[sf.feature_type]:
-			features[sf.feature_type].append(sf.feature_group)
-	return features
+def special_features():
+	return [sfg.to_dict(True) for sfg in SpecialFeatureGroup.objects.all()]
