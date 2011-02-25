@@ -781,7 +781,7 @@ var Editor = Class.extend({
 		if (this.ajaxModifyTransaction) {
 			for (var i = 0; i < mods.length; i++) this.ajaxModifyTransaction.mods.push(mods[i]);
 			if (func) this.ajaxModifyTransaction.func.push(func);
-		} else this.ajaxModifyExecute({mods: mods, func:[func]});
+		} else this.ajaxModifyExecute({mods: mods, func:(func ? [func] : [])});
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -1354,10 +1354,14 @@ var SpecialConnectorForm = ConnectorForm.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.addField(new SelectField("feature_type", getKeys(this.editor.specialFeatures), "auto"), "type");
-		this.addField(new SelectField("hostgroup", [], "auto"), "hostgroup");
+		this.addField(new SelectField("feature_group", [], "auto"), "group");
 	},
 	_featureChanged: function() {
-		this.fields.hostgroup.setOptions(this.editor.specialFeatures[this.fields.feature_type.getValue()]);
+		this.fields.feature_group.setOptions(this.editor.specialFeatures[this.fields.feature_type.getValue()]);
+	},
+	show: function() {
+		this._super();
+		this._featureChanged();
 	},
 	onChanged: function(name, value) {
 		this._super(name, value);
