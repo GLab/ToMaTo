@@ -26,20 +26,30 @@ class SpecialFeatureConnector(generic.Connector):
 	def upcast(self):
 		return self
 
+	def _update_host_preferences(self, prefs, sfg):
+		if not sfg.has_free_slots():
+			return
+		hosts = []
+		used = sfg.usage_count()
+		if sfg.avoid_duplicates:
+			for con in self.connection_set_all():
+				dev = con.interface.device
+				if dev.host:
+					hosts.append(dev.host)
+		for sf in sfg.specialfeature_set.all():
+			if sf.host.enabled and not (sfg.avoid_duplicates and (sf.host in hosts)):
+				if sfg.max_devices:
+					prefs.add(sf.host, 1.0-used/sfg.max_devices)
+				else:
+					prefs.add(sf.host, 1.0)
+		
 	def host_preferences(self):
 		prefs = generic.ObjectPreferences(True)
 		if self.used_feature_group:
-			for sf in self.used_feature_group.specialfeature_set.all():
-				#FIXME: exclude used hosts on avoid_duplicates
-				if sf.host.enabled:
-					prefs.add(sf.host, 1.0)
+			self._update_host_preferences(prefs, self.used_feature_group)
 		else:
 			for sfg in self.feature_options().objects:
-				if sfg.has_free_slots():
-					for sf in sfg.specialfeature_set.all():
-						#FIXME: weight based on slots available
-						if sf.host.enabled:
-							prefs.add(sf.host, 1.0)
+				self._update_host_preferences(prefs, sfg)
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
