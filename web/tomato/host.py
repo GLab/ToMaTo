@@ -41,7 +41,7 @@ def index(api, request):
 
 @wrap_rpc
 def detail(api, request, hostname):
-	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname)})
+	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname), 'special_features': api.special_features()})
 
 @wrap_rpc
 def edit(api, request, hostname):
@@ -80,18 +80,3 @@ def debug(api, request, hostname):
 def remove(api, request, hostname):
 	api.host_remove(hostname)
 	return index(request)
-
-@wrap_rpc
-def special_feature_add(api, request, hostname):
-	type = request.REQUEST["type"]
-	group = request.REQUEST["group"]
-	bridge = request.REQUEST["bridge"]		
-	api.special_features_add(hostname, type, group, bridge)
-	return detail(request, hostname)
-
-@wrap_rpc
-def special_feature_remove(api, request, hostname):
-	type = request.REQUEST["type"]
-	group = request.REQUEST["group"]
-	api.special_features_remove(hostname, type, group)
-	return detail(request, hostname)

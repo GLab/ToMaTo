@@ -118,8 +118,14 @@ def edit(api, request, top_id):
 		xml=api.top_get(int(top_id))
 		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 		tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
-		sf = api.special_features_map()
-		special_features=",".join([f+":"+("|".join(sf[f])) for f in sf])
+		sflist = api.special_features()
+		map = {}
+		for sf in sflist:
+			if map.has_key(sf["type"]):
+				map[sf["type"]].append(sf["name"])
+			else:
+				map[sf["type"]] = [sf["name"]]
+		special_features=",".join([f+":"+("|".join(map[f])) for f in map])
 		host_groups=",".join(api.host_groups())
 		if not request.REQUEST.has_key("editor"):
 			editor = "jsui"

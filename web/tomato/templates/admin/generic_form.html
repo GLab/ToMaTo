@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+{% if name %}
+<h1>Edit {{type}} {{name}}</h1>
+{% else %}
+<h1>Add new {{type}}</h1>
+{% endif %}
+<form method="POST">
+<table>
+{{form.as_table}}
+</table>
+<input type="submit"/>
+</form>
+{% endblock %}

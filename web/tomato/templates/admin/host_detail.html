@@ -31,13 +31,16 @@
     <td>{{sf.type}}</td>
     <td>{{sf.group}}</td>
     <td>{{sf.bridge}}</td>
-    <td><a href="{%url host.special_feature_remove hostname=host.name%}?type={{sf.type}}&group={{sf.group}}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
+    <td><a href="{%url special_features.remove_host type=sf.type group=sf.group hostname=host.name%}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
   </tr>
 {% endfor %}
-<form action="{%url host.special_feature_add hostname=host.name%}">
+<form action="{%url special_features.add_host hostname=host.name%}">
   <tr>
-    <td><input name="type"/></td>
-    <td><input name="group"/></td>
+    <td colspan="2"><select name="typegroup">
+{% for sfg in special_features %}
+	<option value="{{sfg.type}}:{{sfg.name}}">{{sfg.type}} ({{sfg.name}})</option>
+{% endfor %}    
+    </select></td>
     <td><input name="bridge"/></td>
     <td><input type="submit" value="Add"/></td>
   </tr>
