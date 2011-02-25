@@ -106,7 +106,9 @@ class KVMDevice(generic.Device):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template_name("kvm", self.template)
 		if not self.host:
-			self.host = hosts.get_best_host(self.hostgroup, self)
+			self.host = self.host_options().best()
+			if not self.host:
+				raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
 		if not self.kvm_id:
 			self.kvm_id = self.host.next_free_vm_id()
 			self.save()

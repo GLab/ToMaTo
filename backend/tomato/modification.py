@@ -82,7 +82,6 @@ class Modification():
 			import tinc, special
 			if ctype == "special":
 				con = special.SpecialFeatureConnector()
-				con.state = generic.State.STARTED
 			elif ctype == "hub" or ctype =="switch" or ctype == "router":
 				con = tinc.TincConnector()
 			else:

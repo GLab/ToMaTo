@@ -107,7 +107,9 @@ class OpenVZDevice(generic.Device):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template_name("openvz", self.template)
 		if not self.host:
-			self.host = hosts.get_best_host(self.hostgroup, self)
+			self.host = self.host_options().best()
+			if not self.host:
+				raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
 		if not self.openvz_id:
 			self.openvz_id = self.host.next_free_vm_id()
 			self.save()				

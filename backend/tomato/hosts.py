@@ -378,20 +378,14 @@ class SpecialFeatureGroup(models.Model):
 	max_devices = models.IntegerField(null=True)
 	avoid_duplicates = models.BooleanField(default=False)
 
+	def has_free_slots(self):
+		return not (self.max_devices and self.usage_count() >= self.max_devices) 
+
 	def usage_count(self):
 		import special
-		connectors = special.SpecialFeatureConnector.objects.filter(Q(feature_type=self.feature_type) & (Q(feature_group=None) | Q(feature_group=self.group_name)) & ~Q(state="created"))
+		connectors = special.SpecialFeatureConnector.objects.filter(used_feature_group=self)
 		return connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
 		
-	def topologies(self):
-		#FIXME: makes no sense here, avoid_duplicates should of course still use the same group
-		import special
-		connectors = special.SpecialFeatureConnector.objects.filter(Q(feature_type=self.feature_type) & (Q(feature_group=None) | Q(feature_group=self.group_name)) & ~Q(state="created"))
-		tops = set()
-		for c in connectors:
-			tops.add(c.topology)
-		return tops
-
 	def to_dict(self, instances=False):
 		"""
 		Prepares a special feature group for serialization.
@@ -430,19 +424,16 @@ def get_host_groups():
 def get_host(name):
 	return Host.objects.get(name=name) # pylint: disable-msg=E1101
 
-def get_best_host(group, device=None):
+def get_hosts(group=None):
+	hosts = Host.objects.all()
+	if group:
+		hosts = hosts.filter(group=group)
+	return hosts
+
+def get_best_host(group):
 	all_hosts = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
 	if group:
 		all_hosts = all_hosts.filter(group=group)
-	if device:
-		for iface in device.interface_set_all():
-			if iface.is_connected():
-				sf = iface.connection.connector.upcast()
-				if sf.is_special():
-					if sf.feature_group:
-						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type, specialfeature__feature_group=sf.feature_group).distinct()
-					else:
-						all_hosts = all_hosts.filter(specialfeature__feature_type=sf.feature_type).distinct() # pylint: disable-msg=E1101
 	hosts = all_hosts.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
 	if len(hosts) > 0:
 		return hosts[0]
@@ -518,6 +509,8 @@ def get_all_physical_links():
 		
 def measure_link_properties(src, dst):
 	res = src.get_result("ping -A -c 500 -n -q -w 300 %s" % dst.name)
+	if not res:
+		return
 	lines = res.splitlines()
 	loss = float(lines[3].split()[5][:-1])/100.0
 	import math
@@ -532,6 +525,8 @@ def measure_link_properties(src, dst):
 	return (loss, avg, stddev)
 				
 def measure_physical_links():
+	if config.remote_dry_run:
+		return
 	for srcg in get_host_groups():
 		for dstg in get_host_groups():
 			if not srcg == dstg:

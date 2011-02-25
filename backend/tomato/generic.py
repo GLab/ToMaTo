@@ -126,6 +126,20 @@ class Device(models.Model):
 
 	def is_kvm(self):
 		return self.type == Device.TYPE_KVM
+	
+	def host_preferences(self):
+		prefs = ObjectPreferences(True)
+		for h in hosts.get_hosts(self.hostgroup):
+			if h.enabled:
+				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
+		#print "Host preferences for %s: %s" % (self, prefs) 
+		return prefs
+
+	def host_options(self):
+		options = self.host_preferences()
+		for iface in self.interface_set_all():
+			options = options.combine(iface.connection.connector.upcast().host_preferences())
+		return options
 
 	def download_supported(self):
 		return False
@@ -227,6 +241,8 @@ class Device(models.Model):
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
 			self.hostgroup = properties["hostgroup"]
+			if self.hostgroup == "auto":
+				self.hostgroup = ""
 		self.save()
 
 	def update_resource_usage(self):
@@ -331,6 +347,18 @@ class Connector(models.Model):
 		if self.is_special():
 			return self.specialfeatureconnector.upcast() # pylint: disable-msg=E1101
 		return self
+
+	def host_preferences(self):
+		prefs = ObjectPreferences()
+		# keep it local
+		for c in self.connection_set_all():
+			dev = c.interface.device
+			if dev.host:
+				prefs.add(dev.host, -0.1)
+				for h in hosts.get_hosts(dev.host.group):
+					prefs.add(h, 0.01)
+		#print "Host preferences for %s: %s" % (self, prefs) 
+		return prefs
 
 	def affected_hosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
@@ -500,3 +528,65 @@ class Connection(models.Model):
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
+
+class ObjectPreferences:
+	def __init__(self, exclusive=False):
+		self.exclusive = exclusive
+		self.objects = []
+		self.values = []
+	def add(self, obj, value=1.0):
+		try:
+			index = self.objects.index(obj)
+			self.values[index]+=value
+		except:
+			self.objects.append(obj)
+			self.values.append(value)
+	def remove(self, obj):
+		try:
+			index = self.objects.index(obj)
+			del self.objects[index]
+			del self.values[index]
+		except:
+			pass
+	def getValue(self, obj):
+		try:
+			index = self.objects.index(obj)
+			return self.values[index]
+		except:
+			return None
+	def contains(self, obj):
+		return not (self.getValue(obj) is None)
+	def combine(self, other):
+		if other.exclusive and not self.exclusive:
+			return other.combine(self)
+		res = ObjectPreferences(self.exclusive or other.exclusive)
+		if self.exclusive:
+			for o in self.objects:
+				val = self.getValue(o)
+				oval = other.getValue(o)
+				if not (oval is None and other.exclusive):
+					res.add(o, (oval + val) if oval else val)
+		else:
+			for o in self.objects:
+				res.add(o, self.getValue(o))
+			for o in other.objects:
+				res.add(o, other.getValue(o))
+		return res
+	def best(self):
+		max_val = None
+		best = None
+		i = 0
+		while i < len(self.values):
+			if max_val is None or max_val < self.values[i]:
+				max_val = self.values[i]
+				best = self.objects[i]
+			i=i+1
+		return best
+	def __str__(self):
+		strs = []
+		i=0
+		while i < len(self.values):
+			strs.append("%s: %s" %(self.objects[i], self.values[i]))
+			i=i+1
+		type = "exclusive" if self.exclusive else "hint"
+		return type + ":{" + (", ".join(strs)) + "}"
