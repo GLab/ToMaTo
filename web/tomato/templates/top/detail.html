@@ -5,10 +5,10 @@
 <!-- %%%GLABNETMAN%%%TOPOLOGY%%%{{top.id}}%%%{{task_id}}%%% -->
 <script src="/static/enhancetable.js"></script>
 
-Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}">[permissions]</a>
+Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}"><img src="/static/icons/permissions.png" alt="permissions" title="permissions"/></a>
 <br/>
 Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
-Last usage: {{top.date_usage}} [<a href="{%url top.renew top_id=top_id %}">renew</a>] <a href="{%url main.help page="TopologyTimeout" %}" target="_help">(info)</a><br/>
+Last usage: {{top.date_usage}} <a href="{%url top.renew top_id=top_id %}"><img src="/static/icons/refresh.png" alt="renew" title="renew"/></a> <a href="{%url main.help page="TopologyTimeout" %}" target="_help"><img src="/static/icons/help.png" alt="info" title="info"/></a><br/>
 Devices: {{top.device_count}}<br/>
 Connectors: {{top.connector_count}}<br/>
 {% if top.finished_task %}
