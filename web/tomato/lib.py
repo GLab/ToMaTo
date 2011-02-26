@@ -38,7 +38,7 @@ def getapi(request):
 		return None
 	(username, password) = auth
 	try:
-		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port) )
+		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
 		api.account()
 		return api
 	except Exception, exc:

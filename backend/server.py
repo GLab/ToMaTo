@@ -55,7 +55,7 @@ class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, papi):
 		self.api=papi
 		self.introspection=Introspection(self.api)
-		xmlrpc.XMLRPC.__init__(self)
+		xmlrpc.XMLRPC.__init__(self, allowNone=True)
 		self.logger = tomato.log.Logger(tomato.config.log_dir + "/api.log")
 
 	def log(self, function, args, user):
