@@ -270,6 +270,22 @@ var Topology = IconElement.extend({
 	},
 	getElementType: function () {
 		return "topology";
+	},
+	stateAction: function(action) {
+		switch(action) {
+			case "prepare":
+				this.setAttribute("state", "prepared");
+				break;
+			case "destroy":
+				this.setAttribute("state", "created");
+				break;
+			case "start":
+				this.setAttribute("state", "started");
+				break;
+			case "stop":
+				this.setAttribute("state", "prepared");
+				break;
+		}
 	}
 });
 
@@ -501,6 +517,22 @@ var Connector = IconElement.extend({
 	},
 	removeConnection: function(con) {
 		this.connections.remove(con);
+	},
+	stateAction: function(action) {
+		switch(action) {
+			case "prepare":
+				this.setAttribute("state", "prepared");
+				break;
+			case "destroy":
+				this.setAttribute("state", "created");
+				break;
+			case "start":
+				this.setAttribute("state", "started");
+				break;
+			case "stop":
+				this.setAttribute("state", "prepared");
+				break;
+		}
 	}
 });
 
@@ -649,6 +681,22 @@ var Device = IconElement.extend({
 	},
 	removeInterface: function(iface) {
 		this.interfaces.remove(iface);
+	},
+	stateAction: function(action) {
+		switch(action) {
+			case "prepare":
+				this.setAttribute("state", "prepared");
+				break;
+			case "destroy":
+				this.setAttribute("state", "created");
+				break;
+			case "start":
+				this.setAttribute("state", "started");
+				break;
+			case "stop":
+				this.setAttribute("state", "prepared");
+				break;
+		}
 	}
 });
 
@@ -794,6 +842,15 @@ var Editor = Class.extend({
 	},
 	setSpecialFeatures: function(sfmap) {
 		this.specialFeatures = sfmap;
+	},
+	loadTopologyInfo: function() {
+		var req = $.ajax({type: "GET", url: ajaxpath+"top/"+topid+"/info", complete: function(res) {
+			if (res.status == 200) {
+				var msg = $.parseJSON(res.responseText);
+				log(msg);
+			} else editor.errorMessage("AJAX request failed", res.statusText);
+		}});
+		var editor = this;
 	},
 	loadTopologyURL: function(url) {
 		var req = $.ajax({type: "GET", url: url, dataType: "xml"});
@@ -1245,7 +1302,7 @@ var Button = EditElement.extend({
 		});
 	},
 	setEditable: function(editable) {
-		this.input.attr({disabled: !editable});
+		this.input.button("option", "disabled", !editable);
 	},
 	setValue: function(value) {
 	},
@@ -1258,13 +1315,14 @@ var Button = EditElement.extend({
 });
 
 var Tabs = Class.extend({
-	init: function() {
+	init: function(listener) {
 		this.div = $('<div/>').addClass('ui-tabs ui-widget ui-widget-content ui-corner-all');
 		this.button_div = $('<ul/>').addClass('ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all');
 		this.div.append(this.button_div);
 		this.buttons = {};
 		this.tabs = {};
 		this.selection = null;
+		this.listener = listener;
 	},
 	select: function(name) {
 		for (t in this.tabs) {
@@ -1278,6 +1336,7 @@ var Tabs = Class.extend({
 			}
 		}
 		this.selection = name;
+		if (this.listener) this.listener(name);
 	},
 	_addButton: function(title, name) {
 		var t = this;
@@ -1357,7 +1416,7 @@ var AttributeForm = Class.extend({
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
-			this.fields[name].setEditable(this.editor.editable);
+			this.fields[name].setEditable(this.obj.editor.editable);
 		}
 	},
 	addField: function(field, desc) {
@@ -1389,12 +1448,56 @@ var AttributeForm = Class.extend({
 	}
 });
 
+var ControlPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.obj.editor.loadTopologyInfo();
+		this.div.empty();
+		var state = this.obj.getAttribute('state');
+		log(state);
+		var t = this;
+		var actionFunc = function(btn) {
+			t.obj.stateAction(btn.name.split("button-")[1]);
+			t.load();
+		};
+		var destroyButton = new Button("destroy", '<img src="/static/icons/destroy.png">', actionFunc);
+		var prepareButton = new Button("prepare", '<img src="/static/icons/prepare.png">', actionFunc);
+		var stopButton = new Button("stop", '<img src="/static/icons/stop.png">', actionFunc);
+		var startButton = new Button("start", '<img src="/static/icons/start.png">', actionFunc);
+		this.div.append(destroyButton.getInputElement());
+		this.div.append(prepareButton.getInputElement());
+		this.div.append(stopButton.getInputElement());
+		this.div.append(startButton.getInputElement());
+		destroyButton.setEditable(state == "prepared" || state == "created" || !state);
+		prepareButton.setEditable(state == "created" || !state);
+		stopButton.setEditable(state == "started" || state == "prepared");
+		startButton.setEditable(state == "prepared");
+		this.div.append("<br/>");
+		this.div.append('State: ' + state + '<br/>');
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
 var TopologyWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
+		this.tabs = new Tabs();
+		this.add(this.tabs.getDiv());
 		this.attrs = new AttributeForm(obj);
 		this.attrs.addField(new TextField("name", "Topology"), "name");
-		this.add(this.attrs.getDiv());
+		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
+		this.control = new ControlPanel(obj);
+		this.tabs.addTab("control", "Control", this.control.getDiv());
+	},
+	show: function() {
+		this.attrs.load();
+		this.control.load();
+		this._super();
 	}
 });
 
@@ -1410,6 +1513,13 @@ var DeviceWindow = ElementWindow.extend({
 		}), "name");
 		this.attrs.addField(new SelectField("hostgroup", this.obj.editor.hostGroups, "auto"), "hostgroup");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
+		this.control = new ControlPanel(obj);
+		this.tabs.addTab("control", "Control", this.control.getDiv());
+	},
+	show: function() {
+		this.attrs.load();
+		this.control.load();
+		this._super();
 	}
 });
 
@@ -1440,6 +1550,13 @@ var ConnectorWindow = ElementWindow.extend({
 			t.setTitle(name);
 		}), "name");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
+		this.control = new ControlPanel(obj);
+		this.tabs.addTab("control", "Control", this.control.getDiv());
+	},
+	show: function() {
+		this.attrs.load();
+		this.control.load();
+		this._super();
 	}
 });
 
@@ -1476,6 +1593,10 @@ var InterfaceWindow = ElementWindow.extend({
 		this.attrs = new AttributeForm(obj);
 		this.attrs.addField(new NameField(obj), "name");
 		this.add(this.attrs.getDiv());
+	},
+	show: function() {
+		this.attrs.load();
+		this._super();
 	}
 });
 
@@ -1498,6 +1619,10 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.attrs.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
 		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
 		this.add(this.attrs.getDiv());
+	},
+	show: function() {
+		this.attrs.load();
+		this._super();
 	}
 });
 
