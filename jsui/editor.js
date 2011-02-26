@@ -1259,6 +1259,46 @@ var Button = EditElement.extend({
 	}
 });
 
+var Tabs = Class.extend({
+	init: function() {
+		this.div = $('<div/>').addClass('ui-tabs ui-widget ui-widget-content ui-corner-all');
+		this.button_div = $('<ul/>').addClass('ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all');
+		this.div.append(this.button_div);
+		this.buttons = {};
+		this.tabs = {};
+		this.selection = null;
+	},
+	select: function(name) {
+		for (t in this.tabs) {
+			if (t == name) {
+				this.tabs[t].show();
+				this.buttons[t].addClass('ui-tabs-selected ui-state-active');
+			} else {
+				this.tabs[t].hide();
+				this.buttons[t].removeClass('ui-tabs-selected');
+				this.buttons[t].removeClass('ui-state-active');
+			}
+		}
+		this.selection = name;
+	},
+	addButton: function(title, name) {
+		var t = this;
+		var b = $('<li><a>'+title+'</a></li>').click(function(){
+			t.select(name);
+		}).addClass('ui-state-default ui-corner-top');
+		this.buttons[name] = b;
+		this.button_div.append(b);
+	},
+	addTab: function(name, title, div) {
+		div.addClass('ui-tabs-panel ui-widget-content ui-corner-bottom');
+		div.hide();
+		this.tabs[name] = div;
+		this.addButton(title, name);
+		this.div.append(div);
+		if (! this.selection) this.select(name);
+	}
+});
+
 var AttributeForm = Class.extend({
 	init: function(obj) {
 		this.obj = obj;
@@ -1266,8 +1306,12 @@ var AttributeForm = Class.extend({
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
 			resizable: false, height:"auto", width:"auto", title: "Attributes of "+obj.name,
 			show: "slide", hide: "slide"});
+		this.tabs = new Tabs();
+		this.div.append(this.tabs.div);
 		this.table = $('<table/>').attr({"class": "ui-widget"});
-		this.div.append(this.table);
+		this.tabs.addTab("attributes", "Attributes", this.table);
+		this.control = $('<div>Control</div>').attr({"class": "ui-widget"});
+		this.tabs.addTab("control", "Control", this.control);
 		this.fields = {};
 	},
 	show: function() {
