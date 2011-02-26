@@ -255,7 +255,7 @@ var Topology = IconElement.extend({
 		this._super(editor, name, "images/topology.png", {x: 32, y: 32}, pos);
 		this.paletteItem = true;
 		this.paint();
-		this.form = new TopologyForm(this);
+		this.form = new TopologyWindow(this);
 	},
 	setAttribute: function(name, value) {
 		//ignore name changes
@@ -282,7 +282,7 @@ var Connection = NetElement.extend({
 		this.isConnection = true ;
 		this.iface = false;
 		this.name = "connection";
-		this.form = new ConnectionForm(this);		
+		this.form = new ConnectionWindow(this);		
 	},
 	connect: function(iface) {
 		this.iface = iface;
@@ -358,7 +358,7 @@ var EmulatedConnection = Connection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.handle.attr({fill: this.editor.glabColor});
-		this.form = new EmulatedConnectionForm(this);
+		this.form = new EmulatedConnectionWindow(this);
 		this.IPHintNumber = this.con.nextIPHintNumber++;
 	},
 	getIPHint: function() {
@@ -369,7 +369,7 @@ var EmulatedConnection = Connection.extend({
 var EmulatedRouterConnection = EmulatedConnection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
-		this.form = new EmulatedRouterConnectionForm(this);
+		this.form = new EmulatedRouterConnectionWindow(this);
 		this.setAttribute("gateway", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
 	},
 	getIPHint: function() {
@@ -385,7 +385,7 @@ var Interface = NetElement.extend({
 		this.paint();
 		this.isInterface = true;
 		this.name = "eth" + dev.interfaces.length;
-		this.form = new InterfaceForm(this);
+		this.form = new InterfaceWindow(this);
 		this.editor.ajaxModify([this.modification("create", {name: this.name})], function(res) {});
 	},
 	getElementType: function () {
@@ -441,7 +441,7 @@ var Interface = NetElement.extend({
 var ConfiguredInterface = Interface.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
-		this.form = new ConfiguredInterfaceForm(this);
+		this.form = new ConfiguredInterfaceWindow(this);
 		var ipHint = con.getIPHint();
 		this.setAttribute("use_dhcp", ipHint == "dhcp");
 		if (ipHint != "dhcp" ) this.setAttribute("ip4address", ipHint);
@@ -507,7 +507,7 @@ var Connector = IconElement.extend({
 var SpecialConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
-		this.form = new SpecialConnectorForm(this);
+		this.form = new SpecialConnectorWindow(this);
 	},
 	nextIPHint: function() {
 		return "dhcp";
@@ -531,7 +531,7 @@ var SpecialConnector = Connector.extend({
 var HubConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/hub.png", {x: 32, y: 16}, pos);
-		this.form = new HubConnectorForm(this);
+		this.form = new HubConnectorWindow(this);
 	},
 	baseName: function() {
 		return "hub";
@@ -553,7 +553,7 @@ var SwitchConnector = Connector.extend({
 			name = this.nextName();
 		}
 		this._super(editor, name, "images/switch.png", {x: 32, y: 16}, pos);
-		this.form = new SwitchConnectorForm(this);
+		this.form = new SwitchConnectorWindow(this);
 	},
 	baseName: function() {
 		return "switch";
@@ -571,7 +571,7 @@ var SwitchConnector = Connector.extend({
 var RouterConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/router.png", {x: 32, y: 16}, pos);
-		this.form = new RouterConnectorForm(this);
+		this.form = new RouterConnectorWindow(this);
 	},
 	nextIPHint: function() {
 		return "10."+this.IPHintNumber+"."+(this.nextIPHintNumber++)+".1/24";
@@ -655,7 +655,7 @@ var Device = IconElement.extend({
 var OpenVZDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/openvz.png", {x: 32, y: 32}, pos);
-		this.form = new OpenVZDeviceForm(this);
+		this.form = new OpenVZDeviceWindow(this);
 	},
 	baseName: function() {
 		return "openvz";
@@ -673,7 +673,7 @@ var OpenVZDevice = Device.extend({
 var KVMDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/kvm.png", {x: 32, y: 32}, pos);
-		this.form = new KVMDeviceForm(this);
+		this.form = new KVMDeviceWindow(this);
 	},
 	baseName: function() {
 		return "kvm";
@@ -703,7 +703,7 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (editable) this.paintPalette();
 		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
-		this.wizardForm = new WizardForm(this);
+		this.wizardForm = new WizardWindow(this);
 		this.paintBackground();
 		this.checkBrowser();
 	},
@@ -1096,10 +1096,12 @@ var Editor = Class.extend({
 });
 
 var EditElement = Class.extend({
-	init: function(name) {
+	init: function(name, listener) {
 		this.name = name;
+		this.changeListener = listener;
 	},
 	onChanged: function(value) {
+		if (this.changeListener) this.changeListener(value);
 		this.form.onChanged(this.name, value);
 	},
 	setValue: function(value) {
@@ -1117,8 +1119,8 @@ var EditElement = Class.extend({
 });
 
 var TextField = EditElement.extend({
-	init: function(name, dflt) {
-		this._super(name);
+	init: function(name, dflt, listener) {
+		this._super(name, listener);
 		this.dflt = dflt;
 		this.input = $('<input type="text" name="'+name+'" value="'+dflt+'" size=10/>');
 		this.input[0].fld = this;
@@ -1141,18 +1143,14 @@ var TextField = EditElement.extend({
 });
 
 var NameField = TextField.extend({
-	init: function(obj) {
-		this._super("name", obj.name);
-	},
-	onChanged: function(value) {
-		this._super(value);
-		this.form.div.dialog("option", "title", "Attributes of " + value);
+	init: function(obj, listener) {
+		this._super("name", obj.name, listener);
 	}
 });
 
 var MagicTextField = TextField.extend({
-	init: function(name, pattern, dflt) {
-		this._super(name, dflt);
+	init: function(name, pattern, dflt, listener) {
+		this._super(name, dflt, listener);
 		this.pattern = pattern;
 	},
 	onChanged: function(value) {
@@ -1163,15 +1161,15 @@ var MagicTextField = TextField.extend({
 });
 
 var PasswordField = TextField.extend({
-	init: function(name, dflt) {
-		this._super(name, dflt);
+	init: function(name, dflt, listener) {
+		this._super(name, dflt, listener);
 		this.input[0].type = "password";
 	}
 });
 
 var SelectField = EditElement.extend({
-	init: function(name, options, dflt) {
-		this._super(name);
+	init: function(name, options, dflt, listener) {
+		this._super(name, listener);
 		this.options = options;
 		this.dflt = dflt;
 		this.input = $('<select name="'+name+'"/>');
@@ -1212,8 +1210,8 @@ var SelectField = EditElement.extend({
 });
 
 var CheckField = EditElement.extend({
-	init: function(name, dflt) {
-		this._super(name);
+	init: function(name, dflt, listener) {
+		this._super(name, listener);
 		this.dflt = dflt;
 		this.input = $('<input type="checkbox" name="'+name+'"/>');
 		if (dflt) this.input.attr({checked: true});
@@ -1281,7 +1279,7 @@ var Tabs = Class.extend({
 		}
 		this.selection = name;
 	},
-	addButton: function(title, name) {
+	_addButton: function(title, name) {
 		var t = this;
 		var b = $('<li><a>'+title+'</a></li>').click(function(){
 			t.select(name);
@@ -1290,37 +1288,38 @@ var Tabs = Class.extend({
 		this.button_div.append(b);
 	},
 	addTab: function(name, title, div) {
-		div.addClass('ui-tabs-panel ui-widget-content ui-corner-bottom');
+		div.addClass('ui-tabs-panel ui-widget ui-widget-content ui-corner-bottom');
 		div.hide();
 		this.tabs[name] = div;
-		this.addButton(title, name);
+		this._addButton(title, name);
 		this.div.append(div);
 		if (! this.selection) this.select(name);
+	},
+	getSelection: function() {
+		return this.selection;
+	},
+	getTab: function(name) {
+		return this.tabs[name];
+	},
+	getDiv: function() {
+		return this.div;
 	}
 });
 
-var AttributeForm = Class.extend({
-	init: function(obj) {
-		this.obj = obj;
-		this.editor = obj.editor;
+var Window = Class.extend({
+	init: function(title) {
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
-			resizable: false, height:"auto", width:"auto", title: "Attributes of "+obj.name,
+			resizable: false, height:"auto", width:"auto", title: title,
 			show: "slide", hide: "slide"});
-		this.tabs = new Tabs();
-		this.div.append(this.tabs.div);
-		this.table = $('<table/>').attr({"class": "ui-widget"});
-		this.tabs.addTab("attributes", "Attributes", this.table);
-		this.control = $('<div>Control</div>').attr({"class": "ui-widget"});
-		this.tabs.addTab("control", "Control", this.control);
-		this.fields = {};
 	},
-	show: function() {
-		this.div.dialog({position: {my: "left top", at: "right top", of: this.obj.getRectObj(), offset: this.obj.getRect().width+5+" 0"}});
-		for (var name in this.fields) {
-			var val = this.obj.attributes[name];
-			if (val) this.fields[name].setValue(val);
-			this.fields[name].setEditable(this.editor.editable);
-		}
+	setTitle: function(title) {
+		this.div.dialog("option", "title", title);
+	},
+	setPosition: function(position) {
+		this.div.dialog({position: position});
+	},
+	show: function(position) {
+		if (position) this.setPosition(position);
 		this.div.dialog("open");
 	},
 	hide: function() {
@@ -1329,6 +1328,37 @@ var AttributeForm = Class.extend({
 	toggle: function() {
 		if (this.div.dialog("isOpen")) this.hide();
 		else this.show();
+	},
+	add: function(div) {
+		this.div.append(div);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
+var ElementWindow = Window.extend({
+	init: function(obj) {
+		this._super(obj.name);
+		this.obj = obj;
+	},
+	show: function() {
+		this._super({my: "left top", at: "right top", of: this.obj.getRectObj(), offset: this.obj.getRect().width+5+" 0"});
+	}
+});
+
+var AttributeForm = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.table = $('<table/>').addClass('ui-widget');
+		this.fields = {};
+	},
+	load: function() {
+		for (var name in this.fields) {
+			var val = this.obj.attributes[name];
+			if (val) this.fields[name].setValue(val);
+			this.fields[name].setEditable(this.editor.editable);
+		}
 	},
 	addField: function(field, desc) {
 		field.setForm(this);
@@ -1353,107 +1383,132 @@ var AttributeForm = Class.extend({
 	},
 	onChanged: function(name, value) {
 		this.obj.setAttribute(name, value);
+	},
+	getDiv: function() {
+		return this.table;
 	}
 });
 
-var TopologyForm = AttributeForm.extend({
+var TopologyWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new TextField("name", "Topology"), "name");
+		this.attrs = new AttributeForm(obj);
+		this.attrs.addField(new TextField("name", "Topology"), "name");
+		this.add(this.attrs.getDiv());
 	}
 });
 
-var DeviceForm = AttributeForm.extend({
+var DeviceWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new NameField(obj), "name");
-		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "hostgroup");
+		this.tabs = new Tabs();
+		this.add(this.tabs.getDiv());
+		this.attrs = new AttributeForm(obj);
+		var t = this;
+		this.attrs.addField(new NameField(obj, function(name){
+			t.setTitle(name);
+		}), "name");
+		this.attrs.addField(new SelectField("hostgroup", this.obj.editor.hostGroups, "auto"), "hostgroup");
+		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 	}
 });
 
-var OpenVZDeviceForm = DeviceForm.extend({
+var OpenVZDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "template");
-		this.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
-		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
+		this.attrs.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
+		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
 	}
 });
 
-var KVMDeviceForm = DeviceForm.extend({
+var KVMDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new SelectField("template", this.editor.templatesKVM, "auto"), "template");
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template");
 	}	
 });
 
-var ConnectorForm = AttributeForm.extend({
+var ConnectorWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new NameField(obj), "name");
+		this.tabs = new Tabs();
+		this.add(this.tabs.getDiv());
+		this.attrs = new AttributeForm(obj);
+		var t = this;
+		this.attrs.addField(new NameField(obj, function(name){
+			t.setTitle(name);
+		}), "name");
+		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 	}
 });
 
-var SpecialConnectorForm = ConnectorForm.extend({
+var SpecialConnectorWindow = ConnectorWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new SelectField("feature_type", getKeys(this.editor.specialFeatures), "auto"), "type");
-		this.addField(new SelectField("feature_group", [], "auto"), "group");
+		var t = this;
+		this.attrs.addField(new SelectField("feature_type", getKeys(this.obj.editor.specialFeatures), "auto", function(value) {
+			t._featureChanged(value);
+		}), "type");
+		this.attrs.addField(new SelectField("feature_group", [], "auto"), "group");
 	},
-	_featureChanged: function() {
-		this.fields.feature_group.setOptions(this.editor.specialFeatures[this.fields.feature_type.getValue()]);
+	_featureChanged: function(value) {
+		var feature_group = this.attrs.fields.feature_group;
+		var options = this.obj.editor.specialFeatures[value];
+		if (!options) options = [];
+		feature_group.setOptions(options);
 	},
 	show: function() {
 		this._super();
 		this._featureChanged();
-	},
-	onChanged: function(name, value) {
-		this._super(name, value);
-		if (name == "feature_type") this._featureChanged();
 	}
 });
 
-var HubConnectorForm = ConnectorForm.extend({});
+var HubConnectorWindow = ConnectorWindow.extend({});
 
-var SwitchConnectorForm = ConnectorForm.extend({});
+var SwitchConnectorWindow = ConnectorWindow.extend({});
 
-var RouterConnectorForm = ConnectorForm.extend({});
+var RouterConnectorWindow = ConnectorWindow.extend({});
 
-var InterfaceForm = AttributeForm.extend({
+var InterfaceWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new NameField(obj), "name");
+		this.attrs = new AttributeForm(obj);
+		this.attrs.addField(new NameField(obj), "name");
+		this.add(this.attrs.getDiv());
 	}
 });
 
-var ConfiguredInterfaceForm = InterfaceForm.extend({
+var ConfiguredInterfaceWindow = InterfaceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
-		this.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");		
+		this.attrs.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
+		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");		
 	}
 });
 
-var ConnectionForm = AttributeForm.extend({});
+var ConnectionWindow = ElementWindow.extend({});
 
-var EmulatedConnectionForm = ConnectionForm.extend({
+var EmulatedConnectionWindow = ConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.addField(new MagicTextField("delay", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
-		this.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
-		this.addField(new CheckField("capture", false), "capture&nbsp;packets");
+		this.attrs = new AttributeForm(obj);
+		this.attrs.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
+		this.attrs.addField(new MagicTextField("delay", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
+		this.attrs.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
+		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
+		this.add(this.attrs.getDiv());
 	}
 });
 
-var EmulatedRouterConnectionForm = EmulatedConnectionForm.extend({
+var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");
+		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");
 	}
 });
 
-var WizardForm = Class.extend({
+var WizardWindow = Window.extend({
 	init: function(editor) {
 		this.editor = editor;
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
