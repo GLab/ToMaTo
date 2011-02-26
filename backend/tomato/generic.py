@@ -157,23 +157,7 @@ class Device(models.Model):
 			return interface.connection.bridge_name()
 		except: #pylint: disable-msg=W0702
 			return None		
-
-	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("name", self.name)
-		dom.setAttribute("type", self.type)
-		if self.hostgroup:
-			dom.setAttribute("hostgroup", self.hostgroup)
-		if internal:
-			if self.host:
-				dom.setAttribute("host", self.host.name)
-			dom.setAttribute("state", self.state)
-		for iface in self.interface_set_all():
-			x_iface = doc.createElement ( "interface" )
-			iface.upcast().encode_xml(x_iface, doc, internal)
-			dom.appendChild(x_iface)
-		if self.pos:
-			dom.setAttribute("pos", self.pos)
-		
+	
 	def start(self):
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -299,9 +283,6 @@ class Interface(models.Model):
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
-		dom.setAttribute("name", self.name)
-
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
@@ -364,18 +345,6 @@ class Connector(models.Model):
 
 	def affected_hosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
-
-	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("name", self.name)
-		dom.setAttribute("type", self.type)
-		if internal:
-			dom.setAttribute("state", self.state)
-		for con in self.connection_set_all():
-			x_con = doc.createElement ( "connection" )
-			con.upcast().encode_xml(x_con, doc, internal)
-			dom.appendChild(x_con)
-		if self.pos:
-			dom.setAttribute("pos", self.pos)
 
 	def start(self):
 		self.topology.renew()
@@ -498,10 +467,7 @@ class Connection(models.Model):
 
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
-
-	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
-		dom.setAttribute("interface", "%s.%s" % (self.interface.device.name, self.interface.name))
-					
+				
 	def start_run(self, task):
 		host = self.interface.device.host
 		if not self.connector.is_special():

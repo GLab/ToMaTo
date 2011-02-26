@@ -63,15 +63,6 @@ class KVMDevice(generic.Device):
 		self.save()
 		task.done()
 
-	def encode_xml(self, dom, doc, internal):
-		generic.Device.encode_xml(self, dom, doc, internal)
-		dom.setAttribute("template", self.template)
-		if internal:
-			if self.kvm_id:
-				dom.setAttribute("kvm_id", str(self.kvm_id))
-			if self.vnc_port:
-				dom.setAttribute("vnc_port", str(self.vnc_port))
-
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)

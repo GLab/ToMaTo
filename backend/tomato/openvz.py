@@ -40,19 +40,6 @@ class OpenVZDevice(generic.Device):
 		m.update(str(self.topology.owner))
 		return m.hexdigest()
 	
-	def encode_xml(self, dom, doc, internal):
-		generic.Device.encode_xml(self, dom, doc, internal)
-		dom.setAttribute("template", self.template)
-		if self.root_password:
-			dom.setAttribute("root_password", self.root_password)
-		if self.gateway:
-			dom.setAttribute("gateway", self.gateway)
-		if internal:
-			if self.openvz_id:
-				dom.setAttribute("openvz_id", str(self.openvz_id))
-			if self.vnc_port:
-				dom.setAttribute("vnc_port", str(self.vnc_port))
-		
 	def get_state(self, task):
 		if config.remote_dry_run:
 			return self.state
@@ -271,13 +258,6 @@ class ConfiguredInterface(generic.Interface):
 
 	def upcast(self):
 		return self
-
-	def encode_xml(self, dom, doc, internal):
-		generic.Interface.encode_xml(self, dom, doc, internal)
-		if self.use_dhcp:
-			dom.setAttribute("use_dhcp", str(self.use_dhcp).lower())
-		if self.ip4address:
-			dom.setAttribute("ip4address", self.ip4address)
 
 	def interface_name(self):
 		return self.device.upcast().interface_device(self)

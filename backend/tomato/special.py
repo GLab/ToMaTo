@@ -65,12 +65,6 @@ class SpecialFeatureConnector(generic.Connector):
 		for sfg in sfgs:
 			options.add(sfg, 1.0)
 		return options
-
-	def encode_xml(self, dom, doc, internal):
-		generic.Connector.encode_xml(self, dom, doc, internal)
-		dom.setAttribute("feature_type", self.feature_type)
-		if self.feature_group:
-			dom.setAttribute("feature_group", self.feature_group)
 		
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)

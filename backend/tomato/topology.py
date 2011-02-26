@@ -155,25 +155,6 @@ class Topology(models.Model):
 		import hosts
 		return hosts.Host.objects.filter(device__topology=self).distinct() # pylint: disable-msg=E1101
 	
-	def save_to ( self, dom, doc, internal ):
-		"""
-		Creates an xml dom object containing the xml representation of this topology
-		@param internal whether to store or ignore assigned ids int the dom
-		"""
-		if internal:
-			dom.setAttribute("id", str(self.id))
-			dom.setAttribute("owner", self.owner)
-		dom.setAttribute("name", self.name)
-		for dev in self.device_set_all():
-			x_dev = doc.createElement ( "device" )
-			dev.upcast().encode_xml ( x_dev, doc, internal )
-			dom.appendChild ( x_dev )
-		for con in self.connector_set_all():
-			x_con = doc.createElement ( "connector" )
-			con.upcast().encode_xml ( x_con, doc, internal )
-			dom.appendChild ( x_con )
-		return dom
-
 	def get_control_dir(self,host_name):
 		"""
 		The local directory where all control scripts and files are stored.

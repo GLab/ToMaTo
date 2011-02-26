@@ -105,6 +105,7 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		return False
 
 def host_list(group_filter="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
+	#FIXME: combine with host_info
 	"""
 	Returns details about all hosts as a list. If group filter is "" all hosts
 	will be returned otherwise only the hosts within the group (exact match) .
@@ -397,6 +398,7 @@ def top_info(top_id, user=None):
 	return top.to_dict(top.check_access("user", user), True)
 
 def top_list(owner_filter, host_filter, access_filter, user=None):
+	#FIXME: combine with top_info
 	"""
 	Returns brief information about topologies. The set of topologies that will
 	be returned can be filtered by owner, by host (affected by the topology) 
@@ -425,30 +427,8 @@ def top_list(owner_filter, host_filter, access_filter, user=None):
 			tops.append(t.to_dict(t.check_access("user", user), False))
 	return tops
 	
-def top_get(top_id, include_ids=False, user=None):
-	"""
-	Returns the xml specification of a topology. This operation needs user
-	access to the topology. If include_ids is True internal values will be
-	included in the output.
-	
-	@param top_id: id of the topology
-	@type top_id: number
-	@param include_ids: whether to include internal data
-	@type include_ids: boolean
-	@param user: current user
-	@type user: generic.User
-	@return: an xml specification of the topology
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	from xml.dom import minidom
-	doc = minidom.Document()
-	dom = doc.createElement ( "topology" )
-	top.save_to(dom, doc, include_ids)
-	return dom.toprettyxml(indent="\t", newl="\n")
-
 def top_import(xml, user=None):
+	#FIXME: move to webfrontend
 	"""
 	Creates a new topology by importing a xml topology specification. 
 	Internally this method first creates a new empty topology, then converts
@@ -491,6 +471,7 @@ def top_create(user=None):
 	return top.id
 
 def top_modify_xml(top_id, xml, user=None):
+	#FIXME: remove this
 	"""
 	Applies the modifications encoded as xml to the topology. The user must
 	have at least manager access to the topology. The result of this method
