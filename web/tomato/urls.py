@@ -80,4 +80,5 @@ urlpatterns = patterns('',
 	(r'^template/remove/(?P<name>.*)$', 'tomato.template.remove'),
 	(r'^template/set_default/(?P<type>.*)/(?P<name>.*)$', 'tomato.template.set_default'),
 	(r'^ajax/top/(?P<top_id>\d+)/modify$', 'tomato.ajax.modify'),
+	(r'^ajax/top/(?P<top_id>\d+)/info$', 'tomato.ajax.info'),
 )

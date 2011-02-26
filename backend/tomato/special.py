@@ -151,3 +151,8 @@ class SpecialFeatureConnector(generic.Connector):
 			if sf.feature_type == self.feature_type and (not self.feature_group or sf.feature_group == self.feature_group):
 				return sf.bridge
 		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.feature_type, self.feature_group, interface.device.host))
+	
+	def to_dict(self, auth):
+		res = generic.Connector.to_dict(self, auth)
+		res.update(feature_type=self.feature_type, feature_group=self.feature_group, used_feature_group=self.used_feature_group)
+		return res

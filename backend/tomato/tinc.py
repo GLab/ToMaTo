@@ -243,3 +243,10 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.tinc_port=None
 		self.save()
 		dummynet.EmulatedConnection.destroy_run(self, task)
+
+	def to_dict(self, auth):
+		res = dummynet.EmulatedConnection.to_dict(self, auth)		
+		res.update(tinc_port=self.tinc_port)
+		if self.gateway:
+			res.update(gateway=self.gateway)
+		return res

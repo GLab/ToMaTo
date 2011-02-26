@@ -45,7 +45,7 @@ function console (url) {
 		<th>State</th>
 		<th>Actions</th>
 	</tr>
-{% for name, dev in top.devices %}
+{% for name, dev in top.devices.items %}
 	<tr>
 		<td>{{dev.name}}</td>
 		<td>{{dev.type}}</td>
@@ -87,7 +87,7 @@ function console (url) {
 		<th>State</th>
 		<th>Actions</th>
 	</tr>
-{% for name, con in top.connectors %}
+{% for name, con in top.connectors.items %}
 	<tr>
 		<td>{{con.name}}</td>
 		<td>{{con.type}}</td>
@@ -131,7 +131,7 @@ No captures ready
 		<th>Ports</th>
 		<th>Special</th>
 	</tr>
-{% for name, dev in top.devices %}
+{% for name, dev in top.devices.items %}
 {% if dev.resources %}
 	<tr>
 		<td>{{dev.name}}</td>
@@ -143,7 +143,7 @@ No captures ready
 	</tr>
 {% endif %}
 {% endfor %}
-{% for name, con in top.connectors %}
+{% for name, con in top.connectors.items %}
 {% if con.resources %}
 	<tr>
 		<td>{{con.name}}</td>

@@ -31,7 +31,7 @@ class OpenVZDevice(generic.Device):
 
 	def vnc_password(self):
 		if not self.vnc_port:
-			return "---" 
+			return None 
 		m = hashlib.md5()
 		m.update(config.password_salt)
 		m.update(str(self.name))
@@ -252,6 +252,18 @@ class OpenVZDevice(generic.Device):
 	def interface_device(self, iface):
 		return "veth%s.%s" % ( self.upcast().openvz_id, iface.name )
 
+	def to_dict(self, auth):
+		res = generic.Device.to_dict(self, auth)
+		res.update(template=self.template, openvz_id=self.openvz_id)
+		if auth:
+			if self.vnc_port:
+				res.update(vnc_port=self.vnc_port)
+				res.update(vnc_password=self.vnc_password())
+			if self.gateway:
+				res.update(gateway=self.gateway)
+			if self.root_password:
+				res.update(root_password=self.root_password)
+		return res
 
 class ConfiguredInterface(generic.Interface):
 	use_dhcp = models.BooleanField()
@@ -298,4 +310,9 @@ class ConfiguredInterface(generic.Interface):
 	def prepare_run(self, task):
 		openvz_id = self.device.upcast().openvz_id
 		self.device.host.execute("vzctl set %s --netif_add %s --save" % ( openvz_id, self.name ), task)
-		self.device.host.execute("vzctl set %s --ifname %s --host_ifname %s --save" % ( openvz_id, self.name, self.interface_name()), task)		
+		self.device.host.execute("vzctl set %s --ifname %s --host_ifname %s --save" % ( openvz_id, self.name, self.interface_name()), task)
+		
+	def to_dict(self, auth):
+		res = generic.Interface.to_dict(self, auth)		
+		res.update(use_dhcp=self.use_dhcp, ip4address=self.ip4address)
+		return res				

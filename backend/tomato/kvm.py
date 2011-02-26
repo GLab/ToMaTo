@@ -231,3 +231,12 @@ class KVMDevice(generic.Device):
 		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%si%s*)" % ( self.upcast().kvm_id, iface_id ) ).strip()
 		return name
 
+	def to_dict(self, auth):
+		res = generic.Device.to_dict(self, auth)
+		res.update(template=self.template, kvm_id=self.kvm_id)
+		if auth:
+			if self.vnc_port:
+				res.update(vnc_port=self.vnc_port)
+				res.update(vnc_password=self.vnc_password())
+		return res
+

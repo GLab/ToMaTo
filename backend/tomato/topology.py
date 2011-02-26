@@ -405,9 +405,9 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
-		res = {"id": self.id, "name": self.name, "state": self.max_state(), "owner": str(self.owner),
+		res = {"id": self.id, "name": self.name, "state": self.max_state(), "owner": self.owner,
 			"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
-			"date_created": self.date_created, "date_modified": self.date_modified, "date_usage": self.date_usage
+			"date_created": str(self.date_created), "date_modified": str(self.date_modified), "date_usage": str(self.date_usage)
 			}
 		if detail:
 			try:
@@ -417,8 +417,8 @@ class Topology(models.Model):
 				import traceback
 				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			res.update({"analysis": analysis, 
-				"devices": [(v.name, v.to_dict(auth)) for v in self.device_set_all()],
-				"connectors": [(v.name, v.to_dict(auth)) for v in self.connector_set_all()]
+				"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
+				"connectors": dict([[v.name, v.upcast().to_dict(auth)] for v in self.connector_set_all()])
 				})
 			if auth:
 				task = self.get_task()

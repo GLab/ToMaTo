@@ -69,7 +69,7 @@ class ResourceSet(models.Model):
 	def encode(self):
 		res = {}
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			res[r.type] = str(r.value)
+			res[r.type] = r.value if abs(r.value) < 0x7FFFFFFF else str(r.value)
 		return res
 
 def add_encoded_resources(r1, r2):
@@ -267,23 +267,13 @@ class Device(models.Model):
 		@return: a dict containing information about the device
 		@rtype: dict
 		"""
-		state = str(self.state)
-		res = {"name": self.name, "type": self.type, "host": str(self.host),
-			"state": state,
-			"is_created": state == State.CREATED,
-			"is_prepared": state == State.PREPARED,
-			"is_started": state == State.STARTED,
-			"upload_supported": self.upcast().upload_supported(),
-			"download_supported": self.upcast().download_supported(),
-			}
+		res = {"name": self.name, "type": self.type, "host": str(self.host) if self.host else None,
+			"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos,
+			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
+		}
 		if auth:
-			dev = self.upcast()
-			if dev.resources:
-				res.update(resources=dev.resources.encode())
-			if hasattr(dev, "vnc_port") and dev.vnc_port:
-				res.update(vnc_port=dev.vnc_port)
-			if hasattr(dev, "vnc_password"):
-				res.update(vnc_password=dev.vnc_password())
+			if self.resources:
+				res.update(resources=self.resources.encode())
 		return res
 		
 class Interface(models.Model):
@@ -315,6 +305,18 @@ class Interface(models.Model):
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
+	def to_dict(self, auth):
+		"""
+		Prepares an interface for serialization.
+		
+		@type auth: boolean
+		@param auth: Whether to include confidential information
+		@return: a dict containing information about the interface
+		@rtype: dict
+		"""
+		res = {"name": self.name}
+		return res
+
 
 class Connector(models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('special', 'Special feature') )
@@ -468,12 +470,8 @@ class Connector(models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		state = str(self.state)
-		res = {"name": self.name, "type": ("special: %s" % self.upcast().feature_type if self.is_special() else self.type),
-			"state": state,
-			"is_created": state == State.CREATED,
-			"is_prepared": state == State.PREPARED,
-			"is_started": state == State.STARTED,
+		res = {"name": self.name, "type": self.type, "state": self.state, "pos": self.pos,
+			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
 		if auth:
 			if self.resources:
@@ -528,6 +526,18 @@ class Connection(models.Model):
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
+
+	def to_dict(self, auth):
+		"""
+		Prepares a connection for serialization.
+		
+		@type auth: boolean
+		@param auth: Whether to include confidential information
+		@return: a dict containing information about the connection
+		@rtype: dict
+		"""
+		res = {"interface": str(self.interface)}
+		return res
 
 class ObjectPreferences:
 	def __init__(self, exclusive=False):

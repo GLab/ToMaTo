@@ -32,3 +32,9 @@ def modify(api, request, top_id):
 	#print mods
 	res = api.top_modify(top_id, mods, True)
 	return HttpResponse(json.dumps({"success": res["done"], "output": res["output"]}))
+
+@wrap_rpc
+def info(api, request, top_id):
+	res = api.top_info(top_id);
+	return HttpResponse(json.dumps(res))
+	
