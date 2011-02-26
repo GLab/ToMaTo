@@ -1,6 +1,6 @@
 body
 {
- font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.6em;
+ font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.8em;
  background-color:#ffffff;
  margin:0px;
 }
@@ -272,4 +272,8 @@ form table ul.errorlist li {
 	font-size:0.5em;
 	color:red;
 	font-weight:bold;
+}
+
+div.ui-widget {
+	font-size:1.0em;
 }
