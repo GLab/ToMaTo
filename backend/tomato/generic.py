@@ -32,10 +32,6 @@ class State(): #pylint: disable-msg=W0232
 	STARTED="started"
 
 class ResourceSet(models.Model):
-	disk = models.IntegerField(default=0)
-	memory = models.IntegerField(default=0)
-	ports = models.IntegerField(default=0)
-	special = models.IntegerField(default=0)
 
 	def clean(self):
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101

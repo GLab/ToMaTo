@@ -132,13 +132,13 @@ getKeys = function(assAr) {
 	return keys;
 };
 
-getAttributesDOM = function(dom) {
-	var map = {};
-	for (var i in dom.attributes) {
-		var attr = dom.attributes[i];
-		if (attr.value) map[attr.name]=attr.value;
+formatSize = function(value) {
+	suffix = 0;
+	while (value > 1024) {
+		value /= 1024.0;
+		suffix++;
 	}
-	return map;
+	return Math.round(value*100)/100 + " " + ["Bytes", "KB", "MB", "GB", "TB"][suffix];
 };
 
 if (!Array.prototype.indexOf) {

@@ -99,6 +99,12 @@ var NetElement = Class.extend({
 	getSubElementName: function() {
 		return "";
 	},
+	setResources: function(res) {
+		this.resources = res;
+	},
+	getResources: function() {
+		return this.resources;
+	},
 	stateAction: function(action) {
 		var t = this;
 		this.editor.ajaxAction(this.action(action), function(task_id) {
@@ -881,6 +887,7 @@ var Editor = Class.extend({
 		var connectors = {};
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
+		editor.topology.setResources(top.resources);
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
@@ -914,6 +921,7 @@ var Editor = Class.extend({
 					connectors[name] = el;
 					break;
 			}
+			el.setResources(obj.resources);
 			el.setAttributes(attrs);
 		};
 		for (var name in top.devices) f(top.devices[name]);
@@ -1496,6 +1504,30 @@ var ControlPanel = Class.extend({
 	}
 });
 
+var ResourcesPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.div.empty();
+		var resources = this.obj.getResources();
+		var t = this;
+		if (resources) {
+			var table = $('<table/>');
+			if (resources.disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(resources.disk)+'</td></tr>'));
+			if (resources.memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(resources.memory)+'</td></tr>'));
+			if (resources.traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(resources.traffic)+'</td></tr>'));
+			if (resources.special) table.append($('<tr><td>Special slots:</td><td>'+resources.special+'</td></tr>'));
+			if (resources.ports) table.append($('<tr><td>Ports:</td><td>'+resources.ports+'</td></tr>'));
+			this.div.append(table);
+		}
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
 var TopologyWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
@@ -1506,10 +1538,14 @@ var TopologyWindow = ElementWindow.extend({
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 		this.control = new ControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
+		this.resources = new ResourcesPanel(obj);
+		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	show: function() {
 		this.attrs.load();
 		this.control.load();
+		this.resources.load();
 		this._super();
 	}
 });
@@ -1528,10 +1564,14 @@ var DeviceWindow = ElementWindow.extend({
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 		this.control = new ControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
+		this.resources = new ResourcesPanel(obj);
+		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	show: function() {
 		this.attrs.load();
 		this.control.load();
+		this.resources.load();
 		this._super();
 	}
 });
@@ -1565,10 +1605,14 @@ var ConnectorWindow = ElementWindow.extend({
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 		this.control = new ControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
+		this.resources = new ResourcesPanel(obj);
+		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	show: function() {
 		this.attrs.load();
 		this.control.load();
+		this.resources.load();
 		this._super();
 	}
 });
