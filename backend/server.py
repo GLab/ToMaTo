@@ -94,7 +94,7 @@ class APIServer(xmlrpc.XMLRPC):
 		if functionPath.startswith("system."):
 			functionPath = functionPath[7:]
 		if hasattr(self.introspection, functionPath):
-			function=getattr(self.introspection, functionPath)			
+			function=getattr(self.introspection, functionPath)
 		if function:
 			request.setHeader("content-type", "text/xml")
 			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender, request)

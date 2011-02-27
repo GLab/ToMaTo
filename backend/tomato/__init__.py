@@ -523,334 +523,39 @@ def top_modify(top_id, mods, direct, user=None):
 		top.logger().log("started task %s" % res, user=user.name)
 	return res
 
-def top_remove(top_id, user=None):
-	"""
-	Removes the topology by first bringing all components to the created state
-	and then removing it from the database. The result of this method
-	is a task id that runs the removal. Only owners of topologies can remove
-	them.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "owner", user)
-	top.logger().log("removing topology", user=user.name)
-	task_id = top.remove()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_prepare(top_id, user=None):
-	"""
-	Prepares the topology by bringing all components to the prepared state,
-	preparing devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing topology", user=user.name)
-	task_id = top.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_destroy(top_id, user=None):
-	"""
-	Destroys the topology by bringing all components to the created state,
-	stopping and destroying devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying topology", user=user.name)
-	task_id = top.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_start(top_id, user=None):
-	"""
-	Starts the topology by bringing all components to the started state,
-	starting devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
+def top_action(top_id, element_type, element_name, action, attrs={}, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
-	top.logger().log("starting topology", user=user.name)
-	task_id = top.start()
+	if element_type == "topology":
+		element = top
+	elif element_type == "device":
+		element = top.device_set_get(element_name)
+	elif element_type == "connector":
+		element = top.connector_set_get(element_name)
+	if action == "prepare":
+		_top_access(top, "manager", user)
+		task_id = element.prepare()
+	elif action == "destroy":
+		_top_access(top, "manager", user)
+		task_id = element.destroy()
+	elif action == "start":
+		_top_access(top, "user", user)
+		task_id = element.start()
+	elif action == "stop":
+		_top_access(top, "user", user)
+		task_id = element.stop()
+	if element_type == "topology":
+		if action == "remove":
+			_top_access(top, "owner", user)
+			task_id = top.remove()
+		elif action == "renew":
+			_top_access(top, "owner", user)
+			top.renew()
+			return
+	top.logger().log("%s %s %s" % (action, element_type, element_name), user=user.name)
 	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
+	return task_id	
 	
-def top_stop(top_id, user=None):
-	"""
-	Stops the topology by bringing all components to the prepared state,
-	stopping devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping topology", user=user.name)
-	task_id = top.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
-def top_renew(top_id, user=None):
-	"""
-	This method explicitly renews a topology.
-	All users of topologies can execute the renewal.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("renewing topology", user=user.name)
-	top.renew()
-	return True
-
-def device_prepare(top_id, device_name, user=None):
-	"""
-	Prepares the device by executing the prepare command on it.	The device
-	must be in the created state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the deivce
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_destroy(top_id, device_name, user=None):
-	"""
-	Destroys the device by executing the destroy command on it.	The device
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_start(top_id, device_name, user=None):
-	"""
-	Starts the device by executing the start command on it. The device
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("starting device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.start()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_stop(top_id, device_name, user=None):
-	"""
-	Stops the device by executing the stop command on it. The device
-	must be in the started state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
-def connector_prepare(top_id, connector_name, user=None):
-	"""
-	Prepares the connector by executing the prepare command on it. The connector
-	must be in the created state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_destroy(top_id, connector_name, user=None):
-	"""
-	Destroys the connector by executing the destroy command on it. The connector
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_start(top_id, connector_name, user=None):
-	"""
-	Starts the connector by executing the start command on it. The connector
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("starting connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.start()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_stop(top_id, connector_name, user=None):
-	"""
-	Stops the connector by executing the stop command on it. The connector
-	must be in the started state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
 def task_list(user=None):
 	"""
 	Returns a list of all tasks.

@@ -101,7 +101,7 @@ def download_capture(api, request, top_id, connector_id, device_id, interface_id
 
 @wrap_rpc
 def renew(api, request, top_id):
-	api.top_renew(int(top_id))
+	api.top_action(int(top_id), "topology", None, "renew")
 	return _display_top(api, top_id)
 
 @wrap_rpc
@@ -113,28 +113,22 @@ def vncview(api, request, top_id, device_id):
 
 @wrap_rpc
 def edit(api, request, top_id):
-	#FIXME: do not populate text editor with specification xml
-	if not request.REQUEST.has_key("xml"):
-		xml=api.top_get(int(top_id))
-		tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
-		tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
-		sflist = api.special_features()
-		map = {}
-		for sf in sflist:
-			if map.has_key(sf["type"]):
-				map[sf["type"]].append(sf["name"])
-			else:
-				map[sf["type"]] = [sf["name"]]
-		special_features=",".join([f+":"+("|".join(map[f])) for f in map])
-		host_groups=",".join(api.host_groups())
-		if not request.REQUEST.has_key("editor"):
-			editor = "jsui"
+	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
+	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+	sflist = api.special_features()
+	map = {}
+	for sf in sflist:
+		if map.has_key(sf["type"]):
+			map[sf["type"]].append(sf["name"])
 		else:
-			editor = request.REQUEST["editor"]
-		return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
-	xml=request.REQUEST["xml"]
-	task_id=api.top_modify_xml(int(top_id), xml)
-	return _display_top(api, top_id, task_id, "Change topology")
+			map[sf["type"]] = [sf["name"]]
+	special_features=",".join([f+":"+("|".join(map[f])) for f in map])
+	host_groups=",".join(api.host_groups())
+	if not request.REQUEST.has_key("editor"):
+		editor = "jsui"
+	else:
+		editor = request.REQUEST["editor"]
+	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
 
 @wrap_rpc
 def details(api, request, top_id):
@@ -142,78 +136,78 @@ def details(api, request, top_id):
 	
 @wrap_rpc
 def show(api, request, top_id):
-	xml=api.top_get(int(top_id), True)
 	if not request.REQUEST.has_key("format"):
 		format = "jsui"
 	else:
 		format = request.REQUEST["format"]
-	if format == "plain":
-		return HttpResponse(xml, mimetype="text/plain")		
-	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'xml': xml, 'auth': request.META["HTTP_AUTHORIZATION"], 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
+	if format == "json":
+		import json
+		return HttpResponse(json.dumps(api.top_info(top_id), indent=2), mimetype="text/plain")		
+	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
 
 @wrap_rpc
 def remove(api, request, top_id):
-	api.top_remove(int(top_id))
+	api.top_action(int(top_id), "topology", None, "remove")
 	return index(request)
 
 @wrap_rpc
 def prepare(api, request, top_id):
-	task_id=api.top_prepare(int(top_id))
+	task_id=api.top_action(int(top_id), "topology", None, "prepare")
 	return _display_top(api, top_id, task_id, "Prepare topology")
 
 @wrap_rpc
 def destroy(api, request, top_id):
-	task_id=api.top_destroy(int(top_id))
+	task_id=api.top_action(int(top_id), "topology", None, "destroy")
 	return _display_top(api, top_id, task_id, "Destroy topology")
 
 @wrap_rpc
 def start(api, request, top_id):
-	task_id=api.top_start(int(top_id))
+	task_id=api.top_action(int(top_id), "topology", None, "start")
 	return _display_top(api, top_id, task_id, "Start topology")
 
 @wrap_rpc
 def stop(api, request, top_id):
-	task_id=api.top_stop(int(top_id))
+	task_id=api.top_action(int(top_id), "topology", None, "stop")
 	return _display_top(api, top_id, task_id, "Stop topology")
 
 @wrap_rpc
 def dev_prepare(api, request, top_id, device_id):
-	task_id=api.device_prepare(int(top_id), device_id)
+	task_id=api.top_action(int(top_id), "device", device_id, "prepare")
 	return _display_top(api, top_id, task_id, "Prepare device")
 
 @wrap_rpc
 def dev_destroy(api, request, top_id, device_id):
-	task_id=api.device_destroy(int(top_id), device_id)
+	task_id=api.top_action(int(top_id), "device", device_id, "destroy")
 	return _display_top(api, top_id, task_id, "Destroy device")
 
 @wrap_rpc
 def dev_start(api, request, top_id, device_id):
-	task_id=api.device_start(int(top_id), device_id)
+	task_id=api.top_action(int(top_id), "device", device_id, "start")
 	return _display_top(api, top_id, task_id, "Start device")
 
 @wrap_rpc
 def dev_stop(api, request, top_id, device_id):
-	task_id=api.device_stop(int(top_id), device_id)
+	task_id=api.top_action(int(top_id), "device", device_id, "stop")
 	return _display_top(api, top_id, task_id, "Stop device")
 
 @wrap_rpc
 def con_prepare(api, request, top_id, connector_id):
-	task_id=api.connector_prepare(int(top_id), connector_id)
+	task_id=api.top_action(int(top_id), "connector", connector_id, "prepare")
 	return _display_top(api, top_id, task_id, "Prepare connector")
 
 @wrap_rpc
 def con_destroy(api, request, top_id, connector_id):
-	task_id=api.connector_destroy(int(top_id), connector_id)
+	task_id=api.top_action(int(top_id), "connector", connector_id, "destroy")
 	return _display_top(api, top_id, task_id, "Destroy connector")
 
 @wrap_rpc
 def con_start(api, request, top_id, connector_id):
-	task_id=api.connector_start(int(top_id), connector_id)
+	task_id=api.top_action(int(top_id), "connector", connector_id, "start")
 	return _display_top(api, top_id, task_id, "Start connector")
 
 @wrap_rpc
 def con_stop(api, request, top_id, connector_id):
-	task_id=api.connector_stop(int(top_id), connector_id)
+	task_id=api.top_action(int(top_id), "connector", connector_id, "stop")
 	return _display_top(api, top_id, task_id, "Stop connector")
 
 @wrap_rpc

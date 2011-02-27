@@ -251,8 +251,10 @@ class Device(models.Model):
 		@return: a dict containing information about the device
 		@rtype: dict
 		"""
-		res = {"name": self.name, "type": self.type, "host": str(self.host) if self.host else None,
-			"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos,
+		res = {"attrs": {"host": str(self.host) if self.host else None,
+					"name": self.name, "type": self.type,
+					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos
+					},
 			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
 		}
 		if auth:
@@ -295,7 +297,7 @@ class Interface(models.Model):
 		@return: a dict containing information about the interface
 		@rtype: dict
 		"""
-		res = {"name": self.name}
+		res = {"attrs": {"name": self.name}}
 		return res
 
 
@@ -439,7 +441,8 @@ class Connector(models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		res = {"name": self.name, "type": self.type, "state": self.state, "pos": self.pos,
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
+						"pos": self.pos},
 			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
 		if auth:
@@ -502,7 +505,7 @@ class Connection(models.Model):
 		@return: a dict containing information about the connection
 		@rtype: dict
 		"""
-		res = {"interface": str(self.interface)}
+		res = {"interface": str(self.interface), "attrs":{}}
 		return res
 
 class ObjectPreferences:

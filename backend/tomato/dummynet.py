@@ -147,6 +147,6 @@ class EmulatedConnection(generic.Connection):
 	
 	def to_dict(self, auth):
 		res = generic.Connection.to_dict(self, auth)		
-		res.update(delay=self.delay, bandwidth=self.bandwidth, lossratio=self.lossratio, capture=self.capture)
+		res["attrs"].update(delay=self.delay, bandwidth=self.bandwidth, lossratio=self.lossratio, capture=self.capture)
 		return res
 	

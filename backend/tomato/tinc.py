@@ -235,7 +235,7 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def to_dict(self, auth):
 		res = dummynet.EmulatedConnection.to_dict(self, auth)		
-		res.update(tinc_port=self.tinc_port)
+		res["attrs"].update(tinc_port=self.tinc_port)
 		if self.gateway:
-			res.update(gateway=self.gateway)
+			res["attrs"].update(gateway=self.gateway)
 		return res

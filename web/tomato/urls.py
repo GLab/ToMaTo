@@ -81,4 +81,6 @@ urlpatterns = patterns('',
 	(r'^template/set_default/(?P<type>.*)/(?P<name>.*)$', 'tomato.template.set_default'),
 	(r'^ajax/top/(?P<top_id>\d+)/modify$', 'tomato.ajax.modify'),
 	(r'^ajax/top/(?P<top_id>\d+)/info$', 'tomato.ajax.info'),
+	(r'^ajax/top/(?P<top_id>\d+)/action$', 'tomato.ajax.action'),
+	(r'^ajax/task/(?P<task_id>.*)$', 'tomato.ajax.task_status'),
 )

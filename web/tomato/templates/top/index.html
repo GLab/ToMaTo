@@ -17,11 +17,11 @@
 {% for top in top_list %}
   <tr>
     <td>{{top.id}}</td>
-    <td><a href="{%url top.details top.id%}">{{top.name}}</a></td>
-    <td>{{top.owner}}</td>
-    <td>{{top.state}}</td>
-    <td>{{top.device_count}}</td>
-    <td>{{top.connector_count}}</td>
+    <td><a href="{%url top.details top.id%}">{{top.attrs.name}}</a></td>
+    <td>{{top.attrs.owner}}</td>
+    <td>{{top.attrs.state}}</td>
+    <td>{{top.attrs.device_count}}</td>
+    <td>{{top.attrs.connector_count}}</td>
   </tr>
 {% endfor %}
 </table>

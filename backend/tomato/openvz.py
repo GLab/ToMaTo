@@ -241,15 +241,15 @@ class OpenVZDevice(generic.Device):
 
 	def to_dict(self, auth):
 		res = generic.Device.to_dict(self, auth)
-		res.update(template=self.template, openvz_id=self.openvz_id)
+		res["attrs"].update(template=self.template, openvz_id=self.openvz_id)
 		if auth:
 			if self.vnc_port:
-				res.update(vnc_port=self.vnc_port)
-				res.update(vnc_password=self.vnc_password())
+				res["attrs"].update(vnc_port=self.vnc_port)
+				res["attrs"].update(vnc_password=self.vnc_password())
 			if self.gateway:
-				res.update(gateway=self.gateway)
+				res["attrs"].update(gateway=self.gateway)
 			if self.root_password:
-				res.update(root_password=self.root_password)
+				res["attrs"].update(root_password=self.root_password)
 		return res
 
 class ConfiguredInterface(generic.Interface):
@@ -294,5 +294,5 @@ class ConfiguredInterface(generic.Interface):
 		
 	def to_dict(self, auth):
 		res = generic.Interface.to_dict(self, auth)		
-		res.update(use_dhcp=self.use_dhcp, ip4address=self.ip4address)
+		res["attrs"].update(use_dhcp=self.use_dhcp, ip4address=self.ip4address)
 		return res				

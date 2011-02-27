@@ -386,9 +386,11 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
-		res = {"id": self.id, "name": self.name, "state": self.max_state(), "owner": self.owner,
-			"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
-			"date_created": str(self.date_created), "date_modified": str(self.date_modified), "date_usage": str(self.date_usage)
+		res = {"id": self.id, 
+			"attrs": {"name": self.name, "state": self.max_state(), "owner": self.owner,
+					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
+					"date_created": str(self.date_created), "date_modified": str(self.date_modified), "date_usage": str(self.date_usage)
+					}
 			}
 		if detail:
 			try:

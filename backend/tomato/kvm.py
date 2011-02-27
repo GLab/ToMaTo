@@ -224,10 +224,10 @@ class KVMDevice(generic.Device):
 
 	def to_dict(self, auth):
 		res = generic.Device.to_dict(self, auth)
-		res.update(template=self.template, kvm_id=self.kvm_id)
+		res["attrs"].update(template=self.template, kvm_id=self.kvm_id)
 		if auth:
 			if self.vnc_port:
-				res.update(vnc_port=self.vnc_port)
-				res.update(vnc_password=self.vnc_password())
+				res["attrs"].update(vnc_port=self.vnc_port)
+				res["attrs"].update(vnc_password=self.vnc_password())
 		return res
 

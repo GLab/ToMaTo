@@ -75,6 +75,9 @@ var NetElement = Class.extend({
 	modification: function(type, attr) {
 		return {"type": this.getElementType() + "-" + type, "element": this.getElementName(), "subelement": this.getSubElementName(), "properties": attr};
 	},
+	action: function(action) {
+		return {"element_type": this.getElementType(), "element_name": this.getElementName(), "action": action, "attrs": {}};
+	},
 	setAttribute: function(name, value) {
 		this.attributes[name]=value;
 		var attr = {};
@@ -95,6 +98,27 @@ var NetElement = Class.extend({
 	},
 	getSubElementName: function() {
 		return "";
+	},
+	stateAction: function(action) {
+		var t = this;
+		this.editor.ajaxAction(this.action(action), function(task_id) {
+			t.editor.followTask(task_id, function(){
+				switch (action) {
+					case "prepare":
+						t.setAttribute("state", "prepared");
+						break;
+					case "destroy":
+						t.setAttribute("state", "created");
+						break;
+					case "start":
+						t.setAttribute("state", "started");
+						break;
+					case "stop":
+						t.setAttribute("state", "prepared");
+						break;
+				}
+			});
+		});
 	}
 });
 
@@ -192,8 +216,8 @@ var IconElement = NetElement.extend({
 		this._super(); //must be at end, so rect has already been updated
 	},
 	setAttribute: function(name, value) {
-		this._super(name, value);
 		if (name == "name") {
+			this._super(name, value);
 			this.editor.elementNames.remove(this.name);
 			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 			this.name = value;
@@ -209,7 +233,7 @@ var IconElement = NetElement.extend({
 				default:
 					this.stateIcon.attr({src: basepath+"images/pixel.png", opacity: 0.0});
 			}
-		}
+		} else this._super(name, value);
 	},
 	remove: function(){
 		this._super();
@@ -260,7 +284,10 @@ var Topology = IconElement.extend({
 	setAttribute: function(name, value) {
 		//ignore name changes
 		this.attributes[name]=value;
-		if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+		if (name == "state") for (var e in this.editor.elements) {
+			var el = this.editor.elements[e];
+			if (el.isDevice || el.isConnector) el.setAttribute("state", value);
+		} else if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 	},
 	_dragStart: function () {
 	},
@@ -270,22 +297,6 @@ var Topology = IconElement.extend({
 	},
 	getElementType: function () {
 		return "topology";
-	},
-	stateAction: function(action) {
-		switch(action) {
-			case "prepare":
-				this.setAttribute("state", "prepared");
-				break;
-			case "destroy":
-				this.setAttribute("state", "created");
-				break;
-			case "start":
-				this.setAttribute("state", "started");
-				break;
-			case "stop":
-				this.setAttribute("state", "prepared");
-				break;
-		}
 	}
 });
 
@@ -517,22 +528,6 @@ var Connector = IconElement.extend({
 	},
 	removeConnection: function(con) {
 		this.connections.remove(con);
-	},
-	stateAction: function(action) {
-		switch(action) {
-			case "prepare":
-				this.setAttribute("state", "prepared");
-				break;
-			case "destroy":
-				this.setAttribute("state", "created");
-				break;
-			case "start":
-				this.setAttribute("state", "started");
-				break;
-			case "stop":
-				this.setAttribute("state", "prepared");
-				break;
-		}
 	}
 });
 
@@ -681,22 +676,6 @@ var Device = IconElement.extend({
 	},
 	removeInterface: function(iface) {
 		this.interfaces.remove(iface);
-	},
-	stateAction: function(action) {
-		switch(action) {
-			case "prepare":
-				this.setAttribute("state", "prepared");
-				break;
-			case "destroy":
-				this.setAttribute("state", "created");
-				break;
-			case "start":
-				this.setAttribute("state", "started");
-				break;
-			case "stop":
-				this.setAttribute("state", "prepared");
-				break;
-		}
 	}
 });
 
@@ -778,8 +757,9 @@ var Editor = Class.extend({
 	},
 	infoMessage: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
-			resizable: false, height:"auto", width:"auto", title: title, 
-			position:{my: "center center", at: "center center", of: editor.div}});
+			resizable: false, height:"auto", width:"auto", maxHeight: this.size.y, maxWidth: this.size.x, title: title, 
+			position:{my: "center center", at: "center center", of: this.div}});
+		div.css({overflow: "scroll", "max-width": this.size.x-100, "max-height": this.size.y-100});
 		div.append(message);
 		div.dialog("open");
 		return div; 
@@ -787,11 +767,43 @@ var Editor = Class.extend({
 	errorMessage: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
 			resizable: false, height:"auto", width:"auto", title: title, 
-			position:{my: "center center", at: "center center", of: editor.div},
+			position:{my: "center center", at: "center center", of: this.div},
 			dialogClass: "ui-state-error"});
 		div.append(message);
 		div.dialog("open");
 		return div; 
+	},
+	followTask: function(task, onSuccess) {
+		followTask = {t: this, task: task, onSuccess: onSuccess, closable: false};
+		followTask.dialog = this.infoMessage("Task", "");
+		followTask.dialog.bind("dialogbeforeclose", function() {return followTask.closable;});
+		followTask.update = function() {
+			followTask.t._ajax("task/"+followTask.task, null, function(output){
+				 followTask.dialog.empty();
+				 followTask.dialog.append("<pre>"+output.output+"</pre>");
+				 followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
+				 switch (output.status) {
+				 	case "active":
+				 		window.setTimeout("followTask.update()", 1000);
+				 		break;
+				 	case "done":
+						followTask.closable = true;
+						followTask.dialog.dialog("close");
+				 		log("closed");
+				 		var fT = followTask;
+				 		delete followTask;
+				 		fT.onSuccess();
+				 		break;
+				 	case "failed":
+						followTask.closable = true;
+						followTask.dialog.bind("dialogclose", function(){
+							window.location.reload();						
+						});
+				 		break;
+				 }
+			});			
+		};
+		followTask.update();
 	},
 	ajaxModifyBegin: function() {
 		if (this.ajaxModifyTransaction) return false;
@@ -803,24 +815,36 @@ var Editor = Class.extend({
 		this.ajaxModifyExecute(this.ajaxModifyTransaction);
 		delete this.ajaxModifyTransaction;
 	},
-	ajaxModifyExecute: function(transaction) {
-		var data = {"mods": $.toJSON(transaction.mods)};
-		var editor = this;
-		if (transaction.mods.length == 0) return;
-		log("AJAX MOD SEND: " + transaction.mods.length);
+	_ajax: function(path, data, func) {
+		log("AJAX " + path + " " + data);
 		try {
-			return $.ajax({type: "POST", url:ajaxpath+"top/"+topid+"/modify", async: true, data: data, complete: function(res){
+			return $.ajax({type: "POST", url:ajaxpath+path, async: true, data: data, complete: function(res){
 				if (res.status == 200) {
 					var msg = $.parseJSON(res.responseText);
 					if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
 						window.location.reload();						
 					});
-					for (var i = 0; i < transaction.func.length; i++) transaction.func[i](msg);
+					func(msg.output);
 				} else editor.errorMessage("AJAX request failed", res.statusText);
 			}});
 		} catch (e) {
 			editor.errorMessage("AJAX request failed", e);
 		}
+	},
+	ajaxAction: function(action, func) {
+		var data = {"action": $.toJSON(action)};
+		var editor = this;
+		this._ajax("top/"+topid+"/action", data, func);
+	},
+	ajaxModifyExecute: function(transaction) {
+		var data = {"mods": $.toJSON(transaction.mods)};
+		var editor = this;
+		if (transaction.mods.length == 0) return;
+		log("AJAX MOD SEND: " + transaction.mods.length);
+		var func = function(output) {
+			for (var i = 0; i < transaction.func.length; i++) transaction.func[i](output);
+		};
+		this._ajax("top/"+topid+"/modify", data, func);
 	},
 	ajaxModify: function(mods, func) {
 		if (this.isLoading) return;
@@ -843,90 +867,81 @@ var Editor = Class.extend({
 	setSpecialFeatures: function(sfmap) {
 		this.specialFeatures = sfmap;
 	},
-	loadTopologyInfo: function() {
-		var req = $.ajax({type: "GET", url: ajaxpath+"top/"+topid+"/info", complete: function(res) {
-			if (res.status == 200) {
-				var msg = $.parseJSON(res.responseText);
-				log(msg);
-			} else editor.errorMessage("AJAX request failed", res.statusText);
-		}});
+	loadTopology: function() {
 		var editor = this;
-	},
-	loadTopologyURL: function(url) {
-		var req = $.ajax({type: "GET", url: url, dataType: "xml"});
-		var editor = this;
-		req.success(function(xml) {
-			editor.loadTopologyDOM(xml);
+		this._ajax("top/"+topid+"/info", null, function(top){
+			editor._loadTopology(top);
 		});
 	},
-	loadTopologyDOM: function(xml) {
+	_loadTopology: function(top) {
 		this.isLoading = true;
 		var editor = this;
 		var dangling_interfaces_mods = [];
-		$(xml).find("topology").each(function(){
-			var attrs = getAttributesDOM(this);
-			editor.topology.setAttributes(attrs);
-			var devices = {};
-			var connectors = {};
-			var connections = {};
-			var f = function(){
-				var attrs = getAttributesDOM(this);
-				var name = attrs["name"];
-				var pos = attrs["pos"].split(",");
-				var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
-				var type = attrs["type"];
-				var el;
-				switch (type) {
-					case "openvz":
-						el = new OpenVZDevice(editor, name, pos);
-						devices[name] = el;
-						break;
-					case "kvm": 
-						el = new KVMDevice(editor, name, pos);
-						devices[name] = el;
-						break;
-					case "hub": 
-						el = new HubConnector(editor, name, pos);
-						connectors[name] = el;
-						break;
-					case "switch": 
-						el = new SwitchConnector(editor, name, pos);
-						connectors[name] = el;
-						break;
-					case "router": 
-						el = new RouterConnector(editor, name, pos);
-						connectors[name] = el;
-						break;
-					case "special": 
-						el = new SpecialConnector(editor, name, pos);
-						connectors[name] = el;
-						break;
-				}
-				el.setAttributes(attrs);
-			};
-			$(this).find('device').each(f);
-			$(this).find('connector').each(f);
-			$(this).find('connection').each(function(){
-				var attrs = getAttributesDOM(this);
-				var con = connectors[$(this).parent().attr("name")];
-				var ifname = attrs["interface"];
-				var device = devices[ifname.split(".")[0]];
-				var c = con.createConnection(device);
-				c.setAttributes(attrs);
-				connections[ifname] = c;
-			});
-			$(this).find('interface').each(function(){
-				var attrs = getAttributesDOM(this);
-				var device = devices[$(this).parent().attr("name")];
-				var name = attrs["name"];
-				var con = connections[device.name+"."+name];
-				if (con) {
-					var iface = device.createInterface(con);
-					con.connect(iface);
-					iface.setAttributes(attrs);
-				} else dangling_interfaces_mods.push({type: "interface-delete", element: device.name, subelement: name, properties: {}});
-			});
-		});
+		var devices = {};
+		var connectors = {};
+		var connections = {};
+		editor.topology.setAttributes(top.attrs);
+		var f = function(obj){
+			var attrs = obj.attrs;
+			var name = attrs.name;
+			var pos = attrs.pos.split(",");
+			var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
+			var type = attrs.type;
+			var el;
+			switch (type) {
+				case "openvz":
+					el = new OpenVZDevice(editor, name, pos);
+					devices[name] = el;
+					break;
+				case "kvm": 
+					el = new KVMDevice(editor, name, pos);
+					devices[name] = el;
+					break;
+				case "hub": 
+					el = new HubConnector(editor, name, pos);
+					connectors[name] = el;
+					break;
+				case "switch": 
+					el = new SwitchConnector(editor, name, pos);
+					connectors[name] = el;
+					break;
+				case "router": 
+					el = new RouterConnector(editor, name, pos);
+					connectors[name] = el;
+					break;
+				case "special": 
+					el = new SpecialConnector(editor, name, pos);
+					connectors[name] = el;
+					break;
+			}
+			el.setAttributes(attrs);
+		};
+		for (var name in top.devices) f(top.devices[name]);
+		for (var name in top.connectors) f(top.connectors[name]);
+		for (var name in top.connectors) {
+			var con = top.connectors[name];
+			for (var ifname in con.connections) {
+				var c = con.connections[ifname];
+				var con_obj = connectors[con.attrs.name];
+				var device_obj = devices[ifname.split(".")[0]];
+				var c_obj = con_obj.createConnection(device_obj);
+				c_obj.setAttributes(c.attrs);
+				connections[ifname] = c_obj;
+			}
+		}
+		for (var name in top.devices) {
+			var dev = top.devices[name];
+			var dev_obj = devices[name];
+			for (var ifname in dev.interfaces) {
+				var iface = dev.interfaces[ifname];
+				var con_obj = connections[name+"."+ifname];
+				if (con_obj) {
+					var iface_obj = dev_obj.createInterface(con_obj);
+					con_obj.connect(iface_obj);
+					iface_obj.setAttributes(iface.attrs);
+				} else dangling_interfaces_mods.push({type: "interface-delete", element: dev_obj.name, subelement: iface.attrs.name, properties: {}});
+			}
+		}
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 	},
@@ -1454,10 +1469,8 @@ var ControlPanel = Class.extend({
 		this.div = $('<div/>');
 	},
 	load: function() {
-		this.obj.editor.loadTopologyInfo();
 		this.div.empty();
 		var state = this.obj.getAttribute('state');
-		log(state);
 		var t = this;
 		var actionFunc = function(btn) {
 			t.obj.stateAction(btn.name.split("button-")[1]);
