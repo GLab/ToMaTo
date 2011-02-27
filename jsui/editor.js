@@ -230,6 +230,7 @@ var IconElement = NetElement.extend({
 			this.paintUpdate();
 			this.editor.elementNames.push(value);
 		} else if (name == "state") {
+			this.attributes[name] = value;
 			switch (value) {
 				case "started":
 				case "prepared":
@@ -239,6 +240,7 @@ var IconElement = NetElement.extend({
 				default:
 					this.stateIcon.attr({src: basepath+"images/pixel.png", opacity: 0.0});
 			}
+			if (this.form.reload) this.form.reload();
 		} else this._super(name, value);
 	},
 	remove: function(){
@@ -790,12 +792,11 @@ var Editor = Class.extend({
 				 followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
 				 switch (output.status) {
 				 	case "active":
-				 		window.setTimeout("followTask.update()", 1000);
+				 		window.setTimeout("followTask.update()", 250);
 				 		break;
 				 	case "done":
 						followTask.closable = true;
 						followTask.dialog.dialog("close");
-				 		log("closed");
 				 		var fT = followTask;
 				 		delete followTask;
 				 		fT.onSuccess();
@@ -1531,7 +1532,10 @@ var ResourcesPanel = Class.extend({
 var TopologyWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.tabs = new Tabs();
+		var t = this;
+		this.tabs = new Tabs(function(name) {
+			t.reload();
+		});
 		this.add(this.tabs.getDiv());
 		this.attrs = new AttributeForm(obj);
 		this.attrs.addField(new TextField("name", "Topology"), "name");
@@ -1542,10 +1546,13 @@ var TopologyWindow = ElementWindow.extend({
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
+	reload: function() {
+		if (this.control) this.control.load();
+		if (this.resources) this.resources.load();
+		if (this.attrs) this.attrs.load();
+	},
 	show: function() {
-		this.attrs.load();
-		this.control.load();
-		this.resources.load();
+		this.reload();
 		this._super();
 	}
 });
@@ -1553,10 +1560,12 @@ var TopologyWindow = ElementWindow.extend({
 var DeviceWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.tabs = new Tabs();
+		var t = this;
+		this.tabs = new Tabs(function(name) {
+			t.reload();
+		});
 		this.add(this.tabs.getDiv());
 		this.attrs = new AttributeForm(obj);
-		var t = this;
 		this.attrs.addField(new NameField(obj, function(name){
 			t.setTitle(name);
 		}), "name");
@@ -1568,10 +1577,13 @@ var DeviceWindow = ElementWindow.extend({
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
+	reload: function() {
+		if (this.control) this.control.load();
+		if (this.resources) this.resources.load();
+		if (this.attrs) this.attrs.load();
+	},
 	show: function() {
-		this.attrs.load();
-		this.control.load();
-		this.resources.load();
+		this.reload();
 		this._super();
 	}
 });
@@ -1595,10 +1607,12 @@ var KVMDeviceWindow = DeviceWindow.extend({
 var ConnectorWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.tabs = new Tabs();
+		var t = this;
+		this.tabs = new Tabs(function(name) {
+			t.reload();
+		});
 		this.add(this.tabs.getDiv());
 		this.attrs = new AttributeForm(obj);
-		var t = this;
 		this.attrs.addField(new NameField(obj, function(name){
 			t.setTitle(name);
 		}), "name");
@@ -1609,10 +1623,13 @@ var ConnectorWindow = ElementWindow.extend({
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
+	reload: function() {
+		if (this.control) this.control.load();
+		if (this.resources) this.resources.load();
+		if (this.attrs) this.attrs.load();
+	},
 	show: function() {
-		this.attrs.load();
-		this.control.load();
-		this.resources.load();
+		this.reload();
 		this._super();
 	}
 });
