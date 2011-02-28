@@ -846,7 +846,7 @@ var Editor = Class.extend({
 					if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
 						window.location.reload();						
 					});
-					func(msg.output);
+					else func(msg.output);
 				} else editor.errorMessage("AJAX request failed", res.statusText);
 			}});
 		} catch (e) {

@@ -81,6 +81,8 @@ class wrap_json:
 			try:
 				res = self.fun(api, request, *args, **kwargs)
 				return HttpResponse(json.dumps({"success": True, "output": res}))
+			except xmlrpclib.Fault, f:
+				return HttpResponse(json.dumps({"success": False, "output": f.faultString}))
 			except Exception, exc:
 				return HttpResponse(json.dumps({"success": False, "output": '%s:%s' % (exc.__class__.__name__, exc)}))				
 		except xmlrpclib.ProtocolError, e:
