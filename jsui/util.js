@@ -193,4 +193,10 @@ log = function(msg) {
 	if (typeof(console)!="undefined") console.log(msg);
 };
 
+table_row = function(elements) {
+	var tr = $('<tr/>');
+	for (var i=0; i<elements.length; i++) tr.append($('<td/>').append(elements[i]));
+	return tr;
+};
+
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);
