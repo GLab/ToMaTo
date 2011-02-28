@@ -10,20 +10,15 @@
 		<th>Role</th>
 		<th>Actions</th>
 	</tr>
+{% for user, role in top.permissions.items %}
 	<tr>
-		<td>{{top.owner}}</td>
-		<td><b>owner</b></td>
-		<td></td>
-	</tr>
-{% for p in top.permissions %}
-	<tr>
-		<td>{{p.user}}</td>
-		<td>{{p.role}}</td>
-		<td><a href="{%url top.permission_remove top_id=top_id user=p.user%}"><img src="/static/icons/user_delete.png" alt="remove permission" title="remove permission"/></a></td>		
+		<td>{{user}}</td>
+		<td>{{role}}</td>
+		<td>{% if role != "owner" %}<a href="{%url top.permission_set top_id=top_id%}?user={{user}}&role="><img src="/static/icons/user_delete.png" alt="remove permission" title="remove permission"/></a>{% endif %}</td>		
 	</tr>
 {% endfor %}
 	<tr>
-		<form action="{%url top.permission_add top_id=top_id%}" method="POST">
+		<form action="{%url top.permission_set top_id=top_id%}" method="POST">
 		<td><input type="text" name="user"/></td>
 		<td><select name="role"><option>manager</option><option>user</option></select></td>
 		<td><input type="submit" value="Add permission"/></td>		

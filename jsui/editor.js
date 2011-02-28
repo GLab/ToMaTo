@@ -280,10 +280,7 @@ var Topology = IconElement.extend({
 	},
 	setAttribute: function(name, value) {
 		if (name != "state") this.attributes[name]=value;
-		if (name == "state") for (var e in this.editor.elements) {
-			var el = this.editor.elements[e];
-			if (el.isDevice || el.isConnector) el.setAttribute("state", value);
-		} else if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+		if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 	},
 	_dragStart: function () {
 	},
@@ -293,6 +290,16 @@ var Topology = IconElement.extend({
 	},
 	getElementType: function () {
 		return "topology";
+	},
+	setPermission: function(user, role) {
+		log("Permission:" + user + "=" + role);
+		var t = this;
+		var data = {"permission": $.toJSON({user:user, role:role})};
+		this.editor._ajax("top/"+topid+"/permission", data, function(){
+			t.editor.reloadTopology(function(){
+				t.form.reload();				
+			});
+		});
 	}
 });
 
@@ -831,7 +838,7 @@ var Editor = Class.extend({
 		delete this.ajaxModifyTransaction;
 	},
 	_ajax: function(path, data, func) {
-		log("AJAX " + path + " " + data);
+		log("AJAX " + path + " " + $.toJSON(data));
 		try {
 			return $.ajax({type: "POST", url:ajaxpath+path, async: true, data: data, complete: function(res){
 				if (res.status == 200) {
@@ -897,6 +904,7 @@ var Editor = Class.extend({
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
 		editor.topology.setResources(top.resources);
+		editor.topology.permissions = top.permissions;
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
@@ -963,16 +971,17 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 	},
-	reloadTopology: function() {
+	reloadTopology: function(callback) {
 		var editor = this;
 		this._ajax("top/"+topid+"/info", null, function(top){
-			editor._reloadTopology(top);
+			editor._reloadTopology(top, callback);
 		});
 	},
-	_reloadTopology: function(top) {
+	_reloadTopology: function(top, callback) {
 		this.isLoading = true;
 		this.topology.setAttributes(top.attrs);
 		this.topology.setResources(top.resources);
+		this.topology.permissions = top.permissions;
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
@@ -996,6 +1005,7 @@ var Editor = Class.extend({
 			}
 		}
 		this.isLoading = false;
+		if (callback) callback();
 	},
 	getPosition: function () { 
 		var pos = $("#editor").position();
@@ -1231,8 +1241,8 @@ var EditElement = Class.extend({
 		this.changeListener = listener;
 	},
 	onChanged: function(value) {
-		if (this.changeListener) this.changeListener(value);
-		this.form.onChanged(this.name, value);
+		if (this.changeListener) this.changeListener(value, this);
+		if (this.form) this.form.onChanged(this.name, value);
 	},
 	setValue: function(value) {
 	},
@@ -1366,9 +1376,10 @@ var CheckField = EditElement.extend({
 
 var Button = EditElement.extend({
 	init: function(name, content, func) {
-		this._super("button-"+name);
+		this._super(name);
 		this.func = func;
-		this.input = $('<div>'+content+'<div/>');
+		this.input = $('<div>'+content+'</div>');
+		this.input.css({"vertical-align": "middle"});
 		var t = this;
 		this.input.button().click(function (){
 			t.func(t);
@@ -1531,7 +1542,7 @@ var ControlPanel = Class.extend({
 		var state = this.obj.getAttribute('state');
 		var t = this;
 		var actionFunc = function(btn) {
-			t.obj.stateAction(btn.name.split("button-")[1]);
+			t.obj.stateAction(btn.name);
 			t.load();
 		};
 		var destroyButton = new Button("destroy", '<img src="/static/icons/destroy.png">', actionFunc);
@@ -1553,17 +1564,26 @@ var ControlPanel = Class.extend({
 	}
 });
 
+var TopologyControlPanel = ControlPanel.extend({
+	load: function() {
+		this._super();
+		var t = this;
+		var attrs = this.obj.attributes;
+		this.div.append('<p>Owner: '+attrs.owner+'</p>');
+		this.div.append('<p>Created: '+attrs.date_created+'<br/>Modified: '+attrs.date_modified+'<br/>Last used: '+attrs.date_usage+'</p>');
+	}	
+});
+
 var DeviceControlPanel = ControlPanel.extend({
 	load: function() {
 		this._super();
 		var t = this;
 		this.div.append('<p>Host: '+this.obj.attributes.host+'</p>');
-		if (this.obj.consoleSupported()) this.div.append(new Button("console", '<img src="'+basepath+'images/console.png">open console', function(){
+		if (this.obj.consoleSupported()) this.div.append(new Button("console", '<img src="'+basepath+'images/console.png"> open console', function(){
 			t.obj.showConsole();
 		}).getInputElement());
 	}	
 });
-
 
 var ResourcesPanel = Class.extend({
 	init: function(obj) {
@@ -1589,6 +1609,37 @@ var ResourcesPanel = Class.extend({
 	}
 });
 
+var PermissionsPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.div.empty();
+		var t = this;
+		var permissions = this.obj.permissions;
+		var table = $('<table><tr><th>User</th><th>Role</th><th>Actions</th></tr></table>');
+		for (user in permissions) {
+			var role = permissions[user];
+			if (role == "owner") table.append(table_row([user, "<b>owner</b", ""]));
+			else table.append(table_row([user, new SelectField(user, ["manager", "user"], role, function(role, select){
+				t.obj.setPermission(select.name, role);
+			}).getInputElement(), new Button(user, '<img src="'+basepath+'/images/user_delete.png"/>', function(btn){
+				t.obj.setPermission(btn.name, null);
+			}).getInputElement()]));
+		}
+		var user_input = new TextField("user", "");
+		var role_input = new SelectField("role", ["manager", "user"], "user");
+		table.append(table_row([user_input.getInputElement(), role_input.getInputElement(), new Button("add", '<img src="'+basepath+'/images/user_add.png"/>', function() {
+			t.obj.setPermission(user_input.getValue(), role_input.getValue());
+		}).getInputElement()]));
+		this.div.append(table);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
 var TopologyWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
@@ -1600,16 +1651,19 @@ var TopologyWindow = ElementWindow.extend({
 		this.attrs = new AttributeForm(obj);
 		this.attrs.addField(new TextField("name", "Topology"), "name");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
-		this.control = new ControlPanel(obj);
+		this.control = new TopologyControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
 		this.resources = new ResourcesPanel(obj);
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.permissions = new PermissionsPanel(obj);
+		this.tabs.addTab("permissions", "Permissions", this.permissions.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
 		if (this.control) this.control.load();
 		if (this.resources) this.resources.load();
 		if (this.attrs) this.attrs.load();
+		if (this.permissions) this.permissions.load();
 	},
 	show: function() {
 		this.reload();

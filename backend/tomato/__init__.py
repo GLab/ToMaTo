@@ -105,7 +105,6 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		return False
 
 def host_list(group_filter="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
-	#FIXME: combine with host_info
 	"""
 	Returns details about all hosts as a list. If group filter is "" all hosts
 	will be returned otherwise only the hosts within the group (exact match) .
@@ -398,7 +397,6 @@ def top_info(top_id, user=None):
 	return top.to_dict(top.check_access("user", user), True)
 
 def top_list(owner_filter, host_filter, access_filter, user=None):
-	#FIXME: combine with top_info
 	"""
 	Returns brief information about topologies. The set of topologies that will
 	be returned can be filtered by owner, by host (affected by the topology) 
@@ -427,32 +425,6 @@ def top_list(owner_filter, host_filter, access_filter, user=None):
 			tops.append(t.to_dict(t.check_access("user", user), False))
 	return tops
 	
-def top_import(xml, user=None):
-	#FIXME: move to webfrontend
-	"""
-	Creates a new topology by importing a xml topology specification. 
-	Internally this method first creates a new empty topology, then converts
-	the xml specification to a list of topology modifications and finally
-	applies the modifications. The user must be a regular user to create 
-	topologies.
-
-	@param xml: xml specification of the topology
-	@type xml: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the new topology
-	@rtype: int
-	""" 
-	if not user.is_user:
-		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
-	top=topology.create(user.name)
-	top.save()
-	import modification
-	dom = util.parse_xml(xml, "topology")
-	modification.apply_spec(top, dom)
-	top.logger().log("imported", user=user.name, bigmessage=xml)
-	return top.id
-	
 def top_create(user=None):
 	"""
 	Creates a new empty topology to be modified via top_modify afterwards.
@@ -469,32 +441,6 @@ def top_create(user=None):
 	top.save()
 	top.logger().log("created", user=user.name)
 	return top.id
-
-def top_modify_xml(top_id, xml, user=None):
-	#FIXME: remove this
-	"""
-	Applies the modifications encoded as xml to the topology. The user must
-	have at least manager access to the topology. The result of this method
-	is a task id that runs the modifications.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param xml: the modifications encoded as xml
-	@type xml: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the modification task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
-	dom = util.parse_xml(xml, "modifications")
-	import modification
-	task_id = modification.modify_dom(top, dom)
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
 
 def top_modify(top_id, mods, direct, user=None):
 	"""
@@ -802,7 +748,7 @@ def errors_remove(error_id, user=None):
 	fault.errors_remove(error_id)
 	return True
 
-def permission_add(top_id, user_name, role, user=None):
+def permission_set(top_id, user_name, role, user=None):
 	"""
 	Adds a permission entry to a topology. Acceptable roles are "user" and
 	"manager". This method requires owner access to the topology.
@@ -820,28 +766,11 @@ def permission_add(top_id, user_name, role, user=None):
 	"""
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
-	top.permissions_add(user_name, role)
-	top.logger().log("added permission: %s=%s" % (user_name, role))
-	return True
-	
-def permission_remove(top_id, user_name, user=None):
-	"""
-	Removes all permissions for the given user on the topology. The owner
-	cannot be removed. This method requires owner access to the topology.
-
-	@param top_id: id of the topology
-	@type top_id: number
-	@param user_name: user name
-	@type user_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	"""
-	top = topology.get(top_id)
-	_top_access(top, "owner", user)
-	top.permissions_remove(user_name)
-	top.logger().log("removed permission: %s" % user_name)
+	if user_name != top.owner:
+		top.permissions_remove(user_name)
+	if role:
+		top.permissions_add(user_name, role)
+	top.logger().log("set permission: %s=%s" % (user_name, role))
 	return True
 		
 def resource_usage_by_user(user=None):

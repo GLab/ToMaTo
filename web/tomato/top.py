@@ -42,13 +42,8 @@ def index(api, request):
 
 @wrap_rpc
 def create(api, request):
-	if request.REQUEST.has_key("xml"):
-		xml=request.REQUEST["xml"]
-		top_id=api.top_import(xml)
-		return _display_top(api, top_id)
-	else:
-		top_id=api.top_create()
-		return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
+	top_id=api.top_create()
+	return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
 
 @wrap_rpc
 def upload_image(api, request, top_id, device_id):
@@ -216,13 +211,8 @@ def permission_list(api, request, top_id):
 	return render_to_response("top/permissions.html", {'top_id': top_id, 'top': top })
 
 @wrap_rpc
-def permission_remove(api, request, top_id, user):
-	api.permission_remove(top_id, user)
-	return permission_list(request, top_id)
-
-@wrap_rpc
-def permission_add(api, request, top_id):
+def permission_set(api, request, top_id):
 	user=request.REQUEST["user"]
 	role=request.REQUEST["role"]
-	api.permission_add(top_id, user, role)
+	api.permission_set(top_id, user, role)
 	return permission_list(request, top_id)

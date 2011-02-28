@@ -122,44 +122,10 @@ class Modification():
 		else:
 			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
 							
-def read_from_dom(dom):
-	modlist = []
-	for mod in dom.getElementsByTagName("modification"):
-		mtype = mod.getAttribute("type")
-		element = util.get_attr(mod, "element", None)
-		subelement = util.get_attr(mod, "subelement", None)
-		properties = {}
-		for pr in mod.getElementsByTagName("properties"):
-			properties.update(_xml_attrs_to_dict(pr.attributes))
-		modlist.append(Modification(mtype, element, subelement, properties))
-	return modlist
-
 def read_from_list(mods):
 	modlist = []
 	for mod in mods:
 		modlist.append(Modification(mod["type"], mod["element"], mod["subelement"], mod["properties"]))
-	return modlist
-
-def _xml_attrs_to_dict(xml):
-	res = {}
-	for k in xml.keys():
-		res[k] = xml[k].value
-	return res
-
-def convert_specification(dom):
-	modlist = []
-	if "name" in dom.attributes.keys():
-		modlist.append(Modification("topology-rename", None, None, {"name": dom.attributes["name"].value}))
-	for dev in dom.getElementsByTagName("device"):
-		devname = dev.getAttribute("name")
-		modlist.append(Modification("device-create", None, None, _xml_attrs_to_dict(dev.attributes)))
-		for iface in dev.getElementsByTagName("interface"):
-			modlist.append(Modification("interface-create", devname, None, _xml_attrs_to_dict(iface.attributes)))
-	for con in dom.getElementsByTagName("connector"):
-		conname = con.getAttribute("name")
-		modlist.append(Modification("connector-create", None, None, _xml_attrs_to_dict(con.attributes)))
-		for conn in con.getElementsByTagName("connection"):
-			modlist.append(Modification("connection-create", conname, None, _xml_attrs_to_dict(conn.attributes)))
 	return modlist
 
 def modify_task_run(top_id, mods, task):
@@ -185,14 +151,3 @@ def modify(top, mods, direct):
 def modify_list(top, mods, direct):
 	mods = read_from_list(mods)
 	return modify(top, mods, direct)
-	
-def modify_dom(top, dom):
-	mods = read_from_dom(dom)
-	return modify(top, mods, False)
-
-def apply_spec(top, dom):
-	top.renew()
-	mods = convert_specification(dom)
-	task = top.start_task(modify_task_run, top.id, mods)
-	task.subtasks_total = len(mods)
-	return task.id

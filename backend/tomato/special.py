@@ -69,11 +69,13 @@ class SpecialFeatureConnector(generic.Connector):
 	def start_run(self, task):
 		generic.Connector.start_run(self, task)
 		self.state = generic.State.STARTED
+		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
 	def stop_run(self, task):
 		generic.Connector.stop_run(self, task)
 		self.state = generic.State.PREPARED
+		self.save()
 		task.subtasks_done = task.subtasks_done + 1
 
 	def prepare_run(self, task):

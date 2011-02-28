@@ -412,7 +412,8 @@ class Topology(models.Model):
 						res.update(running_task=task.id)
 					else:
 						res.update(finished_task=task.id)
-				res.update(permissions=[p.to_dict() for p in self.permissions_all()])
+				res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
+				res["permissions"][self.owner]="owner";
 				captures = []
 				for con in self.connector_set_all():
 					for c in con.connection_set_all():
@@ -429,8 +430,6 @@ class Permission(models.Model):
 	topology = models.ForeignKey(Topology)
 	user = models.CharField(max_length=30)
 	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))
-	def to_dict(self):
-		return {"user": self.user, "role": self.role}
 
 def get(top_id):
 	try:
