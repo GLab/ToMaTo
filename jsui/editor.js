@@ -88,7 +88,9 @@ var NetElement = Class.extend({
 		return this.attributes[name];
 	},
 	setAttributes: function(attrs) {
+		this.attributes = {};
 		for (var key in attrs) this.setAttribute(key, attrs[key]);
+		if (this.form && this.form.reload) this.form.reload();
 	},
 	getElementType: function() {
 		return "";
@@ -109,20 +111,7 @@ var NetElement = Class.extend({
 		var t = this;
 		this.editor.ajaxAction(this.action(action), function(task_id) {
 			t.editor.followTask(task_id, function(){
-				switch (action) {
-					case "prepare":
-						t.setAttribute("state", "prepared");
-						break;
-					case "destroy":
-						t.setAttribute("state", "created");
-						break;
-					case "start":
-						t.setAttribute("state", "started");
-						break;
-					case "stop":
-						t.setAttribute("state", "prepared");
-						break;
-				}
+				t.editor.reloadTopology();
 			});
 		});
 	}
@@ -240,7 +229,6 @@ var IconElement = NetElement.extend({
 				default:
 					this.stateIcon.attr({src: basepath+"images/pixel.png", opacity: 0.0});
 			}
-			if (this.form.reload) this.form.reload();
 		} else this._super(name, value);
 	},
 	remove: function(){
@@ -287,11 +275,11 @@ var Topology = IconElement.extend({
 		this._super(editor, name, "images/topology.png", {x: 32, y: 32}, pos);
 		this.paletteItem = true;
 		this.paint();
+		this.isTopology = true;
 		this.form = new TopologyWindow(this);
 	},
 	setAttribute: function(name, value) {
-		//ignore name changes
-		this.attributes[name]=value;
+		if (name != "state") this.attributes[name]=value;
 		if (name == "state") for (var e in this.editor.elements) {
 			var el = this.editor.elements[e];
 			if (el.isDevice || el.isConnector) el.setAttribute("state", value);
@@ -536,6 +524,12 @@ var Connector = IconElement.extend({
 	},
 	removeConnection: function(con) {
 		this.connections.remove(con);
+	},
+	getConnection: function(ifname) {
+		for (var i=0; i < this.connections.length; i++) {
+			var el = this.connections[i];
+			if (el.getSubElementName() == ifname) return el;
+		}
 	}
 });
 
@@ -684,6 +678,20 @@ var Device = IconElement.extend({
 	},
 	removeInterface: function(iface) {
 		this.interfaces.remove(iface);
+	},
+	getInterface: function(ifname) {
+		for (var i=0; i < this.interfaces.length; i++) {
+			var el = this.interfaces[i];
+			if (el.name == ifname) return el;
+		}
+	},
+	consoleSupported: function() {
+		return this.getAttribute("vnc_port") && this.getAttribute("vnc_password");
+	},
+	showConsole: function() {
+		console = window.open(basepath+'console.html/', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		console.params = {topology: this.editor.topology.getAttribute("name"), device: this.name, host: this.getAttribute("host"), port: this.getAttribute("vnc_port"), password: this.getAttribute("vnc_password")};
+		console.focus();
 	}
 });
 
@@ -948,11 +956,46 @@ var Editor = Class.extend({
 					var iface_obj = dev_obj.createInterface(con_obj);
 					con_obj.connect(iface_obj);
 					iface_obj.setAttributes(iface.attrs);
+					iface_obj.name = ifname;
 				} else dangling_interfaces_mods.push({type: "interface-delete", element: dev_obj.name, subelement: iface.attrs.name, properties: {}});
 			}
 		}
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
+	},
+	reloadTopology: function() {
+		var editor = this;
+		this._ajax("top/"+topid+"/info", null, function(top){
+			editor._reloadTopology(top);
+		});
+	},
+	_reloadTopology: function(top) {
+		this.isLoading = true;
+		this.topology.setAttributes(top.attrs);
+		this.topology.setResources(top.resources);
+		for (var name in top.devices) {
+			var dev_obj = this.getElement("device", name);
+			var dev = top.devices[name];
+			dev_obj.setAttributes(dev.attrs);
+			dev_obj.setResources(dev.resources);
+			for (var ifname in dev.interfaces) {
+				var iface_obj = dev_obj.getInterface(ifname);
+				var iface = dev.interfaces[ifname];
+				iface_obj.setAttributes(iface.attrs);
+			}
+		}
+		for (var name in top.connectors) {
+			var con_obj = this.getElement("connector", name);
+			var con = top.connectors[name];
+			con_obj.setAttributes(con.attrs);
+			con_obj.setResources(con.resources);
+			for (var ifname in con.connections) {				
+				var c_obj = con_obj.getConnection(ifname);
+				var c = con.connections[ifname];
+				c_obj.setAttributes(c.attrs);
+			}
+		}
+		this.isLoading = false;
 	},
 	getPosition: function () { 
 		var pos = $("#editor").position();
@@ -1116,6 +1159,12 @@ var Editor = Class.extend({
 	addElement: function(el) {
 		this.elements.push(el);
 		if (el.name) this.elementNames.push(el.name);
+	},
+	getElement: function(type, name) {
+		for (var i = 0; i < this.elements.length; i++) {
+			var el = this.elements[i];
+			if (el.getElementType() == type && el.getElementName() == name) return el;
+		}
 	},
 	removeElement: function(el) {
 		this.elements.remove(el);
@@ -1493,17 +1542,28 @@ var ControlPanel = Class.extend({
 		this.div.append(prepareButton.getInputElement());
 		this.div.append(stopButton.getInputElement());
 		this.div.append(startButton.getInputElement());
-		destroyButton.setEditable(state == "prepared" || state == "created" || !state);
-		prepareButton.setEditable(state == "created" || !state);
-		stopButton.setEditable(state == "started" || state == "prepared");
-		startButton.setEditable(state == "prepared");
-		this.div.append("<br/>");
-		this.div.append('State: ' + state + '<br/>');
+		destroyButton.setEditable(state == "prepared" || state == "created" || !state || this.obj.isTopology);
+		prepareButton.setEditable(state == "created" || !state || this.obj.isTopology);
+		stopButton.setEditable(state == "started" || state == "prepared" || this.obj.isTopology);
+		startButton.setEditable(state == "prepared" || this.obj.isTopology);
+		if (! this.obj.isTopology) this.div.append('<p>State: ' + state + '</p>');
 	},
 	getDiv: function() {
 		return this.div;
 	}
 });
+
+var DeviceControlPanel = ControlPanel.extend({
+	load: function() {
+		this._super();
+		var t = this;
+		this.div.append('<p>Host: '+this.obj.attributes.host+'</p>');
+		if (this.obj.consoleSupported()) this.div.append(new Button("console", '<img src="'+basepath+'images/console.png">open console', function(){
+			t.obj.showConsole();
+		}).getInputElement());
+	}	
+});
+
 
 var ResourcesPanel = Class.extend({
 	init: function(obj) {
@@ -1571,7 +1631,7 @@ var DeviceWindow = ElementWindow.extend({
 		}), "name");
 		this.attrs.addField(new SelectField("hostgroup", this.obj.editor.hostGroups, "auto"), "hostgroup");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
-		this.control = new ControlPanel(obj);
+		this.control = new DeviceControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
 		this.resources = new ResourcesPanel(obj);
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());

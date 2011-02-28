@@ -49,7 +49,7 @@ function console (url) {
 	<tr>
 		<td>{{dev.attrs.name}}</td>
 		<td>{{dev.attrs.type}}</td>
-		<td>{% if not dev.attrs.host == "None" %}<a href="{% url host.detail hostname=dev.attrs.host %}">{{dev.attrs.host}}</a>{% else %}-{% endif %}</td>
+		<td>{% if dev.attrs.host %}<a href="{% url host.detail hostname=dev.attrs.host %}">{{dev.attrs.host}}</a>{% else %}-{% endif %}</td>
 		<td>{{dev.attrs.state}}</td>
 		<td>
 {% if dev.attrs.state == "prepared" %}
@@ -64,7 +64,7 @@ function console (url) {
 {% if dev.attrs.state == "prepared" or dev.attrs.state == "created" %}
 		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
-{% if dev.attrs.state == "started" and dev.vnc_port %}
+{% if dev.attrs.state == "started" and dev.attrs.vnc_port %}
 		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.attrs.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
 {% if dev.upload_supported %}
