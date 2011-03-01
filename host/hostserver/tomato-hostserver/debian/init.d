@@ -93,7 +93,7 @@ case "$1" in
 	esac
 	;;
   status)
-       daemon --name=$NAME --user=$USER:$GROUP --running
+       daemon --name=$NAME --user=$USER.$GROUP --running
        ;;
   #reload|force-reload)
 	#
