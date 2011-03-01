@@ -1,0 +1,29 @@
+diff -ur pve-kernel-2.6.32_2010-12-23/config-2.6.32.org pve-kernel-2.6.32_2010-12-23-1000hz/config-2.6.32.org
+--- pve-kernel-2.6.32_2010-12-23/config-2.6.32.org	2011-02-01 07:22:33.000000000 +0100
++++ pve-kernel-2.6.32_2010-12-23-1000hz/config-2.6.32.org	2011-02-01 07:23:39.000000000 +0100
+@@ -375,10 +375,10 @@
+ CONFIG_SECCOMP=y
+ CONFIG_CC_STACKPROTECTOR=y
+ # CONFIG_HZ_100 is not set
+-CONFIG_HZ_250=y
++# CONFIG_HZ_250 is not set
+ # CONFIG_HZ_300 is not set
+-# CONFIG_HZ_1000 is not set
+-CONFIG_HZ=250
++CONFIG_HZ_1000=y
++CONFIG_HZ=1000
+ CONFIG_SCHED_HRTICK=y
+ CONFIG_KEXEC=y
+ # CONFIG_CRASH_DUMP is not set
+diff -ur pve-kernel-2.6.32_2010-12-23/Makefile pve-kernel-2.6.32_2010-12-23-1000hz/Makefile
+--- pve-kernel-2.6.32_2010-12-23/Makefile	2011-02-01 07:22:33.000000000 +0100
++++ pve-kernel-2.6.32_2010-12-23-1000hz/Makefile	2011-02-01 07:22:51.000000000 +0100
+@@ -1,7 +1,7 @@
+ RELEASE=1.7
+ 
+ KERNEL_VER=2.6.32
+-PKGREL=30
++PKGREL=30-glab1
+ KREL=4
+ 
+ KERNEL_DEB_REL=29
