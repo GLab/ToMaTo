@@ -28,4 +28,4 @@ $(PACKAGE)-*.deb: $(FILE)
 
 .PHONY: clean
 clean:
-	rm -rf $(FILE) $(PACKAGE) $(PACKAGE)_$(VERSION)-*.{build,changes} $(PACKAGE)_*.deb
+	rm -rf $(FILE) $(PACKAGE) $(PACKAGE)_$(VERSION)-*.{build,changes} $(PACKAGE)-*.deb
