@@ -33,6 +33,9 @@ class Host(models.Model):
 	vmid_range_count = models.PositiveSmallIntegerField(default=200)
 	bridge_range_start = models.PositiveSmallIntegerField(default=1000)
 	bridge_range_count = models.PositiveSmallIntegerField(default=1000)
+	hostserver_port = models.PositiveSmallIntegerField(null=True)
+	hostserver_basedir = models.CharField(max_length=100, null=True)
+	hostserver_secret_key = models.CharField(max_length=100, null=True)
 
 	def __unicode__(self):
 		return self.name
@@ -42,7 +45,7 @@ class Host(models.Model):
 			tpl.upload_to_host(self, task)
 
 	def check_save(self, task):
-		task.subtasks_total = 8
+		task.subtasks_total = 9
 		self.check(task)
 		self.save()
 		task.done()
@@ -100,8 +103,21 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
 		
+		task.output.write("checking for hostserver...\n")
+		res = self.get_result("/etc/init.d/tomato-hostserver status; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "hostserver error"
+		task.subtasks_done = task.subtasks_done + 1
+		
+		self.fetch_hostserver_config()
 		self.fetch_all_templates(task)
 				
+	def fetch_hostserver_config(self):
+		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
+		self.hostserver_port = int(res[0])
+		self.hostserver_basedir = res[1]
+		self.hostserver_secret_key = res[2]
+		self.save();
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
@@ -160,6 +176,27 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
+	def _calc_grant(self, params):
+		list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
+		list.sort()
+		import hashlib
+		return hashlib.sha1("&".join(list)+"|"+self.hostserver_secret_key).hexdigest()
+	
+	def upload_grant(self, filename, redirect):
+		import urllib, base64, time
+		params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
+		params.update(grant=self._calc_grant(params))
+		qstr = urllib.urlencode(params)
+		return "http://%s:%s/upload?%s" % (self.name, self.hostserver_port, qstr)
+	
+	def download_grant(self, filename):
+		import time
+		params={"file": filename, "valid_until": str(time.time()+3600)}
+		params.update(grant=self._calc_grant(params))
+		import urllib
+		qstr = urllib.urlencode(params)
+		return "http://%s:%s/download?%s" % (self.name, self.hostserver_port, qstr)
+
 	def upload(self, local_file, remote_file, task=None):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
