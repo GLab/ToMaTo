@@ -55,7 +55,7 @@ class APIServer(xmlrpc.XMLRPC):
 	def __init__(self, papi):
 		self.api=papi
 		self.introspection=Introspection(self.api)
-		xmlrpc.XMLRPC.__init__(self)
+		xmlrpc.XMLRPC.__init__(self, allowNone=True)
 		self.logger = tomato.log.Logger(tomato.config.log_dir + "/api.log")
 
 	def log(self, function, args, user):
@@ -94,7 +94,7 @@ class APIServer(xmlrpc.XMLRPC):
 		if functionPath.startswith("system."):
 			functionPath = functionPath[7:]
 		if hasattr(self.introspection, functionPath):
-			function=getattr(self.introspection, functionPath)			
+			function=getattr(self.introspection, functionPath)
 		if function:
 			request.setHeader("content-type", "text/xml")
 			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender, request)

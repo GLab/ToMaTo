@@ -5,12 +5,11 @@
 {% if edit %}
 <h1>Edit topology {{top_id}}</h1>
 {% else %}
-<h1>Definition of topology {{top_id}}</h1>
+<h1>Details of topology {{top_id}}</h1>
 {% endif %}
 {% else %}
 <h1>Creation of new topology</h1>
 {% endif %}
-<a href="{%url main.help "BuildUi"%}" target="_help">Editor help</a><br/>
 <script src="/static/jsui/jQuery-min.js"></script>
 <script src="/static/jsui/jQuery-ui-min.js"></script>
 <script src="/static/jsui/raphael-min.js"></script>
@@ -29,7 +28,7 @@ $("#javascript-error").hide();
 basepath="/static/jsui/";
 ajaxpath="/ajax/";
 topid="{{top_id}}";
-$("head").append($('<link href="'+basepath+'glabdesign/jquery-ui-1.8.9.custom.css" rel="stylesheet" type="text/css" />'));
+$("head").append($('<link href="'+basepath+'glabdesign/jquery-ui-custom.css" rel="stylesheet" type="text/css" />'));
 
 editor = new Editor({x:800, y:600}, {% if edit %}true{% else %}false{% endif %});
 
@@ -42,6 +41,6 @@ var sf_data = {% if special_features %}"{{special_features}}".split(","){% else 
 for (var i=0; i < sf_data.length; i++) special_features[sf_data[i].split(":")[0]] = sf_data[i].split(":")[1].split("|");
 editor.setSpecialFeatures(special_features);
 
-editor.loadTopologyURL("{%url top.show top_id%}?format=plain");
+editor.loadTopology();
 //--></script>
 {% endblock %}

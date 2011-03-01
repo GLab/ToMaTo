@@ -37,18 +37,7 @@ class EmulatedConnection(generic.Connection):
 			return True
 		except: #pylint: disable-msg=W0702
 			return False
-	
-	def encode_xml(self, dom, doc, internal):
-		generic.Connection.encode_xml(self, dom, doc, internal)
-		if self.delay:
-			dom.setAttribute("delay", str(self.delay))
-		if self.bandwidth:
-			dom.setAttribute("bandwidth", str(self.bandwidth))
-		if self.lossratio:
-			dom.setAttribute("lossratio", str(self.lossratio))
-		if self.capture:
-			dom.setAttribute("capture", str(self.capture))
-			
+				
 	def configure(self, properties, task):
 		if "delay" in properties:
 			try:
@@ -155,3 +144,9 @@ class EmulatedConnection(generic.Connection):
 		host.download("%s" % filename, filename)
 		host.execute("rm %s" % filename)
 		return filename
+	
+	def to_dict(self, auth):
+		res = generic.Connection.to_dict(self, auth)		
+		res["attrs"].update(delay=self.delay, bandwidth=self.bandwidth, lossratio=self.lossratio, capture=self.capture)
+		return res
+	

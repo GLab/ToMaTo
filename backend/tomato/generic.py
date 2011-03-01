@@ -32,10 +32,6 @@ class State(): #pylint: disable-msg=W0232
 	STARTED="started"
 
 class ResourceSet(models.Model):
-	disk = models.IntegerField(default=0)
-	memory = models.IntegerField(default=0)
-	ports = models.IntegerField(default=0)
-	special = models.IntegerField(default=0)
 
 	def clean(self):
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
@@ -69,7 +65,7 @@ class ResourceSet(models.Model):
 	def encode(self):
 		res = {}
 		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			res[r.type] = str(r.value)
+			res[r.type] = r.value if abs(r.value) < 0x7FFFFFFF else str(r.value)
 		return res
 
 def add_encoded_resources(r1, r2):
@@ -126,6 +122,20 @@ class Device(models.Model):
 
 	def is_kvm(self):
 		return self.type == Device.TYPE_KVM
+	
+	def host_preferences(self):
+		prefs = ObjectPreferences(True)
+		for h in hosts.get_hosts(self.hostgroup):
+			if h.enabled:
+				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
+		#print "Host preferences for %s: %s" % (self, prefs) 
+		return prefs
+
+	def host_options(self):
+		options = self.host_preferences()
+		for iface in self.interface_set_all():
+			options = options.combine(iface.connection.connector.upcast().host_preferences())
+		return options
 
 	def download_supported(self):
 		return False
@@ -143,23 +153,7 @@ class Device(models.Model):
 			return interface.connection.bridge_name()
 		except: #pylint: disable-msg=W0702
 			return None		
-
-	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("name", self.name)
-		dom.setAttribute("type", self.type)
-		if self.hostgroup:
-			dom.setAttribute("hostgroup", self.hostgroup)
-		if internal:
-			if self.host:
-				dom.setAttribute("host", self.host.name)
-			dom.setAttribute("state", self.state)
-		for iface in self.interface_set_all():
-			x_iface = doc.createElement ( "interface" )
-			iface.upcast().encode_xml(x_iface, doc, internal)
-			dom.appendChild(x_iface)
-		if self.pos:
-			dom.setAttribute("pos", self.pos)
-		
+	
 	def start(self):
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -227,6 +221,8 @@ class Device(models.Model):
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
 			self.hostgroup = properties["hostgroup"]
+			if self.hostgroup == "auto":
+				self.hostgroup = ""
 		self.save()
 
 	def update_resource_usage(self):
@@ -251,23 +247,15 @@ class Device(models.Model):
 		@return: a dict containing information about the device
 		@rtype: dict
 		"""
-		state = str(self.state)
-		res = {"name": self.name, "type": self.type, "host": str(self.host),
-			"state": state,
-			"is_created": state == State.CREATED,
-			"is_prepared": state == State.PREPARED,
-			"is_started": state == State.STARTED,
-			"upload_supported": self.upcast().upload_supported(),
-			"download_supported": self.upcast().download_supported(),
-			}
+		res = {"attrs": {"host": str(self.host) if self.host else None,
+					"name": self.name, "type": self.type,
+					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos
+					},
+			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
+		}
 		if auth:
-			dev = self.upcast()
-			if dev.resources:
-				res.update(resources=dev.resources.encode())
-			if hasattr(dev, "vnc_port") and dev.vnc_port:
-				res.update(vnc_port=dev.vnc_port)
-			if hasattr(dev, "vnc_password"):
-				res.update(vnc_password=dev.vnc_password())
+			if self.resources:
+				res.update(resources=self.resources.encode())
 		return res
 		
 class Interface(models.Model):
@@ -293,12 +281,21 @@ class Interface(models.Model):
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
-		dom.setAttribute("name", self.name)
-
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
+	def to_dict(self, auth):
+		"""
+		Prepares an interface for serialization.
+		
+		@type auth: boolean
+		@param auth: Whether to include confidential information
+		@return: a dict containing information about the interface
+		@rtype: dict
+		"""
+		res = {"attrs": {"name": self.name}}
+		return res
+
 
 class Connector(models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('special', 'Special feature') )
@@ -332,20 +329,20 @@ class Connector(models.Model):
 			return self.specialfeatureconnector.upcast() # pylint: disable-msg=E1101
 		return self
 
+	def host_preferences(self):
+		prefs = ObjectPreferences()
+		# keep it local
+		for c in self.connection_set_all():
+			dev = c.interface.device
+			if dev.host:
+				prefs.add(dev.host, -0.1)
+				for h in hosts.get_hosts(dev.host.group):
+					prefs.add(h, 0.01)
+		#print "Host preferences for %s: %s" % (self, prefs) 
+		return prefs
+
 	def affected_hosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
-
-	def encode_xml(self, dom, doc, internal):
-		dom.setAttribute("name", self.name)
-		dom.setAttribute("type", self.type)
-		if internal:
-			dom.setAttribute("state", self.state)
-		for con in self.connection_set_all():
-			x_con = doc.createElement ( "connection" )
-			con.upcast().encode_xml(x_con, doc, internal)
-			dom.appendChild(x_con)
-		if self.pos:
-			dom.setAttribute("pos", self.pos)
 
 	def start(self):
 		self.topology.renew()
@@ -440,12 +437,9 @@ class Connector(models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		state = str(self.state)
-		res = {"name": self.name, "type": ("special: %s" % self.upcast().feature_type if self.is_special() else self.type),
-			"state": state,
-			"is_created": state == State.CREATED,
-			"is_prepared": state == State.PREPARED,
-			"is_started": state == State.STARTED,
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
+						"pos": self.pos},
+			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
 		if auth:
 			if self.resources:
@@ -472,10 +466,7 @@ class Connection(models.Model):
 
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
-
-	def encode_xml(self, dom, doc, internal): #@UnusedVariable, pylint: disable-msg=W0613
-		dom.setAttribute("interface", "%s.%s" % (self.interface.device.name, self.interface.name))
-					
+				
 	def start_run(self, task):
 		host = self.interface.device.host
 		if not self.connector.is_special():
@@ -500,3 +491,77 @@ class Connection(models.Model):
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
+
+	def to_dict(self, auth):
+		"""
+		Prepares a connection for serialization.
+		
+		@type auth: boolean
+		@param auth: Whether to include confidential information
+		@return: a dict containing information about the connection
+		@rtype: dict
+		"""
+		res = {"interface": str(self.interface), "attrs":{}}
+		return res
+
+class ObjectPreferences:
+	def __init__(self, exclusive=False):
+		self.exclusive = exclusive
+		self.objects = []
+		self.values = []
+	def add(self, obj, value=1.0):
+		try:
+			index = self.objects.index(obj)
+			self.values[index]+=value
+		except:
+			self.objects.append(obj)
+			self.values.append(value)
+	def remove(self, obj):
+		try:
+			index = self.objects.index(obj)
+			del self.objects[index]
+			del self.values[index]
+		except:
+			pass
+	def getValue(self, obj):
+		try:
+			index = self.objects.index(obj)
+			return self.values[index]
+		except:
+			return None
+	def contains(self, obj):
+		return not (self.getValue(obj) is None)
+	def combine(self, other):
+		if other.exclusive and not self.exclusive:
+			return other.combine(self)
+		res = ObjectPreferences(self.exclusive or other.exclusive)
+		if self.exclusive:
+			for o in self.objects:
+				val = self.getValue(o)
+				oval = other.getValue(o)
+				if not (oval is None and other.exclusive):
+					res.add(o, (oval + val) if oval else val)
+		else:
+			for o in self.objects:
+				res.add(o, self.getValue(o))
+			for o in other.objects:
+				res.add(o, other.getValue(o))
+		return res
+	def best(self):
+		max_val = None
+		best = None
+		i = 0
+		while i < len(self.values):
+			if max_val is None or max_val < self.values[i]:
+				max_val = self.values[i]
+				best = self.objects[i]
+			i=i+1
+		return best
+	def __str__(self):
+		strs = []
+		i=0
+		while i < len(self.values):
+			strs.append("%s: %s" %(self.objects[i], self.values[i]))
+			i=i+1
+		type = "exclusive" if self.exclusive else "hint"
+		return type + ":{" + (", ".join(strs)) + "}"

@@ -24,11 +24,35 @@ import simplejson as json;
 
 from lib import *
 
-@wrap_rpc
+@wrap_json
 def modify(api, request, top_id):
 	if not request.REQUEST.has_key("mods"):
-		return HttpResponse(json.dumps({"success": False, "errorMessage": "mods not found"})) 
+		raise Exception("mods not found") 
 	mods = json.loads(request.REQUEST["mods"])
 	#print mods
 	res = api.top_modify(top_id, mods, True)
-	return HttpResponse(json.dumps({"success": res["done"], "output": res["output"]}))
+	return res["output"]
+
+@wrap_json
+def info(api, request, top_id):
+	res = api.top_info(top_id);
+	return res
+
+@wrap_json
+def action(api, request, top_id):
+	if not request.REQUEST.has_key("action"):
+		raise Exception("action not found") 
+	action = json.loads(request.REQUEST["action"])
+	res = api.top_action(top_id, action["element_type"], action["element_name"], action["action"], action["attrs"]);
+	return res
+	
+@wrap_json
+def task_status(api, request, task_id):
+	return api.task_status(task_id);
+
+@wrap_json
+def permission(api, request, top_id):
+	if not request.REQUEST.has_key("permission"):
+		raise Exception("permission not found")
+	permission = json.loads(request.REQUEST["permission"]); 
+	return api.permission_set(top_id, permission["user"], permission["role"]);

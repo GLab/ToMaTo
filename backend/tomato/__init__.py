@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, sys
+
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
@@ -250,6 +251,79 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return hosts.get_host_groups()
 
+def special_feature_group_add(feature_type, group_name, params, user=None):
+	"""
+	Adds a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param params: dict of all additional parameters
+	@type params: dict 
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	if not params.has_key("max_devices"):
+		params["max_devices"] = None
+	if not params.has_key("avoid_duplicates"):
+		params["avoid_duplicates"] = False
+	hosts.SpecialFeatureGroup.objects.create(feature_type=feature_type, group_name=group_name, max_devices=params["max_devices"], avoid_duplicates=params["avoid_duplicates"])
+	return True
+
+def special_feature_group_change(feature_type, group_name, params, user=None):
+	"""
+	Changes a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param params: dict of all additional parameters
+	@type params: dict 
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+	if not params.has_key("max_devices"):
+		params["max_devices"] = None
+	if not params.has_key("avoid_duplicates"):
+		params["avoid_duplicates"] = False
+	sfg.max_devices = params["max_devices"]
+	sfg.avoid_duplicates = params["avoid_duplicates"]
+	sfg.save()
+	return True
+
+def special_feature_group_remove(feature_type, group_name, user=None):
+	"""
+	Removes a special feature group. This operation needs admin access.
+	
+	@param feature_type: type of the special feature group
+	@type feature_type: string
+	@param group_name: name of the special feature group
+	@type group_name: string
+	@param user: current user
+	@type user: generic.User
+	@return: True
+	@rtype: boolean
+	@raise fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+	if len(sfg.special_feature_set):
+		raise fault.new(0, "Special feature group is not empty")
+	sfg.remove()
+	return True
+
+
 def special_features_add(host_name, feature_type, feature_group, bridge, user=None):
 	"""
 	Adds a special feature to a host. This operation needs admin access.
@@ -294,17 +368,17 @@ def special_features_remove(host_name, feature_type, feature_group, user=None):
 	host.special_features_remove(feature_type, feature_group)
 	return True
 
-def special_features_map(user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def special_features(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Returns a map of all special features.
+	Returns a list of all special features.
 	
 	@param user: current user
 	@type user: generic.User
-	@return: a map of all feature types to the available groups of this type
-	@rtype: dict of string->string
+	@return: a list of all feature groups with all instances
+	@rtype: list of dict
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
-	return hosts.special_feature_map()
+	return hosts.special_features()
 
 def top_info(top_id, user=None):
 	"""
@@ -351,54 +425,6 @@ def top_list(owner_filter, host_filter, access_filter, user=None):
 			tops.append(t.to_dict(t.check_access("user", user), False))
 	return tops
 	
-def top_get(top_id, include_ids=False, user=None):
-	"""
-	Returns the xml specification of a topology. This operation needs user
-	access to the topology. If include_ids is True internal values will be
-	included in the output.
-	
-	@param top_id: id of the topology
-	@type top_id: number
-	@param include_ids: whether to include internal data
-	@type include_ids: boolean
-	@param user: current user
-	@type user: generic.User
-	@return: an xml specification of the topology
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	from xml.dom import minidom
-	doc = minidom.Document()
-	dom = doc.createElement ( "topology" )
-	top.save_to(dom, doc, include_ids)
-	return dom.toprettyxml(indent="\t", newl="\n")
-
-def top_import(xml, user=None):
-	"""
-	Creates a new topology by importing a xml topology specification. 
-	Internally this method first creates a new empty topology, then converts
-	the xml specification to a list of topology modifications and finally
-	applies the modifications. The user must be a regular user to create 
-	topologies.
-
-	@param xml: xml specification of the topology
-	@type xml: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the new topology
-	@rtype: int
-	""" 
-	if not user.is_user:
-		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
-	top=topology.create(user.name)
-	top.save()
-	import modification
-	dom = util.parse_xml(xml, "topology")
-	modification.apply_spec(top, dom)
-	top.logger().log("imported", user=user.name, bigmessage=xml)
-	return top.id
-	
 def top_create(user=None):
 	"""
 	Creates a new empty topology to be modified via top_modify afterwards.
@@ -415,31 +441,6 @@ def top_create(user=None):
 	top.save()
 	top.logger().log("created", user=user.name)
 	return top.id
-
-def top_modify_xml(top_id, xml, user=None):
-	"""
-	Applies the modifications encoded as xml to the topology. The user must
-	have at least manager access to the topology. The result of this method
-	is a task id that runs the modifications.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param xml: the modifications encoded as xml
-	@type xml: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the modification task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("modifying topology", user=user.name, bigmessage=xml)
-	dom = util.parse_xml(xml, "modifications")
-	import modification
-	task_id = modification.modify_dom(top, dom)
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
 
 def top_modify(top_id, mods, direct, user=None):
 	"""
@@ -468,334 +469,39 @@ def top_modify(top_id, mods, direct, user=None):
 		top.logger().log("started task %s" % res, user=user.name)
 	return res
 
-def top_remove(top_id, user=None):
-	"""
-	Removes the topology by first bringing all components to the created state
-	and then removing it from the database. The result of this method
-	is a task id that runs the removal. Only owners of topologies can remove
-	them.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "owner", user)
-	top.logger().log("removing topology", user=user.name)
-	task_id = top.remove()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_prepare(top_id, user=None):
-	"""
-	Prepares the topology by bringing all components to the prepared state,
-	preparing devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing topology", user=user.name)
-	task_id = top.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_destroy(top_id, user=None):
-	"""
-	Destroys the topology by bringing all components to the created state,
-	stopping and destroying devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying topology", user=user.name)
-	task_id = top.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def top_start(top_id, user=None):
-	"""
-	Starts the topology by bringing all components to the started state,
-	starting devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
+def top_action(top_id, element_type, element_name, action, attrs={}, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
-	top.logger().log("starting topology", user=user.name)
-	task_id = top.start()
+	if element_type == "topology":
+		element = top
+	elif element_type == "device":
+		element = top.device_set_get(element_name)
+	elif element_type == "connector":
+		element = top.connector_set_get(element_name)
+	if action == "prepare":
+		_top_access(top, "manager", user)
+		task_id = element.prepare()
+	elif action == "destroy":
+		_top_access(top, "manager", user)
+		task_id = element.destroy()
+	elif action == "start":
+		_top_access(top, "user", user)
+		task_id = element.start()
+	elif action == "stop":
+		_top_access(top, "user", user)
+		task_id = element.stop()
+	if element_type == "topology":
+		if action == "remove":
+			_top_access(top, "owner", user)
+			task_id = top.remove()
+		elif action == "renew":
+			_top_access(top, "owner", user)
+			top.renew()
+			return
+	top.logger().log("%s %s %s" % (action, element_type, element_name), user=user.name)
 	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
+	return task_id	
 	
-def top_stop(top_id, user=None):
-	"""
-	Stops the topology by bringing all components to the prepared state,
-	stopping devices and connectors if needed.
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping topology", user=user.name)
-	task_id = top.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
-def top_renew(top_id, user=None):
-	"""
-	This method explicitly renews a topology.
-	All users of topologies can execute the renewal.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("renewing topology", user=user.name)
-	top.renew()
-	return True
-
-def device_prepare(top_id, device_name, user=None):
-	"""
-	Prepares the device by executing the prepare command on it.	The device
-	must be in the created state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the deivce
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_destroy(top_id, device_name, user=None):
-	"""
-	Destroys the device by executing the destroy command on it.	The device
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_start(top_id, device_name, user=None):
-	"""
-	Starts the device by executing the start command on it. The device
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("starting device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.start()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def device_stop(top_id, device_name, user=None):
-	"""
-	Stops the device by executing the stop command on it. The device
-	must be in the started state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param device_name: the name of the device
-	@type device_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping device %s" % device_name, user=user.name)
-	device = top.device_set_get(device_name)
-	task_id = device.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
-def connector_prepare(top_id, connector_name, user=None):
-	"""
-	Prepares the connector by executing the prepare command on it. The connector
-	must be in the created state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("preparing connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.prepare()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_destroy(top_id, connector_name, user=None):
-	"""
-	Destroys the connector by executing the destroy command on it. The connector
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	Only managers of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("destroying connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.destroy()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_start(top_id, connector_name, user=None):
-	"""
-	Starts the connector by executing the start command on it. The connector
-	must be in the prepared state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("starting connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.start()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-	
-def connector_stop(top_id, connector_name, user=None):
-	"""
-	Stops the connector by executing the stop command on it. The connector
-	must be in the started state before, otherwise an exception is raised. 
-	The result of this method is a task id that runs the state change.
-	All users of topologies can execute the state change.
-	This method implicitly renews the topology.
-	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param connector_name: the name of the connector
-	@type connector_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the task
-	@rtype: string
-	""" 
-	top = topology.get(top_id)
-	_top_access(top, "user", user)
-	top.logger().log("stopping connector %s" % connector_name, user=user.name)
-	connector = top.connector_set_get(connector_name)
-	task_id = connector.stop()
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
-
 def task_list(user=None):
 	"""
 	Returns a list of all tasks.
@@ -1042,7 +748,7 @@ def errors_remove(error_id, user=None):
 	fault.errors_remove(error_id)
 	return True
 
-def permission_add(top_id, user_name, role, user=None):
+def permission_set(top_id, user_name, role, user=None):
 	"""
 	Adds a permission entry to a topology. Acceptable roles are "user" and
 	"manager". This method requires owner access to the topology.
@@ -1060,28 +766,11 @@ def permission_add(top_id, user_name, role, user=None):
 	"""
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
-	top.permissions_add(user_name, role)
-	top.logger().log("added permission: %s=%s" % (user_name, role))
-	return True
-	
-def permission_remove(top_id, user_name, user=None):
-	"""
-	Removes all permissions for the given user on the topology. The owner
-	cannot be removed. This method requires owner access to the topology.
-
-	@param top_id: id of the topology
-	@type top_id: number
-	@param user_name: user name
-	@type user_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	"""
-	top = topology.get(top_id)
-	_top_access(top, "owner", user)
-	top.permissions_remove(user_name)
-	top.logger().log("removed permission: %s" % user_name)
+	if user_name != top.owner:
+		top.permissions_remove(user_name)
+	if role:
+		top.permissions_add(user_name, role)
+	top.logger().log("set permission: %s=%s" % (user_name, role))
 	return True
 		
 def resource_usage_by_user(user=None):

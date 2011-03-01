@@ -155,25 +155,6 @@ class Topology(models.Model):
 		import hosts
 		return hosts.Host.objects.filter(device__topology=self).distinct() # pylint: disable-msg=E1101
 	
-	def save_to ( self, dom, doc, internal ):
-		"""
-		Creates an xml dom object containing the xml representation of this topology
-		@param internal whether to store or ignore assigned ids int the dom
-		"""
-		if internal:
-			dom.setAttribute("id", str(self.id))
-			dom.setAttribute("owner", self.owner)
-		dom.setAttribute("name", self.name)
-		for dev in self.device_set_all():
-			x_dev = doc.createElement ( "device" )
-			dev.upcast().encode_xml ( x_dev, doc, internal )
-			dom.appendChild ( x_dev )
-		for con in self.connector_set_all():
-			x_con = doc.createElement ( "connector" )
-			con.upcast().encode_xml ( x_con, doc, internal )
-			dom.appendChild ( x_con )
-		return dom
-
 	def get_control_dir(self,host_name):
 		"""
 		The local directory where all control scripts and files are stored.
@@ -405,9 +386,11 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
-		res = {"id": self.id, "name": self.name, "state": self.max_state(), "owner": str(self.owner),
-			"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
-			"date_created": self.date_created, "date_modified": self.date_modified, "date_usage": self.date_usage
+		res = {"id": self.id, 
+			"attrs": {"name": self.name, "state": self.max_state(), "owner": self.owner,
+					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
+					"date_created": str(self.date_created), "date_modified": str(self.date_modified), "date_usage": str(self.date_usage)
+					}
 			}
 		if detail:
 			try:
@@ -417,8 +400,8 @@ class Topology(models.Model):
 				import traceback
 				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			res.update({"analysis": analysis, 
-				"devices": [(v.name, v.to_dict(auth)) for v in self.device_set_all()],
-				"connectors": [(v.name, v.to_dict(auth)) for v in self.connector_set_all()]
+				"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
+				"connectors": dict([[v.name, v.upcast().to_dict(auth)] for v in self.connector_set_all()])
 				})
 			if auth:
 				task = self.get_task()
@@ -429,7 +412,8 @@ class Topology(models.Model):
 						res.update(running_task=task.id)
 					else:
 						res.update(finished_task=task.id)
-				res.update(permissions=[p.to_dict() for p in self.permissions_all()])
+				res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
+				res["permissions"][self.owner]="owner";
 				captures = []
 				for con in self.connector_set_all():
 					for c in con.connection_set_all():
@@ -446,8 +430,6 @@ class Permission(models.Model):
 	topology = models.ForeignKey(Topology)
 	user = models.CharField(max_length=30)
 	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))
-	def to_dict(self):
-		return {"user": self.user, "role": self.role}
 
 def get(top_id):
 	try:

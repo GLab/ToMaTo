@@ -24,9 +24,6 @@ class TincConnector(generic.Connector):
 	
 	def upcast(self):
 		return self
-
-	def encode_xml(self, dom, doc, internal):
-		generic.Connector.encode_xml(self, dom, doc, internal)
 		
 	def tincname(self, con):
 		return "tinc_%s" % con.id
@@ -203,15 +200,7 @@ class TincConnection(dummynet.EmulatedConnection):
 	
 	def upcast(self):
 		return self
-
-	def encode_xml(self, dom, doc, internal):
-		dummynet.EmulatedConnection.encode_xml(self, dom, doc, internal)
-		if self.gateway and self.connector.type == "router":
-			dom.setAttribute("gateway", self.gateway)
-		if internal:
-			if self.tinc_port:
-				dom.setAttribute("tinc_port", str(self.tinc_port))
-		
+	
 	def configure(self, properties, task):
 		dummynet.EmulatedConnection.configure(self, properties, task)
 		if "gateway" in properties:
@@ -243,3 +232,10 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.tinc_port=None
 		self.save()
 		dummynet.EmulatedConnection.destroy_run(self, task)
+
+	def to_dict(self, auth):
+		res = dummynet.EmulatedConnection.to_dict(self, auth)		
+		res["attrs"].update(tinc_port=self.tinc_port)
+		if self.gateway:
+			res["attrs"].update(gateway=self.gateway)
+		return res

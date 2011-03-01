@@ -18,7 +18,7 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
-import xmlrpclib
+import xmlrpclib, json
 from settings import *
 
 def getauth(request):
@@ -38,7 +38,7 @@ def getapi(request):
 		return None
 	(username, password) = auth
 	try:
-		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port) )
+		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
 		api.account()
 		return api
 	except Exception, exc:
@@ -69,3 +69,21 @@ class wrap_rpc:
 			return render_to_response("main/error.html", {'error': f})
 		except xmlrpclib.Fault, f:
 			return render_to_response("main/error.html", {'error': f})
+		
+class wrap_json:
+	def __init__(self, fun):
+		self.fun = fun
+	def __call__(self, request, *args, **kwargs):
+		try:
+			api = getapi(request)
+			if api is None:
+				return HttpResponseNotAuthorized("Authorization required!")
+			try:
+				res = self.fun(api, request, *args, **kwargs)
+				return HttpResponse(json.dumps({"success": True, "output": res}))
+			except Exception, exc:
+				return HttpResponse(json.dumps({"success": False, "output": '%s:%s' % (exc.__class__.__name__, exc)}))				
+		except xmlrpclib.ProtocolError, e:
+			return HttpResponse(json.dumps({"success": False, "output": 'Error %s: %s' % (e.errcode, e.errmsg)}))				
+		except xmlrpclib.Fault, f:
+			return HttpResponse(json.dumps({"success": False, "output": 'Error %s' % f}))

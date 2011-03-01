@@ -63,15 +63,6 @@ class KVMDevice(generic.Device):
 		self.save()
 		task.done()
 
-	def encode_xml(self, dom, doc, internal):
-		generic.Device.encode_xml(self, dom, doc, internal)
-		dom.setAttribute("template", self.template)
-		if internal:
-			if self.kvm_id:
-				dom.setAttribute("kvm_id", str(self.kvm_id))
-			if self.vnc_port:
-				dom.setAttribute("vnc_port", str(self.vnc_port))
-
 	def start_run(self, task):
 		generic.Device.start_run(self, task)
 		self.host.execute("qm start %s" % self.kvm_id, task)
@@ -106,7 +97,9 @@ class KVMDevice(generic.Device):
 		generic.Device.prepare_run(self, task)
 		self.template = hosts.get_template_name("kvm", self.template)
 		if not self.host:
-			self.host = hosts.get_best_host(self.hostgroup, self)
+			self.host = self.host_options().best()
+			if not self.host:
+				raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
 		if not self.kvm_id:
 			self.kvm_id = self.host.next_free_vm_id()
 			self.save()
@@ -228,4 +221,13 @@ class KVMDevice(generic.Device):
 		#  not asserting state == started here, because this method will be used during start
 		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%si%s*)" % ( self.upcast().kvm_id, iface_id ) ).strip()
 		return name
+
+	def to_dict(self, auth):
+		res = generic.Device.to_dict(self, auth)
+		res["attrs"].update(template=self.template, kvm_id=self.kvm_id)
+		if auth:
+			if self.vnc_port:
+				res["attrs"].update(vnc_port=self.vnc_port)
+				res["attrs"].update(vnc_password=self.vnc_password())
+		return res
 

@@ -27,23 +27,4 @@
 {% endfor %}
 </table>
 
-<br/>
-
-<h2>Special features</h2>
-<table class="sortable,filterable">
-	<tr>
-		<th>Host</th>
-		<th>Type</th>
-		<th>Group</th>
-		<th>Bridge</th>
-	</tr>
-{% for host in host_list %}{% for sf in host.special_features %}
-	<tr>
-		<td><a href="{%url host.detail hostname=host.name%}">{{host.name}}</a></td>
-		<td>{{sf.type}}</td>
-		<td>{{sf.group}}</td>
-		<td>{{sf.bridge}}</td>
-	</tr>
-{% endfor %}{% endfor %}
-</table>
 {% endblock %}

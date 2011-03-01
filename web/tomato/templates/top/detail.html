@@ -5,13 +5,13 @@
 <!-- %%%GLABNETMAN%%%TOPOLOGY%%%{{top.id}}%%%{{task_id}}%%% -->
 <script src="/static/enhancetable.js"></script>
 
-Owner: {{top.owner}} <a href="{%url top.permission_list top_id=top_id%}">[permissions]</a>
+Owner: {{top.attrs.owner}} <a href="{%url top.permission_list top_id=top_id%}"><img src="/static/icons/permissions.png" alt="permissions" title="permissions"/></a>
 <br/>
-Created: {{top.date_created}}, modified: {{top.date_modified}}<br/>
-Last usage: {{top.date_usage}} [<a href="{%url top.renew top_id=top_id %}">renew</a>] <a href="{%url main.help page="TopologyTimeout" %}" target="_help">(info)</a><br/>
-Devices: {{top.device_count}}<br/>
-Connectors: {{top.connector_count}}<br/>
-{% if top.finished_task %}
+Created: {{top.attrs.date_created}}, modified: {{top.attrs.date_modified}}<br/>
+Last usage: {{top.attrs.date_usage}} <a href="{%url top.renew top_id=top_id %}"><img src="/static/icons/refresh.png" alt="renew" title="renew"/></a> <a href="{%url main.help page="TopologyTimeout" %}" target="_help"><img src="/static/icons/help.png" alt="info" title="info"/></a><br/>
+Devices: {{top.attrs.device_count}}<br/>
+Connectors: {{top.attrs.connector_count}}<br/>
+{% if top.attrs.finished_task %}
 <a href="{%url main.task_status top.finished_task%}" target="_blank">last task</a><br>
 {% endif %}
 <br/>
@@ -45,33 +45,33 @@ function console (url) {
 		<th>State</th>
 		<th>Actions</th>
 	</tr>
-{% for name, dev in top.devices %}
+{% for name, dev in top.devices.items %}
 	<tr>
-		<td>{{dev.name}}</td>
-		<td>{{dev.type}}</td>
-		<td>{% if not dev.host == "None" %}<a href="{% url host.detail hostname=dev.host %}">{{dev.host}}</a>{% else %}-{% endif %}</td>
-		<td>{{dev.state}}</td>
+		<td>{{dev.attrs.name}}</td>
+		<td>{{dev.attrs.type}}</td>
+		<td>{% if dev.attrs.host %}<a href="{% url host.detail hostname=dev.attrs.host %}">{{dev.attrs.host}}</a>{% else %}-{% endif %}</td>
+		<td>{{dev.attrs.state}}</td>
 		<td>
-{% if dev.is_prepared %}
-		<a href="{%url top.dev_start top_id=top_id device_id=dev.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
+{% if dev.attrs.state == "prepared" %}
+		<a href="{%url top.dev_start top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
-{% if dev.is_prepared or dev.is_started %}
-		<a href="{%url top.dev_stop top_id=top_id device_id=dev.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
+{% if dev.attrs.state == "prepared" or dev.attrs.state = "started" %}
+		<a href="{%url top.dev_stop top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
-{% if dev.is_created %}
-		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+{% if dev.attrs.state == "created" %}
+		<a href="{%url top.dev_prepare top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
 {% endif %}		
-{% if dev.is_prepared or dev.is_created %}
-		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
+{% if dev.attrs.state == "prepared" or dev.attrs.state == "created" %}
+		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
-{% if dev.is_started and dev.vnc_port %}
-		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
+{% if dev.attrs.state == "started" and dev.attrs.vnc_port %}
+		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.attrs.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
 {% if dev.upload_supported %}
-		<a href="{%url top.upload_image top_id=top_id device_id=dev.name%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
+		<a href="{%url top.upload_image top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
 {% endif %}
 {% if dev.download_supported %}
-		<a href="{%url top.download_image top_id=top_id device_id=dev.name%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
+		<a href="{%url top.download_image top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
 {% endif %}
 		</td>		
 	</tr>
@@ -87,23 +87,23 @@ function console (url) {
 		<th>State</th>
 		<th>Actions</th>
 	</tr>
-{% for name, con in top.connectors %}
+{% for name, con in top.connectors.items %}
 	<tr>
-		<td>{{con.name}}</td>
-		<td>{{con.type}}</td>
-		<td>{{con.state}}</td>
+		<td>{{con.attrs.name}}</td>
+		<td>{{con.attrs.type}}</td>
+		<td>{{con.attrs.state}}</td>
 		<td>
-{% if con.is_prepared %}
-		<a href="{%url top.con_start top_id=top_id connector_id=con.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
+{% if con.attrs.state == "prepared" %}
+		<a href="{%url top.con_start top_id=top_id connector_id=con.attrs.name%}"><img src="/static/icons/start.png" alt="start" title="start"/></a>
 {% endif %}
-{% if con.is_prepared or con.is_started %}
-		<a href="{%url top.con_stop top_id=top_id connector_id=con.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
+{% if con.attrs.state == "prepared" or con.attrs.state == "started" %}
+		<a href="{%url top.con_stop top_id=top_id connector_id=con.attrs.name%}"><img src="/static/icons/stop.png" alt="stop" title="stop"/></a>
 {% endif %}
-{% if con.is_created %}
-		<a href="{%url top.con_prepare top_id=top_id connector_id=con.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
+{% if con.attrs.state == "created" %}
+		<a href="{%url top.con_prepare top_id=top_id connector_id=con.attrs.name%}"><img src="/static/icons/prepare.png" alt="prepare" title="prepare"/></a>
 {% endif %}		
-{% if con.is_prepared or con.is_created %}
-		<a href="{%url top.con_destroy top_id=top_id connector_id=con.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
+{% if con.attrs.state == "prepared" or con.attrs.state == "created" %}
+		<a href="{%url top.con_destroy top_id=top_id connector_id=con.attrs.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 		</td>		
 	</tr>
@@ -131,10 +131,10 @@ No captures ready
 		<th>Ports</th>
 		<th>Special</th>
 	</tr>
-{% for name, dev in top.devices %}
+{% for name, dev in top.devices.items %}
 {% if dev.resources %}
 	<tr>
-		<td>{{dev.name}}</td>
+		<td>{{dev.attrs.name}}</td>
 		<td enhancetable_customkey="{{dev.resources.disk}}">{{dev.resources.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{dev.resources.memory}}">{{dev.resources.memory|filesizeformat}}</td>
 		<td enhancetable_customkey="{{dev.resources.traffic}}">{{dev.resources.traffic|filesizeformat}}</td>
@@ -143,10 +143,10 @@ No captures ready
 	</tr>
 {% endif %}
 {% endfor %}
-{% for name, con in top.connectors %}
+{% for name, con in top.connectors.items %}
 {% if con.resources %}
 	<tr>
-		<td>{{con.name}}</td>
+		<td>{{con.attrs.name}}</td>
 		<td enhancetable_customkey="{{con.resources.disk}}">{{con.resources.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{con.resources.memory}}">{{con.resources.memory|filesizeformat}}</td>
 		<td enhancetable_customkey="{{con.resources.traffic}}">{{con.resources.traffic|filesizeformat}}</td>
