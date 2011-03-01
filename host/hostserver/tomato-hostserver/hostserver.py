@@ -51,6 +51,11 @@ POST /upload?file=FILE&redirect=REDIRECT&grant=GRANT
 """
 
 import sys, SocketServer, BaseHTTPServer, hashlib, cgi, urlparse, shutil, base64, time, os.path, configobj
+try:    #python >=2.6
+        from urlparse import parse_qsl
+except: #python <2.6
+        from cgi import parse_qsl
+
 
 def check_grant(params):
 	if "valid_until" in params and float(params["valid_until"]) < time.time():
@@ -62,7 +67,7 @@ def check_grant(params):
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def process_request(self):
 		scheme, netloc, path, params, query, fragment = urlparse.urlparse(self.path)
-		params = dict(urlparse.parse_qsl(query))
+		params = dict(parse_qsl(query))
 		return (path, params)
 	def error(self, code, message):
 		self.send_error(code, message)
