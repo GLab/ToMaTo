@@ -1,3 +1,9 @@
+tomato-hostserver (0.3) stable; urgency=low
+
+  * Using meta-refresh for redirect to make Firefox shut up
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 02 Mar 2011 16:25:00 +0100
+
 tomato-hostserver (0.2) unstable; urgency=low
 
   * Added filenames to downloads

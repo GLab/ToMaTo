@@ -728,17 +728,16 @@ var Device = IconElement.extend({
 		var t = this;
 		this.editor._ajax("top/"+topid+"/upload_image_uri/"+this.name, {}, function(grant) {
 			var div = $('<div/>');
-			var iframe = $('<iframe id="upload_target"/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target"/>');
 			iframe.css("display", "none");
 			$('body').append(iframe);
 			div.append('<form method="post" enctype="multipart/form-data" action="'+grant.upload_url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
 			iframe.load(function(){
 				var html = $(frames["upload_target"].document).find("html").find("body").html();
-				log(html);
 				var msg = $.parseJSON(html);
 				if (! msg) return;
 				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
-					window.location.reload();						
+					window.location.reload();
 				});
 				iframe.remove();
 				info.remove();

@@ -85,9 +85,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				upload = form["upload"].file
 				shutil.copyfileobj(upload, file)
 				file.close()
-				self.send_response(307)
-				self.send_header("Location", base64.b64decode(params["redirect"]))
+				self.send_response(200)
 				self.end_headers()
+				self.wfile.write("<html><head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head><body>success, redirecting...</body></html>" % base64.b64decode(params["redirect"]))
 				self.finish()
 			except:
 				self.error(500, "Failed to write file")
