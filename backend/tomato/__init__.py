@@ -549,36 +549,13 @@ def use_uploaded_image(top_id, device_id, filename, user=None):
 def download_image_uri(top_id, device_id, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
-	dev=top.device_set_get(device_id)
-	if not dev.download_supported():
-		raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Download not supported for device %s" % dev)
 	top.logger().log("download image grant %s" % device_id, user=user.name)
-	return dev.download_image_uri()
+	return top.download_image_uri(device_id)
 
-def download_capture(top_id, connector_id, device_id, interface_id, user=None):
-	"""
-	Downloads the captured network data on a connection. This method might fail 
-	if the connection is in the wrong state. This operation requires user
-	access to the topology.
-	
-	@param top_id: id of topology
-	@type top_id: number
-	@param connector_id: name of the connector
-	@type connector_id: string
-	@param device_id: name of the connected device
-	@type device_id: string
-	@param interface_id: name of the connected interface
-	@type interface_id: string
-	@param user: current user
-	@type user: generic.User
-	@return: id of download task
-	@rtype: string
-	"""
+def download_capture_uri(top_id, connector_id, ifname, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "user", user)
-	filename = top.download_capture(connector_id, device_id, interface_id)
-	task = tasks.DownloadTask(filename)
-	return task.id
+	return top.download_capture_uri(connector_id, ifname)
 
 def download_chunk(download_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""

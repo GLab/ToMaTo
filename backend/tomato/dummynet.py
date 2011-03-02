@@ -136,17 +136,15 @@ class EmulatedConnection(generic.Connection):
 	def download_supported(self):
 		return not self.connector.state == generic.State.CREATED and self.capture
 
-	def download_capture(self):
-		tmp_id = uuid.uuid1()
-		filename = "/tmp/tomato-%s" % tmp_id
+	def download_capture_uri(self):
+		filename = "%s_%s_%s.tar.gz" % (self.connector, self.interface, uuid.uuid1())
 		host = self.interface.device.host
-		host.execute("tar -czf %s -C %s . " % ( filename, self._capture_dir() ) )
-		host.download("%s" % filename, filename)
-		host.execute("rm %s" % filename)
-		return filename
+		path = "%s/%s" % (host.hostserver_basedir, filename)
+		host.execute("tar -czf %s -C %s . " % ( path, self._capture_dir() ) )
+		return host.download_grant(filename, filename)
 	
 	def to_dict(self, auth):
 		res = generic.Connection.to_dict(self, auth)		
-		res["attrs"].update(delay=self.delay, bandwidth=self.bandwidth, lossratio=self.lossratio, capture=self.capture)
+		res["attrs"].update(delay=self.delay, bandwidth=self.bandwidth, lossratio=self.lossratio, capture=self.capture, download_supported=self.download_supported())
 		return res
 	

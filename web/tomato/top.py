@@ -46,37 +46,6 @@ def create(api, request):
 	return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
 
 @wrap_rpc
-def upload_image(api, request, top_id, device_id):
-	if not request.FILES.has_key("image"):
-		top=api.top_info(int(top_id))
-		return render_to_response("top/upload.html", {'top_id': top_id, 'top': top, 'device_id': device_id} )
-	file=request.FILES["image"]
-	upload_id=api.upload_start()
-	for chunk in file.chunks():
-		api.upload_chunk(upload_id,xmlrpclib.Binary(chunk))
-	task_id = api.upload_image(top_id, device_id, upload_id)
-	return _display_top(api, top_id, task_id, "Upload image")
-
-@wrap_rpc
-def download_image(api, request, top_id, device_id):
-	top=api.top_info(int(top_id))
-	download_id=api.download_image(top_id, device_id)
-	temp = tempfile.TemporaryFile()
-	while True:
-		data = api.download_chunk(download_id).data
-		if len(data) == 0:
-			break
-		temp.write(data)
-	size = temp.tell()
-	temp.seek(0)
-	wrapper = FileWrapper(temp)
-	response = HttpResponse(wrapper, content_type='application/force-download')
-	response['Content-Length'] = size
-	filename_ext = {'openvz': 'tgz', 'kvm': 'qcow2'}[dict(top['devices'])[device_id]['type']]
-	response['Content-Disposition'] = 'attachment; filename=%s_%s.%s' % ( top["name"], device_id, filename_ext )
-	return response
-
-@wrap_rpc
 def download_capture(api, request, top_id, connector_id, device_id, interface_id):
 	top=api.top_info(int(top_id))
 	download_id=api.download_capture(top_id, connector_id, device_id, interface_id)

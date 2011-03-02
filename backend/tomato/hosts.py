@@ -189,9 +189,9 @@ class Host(models.Model):
 		qstr = urllib.urlencode(params)
 		return "http://%s:%s/upload?%s" % (self.name, self.hostserver_port, qstr)
 	
-	def download_grant(self, filename):
+	def download_grant(self, file, name):
 		import time
-		params={"file": filename, "valid_until": str(time.time()+3600)}
+		params={"file": file, "valid_until": str(time.time()+3600), "name": name}
 		params.update(grant=self._calc_grant(params))
 		import urllib
 		qstr = urllib.urlencode(params)

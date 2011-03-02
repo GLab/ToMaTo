@@ -393,7 +393,25 @@ var EmulatedConnection = Connection.extend({
 	},
 	getIPHint: function() {
 		return "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24";
-	}	
+	},
+	downloadSupported: function() {
+		return this.getAttribute("download_supported");
+	},
+	downloadCapture: function(btn) {
+		btn.setEditable(false);
+		btn.setContent("Preparing download ...");
+		btn.setFunc(function(){
+			return false;
+		});
+		var t = this;
+		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {}, function(msg) {
+			btn.setEditable(true);
+			btn.setContent("Download ready");
+			btn.setFunc(function(){
+				window.location.href=msg;				
+			});
+		});
+	}
 });
 
 var EmulatedRouterConnection = EmulatedConnection.extend({
@@ -729,8 +747,7 @@ var Device = IconElement.extend({
 			var info = t.editor.infoMessage("Upload image", div);
 		});		
 	},
-	downloadImage: function() {
-		var btn = this.form.control.downloadButton;
+	downloadImage: function(btn) {
 		btn.setEditable(false);
 		btn.setContent("Preparing download ...");
 		btn.setFunc(function(){
@@ -1583,6 +1600,12 @@ var AttributeForm = Class.extend({
 		tr.append(td);
 		this.table.append(tr);
 	},
+	removeField: function(name) {
+		if (this.fields[name]) {
+			this.fields[name].getInputElement().remove();
+			delete this.fields[name];
+		}
+	},
 	onChanged: function(name, value) {
 		this.obj.setAttribute(name, value);
 	},
@@ -1642,10 +1665,9 @@ var DeviceControlPanel = ControlPanel.extend({
 			t.obj.showConsole();
 		}).getInputElement());
 		if (this.obj.downloadSupported()) {
-			this.downloadButton = new Button("download", 'download image', function(){
-				t.obj.downloadImage();
-			});
-			this.div.append(this.downloadButton.getInputElement());
+			this.div.append(this.downloadButton = new Button("download", 'download image', function(btn){
+				t.obj.downloadImage(btn);
+			}).getInputElement());
 		}
 		if (this.obj.uploadSupported()) {
 			this.div.append(new Button("upload", 'upload image', function(){
@@ -1879,7 +1901,14 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.add(this.attrs.getDiv());
 	},
 	show: function() {
+		this.attrs.removeField("download");
 		this.attrs.load();
+		var t = this;
+		if (this.obj.downloadSupported()) {
+			this.attrs.addMultipleFields([new Button("download", "download capture", function(btn){
+				t.obj.downloadCapture(btn);
+			})]);
+		}
 		this._super();
 	}
 });

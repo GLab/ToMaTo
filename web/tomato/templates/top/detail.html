@@ -106,15 +106,6 @@ function console (url) {
 
 <br/>
 
-<h2>Captures ready to download</h2>
-{% for capture in top.captures %}
-<a href="{%url top.download_capture top.id capture.connector capture.device capture.interface%}">{{capture.connector}} <-> {{capture.device}}.{{capture.interface}}</a><br/>
-{% empty %}
-No captures ready
-{% endfor %}
-
-<br/><br/>
-
 <h2>Resource usage <a href="#" onclick="javascript:var el = document.getElementById('resource_usage');el.style.display = (el.style.display != 'none' ? 'none' : '' );">[show/hide]</a></h2>
 <table id="resource_usage" class="sortable,filterable" style="display:none">
 	<tr>

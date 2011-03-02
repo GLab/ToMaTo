@@ -294,19 +294,7 @@ class Topology(models.Model):
 		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
 		
-	def upload_image(self, device_id, filename):
-		self.renew()
-		device = self.device_set_get(device_id)
-		if not device:
-			os.remove(filename)
-			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		if not device.upcast().upload_supported():
-			os.remove(filename)
-			raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Device does not support image upload: %s" % device_id)
-		task = self.start_task(device.upcast().upload_image, filename)
-		return task.id
-	
-	def download_image(self, device_id):
+	def download_image_uri(self, device_id):
 		self.renew()
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -315,12 +303,13 @@ class Topology(models.Model):
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		if not device.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
-		return device.upcast().download_image()
+		return device.upcast().download_image_uri()
 
-	def download_capture(self, connector_id, device_id, interface_id): #@UnusedVariable, pylint: disable-msg=W0613
+	def download_capture_uri(self, connector_id, ifname): #@UnusedVariable, pylint: disable-msg=W0613
 		self.renew()
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		device_id, interface_id = ifname.split(".")
 		device = self.device_set_get(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
@@ -330,7 +319,7 @@ class Topology(models.Model):
 		con = interface.connection
 		if not con.upcast().download_supported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Connection does not support capture download: %s" % con)
-		return con.upcast().download_capture()
+		return con.upcast().download_capture_uri()
 
 	def permissions_add(self, user_name, role):
 		self.renew()
@@ -414,13 +403,6 @@ class Topology(models.Model):
 						res.update(finished_task=task.id)
 				res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
 				res["permissions"][self.owner]="owner";
-				captures = []
-				for con in self.connector_set_all():
-					for c in con.connection_set_all():
-						c = c.upcast()
-						if hasattr(c, "download_supported") and c.download_supported():
-							captures.append({"connector":con.name, "device": c.interface.device.name, "interface": c.interface.name})
-				res.update(captures=captures)
 		return res
 
 						

@@ -271,7 +271,7 @@ class Device(models.Model):
 	def download_image_uri(self):
 		if self.host:
 			filename = self.prepare_downloadable_image()
-			return self.host.download_grant(filename)
+			return self.host.download_grant(filename, filename)
 		else:
 			return None
 			
