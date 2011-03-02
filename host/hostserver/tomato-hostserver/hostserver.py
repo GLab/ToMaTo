@@ -102,6 +102,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			try:
 				file = open(os.path.join(basedir,params["file"]), "rb")
 				self.send_response(200)
+				if params.has_key("name"):
+                                        self.send_header('Content-Disposition', "attachment; filename=%s" % params["name"])
 				self.end_headers()
 				shutil.copyfileobj(file, self.wfile)
 				file.close()
