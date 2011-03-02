@@ -20,7 +20,8 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.http import Http404
 from django.core.servers.basehttp import FileWrapper
-import simplejson as json;
+import simplejson as json
+from django.core.urlresolvers import reverse
 
 from lib import *
 
@@ -57,3 +58,19 @@ def permission(api, request, top_id):
 		raise Exception("permission not found")
 	permission = json.loads(request.REQUEST["permission"]); 
 	return api.permission_set(top_id, permission["user"], permission["role"]);
+
+@wrap_json
+def download_image_uri(api, request, top_id, device):
+	return api.download_image_uri(top_id, device)
+
+@wrap_json
+def upload_image_uri(api, request, top_id, device):
+	redirect = request.build_absolute_uri(reverse('tomato.ajax.use_uploaded_image', kwargs={"top_id": top_id, "device": device})) +"?filename=%s"
+	return api.upload_image_uri(top_id, device, redirect)
+
+@wrap_json
+def use_uploaded_image(api, request, top_id, device):
+	if not request.REQUEST.has_key("filename"):
+		raise Exception("filename not found")
+	filename = request.REQUEST["filename"]; 
+	return api.use_uploaded_image(top_id, device, filename)

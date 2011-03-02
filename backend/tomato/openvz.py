@@ -191,18 +191,16 @@ class OpenVZDevice(generic.Device):
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def upload_image(self, filename, task):
-		task.subtasks_total=2
-		tmp_id = uuid.uuid1()
-		remote_filename= "/tmp/tomato-%s" % tmp_id
-		self.host.upload(filename, remote_filename, task)
-		task.subtasks_done = task.subtasks_done + 1
+	def use_uploaded_image_run(self, filename, task):
+		task.subtasks_total=3
+		path = "%s/%s" % (self.host.hostserver_basedir, filename)
 		self.host.execute("rm -rf /var/lib/vz/private/%s" % self.openvz_id, task)
-		self.host.execute("mkdir /var/lib/vz/private/%s" % self.openvz_id, task)
-		self.host.execute("tar -xzf %s -C /var/lib/vz/private/%s" % ( remote_filename, self.openvz_id ), task)
 		task.subtasks_done = task.subtasks_done + 1
-		self.host.execute("rm %s" % remote_filename, task)
-		os.remove(filename)
+		self.host.execute("mkdir /var/lib/vz/private/%s" % self.openvz_id, task)
+		self.host.execute("tar -xzf %s -C /var/lib/vz/private/%s" % ( path, self.openvz_id ), task)
+		task.subtasks_done = task.subtasks_done + 1
+		self.host.execute("rm %s" % path, task)
+		task.subtasks_done = task.subtasks_done + 1
 		self.template = "***custom***"
 		self.save()
 		task.done()
@@ -210,12 +208,10 @@ class OpenVZDevice(generic.Device):
 	def download_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def download_image(self):
-		tmp_id = uuid.uuid1()
-		filename = "/tmp/tomato-%s" % tmp_id
-		self.host.execute("tar --numeric-owner -czf %s -C /var/lib/vz/private/%s . " % ( filename, self.openvz_id ) )
-		self.host.download("%s" % filename, filename)
-		self.host.execute("rm %s" % filename)
+	def prepare_downloadable_image(self):
+		filename = "%s_%s_%s.tar.gz" % (self.topology.id, self.name, uuid.uuid1())
+		path = "%s/%s" % (self.host.hostserver_basedir, filename)
+		self.host.execute("tar --numeric-owner -czf %s -C /var/lib/vz/private/%s . " % ( path, self.openvz_id ) )
 		return filename
 	
 	def get_resource_usage(self):

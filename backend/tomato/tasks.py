@@ -69,56 +69,9 @@ class TaskStatus():
 			logger.lograw(self.output.getvalue())
 			logger.close()
 			del TaskStatus.tasks[self.id]
-
-class UploadTask():
-	tasks={}
-	def __init__(self):
-		self.id = str(uuid.uuid1())
-		UploadTask.tasks[self.id]=self
-		self.filename = config.local_control_dir+"/tmp/"+self.id
-		if not os.path.exists(config.local_control_dir+"/tmp/"):
-			os.makedirs(config.local_control_dir+"/tmp/")
-		self.fd = open(self.filename, "w")
-		self.started = time.time()
-	def chunk(self, data):
-		self.fd.write(data)
-	def finished(self):
-		self.fd.close()
-		del UploadTask.tasks[self.id]
-	def check_delete(self):
-		if time.time() - self.started > 3600:
-			del UploadTask.tasks[self.id]
-			if os.path.exists(self.filename):
-				os.remove(self.filename)
-		
-class DownloadTask():
-	tasks={}
-	def __init__(self, filename):
-		self.filename = filename
-		self.id = str(uuid.uuid1())
-		DownloadTask.tasks[self.id]=self
-		self.started = time.time()
-		self.fd = open(self.filename, "rb")
-	def chunk(self):
-		size=1024*1024
-		data = self.fd.read(size)
-		if len(data) == 0:
-			self.fd.close()
-			del DownloadTask.tasks[self.id]
-			os.remove(self.filename)
-		return data
-	def check_delete(self):
-		if time.time() - self.started > 3600:
-			del DownloadTask.tasks[self.id]
-			if os.path.exists(self.filename):
-				os.remove(self.filename)
 	
 def cleanup():
 	for task in TaskStatus.tasks.values():
-		task.check_delete()
-	for task in DownloadTask.tasks.values():
-		task.check_delete()
-	for task in UploadTask.tasks.values():
 		task.check_delete()
 		
 def running_tasks():

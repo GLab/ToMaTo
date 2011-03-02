@@ -72,7 +72,7 @@ def _admin_access(user):
 	@raise fault.Error: when the user does not have the required privileges 
 	"""
 	if not user.is_admin:
-		raise fault.new(fault.ACCESS_TO_HOST_DENIED, "admin access denied")
+		raise fault.new(fault.ADMIN_ACCESS_DENIED, "admin access denied")
 	
 def account(user=None):
 	"""
@@ -319,7 +319,7 @@ def special_feature_group_remove(feature_type, group_name, user=None):
 	_admin_access(user)
 	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
 	if len(sfg.special_feature_set):
-		raise fault.new(0, "Special feature group is not empty")
+		raise fault.new(fault.SPECIAL_FEATURE_GROUP_NOT_EMPTY, "Special feature group is not empty")
 	sfg.remove()
 	return True
 
@@ -528,83 +528,32 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return tasks.TaskStatus.tasks[task_id].dict()
 	
-def upload_start(user=None): #@UnusedVariable, pylint: disable-msg=W0613
-	"""
-	Start a new upload. This method registers a new upload and returns a
-	unique id. The user should upload data chunks using upload_chunk and then
-	use the uploaded file.
-	
-	@param user: current user
-	@type user: generic.User
-	@return: a unique upload task id
-	@rtype: string 
-	"""
-	task = tasks.UploadTask()
-	return task.id
-
-def upload_chunk(upload_id, chunk, user=None): #@UnusedVariable, pylint: disable-msg=W0613
-	"""
-	Appends a data chunk to the upload task.
-	
-	@param upload_id: id of the upload task
-	@type upload_id: string
-	@param chunk: data chunk
-	@type chunk: bytes   
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	"""
-	task = tasks.UploadTask.tasks[upload_id]
-	task.chunk(chunk.data)
-	return True
-
-def upload_image(top_id, device_id, upload_id, user=None):
-	"""
-	Uses an uploaded file a a disk image for a device. This method might fail 
-	if the device is in the wrong state. This operation requires manager 
-	access to the topology.
-	
-	@param top_id: id of the topology
-	@type top_id: number
-	@param device_id: name of the device
-	@type device_id: string
-	@param upload_id: id of the upload task
-	@type upload_id: string
-	@param user: current user
-	@type user: generic.User
-	@return: task id
-	@rtype: string       
-	"""
-	upload = tasks.UploadTask.tasks[upload_id]
-	upload.finished()
+def upload_image_uri(top_id, device_id, redirect, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
-	top.logger().log("uploading image %s" % device_id, user=user.name)
-	task_id =  top.upload_image(device_id, upload.filename)
-	top.logger().log("started task %s" % task_id, user=user.name)
-	return task_id
+	dev=top.device_set_get(device_id)
+	if not dev.upload_supported():
+		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
+	top.logger().log("upload image grant %s" % device_id, user=user.name)
+	return dev.upload_image_grant(redirect)
 
-def download_image(top_id, device_id, user=None):
-	"""
-	Downloads the disk image of a device. This method might fail 
-	if the device is in the wrong state. This operation requires manager 
-	access to the topology.
-	
-	@param top_id: id of topology
-	@type top_id: number
-	@param device_id: name of the device
-	@type device_id: string
-	@param user: current user
-	@type user: generic.User
-	@return: id of download task
-	@rtype: string
-	"""
+def use_uploaded_image(top_id, device_id, filename, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
-	filename = top.download_image(device_id)
-	task = tasks.DownloadTask(filename)
-	return task.id
+	dev=top.device_set_get(device_id)
+	if not dev.upload_supported():
+		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
+	top.logger().log("use uploaded image %s %s" % (device_id, filename), user=user.name)
+	return dev.use_uploaded_image(filename)	
+
+def download_image_uri(top_id, device_id, user=None):
+	top=topology.get(top_id)
+	_top_access(top, "manager", user)
+	dev=top.device_set_get(device_id)
+	if not dev.download_supported():
+		raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Download not supported for device %s" % dev)
+	top.logger().log("download image grant %s" % device_id, user=user.name)
+	return dev.download_image_uri()
 
 def download_capture(top_id, connector_id, device_id, interface_id, user=None):
 	"""

@@ -44,21 +44,23 @@ class KVMDevice(generic.Device):
 	def download_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def download_image(self):
-		tmp_id = uuid.uuid1()
-		filename = "/tmp/tomato-%s" % tmp_id
-		self.host.download("/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id, filename)
+	def prepare_downloadable_image(self):
+		filename = "%s_%s_%s.qcow2" % (self.topology.id, self.name, uuid.uuid1())
+		path = "%s/%s" % (self.host.hostserver_basedir, filename)
+		self.host.execute("cp /var/lib/vz/images/%s/disk.qcow2 %s; chmod 644 %s" % (self.kvm_id, path, path))
 		return filename
 
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def upload_image(self, filename, task):
-		task.subtasks_total=1
-		remote_filename= "/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id
-		self.host.upload(filename, remote_filename, task)
+	def use_uploaded_image_run(self, filename, task):
+		task.subtasks_total=2
+		path = "%s/%s" % (self.host.hostserver_basedir, filename)
+		dst = "/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id
+		self.host.execute("mv %s %s" % ( path, dst ), task)
 		task.subtasks_done = task.subtasks_done + 1
-		os.remove(filename)
+		self.host.execute("chown root:root %s" % dst, task)
+		task.subtasks_done = task.subtasks_done + 1
 		self.template = "***custom***"
 		self.save()
 		task.done()

@@ -249,7 +249,8 @@ class Device(models.Model):
 		"""
 		res = {"attrs": {"host": str(self.host) if self.host else None,
 					"name": self.name, "type": self.type,
-					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos
+					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos,
+					"download_supported": self.download_supported(), "upload_supported": self.upload_supported() 
 					},
 			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
 		}
@@ -257,7 +258,27 @@ class Device(models.Model):
 			if self.resources:
 				res.update(resources=self.resources.encode())
 		return res
+	
+	def upload_image_grant(self, redirect):
+		import uuid
+		if self.host:
+			filename = str(uuid.uuid1())
+			redirect = redirect % filename
+			return {"upload_url": self.host.upload_grant(filename, redirect), "redirect_url": redirect}
+		else:
+			return None
 		
+	def download_image_uri(self):
+		if self.host:
+			filename = self.prepare_downloadable_image()
+			return self.host.download_grant(filename)
+		else:
+			return None
+			
+	def use_uploaded_image(self, filename):
+		return self.topology.start_task(self.upcast().use_uploaded_image_run, filename).id
+			
+			
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)

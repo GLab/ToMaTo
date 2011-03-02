@@ -695,10 +695,55 @@ var Device = IconElement.extend({
 	consoleSupported: function() {
 		return this.getAttribute("vnc_port") && this.getAttribute("vnc_password");
 	},
+	downloadSupported: function() {
+		return this.getAttribute("download_supported");
+	},
+	uploadSupported: function() {
+		return this.getAttribute("upload_supported");
+	},
 	showConsole: function() {
 		console = window.open(basepath+'console.html/', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 		console.params = {topology: this.editor.topology.getAttribute("name"), device: this.name, host: this.getAttribute("host"), port: this.getAttribute("vnc_port"), password: this.getAttribute("vnc_password")};
 		console.focus();
+	},
+	uploadImage: function() {
+		var t = this;
+		this.editor._ajax("top/"+topid+"/upload_image_uri/"+this.name, {}, function(grant) {
+			var div = $('<div/>');
+			var iframe = $('<iframe id="upload_target"/>');
+			iframe.css("display", "none");
+			$('body').append(iframe);
+			div.append('<form method="post" enctype="multipart/form-data" action="'+grant.upload_url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+			iframe.load(function(){
+				var html = $(frames["upload_target"].document).find("html").find("body").html();
+				log(html);
+				var msg = $.parseJSON(html);
+				if (! msg) return;
+				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+					window.location.reload();						
+				});
+				iframe.remove();
+				info.remove();
+				t.editor.followTask(msg.output);
+			});
+			var info = t.editor.infoMessage("Upload image", div);
+		});		
+	},
+	downloadImage: function() {
+		var btn = this.form.control.downloadButton;
+		btn.setEditable(false);
+		btn.setContent("Preparing download ...");
+		btn.setFunc(function(){
+			return false;
+		});
+		var t = this;
+		this.editor._ajax("top/"+topid+"/download_image_uri/"+this.name, {}, function(msg) {
+			btn.setEditable(true);
+			btn.setContent("Download ready");
+			btn.setFunc(function(){
+				window.location.href=msg;				
+			});
+		});
 	}
 });
 
@@ -778,11 +823,19 @@ var Editor = Class.extend({
 		}));
 		var msg = p.infoMessage("Auto-Layout", div);
 	},
-	infoMessage: function(title, message) {
+	infoMessageBig: function(title, message) {
 		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
 			resizable: false, height:"auto", width:"auto", maxHeight: this.size.y, maxWidth: this.size.x, title: title, 
 			position:{my: "center center", at: "center center", of: this.div}});
 		div.css({overflow: "scroll", "max-width": this.size.x-100, "max-height": this.size.y-100});
+		div.append(message);
+		div.dialog("open");
+		return div; 
+	},
+	infoMessage: function(title, message) {
+		var div = $('<div/>').dialog({autoOpen: false, draggable: false, modal: true,
+			resizable: false, height:"auto", width:"auto", title: title, 
+			position:{my: "center center", at: "center center", of: this.div}});
 		div.append(message);
 		div.dialog("open");
 		return div; 
@@ -798,7 +851,7 @@ var Editor = Class.extend({
 	},
 	followTask: function(task, onSuccess) {
 		followTask = {t: this, task: task, onSuccess: onSuccess, closable: false};
-		followTask.dialog = this.infoMessage("Task", "");
+		followTask.dialog = this.infoMessageBig("Task", "");
 		followTask.dialog.bind("dialogbeforeclose", function() {return followTask.closable;});
 		followTask.update = function() {
 			followTask.t._ajax("task/"+followTask.task, null, function(output){
@@ -814,7 +867,7 @@ var Editor = Class.extend({
 						followTask.dialog.dialog("close");
 				 		var fT = followTask;
 				 		delete followTask;
-				 		fT.onSuccess();
+				 		if (fT.onSuccess) fT.onSuccess();
 				 		break;
 				 	case "failed":
 						followTask.closable = true;
@@ -1393,6 +1446,12 @@ var Button = EditElement.extend({
 	getValue: function() {
 		return "";
 	},
+	setContent: function(content) {
+		this.input.button('option', 'label', content);
+	},
+	setFunc: function(func) {
+		this.func = func ;
+	},
 	getInputElement: function() {
 		return this.input;
 	}
@@ -1582,6 +1641,17 @@ var DeviceControlPanel = ControlPanel.extend({
 		if (this.obj.consoleSupported()) this.div.append(new Button("console", '<img src="'+basepath+'images/console.png"> open console', function(){
 			t.obj.showConsole();
 		}).getInputElement());
+		if (this.obj.downloadSupported()) {
+			this.downloadButton = new Button("download", 'download image', function(){
+				t.obj.downloadImage();
+			});
+			this.div.append(this.downloadButton.getInputElement());
+		}
+		if (this.obj.uploadSupported()) {
+			this.div.append(new Button("upload", 'upload image', function(){
+				t.obj.uploadImage();
+			}).getInputElement());
+		}
 	}	
 });
 

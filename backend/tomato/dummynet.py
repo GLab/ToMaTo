@@ -92,7 +92,7 @@ class EmulatedConnection(generic.Connection):
 		host = self.interface.device.host
 		if not host:
 			import fault
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
 		if not self.bridge_id:
 			self.bridge_id = host.next_free_bridge()		
 		pipe_id = int(self.bridge_id) * 10

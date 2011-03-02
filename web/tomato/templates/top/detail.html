@@ -67,12 +67,6 @@ function console (url) {
 {% if dev.attrs.state == "started" and dev.attrs.vnc_port %}
 		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.attrs.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
-{% if dev.upload_supported %}
-		<a href="{%url top.upload_image top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/upload-image.png" alt="upload image" title="upload image"/></a>
-{% endif %}
-{% if dev.download_supported %}
-		<a href="{%url top.download_image top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/download-image.png" alt="download image" title="download image"/></a>
-{% endif %}
 		</td>		
 	</tr>
 {% endfor %}

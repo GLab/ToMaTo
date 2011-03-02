@@ -82,5 +82,8 @@ urlpatterns = patterns('',
 	(r'^ajax/top/(?P<top_id>\d+)/info$', 'tomato.ajax.info'),
 	(r'^ajax/top/(?P<top_id>\d+)/action$', 'tomato.ajax.action'),
 	(r'^ajax/top/(?P<top_id>\d+)/permission$', 'tomato.ajax.permission'),
+	(r'^ajax/top/(?P<top_id>\d+)/upload_image_uri/(?P<device>.*)$', 'tomato.ajax.upload_image_uri'),
+	(r'^ajax/top/(?P<top_id>\d+)/download_image_uri/(?P<device>.*)$', 'tomato.ajax.download_image_uri'),
+	(r'^ajax/top/(?P<top_id>\d+)/use_uploaded_image/(?P<device>.*)$', 'tomato.ajax.use_uploaded_image'),
 	(r'^ajax/task/(?P<task_id>.*)$', 'tomato.ajax.task_status'),
 )
