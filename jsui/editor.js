@@ -720,7 +720,7 @@ var Device = IconElement.extend({
 		return this.getAttribute("upload_supported");
 	},
 	showConsole: function() {
-		console = window.open(basepath+'console.html/', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		var console = window.open(basepath+'console.html/', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 		console.params = {topology: this.editor.topology.getAttribute("name"), device: this.name, host: this.getAttribute("host"), port: this.getAttribute("vnc_port"), password: this.getAttribute("vnc_password")};
 		console.focus();
 	},
