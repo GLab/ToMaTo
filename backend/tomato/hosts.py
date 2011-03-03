@@ -109,15 +109,20 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "hostserver error"
 		task.subtasks_done = task.subtasks_done + 1
 		
-		self.fetch_hostserver_config()
+		self.fetch_hostserver_config(task)
+		self.hostserver_cleanup(task)
 		self.fetch_all_templates(task)
 				
-	def fetch_hostserver_config(self):
-		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
+	def fetch_hostserver_config(self, task):
+		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key", task).splitlines()
 		self.hostserver_port = int(res[0])
 		self.hostserver_basedir = res[1]
 		self.hostserver_secret_key = res[2]
 		self.save();
+				
+	def hostserver_cleanup(self, task):
+		if self.hostserver_basedir:
+			self.execute("find %s -mtime +0 -delete" % self.hostserver_basedir, task)
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
@@ -578,10 +583,27 @@ def measure_physical_links():
 				except fault.Fault:
 					pass
 
+def check_all_hosts():
+	if config.remote_dry_run:
+		return
+	import tasks
+	task = tasks.TaskStatus(None)
+	for host in get_hosts():
+		try:
+			if host.enabled:
+				host.check(task)
+		except:
+			host.enabled = False
+			host.save()
+	task.done()
+
 if not config.TESTING:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
 	measurement_task.start()
+	host_check_task = util.RepeatedTimer(3600*6, check_all_hosts)
+	host_check_task.start()
 	atexit.register(measurement_task.stop)
+	atexit.register(host_check_task.stop)
 
 def host_check(host):
 	import tasks
