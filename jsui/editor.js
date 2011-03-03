@@ -724,6 +724,13 @@ var Device = IconElement.extend({
 		console.params = {topology: this.editor.topology.getAttribute("name"), device: this.name, host: this.getAttribute("host"), port: this.getAttribute("vnc_port"), password: this.getAttribute("vnc_password")};
 		console.focus();
 	},
+	showVNCinfo: function() {
+		var host = this.getAttribute("host");
+		var port = this.getAttribute("vnc_port");
+		var passwd = this.getAttribute("vnc_password");
+		var link = "vnc://" + host + ":" + port;
+		this.editor.infoMessage("VNC Information for " + this.name, '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Password: <pre>"+passwd+"</pre></p>");
+	},
 	uploadImage: function() {
 		var t = this;
 		this.editor._ajax("top/"+topid+"/upload_image_uri/"+this.name, {}, function(grant) {
@@ -1660,9 +1667,14 @@ var DeviceControlPanel = ControlPanel.extend({
 		this._super();
 		var t = this;
 		this.div.append('<p>Host: '+this.obj.attributes.host+'</p>');
-		if (this.obj.consoleSupported()) this.div.append(new Button("console", '<img src="'+basepath+'images/console.png"> open console', function(){
-			t.obj.showConsole();
-		}).getInputElement());
+		if (this.obj.consoleSupported()) {
+			this.div.append(new Button("console", '<img src="'+basepath+'images/console.png"> open console', function(){
+				t.obj.showConsole();
+			}).getInputElement());
+			this.div.append(new Button("vncinfo", 'VNC info', function(){
+				t.obj.showVNCinfo();
+			}).getInputElement());
+		}
 		if (this.obj.downloadSupported()) {
 			this.div.append(this.downloadButton = new Button("download", 'download image', function(btn){
 				t.obj.downloadImage(btn);
