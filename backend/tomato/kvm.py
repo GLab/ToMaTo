@@ -57,9 +57,11 @@ class KVMDevice(generic.Device):
 		task.subtasks_total=2
 		path = "%s/%s" % (self.host.hostserver_basedir, filename)
 		dst = "/var/lib/vz/images/%s/disk.qcow2" % self.kvm_id
+		self.host.execute("qm set %s --ide0 undef" % self.kvm_id, task)
 		self.host.execute("mv %s %s" % ( path, dst ), task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.host.execute("chown root:root %s" % dst, task)
+		self.host.execute("qm set %s --ide0=local:%s/disk.qcow2" % (self.kvm_id, self.kvm_id), task)
 		task.subtasks_done = task.subtasks_done + 1
 		self.template = "***custom***"
 		self.save()
