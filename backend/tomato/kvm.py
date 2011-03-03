@@ -173,8 +173,12 @@ class KVMDevice(generic.Device):
 		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM does not support renaming interfaces: %s" % name)
 	
 	def interfaces_delete(self, name, task): #@UnusedVariable, pylint: disable-msg=W0613
-		#FIXME: actually delete interface in VM
+		if self.state == generic.State.STARTED:
+			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 		iface = self.interface_set_get(name)
+		if self.state == generic.State.PREPARED:
+			iface_id = re.match("eth(\d+)", iface.name).group(1)
+			self.host.execute("qm set %s --vlan%s undef\n" % ( self.kvm_id, iface_id ), task )			
 		iface.delete()
 		
 	def vnc_password(self):

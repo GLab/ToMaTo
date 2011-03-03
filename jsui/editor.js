@@ -8,7 +8,7 @@
  * - Opera zooms in when ctrl is hold while pressing the left mouse button and
  *   reacts sometimes strangely when alt key is hold.
  * - IE8 does not support auto-sizing of dialogs, so dialogs look awful.
- * - IE8 does not correctly support transparecy in svg but transparent images can
+ * - IE8 does not correctly support transparency in svg but transparent images can
  * 	 be used
  ********************************************************************************/ 
 
