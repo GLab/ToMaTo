@@ -109,12 +109,12 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "hostserver error"
 		task.subtasks_done = task.subtasks_done + 1
 		
-		self.fetch_hostserver_config(task)
+		self.fetch_hostserver_config()
 		self.hostserver_cleanup(task)
 		self.fetch_all_templates(task)
 				
-	def fetch_hostserver_config(self, task):
-		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key", task).splitlines()
+	def fetch_hostserver_config(self):
+		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
 		self.hostserver_port = int(res[0])
 		self.hostserver_basedir = res[1]
 		self.hostserver_secret_key = res[2]
