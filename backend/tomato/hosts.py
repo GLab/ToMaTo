@@ -430,7 +430,8 @@ class SpecialFeatureGroup(models.Model):
 	def usage_count(self):
 		import special
 		connectors = special.SpecialFeatureConnector.objects.filter(used_feature_group=self)
-		return connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
+		num = connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
+		return num if num else 0
 		
 	def to_dict(self, instances=False):
 		"""

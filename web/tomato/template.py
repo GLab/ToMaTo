@@ -43,6 +43,7 @@ def add(api, request):
 			return render_to_response("admin/template_index.html", {'templates': api.template_list(""), "task": task})
 	else:
 		form = TemplateForm()
+		form.fields["name"].initial = "type-version"
 	return render_to_response("admin/template_add.html", {"form": form})
 
 @wrap_rpc

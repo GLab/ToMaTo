@@ -143,8 +143,8 @@ class SpecialFeatureConnector(generic.Connector):
 	def bridge_name(self, interface):
 		if not interface.device.host:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE, "Interface is not prepared: %s" % interface)
-		for sf in interface.device.host.special_features():
-			if sf.feature_type == self.feature_type and (not self.feature_group or sf.feature_group == self.feature_group):
+		for sf in self.used_feature_group.specialfeature_set.all():
+			if sf.host == interface.device.host:
 				return sf.bridge
 		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.feature_type, self.feature_group, interface.device.host))
 	

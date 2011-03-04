@@ -58,6 +58,7 @@ class OpenVZDevice(generic.Device):
 		generic.Device.start_run(self, task)
 		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
+			assert bridge, "Interface has no bridge %s" % iface
 			self.host.bridge_create(bridge)
 			self.host.execute("ip link set %s up" % bridge, task)
 		self.host.execute("timeout 10 vzctl start %s --wait" % self.openvz_id, task)
