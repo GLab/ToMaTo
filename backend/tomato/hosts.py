@@ -122,7 +122,7 @@ class Host(models.Model):
 				
 	def hostserver_cleanup(self, task):
 		if self.hostserver_basedir:
-			self.execute("find %s -mtime +0 -delete" % self.hostserver_basedir, task)
+			self.execute("find %s -type f -mtime +0 -delete" % self.hostserver_basedir, task)
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
