@@ -46,7 +46,6 @@ a:active, a:hover
         clear:both;
         display: block;
         overflow: hidden;
-        margin-bottom: 80px;
 }
 
 #left {
@@ -55,18 +54,18 @@ a:active, a:hover
 }
 
 #header {
-	height:120px;
-	margin: 0 auto 30px auto;
+	height: 80px;
+	margin: 0 auto 10px auto;
 	background:url(images/spacer_hor.gif) repeat-x left bottom;
 }
 
+#footer-container{
+	text-align:center;
+	width: 100%;
+}
 
 #footer{
-	position:fixed;
 	text-align:center;
-	margin-left:-460px;
-	left:50%;
-	bottom:0px;
 	padding-top:1px;
 	height:52px;
 	width:921px;
