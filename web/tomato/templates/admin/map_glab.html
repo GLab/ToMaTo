@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<script src="/static/jsui/jQuery-min.js"></script>
+<script src="/static/jsui/jQuery-ui-min.js"></script>
+<script src="/static/jsui/raphael-min.js"></script>
+<script src="/static/jsui/util.js"></script>
+<script src="/static/map/map.js"></script>
+<div id="map" style="width:450px;height:600px;"></div>
+<script><!--
+$("head").append($('<link href="/static/jsui/glabdesign/jquery-ui-custom.css" rel="stylesheet" type="text/css" />'));
+map = new Map({x:450, y:600}, "/static/map/Germany_location_map.svg", {west: 5.5, east: 15.5, north: -55.1, south:-47.1});
+map.addSite("ukl", {lat:-49.444722222222, long:7.7688888888889});
+map.addSite("kit", {lat:-49.014, long:8.4043});
+map.addSite("uwue", {lat:-49.794444444444, long:9.9294444444444});
+map.addSite("tum", {lat:-48.136944444444, long:11.575277777778});
+map.addSite("tud", {lat:-49.866666666667, long:8.65});
+map.addSite("haw", {lat:-53.550556, long:9.993333});
+map.addSite("uha", {lat:-52.374444444444, long:9.7386111111111});
+map.addSite("ulu", {lat:-53.869722222222, long:10.686388888889});
+map.addSite("tub", {lat:-52.518611111111, long:13.408055555556});
+map.addSite("ust", {lat:-48.775555555556, long:9.1827777777778});
+map.addSite("upa", {lat:-48.573333333333, long:13.456944444444});
+
+{% for l in links %}
+map.addConnection("{{l.src}}", "{{l.dst}}", {
+	delay_avg: "{{l.delay_avg|floatformat:2}}",
+	delay_stddev: "{{l.delay_stddev|floatformat:2}}",
+	delay_avg_factor: "{{l.delay_avg_factor}}",
+	loss_percent: "{{l.loss|floatformat:3}}",
+	loss_factor: "{{l.loss_factor}}"
+});
+{% endfor %}
+--></script>
+{% endblock %}

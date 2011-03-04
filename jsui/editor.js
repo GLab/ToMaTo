@@ -1535,7 +1535,7 @@ var Window = Class.extend({
 	init: function(title) {
 		this.div = $('<div/>').dialog({autoOpen: false, draggable: false,
 			resizable: false, height:"auto", width:"auto", title: title,
-			show: "slide", hide: "slide"});
+			show: "slide", hide: "slide", minHeight:50});
 	},
 	setTitle: function(title) {
 		this.div.dialog("option", "title", title);

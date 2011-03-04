@@ -50,10 +50,44 @@ def task_status(api, request, task_id):
 
 @wrap_rpc
 def physical_links(api, request):
-	links = api.physical_links_get_all()
+	links_data = api.physical_links_get_all()
+	links_seen = {}
+	links = []
+	for l in links_data:
+		dst = l["dst"]
+		src = l["src"]
+		if dst+"."+src in links_seen:
+			l2 = links_seen[dst+"."+src]
+			for k, v in l.iteritems():
+				if k != "dst" and k != "src":
+					l[k] = (float(v) + float(l2[k]))/2
+			links.append(l)
+		else:
+			links_seen[src+"."+dst] = l
+	import math
+	delay_sum = 0.0
+	loss_sum = 0.0
 	for l in links:
-		l["loss"] = l["loss"] * 100.0
-	return render_to_response("admin/physical_links.html", {"links": links})
+		delay_sum += l["delay_avg"]
+		loss_sum += l["loss"]
+	delay_avg = delay_sum / len(links)
+	loss_avg = loss_sum / len(links)
+	delay_stddev = 0.0
+	loss_stddev = 0.0
+	for l in links:
+		delay_stddev += (delay_avg-l["delay_avg"])*(delay_avg-l["delay_avg"])
+		loss_stddev += (loss_avg-l["loss"])*(loss_avg-l["loss"])
+	if len(links) > 1:
+		delay_stddev /= len(links) -1
+		loss_stddev /= len(links) -1
+	delay_stddev = math.sqrt(delay_stddev)
+	loss_stddev = math.sqrt(loss_stddev)
+	for l in links:
+		l["delay_avg_factor"] = (l["delay_avg"] - delay_avg)/delay_stddev
+		l["loss_factor"] = (l["loss"] - loss_avg)/loss_stddev if l["loss"] > 0.00001 else -2
+	for l in links:
+		l["loss_percent"] = l["loss"] * 100.0
+	return render_to_response("admin/map_%s.html" % settings.map, {"links": links})
 
 @wrap_rpc
 def resource_usage_by_topology(api, request):

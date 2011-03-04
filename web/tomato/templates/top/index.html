@@ -17,7 +17,7 @@
 {% for top in top_list %}
   <tr>
     <td>{{top.id}}</td>
-    <td><a href="{%url top.details top.id%}">{{top.attrs.name}}</a></td>
+    <td><a href="{%url top.show top.id%}">{{top.attrs.name}}</a></td>
     <td>{{top.attrs.owner}}</td>
     <td>{{top.attrs.state}}</td>
     <td>{{top.attrs.device_count}}</td>
