@@ -301,7 +301,7 @@ class Host(models.Model):
 
 	def debug_info(self):		
 		result={}
-		result["top"] = self.get_result("top -n 1")
+		result["top"] = self.get_result("top -b -n 1")
 		result["OpenVZ"] = self.get_result("vzlist -a")
 		result["KVM"] = self.get_result("qm list")
 		result["Bridges"] = self.get_result("brctl show")
@@ -310,6 +310,10 @@ class Host(models.Model):
 		result["ipfw pipes"] = self.get_result("ipfw pipe show")
 		result["ifconfig"] = self.get_result("ifconfig -a")
 		result["netstat"] = self.get_result("netstat -tulpen")		
+		result["df"] = self.get_result("df -h")		
+		result["templates"] = self.get_result("ls -lh /var/lib/vz/template/*")		
+		result["hostserver"] = self.get_result("/etc/init.d/tomato-hostserver status")		
+		result["hostserver-files"] = self.get_result("ls -l /var/lib/vz/hostserver")		
 		return result
 	
 	def special_features(self):
