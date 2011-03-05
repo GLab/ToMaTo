@@ -65,7 +65,7 @@ var Connection = Class.extend({
 	},
 	getColor: function() {
 		var factor = Math.max(this.attrs.delay_avg_factor, this.attrs.loss_factor);
-		factor = Math.max(Math.min((factor+1)/3, 1), 0); //normalize -1..2 -> 0..1
+		factor = Math.max(Math.min((factor+2)/5, 1), 0); //normalize -2..3 -> 0..1
 		return "hsl("+((1-factor)/3)+",1.0,0.4)";
 	}
 });
