@@ -1,0 +1,19 @@
+Source: tomato-backend
+Section: misc
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+
+Package: tomato-backend
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-twisted, 
+ python-django, python-django-south, python-ldap, python-twisted-web
+Recommends: tomato-web
+Description: ToMaTo backend
+ This is the major ToMaTo component. ToMaTo is a networking testbed, giving
+ researchers the possibility to design and use virtual networking topologies
+ consisting of devices and connectors. ToMaTo utilizes Proxmox virtualization
+ technology (OpenVZ and KVM), Tinc VPN and Dummynet link emulation to organize
+ virtual machines in virtual topologies. This backend provides an xml-rpc 
+ interface that can be used by frontends like tomato-web.
