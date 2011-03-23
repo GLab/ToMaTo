@@ -1,0 +1,15 @@
+Source: tomato-web
+Section: misc
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+
+Package: tomato-web
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-django, 
+  python-simplejson, apache2, libapache2-mod-python
+Description: ToMaTo webfrontend
+ This web-based frontend allows users to access the ToMaTo testbed software. 
+ The webfrontend is based on HTML, CSS and Javascript and is optimized for
+ Google Chrome and Firefox. The frontend must be connected to a backend.

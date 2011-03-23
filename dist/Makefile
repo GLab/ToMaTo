@@ -1,4 +1,4 @@
-MODULES = kernel dummynet hostserver meta
+MODULES = kernel dummynet hostserver meta web
 
 default: build
 

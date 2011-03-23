@@ -1,0 +1,54 @@
+<html>
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<title>G-Lab ToMaTo</title> 
+<meta name="DESCRIPTION" content="German Lab Webpage" /> 
+<link href="/static/style/style.css" rel="stylesheet" type="text/css" />
+<link rel="shortcut icon" type="image/x-icon" href="http://www.german-lab.de/favicon.ico" /> 
+</head>
+<body>
+
+<h1>Topology creation</h1>
+<p>A topology element can be added by dragging the prototype of the element from the palette on the
+left into the workarea on the right. Once added, the elements can be moved inside the workarea by
+dragging them. Elements can be selected by clicking on them; multiple elements can either be 
+selected by holding the shift-key while clicking on them or by drawing a selection frame around 
+them.</p>
+<p>Devices can be connected to connectors by selecting one element and then clicking on the other
+while holding the control key. If multiple elements are selected, all of them will be connected to
+the element. Two devices can also be connected this way, an switch will be automatically created 
+between them.</p>
+<p>Elements can be removed by selecting them and then clicking on the remove icon on the lower
+left.</p>
+
+<h1>Wizard usage</h1>
+<p>The wizard can be started by clicking on the widard icon in the palette. The wizard will open 
+and properties of the new topology can be changed. If devices have been selected before opening the
+wizard, these devices will be used to create the topology and the settings for new devices are 
+greyed out. If no devices have been selected, the devices will be created by the wizard. After 
+configuring the wizard, the area to create new devices must be selected by dragging and resizing a
+frame. When the create button i pressed all the devices will be created and connected according to
+the seelcted topology</p>
+
+<h1>Property editing</h1>
+All elements have an associated property dialog that can be accessed by double-clicking the
+element. In this dialog, various properties of the element can be changed. Text fields often offer
+a syntax check: if the contents of the field are invalid the text will be colored red.
+
+<h1>Interface auto-configuration</h1>
+All interfaces of OpenVZ devices are automatically preconfigured with the following properties:
+<ul>
+<li>Every connector will be given its own 10.x.y.z/16 subnet so that all connectors have different
+networks.</li>
+<li>Switches and hubs will have a simple flat network where all interfaces will get a uniq ip 
+address in their subnet so that all devices can communicate.</li>
+<li>Every interface on a router will have its own /24 subnet in the /16 subnet of the router. The
+interface will have the ip address ending in 1 and the gateway will be configured to have the ip 
+address ending in a 254 so that all devices on the router can communicate if the routes are 
+configured properly.</li>
+<li>Interfaces connected to special connectors like the internet are configured to use DHCP to
+obtain an address.</li>
+</ul>
+
+</body>
+</html>
