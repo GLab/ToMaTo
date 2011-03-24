@@ -28,9 +28,9 @@ case "$1" in
         
         [ -f /etc/tomato/ssh_key ] || ssh-keygen -q -f /etc/tomato/ssh_key -P ""
 
-        chown -R root:tomato /etc/tomato /var/lib/tomato
+        chown -R root:tomato /etc/tomato
         chmod 640 /etc/tomato/tomato.conf /etc/tomato/ssh_key
-        chown tomato:tomato /var/lib/tomato
+        chown tomato:tomato /var/lib/tomato /var/log/tomato
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

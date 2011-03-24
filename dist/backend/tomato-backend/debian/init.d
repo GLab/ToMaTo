@@ -1,8 +1,8 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          tomato-backend
-# Required-Start:    $network $local_fs
-# Required-Stop:
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $remote_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: ToMaTo backend
@@ -16,6 +16,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="ToMaTo backend"           # Introduce a short description here
 NAME=tomato-backend             # Introduce the short server's name here
 SCRIPTNAME=/etc/init.d/$NAME
+LOG=/var/log/tomato/server.log
 
 # default settings
 USER=tomato
@@ -45,7 +46,7 @@ do_start()
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	daemon --name=$NAME --user=$USER.$GROUP --running && return 1
-	daemon --name=$NAME --user=$USER.$GROUP --umask=$UMASK -- \
+	daemon --name=$NAME --user=$USER.$GROUP --umask=$UMASK --output=$LOG -- \
 		python /usr/share/tomato/backend/server.py && return 0 || return 2
 }
 
