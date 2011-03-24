@@ -183,31 +183,8 @@ class LdapUser(object):
 		"""
 		return self.is_in_group('users')
 
-class CachedUser():
-	def __init__(self, ldap_user, password):
-		self.user = User(ldap_user.username, ldap_user.is_user(), ldap_user.is_admin())
-		self.password = password
-		self.cachetime = time.time()
-
-users={}
-
 def login(username, password):
-	if users.has_key(username):
-		cached = users[username] 
-		if cached.password == password:
-			return cached.user 
 	ldap_user = LdapUser(username)
 	if not ldap_user.authenticate(password):
 		return False
-	cached = CachedUser(ldap_user, password)
-	users[username] = cached
-	return cached.user
-
-def cleanup():
-	for user in users.values():
-		if time.time() - user.cachetime > 3600:
-			del users[user.user.name]
-	
-cleanup_task = util.RepeatedTimer(3, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
+	return User(username, ldap_user.is_user(), ldap_user.is_admin())

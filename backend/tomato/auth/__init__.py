@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import tomato.config as config
+import tomato.util as util
+import time, atexit
 
 class User():
 	def __init__ (self, name, is_user, is_admin):
@@ -23,4 +25,35 @@ class User():
 		self.is_user = is_user
 		self.is_admin = is_admin
 		
-exec("from %s_provider import login" % config.auth_provider) #pylint: disable-msg=W0122
+class CachedUser():
+	def __init__(self, user, password):
+		self.user = user
+		self.password = password
+		self.cachetime = time.time()
+
+users={}
+
+def cleanup():
+	for user in users.values():
+		if time.time() - user.cachetime > 3600:
+			del users[user.user.name]
+	
+cleanup_task = util.RepeatedTimer(3, cleanup)
+cleanup_task.start()
+atexit.register(cleanup_task.stop)
+
+def provider_login(user, password):
+	raise Exception("No auth provider used")
+
+exec("from %s_provider import login as provider_login" % config.auth_provider) #pylint: disable-msg=W0122
+
+def login(username, password):
+	print username, password
+	if users.has_key(username):
+		cached = users[username] 
+		if cached.password == password:
+			return cached.user 
+	user = provider_login(username, password)
+	cached = CachedUser(user, password)
+	users[username] = cached
+	return cached.user		

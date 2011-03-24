@@ -45,6 +45,9 @@ auth_ldap_identity_base = get("auth_ldap", "identity_base", 'ou=identities,dc=ge
 auth_ldap_user_group = get("auth_ldap", "user_group", 'cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de')
 auth_ldap_admin_group = get("auth_ldap", "admin_group", 'cn=admin,ou=management,ou=groups,dc=german-lab,dc=de')
 
+auth_htpasswd_admin_user = get("auth_htpasswd", "admin_user", 'admin')
+auth_htpasswd_file = get("auth_htpasswd", "file", '')
+
 local_control_dir = get("local", "control_dir", "/tmp/tomato")
 # The local directory to use for preparing control scripts before they are uploaded to the hosts.
 

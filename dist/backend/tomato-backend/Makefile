@@ -9,3 +9,4 @@ install:
 	install -m 755 server.py $(DESTDIR)/usr/share/tomato/backend
 	rsync -r tomato $(DESTDIR)/usr/share/tomato/backend/
 	install -d $(DESTDIR)/var/log/tomato
+	install -m 640 users $(DESTDIR)/etc/tomato/users
