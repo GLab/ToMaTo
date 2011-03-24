@@ -763,3 +763,17 @@ def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W06
 	@rtype: list of dict
 	"""
 	return [l.to_dict() for l in hosts.get_all_physical_links()]
+
+def admin_public_key(user=None):
+	"""
+	Returns the public key that is used for accessing the hosts.
+
+	@param user: current user
+	@type user: generic.User
+	@return: public key
+	@rtype: string
+	"""
+	_admin_access(user)
+	with open("%s.pub" % config.remote_ssh_key, 'r') as f:
+		key = f.read()
+	return key

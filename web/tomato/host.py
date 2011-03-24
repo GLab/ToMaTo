@@ -66,6 +66,12 @@ def edit(api, request, hostname):
 	return render_to_response("admin/host_edit.html", {"form": form, "edit_host": hostname})
 		
 @wrap_rpc
+def public_key(api, request):
+	return HttpResponse(api.admin_public_key(), mimetype='application/force-download')
+
+	return api.admin_public_key();
+		
+@wrap_rpc
 def check(api, request, hostname):
 	task = api.host_check(hostname)
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list(), 'task': task, 'taskname': "Checking host %s" % hostname})

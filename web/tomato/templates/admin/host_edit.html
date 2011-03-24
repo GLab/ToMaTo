@@ -16,5 +16,7 @@
 </table>
 	<input type="submit"/>
 </form>
+<h2>Public key</h2>
+Please save <a href="{%url host.public_key %}">this key</a> to a file and add it to the host via <pre>ssh-copy-id -i KEYFILE root@HOSTNAME</pre>
 {% endif %}
 {% endblock %}
