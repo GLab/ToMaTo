@@ -1,8 +1,7 @@
-body
-{
- font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.8em;
- background-color:#ffffff;
- margin:0px;
+body {
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.8em;
+  background-color:#ffffff;
+  margin:0px;
 }
 
 h1 {font-size:1.5em;color:#000000;margin-bottom:5mm;}
@@ -10,12 +9,15 @@ h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
 
 code {font-size:0.9px;color:#0000ff;}
-pre
-{
- font-size:14px;
- color:#0000ff;
- padding:5px;
- white-space: pre-wrap;
+pre {
+  font-size:14px;
+  color:#0000ff;
+  padding:5px;
+  white-space: pre-wrap;
+}
+
+#nonfooter {
+  min-height: 100%;
 }
 
 a:link, a:visited, a:active, a:hover
@@ -46,6 +48,7 @@ a:active, a:hover
         clear:both;
         display: block;
         overflow: hidden;
+        padding-bottom:55px;
 }
 
 #left {
@@ -69,6 +72,7 @@ a:active, a:hover
 	padding-top:1px;
 	height:52px;
 	width:921px;
+	margin-top:-53px;
 	background:url(images/footer.png)  no-repeat;
 }
 
