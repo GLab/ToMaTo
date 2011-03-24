@@ -21,7 +21,7 @@ import config, fault, util, sys, atexit
 from django.db.models import Q, Sum
 
 class Host(models.Model):
-	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false"]
+	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.remote_ssh_key]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
 	group = models.CharField(max_length=10, blank=True)

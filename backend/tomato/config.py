@@ -22,7 +22,7 @@ import ConfigParser, os
 # This class represents the configuration
 
 config = ConfigParser.SafeConfigParser()
-config.read(['tomato.conf', '/etc/tomato.conf', os.path.expanduser('~/.tomato.conf')])
+config.read(['tomato.conf', '/etc/tomato/tomato.conf', '/etc/tomato.conf', os.path.expanduser('~/.tomato.conf')])
 
 def get(section, option, default):
     """
@@ -55,6 +55,8 @@ remote_control_dir = get("remote", "control_dir", "/root/tomato")
 
 remote_dry_run = parse_bool(get("remote", "dry_run", True))
 # If this is true all remote commands are just printed but not executed
+
+remote_ssh_key = get("remote", "ssh_key", os.path.expanduser('~/.ssh/id_rsa'))
 
 password_salt = get("local", "password_salt", "tomato")
 
