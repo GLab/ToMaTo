@@ -48,7 +48,6 @@ def provider_login(user, password):
 exec("from %s_provider import login as provider_login" % config.auth_provider) #pylint: disable-msg=W0122
 
 def login(username, password):
-	print username, password
 	if users.has_key(username):
 		cached = users[username] 
 		if cached.password == password:

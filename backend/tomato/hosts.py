@@ -20,6 +20,11 @@ from django.db import models
 import config, fault, util, sys, atexit
 from django.db.models import Q, Sum
 
+class ClusterState:
+	MASTER = "M"
+	NODE = "N"
+	NONE = "-"
+
 class Host(models.Model):
 	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.remote_ssh_key]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
@@ -109,6 +114,15 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "hostserver error"
 		task.subtasks_done = task.subtasks_done + 1
 		
+		task.output.write("checking cluster membership...\n")
+		cluster_state = self.cluster_state()
+		if cluster_state == ClusterState.MASTER:
+			task.output.write("node is cluster master\n\n")
+		elif cluster_state == ClusterState.NODE:
+			task.output.write("node is cluster member\n\n")
+		elif cluster_state == ClusterState.NONE:
+			task.output.write("node is not part of a cluster\n\n")
+		
 		self.fetch_hostserver_config()
 		self.hostserver_cleanup(task)
 		self.fetch_all_templates(task)
@@ -123,6 +137,10 @@ class Host(models.Model):
 	def hostserver_cleanup(self, task):
 		if self.hostserver_basedir:
 			self.execute("find %s -type f -mtime +0 -delete" % self.hostserver_basedir, task)
+			
+	def cluster_state(self):
+		res = self.get_result("pveca -i 2>/dev/null | tail -n 1")
+		return res.split("\n")[-2].split(" ")[-1]
 				
 	def next_free_vm_id (self):
 		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
@@ -370,11 +388,12 @@ class Template(models.Model):
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	
 	def upload_to_all(self, task):
-		dst = self.get_filename()
 		for host in Host.objects.all(): # pylint: disable-msg=E1101
-			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+			self.upload_to_host(host, task)
 		
 	def upload_to_host(self, host, task):
+		if host.cluster_state() == ClusterState.NODE:
+			return
 		dst = self.get_filename()
 		if self.download_url:
 			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
