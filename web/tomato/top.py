@@ -185,3 +185,6 @@ def permission_set(api, request, top_id):
 	role=request.REQUEST["role"]
 	api.permission_set(top_id, user, role)
 	return permission_list(request, top_id)
+
+def console(request):
+	return render_to_response("top/console.html")
