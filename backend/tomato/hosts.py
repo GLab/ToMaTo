@@ -50,7 +50,7 @@ class Host(models.Model):
 			tpl.upload_to_host(self, task)
 
 	def check_save(self, task):
-		task.subtasks_total = 9
+		task.subtasks_total = 10
 		self.check(task)
 		self.save()
 		task.done()
@@ -102,6 +102,12 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
 		
+		task.output.write("checking for curl...\n")
+		res = self.get_result("curl --version; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "curl error"
+		task.subtasks_done = task.subtasks_done + 1
+
 		task.output.write("checking for timeout...\n")
 		res = self.get_result("timeout 1 true; echo $?")
 		task.output.write(res)
@@ -396,7 +402,7 @@ class Template(models.Model):
 			return
 		dst = self.get_filename()
 		if self.download_url:
-			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst}, task)
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)

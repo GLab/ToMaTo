@@ -7,10 +7,10 @@ Standards-Version: 3.8.3
 
 Package: tomato-host
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, tinc, ipfw3-2.6.32-4-pve, dhcp3-server, timeout, tomato-hostserver
+Depends: ${shlibs:Depends}, ${misc:Depends}, tinc, ipfw3-2.6.32-4-pve, timeout, curl, tomato-hostserver
 Description: Meta package to install packages needed for tomato
  * tinc
  * ipfw3-2.6.32-4-pve
- * dhcp3-server
  * timeout
+ * curl
  * tomato-hostserver
