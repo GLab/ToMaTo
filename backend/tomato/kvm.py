@@ -216,7 +216,7 @@ class KVMDevice(generic.Device):
 		release of qemu-server. Here the current list of naming schemes:
 		qemu-server 1.1-22 vmtab1000i0 
 		qemu-server 1.1-25 vmtab1000i0d0
-		qemu-server 1.1-28 tap1000i0d0
+		qemu-server 1.1-28 tap1000i0d0 or tap1000i0
 		Due to this naming chaos the name must determined on the host with a
 		command, so	this can only be determined for started devices.
 		
@@ -228,7 +228,7 @@ class KVMDevice(generic.Device):
 		iface_id = re.match("eth(\d+)", iface.name).group(1)
 		assert self.host, "Cannot determine KVM host device names when not running"
 		#  not asserting state == started here, because this method will be used during start
-		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%(kvm_id)si%(iface_id)s vmtab%(kvm_id)si%(iface_id)sd0 tap%(kvm_id)si%(iface_id)sd0 2>/dev/null)" % { "kvm_id": self.upcast().kvm_id, "iface_id": iface_id }).strip()
+		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%(kvm_id)si%(iface_id)s vmtab%(kvm_id)si%(iface_id)sd0 tap%(kvm_id)si%(iface_id)s tap%(kvm_id)si%(iface_id)sd0 2>/dev/null)" % { "kvm_id": self.upcast().kvm_id, "iface_id": iface_id }).strip()
 		return name
 
 	def to_dict(self, auth):
