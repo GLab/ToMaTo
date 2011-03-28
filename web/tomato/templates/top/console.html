@@ -5,6 +5,14 @@
     <style></style>
     <script src="/static/jsui/jQuery-min.js"></script>
     <script language="javascript"><!--
+function getUrlVars() {
+	var map = {};
+	var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+		map[key] = value;
+	});
+	return map; 
+}    
+        
 function wresize() {
 	var ps = document.vncapp.getPreferredSize();
 	document.vncapp.width = ps.width;
@@ -19,10 +27,7 @@ function wresize() {
 }
 
 function showConsole() {
-	if (! params) {
-		setTimeout("showConsole()", 100);
-		return;
-	}
+	params = getUrlVars();
 	var applet = $('<applet name="vncapp" code="VncViewer.class" archive="/static/VncViewer.jar" width="745" height="400">');
 	applet.append($('<param name="HOST" value="'+params.host+'">'));
 	applet.append($('<param name="PORT" value="'+params.port+'">'));
