@@ -376,7 +376,7 @@ class Connector(models.Model):
 			self.attributes["resources_%s" % key] = res[key]
 	
 	def bridge_name(self, interface):
-		return "gbr_%s" % interface.connection.bridge_id
+		return "gbr_%s" % interface.connection.bridge_id()
 
 	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
 		for key in properties:

@@ -196,7 +196,10 @@ class KVMDevice(generic.Device):
 		if self.state == generic.State.CREATED:
 			disk = 0
 		else:
-			disk = int(self.host.get_result("[ -s /var/lib/vz/images/%(vmid)s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%(vmid)s/disk.qcow2 || echo 0" % {"vmid": self.attributes["vmid"]}))
+			try:
+				disk = int(self.host.get_result("[ -s /var/lib/vz/images/%(vmid)s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%(vmid)s/disk.qcow2 || echo 0" % {"vmid": self.attributes["vmid"]}))
+			except:
+				disk = 0
 		if self.state == generic.State.STARTED:
 			try:
 				memory = int(self.host.get_result("[ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`cat /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": self.attributes["vmid"]}))

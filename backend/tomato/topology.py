@@ -50,13 +50,12 @@ class Topology(models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
-		self.date_usage = datetime.datetime.now()
-		self.save()
+		self.renew()
 		self.name = "Topology_%s" % self.id
 		self.save()
 
 	def renew(self):
-		self.date_usage = datetime.datetime.now()
+		self.attributes["date_usage"] = datetime.datetime.now()
 		self.save()
 
 	def max_state(self):
@@ -76,7 +75,7 @@ class Topology(models.Model):
 
 	def check_timeout(self):
 		now = datetime.datetime.now()
-		date = self.attributes["date_usage"]
+		date = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		if not date:
 			return
 		if now > date + self.REMOVE_TIMEOUT:
