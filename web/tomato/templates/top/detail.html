@@ -32,8 +32,8 @@ Connectors: {{top.attrs.connector_count}}<br/>
 
 <script language="javascript"><!--
 function console (url) {
-    var nw = window.open(url, '_blank', "innerWidth=745,innerheight=400");
-    nw.focus();
+	var console = window.open(url, '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+    console.focus();
 }
 --></script>
 
@@ -65,7 +65,7 @@ function console (url) {
 		<a href="{%url top.dev_destroy top_id=top_id device_id=dev.attrs.name%}"><img src="/static/icons/destroy.png" alt="destroy" title="destroy"/></a>
 {% endif %}
 {% if dev.attrs.state == "started" and dev.attrs.vnc_port %}
-		<a href="javascript:console('{%url top.vncview top_id=top.id device_id=dev.attrs.name%}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
+		<a href="javascript:console('{%url top.console%}?host={{dev.attrs.host}}&port={{dev.attrs.vnc_port}}&password={{dev.attrs.vnc_password}}&topology={{top.attrs.name}}&device={{dev.attrs.name}}');"><img src="/static/icons/console.png" alt="console" title="console"/></a>
 {% endif %}
 		</td>		
 	</tr>

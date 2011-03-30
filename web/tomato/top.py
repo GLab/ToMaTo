@@ -69,13 +69,6 @@ def renew(api, request, top_id):
 	return _display_top(api, top_id)
 
 @wrap_rpc
-def vncview(api, request, top_id, device_id):
-	api.top_renew(int(top_id))
-	top=api.top_info(int(top_id))
-	device=dict(top["devices"])[device_id]
-	return render_to_response("top/vncview.html", {'top': top, 'device': device})
-
-@wrap_rpc
 def edit(api, request, top_id):
 	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
