@@ -233,8 +233,9 @@ class OpenVZDevice(generic.Device):
 		res = generic.Device.to_dict(self, auth)
 		if not auth:
 			del res["attrs"]["vnc_port"]
-			del res["attrs"]["vnc_password"]
 			del	res["attrs"]["root_password"]
+		else:
+			res["attrs"]["vnc_password"] = self.vnc_password()
 		return res
 
 class ConfiguredInterface(generic.Interface):

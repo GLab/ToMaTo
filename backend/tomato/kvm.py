@@ -238,6 +238,7 @@ class KVMDevice(generic.Device):
 		res = generic.Device.to_dict(self, auth)
 		if not auth:
 			del res["attrs"]["vnc_port"]
-			del res["attrs"]["vnc_password"]
+		else:
+			res["attrs"]["vnc_password"] = self.vnc_password()
 		return res
 
