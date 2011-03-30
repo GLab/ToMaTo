@@ -145,19 +145,19 @@ class Device(models.Model):
 		task.subtasks_total = 1
 		return task.id
 
-	def start_run(self, task):
+	def start_run(self):
 		pass
 
-	def stop_run(self, task):
+	def stop_run(self):
 		pass
 
-	def prepare_run(self, task):
+	def prepare_run(self):
 		pass
 
-	def destroy_run(self, task):
+	def destroy_run(self):
 		pass
 	
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def configure(self, properties):
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
 			if properties["hostgroup"] == "auto":
@@ -231,7 +231,7 @@ class Interface(models.Model):
 		except: #pylint: disable-msg=W0702
 			return False	
 	
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def configure(self, properties):
 		for key in properties:
 			self.attributes[key] = properties[key]
 		self.save()
@@ -348,24 +348,24 @@ class Connector(models.Model):
 		task.subtasks_total = 1
 		return task.id
 
-	def start_run(self, task):
+	def start_run(self):
 		for con in self.connection_set_all():
-			con.upcast().start_run(task)
+			con.upcast().start_run()
 
-	def stop_run(self, task):
+	def stop_run(self):
 		for con in self.connection_set_all():
-			con.upcast().stop_run(task)
+			con.upcast().stop_run()
 
-	def prepare_run(self, task):
+	def prepare_run(self):
 		for con in self.connection_set_all():
 			if con.interface.device.state == State.CREATED:
 				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
 		for con in self.connection_set_all():
-			con.upcast().prepare_run(task)
+			con.upcast().prepare_run()
 
-	def destroy_run(self, task):
+	def destroy_run(self):
 		for con in self.connection_set_all():
-			con.upcast().destroy_run(task)
+			con.upcast().destroy_run()
 
 	def __unicode__(self):
 		return self.name
@@ -378,7 +378,7 @@ class Connector(models.Model):
 	def bridge_name(self, interface):
 		return "gbr_%s" % interface.connection.bridge_id()
 
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def configure(self, properties):
 		for key in properties:
 			self.attributes[key] = properties[key]
 		self.save()
@@ -424,30 +424,30 @@ class Connection(models.Model):
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
 				
-	def start_run(self, task):
+	def start_run(self):
 		host = self.interface.device.host
 		if not self.connector.is_special():
 			host.bridge_create(self.bridge_name())
-			host.execute("ip link set %s up" % self.bridge_name(), task)
+			host.execute("ip link set %s up" % self.bridge_name())
 
-	def stop_run(self, task):
+	def stop_run(self):
 		host = self.interface.device.host
 		if not host:
 			return
 		if not self.connector.is_special():
-			host.execute("ip link set %s down" % self.bridge_name(), task)
+			host.execute("ip link set %s down" % self.bridge_name())
 
-	def prepare_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def prepare_run(self):
 		if not self.attributes.get("bridge_id"):
 			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
 
-	def destroy_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def destroy_run(self):
 		del self.attributes["bridge_id"]
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
 
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def configure(self, properties):
 		for key in properties:
 			self.attributes[key] = properties[key]
 		self.save()

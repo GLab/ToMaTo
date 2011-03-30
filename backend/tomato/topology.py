@@ -168,27 +168,27 @@ class Topology(models.Model):
 		task = self.start_task(self.start_run)
 		return task.id
 
-	def start_run(self, task):
+	def start_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run(task)
+				dev.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run(task)
+				con.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.PREPARED:
 				task.output.write("\n# starting " + con.name + "\n") 
-				con.upcast().start_run(task)
+				con.upcast().start_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.PREPARED:
 				task.output.write("\n# starting " + dev.name + "\n") 
-				dev.upcast().start_run(task)
-		task.done()
+				dev.upcast().start_run()
 
 	def stop(self, renew=True):
 		"""
@@ -200,17 +200,17 @@ class Topology(models.Model):
 		task = self.start_task(self.stop_run)
 		return task.id
 
-	def stop_run(self, task):
+	def stop_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
 				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run(task)
+				dev.upcast().stop_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
 				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run(task)
-		task.done()
+				con.upcast().stop_run()
 
 	def prepare(self):
 		"""
@@ -221,17 +221,17 @@ class Topology(models.Model):
 		task = self.start_task(self.prepare_run)
 		return task.id
 
-	def prepare_run(self, task):
+	def prepare_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
 				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run(task)
+				dev.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
 				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run(task)
-		task.done()
+				con.upcast().prepare_run()
 
 	def destroy(self, renew=True):
 		"""
@@ -243,26 +243,27 @@ class Topology(models.Model):
 		task = self.start_task(self.destroy_run)
 		return task.id
 
-	def destroy_run(self, task):
+	def destroy_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run(task)
+				con.upcast().stop_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run(task)
+				dev.upcast().stop_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.PREPARED or con.state == generic.State.CREATED:
 				task.output.write("\n# destroying " + con.name + "\n") 
-				con.upcast().destroy_run(task)
+				con.upcast().destroy_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
 				task.output.write("\n# destroying " + dev.name + "\n") 
-				dev.upcast().destroy_run(task)
+				dev.upcast().destroy_run()
 		task.done()
 
 	def remove(self):
@@ -272,10 +273,9 @@ class Topology(models.Model):
 		task = self.start_task(self.remove_run)
 		return task.id
 
-	def remove_run(self, task):
-		self.destroy_run(task)
+	def remove_run(self):
+		self.destroy_run()
 		self.delete()
-		task.done()
 			
 	def _log(self, task, output):
 		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)

@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import config, fault, util, sys, atexit, attributes
+import config, fault, util, sys, atexit, attributes, tasks
 from django.db.models import Q, Sum
 
 class ClusterState:
@@ -37,17 +37,16 @@ class Host(models.Model):
 	def __unicode__(self):
 		return self.name
 
-	def fetch_all_templates(self, task):
+	def fetch_all_templates(self):
 		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
-			tpl.upload_to_host(self, task)
+			tpl.upload_to_host(self)
 
-	def check_save(self, task):
-		task.subtasks_total = 10
-		self.check(task)
+	def check_save(self):
+		tasks.get_current_task().subtasks_total = 10
+		self.check()
 		self.save()
-		task.done()
 
-	def check(self, task):
+	def check(self):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		
@@ -58,56 +57,58 @@ class Host(models.Model):
 		"""
 		if config.remote_dry_run:
 			return True
+		task = tasks.get_current_task()
+		
 		task.output.write("checking login...\n")
-		res = self.get_result("true; echo $?")
+		res = self.execute("true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "Login error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for openvz...\n")
-		res = self.get_result("vzctl --version; echo $?")
+		res = self.execute("vzctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for kvm...\n")
-		res = self.get_result("qm list; echo $?")
+		res = self.execute("qm list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for bridge utils...\n")
-		res = self.get_result("brctl --version; echo $?")
+		res = self.execute("brctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for dummynet...\n")
-		res = self.get_result("modprobe ipfw_mod && ipfw list; echo $?")
+		res = self.execute("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for tinc...\n")
-		res = self.get_result("tincd --version; echo $?")
+		res = self.execute("tincd --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for curl...\n")
-		res = self.get_result("curl --version; echo $?")
+		res = self.execute("curl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "curl error"
 		task.subtasks_done = task.subtasks_done + 1
 
 		task.output.write("checking for timeout...\n")
-		res = self.get_result("timeout 1 true; echo $?")
+		res = self.execute("timeout 1 true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for hostserver...\n")
-		res = self.get_result("/etc/init.d/tomato-hostserver status; echo $?")
+		res = self.execute("/etc/init.d/tomato-hostserver status; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "hostserver error"
 		task.subtasks_done = task.subtasks_done + 1
@@ -122,21 +123,21 @@ class Host(models.Model):
 			task.output.write("node is not part of a cluster\n\n")
 		
 		self.fetch_hostserver_config()
-		self.hostserver_cleanup(task)
-		self.fetch_all_templates(task)
+		self.hostserver_cleanup()
+		self.fetch_all_templates()
 				
 	def fetch_hostserver_config(self):
-		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
+		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
 		self.attributes["hostserver_port"] = int(res[0])
 		self.attributes["hostserver_basedir"] = res[1]
 		self.attributes["hostserver_secret_key"] = res[2]
 				
-	def hostserver_cleanup(self, task):
+	def hostserver_cleanup(self):
 		if self.attributes.get("hostserver_basedir"):
-			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"], task)
+			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"])
 			
 	def cluster_state(self):
-		res = self.get_result("pveca -i 2>/dev/null | tail -n 1")
+		res = self.execute("pveca -i 2>/dev/null | tail -n 1")
 		return res.split("\n")[-2].split(" ")[-1]
 				
 	def next_free_vm_id (self):
@@ -190,11 +191,11 @@ class Host(models.Model):
 		#	raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
 		return res[1]
 	
-	def execute(self, command, task=None):
+	def execute(self, command):
 		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
 		log_str = self.name + ": " + command + "\n"
-		if task:
-			fd = task.output
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
@@ -223,12 +224,12 @@ class Host(models.Model):
 		qstr = urllib.urlencode(params)
 		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 
-	def upload(self, local_file, remote_file, task=None):
+	def upload(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
-		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
-		if task:
-			fd = task.output
+		self.execute("mkdir -p $(dirname %s)" % remote_file)
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
@@ -236,11 +237,11 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
-	def download(self, remote_file, local_file, task=None):
+	def download(self, remote_file, local_file):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
-		if task:
-			fd = task.output
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
@@ -248,9 +249,6 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
-	def get_result(self, command):
-		return self._exec(Host.SSH_COMMAND+["root@%s" % self.name, command])
-
 	def _first_line(self, line):
 		if not line:
 			return line
@@ -260,32 +258,32 @@ class Host(models.Model):
 		else:
 			return line[0]
 
-	def free_port(self, port, task):
-		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
-		self.execute("lsof -i:%s -t | xargs -r kill" % port, task)
+	def free_port(self, port):
+		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
+		self.execute("lsof -i:%s -t | xargs -r kill" % port)
 
 	def bridge_exists(self, bridge):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
+		return self._first_line(self.execute("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
 
 	def bridge_create(self, bridge):
 		if config.remote_dry_run:
 			return
-		self.get_result("brctl addbr %s" % bridge)
+		self.execute("brctl addbr %s" % bridge)
 		assert self.bridge_exists(bridge), "Bridge cannot be created: %s" % bridge
 		
 	def bridge_remove(self, bridge):
 		if config.remote_dry_run:
 			return
-		self.get_result("brctl delbr %s" % bridge)
+		self.execute("brctl delbr %s" % bridge)
 		assert not self.bridge_exists(bridge), "Bridge cannot be removed: %s" % bridge
 		
 	def bridge_interfaces(self, bridge):
 		if config.remote_dry_run:
 			return
 		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge 
-		return self.get_result("ls /sys/class/net/%s/brif" % bridge).split()
+		return self.execute("ls /sys/class/net/%s/brif" % bridge).split()
 		
 	def bridge_disconnect(self, bridge, iface):
 		if config.remote_dry_run:
@@ -293,7 +291,7 @@ class Host(models.Model):
 		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge
 		if not iface in self.bridge_interfaces(bridge):
 			return
-		self.get_result("brctl delif %s %s" % (bridge, iface))
+		self.execute("brctl delif %s %s" % (bridge, iface))
 		assert not iface in self.bridge_interfaces(bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
 		
 	def bridge_connect(self, bridge, iface):
@@ -307,34 +305,34 @@ class Host(models.Model):
 		oldbridge = self.interface_bridge(iface)
 		if oldbridge:
 			self.bridge_disconnect(oldbridge, iface)
-		self.get_result("brctl addif %s %s" % (bridge, iface))
+		self.execute("brctl addif %s %s" % (bridge, iface))
 		assert iface in self.bridge_interfaces(bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
 		
 	def interface_bridge(self, iface):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
+		return self._first_line(self.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
 			
 	def interface_exists(self, iface):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
+		return self._first_line(self.execute("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
 
 	def debug_info(self):		
 		result={}
-		result["top"] = self.get_result("top -b -n 1")
-		result["OpenVZ"] = self.get_result("vzlist -a")
-		result["KVM"] = self.get_result("qm list")
-		result["Bridges"] = self.get_result("brctl show")
-		result["iptables router"] = self.get_result("iptables -t mangle -v -L PREROUTING")		
-		result["ipfw rules"] = self.get_result("ipfw show")
-		result["ipfw pipes"] = self.get_result("ipfw pipe show")
-		result["ifconfig"] = self.get_result("ifconfig -a")
-		result["netstat"] = self.get_result("netstat -tulpen")		
-		result["df"] = self.get_result("df -h")		
-		result["templates"] = self.get_result("ls -lh /var/lib/vz/template/*")		
-		result["hostserver"] = self.get_result("/etc/init.d/tomato-hostserver status")		
-		result["hostserver-files"] = self.get_result("ls -l /var/lib/vz/hostserver")		
+		result["top"] = self.execute("top -b -n 1")
+		result["OpenVZ"] = self.execute("vzlist -a")
+		result["KVM"] = self.execute("qm list")
+		result["Bridges"] = self.execute("brctl show")
+		result["iptables router"] = self.execute("iptables -t mangle -v -L PREROUTING")		
+		result["ipfw rules"] = self.execute("ipfw show")
+		result["ipfw pipes"] = self.execute("ipfw pipe show")
+		result["ifconfig"] = self.execute("ifconfig -a")
+		result["netstat"] = self.execute("netstat -tulpen")		
+		result["df"] = self.execute("df -h")		
+		result["templates"] = self.execute("ls -lh /var/lib/vz/template/*")		
+		result["hostserver"] = self.execute("/etc/init.d/tomato-hostserver status")		
+		result["hostserver-files"] = self.execute("ls -l /var/lib/vz/hostserver")		
 		return result
 	
 	def special_features(self):
@@ -394,16 +392,16 @@ class Template(models.Model):
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	
-	def upload_to_all(self, task):
+	def upload_to_all(self):
 		for host in Host.objects.all(): # pylint: disable-msg=E1101
-			self.upload_to_host(host, task)
+			self.upload_to_host(host)
 		
-	def upload_to_host(self, host, task):
+	def upload_to_host(self, host):
 		if host.cluster_state() == ClusterState.NODE:
 			return
 		dst = self.get_filename()
 		if self.download_url:
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst}, task)
+			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
@@ -575,7 +573,7 @@ def get_all_physical_links():
 	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 		
 def measure_link_properties(src, dst):
-	res = src.get_result("ping -A -c 500 -n -q -w 300 %s" % dst.name)
+	res = src.execute("ping -A -c 500 -n -q -w 300 %s" % dst.name)
 	if not res:
 		return
 	lines = res.splitlines()
@@ -611,16 +609,13 @@ def measure_physical_links():
 def check_all_hosts():
 	if config.remote_dry_run:
 		return
-	import tasks
-	task = tasks.TaskStatus(None)
 	for host in get_hosts():
 		try:
 			if host.enabled:
-				host.check(task)
+				host.check()
 		except:
 			host.enabled = False
 			host.save()
-	task.done()
 
 if not config.TESTING:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
@@ -631,7 +626,6 @@ if not config.TESTING:
 	atexit.register(host_check_task.stop)
 
 def host_check(host):
-	import tasks
 	t = tasks.TaskStatus(host.check)
 	t.subtasks_total = 7
 	t.start()

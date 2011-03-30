@@ -64,43 +64,39 @@ class SpecialFeatureConnector(generic.Connector):
 			options.add(sfg, 1.0)
 		return options
 		
-	def start_run(self, task):
-		generic.Connector.start_run(self, task)
+	def start_run(self):
+		generic.Connector.start_run(self)
 		self.state = generic.State.STARTED
 		self.save()
-		task.subtasks_done = task.subtasks_done + 1
 
-	def stop_run(self, task):
-		generic.Connector.stop_run(self, task)
+	def stop_run(self):
+		generic.Connector.stop_run(self)
 		self.state = generic.State.PREPARED
 		self.save()
-		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare_run(self, task):
-		generic.Connector.prepare_run(self, task)
+	def prepare_run(self):
+		generic.Connector.prepare_run(self)
 		self.used_feature_group = self.feature_options().best()
 		self.state = generic.State.PREPARED
 		self.save()
-		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy_run(self, task):
-		generic.Connector.destroy_run(self, task)
+	def destroy_run(self):
+		generic.Connector.destroy_run(self)
 		self.used_feature_group = None		
 		self.state = generic.State.CREATED
 		self.save()
-		task.subtasks_done = task.subtasks_done + 1
 		
-	def configure(self, properties, task):
+	def configure(self, properties):
 		if "feature_type" in properties and self.state != generic.State.CREATED: 
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of special feature with prepared connections: %s" % self.name )
 		if "feature_group" in properties and self.state != generic.State.CREATED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of special feature with prepared connections: %s" % self.name )
-		generic.Connector.configure(self, properties, task)
+		generic.Connector.configure(self, properties)
 		if self.attributes["feature_group"] == "auto":
 			self.attributes["feature_group"] = ""
 		self.save()		
 	
-	def connections_add(self, iface_name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def connections_add(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
@@ -109,10 +105,10 @@ class SpecialFeatureConnector(generic.Connector):
 		con.interface = iface
 		con.save()
 
-	def connections_configure(self, iface_name, properties, task):
+	def connections_configure(self, iface_name, properties):
 		pass
 	
-	def connections_delete(self, iface_name, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def connections_delete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
@@ -128,8 +124,8 @@ class SpecialFeatureConnector(generic.Connector):
 			dev = con.interface.device
 			if dev.host and dev.state == generic.State.STARTED:
 				iface = dev.upcast().interface_device(con.interface)
-				traffic += int(dev.host.get_result("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
-				traffic += int(dev.host.get_result("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
+				traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
+				traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
 		return {"special": special, "traffic": traffic}		
 
 	def bridge_name(self, interface):

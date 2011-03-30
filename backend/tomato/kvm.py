@@ -23,12 +23,12 @@ class KVMDevice(generic.Device):
 	def upcast(self):
 		return self
 
-	def get_state(self, task):
+	def get_state(self):
 		if config.remote_dry_run:
 			return self.state
 		if not self.attributes.get("vmid"):
 			return generic.State.CREATED
-		res = self.host.execute("qm status %s" % self.attributes["vmid"], task)
+		res = self.host.execute("qm status %s" % self.attributes["vmid"])
 		if "running" in res:
 			return generic.State.STARTED
 		if "stopped" in res:
@@ -49,54 +49,48 @@ class KVMDevice(generic.Device):
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def use_uploaded_image_run(self, filename, task):
-		task.subtasks_total=2
+	def use_uploaded_image_run(self, filename):
 		path = "%s/%s" % (self.attributes["hostserver_basedir"], filename)
 		vmid = self.attributes["vmid"]
 		dst = "/var/lib/vz/images/%s/disk.qcow2" % vmid
-		self.host.execute("qm set %s --ide0 undef" % vmid, task)
-		self.host.execute("mv %s %s" % ( path, dst ), task)
-		task.subtasks_done = task.subtasks_done + 1
-		self.host.execute("chown root:root %s" % dst, task)
-		self.host.execute("qm set %(vmid)s --ide0=local:%(vmid)s/disk.qcow2" % {"vmid": vmid}, task)
-		task.subtasks_done = task.subtasks_done + 1
+		self.host.execute("qm set %s --ide0 undef" % vmid)
+		self.host.execute("mv %s %s" % ( path, dst ))
+		self.host.execute("chown root:root %s" % dst)
+		self.host.execute("qm set %(vmid)s --ide0=local:%(vmid)s/disk.qcow2" % {"vmid": vmid})
 		self.attributes["template"] = "***custom***"
 		self.save()
-		task.done()
 
-	def start_run(self, task):
-		generic.Device.start_run(self, task)
+	def start_run(self):
+		generic.Device.start_run(self)
 		vmid = self.attributes["vmid"]
-		self.host.execute("qm start %s" % vmid, task)
+		self.host.execute("qm start %s" % vmid)
 		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
 			self.host.bridge_connect(bridge, self.interface_device(iface) )
-			self.host.execute("ip link set %s up" % bridge, task)
+			self.host.execute("ip link set %s up" % bridge)
 		if not self.attributes.get("vnc_port"):
 			self.attributes["vnc_port"] = self.host.next_free_port()
 			self.save()
-		self.host.free_port(self.attributes["vnc_port"], task)		
-		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ), task)
+		self.host.free_port(self.attributes["vnc_port"])		
+		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
 		self.state = generic.State.STARTED #for dry-run
-		self.state = self.get_state(task)
+		self.state = self.get_state()
 		self.save()
 		assert self.state == generic.State.STARTED, "VM is not started"
-		task.subtasks_done = task.subtasks_done + 1
 
-	def stop_run(self, task):
-		generic.Device.stop_run(self, task)
-		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name, task)
+	def stop_run(self):
+		generic.Device.stop_run(self)
+		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name)
 		del self.attributes["vnc_port"]
-		self.host.execute("qm stop %s" % self.attributes["vmid"], task)
+		self.host.execute("qm stop %s" % self.attributes["vmid"])
 		self.state = generic.State.PREPARED #for dry-run
-		self.state = self.get_state(task)
+		self.state = self.get_state()
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
-		task.subtasks_done = task.subtasks_done + 1
 
-	def prepare_run(self, task):
-		generic.Device.prepare_run(self, task)
+	def prepare_run(self):
+		generic.Device.prepare_run(self)
 		self.attributes["template"] = hosts.get_template_name("kvm", self.attributes.get("template"))
 		if not self.host:
 			self.host = self.host_options().best()
@@ -106,47 +100,45 @@ class KVMDevice(generic.Device):
 			self.attributes["vmid"] = self.host.next_free_vm_id()
 			self.save()
 		vmid = self.attributes["vmid"]
-		self.host.execute("qm create %s" % vmid, task)
-		self.host.execute("mkdir -p /var/lib/vz/images/%s" % vmid, task)
-		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.attributes["template"], vmid), task)
-		self.host.execute("qm set %(vmid)s --ide0 local:%(vmid)s/disk.qcow2" % {"vmid": vmid}, task)
-		self.host.execute("qm set %s --name \"%s_%s\"" % (vmid, self.topology.name, self.name), task)
+		self.host.execute("qm create %s" % vmid)
+		self.host.execute("mkdir -p /var/lib/vz/images/%s" % vmid)
+		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.attributes["template"], vmid))
+		self.host.execute("qm set %(vmid)s --ide0 local:%(vmid)s/disk.qcow2" % {"vmid": vmid})
+		self.host.execute("qm set %s --name \"%s_%s\"" % (vmid, self.topology.name, self.name))
 		for iface in self.interface_set_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
-			self.host.execute("qm set %s --vlan%s e1000" % ( vmid, iface_id ), task)
+			self.host.execute("qm set %s --vlan%s e1000" % ( vmid, iface_id ))
 		self.state = generic.State.PREPARED #for dry-run
-		self.state = self.get_state(task)
+		self.state = self.get_state()
 		self.save()
 		assert self.state == generic.State.PREPARED, "VM is not prepared"
-		task.subtasks_done = task.subtasks_done + 1
 
-	def destroy_run(self, task):
-		generic.Device.destroy_run(self, task)
+	def destroy_run(self):
+		generic.Device.destroy_run(self)
 		if not self.host:
-			self.state = self.get_state(task)
+			self.state = self.get_state()
 			self.save()
 			return
-		self.host.execute("qm destroy %s" % self.attributes["vmid"], task)
+		self.host.execute("qm destroy %s" % self.attributes["vmid"])
 		self.state = generic.State.CREATED #for dry-run
-		self.state = self.get_state(task)
+		self.state = self.get_state()
 		assert self.state == generic.State.CREATED, "VM still exists"
 		del self.attributes["vmid"]
 		self.host = None
 		self.save()
-		task.subtasks_done = task.subtasks_done + 1
-
-	def configure(self, properties, task):
+		
+	def configure(self, properties):
 		if "template" in properties:
 			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
-		generic.Device.configure(self, properties, task)
+		generic.Device.configure(self, properties)
 		if "template" in properties:
 			self.attributes["template"] = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
 			if not self.attributes["template"]:
 				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found:" % properties["template"])
 		self.save()
 			
-	def interfaces_add(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def interfaces_add(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.state == "started":
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 		if not re.match("eth(\d+)", name):
@@ -162,23 +154,23 @@ class KVMDevice(generic.Device):
 		if self.state == "prepared":
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
-			self.host.execute("qm set %s --vlan%s e1000\n" % ( self.attributes["vmid"], iface_id ), task )
+			self.host.execute("qm set %s --vlan%s e1000\n" % ( self.attributes["vmid"], iface_id ))
 		iface.save()
 		generic.Device.interface_set_add(self, iface)
 
-	def interfaces_configure(self, name, properties, task):
+	def interfaces_configure(self, name, properties):
 		pass
 	
-	def interfaces_rename(self, name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def interfaces_rename(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "KVM does not support renaming interfaces: %s" % name)
 	
-	def interfaces_delete(self, name, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def interfaces_delete(self, name): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.state == generic.State.STARTED:
 			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Changes of running KVMs are not supported")
 		iface = self.interface_set_get(name)
 		if self.state == generic.State.PREPARED:
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
-			self.host.execute("qm set %s --vlan%s undef\n" % ( self.attributes["vmid"], iface_id ), task )			
+			self.host.execute("qm set %s --vlan%s undef\n" % ( self.attributes["vmid"], iface_id ))			
 		iface.delete()
 		
 	def vnc_password(self):
@@ -197,12 +189,12 @@ class KVMDevice(generic.Device):
 			disk = 0
 		else:
 			try:
-				disk = int(self.host.get_result("[ -s /var/lib/vz/images/%(vmid)s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%(vmid)s/disk.qcow2 || echo 0" % {"vmid": self.attributes["vmid"]}))
+				disk = int(self.host.execute("[ -s /var/lib/vz/images/%(vmid)s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%(vmid)s/disk.qcow2 || echo 0" % {"vmid": self.attributes["vmid"]}))
 			except:
 				disk = 0
 		if self.state == generic.State.STARTED:
 			try:
-				memory = int(self.host.get_result("[ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`cat /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": self.attributes["vmid"]}))
+				memory = int(self.host.execute("[ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`cat /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": self.attributes["vmid"]}))
 			except: #pylint: disable-msg=W0702
 				memory = 0
 			ports = 1
@@ -231,7 +223,7 @@ class KVMDevice(generic.Device):
 		iface_id = re.match("eth(\d+)", iface.name).group(1)
 		assert self.host, "Cannot determine KVM host device names when not running"
 		#  not asserting state == started here, because this method will be used during start
-		name = self.host.get_result("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": self.attributes["vmid"], "iface_id": iface_id }).strip()
+		name = self.host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": self.attributes["vmid"], "iface_id": iface_id }).strip()
 		return name
 
 	def to_dict(self, auth):

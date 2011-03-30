@@ -15,13 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import uuid, os, traceback
+import uuid, os, traceback, threading
 
 import config, util, fault, atexit, time, log
 
 from cStringIO import StringIO
-
-# FIXME: remove task parameters by using threading.local()
 
 class TaskStatus():
 	tasks={}
@@ -41,8 +39,10 @@ class TaskStatus():
 		self.started = time.time()
 	def done(self):
 		self.status = TaskStatus.DONE
+		set_current_task(None)
 	def failed(self):
 		self.status = TaskStatus.FAILED
+		set_current_task(None)
 	def is_active(self):
 		return self.status == TaskStatus.ACTIVE
 	def dict(self):
@@ -53,6 +53,7 @@ class TaskStatus():
 			"started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(self.started))}
 	def _run(self):
 		try:
+			set_current_task(self)
 			self.func(*self.args, task=self, **self.kwargs)
 			self.done()
 		except Exception, exc: #pylint: disable-msg=W0703
@@ -89,6 +90,17 @@ def keep_running():
 		print "%s tasks still running" % len(running_tasks())
 		time.sleep(1)
 		i=i+1
+		
+_current_task = threading.local()
+
+def set_current_task(task):
+	_current_task.task = task
+
+def get_current_task():
+	if "task" in _current_task.__dict__:
+		return _current_task.task
+	else:
+		return None
 		
 if not config.TESTING:	
 	cleanup_task = util.RepeatedTimer(3, cleanup)
