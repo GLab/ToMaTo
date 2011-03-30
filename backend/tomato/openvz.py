@@ -20,9 +20,6 @@ from django.db import models
 import generic, util, hosts, hashlib, config, fault, os, uuid
 
 class OpenVZDevice(generic.Device):
-	class Meta:
-		abstract = True
-		
 	def upcast(self):
 		return self
 
@@ -241,9 +238,6 @@ class OpenVZDevice(generic.Device):
 		return res
 
 class ConfiguredInterface(generic.Interface):
-	class Meta:
-		abstract = True
-
 	def upcast(self):
 		return self
 

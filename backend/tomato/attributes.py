@@ -43,7 +43,7 @@ class AttributeSet(models.Model):
 			return self.attributeentry_set.get(name=name) # pylint: disable-msg=E1101
 	def get(self, name):
 		entr = self.get_entry(name)
-		return entr if entr else None
+		return entr.value if entr else None
 	
 	#dict methods
 	def __len__(self):
@@ -57,13 +57,13 @@ class AttributeSet(models.Model):
 		if not entr:
 			#raise KeyError("no such key: %s" % key)
 			return
-		self.attributeentry_set.delete(entr)
 		entr.delete()
-		self.save()
 	def __iter__(self):
 		return (entr.name for entr in self.attributeentry_set.all())
 	def iterkeys(self):
 		return self.__iter__()
+	def items(self):
+		return ((entr.name, entr.value) for entr in self.attributeentry_set.all())
 	def __contains__(self, key):
 		return self.get(key) is None
 

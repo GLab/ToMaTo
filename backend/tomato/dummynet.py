@@ -22,9 +22,6 @@ import generic, util
 
 class EmulatedConnection(generic.Connection):
 	
-	class Meta:
-		abstract = True
-	
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnection # pylint: disable-msg=E1101
@@ -49,7 +46,7 @@ class EmulatedConnection(generic.Connection):
 			
 	def _config_link(self, task):
 		host = self.interface.device.host
-		pipe_id = int(self.bridge_id) * 10
+		pipe_id = int(self.bridge_id()) * 10
 		pipe_config=""
 		if "delay" in self.attributes:
 			try:

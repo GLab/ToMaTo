@@ -373,20 +373,22 @@ class Topology(models.Model):
 					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
 					}
 			}
-		res["attrs"].update(self.attributes)
+		res["attrs"].update(self.attributes.items())
 		if detail:
 			res.update({"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
 				"connectors": dict([[v.name, v.upcast().to_dict(auth)] for v in self.connector_set_all()])
 				})
-			if auth:
-				task = self.get_task()
-				if task:
-					if task.is_active():
-						res.update(running_task=task.id)
-					else:
-						res.update(finished_task=task.id)
-				res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
-				res["permissions"][self.owner]="owner";
+			res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
+			res["permissions"][self.owner]="owner";
+		del res["attrs"]["task"]
+		if auth:
+			task = self.get_task()
+			if task:
+				if task.is_active():
+					res.update(running_task=task.id)
+				else:
+					res.update(finished_task=task.id)
+
 		return res
 
 						

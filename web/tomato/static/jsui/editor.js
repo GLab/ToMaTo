@@ -101,12 +101,6 @@ var NetElement = Class.extend({
 	getSubElementName: function() {
 		return "";
 	},
-	setResources: function(res) {
-		this.resources = res;
-	},
-	getResources: function() {
-		return this.resources;
-	},
 	stateAction: function(action) {
 		var t = this;
 		this.editor.ajaxAction(this.action(action), function(task_id) {
@@ -978,7 +972,6 @@ var Editor = Class.extend({
 		var connectors = {};
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
-		editor.topology.setResources(top.resources);
 		editor.topology.permissions = top.permissions;
 		var f = function(obj){
 			var attrs = obj.attrs;
@@ -1013,7 +1006,6 @@ var Editor = Class.extend({
 					connectors[name] = el;
 					break;
 			}
-			el.setResources(obj.resources);
 			el.setAttributes(attrs);
 		};
 		for (var name in top.devices) f(top.devices[name]);
@@ -1055,13 +1047,11 @@ var Editor = Class.extend({
 	_reloadTopology: function(top, callback) {
 		this.isLoading = true;
 		this.topology.setAttributes(top.attrs);
-		this.topology.setResources(top.resources);
 		this.topology.permissions = top.permissions;
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
 			dev_obj.setAttributes(dev.attrs);
-			dev_obj.setResources(dev.resources);
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
@@ -1072,7 +1062,6 @@ var Editor = Class.extend({
 			var con_obj = this.getElement("connector", name);
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
-			con_obj.setResources(con.resources);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
@@ -1694,17 +1683,15 @@ var ResourcesPanel = Class.extend({
 	},
 	load: function() {
 		this.div.empty();
-		var resources = this.obj.getResources();
+		var attrs = this.obj.attributes;
 		var t = this;
-		if (resources) {
-			var table = $('<table/>');
-			if (resources.disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(resources.disk)+'</td></tr>'));
-			if (resources.memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(resources.memory)+'</td></tr>'));
-			if (resources.traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(resources.traffic)+'</td></tr>'));
-			if (resources.special) table.append($('<tr><td>Special slots:</td><td>'+resources.special+'</td></tr>'));
-			if (resources.ports) table.append($('<tr><td>Ports:</td><td>'+resources.ports+'</td></tr>'));
-			this.div.append(table);
-		}
+		var table = $('<table/>');
+		if (attrs.resources_disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(attrs.resources_disk)+'</td></tr>'));
+		if (attrs.resources_memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(attrs.resources_memory)+'</td></tr>'));
+		if (attrs.resources_traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(attrs.resources_traffic)+'</td></tr>'));
+		if (attrs.resources_special) table.append($('<tr><td>Special slots:</td><td>'+attrs.resources_special+'</td></tr>'));
+		if (attrs.resources_ports) table.append($('<tr><td>Ports:</td><td>'+attrs.resources_ports+'</td></tr>'));
+		this.div.append(table);
 	},
 	getDiv: function() {
 		return this.div;

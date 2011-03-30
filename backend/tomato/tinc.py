@@ -21,9 +21,6 @@ import dummynet, generic, config, os, subprocess, shutil, fault, util
 
 # Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
-	class Meta:
-		abstract = True
-	
 	def upcast(self):
 		return self
 		
@@ -197,9 +194,6 @@ class TincConnector(generic.Connector):
 
 
 class TincConnection(dummynet.EmulatedConnection):
-	class Meta:
-		abstract = True
-	
 	def upcast(self):
 		return self
 	
@@ -235,5 +229,8 @@ class TincConnection(dummynet.EmulatedConnection):
 		dummynet.EmulatedConnection.destroy_run(self, task)
 
 	def to_dict(self, auth):
-		res = dummynet.EmulatedConnection.to_dict(self, auth)		
+		res = dummynet.EmulatedConnection.to_dict(self, auth)	
+		if not auth:
+			del res["attrs"]["tinc_port"]	
+			del res["attrs"]["bridge_id"]	
 		return res

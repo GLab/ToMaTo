@@ -20,11 +20,6 @@ from django.db import models
 import generic, hosts, fault, config, hashlib, re, uuid, os
 
 class KVMDevice(generic.Device):
-	
-	class Meta:
-		abstract = True
-
-	
 	def upcast(self):
 		return self
 
@@ -113,7 +108,7 @@ class KVMDevice(generic.Device):
 		vmid = self.attributes["vmid"]
 		self.host.execute("qm create %s" % vmid, task)
 		self.host.execute("mkdir -p /var/lib/vz/images/%s" % vmid, task)
-		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.attributes["template"], self.vmid), task)
+		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.attributes["template"], vmid), task)
 		self.host.execute("qm set %(vmid)s --ide0 local:%(vmid)s/disk.qcow2" % {"vmid": vmid}, task)
 		self.host.execute("qm set %s --name \"%s_%s\"" % (vmid, self.topology.name, self.name), task)
 		for iface in self.interface_set_all():

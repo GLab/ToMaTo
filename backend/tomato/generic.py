@@ -189,7 +189,7 @@ class Device(models.Model):
 					},
 			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
 		}
-		res["attrs"].update(self.attributes)
+		res["attrs"].update(self.attributes.items())
 		return res
 	
 	def upload_image_grant(self, redirect):
@@ -254,7 +254,7 @@ class Interface(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name}}
-		res["attrs"].update(self.attributes)
+		res["attrs"].update(self.attributes.items())
 		return res
 
 
@@ -395,7 +395,7 @@ class Connector(models.Model):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
 			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
-		res["attrs"].update(self.attributes)
+		res["attrs"].update(self.attributes.items())
 		return res
 
 
@@ -462,7 +462,7 @@ class Connection(models.Model):
 		@rtype: dict
 		"""
 		res = {"interface": str(self.interface), "attrs":{}}
-		res["attrs"].update(self.attributes)
+		res["attrs"].update(self.attributes.items())
 		return res
 
 class ObjectPreferences:

@@ -122,7 +122,7 @@ def host_list(group_filter="", user=None): #@UnusedVariable, pylint: disable-msg
 		res.append(h.to_dict())
 	return res
 
-def host_add(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
+def host_add(host_name, group_name, enabled, attrs, user=None):
 	"""
 	Adds a host to the list of available hosts. First host will be checked,
 	then all templates will be uploaded and then finally the host will be 
@@ -135,18 +135,8 @@ def host_add(host_name, group_name, enabled, vmid_start, vmid_count, port_start,
 	@type group_name: string
 	@param enabled: whether the host should be enabled
 	@type enabled: boolean
-	@param vmid_start: first virtual machine id to be used on this host
-	@type vmid_start: number        
-	@param vmid_count: number of virtual machine ids to be used on this host
-	@type vmid_count: number        
-	@param port_start: first port number to be used on this host
-	@type port_start: number        
-	@param port_count: number of ports to be used on this host
-	@type port_count: number        
-	@param bridge_start: first bridge id to be used on this host
-	@type bridge_start: number        
-	@param bridge_count: number of bridge ids to be used on this host
-	@type bridge_count: number        
+	@param attrs: dictionary with host attributes
+	@type attrs: dict        
 	@param user: current user
 	@type user: generic.User
 	@return: task id of the task
@@ -154,9 +144,9 @@ def host_add(host_name, group_name, enabled, vmid_start, vmid_count, port_start,
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	return hosts.create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+	return hosts.create(host_name, group_name, enabled, attrs)
 
-def host_change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count, user=None):
+def host_change(host_name, group_name, enabled, attrs, user=None):
 	"""
 	Changes a host. The new values will only apply to new topologies or on state change.
 	This operation needs admin access.
@@ -167,18 +157,8 @@ def host_change(host_name, group_name, enabled, vmid_start, vmid_count, port_sta
 	@type group_name: string
 	@param enabled: whether the host should be enabled
 	@type enabled: boolean
-	@param vmid_start: first virtual machine id to be used on this host
-	@type vmid_start: number        
-	@param vmid_count: number of virtual machine ids to be used on this host
-	@type vmid_count: number        
-	@param port_start: first port number to be used on this host
-	@type port_start: number        
-	@param port_count: number of ports to be used on this host
-	@type port_count: number        
-	@param bridge_start: first bridge id to be used on this host
-	@type bridge_start: number        
-	@param bridge_count: number of bridge ids to be used on this host
-	@type bridge_count: number        
+	@param attrs: dictionary with host attributes
+	@type attrs: dict        
 	@param user: current user
 	@type user: generic.User
 	@return: True
@@ -186,7 +166,7 @@ def host_change(host_name, group_name, enabled, vmid_start, vmid_count, port_sta
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	hosts.change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count)
+	hosts.change(host_name, group_name, enabled, attrs)
 	return True
 
 def host_remove(host_name, user=None):
@@ -556,25 +536,6 @@ def download_capture_uri(top_id, connector_id, ifname, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "user", user)
 	return top.download_capture_uri(connector_id, ifname)
-
-def download_chunk(download_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
-	"""
-	Downloads one chunk of data from the download task. Each chunhk contains up
-	to 1MB of data. The last chunk is always empty, all others will contain 
-	data. After reading the last chunk the download taask is finished. Reading
-	chunks from a finished download task will result in an error.
-	
-	@param download_id: id of the download task
-	@type download_id: string
-	@param user: current user
-	@type user: generic.User
-	@return: chunk of data
-	@rtype: bytes
-	"""
-	task = tasks.DownloadTask.tasks[download_id]
-	data = task.chunk()
-	import xmlrpclib
-	return xmlrpclib.Binary(data)
 
 def template_list(template_type="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""

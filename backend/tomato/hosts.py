@@ -140,45 +140,45 @@ class Host(models.Model):
 		return res.split("\n")[-2].split(" ")[-1]
 				
 	def next_free_vm_id (self):
-		ids = range(self.attributes["vmid_start"],self.attributes["vmid_start"]+self.attributes["vmid_count"])
+		ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
 		import openvz
 		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
 			if dev.attributes.get("vmid"):
-				ids.remove(dev.attributes["vmid"])
+				ids.remove(int(dev.attributes["vmid"]))
 		import kvm
 		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
 			if dev.attributes.get("vmid"):
-				ids.remove(dev.attributes["vmid"])
+				ids.remove(int(dev.attributes["vmid"]))
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
 
 	def next_free_port(self):
-		ids = range(self.attributes["port_start"],self.attributes["port_start"]+self.attributes["port_count"])
+		ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
 		import openvz
 		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
 			if dev.attributes.get("vnc_port"):
-				ids.remove(dev.attributes["vnc_port"])
+				ids.remove(int(dev.attributes["vnc_port"]))
 		import kvm
 		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
 			if dev.attributes.get("vnc_port"):
-				ids.remove(dev.attributes["vnc_port"])
+				ids.remove(int(dev.attributes["vnc_port"]))
 		import tinc
 		for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
 			if con.attributes.get("tinc_port"):
-				ids.remove(con.attributes["tinc_port"])
+				ids.remove(int(con.attributes["tinc_port"]))
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 
 	def next_free_bridge(self):
-		ids = range(self.attributes["bridge_start"],self.attributes["bridge_start"]+self.attributes["bridge_count"])
+		ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
 		import generic
 		for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
 			if con.attributes.get("bridge_id"):
-				ids.remove(con.attributes["bridge_id"])
+				ids.remove(int(con.attributes["bridge_id"]))
 		try:
 			return ids[0]
 		except:
@@ -352,7 +352,7 @@ class Host(models.Model):
 			if sf.feature_group == sfg:
 				sf.delete()
 
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		for key in properties:
 			self.attributes[key] = properties[key]
 		self.save()
@@ -367,7 +367,7 @@ class Host(models.Model):
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
 			"special_features": [sf.to_dict() for sf in self.special_features()]}
-		res.update(self.attributes)
+		res.update(self.attributes.items())
 		return res
 
 	
@@ -546,27 +546,21 @@ def get_default_template(ttype):
 	else:
 		return None
 	
-def create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
-	host = Host(name=host_name, enabled=enabled, group=group_name,
-			vmid_range_start=vmid_start, vmid_range_count=vmid_count,
-			port_range_start=port_start, port_range_count=port_count,
-			bridge_range_start=bridge_start, bridge_range_count=bridge_count)
+def create(host_name, group_name, enabled, attrs):
+	host = Host(name=host_name, enabled=enabled, group=group_name)
+	host.save()
+	host.configure(attrs)
 	import tasks
 	t = tasks.TaskStatus(host.check_save)
 	t.subtasks_total = 1
 	t.start()
 	return t.id
 
-def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+def change(host_name, group_name, enabled, attrs):
 	host = get_host(host_name)
 	host.enabled=enabled
 	host.group=group_name
-	host.vmid_range_start=vmid_start
-	host.vmid_range_count=vmid_count
-	host.port_range_start=port_start
-	host.port_range_count=port_count
-	host.bridge_range_start=bridge_start
-	host.bridge_range_count=bridge_count
+	host.configure(attrs)
 	host.save()
 	
 def remove(host_name):
