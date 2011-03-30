@@ -21,6 +21,8 @@ import config, util, fault, atexit, time, log
 
 from cStringIO import StringIO
 
+# FIXME: remove task parameters by using threading.local()
+
 class TaskStatus():
 	tasks={}
 	ACTIVE = "active"

@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import hosts, fault
+import fault, hosts, attributes
 
 class State(): #pylint: disable-msg=W0232
 	"""
@@ -31,62 +31,6 @@ class State(): #pylint: disable-msg=W0232
 	PREPARED="prepared"
 	STARTED="started"
 
-class ResourceSet(models.Model):
-
-	def clean(self):
-		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			r.delete()
-
-	def add(self, res):
-		for r in res.resourceentry_set.all(): # pylint: disable-msg=E1101
-			self.set(r.type, self.get(r.type) + r.value)
-
-	def set(self, rtype, value):
-		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
-			res = ResourceEntry(resource_set=self, type=rtype, value=value)
-			res.save()
-			self.resourceentry_set.add(res) # pylint: disable-msg=E1101
-		else:
-			res = self.resourceentry_set.all().get(type=rtype) # pylint: disable-msg=E1101
-			res.value = value
-			res.save()
-	
-	def get(self, rtype):
-		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
-			return 0
-		else:
-			res = self.resourceentry_set.get(type=rtype) # pylint: disable-msg=E1101
-			return res.value
-		
-	def decode(self, res):
-		for k, v in res.items():
-			self.set(k, v)
-			
-	def encode(self):
-		res = {}
-		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			res[r.type] = r.value if abs(r.value) < 0x7FFFFFFF else str(r.value)
-		return res
-
-def add_encoded_resources(r1, r2):
-	res = {}
-	for k, v in r1.items():
-		if k in res:
-			res[k] = str(int(res[k]) + int(v))
-		else:
-			res[k] = v
-	for k, v in r2.items():
-		if k in res:
-			res[k] = str(int(res[k]) + int(v))
-		else:
-			res[k] = v
-	return res
-
-class ResourceEntry(models.Model):
-	resource_set = models.ForeignKey(ResourceSet)
-	type = models.CharField(max_length=20)
-	value = models.BigIntegerField()
-
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
@@ -96,10 +40,8 @@ class Device(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host, null=True)
-	hostgroup = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(ResourceSet, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet)
 
 	def interface_set_get(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
@@ -125,7 +67,7 @@ class Device(models.Model):
 	
 	def host_preferences(self):
 		prefs = ObjectPreferences(True)
-		for h in hosts.get_hosts(self.hostgroup):
+		for h in hosts.get_hosts(self.attributes.get("hostgroup")):
 			if h.enabled:
 				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
 		#print "Host preferences for %s: %s" % (self, prefs) 
@@ -216,24 +158,18 @@ class Device(models.Model):
 		pass
 	
 	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if "pos" in properties:
-			self.pos = properties["pos"]
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
-			self.hostgroup = properties["hostgroup"]
-			if self.hostgroup == "auto":
-				self.hostgroup = ""
+			if properties["hostgroup"] == "auto":
+				properties["hostgroup"] = ""
+		for key in properties:
+			self.attributes[key] = properties[key]
 		self.save()
 
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = ResourceSet()
-			r.save()
-			self.resources = r 
-			self.save()
-		self.resources.decode(res)
-		return self.resources
+		for key in res:
+			self.attributes["resources_%s" % key] = res[key]
 
 	def __unicode__(self):
 		return self.name
@@ -248,15 +184,12 @@ class Device(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"host": str(self.host) if self.host else None,
-					"name": self.name, "type": self.type,
-					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos,
+					"name": self.name, "type": self.type, "state": self.state,
 					"download_supported": self.download_supported(), "upload_supported": self.upload_supported() 
 					},
 			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
 		}
-		if auth:
-			if self.resources:
-				res.update(resources=self.resources.encode())
+		res["attrs"].update(self.attributes)
 		return res
 	
 	def upload_image_grant(self, redirect):
@@ -267,10 +200,10 @@ class Device(models.Model):
 			return {"upload_url": self.host.upload_grant(filename, redirect), "redirect_url": redirect}
 		else:
 			return None
-		
+	
 	def download_image_uri(self):
 		if self.host:
-			filename = self.prepare_downloadable_image()
+			filename = self.upcast().prepare_downloadable_image()
 			return self.host.download_grant(filename, filename)
 		else:
 			return None
@@ -282,6 +215,7 @@ class Device(models.Model):
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
+	attributes = models.ForeignKey(attributes.AttributeSet)
 
 	def is_configured(self):
 		try:
@@ -297,6 +231,11 @@ class Interface(models.Model):
 		except: #pylint: disable-msg=W0702
 			return False	
 	
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+		for key in properties:
+			self.attributes[key] = properties[key]
+		self.save()
+
 	def upcast(self):
 		if self.is_configured():
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
@@ -315,6 +254,7 @@ class Interface(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name}}
+		res["attrs"].update(self.attributes)
 		return res
 
 
@@ -325,8 +265,7 @@ class Connector(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	pos = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(ResourceSet, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet)
 
 	def connection_set_add(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
@@ -430,24 +369,19 @@ class Connector(models.Model):
 
 	def __unicode__(self):
 		return self.name
-
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if "pos" in properties:
-			self.pos = properties["pos"]
-		self.save()
 				
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = ResourceSet()
-			r.save()
-			self.resources = r 
-			self.save()
-		self.resources.decode(res)
-		return self.resources
+		for key in res:
+			self.attributes["resources_%s" % key] = res[key]
 	
 	def bridge_name(self, interface):
 		return "gbr_%s" % interface.connection.bridge_id
+
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+		for key in properties:
+			self.attributes[key] = properties[key]
+		self.save()
 
 	def to_dict(self, auth):
 		"""
@@ -458,20 +392,17 @@ class Connector(models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
-						"pos": self.pos},
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
 			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
-		if auth:
-			if self.resources:
-				res.update(resources=self.resources.encode())
+		res["attrs"].update(self.attributes)
 		return res
 
 
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
-	bridge_id = models.IntegerField(null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet)
 
 	def is_emulated(self):
 		try:
@@ -484,6 +415,11 @@ class Connection(models.Model):
 		if self.is_emulated():
 			return self.emulatedconnection.upcast() # pylint: disable-msg=E1101
 		return self
+
+	def bridge_id(self):
+		if not self.attributes.get("bridge_id"):
+			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
+		return self.attributes["bridge_id"]
 
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
@@ -502,16 +438,19 @@ class Connection(models.Model):
 			host.execute("ip link set %s down" % self.bridge_name(), task)
 
 	def prepare_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if not self.bridge_id:
-			self.bridge_id = self.interface.device.host.next_free_bridge()
-			self.save()		
+		if not self.attributes.get("bridge_id"):
+			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
 
 	def destroy_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
-		self.bridge_id=None
-		self.save()
+		del self.attributes["bridge_id"]
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
+
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+		for key in properties:
+			self.attributes[key] = properties[key]
+		self.save()
 
 	def to_dict(self, auth):
 		"""
@@ -523,6 +462,7 @@ class Connection(models.Model):
 		@rtype: dict
 		"""
 		res = {"interface": str(self.interface), "attrs":{}}
+		res["attrs"].update(self.attributes)
 		return res
 
 class ObjectPreferences:

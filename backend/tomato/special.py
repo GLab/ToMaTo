@@ -19,10 +19,8 @@ from django.db import models
 import generic, fault, hosts
 
 class SpecialFeatureConnector(generic.Connector):
-	feature_type = models.CharField(max_length=50)
-	feature_group = models.CharField(max_length=50, blank=True)
 	used_feature_group = models.ForeignKey(hosts.SpecialFeatureGroup, null=True) 
-
+	
 	def upcast(self):
 		return self
 
@@ -55,9 +53,9 @@ class SpecialFeatureConnector(generic.Connector):
 
 	def feature_options(self):
 		options = generic.ObjectPreferences(True)
-		sfgs = hosts.SpecialFeatureGroup.objects.filter(feature_type=self.feature_type)
-		if self.feature_group:
-			sfgs = sfgs.filter(group_name=self.feature_group)
+		sfgs = hosts.SpecialFeatureGroup.objects.filter(feature_type=self.attributes["feature_type"])
+		if self.attributes["feature_group"]:
+			sfgs = sfgs.filter(group_name=self.attributes["feature_group"])
 		for con in self.connection_set_all():
 			dev = con.interface.device
 			if dev.host:
@@ -93,19 +91,13 @@ class SpecialFeatureConnector(generic.Connector):
 		task.subtasks_done = task.subtasks_done + 1
 		
 	def configure(self, properties, task):
+		if "feature_type" in properties and self.state != generic.State.CREATED: 
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of special feature with prepared connections: %s" % self.name )
+		if "feature_group" in properties and self.state != generic.State.CREATED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of special feature with prepared connections: %s" % self.name )
 		generic.Connector.configure(self, properties, task)
-		if "feature_type" in properties:
-			if self.state == generic.State.CREATED:
-				self.feature_type = properties["feature_type"]
-			else:
-				raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of special feature with prepared connections: %s" % self.name )
-		if "feature_group" in properties:
-			if self.state == generic.State.CREATED:
-				self.feature_group = properties["feature_group"]
-				if self.feature_group == "auto":
-					self.feature_group = ""
-			else:
-				raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of special feature with prepared connections: %s" % self.name )
+		if self.attributes["feature_group"] == "auto":
+			self.attributes["feature_group"] = ""
 		self.save()		
 	
 	def connections_add(self, iface_name, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
@@ -146,9 +138,9 @@ class SpecialFeatureConnector(generic.Connector):
 		for sf in self.used_feature_group.specialfeature_set.all():
 			if sf.host == interface.device.host:
 				return sf.bridge
-		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.feature_type, self.feature_group, interface.device.host))
+		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.attributes["feature_type"], self.attributes["feature_group"], interface.device.host))
 	
 	def to_dict(self, auth):
 		res = generic.Connector.to_dict(self, auth)
-		res["attrs"].update(feature_type=self.feature_type, feature_group=self.feature_group, used_feature_group=self.used_feature_group)
+		res["attrs"].update(used_feature_group=self.used_feature_group)
 		return res

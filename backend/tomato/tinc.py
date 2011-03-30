@@ -21,6 +21,8 @@ import dummynet, generic, config, os, subprocess, shutil, fault, util
 
 # Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
+	class Meta:
+		abstract = True
 	
 	def upcast(self):
 		return self
@@ -33,7 +35,7 @@ class TincConnector(generic.Connector):
 		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			host.free_port(con.upcast().tinc_port, task)		
+			host.free_port(con.attributes["tinc_port"], task)		
 			host.execute ( "tincd --net=%s" % tincname, task)
 			if not config.remote_dry_run:
 				assert host.interface_exists(tincname), "Tinc deamon did not start"
@@ -41,7 +43,7 @@ class TincConnector(generic.Connector):
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
 				table_out = 1000 + 2 * con.id + 1 
-				host.execute ( "ip addr add %s dev %s" % (con.upcast().gateway, con.bridge_name()), task )
+				host.execute ( "ip addr add %s dev %s" % (con.attributes["gateway"], con.bridge_name()), task )
 				host.execute ( "ip link set up dev %s" % con.bridge_name(), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ), task )
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ), task )
@@ -82,7 +84,7 @@ class TincConnector(generic.Connector):
 		for con in self.connection_set_all():
 			host = con.interface.device.host
 			tincname = self.tincname(con)
-			tincport = con.upcast().tinc_port 
+			tincport = con.attributes["tinc_port"] 
 			path = self.topology.get_control_dir(host.name) + "/" + tincname
 			if not os.path.exists(path+"/hosts"):
 				os.makedirs(path+"/hosts")
@@ -93,7 +95,7 @@ class TincConnector(generic.Connector):
 			self_host_fd.write("Cipher=none\n" )
 			self_host_fd.write("Digest=none\n" )
 			if self.type == "router":
-				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet(con.upcast().gateway))
+				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet(con.attributes["gateway"]))
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
@@ -195,22 +197,21 @@ class TincConnector(generic.Connector):
 
 
 class TincConnection(dummynet.EmulatedConnection):
-	tinc_port = models.IntegerField(null=True)
-	gateway = models.CharField(max_length=18, null=True) 
+	class Meta:
+		abstract = True
 	
 	def upcast(self):
 		return self
 	
 	def configure(self, properties, task):
-		dummynet.EmulatedConnection.configure(self, properties, task)
 		if "gateway" in properties:
 			assert self.connector.state == generic.State.CREATED, "Cannot change gateways on prepared or started router: %s" % self
-			self.gateway = properties["gateway"]
+		dummynet.EmulatedConnection.configure(self, properties, task)
 		if self.connector.type == "router":
-			if not self.gateway:
-				self.gateway = "10.1.1.254/24" 
-			if not len(self.gateway.split("/")) == 2:
-				self.gateway = self.gateway + "/24"
+			if not self.attributes["gateway"]:
+				self.attributes["gateway"] = "10.1.1.254/24" 
+			if not len(self.attributes["gateway"].split("/")) == 2:
+				self.attributes["gateway"] = self.attributes["gateway"] + "/24"
 		
 	def start_run(self, task):
 		dummynet.EmulatedConnection.start_run(self, task)
@@ -219,23 +220,20 @@ class TincConnection(dummynet.EmulatedConnection):
 		dummynet.EmulatedConnection.stop_run(self, task)
 
 	def prepare_run(self, task):
-		if not self.bridge_id:
-			self.bridge_id = self.interface.device.host.next_free_bridge()		
+		if not self.attributes["bridge_id"]:
+			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()		
 			self.save()
-		if not self.tinc_port:
-			self.tinc_port = self.interface.device.host.next_free_port()
+		if not self.attributes["tinc_port"]:
+			self.attributes["tinc_port"] = self.interface.device.host.next_free_port()
 			self.save()
 		dummynet.EmulatedConnection.prepare_run(self, task)
 
 	def destroy_run(self, task):
-		self.bridge_id=None
-		self.tinc_port=None
+		del self.attributes["bridge_id"]
+		del self.attributes["tinc_port"]
 		self.save()
 		dummynet.EmulatedConnection.destroy_run(self, task)
 
 	def to_dict(self, auth):
 		res = dummynet.EmulatedConnection.to_dict(self, auth)		
-		res["attrs"].update(tinc_port=self.tinc_port)
-		if self.gateway:
-			res["attrs"].update(gateway=self.gateway)
 		return res

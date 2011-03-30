@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import config, fault, util, sys, atexit
+import config, fault, util, sys, atexit, attributes
 from django.db.models import Q, Sum
 
 class ClusterState:
@@ -32,15 +32,7 @@ class Host(models.Model):
 	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	port_range_start = models.PositiveSmallIntegerField(default=7000)
-	port_range_count = models.PositiveSmallIntegerField(default=1000)
-	vmid_range_start = models.PositiveSmallIntegerField(default=1000)
-	vmid_range_count = models.PositiveSmallIntegerField(default=200)
-	bridge_range_start = models.PositiveSmallIntegerField(default=1000)
-	bridge_range_count = models.PositiveSmallIntegerField(default=1000)
-	hostserver_port = models.PositiveSmallIntegerField(null=True)
-	hostserver_basedir = models.CharField(max_length=100, null=True)
-	hostserver_secret_key = models.CharField(max_length=100, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet)	
 
 	def __unicode__(self):
 		return self.name
@@ -135,53 +127,58 @@ class Host(models.Model):
 				
 	def fetch_hostserver_config(self):
 		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
-		self.hostserver_port = int(res[0])
-		self.hostserver_basedir = res[1]
-		self.hostserver_secret_key = res[2]
-		self.save();
+		self.attributes["hostserver_port"] = int(res[0])
+		self.attributes["hostserver_basedir"] = res[1]
+		self.attributes["hostserver_secret_key"] = res[2]
 				
 	def hostserver_cleanup(self, task):
-		if self.hostserver_basedir:
-			self.execute("find %s -type f -mtime +0 -delete" % self.hostserver_basedir, task)
+		if self.attributes.get("hostserver_basedir"):
+			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"], task)
 			
 	def cluster_state(self):
 		res = self.get_result("pveca -i 2>/dev/null | tail -n 1")
 		return res.split("\n")[-2].split(" ")[-1]
 				
 	def next_free_vm_id (self):
-		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
+		ids = range(self.attributes["vmid_start"],self.attributes["vmid_start"]+self.attributes["vmid_count"])
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.openvz_id)
+		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vmid"):
+				ids.remove(dev.attributes["vmid"])
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.kvm_id)
+		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vmid"):
+				ids.remove(dev.attributes["vmid"])
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
 
 	def next_free_port(self):
-		ids = range(self.port_range_start,self.port_range_start+self.port_range_count)
+		ids = range(self.attributes["port_start"],self.attributes["port_start"]+self.attributes["port_count"])
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.vnc_port)
+		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vnc_port"):
+				ids.remove(dev.attributes["vnc_port"])
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.vnc_port)
+		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vnc_port"):
+				ids.remove(dev.attributes["vnc_port"])
 		import tinc
-		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(con.tinc_port)
+		for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			if con.attributes.get("tinc_port"):
+				ids.remove(con.attributes["tinc_port"])
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 
 	def next_free_bridge(self):
-		ids = range(self.bridge_range_start,self.bridge_range_start+self.bridge_range_count)
+		ids = range(self.attributes["bridge_start"],self.attributes["bridge_start"]+self.attributes["bridge_count"])
 		import generic
-		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(con.bridge_id)
+		for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			if con.attributes.get("bridge_id"):
+				ids.remove(con.attributes["bridge_id"])
 		try:
 			return ids[0]
 		except:
@@ -209,14 +206,14 @@ class Host(models.Model):
 		list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
 		list.sort()
 		import hashlib
-		return hashlib.sha1("&".join(list)+"|"+self.hostserver_secret_key).hexdigest()
+		return hashlib.sha1("&".join(list)+"|"+self.attributes["hostserver_secret_key"]).hexdigest()
 	
 	def upload_grant(self, filename, redirect):
 		import urllib, base64, time
 		params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
 		params.update(grant=self._calc_grant(params))
 		qstr = urllib.urlencode(params)
-		return "http://%s:%s/upload?%s" % (self.name, self.hostserver_port, qstr)
+		return "http://%s:%s/upload?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 	
 	def download_grant(self, file, name):
 		import time
@@ -224,7 +221,7 @@ class Host(models.Model):
 		params.update(grant=self._calc_grant(params))
 		import urllib
 		qstr = urllib.urlencode(params)
-		return "http://%s:%s/download?%s" % (self.name, self.hostserver_port, qstr)
+		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 
 	def upload(self, local_file, remote_file, task=None):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
@@ -354,6 +351,11 @@ class Host(models.Model):
 		for sf in self.special_features():
 			if sf.feature_group == sfg:
 				sf.delete()
+
+	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
+		for key in properties:
+			self.attributes[key] = properties[key]
+		self.save()
 	
 	def to_dict(self):
 		"""
@@ -362,12 +364,11 @@ class Host(models.Model):
 		@return: a dict containing information about the host
 		@rtype: dict
 		"""
-		return {"name": self.name, "group": self.group, "enabled": self.enabled, 
+		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"vmid_start": self.vmid_range_start, "vmid_count": self.vmid_range_count,
-			"port_start": self.port_range_start, "port_count": self.port_range_count,
-			"bridge_start": self.bridge_range_start, "bridge_count": self.bridge_range_count,
 			"special_features": [sf.to_dict() for sf in self.special_features()]}
+		res.update(self.attributes)
+		return res
 
 	
 class Template(models.Model):
