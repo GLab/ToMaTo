@@ -249,6 +249,24 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
+	def file_move(self, src, dst):
+		return self.execute("mv \"%s\" \"%s\"" % (src, dst))
+	
+	def file_copy(self, src, dst):
+		return self.execute("cp -a \"%s\" \"%s\"" % (src, dst))
+
+	def file_chown(self, file, owner, recursive=False):
+		return self.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", file, owner))
+
+	def file_chmod(self, file, mode, recursive=False):
+		return self.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", file, mode))
+
+	def file_mkdir(self, dir):
+		return self.execute("mkdir -p \"%s\"" % dir)
+
+	def file_delete(self, path, recursive=False):
+		return self.execute("rm %s -f \"%s\"" % ("-r" if recursive else "", path))
+
 	def _first_line(self, line):
 		if not line:
 			return line
@@ -257,6 +275,9 @@ class Host(models.Model):
 			return ""
 		else:
 			return line[0]
+
+	def process_kill(self, pidfile):
+		self.host.execute("[ -f \"%s\" ] && (cat \"%s\" | xargs -r kill; true) && rm \"%s\"" % pidfile)
 
 	def free_port(self, port):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)

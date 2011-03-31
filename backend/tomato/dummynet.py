@@ -22,6 +22,10 @@ import generic, util
 
 class EmulatedConnection(generic.Connection):
 	
+	def _ipfw(self, cmd):
+		self.interface.device.host.execute("ipfw %s" % cmd)
+		
+	
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnection # pylint: disable-msg=E1101
@@ -45,7 +49,6 @@ class EmulatedConnection(generic.Connection):
 				self._start_capture()
 			
 	def _config_link(self):
-		host = self.interface.device.host
 		pipe_id = int(self.bridge_id()) * 10
 		pipe_config=""
 		if "delay" in self.attributes:
@@ -66,7 +69,7 @@ class EmulatedConnection(generic.Connection):
 			except: #pylint: disable-msg=W0702
 				lossratio = 0.0
 			pipe_config = pipe_config + " " + "plr %s" % lossratio
-		host.execute("ipfw pipe %d config %s" % ( pipe_id, pipe_config ))
+		self._ipfw("pipe %d config %s" % ( pipe_id, pipe_config ))
 		
 	def _capture_dir(self):
 		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id ) # pylint: disable-msg=E1101
@@ -74,7 +77,7 @@ class EmulatedConnection(generic.Connection):
 	def _start_capture(self):
 		host = self.interface.device.host
 		directory = self._capture_dir()
-		host.execute("mkdir -p %s" % directory)
+		host.mkdir(directory)
 		host.bridge_create(self.bridge_name())
 		host.execute("ip link set up %s" % self.bridge_name())
 		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), directory, directory ))		
@@ -87,7 +90,7 @@ class EmulatedConnection(generic.Connection):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
 		pipe_id = int(self.bridge_id()) * 10
 		host.execute("modprobe ipfw_mod")
-		host.execute("ipfw add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))
+		self._ipfw("add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))
 		self._config_link()
 		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)")
 		if "capture" in self.attributes:
@@ -96,17 +99,15 @@ class EmulatedConnection(generic.Connection):
 	def _stop_capture(self):
 		host = self.interface.device.host
 		directory = self._capture_dir()
-		host.execute("cat %s.pid | xargs -r kill" % directory)
-		host.execute("rm %s.pid" % directory)
+		host.process_kill("%s.pid" % directory)
 
 	def stop_run(self):
 		generic.Connection.stop_run(self)
-		host = self.interface.device.host
 		if "bridge_id" in self.attributes:
 			pipe_id = int(self.bridge_id()) * 10
-			host.execute("ipfw delete %d" % pipe_id)
-			host.execute("ipfw pipe delete %d" % pipe_id)
-			host.execute("ipfw delete %d" % ( pipe_id + 1 ))
+			self._ipfw("delete %d" % pipe_id)
+			self._ipfw("pipe delete %d" % pipe_id)
+			self._ipfw("delete %d" % ( pipe_id + 1 ))
 		if "capture" in self.attributes:
 			self._stop_capture()
 
@@ -121,7 +122,7 @@ class EmulatedConnection(generic.Connection):
 		host = self.interface.device.host
 		directory = self._capture_dir()
 		if host:
-			host.execute("rm -r %s %s.pid" % (directory, directory))
+			host.file_delete(directory, recursive=True)
 
 	def download_supported(self):
 		return not self.connector.state == generic.State.CREATED and "capture" in self.attributes

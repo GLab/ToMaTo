@@ -23,12 +23,18 @@ class KVMDevice(generic.Device):
 	def upcast(self):
 		return self
 
+	def _qm(self, cmd, params=""):
+		return self.host.execute("qm %s %s %s" % (cmd, self.attributes["vmid"], params))
+
+	def _image_path(self):
+		return "/var/lib/vz/images/%s/disk.qcow2" % self.attributes["vmid"]
+
 	def get_state(self):
 		if config.remote_dry_run:
 			return self.state
 		if not self.attributes.get("vmid"):
 			return generic.State.CREATED
-		res = self.host.execute("qm status %s" % self.attributes["vmid"])
+		res = self._qm("status")
 		if "running" in res:
 			return generic.State.STARTED
 		if "stopped" in res:
@@ -43,7 +49,8 @@ class KVMDevice(generic.Device):
 	def prepare_downloadable_image(self):
 		filename = "%s_%s_%s.qcow2" % (self.topology.id, self.name, uuid.uuid1())
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
-		self.host.execute("cp /var/lib/vz/images/%(vmid)s/disk.qcow2 %(path)s; chmod 644 %(path)s" % {"vmid": self.attributes["vmid"], "path": path})
+		self.host.file_copy(self._image_path(), path)
+		self.host.chmod(path, 644)
 		return filename
 
 	def upload_supported(self):
@@ -51,19 +58,17 @@ class KVMDevice(generic.Device):
 
 	def use_uploaded_image_run(self, filename):
 		path = "%s/%s" % (self.attributes["hostserver_basedir"], filename)
-		vmid = self.attributes["vmid"]
-		dst = "/var/lib/vz/images/%s/disk.qcow2" % vmid
-		self.host.execute("qm set %s --ide0 undef" % vmid)
-		self.host.execute("mv %s %s" % ( path, dst ))
-		self.host.execute("chown root:root %s" % dst)
-		self.host.execute("qm set %(vmid)s --ide0=local:%(vmid)s/disk.qcow2" % {"vmid": vmid})
+		self._qm("set", "--ide0 undef")
+		self.host.file_move(path, self._image_path() )
+		self.host.file_chown(self._image_path(), "root:root")
+		self._qm("set", "--ide0=local:%s/disk.qcow2" % self.attributes["vmid"])
 		self.attributes["template"] = "***custom***"
 		self.save()
 
 	def start_run(self):
 		generic.Device.start_run(self)
 		vmid = self.attributes["vmid"]
-		self.host.execute("qm start %s" % vmid)
+		self._qm("start")
 		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
@@ -81,9 +86,9 @@ class KVMDevice(generic.Device):
 
 	def stop_run(self):
 		generic.Device.stop_run(self)
-		self.host.execute("cat vnc-%s.pid | xargs -r kill" % self.name)
+		self.host.process_kill("vnc-%s.pid" % self.name)
 		del self.attributes["vnc_port"]
-		self.host.execute("qm stop %s" % self.attributes["vmid"])
+		self._qm("stop")
 		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state()
 		self.save()
@@ -100,15 +105,15 @@ class KVMDevice(generic.Device):
 			self.attributes["vmid"] = self.host.next_free_vm_id()
 			self.save()
 		vmid = self.attributes["vmid"]
-		self.host.execute("qm create %s" % vmid)
-		self.host.execute("mkdir -p /var/lib/vz/images/%s" % vmid)
-		self.host.execute("cp /var/lib/vz/template/qemu/%s /var/lib/vz/images/%s/disk.qcow2" % (self.attributes["template"], vmid))
-		self.host.execute("qm set %(vmid)s --ide0 local:%(vmid)s/disk.qcow2" % {"vmid": vmid})
-		self.host.execute("qm set %s --name \"%s_%s\"" % (vmid, self.topology.name, self.name))
+		self._qm("create")
+		self.host.file_mkdir("/var/lib/vz/images/%s" % vmid)
+		self.host.file_copy("/var/lib/vz/template/qemu/%s" % self.attributes["template"], self._image_path())
+		self._qm("set", "--ide0 local:%s/disk.qcow2" % vmid)
+		self._qm("set", "--name \"%s_%s\"" % (self.topology.name, self.name))
 		for iface in self.interface_set_all():
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
-			self.host.execute("qm set %s --vlan%s e1000" % ( vmid, iface_id ))
+			self._qm("set", "--vlan%s e1000" % iface_id)
 		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state()
 		self.save()
@@ -120,7 +125,7 @@ class KVMDevice(generic.Device):
 			self.state = self.get_state()
 			self.save()
 			return
-		self.host.execute("qm destroy %s" % self.attributes["vmid"])
+		self._qm("destroy")
 		self.state = generic.State.CREATED #for dry-run
 		self.state = self.get_state()
 		assert self.state == generic.State.CREATED, "VM still exists"
@@ -154,7 +159,7 @@ class KVMDevice(generic.Device):
 		if self.state == "prepared":
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
 			self.host.bridge_create("vmbr%s" % iface_id)
-			self.host.execute("qm set %s --vlan%s e1000\n" % ( self.attributes["vmid"], iface_id ))
+			self._qm("set", "--vlan%s e1000\n" % iface_id)
 		iface.save()
 		generic.Device.interface_set_add(self, iface)
 
@@ -170,7 +175,7 @@ class KVMDevice(generic.Device):
 		iface = self.interface_set_get(name)
 		if self.state == generic.State.PREPARED:
 			iface_id = re.match("eth(\d+)", iface.name).group(1)
-			self.host.execute("qm set %s --vlan%s undef\n" % ( self.attributes["vmid"], iface_id ))			
+			self._qm("set", "--vlan%s undef\n" % iface_id)			
 		iface.delete()
 		
 	def vnc_password(self):

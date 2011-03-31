@@ -120,8 +120,7 @@ class TincConnector(generic.Connector):
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname + "/"
-			host.upload(path, self.topology.get_remote_control_dir() + "/" + tincname)
-			host.execute ( "[ -e /etc/tinc/%s ] || ln -s %s/%s /etc/tinc/%s" % (tincname, self.topology.get_remote_control_dir(), tincname, tincname))
+			host.upload(path, "/etc/tinc/" + tincname)
 		self.state = generic.State.PREPARED
 		self.save()
 
@@ -131,8 +130,7 @@ class TincConnector(generic.Connector):
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			if host:
-				host.execute ( "rm /etc/tinc/%s" % tincname)
-				host.execute ( "true")
+				host.file_delete ( "/etc/tinc/%s" % tincname, recursive=True)
 		self.state = generic.State.CREATED
 		self.save()
 
