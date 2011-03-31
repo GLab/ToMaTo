@@ -41,7 +41,7 @@ class Device(models.Model):
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	host = models.ForeignKey(hosts.Host, null=True)
-	attributes = models.ForeignKey(attributes.AttributeSet)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def interface_set_get(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
@@ -215,7 +215,7 @@ class Device(models.Model):
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
-	attributes = models.ForeignKey(attributes.AttributeSet)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def is_configured(self):
 		try:
@@ -265,7 +265,7 @@ class Connector(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	attributes = models.ForeignKey(attributes.AttributeSet)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def connection_set_add(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
@@ -402,7 +402,7 @@ class Connector(models.Model):
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
-	attributes = models.ForeignKey(attributes.AttributeSet)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def is_emulated(self):
 		try:

@@ -107,7 +107,7 @@ class KVMDevice(generic.Device):
 		vmid = self.attributes["vmid"]
 		self._qm("create")
 		self.host.file_mkdir("/var/lib/vz/images/%s" % vmid)
-		self.host.file_copy("/var/lib/vz/template/qemu/%s" % self.attributes["template"], self._image_path())
+		self.host.file_copy("/var/lib/vz/template/qemu/%s.qcow2" % self.attributes["template"], self._image_path())
 		self._qm("set", "--ide0 local:%s/disk.qcow2" % vmid)
 		self._qm("set", "--name \"%s_%s\"" % (self.topology.name, self.name))
 		for iface in self.interface_set_all():
@@ -196,12 +196,12 @@ class KVMDevice(generic.Device):
 			try:
 				disk = int(self.host.execute("[ -s /var/lib/vz/images/%(vmid)s/disk.qcow2 ] && stat -c %%s /var/lib/vz/images/%(vmid)s/disk.qcow2 || echo 0" % {"vmid": self.attributes["vmid"]}))
 			except:
-				disk = 0
+				disk = -1
 		if self.state == generic.State.STARTED:
 			try:
 				memory = int(self.host.execute("[ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`cat /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": self.attributes["vmid"]}))
 			except: #pylint: disable-msg=W0702
-				memory = 0
+				memory = -1
 			ports = 1
 		else:
 			memory = 0

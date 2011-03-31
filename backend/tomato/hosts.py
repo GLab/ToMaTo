@@ -32,7 +32,7 @@ class Host(models.Model):
 	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	attributes = models.ForeignKey(attributes.AttributeSet)	
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)	
 
 	def __unicode__(self):
 		return self.name
@@ -277,7 +277,7 @@ class Host(models.Model):
 			return line[0]
 
 	def process_kill(self, pidfile):
-		self.host.execute("[ -f \"%s\" ] && (cat \"%s\" | xargs -r kill; true) && rm \"%s\"" % pidfile)
+		self.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})
 
 	def free_port(self, port):
 		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
@@ -397,6 +397,9 @@ class Template(models.Model):
 	download_url = models.CharField(max_length=255, default="")
 		
 	def init(self, name, ttype, download_url):
+		import re
+		if not re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name) or name.endswith(".tar.gz") or name.endswith(".qcow2"):
+			raise fault.new(0, "Name must be in the format NAME-VERSION")
 		self.name = name
 		self.type = ttype
 		self.download_url = download_url
@@ -409,7 +412,7 @@ class Template(models.Model):
 		
 	def get_filename(self):
 		if self.type == "kvm":
-			return "/var/lib/vz/template/qemu/%s" % self.name
+			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	

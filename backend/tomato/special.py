@@ -124,8 +124,11 @@ class SpecialFeatureConnector(generic.Connector):
 			dev = con.interface.device
 			if dev.host and dev.state == generic.State.STARTED:
 				iface = dev.upcast().interface_device(con.interface)
-				traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
-				traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
+				try:
+					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
+					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
+				except:
+					traffic = -1
 		return {"special": special, "traffic": traffic}		
 
 	def bridge_name(self, interface):

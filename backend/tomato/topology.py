@@ -33,7 +33,7 @@ class Topology(models.Model):
 
 	owner = models.CharField(max_length=30)
 
-	attributes = models.ForeignKey(attributes.AttributeSet)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 		
 	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
@@ -354,7 +354,8 @@ class Topology(models.Model):
 					if not key in res:
 						res[key] = 0
 					res[key] += float(con.attributes[key])
-		self.attributes.update(res)
+		for key in res:
+			self.attributes[key] = res[key]
 		
 	def to_dict(self, auth, detail):
 		"""
@@ -379,7 +380,8 @@ class Topology(models.Model):
 				})
 			res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
 			res["permissions"][self.owner]="owner";
-		del res["attrs"]["task"]
+		if "task" in res["attrs"]:
+			del res["attrs"]["task"]
 		if auth:
 			task = self.get_task()
 			if task:

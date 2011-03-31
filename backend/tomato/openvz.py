@@ -23,7 +23,7 @@ class OpenVZDevice(generic.Device):
 	def upcast(self):
 		return self
 
-	def _vzctl(self, cmd, params, timeout=None):
+	def _vzctl(self, cmd, params="", timeout=None):
 		return self.host.execute("%svzctl %s %s %s" % ("timeout %s " % timeout if timeout else "", cmd, self.attributes["vmid"], params) )
 
 	def _exec(self, cmd):
@@ -212,14 +212,20 @@ class OpenVZDevice(generic.Device):
 		if self.state == generic.State.CREATED:
 			disk = 0
 		elif self.state == generic.State.STARTED:
-			disk = int(self.host.execute("grep -h -A 1 -E '^%s:' /proc/vz/vzquota | tail -n 1 | awk '{print $2}'" % self.attributes["vmid"]))*1024
+			try:
+				disk = int(self.host.execute("grep -h -A 1 -E '^%s:' /proc/vz/vzquota | tail -n 1 | awk '{print $2}'" % self.attributes["vmid"]))*1024
+			except:
+				disk = -1
 		else:
 			try:
 				disk = int(self.host.execute("du -sb %s | awk '{print $1}'" % self._image_path()))
 			except: #pylint: disable-msg=W0702
-				disk = 0
+				disk = -1
 		if self.state == generic.State.STARTED:
-			memory = int(self.host.execute("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.attributes["vmid"]))*4*1024
+			try:
+				memory = int(self.host.execute("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.attributes["vmid"]))*4*1024
+			except:
+				memory = -1
 			ports = 1
 		else:
 			memory = 0
@@ -259,17 +265,19 @@ class ConfiguredInterface(generic.Interface):
 	def start_run(self):
 		bridge = self.device.upcast().bridge_name(self)
 		self.device.host.bridge_connect(bridge, self.interface_name())
+		dev = self.device.upcast()
 		if self.attributes["ip4address"]:
-			self.device._exec("ip addr add %s dev %s" % ( self.attributes["ip4address"], self.name )) 
-			self.device._exec("ip link set up dev %s" % self.name ) 
+			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip4address"], self.name )) 
+			dev._exec("ip link set up dev %s" % self.name ) 
 		if self.attributes["use_dhcp"]:
-			self.device._exec("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % self.name)
-			self.device._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)					
-		self.device.host.execute("ip link set %s up" % bridge)
+			dev._exec("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % self.name)
+			dev._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)					
+		dev.host.execute("ip link set %s up" % bridge)
 
 	def prepare_run(self):
-		self.device._vzctl("set", "--netif_add %s --save" % self.name)
-		self.device._vzctl("set", "--ifname %s --host_ifname %s --save" % ( self.name, self.interface_name()))
+		dev = self.device.upcast()
+		dev._vzctl("set", "--netif_add %s --save" % self.name)
+		dev._vzctl("set", "--ifname %s --host_ifname %s --save" % ( self.name, self.interface_name()))
 		
 	def to_dict(self, auth):
 		res = generic.Interface.to_dict(self, auth)		

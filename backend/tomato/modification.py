@@ -27,7 +27,7 @@ class Modification():
 	def __str__(self):
 		return "%s %s %s (%s)" % (self.type, self.element, self.subelement, self.properties)
 		
-	def run(self, top, task):
+	def run(self, top):
 		#print "applying %s" % self
 		if self.type == "topology-rename":
 			top.name = self.properties["name"]
@@ -45,7 +45,7 @@ class Modification():
 			dev.topology = top
 			dev.name = self.properties["name"]
 			top.device_set_add(dev)
-			dev.configure(self.properties, task)
+			dev.configure(self.properties)
 			dev.save()
 		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
@@ -54,7 +54,7 @@ class Modification():
 			device.save()
 		elif self.type == "device-configure":
 			device = top.device_set_get(self.element).upcast()
-			device.configure(self.properties, task)
+			device.configure(self.properties)
 		elif self.type == "device-delete":
 			device = top.device_set_get(self.element).upcast()
 			assert device.state == generic.State.CREATED, "Cannot delete a running or prepared device"
@@ -63,19 +63,19 @@ class Modification():
 		elif self.type == "interface-create":
 			device = top.device_set_get(self.element).upcast()
 			name = self.properties["name"]
-			device.interfaces_add(name, self.properties, task)
+			device.interfaces_add(name, self.properties)
 		elif self.type == "interface-rename":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_rename(name, self.properties, task)
+			device.interfaces_rename(name, self.properties)
 		elif self.type == "interface-configure":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_configure(name, self.properties, task)
+			device.interfaces_configure(name, self.properties)
 		elif self.type == "interface-delete":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_delete(name, task)
+			device.interfaces_delete(name)
 		
 		elif self.type == "connector-create":
 			ctype = self.properties["type"]
@@ -90,7 +90,7 @@ class Modification():
 			con.topology = top
 			con.name = self.properties["name"]
 			top.connector_set_add(con)
-			con.configure(self.properties, task)
+			con.configure(self.properties)
 			con.save()
 		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
@@ -99,7 +99,7 @@ class Modification():
 			con.save()
 		elif self.type == "connector-configure":
 			con = top.connector_set_get(self.element).upcast()
-			con.configure(self.properties, task)
+			con.configure(self.properties)
 		elif self.type == "connector-delete":
 			con = top.connector_set_get(self.element).upcast()
 			if not con.is_special(): 
@@ -109,15 +109,15 @@ class Modification():
 		elif self.type == "connection-create":
 			con = top.connector_set_get(self.element).upcast()
 			interface = self.properties["interface"]
-			con.connections_add(interface, self.properties, task)
+			con.connections_add(interface, self.properties)
 		elif self.type == "connection-configure":
 			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
-			con.connections_configure(name, self.properties, task)
+			con.connections_configure(name, self.properties)
 		elif self.type == "connection-delete":
 			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
-			con.connections_delete(name, task)
+			con.connections_delete(name)
 			
 		else:
 			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
@@ -128,12 +128,10 @@ def read_from_list(mods):
 		modlist.append(Modification(mod["type"], mod["element"], mod["subelement"], mod["properties"]))
 	return modlist
 
-def modify_task_run(top_id, mods, task):
+def modify_task_run(top_id, mods):
 	for mod in mods:
 		top = topology.get(top_id)
-		mod.run(top, task)
-		task.subtasks_done = task.subtasks_done + 1
-	task.done()
+		mod.run(top)
 
 def modify(top, mods, direct):
 	top.renew()

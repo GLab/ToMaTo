@@ -54,7 +54,7 @@ class TaskStatus():
 	def _run(self):
 		try:
 			set_current_task(self)
-			self.func(*self.args, task=self, **self.kwargs)
+			self.func(*self.args, **self.kwargs)
 			self.done()
 		except Exception, exc: #pylint: disable-msg=W0703
 			if config.TESTING:

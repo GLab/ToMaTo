@@ -77,7 +77,7 @@ class EmulatedConnection(generic.Connection):
 	def _start_capture(self):
 		host = self.interface.device.host
 		directory = self._capture_dir()
-		host.mkdir(directory)
+		host.file_mkdir(directory)
 		host.bridge_create(self.bridge_name())
 		host.execute("ip link set up %s" % self.bridge_name())
 		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), directory, directory ))		

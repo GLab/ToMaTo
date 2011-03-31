@@ -71,3 +71,8 @@ class AttributeEntry(models.Model):
 	attribute_set = models.ForeignKey(AttributeSet)
 	name = models.CharField(max_length=250)
 	value = models.CharField(max_length=250, null=True)
+
+def create():
+	attr = AttributeSet()
+	attr.save()
+	return attr
