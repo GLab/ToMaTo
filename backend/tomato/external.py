@@ -18,50 +18,50 @@
 from django.db import models
 import generic, fault, hosts
 
-class SpecialFeatureConnector(generic.Connector):
-	used_feature_group = models.ForeignKey(hosts.SpecialFeatureGroup, null=True) 
+class ExternalNetworkConnector(generic.Connector):
+	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
 	
 	def upcast(self):
 		return self
 
-	def _update_host_preferences(self, prefs, sfg):
-		if not sfg.has_free_slots():
+	def _update_host_preferences(self, prefs, en):
+		if not en.has_free_slots():
 			return
 		hosts = []
-		used = sfg.usage_count()
-		if sfg.avoid_duplicates:
+		used = en.usage_count()
+		if en.avoid_duplicates:
 			for con in self.connection_set_all():
 				dev = con.interface.device
 				if dev.host:
 					hosts.append(dev.host)
-		for sf in sfg.specialfeature_set.all():
-			if sf.host.enabled and not (sfg.avoid_duplicates and (sf.host in hosts)):
-				if sfg.max_devices:
-					prefs.add(sf.host, 1.0-used/sfg.max_devices)
+		for enb in en.externalnetworkbridge_set.all():
+			if enb.host.enabled and not (en.avoid_duplicates and (enb.host in hosts)):
+				if en.max_devices:
+					prefs.add(enb.host, 1.0-used/en.max_devices)
 				else:
-					prefs.add(sf.host, 1.0)
+					prefs.add(enb.host, 1.0)
 		
 	def host_preferences(self):
 		prefs = generic.ObjectPreferences(True)
-		if self.used_feature_group:
-			self._update_host_preferences(prefs, self.used_feature_group)
+		if self.used_network:
+			self._update_host_preferences(prefs, self.used_network)
 		else:
-			for sfg in self.feature_options().objects:
-				self._update_host_preferences(prefs, sfg)
+			for en in self.network_options().objects:
+				self._update_host_preferences(prefs, en)
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
-	def feature_options(self):
+	def network_options(self):
 		options = generic.ObjectPreferences(True)
-		sfgs = hosts.SpecialFeatureGroup.objects.filter(feature_type=self.attributes["feature_type"])
-		if self.attributes["feature_group"]:
-			sfgs = sfgs.filter(group_name=self.attributes["feature_group"])
+		ens = hosts.ExternalNetwork.objects.filter(type=self.attributes["network_type"])
+		if self.attributes["network_group"]:
+			ens = ens.filter(group=self.attributes["network_group"])
 		for con in self.connection_set_all():
 			dev = con.interface.device
 			if dev.host:
-				sfgs = sfgs.filter(specialfeature__host=dev.host)
-		for sfg in sfgs:
-			options.add(sfg, 1.0)
+				ens = ens.filter(externalnetworkbridge__host=dev.host)
+		for en in ens:
+			options.add(en, 1.0)
 		return options
 		
 	def start_run(self):
@@ -76,7 +76,7 @@ class SpecialFeatureConnector(generic.Connector):
 
 	def prepare_run(self):
 		generic.Connector.prepare_run(self)
-		self.used_feature_group = self.feature_options().best()
+		self.used_feature_group = self.network_options().best()
 		self.state = generic.State.PREPARED
 		self.save()
 
@@ -87,13 +87,13 @@ class SpecialFeatureConnector(generic.Connector):
 		self.save()
 		
 	def configure(self, properties):
-		if "feature_type" in properties and self.state != generic.State.CREATED: 
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of special feature with prepared connections: %s" % self.name )
-		if "feature_group" in properties and self.state != generic.State.CREATED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of special feature with prepared connections: %s" % self.name )
+		if "network_type" in properties and self.state != generic.State.CREATED: 
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of external network with prepared connections: %s" % self.name )
+		if "network_group" in properties and self.state != generic.State.CREATED:
+			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of external network with prepared connections: %s" % self.name )
 		generic.Connector.configure(self, properties)
-		if self.attributes["feature_group"] == "auto":
-			self.attributes["feature_group"] = ""
+		if self.attributes["network_group"] == "auto":
+			self.attributes["network_group"] = ""
 		self.save()		
 	
 	def connections_add(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
@@ -116,11 +116,11 @@ class SpecialFeatureConnector(generic.Connector):
 		con.delete()
 		
 	def get_resource_usage(self):
-		special = 0
+		external = 0
 		traffic = 0
 		for con in self.connection_set_all():
 			if con.interface.device.state == generic.State.STARTED:
-				special += 1
+				external += 1
 			dev = con.interface.device
 			if dev.host and dev.state == generic.State.STARTED:
 				iface = dev.upcast().interface_device(con.interface)
@@ -129,17 +129,17 @@ class SpecialFeatureConnector(generic.Connector):
 					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
 				except:
 					traffic = -1
-		return {"special": special, "traffic": traffic}		
+		return {"external": external, "traffic": traffic}		
 
 	def bridge_name(self, interface):
 		if not interface.device.host:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE, "Interface is not prepared: %s" % interface)
-		for sf in self.used_feature_group.specialfeature_set.all():
-			if sf.host == interface.device.host:
-				return sf.bridge
-		raise fault.Fault(fault.NO_RESOURCES, "No special feature %s(%s) on host %s" % (self.attributes["feature_type"], self.attributes["feature_group"], interface.device.host))
+		for enb in self.used_network.externalnetworkbridge_set.all():
+			if enb.host == interface.device.host:
+				return enb.bridge
+		raise fault.Fault(fault.NO_RESOURCES, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host))
 	
 	def to_dict(self, auth):
 		res = generic.Connector.to_dict(self, auth)
-		res["attrs"].update(used_feature_group=self.used_feature_group)
+		res["attrs"].update(used_network=self.used_network)
 		return res

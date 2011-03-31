@@ -61,7 +61,7 @@ class Topology(models.Model):
 	def max_state(self):
 		max_state = generic.State.CREATED
 		for con in self.connector_set_all():
-			if not con.is_special():
+			if not con.is_external():
 				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 					max_state = generic.State.PREPARED
 				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):

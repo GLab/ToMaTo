@@ -231,14 +231,14 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return hosts.get_host_groups()
 
-def special_feature_group_add(feature_type, group_name, params, user=None):
+def external_network_add(type, group, params, user=None):
 	"""
-	Adds a special feature group. This operation needs admin access.
+	Adds an external network. This operation needs admin access.
 	
-	@param feature_type: type of the special feature group
-	@type feature_type: string
-	@param group_name: name of the special feature group
-	@type group_name: string
+	@param type: type of the external network
+	@type type: string
+	@param group: group of the external network
+	@type group: string
 	@param params: dict of all additional parameters
 	@type params: dict 
 	@param user: current user
@@ -252,17 +252,17 @@ def special_feature_group_add(feature_type, group_name, params, user=None):
 		params["max_devices"] = None
 	if not params.has_key("avoid_duplicates"):
 		params["avoid_duplicates"] = False
-	hosts.SpecialFeatureGroup.objects.create(feature_type=feature_type, group_name=group_name, max_devices=params["max_devices"], avoid_duplicates=params["avoid_duplicates"])
+	hosts.ExternalNetwork.objects.create(type=type, group=group, max_devices=params["max_devices"], avoid_duplicates=params["avoid_duplicates"])
 	return True
 
-def special_feature_group_change(feature_type, group_name, params, user=None):
+def external_network_change(type, group, params, user=None):
 	"""
-	Changes a special feature group. This operation needs admin access.
+	Changes an external network. This operation needs admin access.
 	
-	@param feature_type: type of the special feature group
-	@type feature_type: string
-	@param group_name: name of the special feature group
-	@type group_name: string
+	@param type: type of the external network
+	@type type: string
+	@param group: name of the external network
+	@type group: string
 	@param params: dict of all additional parameters
 	@type params: dict 
 	@param user: current user
@@ -272,24 +272,24 @@ def special_feature_group_change(feature_type, group_name, params, user=None):
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
+	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
 	if not params.has_key("max_devices"):
 		params["max_devices"] = None
 	if not params.has_key("avoid_duplicates"):
 		params["avoid_duplicates"] = False
-	sfg.max_devices = params["max_devices"]
-	sfg.avoid_duplicates = params["avoid_duplicates"]
-	sfg.save()
+	en.max_devices = params["max_devices"]
+	en.avoid_duplicates = params["avoid_duplicates"]
+	en.save()
 	return True
 
-def special_feature_group_remove(feature_type, group_name, user=None):
+def external_network_remove(type, group, user=None):
 	"""
-	Removes a special feature group. This operation needs admin access.
+	Removes an external network. This operation needs admin access.
 	
-	@param feature_type: type of the special feature group
-	@type feature_type: string
-	@param group_name: name of the special feature group
-	@type group_name: string
+	@param type: type of the external network
+	@type type: string
+	@param group: name of the external network
+	@type group: string
 	@param user: current user
 	@type user: generic.User
 	@return: True
@@ -297,23 +297,23 @@ def special_feature_group_remove(feature_type, group_name, user=None):
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	sfg = hosts.SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
-	if len(sfg.special_feature_set):
-		raise fault.new(fault.SPECIAL_FEATURE_GROUP_NOT_EMPTY, "Special feature group is not empty")
-	sfg.remove()
+	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
+	if len(en.externalnetworkbridge_set):
+		raise fault.new(fault.EXTERNAL_NETWORK_HAS_BRIDGES, "External network still has bridges")
+	en.remove()
 	return True
 
 
-def special_features_add(host_name, feature_type, feature_group, bridge, user=None):
+def external_network_bridge_add(host_name, type, group, bridge, user=None):
 	"""
-	Adds a special feature to a host. This operation needs admin access.
+	Adds an external network bridge to a host. This operation needs admin access.
 	
 	@param host_name: name of the host
 	@type host_name: string
-	@param feature_type: type of the special feature
-	@type feature_type: string
-	@param feature_group: group of the special feature
-	@type feature_group: string
+	@param type: type of the external network
+	@type type: string
+	@param group: group of the external network
+	@type group: string
 	@param bridge: bridge to connect interfaces to
 	@type bridge: string       
 	@param user: current user
@@ -324,19 +324,19 @@ def special_features_add(host_name, feature_type, feature_group, bridge, user=No
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
-	host.special_features_add(feature_type, feature_group, bridge)
+	host.external_networks_add(type, group, bridge)
 	return True
 
-def special_features_remove(host_name, feature_type, feature_group, user=None):
+def external_network_bridge_remove(host_name, type, group, user=None):
 	"""
-	Removes a special feature to a host. This operation needs admin access.
+	Removes an external network bridge to a host. This operation needs admin access.
 	
 	@param host_name: name of the host
 	@type host_name: string
-	@param feature_type: type of the special feature
-	@type feature_type: string
-	@param feature_group: group of the special feature
-	@type feature_group: string
+	@param type: type of the external network
+	@type type: string
+	@param group: group of the external network
+	@type group: string
 	@param user: current user
 	@type user: generic.User
 	@return: True
@@ -345,20 +345,20 @@ def special_features_remove(host_name, feature_type, feature_group, user=None):
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
-	host.special_features_remove(feature_type, feature_group)
+	host.external_networks_remove(type, group)
 	return True
 
-def special_features(user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Returns a list of all special features.
+	Returns a list of all external networks
 	
 	@param user: current user
 	@type user: generic.User
-	@return: a list of all feature groups with all instances
+	@return: a list of all external networks with all bridges
 	@rtype: list of dict
 	@raise fault.Error: if the user does not have enough privileges  
 	"""
-	return hosts.special_features()
+	return hosts.external_networks()
 
 def top_info(top_id, user=None):
 	"""

@@ -26,19 +26,19 @@
     <th>Bridge</th>
     <th>Actions</th>
   </tr>
-{% for sf in host.special_features %}
+{% for en in host.external_networks %}
   <tr>
-    <td>{{sf.type}}</td>
-    <td>{{sf.group}}</td>
-    <td>{{sf.bridge}}</td>
-    <td><a href="{%url special_features.remove_host type=sf.type group=sf.group hostname=host.name%}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
+    <td>{{en.type}}</td>
+    <td>{{en.group}}</td>
+    <td>{{en.bridge}}</td>
+    <td><a href="{%url external_networks.remove_bridge type=en.type group=en.group hostname=host.name%}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
   </tr>
 {% endfor %}
-<form action="{%url special_features.add_host hostname=host.name%}">
+<form action="{%url external_networks.add_bridge hostname=host.name%}">
   <tr>
     <td colspan="2"><select name="typegroup">
-{% for sfg in special_features %}
-	<option value="{{sfg.type}}:{{sfg.name}}">{{sfg.type}} ({{sfg.name}})</option>
+{% for en in external_networks %}
+	<option value="{{en.type}}:{{en.group}}">{{en.type}} ({{en.group}})</option>
 {% endfor %}    
     </select></td>
     <td><input name="bridge"/></td>

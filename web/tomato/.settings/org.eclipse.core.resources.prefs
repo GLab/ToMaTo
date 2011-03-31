@@ -1,6 +1,7 @@
-#Mon Feb 07 10:04:32 CET 2011
+#Thu Mar 31 14:49:33 CEST 2011
 eclipse.preferences.version=1
 encoding/ajax.py=utf-8
+encoding/external_networks.py=utf-8
 encoding/host.py=utf-8
 encoding/lib.py=utf-8
 encoding/main.py=utf-8

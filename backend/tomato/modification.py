@@ -79,9 +79,9 @@ class Modification():
 		
 		elif self.type == "connector-create":
 			ctype = self.properties["type"]
-			import tinc, special
-			if ctype == "special":
-				con = special.SpecialFeatureConnector()
+			import tinc, external
+			if ctype == "external":
+				con = external.ExternalNetworkConnector()
 			elif ctype == "hub" or ctype =="switch" or ctype == "router":
 				con = tinc.TincConnector()
 			else:
@@ -102,7 +102,7 @@ class Modification():
 			con.configure(self.properties)
 		elif self.type == "connector-delete":
 			con = top.connector_set_get(self.element).upcast()
-			if not con.is_special(): 
+			if not con.is_external(): 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		

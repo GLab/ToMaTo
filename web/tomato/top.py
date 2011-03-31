@@ -72,20 +72,20 @@ def renew(api, request, top_id):
 def edit(api, request, top_id):
 	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
-	sflist = api.special_features()
+	enlist = api.external_networks()
 	map = {}
-	for sf in sflist:
-		if map.has_key(sf["type"]):
-			map[sf["type"]].append(sf["name"])
+	for en in enlist:
+		if map.has_key(en["type"]):
+			map[en["type"]].append(en["group"])
 		else:
-			map[sf["type"]] = [sf["name"]]
-	special_features=",".join([f+":"+("|".join(map[f])) for f in map])
+			map[en["type"]] = [en["group"]]
+	external_networks=",".join([f+":"+("|".join(map[f])) for f in map])
 	host_groups=",".join(api.host_groups())
 	if not request.REQUEST.has_key("editor"):
 		editor = "jsui"
 	else:
 		editor = request.REQUEST["editor"]
-	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "special_features": special_features, 'edit':True} )
+	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "external_networks": external_networks, 'edit':True} )
 
 @wrap_rpc
 def details(api, request, top_id):

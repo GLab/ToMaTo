@@ -552,27 +552,27 @@ var Connector = IconElement.extend({
 	}
 });
 
-var SpecialConnector = Connector.extend({
+var ExternalConnector = Connector.extend({
 	init: function(editor, name, pos) {
-		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
-		this.form = new SpecialConnectorWindow(this);
+		this._super(editor, name, "images/external.png", {x: 32, y: 32}, pos);
+		this.form = new ExternalConnectorWindow(this);
 	},
 	nextIPHint: function() {
 		return "dhcp";
 	},
 	setAttribute: function(name, value) {
 		this._super(name, value);
-		if (name == "feature_type") {
+		if (name == "network_type") {
 			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
-			else this.iconsrc="images/special.png";
+			else this.iconsrc="images/external.png";
 			this.paintUpdate();
 		}
 	},
 	baseName: function() {
-		return "special";
+		return "external";
 	},
 	createAnother: function(pos) {
-		return new SpecialConnector(this.editor, this.nextName(), pos);
+		return new ExternalConnector(this.editor, this.nextName(), pos);
 	}
 });
 
@@ -809,7 +809,7 @@ var Editor = Class.extend({
 		this.hostGroups = [];
 		this.templatesOpenVZ = [];
 		this.templatesKVM = [];
-		this.specialFeatures = {};
+		this.externalNetworks = {};
 		this.nextIPHintNumber = 0;
 		this.isLoading = false;
 		if (editable) this.paintPalette();
@@ -955,8 +955,8 @@ var Editor = Class.extend({
 	setTemplatesKVM: function(tpls) {
 		this.templatesKVM = tpls;
 	},
-	setSpecialFeatures: function(sfmap) {
-		this.specialFeatures = sfmap;
+	setExternalNetworks: function(enmap) {
+		this.externalNetworks = enmap;
 	},
 	loadTopology: function() {
 		var editor = this;
@@ -1001,8 +1001,8 @@ var Editor = Class.extend({
 					el = new RouterConnector(editor, name, pos);
 					connectors[name] = el;
 					break;
-				case "special": 
-					el = new SpecialConnector(editor, name, pos);
+				case "external": 
+					el = new ExternalConnector(editor, name, pos);
 					connectors[name] = el;
 					break;
 			}
@@ -1094,8 +1094,8 @@ var Editor = Class.extend({
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
 		this.kvmPrototype.paletteItem = true;
 		y+=30;
-		this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: y+=50});
-		this.specialPrototype.paletteItem = true;
+		this.externalPrototype = new ExternalConnector(this, "External", {x: this.paletteWidth/2, y: y+=50});
+		this.externalPrototype.paletteItem = true;
 		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=50});
 		this.hubPrototype.paletteItem = true;
 		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: y+=40});
@@ -1689,7 +1689,7 @@ var ResourcesPanel = Class.extend({
 		if (attrs.resources_disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(attrs.resources_disk)+'</td></tr>'));
 		if (attrs.resources_memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(attrs.resources_memory)+'</td></tr>'));
 		if (attrs.resources_traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(attrs.resources_traffic)+'</td></tr>'));
-		if (attrs.resources_special) table.append($('<tr><td>Special slots:</td><td>'+attrs.resources_special+'</td></tr>'));
+		if (attrs.resources_external) table.append($('<tr><td>External slots:</td><td>'+attrs.resources_external+'</td></tr>'));
 		if (attrs.resources_ports) table.append($('<tr><td>Ports:</td><td>'+attrs.resources_ports+'</td></tr>'));
 		this.div.append(table);
 	},
@@ -1837,24 +1837,24 @@ var ConnectorWindow = ElementWindow.extend({
 	}
 });
 
-var SpecialConnectorWindow = ConnectorWindow.extend({
+var ExternalConnectorWindow = ConnectorWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		var t = this;
-		this.attrs.addField(new SelectField("feature_type", getKeys(this.obj.editor.specialFeatures), "auto", function(value) {
-			t._featureChanged(value);
+		this.attrs.addField(new SelectField("network_type", getKeys(this.obj.editor.externalNetworks), "internet", function(value) {
+			t._typeChanged(value);
 		}), "type");
-		this.attrs.addField(new SelectField("feature_group", [], "auto"), "group");
+		this.attrs.addField(new SelectField("network_group", [], "auto"), "group");
 	},
-	_featureChanged: function(value) {
-		var feature_group = this.attrs.fields.feature_group;
-		var options = this.obj.editor.specialFeatures[value];
+	_typeChanged: function(value) {
+		var group = this.attrs.fields.network_group;
+		var options = this.obj.editor.externalNetworks[value];
 		if (!options) options = [];
-		feature_group.setOptions(options);
+		group.setOptions(options);
 	},
 	show: function() {
 		this._super();
-		this._featureChanged();
+		this._typeChanged();
 	}
 });
 
@@ -1979,8 +1979,8 @@ var WizardWindow = Window.extend({
 			}
 		}
 		if (this.fields.internet.getValue()) {
-			var internet = new SpecialConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
-			internet.setAttribute("feature_type", "internet");
+			var internet = new ExternalConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
+			internet.setAttribute("type", "internet");
 			for (var i=0; i<number; i++) this.editor.connect(internet, nodes[i]);
 		}
 		if (tr) this.editor.ajaxModifyCommit();

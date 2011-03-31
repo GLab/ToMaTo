@@ -356,20 +356,20 @@ class Host(models.Model):
 		result["hostserver-files"] = self.execute("ls -l /var/lib/vz/hostserver")		
 		return result
 	
-	def special_features(self):
-		return self.specialfeature_set.all() # pylint: disable-msg=E1101
+	def external_networks(self):
+		return self.externalnetworkbridge_set.all() # pylint: disable-msg=E1101
 	
-	def special_features_add(self, feature_type, group_name, bridge):
-		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
-		sf = SpecialFeature(host=self, feature_group=sfg, bridge=bridge)
-		sf.save()
-		self.specialfeature_set.add(sf) # pylint: disable-msg=E1101
+	def external_networks_add(self, type, group, bridge):
+		en = ExternalNetwork.objects.get(type=type, group=group)
+		enb = ExternalNetworkBridge(host=self, network=en, bridge=bridge)
+		enb.save()
+		self.externalnetworkbridge_set.add(enb) # pylint: disable-msg=E1101
 		
-	def special_features_remove(self, feature_type, group_name):
-		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
-		for sf in self.special_features():
-			if sf.feature_group == sfg:
-				sf.delete()
+	def external_networks_remove(self, type, group):
+		en = ExternalNetwork.objects.get(type=type, group=group)
+		for enb in self.external_networks():
+			if enb.feature_group == en:
+				enb.delete()
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		for key in properties:
@@ -385,7 +385,7 @@ class Host(models.Model):
 		"""
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"special_features": [sf.to_dict() for sf in self.special_features()]}
+			"external_networks": [enb.to_dict() for enb in self.external_networks()]}
 		res.update(self.attributes.items())
 		return res
 
@@ -466,9 +466,9 @@ class PhysicalLink(models.Model):
 			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
 	
 
-class SpecialFeatureGroup(models.Model):
-	feature_type = models.CharField(max_length=50)
-	group_name = models.CharField(max_length=50)
+class ExternalNetwork(models.Model):
+	type = models.CharField(max_length=50)
+	group = models.CharField(max_length=50)
 	max_devices = models.IntegerField(null=True)
 	avoid_duplicates = models.BooleanField(default=False)
 
@@ -476,37 +476,37 @@ class SpecialFeatureGroup(models.Model):
 		return not (self.max_devices and self.usage_count() >= self.max_devices) 
 
 	def usage_count(self):
-		import special
-		connectors = special.SpecialFeatureConnector.objects.filter(used_feature_group=self)
+		import external
+		connectors = external.ExternalNetworkConnector.objects.filter(used_network=self)
 		num = connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
 		return num if num else 0
 		
-	def to_dict(self, instances=False):
+	def to_dict(self, bridges=False):
 		"""
-		Prepares a special feature group for serialization.
+		Prepares an object for serialization.
 		
-		@return: a dict containing information about the special feature group
+		@return: a dict containing information about the object
 		@rtype: dict
 		"""
-		data = {"type": self.feature_type, "name": self.group_name, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
-		if instances:
-			data["instances"] = [sf.to_dict() for sf in self.specialfeature_set.all()]
+		data = {"type": self.type, "group": self.group, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
+		if bridges:
+			data["bridges"] = [enb.to_dict() for enb in self.externalnetworkbridge_set.all()]
 		return data
 
 	
-class SpecialFeature(models.Model):
+class ExternalNetworkBridge(models.Model):
 	host = models.ForeignKey(Host)
-	feature_group = models.ForeignKey(SpecialFeatureGroup)
+	network = models.ForeignKey(ExternalNetwork)
 	bridge = models.CharField(max_length=10)
 
 	def to_dict(self):
 		"""
-		Prepares a special feature for serialization.
+		Prepares an object for serialization.
 		
-		@return: a dict containing information about the special feature
+		@return: a dict containing information about the object
 		@rtype: dict
 		"""
-		return {"host": self.host.name, "type": self.feature_group.feature_type, "group": self.feature_group.group_name, "bridge": self.bridge}
+		return {"host": self.host.name, "type": self.network.type, "group": self.network.group, "bridge": self.bridge}
 
 	
 def get_host_groups():
@@ -655,5 +655,5 @@ def host_check(host):
 	t.start()
 	return t.id
 
-def special_features():
-	return [sfg.to_dict(True) for sfg in SpecialFeatureGroup.objects.all()]
+def external_networks():
+	return [en.to_dict(True) for en in ExternalNetwork.objects.all()]

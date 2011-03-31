@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+
+<h1>List of external networks</h1>
+
+{% for en in list %}
+<h2>{{en.type}} ({{en.group}})</h2>
+<a href="{%url external_networks.change type=en.type group=en.group %}">[edit]</a> 
+<a href="{%url external_networks.remove type=en.type group=en.group %}">[remove]</a>
+<br/>
+{% if en.max_devices %}Maximal devices: {{en.max_devices}}<br/>{% endif %}
+Avoid duplicates: {{en.avoid_duplicates}}<br/>
+Hosts:
+<ul>
+{% for enb in en.bridges %}
+	<li><a href="{%url host.detail hostname=enb.host %}">{{enb.host}}</a> (Bridge: {{enb.bridge}})</li>
+{% endfor %}
+</ul>
+{% endfor %}
+{% endblock %}

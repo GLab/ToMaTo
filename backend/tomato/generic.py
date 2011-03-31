@@ -134,7 +134,7 @@ class Device(models.Model):
 		for iface in self.interface_set_all():
 			if iface.is_connected():
 				con = iface.connection.connector
-				if not con.is_special() and not con.state == State.CREATED:
+				if not con.is_external() and not con.state == State.CREATED:
 					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -259,7 +259,7 @@ class Interface(models.Model):
 
 
 class Connector(models.Model):
-	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('special', 'Special feature') )
+	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20)
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
@@ -279,14 +279,14 @@ class Connector(models.Model):
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
 
-	def is_special(self):
-		return self.type=='special'
+	def is_external(self):
+		return self.type=='external'
 
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnector.upcast() # pylint: disable-msg=E1101
-		if self.is_special():
-			return self.specialfeatureconnector.upcast() # pylint: disable-msg=E1101
+		if self.is_external():
+			return self.externalnetworkconnector.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def host_preferences(self):
@@ -426,7 +426,7 @@ class Connection(models.Model):
 				
 	def start_run(self):
 		host = self.interface.device.host
-		if not self.connector.is_special():
+		if not self.connector.is_external():
 			host.bridge_create(self.bridge_name())
 			host.execute("ip link set %s up" % self.bridge_name())
 
@@ -434,7 +434,7 @@ class Connection(models.Model):
 		host = self.interface.device.host
 		if not host:
 			return
-		if not self.connector.is_special():
+		if not self.connector.is_external():
 			host.execute("ip link set %s down" % self.bridge_name())
 
 	def prepare_run(self):

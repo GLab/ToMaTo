@@ -23,5 +23,5 @@ from openvz import * #@UnusedWildImport
 from tinc import * #@UnusedWildImport
 from topology import * #@UnusedWildImport
 from fault import * #@UnusedWildImport
-from special import * #@UnusedWildImport
+from external import * #@UnusedWildImport
 from attributes import *  #@UnusedWildImport
