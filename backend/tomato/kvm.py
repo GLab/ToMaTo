@@ -78,7 +78,7 @@ class KVMDevice(generic.Device):
 			self.attributes["vnc_port"] = self.host.next_free_port()
 			self.save()
 		self.host.free_port(self.attributes["vnc_port"])		
-		self.host.execute("( while true; do nc -l -p %s -c \"qm vncproxy %s %s 2>/dev/null\" ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
+		self.host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
 		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state()
 		self.save()

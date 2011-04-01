@@ -16,20 +16,6 @@ Connectors: {{top.attrs.connector_count}}<br/>
 {% endif %}
 <br/>
 
-<ul class="topology_analysis">
-{% for p in top.analysis.problems %}
-<li class="problem">Problem: {{p}}</li>
-{% endfor %}
-
-{% for w in top.analysis.warnings %}
-<li class="warning">Warning: {{w}}</li>
-{% endfor %}
-
-{% for h in top.analysis.hints %}
-<li class="hint">Hint: {{h}}</li>
-{% endfor %}
-</ul>
-
 <script language="javascript"><!--
 function console (url) {
 	var console = window.open(url, '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
