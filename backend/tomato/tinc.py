@@ -40,7 +40,8 @@ class TincConnector(generic.Connector):
 			if self.type == "router":
 				table_in = 1000 + 2 * con.id
 				table_out = 1000 + 2 * con.id + 1 
-				host.execute ( "ip addr add %s dev %s" % (con.attributes["gateway"], con.bridge_name()))
+				host.execute ( "ip addr add %s dev %s" % (con.attributes["gateway4"], con.bridge_name()))
+				host.execute ( "ip addr add %s dev %s" % (con.attributes["gateway6"], con.bridge_name()))
 				host.execute ( "ip link set up dev %s" % con.bridge_name())
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ))
 				host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ))
@@ -90,7 +91,8 @@ class TincConnector(generic.Connector):
 			self_host_fd.write("Cipher=none\n" )
 			self_host_fd.write("Digest=none\n" )
 			if self.type == "router":
-				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet(con.attributes["gateway"]))
+				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet4(con.attributes["gateway4"]))
+				self_host_fd.write("Subnet=%s\n" % util.calculate_subnet6(con.attributes["gateway6"]))
 			subprocess.check_call (["openssl",  "rsa", "-pubout", "-in",  path + "/rsa_key.priv", "-out",  path + "/hosts/" + tincname + ".pub"], stderr=subprocess.PIPE)
 			self_host_pub_fd = open(path+"/hosts/"+tincname+".pub", "r")
 			shutil.copyfileobj(self_host_pub_fd, self_host_fd)
@@ -195,14 +197,18 @@ class TincConnection(dummynet.EmulatedConnection):
 		return self
 	
 	def configure(self, properties):
-		if "gateway" in properties:
+		if "gateway4" in properties or "gateway6" in properties:
 			assert self.connector.state == generic.State.CREATED, "Cannot change gateways on prepared or started router: %s" % self
 		dummynet.EmulatedConnection.configure(self, properties)
 		if self.connector.type == "router":
-			if not self.attributes["gateway"]:
-				self.attributes["gateway"] = "10.1.1.254/24" 
-			if not len(self.attributes["gateway"].split("/")) == 2:
-				self.attributes["gateway"] = self.attributes["gateway"] + "/24"
+			if not self.attributes["gateway4"]:
+				self.attributes["gateway4"] = "10.0.0.254/24" 
+			if not self.attributes["gateway6"]:
+				self.attributes["gateway6"] = "fd01:ab1a:b1ab:0:0:FFFF:FFFF:FFFF/80" 
+			if not len(self.attributes["gateway4"].split("/")) == 2:
+				self.attributes["gateway4"] = self.attributes["gateway4"] + "/24"
+			if not len(self.attributes["gateway6"].split("/")) == 2:
+				self.attributes["gateway6"] = self.attributes["gateway6"] + "/80"
 		
 	def start_run(self):
 		dummynet.EmulatedConnection.start_run(self)

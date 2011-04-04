@@ -71,8 +71,10 @@ class OpenVZDevice(generic.Device):
 				iface = iface.upcast()
 				iface.start_run()
 				assert config.remote_dry_run or self.host.interface_bridge(iface.interface_name()) == self.bridge_name(iface), "Interface %s not connected to bridge %s" % (iface.interface_name(), self.bridge_name(iface))
-		if self.attributes.get("gateway"):
-			self._exec("ip route add default via %s" % self.attributes["gateway"]) 
+		if self.attributes.get("gateway4"):
+			self._exec("ip route add default via %s" % self.attributes["gateway4"]) 
+		if self.attributes.get("gateway6"):
+			self._exec("ip route add default via %s" % self.attributes["gateway6"]) 
 		if not self.attributes.get("vnc_port"):
 			self.attributes["vnc_port"] = self.host.next_free_port()
 			self.save()		
@@ -133,9 +135,12 @@ class OpenVZDevice(generic.Device):
 		if "root_password" in properties:
 			if self.state == "prepared" or self.state == "started":
 				self._vzctl("set", "--userpasswd root:%s --save\n" % self.attributes["root_password"])
-		if "gateway" in properties:
-			if self.attributes["gateway"] and self.state == "started":
-				self._exec("route add default gw %s" % self.attributes["gateway"])
+		if "gateway4" in properties:
+			if self.attributes["gateway4"] and self.state == "started":
+				self._exec("ip route add default via %s" % self.attributes["gateway4"])
+		if "gateway6" in properties:
+			if self.attributes["gateway6"] and self.state == "started":
+				self._exec("ip route add default via %s" % self.attributes["gateway6"])
 		if "template" in properties:
 			self.attributes["template"] = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
 			if not self.attributes["template"]:

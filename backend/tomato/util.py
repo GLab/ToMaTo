@@ -116,7 +116,7 @@ def get_attr(obj, name, default=None, res_type=None):
 	else:
 		return val
 
-def calculate_subnet(ip_with_prefix):
+def calculate_subnet4(ip_with_prefix):
 	(ip, prefix) = ip_with_prefix.split("/")
 	ip_num = 0
 	for p in ip.split("."):
@@ -128,6 +128,28 @@ def calculate_subnet(ip_with_prefix):
 		ip.insert(0, str(ip_num % 256))
 		ip_num = ip_num // 256
 	return ".".join(ip)+"/"+prefix
+
+def calculate_subnet6(ip_with_prefix):
+	(ip, prefix) = ip_with_prefix.split("/")
+	ip_num = 0
+	ip = ip.split("::")
+	ip1 = ip[0].split(":")
+	if len(ip) > 1:
+		ip2 = ip[1].split(":")
+		while len(ip1)+len(ip2) < 8:
+			ip1.append("0")
+		for i in ip2:
+			ip1.append(i)
+	ip = ip1
+	for p in ip:
+		ip_num = (ip_num<<16) + int(p,16)
+	mask = (1<<128) - (1<<(128-int(prefix)))
+	ip_num = ip_num & mask
+	ip = []
+	while len(ip) < 8:
+		ip.insert(0, hex(int(ip_num % (1<<16)))[2:])
+		ip_num = ip_num // (1<<16)
+	return ":".join(ip)+"/"+prefix
 
 def parse_xml(xml, root_tag):
 	"""

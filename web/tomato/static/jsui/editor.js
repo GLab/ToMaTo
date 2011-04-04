@@ -413,7 +413,13 @@ var EmulatedRouterConnection = EmulatedConnection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.form = new EmulatedRouterConnectionWindow(this);
-		this.setAttribute("gateway", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+	},
+	connect: function(iface) {
+		this._super(iface);
+		if (! this.getAttribute("gateway4")) this.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+		if (! this.getAttribute("gateway6")) this.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF/80");
+		if (! this.dev.getAttribute("gateway4")) this.dev.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254");
+		if (! this.dev.getAttribute("gateway6")) this.dev.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF");
 	},
 	getIPHint: function() {
 		return {ipv4: "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24",
@@ -1801,7 +1807,8 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 		this._super(obj);
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
 		this.attrs.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
-		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
+		this.attrs.addField(new MagicTextField("gateway4", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway4");
+		this.attrs.addField(new MagicTextField("gateway6", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "gateway6");
 	}
 });
 
@@ -1887,7 +1894,7 @@ var ConfiguredInterfaceWindow = InterfaceWindow.extend({
 		this._super(obj);
 		this.attrs.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
 		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip4/prefix");		
-		this.attrs.addField(new MagicTextField("ip6address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip6/prefix");		
+		this.attrs.addField(new MagicTextField("ip6address", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "ip6/prefix");		
 	}
 });
 
@@ -1919,7 +1926,8 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");
+		this.attrs.addField(new MagicTextField("gateway4", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip4/prefix)");
+		this.attrs.addField(new MagicTextField("gateway6", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "gateway&nbsp;(ip6/prefix)");
 	}
 });
 
