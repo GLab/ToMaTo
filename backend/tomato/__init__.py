@@ -298,9 +298,9 @@ def external_network_remove(type, group, user=None):
 	"""
 	_admin_access(user)
 	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
-	if len(en.externalnetworkbridge_set):
+	if len(en.externalnetworkbridge_set.all()):
 		raise fault.new(fault.EXTERNAL_NETWORK_HAS_BRIDGES, "External network still has bridges")
-	en.remove()
+	en.delete()
 	return True
 
 
@@ -422,7 +422,7 @@ def top_create(user=None):
 	top.logger().log("created", user=user.name)
 	return top.id
 
-def top_modify(top_id, mods, direct, user=None):
+def top_modify(top_id, mods, direct=False, user=None):
 	"""
 	Applies the list of modifications to the topology. The user must
 	have at least manager access to the topology. The result of this method
@@ -449,7 +449,7 @@ def top_modify(top_id, mods, direct, user=None):
 		top.logger().log("started task %s" % res, user=user.name)
 	return res
 
-def top_action(top_id, element_type, element_name, action, attrs={}, user=None):
+def top_action(top_id, element_type, element_name, action, attrs={}, direct=False, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	if element_type == "topology":
@@ -460,20 +460,20 @@ def top_action(top_id, element_type, element_name, action, attrs={}, user=None):
 		element = top.connector_set_get(element_name)
 	if action == "prepare":
 		_top_access(top, "manager", user)
-		task_id = element.prepare()
+		task_id = element.prepare(direct)
 	elif action == "destroy":
 		_top_access(top, "manager", user)
-		task_id = element.destroy()
+		task_id = element.destroy(direct)
 	elif action == "start":
 		_top_access(top, "user", user)
-		task_id = element.start()
+		task_id = element.start(direct)
 	elif action == "stop":
 		_top_access(top, "user", user)
-		task_id = element.stop()
+		task_id = element.stop(direct)
 	if element_type == "topology":
 		if action == "remove":
 			_top_access(top, "owner", user)
-			task_id = top.remove()
+			task_id = top.remove(direct)
 		elif action == "renew":
 			_top_access(top, "owner", user)
 			top.renew()

@@ -21,20 +21,20 @@ class Test(unittest.TestCase):
 
 	def setUp(self):
 		admin = api.login("admin", "123")
-		for template in api.template_list("*", user=admin):
+		for template in api.template_list("", user=admin):
 			api.template_remove(template["name"], user=admin)
 
 	def tearDown(self):
 		admin = api.login("admin", "123")
-		for template in api.template_list("*", user=admin):
+		for template in api.template_list("", user=admin):
 			api.template_remove(template["name"], user=admin)
 
 	def testTemplates(self):
 		admin = api.login("admin", "123")
-		assert api.template_list("*", user=admin) == []
+		assert api.template_list("", user=admin) == []
 		api.template_add("tpl_1", "openvz", "url1", user=admin)
 		api.template_add("tpl_2", "kvm", "url2", user=admin)
-		assert len(api.template_list("*", user=admin)) == 2
+		assert len(api.template_list("", user=admin)) == 2
 		api.template_remove("tpl_1", user=admin)
 		assert len(api.template_list("kvm", user=admin)) == 1
 

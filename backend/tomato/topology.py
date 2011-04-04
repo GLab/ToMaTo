@@ -80,7 +80,7 @@ class Topology(models.Model):
 			return
 		if now > date + self.REMOVE_TIMEOUT:
 			self.logger().log("timeout: removing topology")
-			self.remove()
+			self.remove(True)
 		elif now > date + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
 			max_state = self.max_state()
@@ -104,13 +104,16 @@ class Topology(models.Model):
 			return False
 		return t.is_active()
 
-	def start_task(self, func, *args, **kwargs):
+	def start_task(self, func, direct=False, *args, **kwargs):
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus(func, *args, **kwargs)
-		task.start()
 		self.attributes["task"] = task.id
 		self.save()
+		if direct:
+			task._run()
+		else:
+			task.start()
 		return task
 
 	def device_set_all(self):
@@ -159,13 +162,13 @@ class Topology(models.Model):
 		"""
 		return config.remote_control_dir+"/"+str(self.id)
 
-	def start(self):
+	def start(self, direct):
 		"""
 		Starts the topology.
 		This will fail if the topology has not been prepared yet or is already started.
 		"""
 		self.renew()
-		task = self.start_task(self.start_run)
+		task = self.start_task(self.start_run, direct)
 		return task.id
 
 	def start_run(self):
@@ -190,14 +193,14 @@ class Topology(models.Model):
 				task.output.write("\n# starting " + dev.name + "\n") 
 				dev.upcast().start_run()
 
-	def stop(self, renew=True):
+	def stop(self, direct, renew=True):
 		"""
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
 		if renew:
 			self.renew()
-		task = self.start_task(self.stop_run)
+		task = self.start_task(self.stop_run, direct)
 		return task.id
 
 	def stop_run(self):
@@ -212,13 +215,13 @@ class Topology(models.Model):
 				task.output.write("\n# stopping " + con.name + "\n") 
 				con.upcast().stop_run()
 
-	def prepare(self):
+	def prepare(self, direct):
 		"""
 		Prepares the topology.
 		This will fail if the topology is already prepared or started.
 		"""
 		self.renew()
-		task = self.start_task(self.prepare_run)
+		task = self.start_task(self.prepare_run, direct)
 		return task.id
 
 	def prepare_run(self):
@@ -233,14 +236,14 @@ class Topology(models.Model):
 				task.output.write("\n# preparing " + con.name + "\n") 
 				con.upcast().prepare_run()
 
-	def destroy(self, renew=True):
+	def destroy(self, direct, renew=True):
 		"""
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
 		if renew:
 			self.renew()
-		task = self.start_task(self.destroy_run)
+		task = self.start_task(self.destroy_run, direct)
 		return task.id
 
 	def destroy_run(self):
@@ -266,11 +269,11 @@ class Topology(models.Model):
 				dev.upcast().destroy_run()
 		task.done()
 
-	def remove(self):
+	def remove(self, direct):
 		"""
 		Removes the topology.
 		"""
-		task = self.start_task(self.remove_run)
+		task = self.start_task(self.remove_run, direct)
 		return task.id
 
 	def remove_run(self):

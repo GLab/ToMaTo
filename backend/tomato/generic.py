@@ -76,7 +76,8 @@ class Device(models.Model):
 	def host_options(self):
 		options = self.host_preferences()
 		for iface in self.interface_set_all():
-			options = options.combine(iface.connection.connector.upcast().host_preferences())
+			if iface.is_connected():
+				options = options.combine(iface.connection.connector.upcast().host_preferences())
 		return options
 
 	def download_supported(self):
@@ -96,7 +97,7 @@ class Device(models.Model):
 		except: #pylint: disable-msg=W0702
 			return None		
 	
-	def start(self):
+	def start(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -104,21 +105,27 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().start_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().start_run()
+		else:
+			task = self.topology.start_task(self.upcast().start_run)
+			task.subtasks_total = 1
+			return task.id
 		
-	def stop(self):
+	def stop(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		task = self.topology.start_task(self.upcast().stop_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().stop_run()
+		else:
+			task = self.topology.start_task(self.upcast().stop_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def prepare(self):
+	def prepare(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -126,11 +133,14 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().prepare_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().prepare_run()
+		else:
+			task = self.topology.start_task(self.upcast().prepare_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def destroy(self):
+	def destroy(self, direct):
 		for iface in self.interface_set_all():
 			if iface.is_connected():
 				con = iface.connection.connector
@@ -141,9 +151,12 @@ class Device(models.Model):
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().destroy_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().destroy_run()
+		else:
+			task = self.topology.start_task(self.upcast().destroy_run)
+			task.subtasks_total = 1
+			return task.id
 
 	def start_run(self):
 		pass

@@ -55,4 +55,4 @@ def login(username, password):
 	user = provider_login(username, password)
 	cached = CachedUser(user, password)
 	users[username] = cached
-	return cached.user		
+	return cached.user

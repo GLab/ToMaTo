@@ -60,10 +60,11 @@ class OpenVZDevice(generic.Device):
 	def start_run(self):
 		generic.Device.start_run(self)
 		for iface in self.interface_set_all():
-			bridge = self.bridge_name(iface)
-			assert bridge, "Interface has no bridge %s" % iface
-			self.host.bridge_create(bridge)
-			self.host.execute("ip link set %s up" % bridge)
+			if iface.is_connected():
+				bridge = self.bridge_name(iface)
+				assert bridge, "Interface has no bridge %s" % iface
+				self.host.bridge_create(bridge)
+				self.host.execute("ip link set %s up" % bridge)
 		self._vzctl("start", "--wait", timeout=10)
 		for iface in self.interface_set_all():
 			if iface.is_configured():
@@ -264,15 +265,17 @@ class ConfiguredInterface(generic.Interface):
 			
 	def start_run(self):
 		bridge = self.device.upcast().bridge_name(self)
-		self.device.host.bridge_connect(bridge, self.interface_name())
+		if self.is_connected():
+			self.device.host.bridge_connect(bridge, self.interface_name())
 		dev = self.device.upcast()
 		if self.attributes["ip4address"]:
 			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip4address"], self.name )) 
 			dev._exec("ip link set up dev %s" % self.name ) 
 		if self.attributes["use_dhcp"]:
 			dev._exec("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % self.name)
-			dev._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)					
-		dev.host.execute("ip link set %s up" % bridge)
+			dev._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)
+		if self.is_connected():					
+			dev.host.execute("ip link set %s up" % bridge)
 
 	def prepare_run(self):
 		dev = self.device.upcast()

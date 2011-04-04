@@ -63,7 +63,7 @@ remote_ssh_key = get("remote", "ssh_key", os.path.expanduser('~/.ssh/id_rsa'))
 
 password_salt = get("local", "password_salt", "tomato")
 
-auth_provider = get("auth", "provider", "dummy")
+auth_provider = get("auth", "provider", "htpasswd")
 
 timeout_stop_weeks = int(get("timeout", "stop", 4))
 timeout_destroy_weeks = int(get("timeout", "destroy", 12))
@@ -90,4 +90,4 @@ if TESTING:
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
     remote_dry_run = True
-    auth_dry_run = True 
+    auth_provider = "dummy" 
