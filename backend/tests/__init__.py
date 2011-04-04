@@ -32,11 +32,11 @@ def tasks_running(api, user):
 def default_setUp():
 	import tomato as api
 	admin = api.login("admin", "123")
-	api.host_add("host1a", "group1", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000}, user=admin)
-	api.host_add("host1b", "group1", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000}, user=admin)
-	api.host_add("host2a", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000}, user=admin)
-	api.host_add("host2b", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000}, user=admin)
-	api.host_add("host2c", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000}, user=admin)
+	api.host_add("host1a", "group1", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000, "bridge_start": 1000, "bridge_count": 1000}, user=admin)
+	api.host_add("host1b", "group1", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000, "bridge_start": 1000, "bridge_count": 1000}, user=admin)
+	api.host_add("host2a", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000, "bridge_start": 1000, "bridge_count": 1000}, user=admin)
+	api.host_add("host2b", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000, "bridge_start": 1000, "bridge_count": 1000}, user=admin)
+	api.host_add("host2c", "group2", True, {"vmid_start": 1000, "vmid_count": 200, "port_start": 7000, "port_count": 1000, "bridge_start": 1000, "bridge_count": 1000}, user=admin)
 	api.template_add("tpl_openvz_1", "openvz", "", user=admin)
 	api.template_add("tpl_openvz_2", "openvz", "", user=admin)
 	api.template_set_default("openvz", "tpl_openvz_1", user=admin)

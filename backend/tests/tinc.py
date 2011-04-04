@@ -18,27 +18,24 @@ import unittest
 import tests
 import tomato as api
 
-TOP1 = '''
-<topology name="test1">
-	<device name="openvz1" type="openvz" root_password="test123">
-		<interface name="eth0" use_dhcp="true"/>
-		<interface name="eth1" ip4address="10.1.1.1/24" gateway="10.1.1.254"/>
-		<interface name="eth2" use_dhcp="true"/>
-	</device>
-	<device name="kvm1" type="kvm">
-		<interface name="eth0"/>
-		<interface name="eth1"/>
-	</device>
-	<connector name="switch1" type="switch">
-		<connection interface="openvz1.eth0"/>
-		<connection interface="kvm1.eth0"/>
-	</connector> 
-	<connector name="router1" type="router">
-		<connection interface="openvz1.eth1" gateway="10.1.1.254/24"/>
-		<connection interface="kvm1.eth1" gateway="10.1.2.254/24"/>
-	</connector> 
-</topology>
-'''
+TOP1 = [
+	tests.encode_mod("topology-rename", None, None, {"name": "test1"}),
+	tests.encode_mod("device-create", None, None, {"name": "openvz1", "type": "openvz"}),
+	tests.encode_mod("device-configure", "openvz1", None, {"root_password": "test123", "gateway": "10.1.1.254"}),
+	tests.encode_mod("interface-create", "openvz1", None, {"name": "eth0"}),
+	tests.encode_mod("interface-configure", "openvz1", "eth0", {"use_dhcp": "true"}),
+	tests.encode_mod("interface-create", "openvz1", None, {"name": "eth1"}),
+	tests.encode_mod("interface-configure", "openvz1", "eth1", {"ip4address": "10.1.1.1/24"}),
+	tests.encode_mod("device-create", None, None, {"name": "kvm1", "type": "kvm"}),
+	tests.encode_mod("interface-create", "kvm1", None, {"name": "eth0"}),
+	tests.encode_mod("interface-create", "kvm1", None, {"name": "eth1"}),
+	tests.encode_mod("connector-create", None, None, {"name": "switch1", "type": "switch"}),
+	tests.encode_mod("connection-create", "switch1", None, {"interface": "openvz1.eth0"}),
+	tests.encode_mod("connection-create", "switch1", None, {"interface": "kvm1.eth0"}),
+	tests.encode_mod("connector-create", None, None, {"name": "router1", "type": "router"}),
+	tests.encode_mod("connection-create", "router1", None, {"interface": "openvz1.eth1", "gateway": "10.1.1.254/24"}),
+	tests.encode_mod("connection-create", "router1", None, {"interface": "kvm1.eth1", "gateway": "10.1.2.254/24"}),
+]
 
 class Test(unittest.TestCase):
 
@@ -50,44 +47,28 @@ class Test(unittest.TestCase):
 
 	def testLifecycle(self):
 		admin = api.login("admin", "123")
-		tid = api.top_import(TOP1, user=admin)
-		api.device_prepare(tid, "openvz1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.device_prepare(tid, "kvm1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_prepare(tid, "switch1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_start(tid, "switch1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_stop(tid, "switch1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_destroy(tid, "switch1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_prepare(tid, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_start(tid, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_stop(tid, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.connector_destroy(tid, "router1", user=admin)
-		tests.wait_for_tasks(api, admin)
+		tid = api.top_create(user=admin)
+		api.top_modify(tid, TOP1, direct=True, user=admin)
+		api.top_action(tid, "device", "openvz1", "prepare", direct=True, user=admin)
+		api.top_action(tid, "device", "kvm1", "prepare", direct=True, user=admin)
+		api.top_action(tid, "connector", "switch1", "prepare", direct=True, user=admin)
+		api.top_action(tid, "connector", "switch1", "start", direct=True, user=admin)
+		api.top_action(tid, "connector", "switch1", "stop", direct=True, user=admin)
+		api.top_action(tid, "connector", "switch1", "destroy", direct=True, user=admin)
+		api.top_action(tid, "connector", "router1", "prepare", direct=True, user=admin)
+		api.top_action(tid, "connector", "router1", "start", direct=True, user=admin)
+		api.top_action(tid, "connector", "router1", "stop", direct=True, user=admin)
+		api.top_action(tid, "connector", "router1", "destroy", direct=True, user=admin)
 
 	def testChange(self):
 		admin = api.login("admin", "123")
-		tid = api.top_import(TOP1, user=admin)
-		api.top_modify(tid, tests.encode_modification("connector-rename", "switch1", None, {"name": "switch2"}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connector-configure", "router1", None, {}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connection-delete", "router1", "openvz1.eth1", {}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connection-delete", "router1", "kvm1.eth1", {}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connector-delete", "router1", None, {}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connector-create", None, None, {"type": "switch", "name": "switch1"}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connection-create", "switch1", None, {"interface": "openvz1.eth1"}), user=admin)
-		tests.wait_for_tasks(api, admin)
-		api.top_modify(tid, tests.encode_modification("connection-create", "switch1", None, {"interface": "kvm1.eth1"}), user=admin)
-		tests.wait_for_tasks(api, admin)		
+		tid = api.top_create(user=admin)
+		api.top_modify(tid, TOP1, direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connector-rename", "switch1", None, {"name": "switch2"})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connector-configure", "router1", None, {})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connection-delete", "router1", "openvz1.eth1", {})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connection-delete", "router1", "kvm1.eth1", {})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connector-delete", "router1", None, {})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connector-create", None, None, {"type": "switch", "name": "switch1"})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connection-create", "switch1", None, {"interface": "openvz1.eth1"})], direct=True, user=admin)
+		api.top_modify(tid, [tests.encode_mod("connection-create", "switch1", None, {"interface": "kvm1.eth1"})], direct=True, user=admin)

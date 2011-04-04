@@ -186,6 +186,8 @@ class Host(models.Model):
 			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
 	
 	def _exec(self, cmd):
+		if config.TESTING:
+			return "\n"
 		res = util.run_shell(cmd, config.remote_dry_run)
 		#if res[0] == 255:
 		#	raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
@@ -200,7 +202,8 @@ class Host(models.Model):
 			fd = sys.stdout
 		fd.write(log_str)
 		res = self._exec(cmd)
-		fd.write(res)
+		if not config.remote_dry_run:
+			fd.write(res)
 		return res
 	
 	def _calc_grant(self, params):

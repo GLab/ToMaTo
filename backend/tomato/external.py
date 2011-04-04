@@ -76,13 +76,15 @@ class ExternalNetworkConnector(generic.Connector):
 
 	def prepare_run(self):
 		generic.Connector.prepare_run(self)
-		self.used_feature_group = self.network_options().best()
+		self.used_network = self.network_options().best()
+		if not self.used_network:
+			raise fault.new(fault.NO_RESOURCES, "No free external network of type %s" % self.attributes["network_type"])
 		self.state = generic.State.PREPARED
 		self.save()
 
 	def destroy_run(self):
 		generic.Connector.destroy_run(self)
-		self.used_feature_group = None		
+		self.used_network = None		
 		self.state = generic.State.CREATED
 		self.save()
 		
