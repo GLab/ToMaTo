@@ -386,7 +386,8 @@ var EmulatedConnection = Connection.extend({
 		this.IPHintNumber = this.con.nextIPHintNumber++;
 	},
 	getIPHint: function() {
-		return "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24";
+		return {ipv4: "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24", 
+			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/64"};
 	},
 	downloadSupported: function() {
 		return this.getAttribute("download_supported");
@@ -415,7 +416,8 @@ var EmulatedRouterConnection = EmulatedConnection.extend({
 		this.setAttribute("gateway", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
 	},
 	getIPHint: function() {
-		return "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24";
+		return {ipv4: "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24",
+			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/80"};
 	}	
 });
 
@@ -486,7 +488,10 @@ var ConfiguredInterface = Interface.extend({
 		this.form = new ConfiguredInterfaceWindow(this);
 		var ipHint = con.getIPHint();
 		this.setAttribute("use_dhcp", ipHint == "dhcp");
-		if (ipHint != "dhcp" ) this.setAttribute("ip4address", ipHint);
+		if (ipHint != "dhcp" ) {
+			this.setAttribute("ip4address", ipHint.ipv4);
+			this.setAttribute("ip6address", ipHint.ipv6);
+		}
 	}
 });
 
@@ -1881,7 +1886,8 @@ var ConfiguredInterfaceWindow = InterfaceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
-		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");		
+		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip4/prefix");		
+		this.attrs.addField(new MagicTextField("ip6address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip6/prefix");		
 	}
 });
 

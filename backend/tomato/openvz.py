@@ -72,7 +72,7 @@ class OpenVZDevice(generic.Device):
 				iface.start_run()
 				assert config.remote_dry_run or self.host.interface_bridge(iface.interface_name()) == self.bridge_name(iface), "Interface %s not connected to bridge %s" % (iface.interface_name(), self.bridge_name(iface))
 		if self.attributes.get("gateway"):
-			self._exec("route add default gw %s" % self.attributes["gateway"]) 
+			self._exec("ip route add default via %s" % self.attributes["gateway"]) 
 		if not self.attributes.get("vnc_port"):
 			self.attributes["vnc_port"] = self.host.next_free_port()
 			self.save()		
@@ -253,10 +253,13 @@ class ConfiguredInterface(generic.Interface):
 		return self.device.upcast().interface_device(self)
 		
 	def configure(self, properties):
+		generic.Interface.configure(self, properties)
 		changed=False
 		if "use_dhcp" in properties:
 			changed = True
 		if "ip4address" in properties:
+			changed = True
+		if "ip6address" in properties:
 			changed = True
 		if changed:
 			if self.device.state == generic.State.STARTED:
@@ -271,7 +274,10 @@ class ConfiguredInterface(generic.Interface):
 		if self.attributes["ip4address"]:
 			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip4address"], self.name )) 
 			dev._exec("ip link set up dev %s" % self.name ) 
-		if self.attributes["use_dhcp"]:
+		if self.attributes["ip6address"]:
+			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip6address"], self.name )) 
+			dev._exec("ip link set up dev %s" % self.name ) 
+		if self.attributes["use_dhcp"] and util.parse_bool(self.attributes["use_dhcp"]):
 			dev._exec("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % self.name)
 			dev._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)
 		if self.is_connected():					
