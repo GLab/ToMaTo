@@ -38,6 +38,8 @@ class TincConnector(generic.Connector):
 				assert host.interface_exists(tincname), "Tinc deamon did not start"
 			host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname)
 			if self.type == "router":
+				host.execute ("sysctl -q -w net.ipv6.conf.all.forwarding=1");
+				host.execute ("sysctl -q -w net.ipv4.conf.all.forwarding=1");
 				table_in = 1000 + 2 * con.id
 				table_out = 1000 + 2 * con.id + 1 
 				host.execute ( "ip addr add %s dev %s" % (con.attributes["gateway4"], con.bridge_name()))
