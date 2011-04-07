@@ -84,7 +84,7 @@ def physical_links(api, request):
 	loss_stddev = math.sqrt(loss_stddev)
 	for l in links:
 		l["delay_avg_factor"] = (l["delay_avg"] - delay_avg)/delay_stddev
-		l["loss_factor"] = (l["loss"] - loss_avg)/loss_stddev if l["loss"] > 0.00001 else -2
+		l["loss_factor"] = (l["loss"] - loss_avg)/loss_stddev if l["loss"] > 0.001 else -2
 	for l in links:
 		l["loss_percent"] = l["loss"] * 100.0
 	return render_to_response("admin/map_%s.html" % settings.map, {"links": links})
