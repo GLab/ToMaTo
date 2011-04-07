@@ -123,7 +123,6 @@ class Modification():
 			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
 							
 def read_from_list(mods):
-	print mods
 	modlist = []
 	for mod in mods:
 		modlist.append(Modification(mod["type"], mod["element"], mod["subelement"], mod["properties"]))
