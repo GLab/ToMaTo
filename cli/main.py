@@ -1,23 +1,44 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, xmlrpclib, getpass
+import sys, xmlrpclib, getpass, getopt, os
 
-if not len(sys.argv) == 2:
-  print "ToMaTo control tool\nUsage: %s URL" % sys.argv[0]
-  sys.exit(1)
+class options:
+	ssl = False
+	hostname = None
+	port = 8000
+	username = None
+	file = None
+	call = None
+	password = None
 
-url=sys.argv[1]
-user=raw_input("Username: ")
-password=getpass.getpass("Password: ")
-api=xmlrpclib.ServerProxy('https://%s:%s@%s' % (user, password, url), allow_none=1)
+optlist, args = getopt.getopt(sys.argv[1:], 'h:p:su:f:c:', ['hostname=', 'port=', 'ssl', 'username=', 'file=', 'call='])
 
-def list():
-  return api.system.listMethods()
-  
-def help(method):
-  print "Signature: " + api.system.methodSignature(method)
-  print api.system.methodHelp(method)
+for (opt, val) in optlist:
+	if opt == "-h" or opt == "--hostname":
+		options.hostname = val
+	elif opt == "-p" or opt == "--port":
+		options.port = int(val)
+	elif opt == "-s" or opt == "--ssl":
+		options.ssl = True
+	elif opt == "-u" or opt == "--username":
+		options.username = val
+	elif opt == "-f" or opt == "--file":
+		options.file = val
+	elif opt == "-c" or opt == "--call":
+		options.call = val
+
+if not options.hostname:
+	print "No hostname given"
+	sys.exit(1)
+
+if not options.username:
+	options.username=raw_input("Username: ")
+	
+if not options.password:
+	options.password=getpass.getpass("Password: ")
+	
+api=xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % ('https' if options.ssl else 'http', options.username, options.password, options.hostname, options.port), allow_none=True)
 
 # Readline and tab completion support
 import atexit
@@ -25,58 +46,109 @@ import readline
 import rlcompleter
 from traceback import print_exc
 
-print 'Type "list()" or "help(method)" for more information.'
+def get_name(instance):
+	for name in globals:
+		if globals[name] is instance:
+			return name
 
-prompt = user
+def help(method=None):
+	if method is None:
+		print "Available methods:\tType help(method) for more infos."
+		print ", ".join(api.system.listMethods())
+	else:
+		if type(method) != type('str'):
+			method = get_name(method)
+		print "Signature: " + api.system.methodSignature(method)
+		print api.system.methodHelp(method)
 
+globals = {"help": help}
 try:
-  while True:
-    command = ""
-    while True:
-      # Get line
-      try:
-        if command == "":
-          sep = ">>> "
-        else:
-          sep = "... "
-        line = raw_input(prompt + sep)
-        # Ctrl-C
-      except KeyboardInterrupt:
-        command = ""
-        print
-        break
+	for func in api.system.listMethods():
+		globals[func] = api.__getattr__(func)
+except xmlrpclib.ProtocolError, err:
+	print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+	sys.exit(-1)
 
-      # Build up multi-line command
-      command += line
 
-      # Blank line or first line does not end in :
-      if line == "" or (command == line and line[-1] != ':'):
-        break
+def read_command_keyboard(prompt):
+	command = ""
+	while True:
+		try:
+			sep = "> " if command == "" else "~ "
+			line = raw_input(prompt + sep)
+		except KeyboardInterrupt:
+			print ""
+			return "q"
+		command += line
+		if line == "" or (command == line and line[-1] != ':'):
+			break
+		command += os.linesep
+	return command 
 
-      command += os.linesep
+def read_command_fd(fd):
+	command = ""
+	while True:
+		line = fd.readline()
+		if line == "":
+			if command == "":
+				raise EOFError
+			else:
+				return command
+		else:
+			line = line[:-1]
+		command += line
+		if line == "" or (command == line and line[-1] != ':'):
+			break
+		command += os.linesep
+	return command
 
-    # Blank line
-    if command == "":
-      continue
-    # Quit
-    elif command in ["q", "quit", "exit"]:
-      break
+def exec_command(command):
+	# Blank line
+	if command == "":
+		return
+	# Quit
+	elif command in ["q", "quit", "exit"]:
+		sys.exit(0)
 
-    try:
-      try:
-        # Try evaluating as an expression and printing the result
-        result = eval(command)
-        if result is not None:
-          print result
-      except SyntaxError:
-        # Fall back to executing as a statement
-        exec command
-    except xmlrpclib.ProtocolError, err:
-      # Avaid revealing password in error url
-      print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
-    except Exception, err:
-      print_exc()
+	try:
+		try:
+			# Try evaluating as an expression and printing the result
+			result = eval(command, globals)
+			if result is not None:
+				print result
+		except SyntaxError:
+			# Fall back to executing as a statement
+			exec command in globals
+		except xmlrpclib.ProtocolError, err:
+			# Avoid revealing password in error url
+			print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+		except xmlrpclib.Fault, f:
+			print f
+	except Exception, err:
+		print_exc()
 
-except EOFError:
-  print
-  pass
+def run_interactive():
+	print 'Type "help()" or "help(method)" for more information.'
+	prompt = "ToMaTo"
+	readline.parse_and_bind("tab: complete")
+	readline.set_completer(rlcompleter.Completer(globals).complete)
+	try:
+		while True:
+			exec_command(read_command_keyboard(prompt))
+	except EOFError:
+		print
+	
+def run_file(file):
+	fd = open(file, "r")
+	try:
+		while True:
+			exec_command(read_command_fd(fd))
+	except EOFError:
+		print
+		
+if options.call:
+	exec_command(options.call)
+elif options.file:
+	run_file(options.file)
+else:
+	run_interactive()
