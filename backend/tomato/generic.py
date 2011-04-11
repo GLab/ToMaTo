@@ -97,6 +97,17 @@ class Device(models.Model):
 		except: #pylint: disable-msg=W0702
 			return None		
 	
+	def migrate(self, direct):
+		self.topology.renew()
+		if self.topology.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		if direct:
+			return self.upcast().migrate_run()
+		else:
+			task = self.topology.start_task(self.upcast().migrate_run)
+			task.subtasks_total = 1
+			return task.id
+
 	def start(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
@@ -177,6 +188,12 @@ class Device(models.Model):
 				properties["hostgroup"] = ""
 		for key in properties:
 			self.attributes[key] = properties[key]
+		del self.attributes["host"]			
+		del self.attributes["name"]			
+		del self.attributes["type"]			
+		del self.attributes["state"]			
+		del self.attributes["download_supported"]			
+		del self.attributes["upload_supported"]			
 		self.save()
 
 	def update_resource_usage(self):
@@ -222,7 +239,8 @@ class Device(models.Model):
 			return None
 			
 	def use_uploaded_image(self, filename):
-		return self.topology.start_task(self.upcast().use_uploaded_image_run, filename).id
+		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
+		return self.topology.start_task(self.upcast().use_uploaded_image_run, path).id
 			
 			
 class Interface(models.Model):
@@ -247,6 +265,7 @@ class Interface(models.Model):
 	def configure(self, properties):
 		for key in properties:
 			self.attributes[key] = properties[key]
+		del self.attributes["name"]			
 		self.save()
 
 	def upcast(self):
@@ -406,6 +425,9 @@ class Connector(models.Model):
 	def configure(self, properties):
 		for key in properties:
 			self.attributes[key] = properties[key]
+		del self.attributes["name"]			
+		del self.attributes["type"]			
+		del self.attributes["state"]			
 		self.save()
 
 	def to_dict(self, auth):

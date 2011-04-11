@@ -227,7 +227,20 @@ class Host(models.Model):
 		qstr = urllib.urlencode(params)
 		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 
-	def upload(self, local_file, remote_file):
+	def file_transfer(self, local_file, host, remote_file, direct=False):
+		direct = False
+		if direct:
+			src = local_file
+		else:
+			import uuid
+			src = "%s/%s" % (self.attributes["hostserver_basedir"], uuid.uuid1())
+			self.file_copy(local_file, src)
+		url = self.download_grant(src, "file")
+		host.execute("curl -o \"%s\" \"%s\"" % (remote_file, url))
+		if not direct:
+			self.file_delete(src)
+		
+	def file_put(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file)
@@ -240,7 +253,7 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
-	def download(self, remote_file, local_file):
+	def file_get(self, remote_file, local_file):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if tasks.get_current_task():
@@ -375,8 +388,13 @@ class Host(models.Model):
 				enb.delete()
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
+		if "enabled" in properties:
+			self.enabled = util.parse_bool(properties["enabled"])
 		for key in properties:
 			self.attributes[key] = properties[key]
+		del self.attributes["enabled"]
+		del self.attributes["name"]
+		del self.attributes["group"]
 		self.save()
 	
 	def to_dict(self):
@@ -636,13 +654,17 @@ def measure_physical_links():
 def check_all_hosts():
 	if config.remote_dry_run:
 		return
+	tasks.set_current_task(tasks.TaskStatus(None))
 	for host in get_hosts():
 		try:
 			if host.enabled:
 				host.check()
-		except:
+		except Exception, exc:
+			print "Disabling host %s because or error during check: %s" % (h, exc)
 			host.enabled = False
 			host.save()
+	tasks.get_current_task().done()
+	tasks.set_current_task(None)
 
 if not config.TESTING:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)

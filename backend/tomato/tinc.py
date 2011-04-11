@@ -124,7 +124,7 @@ class TincConnector(generic.Connector):
 			host = con.interface.device.host
 			tincname = self.tincname(con)
 			path = self.topology.get_control_dir(host.name) + "/" + tincname + "/"
-			host.upload(path, "/etc/tinc/" + tincname)
+			host.file_put(path, "/etc/tinc/" + tincname)
 		self.state = generic.State.PREPARED
 		self.save()
 

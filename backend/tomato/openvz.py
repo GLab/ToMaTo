@@ -57,6 +57,10 @@ class OpenVZDevice(generic.Device):
 			return generic.State.CREATED
 		raise fault.new(fault.UNKNOWN, "Unable to determine openvz state for %s: %s" % ( self, res ) )
 	
+	def _start_vnc(self):
+		self.host.free_port(self.attributes["vnc_port"])		
+		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], self.vnc_password(), self.attributes["vmid"], self.name ))
+
 	def start_run(self):
 		generic.Device.start_run(self)
 		for iface in self.interface_set_all():
@@ -78,17 +82,20 @@ class OpenVZDevice(generic.Device):
 		if not self.attributes.get("vnc_port"):
 			self.attributes["vnc_port"] = self.host.next_free_port()
 			self.save()		
-		self.host.free_port(self.attributes["vnc_port"])		
-		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], self.vnc_password(), self.attributes["vmid"], self.name ))
+		self._start_vnc()
 		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state()
 		self.save()
 		assert self.state == generic.State.STARTED, "VM is not running"
 
+	def _stop_vnc(self):
+		self.host.process_kill("vnc-%s.pid" % self.name)
+		self.host.free_port(self.attributes["vnc_port"])		
+		del self.attributes["vnc_port"]
+
 	def stop_run(self):
 		generic.Device.stop_run(self)
-		self.host.process_kill("vnc-%s.pid" % self.name)
-		del self.attributes["vnc_port"]
+		self._stop_vnc()
 		self._vzctl("stop")
 		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state()
@@ -193,14 +200,122 @@ class OpenVZDevice(generic.Device):
 			self._vzctl("set", "--netif_del %s --save\n" % iface.name)
 		iface.delete()
 
+	def _get_env(self):
+		return {"host": self.host, "vmid": self.attributes["vmid"], "vnc_port": self.attributes["vnc_port"], "state": self.state}
+
+	def _set_env(self, env):
+		self.state = env["state"]
+		self.host = env["host"]
+		self.attributes["vmid"] = env["vmid"]
+		self.attributes["vnc_port"] = env["vnc_port"]
+
+	def migrate_run(self, host=None):
+		#FIXME: live-migration does not work properly
+		if self.state == generic.State.CREATED:
+			self.host = None
+			self.save()
+			return
+		if not host:
+			host = self.host_options().best()
+		if not host:
+			raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
+		#save old data
+		oldhost = self.host
+		oldenv = self._get_env()
+		oldstate = self.state
+		#save new data
+		newhost = host
+		newvmid = newhost.next_free_vm_id()
+		newenv = {"host": newhost, "state": generic.State.CREATED, "vmid": newvmid, "vnc_port": None}
+		#prepare new vm
+		self._set_env(newenv)
+		self.prepare(True)
+		newenv = self._get_env()
+		#create a tmp directory on both hosts
+		tmp = "/tmp/%s" % uuid.uuid1()
+		oldhost.file_mkdir(tmp)
+		newhost.file_mkdir(tmp)
+		#transfer vm disk image
+		self._set_env(oldenv)
+		targz = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image())
+		oldhost.file_move(targz, "%s/disk.tar.gz" % tmp)
+		oldhost.file_transfer("%s/disk.tar.gz" % tmp, newhost, "%s/disk.tar.gz" % tmp, direct=True)
+		newhost.execute("gunzip < %s/disk.tar.gz > %s/disk.tar" % (tmp, tmp))
+		#stop all connectors
+		constates={}
+		for iface in self.interface_set_all():
+			if iface.is_connected():
+				con = iface.connection.connector
+				if con.name in constates:
+					continue
+				constates[con.name] = con.state
+				if con.state == generic.State.STARTED:
+					con.stop(True)
+				if con.state == generic.State.PREPARED:
+					con.destroy(True)		
+		if oldstate == generic.State.STARTED:
+			self.stop(True)
+			"""
+			#prepare rdiff before snapshot to save time
+			oldhost.execute("gunzip < %(tmp)s/disk.tar.gz > %(tmp)s/disk.tar" % {"tmp": tmp})
+			oldhost.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": tmp})
+			#create a memory snapshot on old host and transfer it
+			self._stop_vnc()
+			import time
+			time.sleep(10)
+			self._vzctl("chkpnt", "--dumpfile %s/openvz.dump" % tmp)
+			self.state = generic.State.PREPARED
+			oldhost.file_transfer("%s/openvz.dump" % tmp, newhost, "%s/openvz.dump" % tmp)
+			#create and transfer a disk image rdiff
+			targz2 = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image(gzip=False))
+			oldhost.execute("rdiff -- delta %s/rdiff.sigs %s - | gzip > %s/disk.rdiff.gz" % (tmp, targz2, tmp))
+			oldhost.file_delete(targz2)
+			oldhost.file_transfer("%s/disk.rdiff.gz" % tmp, newhost, "%s/disk.rdiff.gz" % tmp)
+			#patch disk image with the rdiff
+			newhost.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": tmp})
+			newhost.file_move("%s/disk-patched.tar" % tmp, "%s/disk.tar" % tmp)
+			"""
+		#destroy vm on old host
+		self.destroy(True)
+		oldenv = self._get_env()
+		#use disk image on new host
+		self._set_env(newenv)
+		self.use_uploaded_image_run("%s/disk.tar" % tmp, gzip=False)
+		if oldstate == generic.State.STARTED:
+			self.start(True)
+			"""
+			#restore memory snapshot on new host
+			self._vzctl("restore", "--dumpfile %s/openvz.dump" % tmp)
+			assert self.get_state() == generic.State.STARTED 
+			self._start_vnc()
+			self.sate = generic.State.STARTED
+			"""
+		#remove tmp directories
+		oldhost.file_delete(tmp, recursive=True)
+		newhost.file_delete(tmp, recursive=True)
+		#save changes
+		self.save()
+		#redeploy all connectors
+		for iface in self.interface_set_all():
+			if iface.is_connected():
+				con = iface.connection.connector
+				if not con.name in constates:
+					continue
+				state = constates[con.name]
+				del constates[con.name]
+				if state == generic.State.PREPARED or state == generic.State.STARTED:
+					con.prepare(True)
+				if state == generic.State.STARTED:
+					con.start(True)
+
+
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def use_uploaded_image_run(self, filename):
-		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
+	def use_uploaded_image_run(self, path, gzip=True):
 		self.host.file_delete(self._image_path(), recursive=True)
 		self.host.file_mkdir(self._image_path())
-		self.host.execute("tar -xzf %s -C %s" % ( path, self._image_path() ))
+		self.host.execute("tar -x%sf %s -C %s" % ( "z" if gzip else "", path, self._image_path() ))
 		self.host.file_delete(path)
 		self.attributes["template"] = "***custom***"
 		self.save()
@@ -208,10 +323,10 @@ class OpenVZDevice(generic.Device):
 	def download_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def prepare_downloadable_image(self):
-		filename = "%s_%s_%s.tar.gz" % (self.topology.id, self.name, uuid.uuid1())
+	def prepare_downloadable_image(self, gzip=True):
+		filename = "%s_%s_%s.tar%s" % (self.topology.id, self.name, uuid.uuid1(), ".gz" if gzip else "")
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
-		self.host.execute("tar --numeric-owner -czf %s -C %s . " % ( path, self._image_path() ) )
+		self.host.execute("tar --numeric-owner -c%sf %s -C %s . " % ( "z" if gzip else "", path, self._image_path() ) )
 		return filename
 	
 	def get_resource_usage(self):

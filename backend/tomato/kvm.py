@@ -56,8 +56,7 @@ class KVMDevice(generic.Device):
 	def upload_supported(self):
 		return self.state == generic.State.PREPARED
 
-	def use_uploaded_image_run(self, filename):
-		path = "%s/%s" % (self.attributes["hostserver_basedir"], filename)
+	def use_uploaded_image_run(self, path):
 		self._qm("set", "--ide0 undef")
 		self.host.file_move(path, self._image_path() )
 		self.host.file_chown(self._image_path(), "root:root")
@@ -230,6 +229,32 @@ class KVMDevice(generic.Device):
 		#  not asserting state == started here, because this method will be used during start
 		name = self.host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": self.attributes["vmid"], "iface_id": iface_id }).strip()
 		return name
+
+	def migrate(self, host):
+		#create new VM on new host
+		#configure VM, interfaces etc.
+		#if state >= prepared
+			#rsync disk to a temp place on old host
+			#move dist into hostserver
+			#create download grant for new host and download
+			#move disk image to VM area on new host
+			#if state == started
+				#connect to monitor (socat) and stop the vm
+				#create a snapshot on old host
+				#transfer the snapshot file to new host
+				#create an rdiff of disk changes since rsync
+				#transfer changes to new host
+				#apply changes on new host
+				#resume on new host
+				#remove rdiff files
+				#remove snapshot files  
+			#remove disk images from hostserver
+			#remove disk image in temp place
+		#change vmid
+		#change host
+		#destroy on old host
+		#redeploy all connected connectors
+		pass
 
 	def to_dict(self, auth):
 		res = generic.Device.to_dict(self, auth)

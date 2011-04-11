@@ -470,6 +470,9 @@ def top_action(top_id, element_type, element_name, action, attrs={}, direct=Fals
 	elif action == "stop":
 		_top_access(top, "user", user)
 		task_id = element.stop(direct)
+	elif action == "migrate" and element_type =="device":
+		_top_access(top, "manager", user)
+		task_id = element.migrate(direct)
 	if element_type == "topology":
 		if action == "remove":
 			_top_access(top, "owner", user)
