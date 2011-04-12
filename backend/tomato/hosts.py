@@ -228,7 +228,7 @@ class Host(models.Model):
 		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 
 	def file_transfer(self, local_file, host, remote_file, direct=False):
-		direct = False
+		direct = False #FIXME: remove statement
 		if direct:
 			src = local_file
 		else:
@@ -272,10 +272,10 @@ class Host(models.Model):
 		return self.execute("cp -a \"%s\" \"%s\"" % (src, dst))
 
 	def file_chown(self, file, owner, recursive=False):
-		return self.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", file, owner))
+		return self.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", owner, file))
 
 	def file_chmod(self, file, mode, recursive=False):
-		return self.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", file, mode))
+		return self.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", mode, file))
 
 	def file_mkdir(self, dir):
 		return self.execute("mkdir -p \"%s\"" % dir)

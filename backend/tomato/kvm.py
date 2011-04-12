@@ -26,6 +26,9 @@ class KVMDevice(generic.Device):
 	def _qm(self, cmd, params=""):
 		return self.host.execute("qm %s %s %s" % (cmd, self.attributes["vmid"], params))
 
+	def _monitor(self, cmd):
+		return self.host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)s.mon; socat -u unix-connect:/var/run/qemu-server/%(vmid)s.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": self.attributes["vmid"]})
+
 	def _image_path(self):
 		return "/var/lib/vz/images/%s/disk.qcow2" % self.attributes["vmid"]
 
@@ -50,7 +53,7 @@ class KVMDevice(generic.Device):
 		filename = "%s_%s_%s.qcow2" % (self.topology.id, self.name, uuid.uuid1())
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
 		self.host.file_copy(self._image_path(), path)
-		self.host.chmod(path, 644)
+		self.host.file_chmod(path, 644)
 		return filename
 
 	def upload_supported(self):
@@ -64,29 +67,36 @@ class KVMDevice(generic.Device):
 		self.attributes["template"] = "***custom***"
 		self.save()
 
+	def _start_vnc(self):
+		if not self.attributes.get("vnc_port"):
+			self.attributes["vnc_port"] = self.host.next_free_port()
+			self.save()
+		self.host.free_port(self.attributes["vnc_port"])		
+		vmid = self.attributes["vmid"]
+		self.host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
+
 	def start_run(self):
 		generic.Device.start_run(self)
-		vmid = self.attributes["vmid"]
 		self._qm("start")
 		for iface in self.interface_set_all():
 			bridge = self.bridge_name(iface)
 			self.host.bridge_create(bridge)
 			self.host.bridge_connect(bridge, self.interface_device(iface) )
 			self.host.execute("ip link set %s up" % bridge)
-		if not self.attributes.get("vnc_port"):
-			self.attributes["vnc_port"] = self.host.next_free_port()
-			self.save()
-		self.host.free_port(self.attributes["vnc_port"])		
-		self.host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
+		self._start_vnc()
 		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state()
 		self.save()
 		assert self.state == generic.State.STARTED, "VM is not started"
 
+	def _stop_vnc(self):
+		self.host.process_kill("vnc-%s.pid" % self.name)
+		self.host.free_port(self.attributes["vnc_port"])		
+		del self.attributes["vnc_port"]
+	
 	def stop_run(self):
 		generic.Device.stop_run(self)
-		self.host.process_kill("vnc-%s.pid" % self.name)
-		del self.attributes["vnc_port"]
+		self._stop_vnc()
 		self._qm("stop")
 		self.state = generic.State.PREPARED #for dry-run
 		self.state = self.get_state()
@@ -230,7 +240,104 @@ class KVMDevice(generic.Device):
 		name = self.host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": self.attributes["vmid"], "iface_id": iface_id }).strip()
 		return name
 
-	def migrate(self, host):
+	def _get_env(self):
+		return {"host": self.host, "vmid": self.attributes["vmid"], "vnc_port": self.attributes["vnc_port"], "state": self.state}
+
+	def _set_env(self, env):
+		self.state = env["state"]
+		self.host = env["host"]
+		self.attributes["vmid"] = env["vmid"]
+		self.attributes["vnc_port"] = env["vnc_port"]
+
+	def migrate_run(self, host=None):
+		if self.state == generic.State.CREATED:
+			self.host = None
+			self.save()
+			return
+		if not host:
+			host = self.host_options().best()
+		if not host:
+			raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
+		#save old data
+		oldhost = self.host
+		oldenv = self._get_env()
+		oldstate = self.state
+		#save new data
+		newhost = host
+		newvmid = newhost.next_free_vm_id()
+		newenv = {"host": newhost, "state": generic.State.CREATED, "vmid": newvmid, "vnc_port": None}
+		#prepare new vm
+		self._set_env(newenv)
+		self.prepare(True)
+		newenv = self._get_env()
+		#create a tmp directory on both hosts
+		tmp = "/tmp/%s" % uuid.uuid1()
+		oldhost.file_mkdir(tmp)
+		newhost.file_mkdir(tmp)
+		#transfer vm disk image
+		self._set_env(oldenv)
+		disk = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image())
+		oldhost.file_move(disk, "%s/disk.qcow2" % tmp)
+		oldhost.file_transfer("%s/disk.qcow2" % tmp, newhost, "%s/disk.qcow2" % tmp, direct=True)
+		#stop all connectors
+		constates={}
+		for iface in self.interface_set_all():
+			if iface.is_connected():
+				con = iface.connection.connector
+				if con.name in constates:
+					continue
+				constates[con.name] = con.state
+				if con.state == generic.State.STARTED:
+					con.stop(True)
+				if con.state == generic.State.PREPARED:
+					con.destroy(True)		
+		if oldstate == generic.State.STARTED:
+			#prepare rdiff before snapshot to save time
+			oldhost.execute("rdiff signature %(tmp)s/disk.qcow2 %(tmp)s/rdiff.sigs" % {"tmp": tmp})
+			#create a memory snapshot on old host
+			self._monitor("stop")
+			self._monitor("savevm migrate")
+			self.stop(True)
+			#create and transfer a disk image rdiff
+			disk2 = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image())
+			oldhost.execute("rdiff -- delta %s/rdiff.sigs %s - | gzip > %s/disk.rdiff.gz" % (tmp, disk2, tmp))
+			oldhost.file_delete(disk2)
+			oldhost.file_transfer("%s/disk.rdiff.gz" % tmp, newhost, "%s/disk.rdiff.gz" % tmp)
+			#patch disk image with the rdiff
+			newhost.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.qcow2 - %(tmp)s/disk-patched.qcow2" % {"tmp": tmp})
+			newhost.file_move("%s/disk-patched.qcow2" % tmp, "%s/disk.qcow2" % tmp)			
+		#destroy vm on old host
+		self.destroy(True)
+		oldenv = self._get_env()
+		#use disk image on new host
+		self._set_env(newenv)
+		self.use_uploaded_image_run("%s/disk.qcow2" % tmp)
+		if oldstate == generic.State.STARTED:
+			self.start(True)
+			# restore snapshot
+			self._monitor("stop")
+			self._monitor("loadvm migrate")
+			self._monitor("cont")
+			self._monitor("delvm migrate")
+		#remove tmp directories
+		oldhost.file_delete(tmp, recursive=True)
+		newhost.file_delete(tmp, recursive=True)
+		#save changes
+		self.save()
+		#redeploy all connectors
+		for iface in self.interface_set_all():
+			if iface.is_connected():
+				con = iface.connection.connector
+				if not con.name in constates:
+					continue
+				state = constates[con.name]
+				del constates[con.name]
+				if state == generic.State.PREPARED or state == generic.State.STARTED:
+					con.prepare(True)
+				if state == generic.State.STARTED:
+					con.start(True)
+
+	#def migrate(self, host):
 		#create new VM on new host
 		#configure VM, interfaces etc.
 		#if state >= prepared
@@ -254,7 +361,7 @@ class KVMDevice(generic.Device):
 		#change host
 		#destroy on old host
 		#redeploy all connected connectors
-		pass
+		#pass
 
 	def to_dict(self, auth):
 		res = generic.Device.to_dict(self, auth)

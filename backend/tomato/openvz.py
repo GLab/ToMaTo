@@ -58,6 +58,9 @@ class OpenVZDevice(generic.Device):
 		raise fault.new(fault.UNKNOWN, "Unable to determine openvz state for %s: %s" % ( self, res ) )
 	
 	def _start_vnc(self):
+		if not self.attributes.get("vnc_port"):
+			self.attributes["vnc_port"] = self.host.next_free_port()
+			self.save()		
 		self.host.free_port(self.attributes["vnc_port"])		
 		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], self.vnc_password(), self.attributes["vmid"], self.name ))
 
@@ -79,9 +82,6 @@ class OpenVZDevice(generic.Device):
 			self._exec("ip route add default via %s" % self.attributes["gateway4"]) 
 		if self.attributes.get("gateway6"):
 			self._exec("ip route add default via %s" % self.attributes["gateway6"]) 
-		if not self.attributes.get("vnc_port"):
-			self.attributes["vnc_port"] = self.host.next_free_port()
-			self.save()		
 		self._start_vnc()
 		self.state = generic.State.STARTED #for dry-run
 		self.state = self.get_state()
