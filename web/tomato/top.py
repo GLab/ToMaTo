@@ -26,8 +26,7 @@ from lib import *
 import xmlrpclib, tempfile
 
 def _display_top(api, top_id, task_id=None, action=None):
-	top=api.top_info(int(top_id))
-	return render_to_response("top/detail.html", {'top_id': top_id, 'top': top, 'action' : action, 'task_id' : task_id })
+	return render_to_response("top/edit_jsui.html", {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
 
 @wrap_rpc
 def index(api, request):
@@ -43,7 +42,26 @@ def index(api, request):
 @wrap_rpc
 def create(api, request):
 	top_id=api.top_create()
-	return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
+	if request.REQUEST.has_key("json"):
+		import simplejson as json
+		top = json.loads(request.REQUEST["json"])
+		mods = []
+		mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
+		for devname, dev in top["devices"].iteritems():
+			mods.append({"type": "device-create", "element": None, "subelement": None, "properties": dev["attrs"]})
+			for iface in dev["interfaces"].values():
+				mods.append({"type": "interface-create", "element": devname, "subelement": None, "properties": iface["attrs"]})
+		for conname, con in top["connectors"].iteritems():
+			mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
+			for c in con["connections"].values():
+				mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
+		api.top_modify(top_id, mods, True)
+		return HttpResponseRedirect(reverse('tomato.top.show', kwargs={"top_id": top_id}))
+	else:
+		return HttpResponseRedirect(reverse('tomato.top.edit', kwargs={"top_id": top_id}))
+
+def import_form(request):
+	return render_to_response("top/import.html")
 
 @wrap_rpc
 def download_capture(api, request, top_id, connector_id, device_id, interface_id):
@@ -87,10 +105,6 @@ def edit(api, request, top_id):
 		editor = request.REQUEST["editor"]
 	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "external_networks": external_networks, 'edit':True} )
 
-@wrap_rpc
-def details(api, request, top_id):
-	return _display_top(api, top_id)
-	
 @wrap_rpc
 def show(api, request, top_id):
 	if not request.REQUEST.has_key("format"):
