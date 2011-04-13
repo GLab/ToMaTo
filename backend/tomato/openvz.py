@@ -210,7 +210,6 @@ class OpenVZDevice(generic.Device):
 		self.attributes["vnc_port"] = env["vnc_port"]
 
 	def migrate_run(self, host=None):
-		#FIXME: live-migration does not work properly
 		if self.state == generic.State.CREATED:
 			self.host = None
 			self.save()
@@ -254,8 +253,6 @@ class OpenVZDevice(generic.Device):
 				if con.state == generic.State.PREPARED:
 					con.destroy(True)		
 		if oldstate == generic.State.STARTED:
-			self.stop(True)
-			"""
 			#prepare rdiff before snapshot to save time
 			oldhost.execute("gunzip < %(tmp)s/disk.tar.gz > %(tmp)s/disk.tar" % {"tmp": tmp})
 			oldhost.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": tmp})
@@ -265,7 +262,7 @@ class OpenVZDevice(generic.Device):
 			time.sleep(10)
 			self._vzctl("chkpnt", "--dumpfile %s/openvz.dump" % tmp)
 			self.state = generic.State.PREPARED
-			oldhost.file_transfer("%s/openvz.dump" % tmp, newhost, "%s/openvz.dump" % tmp)
+			oldhost.file_transfer("%s/openvz.dump" % tmp, newhost, "%s/openvz.dump" % tmp, direct=True)
 			#create and transfer a disk image rdiff
 			targz2 = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image(gzip=False))
 			oldhost.execute("rdiff -- delta %s/rdiff.sigs %s - | gzip > %s/disk.rdiff.gz" % (tmp, targz2, tmp))
@@ -274,7 +271,6 @@ class OpenVZDevice(generic.Device):
 			#patch disk image with the rdiff
 			newhost.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": tmp})
 			newhost.file_move("%s/disk-patched.tar" % tmp, "%s/disk.tar" % tmp)
-			"""
 		#destroy vm on old host
 		self.destroy(True)
 		oldenv = self._get_env()
@@ -282,14 +278,11 @@ class OpenVZDevice(generic.Device):
 		self._set_env(newenv)
 		self.use_uploaded_image_run("%s/disk.tar" % tmp, gzip=False)
 		if oldstate == generic.State.STARTED:
-			self.start(True)
-			"""
 			#restore memory snapshot on new host
 			self._vzctl("restore", "--dumpfile %s/openvz.dump" % tmp)
 			assert self.get_state() == generic.State.STARTED 
 			self._start_vnc()
-			self.sate = generic.State.STARTED
-			"""
+			self.state = generic.State.STARTED
 		#remove tmp directories
 		oldhost.file_delete(tmp, recursive=True)
 		newhost.file_delete(tmp, recursive=True)

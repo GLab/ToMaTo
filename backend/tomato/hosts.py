@@ -234,14 +234,19 @@ class Host(models.Model):
 		direct = False #FIXME: remove statement
 		if direct:
 			src = local_file
+			mode = host.execute("stat -c %%a %s" % local_file).strip()
 		else:
 			import uuid
 			src = "%s/%s" % (self.attributes["hostserver_basedir"], uuid.uuid1())
 			self.file_copy(local_file, src)
+		self.file_chmod(src, 644)
 		url = self.download_grant(src, "file")
-		host.execute("curl -o \"%s\" \"%s\"" % (remote_file, url))
+		res = host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (remote_file, url))
+		assert res.splitlines()[-1] == "0", "Failure to transfer file"
 		if not direct:
 			self.file_delete(src)
+		else:
+			self.file_chmod(local_file, mode)
 		
 	def file_put(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
