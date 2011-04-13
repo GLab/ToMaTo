@@ -137,8 +137,11 @@ class Host(models.Model):
 			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"])
 			
 	def cluster_state(self):
-		res = self.execute("pveca -i 2>/dev/null | tail -n 1")
-		return res.split("\n")[-2].split(" ")[-1]
+		try:
+			res = self.execute("pveca -i 2>/dev/null | tail -n 1")
+			return res.split("\n")[-2].split(" ")[-1]
+		except:
+			return ClusterState.NONE
 				
 	def next_free_vm_id (self):
 		ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
