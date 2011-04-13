@@ -371,9 +371,11 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
+		last_usage = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.max_state(), "owner": self.owner,
 					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
+					"stop_timeout": str(last_usage + self.STOP_TIMEOUT), "destroy_timeout": str(last_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(last_usage + self.REMOVE_TIMEOUT) 
 					}
 			}
 		res["attrs"].update(self.attributes.items())

@@ -270,7 +270,26 @@ var Topology = IconElement.extend({
 		this.paletteItem = true;
 		this.paint();
 		this.isTopology = true;
+		this.warnings = [];
+		this.errors = [];
 		this.form = new TopologyWindow(this);
+	},
+	paint: function() {
+		this._super();
+		this.stateIcon = this.editor.g.image(basepath+"images/pixel.png", this.pos.x+5, this.pos.y+5, 16, 16);
+		this.stateIcon.attr({opacity: 0.0});
+		this.stateIcon.parent = this;
+		this.stateIcon.click(this._click);
+	},
+	paintUpdate: function() {
+		this._super();
+		if (this.errors.length>0) {
+			this.stateIcon.attr({src: basepath+"images/error.png"});
+			this.stateIcon.attr({opacity: 1.0});		    
+		} else if (this.warnings.length>0) {
+			this.stateIcon.attr({src: basepath+"images/warning.png"});
+			this.stateIcon.attr({opacity: 1.0});
+		} else this.stateIcon.attr({opacity: 0.0});
 	},
 	setAttribute: function(name, value) {
 		if (name != "state") this.attributes[name]=value;
@@ -829,6 +848,80 @@ var Editor = Class.extend({
 		this.paintBackground();
 		this.checkBrowser();
 	},
+	analyze: function() {
+		var top = this.topology;
+		top.warnings = [];
+		top.errors = [];
+		//check timeouts
+		var now = new Date();
+		var stop = new Date(top.getAttribute("stop_timeout"));
+		var destroy = new Date(top.getAttribute("destroy_timeout"));
+		var remove = new Date(top.getAttribute("remove_timeout"));
+		var day = 1000 * 60 * 60 * 24;
+		if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if ((remove-now) < 7 * day) top.warnings.push("Topology will be removed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		this.elements.forEach(function(el){
+			if (el.paletteItem) return;
+			if (el.isDevice) {
+				if (el.interfaces.length == 0) top.warnings.push("Connectivity warning: " + el.name + " has no connections"); 
+				//check attributes
+				if (el.getAttribute("gateway4") && ! pattern.ip4.test(el.getAttribute("gateway4")))
+					top.errors.push("Config error: " + el.name + " has an invalid IPv4 gateway address");
+				if (el.getAttribute("gateway6") && ! pattern.ip6.test(el.getAttribute("gateway6")))
+					top.errors.push("Config error: " + el.name + " has an invalid IPv6 gateway address");
+				el.interfaces.forEach(function(iface){
+					var con = iface.con.con;
+					//check attributes
+					if (iface.getAttribute("ip4address") && ! pattern.ip4net.test(iface.getAttribute("ip4address")))
+						top.errors.push("Config error: " + el.name + "." + iface.name + " has an invalid IPv4 address/prefix");
+					if (iface.getAttribute("ip6address") && ! pattern.ip6net.test(iface.getAttribute("ip6address")))
+						top.errors.push("Config error: " + el.name + "." + iface.name + " has an invalid IPv6 address/prefix");
+					//check for state mismatch
+					var elstate = el.getAttribute("state");
+					var constate = con.getAttribute("state");
+					if (elstate == "started" && constate != "started") top.warnings.push("Communication problem: " + el.name + " is started but " + con.name + " is " + constate );
+				});
+			}
+			if (el.isConnector) {
+				if (el.connections.length == 0) top.warnings.push("Connectivity warning: " + el.name + " has no connections"); 
+				el.connections.forEach(function(con){
+					//check attributes
+					if (con.getAttribute("bandwidth")) {
+						var val = con.getAttribute("bandwidth");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid bandwidth");
+						var val = parseInt(val);
+						if (val > 1000000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 1 Gbit/s bandwidth configured");
+						if (val < 10) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has less than 10 kbit/s bandwidth configured");
+					}
+					if (con.getAttribute("delay")) {
+						var val = con.getAttribute("delay");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid delay");
+						var val = parseInt(val);
+						if (val > 10000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 10 seconds delay configured");
+						if (val < 0) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has a negative delay configured");
+					}
+					if (con.getAttribute("lossratio")) {
+						var val = con.getAttribute("lossratio");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid packet loss ratio");
+						var val = parseFloat(val);
+						if (val >= 0.9) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 90% packet loss configured");
+						if (val >= 1.0) top.errors.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has 100% or more packet loss configured");
+						if (val < 0) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has a negative packet loss ratio configured");
+					}
+					if (con.getAttribute("gateway4") && ! pattern.ip4net.test(con.getAttribute("gateway4")))
+						top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid IPv4 gateway/network address");
+					if (con.getAttribute("gateway6") && ! pattern.ip6net.test(con.getAttribute("gateway6")))
+						top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid IPv6 gateway/network address");
+				});
+			}
+		});
+		top.paintUpdate();
+		if (top.warnings.length>0 || top.errors.length>0) {
+			top.form.tabs.select("analysis");
+			top.form.show();
+		}
+	},
 	checkBrowser: function() {
 		if (! $.support.ajax) this.errorMessage("Browser incompatibility", "Your browser does not support ajax, so you will not be able to use this editor.");
 	},
@@ -1046,6 +1139,7 @@ var Editor = Class.extend({
 				} else dangling_interfaces_mods.push({type: "interface-delete", element: dev_obj.name, subelement: iface.attrs.name, properties: {}});
 			}
 		}
+		this.analyze();
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 	},
@@ -1079,6 +1173,7 @@ var Editor = Class.extend({
 				c_obj.setAttributes(c.attrs);
 			}
 		}
+		this.analyze();
 		this.isLoading = false;
 		if (callback) callback();
 	},
@@ -1709,6 +1804,27 @@ var ResourcesPanel = Class.extend({
 	}
 });
 
+var AnalysisPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.div.empty();
+		var t = this;
+		var ul = $('<ul class="none">');
+		for (var i = 0; i < this.obj.errors.length; i++) ul.append('<li class="error">'+this.obj.errors[i]+'</li>');
+		for (var i = 0; i < this.obj.warnings.length; i++) ul.append('<li class="warning">'+this.obj.warnings[i]+'</li>');
+		this.div.append((this.obj.errors == 0 && this.obj.warnings == 0) ? "<p>No errors or warnings</p>" : ul);
+		this.div.append(new Button("check", 'Run again', function(){
+			t.obj.editor.analyze();
+		}).getInputElement());
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
 var PermissionsPanel = Class.extend({
 	init: function(obj) {
 		this.obj = obj;
@@ -1757,6 +1873,8 @@ var TopologyWindow = ElementWindow.extend({
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
 		this.permissions = new PermissionsPanel(obj);
 		this.tabs.addTab("permissions", "Permissions", this.permissions.getDiv());
+		this.analysis = new AnalysisPanel(obj);
+		this.tabs.addTab("analysis", "Analysis", this.analysis.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
@@ -1764,8 +1882,10 @@ var TopologyWindow = ElementWindow.extend({
 		if (this.resources) this.resources.load();
 		if (this.attrs) this.attrs.load();
 		if (this.permissions) this.permissions.load();
+		if (this.analysis) this.analysis.load();
 	},
 	show: function() {
+		if (this.obj.errors.length>0) this.tabs.select("analysis");
 		this.reload();
 		this._super();
 	}
@@ -1807,8 +1927,8 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 		this._super(obj);
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
 		this.attrs.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
-		this.attrs.addField(new MagicTextField("gateway4", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway4");
-		this.attrs.addField(new MagicTextField("gateway6", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "gateway6");
+		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
+		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6, ""), "gateway6");
 	}
 });
 
@@ -1893,8 +2013,8 @@ var ConfiguredInterfaceWindow = InterfaceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
-		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip4/prefix");		
-		this.attrs.addField(new MagicTextField("ip6address", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "ip6/prefix");		
+		this.attrs.addField(new MagicTextField("ip4address", pattern.ip4net, ""), "ip4/prefix");		
+		this.attrs.addField(new MagicTextField("ip6address", pattern.ip6net, ""), "ip6/prefix");		
 	}
 });
 
@@ -1904,9 +2024,9 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs = new AttributeForm(obj);
-		this.attrs.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.attrs.addField(new MagicTextField("delay", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
-		this.attrs.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
+		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
+		this.attrs.addField(new MagicTextField("delay", pattern.int, "0"), "latency&nbsp;(in&nbsp;ms)");
+		this.attrs.addField(new MagicTextField("lossratio", pattern.float, "0.0"), "packet&nbsp;loss");
 		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
 		this.add(this.attrs.getDiv());
 	},
@@ -1926,8 +2046,8 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new MagicTextField("gateway4", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip4/prefix)");
-		this.attrs.addField(new MagicTextField("gateway6", /^([0-9A-Fa-f]{1,4}:){0,7}:?(:[0-9A-Fa-f]){0,7}\/\d+$/, ""), "gateway&nbsp;(ip6/prefix)");
+		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4net, ""), "gateway&nbsp;(ip4/prefix)");
+		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6net, ""), "gateway&nbsp;(ip6/prefix)");
 	}
 });
 

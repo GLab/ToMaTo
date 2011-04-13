@@ -242,7 +242,7 @@ div.tx_sevenpack-list_container { margin: 0; }
 .topology_analysis {
 	list-style-type: none;
 }
-.problem {
+.problem, .error{
 	font-weight:bold;
 	color:red;
 }
@@ -251,6 +251,25 @@ div.tx_sevenpack-list_container { margin: 0; }
 }
 .hint {
 	color:orange;
+}
+
+ul.none {
+	list-style-type: none;
+}
+li.warning, li.error, li.problem {
+	background-repeat: no-repeat;
+	background-position: 0px 0px; 
+	padding-left: 25px;
+	margin-left: -25px;
+}
+li.warning {
+	background-image: url(../icons/warning.png);	
+	color: black;
+}
+li.error, li.problem {
+	background-image: url(../icons/error.png);
+	color:red;
+	font-weight: normal;
 }
 
 td {
