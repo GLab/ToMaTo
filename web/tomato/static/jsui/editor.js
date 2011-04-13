@@ -1943,6 +1943,7 @@ var WizardWindow = Window.extend({
 		this.addField(new SelectField("type", ["Star", "Ring", "Full mesh", "Star around host", "Loose nodes"], "Star"), "Topology type");		
 		this.addField(new MagicTextField("number", /^\d+$/, "5"), "Number of nodes");
 		this.addField(new SelectField("device_type", ["OpenVZ", "KVM"], "OpenVZ"), "Device type");		
+		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "Device hostgroup");
 		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "Device template");		
 		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
 		this.addField(new CheckField("internet", false), "Additional internet connection");
@@ -1970,6 +1971,7 @@ var WizardWindow = Window.extend({
 						break;
 				}
 				nodes[i].setAttribute("template", this.fields.template.getValue());
+				nodes[i].setAttribute("hostgroup", this.fields.hostgroup.getValue());
 			}
 		}
 		if (nodes.length > 1) {
@@ -2013,7 +2015,7 @@ var WizardWindow = Window.extend({
 			container.width(this.editor.size.x-this.editor.paletteWidth);
 			container.height(this.editor.size.y);
 			this.editor.div.append(container);
-			container.position({my: "right", at: "right", of: $(this.editor.div)});
+			container.position({my: "right top", at: "right top", of: $(this.editor.div), collision: "none"});
 			var div = $("<div/>");
 			div.attr({style: "border: 1px dashed black; text-align: center;"});
 			div.resizable({containment: container, minWidth: 175, minHeight: 175}).draggable({containment: container});
@@ -2046,6 +2048,7 @@ var WizardWindow = Window.extend({
 		this.fields.root_password.setEditable(!sel);
 		this._onTypeChange();
 		this.fields.template.setEditable(!sel);
+		this.fields.hostgroup.setOptions(this.editor.hostGroups);
 		this.div.dialog("open");
 	},
 	_onTypeChange: function() {
