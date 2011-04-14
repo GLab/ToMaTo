@@ -40,7 +40,8 @@ class Introspection():
 			return "Unknown method: %s" % method
 		import inspect
 		argspec = inspect.getargspec(func)
-		return "%s(" % method + ", ".join(argspec.args[:-1]) + ")"
+		argstr = inspect.formatargspec(argspec.args[:-1], defaults=argspec.defaults[:-1])
+		return method + argstr
 
 	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		func = getattr(self.api, method)

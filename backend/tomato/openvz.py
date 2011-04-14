@@ -33,7 +33,10 @@ class OpenVZDevice(generic.Device):
 		return "/var/lib/vz/private/%s" % self.attributes["vmid"]
 
 	def execute(self, cmd):
-		return self._exec(cmd)
+		if self.state == generic.State.STARTED:
+			return self._exec(cmd)
+		else:
+			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Device must be running to execute commands on it: %s" % self.name)
 
 	def vnc_password(self):
 		if not self.attributes.get("vnc_port"):

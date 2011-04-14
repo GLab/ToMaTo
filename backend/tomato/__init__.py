@@ -30,6 +30,7 @@ os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 def db_migrate():
 	"""
+	NOT CALLABLE VIA XML-RPC
 	Migrates the database forward to the current structure using migrations
 	from the package tomato.migrations.
 	"""
@@ -48,6 +49,7 @@ import tinc, kvm, openvz
 
 def _top_access(top, role, user):
 	"""
+	NOT CALLABLE VIA XML-RPC
 	Asserts the user has access to a topology.
 	
 	@type top: topology.Topology
@@ -64,6 +66,7 @@ def _top_access(top, role, user):
 
 def _admin_access(user):
 	"""
+	NOT CALLABLE VIA XML-RPC
 	Asserts the user has admin access.
 	
 	@type user: generic.User
@@ -81,10 +84,7 @@ def account(user=None):
 	about the current user and his groups.
 	Note: The password is not part of the user object.
 	
-	@type user: generic.User  
-	@param user: current user
-	@rtype: generic.User
-	@return: the user object of the current user 
+	Returns: the user object of the current user
 	"""
 	return user
 
@@ -92,27 +92,25 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns details about a host. If the host does not exist False is returned.
 	
-	@type user: generic.User  
-	@param user: current user
-	@type hostname: string
-	@param hostname: the name of the host  
-	@rtype: dict or boolean
-	@return: a dict of host details if host exists or False otherwise
+	Parameters:
+		string hostname: the name of the host
+		  
+	Returns: a dict of host details if host exists or False otherwise
 	"""
 	try:
 		return hosts.get_host(hostname).to_dict()
 	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
-def host_list(group_filter="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def host_list(group_filter=None, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns details about all hosts as a list. If group filter is "" all hosts
 	will be returned otherwise only the hosts within the group (exact match) .
 	
-	@type user: generic.User  
-	@param user: current user
-	@type group_filter: string
-	@param group_filter: host filter by group 
+	Parameters:
+		string group_filter: host filter by group
+		
+	Returns: a list of dicts describing all matching hosts 
 	"""
 	res=[]
 	qs = hosts.Host.objects.all() # pylint: disable-msg=E1101
@@ -129,19 +127,16 @@ def host_add(host_name, group_name, enabled, attrs, user=None):
 	available. The result of this method is a task id that can be used to
 	observe the check and upload progress. This operation needs admin access.
 	
-	@param host_name: the host name
-	@type host_name: string
-	@param group_name: the name of the host group
-	@type group_name: string
-	@param enabled: whether the host should be enabled
-	@type enabled: boolean
-	@param attrs: dictionary with host attributes
-	@type attrs: dict        
-	@param user: current user
-	@type user: generic.User
-	@return: task id of the task
-	@rtype: string
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: the host name
+		string group_name: the name of the host group
+		boolean enabled: whether the host should be enabled
+		dict attrs: dictionary with host attributes
+
+	Returns: task id of the task
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	return hosts.create(host_name, group_name, enabled, attrs)
@@ -151,19 +146,16 @@ def host_change(host_name, group_name, enabled, attrs, user=None):
 	Changes a host. The new values will only apply to new topologies or on state change.
 	This operation needs admin access.
 	
-	@param host_name: the host name
-	@type host_name: string
-	@param group_name: the name of the host group
-	@type group_name: string
-	@param enabled: whether the host should be enabled
-	@type enabled: boolean
-	@param attrs: dictionary with host attributes
-	@type attrs: dict        
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: the host name
+		string group_name: the name of the host group
+		boolean enabled: whether the host should be enabled
+		dict attrs: dictionary with host attributes
+
+	Returns: True
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	hosts.change(host_name, group_name, enabled, attrs)
@@ -174,14 +166,14 @@ def host_remove(host_name, user=None):
 	Deletes a host so that the host and all elements depending on it are 
 	removed from the database. This will not remove or stop topologies from
 	the host. This operation needs admin access.
+
+	Parameters:	
+		string host_name: the host name
 	
-	@param host_name: the host name
-	@type host_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Returns: True
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	hosts.remove(host_name)
@@ -191,13 +183,13 @@ def host_debug(host_name, user=None):
 	"""
 	Returns debug information about the host. This operation needs admin access.
 	
-	@param host_name: the host name
-	@type host_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: Debug infromation
-	@rtype: string
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: the host name
+
+	Returns: Debug information
+
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
@@ -208,13 +200,13 @@ def host_check(host_name, user=None):
 	Performs a sanity check on the host. This method will return a task id that
 	can be used to obtain the results. This operation needs admin access.
 	
-	@param host_name: the host name
-	@type host_name: string
-	@param user: current user
-	@type user: generic.User
-	@return: task id
-	@rtype: string
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: the host name
+	
+	Returns: task id
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
@@ -224,10 +216,7 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns a list of all host groups.
 	
-	@param user: current user
-	@type user: generic.User
-	@return: all host groups
-	@rtype: list of string
+	Returns: list of all host group names
 	"""
 	return hosts.get_host_groups()
 
@@ -235,17 +224,15 @@ def external_network_add(type, group, params, user=None):
 	"""
 	Adds an external network. This operation needs admin access.
 	
-	@param type: type of the external network
-	@type type: string
-	@param group: group of the external network
-	@type group: string
-	@param params: dict of all additional parameters
-	@type params: dict 
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string type: type of the external network
+		string group: group of the external network
+		dict params: dict of all additional parameters
+
+	Returns: True
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	if not params.has_key("max_devices"):
@@ -258,18 +245,16 @@ def external_network_add(type, group, params, user=None):
 def external_network_change(type, group, params, user=None):
 	"""
 	Changes an external network. This operation needs admin access.
+
+	Parameters:	
+		string type: type of the external network
+		string group: name of the external network
+		dict params: dict of all additional parameters
+
+	Returns: True
 	
-	@param type: type of the external network
-	@type type: string
-	@param group: name of the external network
-	@type group: string
-	@param params: dict of all additional parameters
-	@type params: dict 
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
@@ -286,15 +271,14 @@ def external_network_remove(type, group, user=None):
 	"""
 	Removes an external network. This operation needs admin access.
 	
-	@param type: type of the external network
-	@type type: string
-	@param group: name of the external network
-	@type group: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string type: type of the external network
+		string group: name of the external network
+	
+	Returns: True
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
@@ -308,19 +292,16 @@ def external_network_bridge_add(host_name, type, group, bridge, user=None):
 	"""
 	Adds an external network bridge to a host. This operation needs admin access.
 	
-	@param host_name: name of the host
-	@type host_name: string
-	@param type: type of the external network
-	@type type: string
-	@param group: group of the external network
-	@type group: string
-	@param bridge: bridge to connect interfaces to
-	@type bridge: string       
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: name of the host
+		string type: type of the external network
+		string group: group of the external network
+		string bridge: bridge to connect interfaces to
+	
+	Returns: True
+
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
@@ -331,17 +312,15 @@ def external_network_bridge_remove(host_name, type, group, user=None):
 	"""
 	Removes an external network bridge to a host. This operation needs admin access.
 	
-	@param host_name: name of the host
-	@type host_name: string
-	@param type: type of the external network
-	@type type: string
-	@param group: group of the external network
-	@type group: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
-	@raise fault.Error: if the user does not have enough privileges  
+	Parameters:
+		string host_name: name of the host
+		string type: type of the external network
+		string group: group of the external network
+
+	Returns: True
+	
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
@@ -376,7 +355,7 @@ def top_info(top_id, user=None):
 	top = topology.get(top_id)
 	return top.to_dict(top.check_access("user", user), True)
 
-def top_list(owner_filter, host_filter, access_filter, user=None):
+def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
 	"""
 	Returns brief information about topologies. The set of topologies that will
 	be returned can be filtered by owner, by host (affected by the topology) 
