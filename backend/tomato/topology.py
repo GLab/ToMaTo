@@ -341,6 +341,12 @@ class Topology(models.Model):
 		if atype == Permission.ROLE_USER:
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
+	def resources(self):
+		res = {}
+		for key in self.attributes:
+			if key.startswith("resources_"):
+				res[key[10:]] = self.attributes[key]
+
 	def update_resource_usage(self):
 		res = {}
 		for dev in self.device_set_all():

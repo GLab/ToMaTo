@@ -152,14 +152,11 @@ def host_change(host_name, group_name, enabled, attrs, user=None):
 		boolean enabled: whether the host should be enabled
 		dict attrs: dictionary with host attributes
 
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	hosts.change(host_name, group_name, enabled, attrs)
-	return True
 
 def host_remove(host_name, user=None):
 	"""
@@ -170,14 +167,11 @@ def host_remove(host_name, user=None):
 	Parameters:	
 		string host_name: the host name
 	
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	hosts.remove(host_name)
-	return True
 
 def host_debug(host_name, user=None):
 	"""
@@ -229,8 +223,6 @@ def external_network_add(type, group, params, user=None):
 		string group: group of the external network
 		dict params: dict of all additional parameters
 
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
@@ -240,7 +232,6 @@ def external_network_add(type, group, params, user=None):
 	if not params.has_key("avoid_duplicates"):
 		params["avoid_duplicates"] = False
 	hosts.ExternalNetwork.objects.create(type=type, group=group, max_devices=params["max_devices"], avoid_duplicates=params["avoid_duplicates"])
-	return True
 
 def external_network_change(type, group, params, user=None):
 	"""
@@ -251,8 +242,6 @@ def external_network_change(type, group, params, user=None):
 		string group: name of the external network
 		dict params: dict of all additional parameters
 
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
@@ -265,7 +254,6 @@ def external_network_change(type, group, params, user=None):
 	en.max_devices = params["max_devices"]
 	en.avoid_duplicates = params["avoid_duplicates"]
 	en.save()
-	return True
 
 def external_network_remove(type, group, user=None):
 	"""
@@ -275,8 +263,6 @@ def external_network_remove(type, group, user=None):
 		string type: type of the external network
 		string group: name of the external network
 	
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
@@ -285,8 +271,6 @@ def external_network_remove(type, group, user=None):
 	if len(en.externalnetworkbridge_set.all()):
 		raise fault.new(fault.EXTERNAL_NETWORK_HAS_BRIDGES, "External network still has bridges")
 	en.delete()
-	return True
-
 
 def external_network_bridge_add(host_name, type, group, bridge, user=None):
 	"""
@@ -298,15 +282,12 @@ def external_network_bridge_add(host_name, type, group, bridge, user=None):
 		string group: group of the external network
 		string bridge: bridge to connect interfaces to
 	
-	Returns: True
-
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
 	host.external_networks_add(type, group, bridge)
-	return True
 
 def external_network_bridge_remove(host_name, type, group, user=None):
 	"""
@@ -317,25 +298,21 @@ def external_network_bridge_remove(host_name, type, group, user=None):
 		string type: type of the external network
 		string group: group of the external network
 
-	Returns: True
-	
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
 	host = hosts.get_host(host_name)
 	host.external_networks_remove(type, group)
-	return True
 
 def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns a list of all external networks
 	
-	@param user: current user
-	@type user: generic.User
-	@return: a list of all external networks with all bridges
-	@rtype: list of dict
-	@raise fault.Error: if the user does not have enough privileges  
+	Returns: a list of all external networks with all bridges
+
+	Errors:
+		fault.Error: if the user does not have enough privileges  
 	"""
 	return hosts.external_networks()
 
@@ -344,13 +321,13 @@ def top_info(top_id, user=None):
 	Returns detailed information about a topology. The information will vary
 	depending on the access level of the user.
 	
-	@param top_id: id of the topology
-	@type top_id: int
-	@param user: current user
-	@type user: generic.User
-	@return: information about the topology
-	@rtype: dict
-	@raise fault.Error: if the topology is not found      
+	Parameters:
+		int top_id: id of the topology
+
+	Returns: information about the topology
+
+	Errors:
+		fault.Error: if the topology is not found      
 	""" 
 	top = topology.get(top_id)
 	return top.to_dict(top.check_access("user", user), True)
@@ -362,16 +339,12 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 	and by access level of the current user. All filters apply subtractively.
 	If a filter has the value "" it is not applied.
 	
-	@param owner_filter: name of the owner to filter by or ""
-	@type owner_filter: string
-	@param host_filter: name of the host to filter by or ""
-	@type host_filter: string
-	@param access_filter: access level to filter by (either "user" or "manager") or ""
-	@type access_filter: string
-	@param user: current user
-	@type user: generic.User
-	@return: a list of brief information about topologies
-	@rtype: list of dict
+	Parameters:
+		string owner_filter: name of the owner to filter by or ""
+		string host_filter: name of the host to filter by or ""
+		string access_filter: access level to filter by (either "user" or "manager") or ""
+
+	Returns: a list of brief information about topologies
 	""" 
 	tops=[]
 	all_tops = topology.all()
@@ -389,10 +362,7 @@ def top_create(user=None):
 	Creates a new empty topology to be modified via top_modify afterwards.
 	The user must be a regular user to create topologies.
 	
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the new topology
-	@rtype: int
+	Returns: the id of the new topology
 	""" 
 	if not user.is_user:
 		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
@@ -408,16 +378,12 @@ def top_modify(top_id, mods, direct=False, user=None):
 	is a task id that runs the modifications.
 	This method implicitly renews the topology.
 	
-	@param top_id: the id of the topology
-	@type top_id: int
-	@param mods: the modifications list
-	@type mods: list of dict
-	@param direct: whether to execute the modification directly
-	@type direct: boolean
-	@param user: current user
-	@type user: generic.User
-	@return: the id of the modification task
-	@rtype: string
+	Parameters:
+		int top_id: the id of the topology
+		list of dict mods: the modifications list
+		boolean direct: whether to execute the modification directly
+
+	Returns: the id of the modification task (not direct) or None (direct) 
 	""" 
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
@@ -429,6 +395,20 @@ def top_modify(top_id, mods, direct=False, user=None):
 	return res
 
 def top_action(top_id, element_type, element_name, action, attrs={}, direct=False, user=None):
+	"""
+	Executes the given action on a topology element. The minimum user access
+	level depends on the action.
+	
+	Parameters:
+		int top_id: the id of the topology
+		string element_type: the type of the element (topology, device or connector)
+		string element_name: the name of the element
+		string action: the action to perform
+		dict attrs: attributes for the action
+		boolean direct: whether to execute the action directly (non-detached)
+
+	Returns: the id of the action task (not direct) or None (direct) 
+	""" 
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	if element_type == "topology":
@@ -473,10 +453,7 @@ def task_list(user=None):
 	"""
 	Returns a list of all tasks.
 	
-	@param user: current user
-	@type user: generic.User
-	@return: a list of all tasks
-	@rtype: list of dict
+	Returns: a list of all tasks
 	"""
 	_admin_access(user)
 	return [t.dict() for t in tasks.TaskStatus.tasks.values()]
@@ -486,12 +463,10 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Returns the details of a speficic task. The task is identified by a unique
 	(and random) id that is assumed to be secure.
 	
-	@param task_id: task id
-	@type task_id: string
-	@param user: current user
-	@type user: generic.User
-	@return: task details
-	@rtype: dict  
+	Parameters:
+		string task_id: task id
+
+	Returns: task details
 	"""
 	return tasks.TaskStatus.tasks[task_id].dict()
 	
@@ -530,12 +505,10 @@ def template_list(template_type="", user=None): #@UnusedVariable, pylint: disabl
 	If template_type is set to "" all templates will be listed, otherwise only 
 	templates matching the given type will be listed.
 
-	@param template_type: template type filter
-	@type template_type: string
-	@param user: current user
-	@type user: generic.User
-	@return: list of templates
-	@rtype: list of dict
+	Parameters:
+		string template_type: template type filter
+
+	Returns: list of templates
 	"""
 	if not template_type:
 		template_type = None
@@ -546,16 +519,12 @@ def template_add(name, template_type, url, user=None):
 	Adds a template to the template repository. The template will be fetched 
 	from the given url by all hosts. This method requires admin access.
 
-	@param name: template name
-	@type name: string
-	@param template_type: template type
-	@type template_type: string
-	@param url: template download url
-	@type url: string
-	@param user: current user
-	@type user: generic.User
-	@return: task id
-	@rtype: string
+	Parameters:
+		string name: template name
+		string template_type: template type
+		atring url: template download url
+
+	Returns: task id
 	"""
 	_admin_access(user)
 	return hosts.add_template(name, template_type, url)
@@ -565,44 +534,30 @@ def template_remove(name, user=None):
 	Removes a template from the template repository. This method requires admin
 	access.
 
-	@param name: template name
-	@type name: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
+	Parameters:
+		string name: template name
 	"""
 	_admin_access(user)
 	hosts.remove_template(name)
-	return True
 
 def template_set_default(template_type, name, user=None):
 	"""
 	Selects a template to be the default template for the given type. This
 	method requires admin access.
 
-	@param template_type: template type
-	@type template_type: string
-	@param name: template name
-	@type name: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
+	Parameters:
+		string template_type: template type
+		string name: template name
 	"""
 	_admin_access(user)
 	hosts.get_template(template_type, name).set_default()
-	return True
 
 def errors_all(user=None):
 	"""
 	Returns a list of all errors in the backend. This method requires admin 
 	access.
 
-	@param user: current user
-	@type user: generic.User
-	@return: list of all errors
-	@rtype: list of dict
+	Returns: list of all errors
 	"""
 	_admin_access(user)
 	return [f.to_dict() for f in fault.errors_all()]
@@ -611,32 +566,21 @@ def errors_remove(error_id, user=None):
 	"""
 	Removes an error from the error list. This method requires admin access.
 
-	@param error_id: id of the error
-	@type error_id: number
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
+	Parameters:
+		int error_id: id of the error
 	"""
 	_admin_access(user)
 	fault.errors_remove(error_id)
-	return True
 
 def permission_set(top_id, user_name, role, user=None):
 	"""
 	Adds a permission entry to a topology. Acceptable roles are "user" and
 	"manager". This method requires owner access to the topology.
 
-	@param top_id: id of the topology
-	@type top_id: number
-	@param user_name: user name
-	@type user_name: string
-	@param role: role of the permission (either "user" or "manager")
-	@type role: string
-	@param user: current user
-	@type user: generic.User
-	@return: True
-	@rtype: boolean
+	Parameters:
+		int top_id: id of the topology
+		string user_name: user name
+		string role: role of the permission (either "user" or "manager")
 	"""
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
@@ -645,26 +589,26 @@ def permission_set(top_id, user_name, role, user=None):
 	if role:
 		top.permissions_add(user_name, role)
 	top.logger().log("set permission: %s=%s" % (user_name, role))
-	return True
 		
 def resource_usage_by_user(user=None):
 	"""
 	Returns a map of resource usage summed up by user (topology owner).
 	This method requires admin access.
 
-	@param user: current user
-	@type user: generic.User
-	@return: map of resource use by user
-	@rtype: dict of string->dict
+	Returns: map of resource use by user
 	"""
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if top.resources:
-			if not top.owner in usage:
-				usage[top.owner] = top.resources.encode()
-			else:
-				usage[top.owner] = generic.add_encoded_resources(usage[top.owner], top.resources.encode())
+		if not top.owner in usage:
+			usage[top.owner] = top.resources()
+		else:
+			d = top.resources()
+			for key in d:
+				if usage[top.owner][key]:
+					usage[top.owner][key] = float(usage[top.owner][key]) + float(d[key]) 
+				else:
+					usage[top.owner][key] = float(d[key]) 
 	return usage
 		
 def resource_usage_by_topology(user=None):
@@ -672,32 +616,25 @@ def resource_usage_by_topology(user=None):
 	Returns a map of resource usage summed up by topology.
 	This method requires admin access.
 
-	@param user: current user
-	@type user: generic.User
-	@return: map of resource use by topology
-	@rtype: dict of string->dict
+	Returns: map of resource use by topology
 	"""
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if top.resources:
-			d = top.resources.encode()
-			d.update(top_id=top.id)
-			usage[top.name]=d
+		d = top.resources()
+		d.update(top_id=top.id)
+		usage[top.name]=d
 	return usage
 
 def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Returns the statistics of a dictinct physical link.
+	Returns the statistics of a distinct physical link.
 
-	@param src_group: name of source host group 
-	@type src_group: string 
-	@param dst_group: name of destination host group 
-	@type dst_group: string 
-	@param user: current user
-	@type user: generic.User
-	@return: physical link statistics
-	@rtype: dict
+	Parameters:
+		string src_group: name of source host group 
+		string dst_group: name of destination host group 
+	
+	Returns: physical link statistics
 	"""
 	return hosts.get_physical_link(src_group, dst_group).to_dict()
 	
@@ -705,10 +642,7 @@ def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W06
 	"""
 	Returns the statistics of all physical links.
 
-	@param user: current user
-	@type user: generic.User
-	@return: list of all physical link statistics
-	@rtype: list of dict
+	Returns: list of all physical link statistics
 	"""
 	return [l.to_dict() for l in hosts.get_all_physical_links()]
 
@@ -716,10 +650,7 @@ def admin_public_key(user=None):
 	"""
 	Returns the public key that is used for accessing the hosts.
 
-	@param user: current user
-	@type user: generic.User
-	@return: public key
-	@rtype: string
+	Returns: public key
 	"""
 	_admin_access(user)
 	with open("%s.pub" % config.remote_ssh_key, 'r') as f:
