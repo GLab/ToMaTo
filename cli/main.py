@@ -38,7 +38,16 @@ if not options.username:
 if not options.password:
 	options.password=getpass.getpass("Password: ")
 	
-api=xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % ('https' if options.ssl else 'http', options.username, options.password, options.hostname, options.port), allow_none=True)
+class ServerProxy(object):
+    def __init__(self, url, **kwargs):
+        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+    def __getattr__(self, name):
+        call_proxy = getattr(self._xmlrpc_server_proxy, name)
+        def _call(*args, **kwargs):
+            return call_proxy(args, kwargs)
+        return _call
+	
+api=ServerProxy('%s://%s:%s@%s:%s' % ('https' if options.ssl else 'http', options.username, options.password, options.hostname, options.port), allow_none=True)
 
 # Readline and tab completion support
 import atexit
@@ -54,17 +63,17 @@ def get_name(instance):
 def help(method=None):
 	if method is None:
 		print "Available methods:\tType help(method) for more infos."
-		print ", ".join(api.system.listMethods())
+		print ", ".join(api._listMethods())
 	else:
 		if type(method) != type('str'):
 			method = get_name(method)
-		print "Signature: " + api.system.methodSignature(method)
-		print api.system.methodHelp(method)
+		print "Signature: " + api._methodSignature(method)
+		print api._methodHelp(method)
 
 globals = {"help": help}
 try:
-	for func in api.system.listMethods():
-		globals[func] = api.__getattr__(func)
+	for func in api._listMethods():
+		globals[func] = getattr(api, func)
 except xmlrpclib.ProtocolError, err:
 	print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
 	sys.exit(-1)
