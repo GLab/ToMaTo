@@ -473,6 +473,11 @@ def top_action(top_id, element_type, element_name, action, attrs={}, direct=Fals
 	elif action == "migrate" and element_type =="device":
 		_top_access(top, "manager", user)
 		task_id = element.migrate(direct)
+	elif action == "execute" and element_type =="device":
+		_top_access(top, "user", user)
+		if element.is_openvz:
+			return element.upcast().execute(attrs["cmd"])
+		raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Execute is only supported for openvz devices")
 	if element_type == "topology":
 		if action == "remove":
 			_top_access(top, "owner", user)

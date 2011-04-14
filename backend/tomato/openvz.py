@@ -32,6 +32,9 @@ class OpenVZDevice(generic.Device):
 	def _image_path(self):
 		return "/var/lib/vz/private/%s" % self.attributes["vmid"]
 
+	def execute(self, cmd):
+		return self._exec(cmd)
+
 	def vnc_password(self):
 		if not self.attributes.get("vnc_port"):
 			return None 
