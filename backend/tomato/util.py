@@ -87,18 +87,21 @@ class curry:
 	"""
 	Allows to create new methods by currying.
 	"""
-	def __init__(self, fun, *args, **kwargs):
-		self.fun = fun
-		self.pending = args[:]
-		self.kwargs = kwargs.copy()
+	def __init__(self, fn, preargs=[], prekwargs={}, postargs=[], postkwargs={}):
+		self.fn = fn
+		self.preargs = preargs[:]
+		self.prekwargs = prekwargs.copy()
+		self.postargs = postargs[:]
+		self.postkwargs = postkwargs.copy()
 
-	def __call__(self, selfref, *args, **kwargs):
-		if kwargs and self.kwargs:
-			kw = self.kwargs.copy()
-			kw.update(kwargs)
-		else:
-			kw = kwargs or self.kwargs
-		return self.fun(selfref, *(self.pending + args), **kw) #pylint: disable-msg=W0142
+	def __call__(self, *curargs, **curkwargs):
+		kwargs = {}
+		kwargs.update(self.prekwargs)
+		kwargs.update(curkwargs)
+		kwargs.update(self.postkwargs)
+		args = [] + self.preargs + list(curargs) + self.postargs
+		f = self.fn
+		return f(*args, **kwargs) #pylint: disable-msg=W0142
 
 def get_attr(obj, name, default=None, res_type=None):
 	"""

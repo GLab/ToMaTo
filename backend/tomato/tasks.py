@@ -21,6 +21,134 @@ import config, util, fault, atexit, time, log
 
 from cStringIO import StringIO
 
+class Status():
+	WAITING = "waiting"
+	RUNNING = "running"
+	ABORTED = "aborted"
+	SUCCEEDED = "succeeded"
+	REVERSING = "reversing"
+	FAILED = "failed"
+	
+class Task():
+	def __init__(self, name, fn=None, reverseFn=None, onFinished=None, depends=[]):
+		self.name = name
+		self.fn = fn
+		self.reverseFn = reverseFn
+		self.onFinished = onFinished
+		self.status = Status.WAITING
+		self.output = StringIO()
+		self.result = None
+		self.process = None
+		self.depends = depends[:]
+	def getStatus(self):
+		return self.status
+	def getOutput(self):
+		return self.output.getvalue()
+	def getResult(self):
+		return self.result
+	def run(self):
+		assert self.status == Status.WAITING
+		self.status = Status.RUNNING
+		if self.fn:
+			try:
+				depends = {}
+				for dep in self.depends:
+					depends[dep] = self.process.tasks[dep]
+				self.result = self.fn(self, depends)
+				self.status = Status.SUCCEEDED
+			except Exception, exc:
+				self.result = exc
+				#FIXME: append stack trace and error message to output
+				if self.reverseFn:
+					self.status = Status.REVERSING
+					try:
+						self.reverseFn()
+						self.status = Status.ABORTED
+					except:
+						#FIXME: append stack trace and error message to output
+						self.status = Status.FAILED
+				else:
+					self.status = Status.FAILED
+		else:
+			self.status = Status.SUCCEEDED
+		try:
+			if self.onFinished:
+				self.onFinished()
+		except Exception, exc:
+			import traceback
+			traceback.print_exc()
+	def dict(self):
+		return {"name": self.name, "status": self.getStatus(), "output": self.getOutput(), "result": self.getResult()}
+		
+class Process():
+	def __init__(self, name=None, tasks={}, onFinished=None):
+		self.name = name
+		self.tasks = tasks.copy()
+		self.onFinished = onFinished
+	def addTask(self, task):
+		self.tasks[task.name] = task
+		task.process = self
+	def removeTask(self, taskname):
+		del self.tasks[taskname]
+	def getTask(self, taskname):
+		return self.tasks[taskname]
+	def abort(self):
+		for task in self.tasks.values():
+			if task.status == Status.WAITING:
+				task.status = Status.ABORTED
+	def getStatus(self):
+		for task in self.tasks.values():
+			if task.status == Status.FAILED:
+				return Status.FAILED
+		for task in self.tasks.values():
+			if task.status == Status.REVERSING:
+				return Status.REVERSING
+		for task in self.tasks.values():
+			if task.status == Status.RUNNING:
+				return Status.RUNNING
+		for task in self.tasks.values():
+			if task.status == Status.ABORTED:
+				return Status.ABORTED
+		for task in self.tasks.values():
+			if task.status == Status.SUCCEEDED:
+				return Status.SUCCEEDED
+		return Status.WAITING
+	def _canrun(self, task):
+		if task.status != Status.WAITING:
+			return False
+		for dep in task.depends:
+			if self.tasks[dep].status != Status.SUCCEEDED:
+				return False
+		return True
+	def _findTaskToRun(self):
+		for task in self.tasks.values():
+				if self._canrun(task):
+					return task
+	def _runOnFinished(self):
+		try:
+			if self.onFinished:
+				self.onFinished()
+		except:
+			import traceback
+			traceback.print_exc()
+	def run(self):
+		while True:
+			task = self._findTaskToRun()
+			if task:
+				task.run()
+				if task.status != Status.SUCCEEDED:
+					self.abort()
+					self._runOnFinished()
+					return
+			else:
+				self._runOnFinished()
+				return
+	def dict(self):
+		res = {"status": self.getStatus(), "name": self.name, "tasks":{}}
+		for task in self.tasks.values():
+			res["tasks"][task.name] = task.dict()
+		return res
+				
 class TaskStatus():
 	tasks={}
 	ACTIVE = "active"

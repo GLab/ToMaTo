@@ -62,4 +62,4 @@ def default_tearDown():
 def encode_mod(type, element, subelement, properties):
 	return {"type": type, "element": element, "subelement": subelement, "properties": properties}
 
-import hosts, templates, kvm, openvz, tinc, topology
+import hosts, templates, kvm, openvz, tinc, topology, tasks
