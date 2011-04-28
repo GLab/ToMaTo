@@ -41,7 +41,8 @@ def index(api, request):
 
 @wrap_rpc
 def detail(api, request, hostname):
-	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname), 'special_features': api.special_features()})
+	print api.host_info(hostname)
+	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname), 'external_networks': api.external_networks()})
 
 @wrap_rpc
 def edit(api, request, hostname):
@@ -50,11 +51,11 @@ def edit(api, request, hostname):
 		if form.is_valid(): 
 			if not hostname:
 				d = form.cleaned_data
-				task_id = api.host_add(d["name"], d["group"], d["enabled"], d["vmid_start"], d["vmid_count"], d["port_start"], d["port_count"], d["bridge_start"], d["bridge_count"])
+				task_id = api.host_add(d["name"], d["group"], d["enabled"], d)
 				return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": d["name"]})
 			else:
 				d = form.cleaned_data
-				api.host_change(hostname, d["group"], d["enabled"], d["vmid_start"], d["vmid_count"], d["port_start"], d["port_count"], d["bridge_start"], d["bridge_count"])
+				api.host_change(hostname, d["group"], d["enabled"], d)
 				return detail(request, hostname)
 	else:
 		if hostname:

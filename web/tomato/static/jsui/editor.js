@@ -101,12 +101,6 @@ var NetElement = Class.extend({
 	getSubElementName: function() {
 		return "";
 	},
-	setResources: function(res) {
-		this.resources = res;
-	},
-	getResources: function() {
-		return this.resources;
-	},
 	stateAction: function(action) {
 		var t = this;
 		this.editor.ajaxAction(this.action(action), function(task_id) {
@@ -276,7 +270,26 @@ var Topology = IconElement.extend({
 		this.paletteItem = true;
 		this.paint();
 		this.isTopology = true;
+		this.warnings = [];
+		this.errors = [];
 		this.form = new TopologyWindow(this);
+	},
+	paint: function() {
+		this._super();
+		this.stateIcon = this.editor.g.image(basepath+"images/pixel.png", this.pos.x+5, this.pos.y+5, 16, 16);
+		this.stateIcon.attr({opacity: 0.0});
+		this.stateIcon.parent = this;
+		this.stateIcon.click(this._click);
+	},
+	paintUpdate: function() {
+		this._super();
+		if (this.errors.length>0) {
+			this.stateIcon.attr({src: basepath+"images/error.png"});
+			this.stateIcon.attr({opacity: 1.0});		    
+		} else if (this.warnings.length>0) {
+			this.stateIcon.attr({src: basepath+"images/warning.png"});
+			this.stateIcon.attr({opacity: 1.0});
+		} else this.stateIcon.attr({opacity: 0.0});
 	},
 	setAttribute: function(name, value) {
 		if (name != "state") this.attributes[name]=value;
@@ -392,7 +405,8 @@ var EmulatedConnection = Connection.extend({
 		this.IPHintNumber = this.con.nextIPHintNumber++;
 	},
 	getIPHint: function() {
-		return "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24";
+		return {ipv4: "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24", 
+			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/64"};
 	},
 	downloadSupported: function() {
 		return this.getAttribute("download_supported");
@@ -418,10 +432,17 @@ var EmulatedRouterConnection = EmulatedConnection.extend({
 	init: function(editor, dev, con){
 		this._super(editor, dev, con);
 		this.form = new EmulatedRouterConnectionWindow(this);
-		this.setAttribute("gateway", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+	},
+	connect: function(iface) {
+		this._super(iface);
+		if (! this.getAttribute("gateway4")) this.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+		if (! this.getAttribute("gateway6")) this.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF/80");
+		if (! this.dev.getAttribute("gateway4")) this.dev.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254");
+		if (! this.dev.getAttribute("gateway6")) this.dev.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF");
 	},
 	getIPHint: function() {
-		return "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24";
+		return {ipv4: "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24",
+			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/80"};
 	}	
 });
 
@@ -492,7 +513,10 @@ var ConfiguredInterface = Interface.extend({
 		this.form = new ConfiguredInterfaceWindow(this);
 		var ipHint = con.getIPHint();
 		this.setAttribute("use_dhcp", ipHint == "dhcp");
-		if (ipHint != "dhcp" ) this.setAttribute("ip4address", ipHint);
+		if (ipHint != "dhcp" ) {
+			this.setAttribute("ip4address", ipHint.ipv4);
+			this.setAttribute("ip6address", ipHint.ipv6);
+		}
 	}
 });
 
@@ -558,27 +582,27 @@ var Connector = IconElement.extend({
 	}
 });
 
-var SpecialConnector = Connector.extend({
+var ExternalConnector = Connector.extend({
 	init: function(editor, name, pos) {
-		this._super(editor, name, "images/special.png", {x: 32, y: 32}, pos);
-		this.form = new SpecialConnectorWindow(this);
+		this._super(editor, name, "images/external.png", {x: 32, y: 32}, pos);
+		this.form = new ExternalConnectorWindow(this);
 	},
 	nextIPHint: function() {
 		return "dhcp";
 	},
 	setAttribute: function(name, value) {
 		this._super(name, value);
-		if (name == "feature_type") {
+		if (name == "network_type") {
 			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
-			else this.iconsrc="images/special.png";
+			else this.iconsrc="images/external.png";
 			this.paintUpdate();
 		}
 	},
 	baseName: function() {
-		return "special";
+		return "external";
 	},
 	createAnother: function(pos) {
-		return new SpecialConnector(this.editor, this.nextName(), pos);
+		return new ExternalConnector(this.editor, this.nextName(), pos);
 	}
 });
 
@@ -815,7 +839,7 @@ var Editor = Class.extend({
 		this.hostGroups = [];
 		this.templatesOpenVZ = [];
 		this.templatesKVM = [];
-		this.specialFeatures = {};
+		this.externalNetworks = {};
 		this.nextIPHintNumber = 0;
 		this.isLoading = false;
 		if (editable) this.paintPalette();
@@ -823,6 +847,80 @@ var Editor = Class.extend({
 		this.wizardForm = new WizardWindow(this);
 		this.paintBackground();
 		this.checkBrowser();
+	},
+	analyze: function() {
+		var top = this.topology;
+		top.warnings = [];
+		top.errors = [];
+		//check timeouts
+		var now = new Date();
+		var stop = new Date(top.getAttribute("stop_timeout"));
+		var destroy = new Date(top.getAttribute("destroy_timeout"));
+		var remove = new Date(top.getAttribute("remove_timeout"));
+		var day = 1000 * 60 * 60 * 24;
+		if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if ((remove-now) < 7 * day) top.warnings.push("Topology will be removed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		this.elements.forEach(function(el){
+			if (el.paletteItem) return;
+			if (el.isDevice) {
+				if (el.interfaces.length == 0) top.warnings.push("Connectivity warning: " + el.name + " has no connections"); 
+				//check attributes
+				if (el.getAttribute("gateway4") && ! pattern.ip4.test(el.getAttribute("gateway4")))
+					top.errors.push("Config error: " + el.name + " has an invalid IPv4 gateway address");
+				if (el.getAttribute("gateway6") && ! pattern.ip6.test(el.getAttribute("gateway6")))
+					top.errors.push("Config error: " + el.name + " has an invalid IPv6 gateway address");
+				el.interfaces.forEach(function(iface){
+					var con = iface.con.con;
+					//check attributes
+					if (iface.getAttribute("ip4address") && ! pattern.ip4net.test(iface.getAttribute("ip4address")))
+						top.errors.push("Config error: " + el.name + "." + iface.name + " has an invalid IPv4 address/prefix");
+					if (iface.getAttribute("ip6address") && ! pattern.ip6net.test(iface.getAttribute("ip6address")))
+						top.errors.push("Config error: " + el.name + "." + iface.name + " has an invalid IPv6 address/prefix");
+					//check for state mismatch
+					var elstate = el.getAttribute("state");
+					var constate = con.getAttribute("state");
+					if (elstate == "started" && constate != "started") top.warnings.push("Communication problem: " + el.name + " is started but " + con.name + " is " + constate );
+				});
+			}
+			if (el.isConnector) {
+				if (el.connections.length == 0) top.warnings.push("Connectivity warning: " + el.name + " has no connections"); 
+				el.connections.forEach(function(con){
+					//check attributes
+					if (con.getAttribute("bandwidth")) {
+						var val = con.getAttribute("bandwidth");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid bandwidth");
+						var val = parseInt(val);
+						if (val > 1000000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 1 Gbit/s bandwidth configured");
+						if (val < 10) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has less than 10 kbit/s bandwidth configured");
+					}
+					if (con.getAttribute("delay")) {
+						var val = con.getAttribute("delay");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid delay");
+						var val = parseInt(val);
+						if (val > 10000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 10 seconds delay configured");
+						if (val < 0) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has a negative delay configured");
+					}
+					if (con.getAttribute("lossratio")) {
+						var val = con.getAttribute("lossratio");
+						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid packet loss ratio");
+						var val = parseFloat(val);
+						if (val >= 0.9) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 90% packet loss configured");
+						if (val >= 1.0) top.errors.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has 100% or more packet loss configured");
+						if (val < 0) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has a negative packet loss ratio configured");
+					}
+					if (con.getAttribute("gateway4") && ! pattern.ip4net.test(con.getAttribute("gateway4")))
+						top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid IPv4 gateway/network address");
+					if (con.getAttribute("gateway6") && ! pattern.ip6net.test(con.getAttribute("gateway6")))
+						top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid IPv6 gateway/network address");
+				});
+			}
+		});
+		top.paintUpdate();
+		if (top.warnings.length>0 || top.errors.length>0) {
+			top.form.tabs.select("analysis");
+			top.form.show();
+		}
 	},
 	checkBrowser: function() {
 		if (! $.support.ajax) this.errorMessage("Browser incompatibility", "Your browser does not support ajax, so you will not be able to use this editor.");
@@ -961,8 +1059,8 @@ var Editor = Class.extend({
 	setTemplatesKVM: function(tpls) {
 		this.templatesKVM = tpls;
 	},
-	setSpecialFeatures: function(sfmap) {
-		this.specialFeatures = sfmap;
+	setExternalNetworks: function(enmap) {
+		this.externalNetworks = enmap;
 	},
 	loadTopology: function() {
 		var editor = this;
@@ -978,7 +1076,6 @@ var Editor = Class.extend({
 		var connectors = {};
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
-		editor.topology.setResources(top.resources);
 		editor.topology.permissions = top.permissions;
 		var f = function(obj){
 			var attrs = obj.attrs;
@@ -1008,12 +1105,11 @@ var Editor = Class.extend({
 					el = new RouterConnector(editor, name, pos);
 					connectors[name] = el;
 					break;
-				case "special": 
-					el = new SpecialConnector(editor, name, pos);
+				case "external": 
+					el = new ExternalConnector(editor, name, pos);
 					connectors[name] = el;
 					break;
 			}
-			el.setResources(obj.resources);
 			el.setAttributes(attrs);
 		};
 		for (var name in top.devices) f(top.devices[name]);
@@ -1043,6 +1139,7 @@ var Editor = Class.extend({
 				} else dangling_interfaces_mods.push({type: "interface-delete", element: dev_obj.name, subelement: iface.attrs.name, properties: {}});
 			}
 		}
+		this.analyze();
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 	},
@@ -1055,13 +1152,11 @@ var Editor = Class.extend({
 	_reloadTopology: function(top, callback) {
 		this.isLoading = true;
 		this.topology.setAttributes(top.attrs);
-		this.topology.setResources(top.resources);
 		this.topology.permissions = top.permissions;
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
 			dev_obj.setAttributes(dev.attrs);
-			dev_obj.setResources(dev.resources);
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
@@ -1072,13 +1167,13 @@ var Editor = Class.extend({
 			var con_obj = this.getElement("connector", name);
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
-			con_obj.setResources(con.resources);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
 				c_obj.setAttributes(c.attrs);
 			}
 		}
+		this.analyze();
 		this.isLoading = false;
 		if (callback) callback();
 	},
@@ -1105,8 +1200,8 @@ var Editor = Class.extend({
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
 		this.kvmPrototype.paletteItem = true;
 		y+=30;
-		this.specialPrototype = new SpecialConnector(this, "Special", {x: this.paletteWidth/2, y: y+=50});
-		this.specialPrototype.paletteItem = true;
+		this.externalPrototype = new ExternalConnector(this, "External", {x: this.paletteWidth/2, y: y+=50});
+		this.externalPrototype.paletteItem = true;
 		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=50});
 		this.hubPrototype.paletteItem = true;
 		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: y+=40});
@@ -1694,17 +1789,36 @@ var ResourcesPanel = Class.extend({
 	},
 	load: function() {
 		this.div.empty();
-		var resources = this.obj.getResources();
+		var attrs = this.obj.attributes;
 		var t = this;
-		if (resources) {
-			var table = $('<table/>');
-			if (resources.disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(resources.disk)+'</td></tr>'));
-			if (resources.memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(resources.memory)+'</td></tr>'));
-			if (resources.traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(resources.traffic)+'</td></tr>'));
-			if (resources.special) table.append($('<tr><td>Special slots:</td><td>'+resources.special+'</td></tr>'));
-			if (resources.ports) table.append($('<tr><td>Ports:</td><td>'+resources.ports+'</td></tr>'));
-			this.div.append(table);
-		}
+		var table = $('<table/>');
+		if (attrs.resources_disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(attrs.resources_disk)+'</td></tr>'));
+		if (attrs.resources_memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(attrs.resources_memory)+'</td></tr>'));
+		if (attrs.resources_traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(attrs.resources_traffic)+'</td></tr>'));
+		if (attrs.resources_external) table.append($('<tr><td>External slots:</td><td>'+attrs.resources_external+'</td></tr>'));
+		if (attrs.resources_ports) table.append($('<tr><td>Ports:</td><td>'+attrs.resources_ports+'</td></tr>'));
+		this.div.append(table);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
+var AnalysisPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.div.empty();
+		var t = this;
+		var ul = $('<ul class="none">');
+		for (var i = 0; i < this.obj.errors.length; i++) ul.append('<li class="error">'+this.obj.errors[i]+'</li>');
+		for (var i = 0; i < this.obj.warnings.length; i++) ul.append('<li class="warning">'+this.obj.warnings[i]+'</li>');
+		this.div.append((this.obj.errors == 0 && this.obj.warnings == 0) ? "<p>No errors or warnings</p>" : ul);
+		this.div.append(new Button("check", 'Run again', function(){
+			t.obj.editor.analyze();
+		}).getInputElement());
 	},
 	getDiv: function() {
 		return this.div;
@@ -1759,6 +1873,8 @@ var TopologyWindow = ElementWindow.extend({
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
 		this.permissions = new PermissionsPanel(obj);
 		this.tabs.addTab("permissions", "Permissions", this.permissions.getDiv());
+		this.analysis = new AnalysisPanel(obj);
+		this.tabs.addTab("analysis", "Analysis", this.analysis.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
@@ -1766,8 +1882,10 @@ var TopologyWindow = ElementWindow.extend({
 		if (this.resources) this.resources.load();
 		if (this.attrs) this.attrs.load();
 		if (this.permissions) this.permissions.load();
+		if (this.analysis) this.analysis.load();
 	},
 	show: function() {
+		if (this.obj.errors.length>0) this.tabs.select("analysis");
 		this.reload();
 		this._super();
 	}
@@ -1809,7 +1927,8 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 		this._super(obj);
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
 		this.attrs.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
-		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+$/, ""), "gateway");
+		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
+		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6, ""), "gateway6");
 	}
 });
 
@@ -1850,24 +1969,24 @@ var ConnectorWindow = ElementWindow.extend({
 	}
 });
 
-var SpecialConnectorWindow = ConnectorWindow.extend({
+var ExternalConnectorWindow = ConnectorWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		var t = this;
-		this.attrs.addField(new SelectField("feature_type", getKeys(this.obj.editor.specialFeatures), "auto", function(value) {
-			t._featureChanged(value);
+		this.attrs.addField(new SelectField("network_type", getKeys(this.obj.editor.externalNetworks), "internet", function(value) {
+			t._typeChanged(value);
 		}), "type");
-		this.attrs.addField(new SelectField("feature_group", [], "auto"), "group");
+		this.attrs.addField(new SelectField("network_group", [], "auto"), "group");
 	},
-	_featureChanged: function(value) {
-		var feature_group = this.attrs.fields.feature_group;
-		var options = this.obj.editor.specialFeatures[value];
+	_typeChanged: function(value) {
+		var group = this.attrs.fields.network_group;
+		var options = this.obj.editor.externalNetworks[value];
 		if (!options) options = [];
-		feature_group.setOptions(options);
+		group.setOptions(options);
 	},
 	show: function() {
 		this._super();
-		this._featureChanged();
+		this._typeChanged();
 	}
 });
 
@@ -1894,7 +2013,8 @@ var ConfiguredInterfaceWindow = InterfaceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs.addField(new CheckField("use_dhcp", false), "use&nbsp;dhcp");
-		this.attrs.addField(new MagicTextField("ip4address", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "ip/prefix");		
+		this.attrs.addField(new MagicTextField("ip4address", pattern.ip4net, ""), "ip4/prefix");		
+		this.attrs.addField(new MagicTextField("ip6address", pattern.ip6net, ""), "ip6/prefix");		
 	}
 });
 
@@ -1904,9 +2024,9 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs = new AttributeForm(obj);
-		this.attrs.addField(new MagicTextField("bandwidth", /^\d+$/, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.attrs.addField(new MagicTextField("delay", /^\d+$/, "0"), "latency&nbsp;(in&nbsp;ms)");
-		this.attrs.addField(new MagicTextField("lossratio", /^\d+\.\d+$/, "0.0"), "packet&nbsp;loss");
+		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
+		this.attrs.addField(new MagicTextField("delay", pattern.int, "0"), "latency&nbsp;(in&nbsp;ms)");
+		this.attrs.addField(new MagicTextField("lossratio", pattern.float, "0.0"), "packet&nbsp;loss");
 		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
 		this.add(this.attrs.getDiv());
 	},
@@ -1926,7 +2046,8 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new MagicTextField("gateway", /^\d+\.\d+\.\d+\.\d+\/\d+$/, ""), "gateway&nbsp;(ip/prefix)");
+		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4net, ""), "gateway&nbsp;(ip4/prefix)");
+		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6net, ""), "gateway&nbsp;(ip6/prefix)");
 	}
 });
 
@@ -1942,6 +2063,7 @@ var WizardWindow = Window.extend({
 		this.addField(new SelectField("type", ["Star", "Ring", "Full mesh", "Star around host", "Loose nodes"], "Star"), "Topology type");		
 		this.addField(new MagicTextField("number", /^\d+$/, "5"), "Number of nodes");
 		this.addField(new SelectField("device_type", ["OpenVZ", "KVM"], "OpenVZ"), "Device type");		
+		this.addField(new SelectField("hostgroup", this.editor.hostGroups, "auto"), "Device hostgroup");
 		this.addField(new SelectField("template", this.editor.templatesOpenVZ, "auto"), "Device template");		
 		this.addField(new TextField("root_password", "glabroot"), "Root&nbsp;password");
 		this.addField(new CheckField("internet", false), "Additional internet connection");
@@ -1969,6 +2091,7 @@ var WizardWindow = Window.extend({
 						break;
 				}
 				nodes[i].setAttribute("template", this.fields.template.getValue());
+				nodes[i].setAttribute("hostgroup", this.fields.hostgroup.getValue());
 			}
 		}
 		if (nodes.length > 1) {
@@ -1992,8 +2115,8 @@ var WizardWindow = Window.extend({
 			}
 		}
 		if (this.fields.internet.getValue()) {
-			var internet = new SpecialConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
-			internet.setAttribute("feature_type", "internet");
+			var internet = new ExternalConnector(this.editor, this.editor.getNameHint("internet"), {x: middle.x+50, y: middle.y+25});
+			internet.setAttribute("type", "internet");
 			for (var i=0; i<number; i++) this.editor.connect(internet, nodes[i]);
 		}
 		if (tr) this.editor.ajaxModifyCommit();
@@ -2012,7 +2135,7 @@ var WizardWindow = Window.extend({
 			container.width(this.editor.size.x-this.editor.paletteWidth);
 			container.height(this.editor.size.y);
 			this.editor.div.append(container);
-			container.position({my: "right", at: "right", of: $(this.editor.div)});
+			container.position({my: "right top", at: "right top", of: $(this.editor.div), collision: "none"});
 			var div = $("<div/>");
 			div.attr({style: "border: 1px dashed black; text-align: center;"});
 			div.resizable({containment: container, minWidth: 175, minHeight: 175}).draggable({containment: container});
@@ -2045,6 +2168,7 @@ var WizardWindow = Window.extend({
 		this.fields.root_password.setEditable(!sel);
 		this._onTypeChange();
 		this.fields.template.setEditable(!sel);
+		this.fields.hostgroup.setOptions(this.editor.hostGroups);
 		this.div.dialog("open");
 	},
 	_onTypeChange: function() {

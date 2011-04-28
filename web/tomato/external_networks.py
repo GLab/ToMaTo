@@ -25,68 +25,68 @@ from lib import *
 import xmlrpclib
 from django.contrib.messages import api
 
-class SpecialFeatureGroupForm(forms.Form):
-	feature_type = forms.CharField(label="Feature type", max_length=50)
-	group_name = forms.CharField(label="Group name", max_length=50)
+class ExternalNetworkForm(forms.Form):
+	type = forms.CharField(label="Type", max_length=50)
+	group = forms.CharField(label="Group", max_length=50)
 	max_devices = forms.IntegerField(label="Maximal devices", required=False)
 	avoid_duplicates = forms.BooleanField(label="Avoid duplicates", initial=False, required=False)
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/special_features_index.html", {'list': api.special_features()})
+	return render_to_response("admin/external_networks_index.html", {'list': api.external_networks()})
 
 @wrap_rpc
-def add_host(api, request, hostname):
+def add_bridge(api, request, hostname):
 	(type, group) = request.REQUEST["typegroup"].split(":")
 	bridge = request.REQUEST["bridge"]
-	api.special_features_add(hostname, type, group, bridge)
+	api.external_network_bridge_add(hostname, type, group, bridge)
 	import host
 	return host.detail(request, hostname)
 	
 @wrap_rpc
-def remove_host(api, request, type, group, hostname):
-	api.special_features_remove(hostname, type, group)
+def remove_bridge(api, request, type, group, hostname):
+	api.external_network_bridge_remove(hostname, type, group)
 	import host
 	return host.detail(request, hostname)
 	
 @wrap_rpc
-def add_group(api, request):
+def add(api, request):
 	if request.method == 'POST':
-		form = SpecialFeatureGroupForm(request.POST)
+		form = ExternalNetworkForm(request.POST)
 		if form.is_valid():
 			d=form.cleaned_data
 			params={"avoid_duplicates": d["avoid_duplicates"]}
 			if d["max_devices"]:
 				params["max_devices"] = d["max_devices"]
 			print d
-			api.special_feature_group_add(d["feature_type"], d["group_name"], params)		
+			api.external_network_add(d["type"], d["group"], params)		
 			return index(request)
 	else:
-		form = SpecialFeatureGroupForm()
-	return render_to_response("admin/generic_form.html", {'type': "special feature", 'form': form})
+		form = ExternalNetworkForm()
+	return render_to_response("admin/generic_form.html", {'type': "external network", 'form': form})
 	
 @wrap_rpc
-def remove_group(api, request, type, group):
-	api.special_features_group_remove(type, group)
+def remove(api, request, type, group):
+	api.external_network_remove(type, group)
 	return index(request)
 	
 @wrap_rpc
-def change_group(api, request, type, group):
+def change(api, request, type, group):
 	if request.method == 'POST':
-		form = SpecialFeatureGroupForm(request.POST)
+		form = ExternalNetworkForm(request.POST)
 		if form.is_valid():
 			d=form.cleaned_data
 			params={"avoid_duplicates": d["avoid_duplicates"]}
 			if d["max_devices"]:
 				params["max_devices"] = d["max_devices"]
 			print d
-			api.special_feature_group_change(d["feature_type"], d["group_name"], params)		
+			api.external_network_change(d["type"], d["group"], params)		
 			return index(request)
 	else:
-		for sf in api.special_features():
-			if sf["type"] == type and sf["name"] == group:
-				form = SpecialFeatureGroupForm({"feature_type": sf["type"], "group_name": sf["name"], "max_devices": (sf["max_devices"] if sf["max_devices"] else ""), "avoid_duplicates": sf["avoid_duplicates"]})
-		form.fields["feature_type"].widget = forms.widgets.HiddenInput()
-		form.fields["group_name"].widget = forms.widgets.HiddenInput()
-	return render_to_response("admin/generic_form.html", {'type': "special feature", 'name': "%s (%s)" % (type, group), 'form': form})
+		for en in api.external_networks():
+			if en["type"] == type and en["group"] == group:
+				form = ExternalNetworkForm({"type": en["type"], "group": en["group"], "max_devices": (en["max_devices"] if en["max_devices"] else ""), "avoid_duplicates": en["avoid_duplicates"]})
+		form.fields["type"].widget = forms.widgets.HiddenInput()
+		form.fields["group"].widget = forms.widgets.HiddenInput()
+	return render_to_response("admin/generic_form.html", {'type': "external network", 'name': "%s (%s)" % (type, group), 'form': form})
 	

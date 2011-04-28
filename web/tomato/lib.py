@@ -32,13 +32,22 @@ def getauth(request):
 	username, password = auth.split(':',1)
 	return (username, password)
 
+class ServerProxy(object):
+    def __init__(self, url, **kwargs):
+        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+    def __getattr__(self, name):
+        call_proxy = getattr(self._xmlrpc_server_proxy, name)
+        def _call(*args, **kwargs):
+            return call_proxy(args, kwargs)
+        return _call
+
 def getapi(request):
 	auth=getauth(request)
 	if not auth:
 		return None
 	(username, password) = auth
 	try:
-		api = xmlrpclib.ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
+		api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
 		api.account()
 		return api
 	except Exception, exc:

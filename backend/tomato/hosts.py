@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import config, fault, util, sys, atexit
+import config, fault, util, sys, atexit, attributes, tasks
 from django.db.models import Q, Sum
 
 class ClusterState:
@@ -32,30 +32,21 @@ class Host(models.Model):
 	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	port_range_start = models.PositiveSmallIntegerField(default=7000)
-	port_range_count = models.PositiveSmallIntegerField(default=1000)
-	vmid_range_start = models.PositiveSmallIntegerField(default=1000)
-	vmid_range_count = models.PositiveSmallIntegerField(default=200)
-	bridge_range_start = models.PositiveSmallIntegerField(default=1000)
-	bridge_range_count = models.PositiveSmallIntegerField(default=1000)
-	hostserver_port = models.PositiveSmallIntegerField(null=True)
-	hostserver_basedir = models.CharField(max_length=100, null=True)
-	hostserver_secret_key = models.CharField(max_length=100, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)	
 
 	def __unicode__(self):
 		return self.name
 
-	def fetch_all_templates(self, task):
+	def fetch_all_templates(self):
 		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
-			tpl.upload_to_host(self, task)
+			tpl.upload_to_host(self)
 
-	def check_save(self, task):
-		task.subtasks_total = 9
-		self.check(task)
+	def check_save(self):
+		tasks.get_current_task().subtasks_total = 10
+		self.check()
 		self.save()
-		task.done()
 
-	def check(self, task):
+	def check(self):
 		"""
 		Checks if the host is reachable, login works and the needed software is installed
 		
@@ -66,50 +57,58 @@ class Host(models.Model):
 		"""
 		if config.remote_dry_run:
 			return True
+		task = tasks.get_current_task()
+		
 		task.output.write("checking login...\n")
-		res = self.get_result("true; echo $?")
+		res = self.execute("true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "Login error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for openvz...\n")
-		res = self.get_result("vzctl --version; echo $?")
+		res = self.execute("vzctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for kvm...\n")
-		res = self.get_result("qm list; echo $?")
+		res = self.execute("qm list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for bridge utils...\n")
-		res = self.get_result("brctl --version; echo $?")
+		res = self.execute("brctl --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "brctl error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for dummynet...\n")
-		res = self.get_result("modprobe ipfw_mod && ipfw list; echo $?")
+		res = self.execute("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for tinc...\n")
-		res = self.get_result("tincd --version; echo $?")
+		res = self.execute("tincd --version; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "tinc error"
 		task.subtasks_done = task.subtasks_done + 1
 		
+		task.output.write("checking for curl...\n")
+		res = self.execute("curl --version; echo $?")
+		task.output.write(res)
+		assert res.split("\n")[-2] == "0", "curl error"
+		task.subtasks_done = task.subtasks_done + 1
+
 		task.output.write("checking for timeout...\n")
-		res = self.get_result("timeout 1 true; echo $?")
+		res = self.execute("timeout 1 true; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "timeout error"
 		task.subtasks_done = task.subtasks_done + 1
 		
 		task.output.write("checking for hostserver...\n")
-		res = self.get_result("/etc/init.d/tomato-hostserver status; echo $?")
+		res = self.execute("/etc/init.d/tomato-hostserver status; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "hostserver error"
 		task.subtasks_done = task.subtasks_done + 1
@@ -124,93 +123,104 @@ class Host(models.Model):
 			task.output.write("node is not part of a cluster\n\n")
 		
 		self.fetch_hostserver_config()
-		self.hostserver_cleanup(task)
-		self.fetch_all_templates(task)
+		self.hostserver_cleanup()
+		self.fetch_all_templates()
 				
 	def fetch_hostserver_config(self):
-		res = self.get_result(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
-		self.hostserver_port = int(res[0])
-		self.hostserver_basedir = res[1]
-		self.hostserver_secret_key = res[2]
-		self.save();
+		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
+		self.attributes["hostserver_port"] = int(res[0])
+		self.attributes["hostserver_basedir"] = res[1]
+		self.attributes["hostserver_secret_key"] = res[2]
 				
-	def hostserver_cleanup(self, task):
-		if self.hostserver_basedir:
-			self.execute("find %s -type f -mtime +0 -delete" % self.hostserver_basedir, task)
+	def hostserver_cleanup(self):
+		if self.attributes.get("hostserver_basedir"):
+			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"])
 			
 	def cluster_state(self):
-		res = self.get_result("pveca -i 2>/dev/null | tail -n 1")
-		return res.split("\n")[-2].split(" ")[-1]
+		try:
+			res = self.execute("pveca -i 2>/dev/null | tail -n 1")
+			return res.split("\n")[-2].split(" ")[-1]
+		except:
+			return ClusterState.NONE
 				
 	def next_free_vm_id (self):
-		ids = range(self.vmid_range_start,self.vmid_range_start+self.vmid_range_count)
+		ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, openvz_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.openvz_id)
+		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vmid"):
+				ids.remove(int(dev.attributes["vmid"]))
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, kvm_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.kvm_id)
+		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vmid"):
+				ids.remove(int(dev.attributes["vmid"]))
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
 
 	def next_free_port(self):
-		ids = range(self.port_range_start,self.port_range_start+self.port_range_count)
+		ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
 		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.vnc_port)
+		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vnc_port"):
+				ids.remove(int(dev.attributes["vnc_port"]))
 		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self, vnc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(dev.vnc_port)
+		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			if dev.attributes.get("vnc_port"):
+				ids.remove(int(dev.attributes["vnc_port"]))
 		import tinc
-		for con in tinc.TincConnection.objects.filter(interface__device__host=self, tinc_port__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(con.tinc_port)
+		for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			if con.attributes.get("tinc_port"):
+				ids.remove(int(con.attributes["tinc_port"]))
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 
 	def next_free_bridge(self):
-		ids = range(self.bridge_range_start,self.bridge_range_start+self.bridge_range_count)
+		ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
 		import generic
-		for con in generic.Connection.objects.filter(interface__device__host=self, bridge_id__isnull=False): # pylint: disable-msg=E1101
-			ids.remove(con.bridge_id)
+		for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			if con.attributes.get("bridge_id"):
+				ids.remove(int(con.attributes["bridge_id"]))
 		try:
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
 	
 	def _exec(self, cmd):
+		if config.TESTING:
+			return "\n"
 		res = util.run_shell(cmd, config.remote_dry_run)
 		#if res[0] == 255:
 		#	raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
 		return res[1]
 	
-	def execute(self, command, task=None):
+	def execute(self, command):
 		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
 		log_str = self.name + ": " + command + "\n"
-		if task:
-			fd = task.output
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
 		res = self._exec(cmd)
-		fd.write(res)
+		if not config.remote_dry_run:
+			fd.write(res)
 		return res
 	
 	def _calc_grant(self, params):
 		list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
 		list.sort()
 		import hashlib
-		return hashlib.sha1("&".join(list)+"|"+self.hostserver_secret_key).hexdigest()
+		return hashlib.sha1("&".join(list)+"|"+self.attributes["hostserver_secret_key"]).hexdigest()
 	
 	def upload_grant(self, filename, redirect):
 		import urllib, base64, time
 		params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
 		params.update(grant=self._calc_grant(params))
 		qstr = urllib.urlencode(params)
-		return "http://%s:%s/upload?%s" % (self.name, self.hostserver_port, qstr)
+		return "http://%s:%s/upload?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 	
 	def download_grant(self, file, name):
 		import time
@@ -218,14 +228,32 @@ class Host(models.Model):
 		params.update(grant=self._calc_grant(params))
 		import urllib
 		qstr = urllib.urlencode(params)
-		return "http://%s:%s/download?%s" % (self.name, self.hostserver_port, qstr)
+		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
 
-	def upload(self, local_file, remote_file, task=None):
+	def file_transfer(self, local_file, host, remote_file, direct=False):
+		direct = False #FIXME: remove statement
+		if direct:
+			src = local_file
+			mode = host.execute("stat -c %%a %s" % local_file).strip()
+		else:
+			import uuid
+			src = "%s/%s" % (self.attributes["hostserver_basedir"], uuid.uuid1())
+			self.file_copy(local_file, src)
+		self.file_chmod(src, 644)
+		url = self.download_grant(src, "file")
+		res = host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (remote_file, url))
+		assert res.splitlines()[-1] == "0", "Failure to transfer file"
+		if not direct:
+			self.file_delete(src)
+		else:
+			self.file_chmod(local_file, mode)
+		
+	def file_put(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
-		self.execute("mkdir -p $(dirname %s)" % remote_file, task)
-		if task:
-			fd = task.output
+		self.execute("mkdir -p $(dirname %s)" % remote_file)
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
@@ -233,11 +261,11 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
-	def download(self, remote_file, local_file, task=None):
+	def file_get(self, remote_file, local_file):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
-		if task:
-			fd = task.output
+		if tasks.get_current_task():
+			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
@@ -245,8 +273,23 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 	
-	def get_result(self, command):
-		return self._exec(Host.SSH_COMMAND+["root@%s" % self.name, command])
+	def file_move(self, src, dst):
+		return self.execute("mv \"%s\" \"%s\"" % (src, dst))
+	
+	def file_copy(self, src, dst):
+		return self.execute("cp -a \"%s\" \"%s\"" % (src, dst))
+
+	def file_chown(self, file, owner, recursive=False):
+		return self.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", owner, file))
+
+	def file_chmod(self, file, mode, recursive=False):
+		return self.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", mode, file))
+
+	def file_mkdir(self, dir):
+		return self.execute("mkdir -p \"%s\"" % dir)
+
+	def file_delete(self, path, recursive=False):
+		return self.execute("rm %s -f \"%s\"" % ("-r" if recursive else "", path))
 
 	def _first_line(self, line):
 		if not line:
@@ -257,32 +300,35 @@ class Host(models.Model):
 		else:
 			return line[0]
 
-	def free_port(self, port, task):
-		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port, task)
-		self.execute("lsof -i:%s -t | xargs -r kill" % port, task)
+	def process_kill(self, pidfile):
+		self.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})
+
+	def free_port(self, port):
+		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
+		self.execute("lsof -i:%s -t | xargs -r kill" % port)
 
 	def bridge_exists(self, bridge):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
+		return self._first_line(self.execute("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
 
 	def bridge_create(self, bridge):
 		if config.remote_dry_run:
 			return
-		self.get_result("brctl addbr %s" % bridge)
+		self.execute("brctl addbr %s" % bridge)
 		assert self.bridge_exists(bridge), "Bridge cannot be created: %s" % bridge
 		
 	def bridge_remove(self, bridge):
 		if config.remote_dry_run:
 			return
-		self.get_result("brctl delbr %s" % bridge)
+		self.execute("brctl delbr %s" % bridge)
 		assert not self.bridge_exists(bridge), "Bridge cannot be removed: %s" % bridge
 		
 	def bridge_interfaces(self, bridge):
 		if config.remote_dry_run:
 			return
 		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge 
-		return self.get_result("ls /sys/class/net/%s/brif" % bridge).split()
+		return self.execute("ls /sys/class/net/%s/brif" % bridge).split()
 		
 	def bridge_disconnect(self, bridge, iface):
 		if config.remote_dry_run:
@@ -290,7 +336,7 @@ class Host(models.Model):
 		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge
 		if not iface in self.bridge_interfaces(bridge):
 			return
-		self.get_result("brctl delif %s %s" % (bridge, iface))
+		self.execute("brctl delif %s %s" % (bridge, iface))
 		assert not iface in self.bridge_interfaces(bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
 		
 	def bridge_connect(self, bridge, iface):
@@ -304,50 +350,60 @@ class Host(models.Model):
 		oldbridge = self.interface_bridge(iface)
 		if oldbridge:
 			self.bridge_disconnect(oldbridge, iface)
-		self.get_result("brctl addif %s %s" % (bridge, iface))
+		self.execute("brctl addif %s %s" % (bridge, iface))
 		assert iface in self.bridge_interfaces(bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
 		
 	def interface_bridge(self, iface):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
+		return self._first_line(self.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
 			
 	def interface_exists(self, iface):
 		if config.remote_dry_run:
 			return
-		return self._first_line(self.get_result("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
+		return self._first_line(self.execute("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
 
 	def debug_info(self):		
 		result={}
-		result["top"] = self.get_result("top -b -n 1")
-		result["OpenVZ"] = self.get_result("vzlist -a")
-		result["KVM"] = self.get_result("qm list")
-		result["Bridges"] = self.get_result("brctl show")
-		result["iptables router"] = self.get_result("iptables -t mangle -v -L PREROUTING")		
-		result["ipfw rules"] = self.get_result("ipfw show")
-		result["ipfw pipes"] = self.get_result("ipfw pipe show")
-		result["ifconfig"] = self.get_result("ifconfig -a")
-		result["netstat"] = self.get_result("netstat -tulpen")		
-		result["df"] = self.get_result("df -h")		
-		result["templates"] = self.get_result("ls -lh /var/lib/vz/template/*")		
-		result["hostserver"] = self.get_result("/etc/init.d/tomato-hostserver status")		
-		result["hostserver-files"] = self.get_result("ls -l /var/lib/vz/hostserver")		
+		result["top"] = self.execute("top -b -n 1")
+		result["OpenVZ"] = self.execute("vzlist -a")
+		result["KVM"] = self.execute("qm list")
+		result["Bridges"] = self.execute("brctl show")
+		result["iptables router"] = self.execute("iptables -t mangle -v -L PREROUTING")		
+		result["ipfw rules"] = self.execute("ipfw show")
+		result["ipfw pipes"] = self.execute("ipfw pipe show")
+		result["ifconfig"] = self.execute("ifconfig -a")
+		result["netstat"] = self.execute("netstat -tulpen")		
+		result["df"] = self.execute("df -h")		
+		result["templates"] = self.execute("ls -lh /var/lib/vz/template/*")		
+		result["hostserver"] = self.execute("/etc/init.d/tomato-hostserver status")		
+		result["hostserver-files"] = self.execute("ls -l /var/lib/vz/hostserver")		
 		return result
 	
-	def special_features(self):
-		return self.specialfeature_set.all() # pylint: disable-msg=E1101
+	def external_networks(self):
+		return self.externalnetworkbridge_set.all() # pylint: disable-msg=E1101
 	
-	def special_features_add(self, feature_type, group_name, bridge):
-		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
-		sf = SpecialFeature(host=self, feature_group=sfg, bridge=bridge)
-		sf.save()
-		self.specialfeature_set.add(sf) # pylint: disable-msg=E1101
+	def external_networks_add(self, type, group, bridge):
+		en = ExternalNetwork.objects.get(type=type, group=group)
+		enb = ExternalNetworkBridge(host=self, network=en, bridge=bridge)
+		enb.save()
+		self.externalnetworkbridge_set.add(enb) # pylint: disable-msg=E1101
 		
-	def special_features_remove(self, feature_type, group_name):
-		sfg = SpecialFeatureGroup.objects.get(feature_type=feature_type, group_name=group_name)
-		for sf in self.special_features():
-			if sf.feature_group == sfg:
-				sf.delete()
+	def external_networks_remove(self, type, group):
+		en = ExternalNetwork.objects.get(type=type, group=group)
+		for enb in self.external_networks():
+			if enb.feature_group == en:
+				enb.delete()
+
+	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
+		if "enabled" in properties:
+			self.enabled = util.parse_bool(properties["enabled"])
+		for key in properties:
+			self.attributes[key] = properties[key]
+		del self.attributes["enabled"]
+		del self.attributes["name"]
+		del self.attributes["group"]
+		self.save()
 	
 	def to_dict(self):
 		"""
@@ -356,12 +412,11 @@ class Host(models.Model):
 		@return: a dict containing information about the host
 		@rtype: dict
 		"""
-		return {"name": self.name, "group": self.group, "enabled": self.enabled, 
+		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"vmid_start": self.vmid_range_start, "vmid_count": self.vmid_range_count,
-			"port_start": self.port_range_start, "port_count": self.port_range_count,
-			"bridge_start": self.bridge_range_start, "bridge_count": self.bridge_range_count,
-			"special_features": [sf.to_dict() for sf in self.special_features()]}
+			"external_networks": [enb.to_dict() for enb in self.external_networks()]}
+		res.update(self.attributes.items())
+		return res
 
 	
 class Template(models.Model):
@@ -371,6 +426,9 @@ class Template(models.Model):
 	download_url = models.CharField(max_length=255, default="")
 		
 	def init(self, name, ttype, download_url):
+		import re
+		if not re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name) or name.endswith(".tar.gz") or name.endswith(".qcow2"):
+			raise fault.new(0, "Name must be in the format NAME-VERSION")
 		self.name = name
 		self.type = ttype
 		self.download_url = download_url
@@ -383,20 +441,20 @@ class Template(models.Model):
 		
 	def get_filename(self):
 		if self.type == "kvm":
-			return "/var/lib/vz/template/qemu/%s" % self.name
+			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	
-	def upload_to_all(self, task):
+	def upload_to_all(self):
 		for host in Host.objects.all(): # pylint: disable-msg=E1101
-			self.upload_to_host(host, task)
+			self.upload_to_host(host)
 		
-	def upload_to_host(self, host, task):
+	def upload_to_host(self, host):
 		if host.cluster_state() == ClusterState.NODE:
 			return
 		dst = self.get_filename()
 		if self.download_url:
-			host.execute("wget -nv %s -O %s" % (self.download_url, dst), task)
+			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
@@ -437,9 +495,9 @@ class PhysicalLink(models.Model):
 			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
 	
 
-class SpecialFeatureGroup(models.Model):
-	feature_type = models.CharField(max_length=50)
-	group_name = models.CharField(max_length=50)
+class ExternalNetwork(models.Model):
+	type = models.CharField(max_length=50)
+	group = models.CharField(max_length=50)
 	max_devices = models.IntegerField(null=True)
 	avoid_duplicates = models.BooleanField(default=False)
 
@@ -447,37 +505,37 @@ class SpecialFeatureGroup(models.Model):
 		return not (self.max_devices and self.usage_count() >= self.max_devices) 
 
 	def usage_count(self):
-		import special
-		connectors = special.SpecialFeatureConnector.objects.filter(used_feature_group=self)
+		import external
+		connectors = external.ExternalNetworkConnector.objects.filter(used_network=self)
 		num = connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
 		return num if num else 0
 		
-	def to_dict(self, instances=False):
+	def to_dict(self, bridges=False):
 		"""
-		Prepares a special feature group for serialization.
+		Prepares an object for serialization.
 		
-		@return: a dict containing information about the special feature group
+		@return: a dict containing information about the object
 		@rtype: dict
 		"""
-		data = {"type": self.feature_type, "name": self.group_name, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
-		if instances:
-			data["instances"] = [sf.to_dict() for sf in self.specialfeature_set.all()]
+		data = {"type": self.type, "group": self.group, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
+		if bridges:
+			data["bridges"] = [enb.to_dict() for enb in self.externalnetworkbridge_set.all()]
 		return data
 
 	
-class SpecialFeature(models.Model):
+class ExternalNetworkBridge(models.Model):
 	host = models.ForeignKey(Host)
-	feature_group = models.ForeignKey(SpecialFeatureGroup)
+	network = models.ForeignKey(ExternalNetwork)
 	bridge = models.CharField(max_length=10)
 
 	def to_dict(self):
 		"""
-		Prepares a special feature for serialization.
+		Prepares an object for serialization.
 		
-		@return: a dict containing information about the special feature
+		@return: a dict containing information about the object
 		@rtype: dict
 		"""
-		return {"host": self.host.name, "type": self.feature_group.feature_type, "group": self.feature_group.group_name, "bridge": self.bridge}
+		return {"host": self.host.name, "type": self.network.type, "group": self.network.group, "bridge": self.bridge}
 
 	
 def get_host_groups():
@@ -539,27 +597,21 @@ def get_default_template(ttype):
 	else:
 		return None
 	
-def create(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
-	host = Host(name=host_name, enabled=enabled, group=group_name,
-			vmid_range_start=vmid_start, vmid_range_count=vmid_count,
-			port_range_start=port_start, port_range_count=port_count,
-			bridge_range_start=bridge_start, bridge_range_count=bridge_count)
+def create(host_name, group_name, enabled, attrs):
+	host = Host(name=host_name, enabled=enabled, group=group_name)
+	host.save()
+	host.configure(attrs)
 	import tasks
 	t = tasks.TaskStatus(host.check_save)
 	t.subtasks_total = 1
 	t.start()
 	return t.id
 
-def change(host_name, group_name, enabled, vmid_start, vmid_count, port_start, port_count, bridge_start, bridge_count):
+def change(host_name, group_name, enabled, attrs):
 	host = get_host(host_name)
 	host.enabled=enabled
 	host.group=group_name
-	host.vmid_range_start=vmid_start
-	host.vmid_range_count=vmid_count
-	host.port_range_start=port_start
-	host.port_range_count=port_count
-	host.bridge_range_start=bridge_start
-	host.bridge_range_count=bridge_count
+	host.configure(attrs)
 	host.save()
 	
 def remove(host_name):
@@ -574,7 +626,7 @@ def get_all_physical_links():
 	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 		
 def measure_link_properties(src, dst):
-	res = src.get_result("ping -A -c 500 -n -q -w 300 %s" % dst.name)
+	res = src.execute("ping -A -c 500 -n -q -w 300 %s" % dst.name)
 	if not res:
 		return
 	lines = res.splitlines()
@@ -610,16 +662,17 @@ def measure_physical_links():
 def check_all_hosts():
 	if config.remote_dry_run:
 		return
-	import tasks
-	task = tasks.TaskStatus(None)
+	tasks.set_current_task(tasks.TaskStatus(None))
 	for host in get_hosts():
 		try:
 			if host.enabled:
-				host.check(task)
-		except:
+				host.check()
+		except Exception, exc:
+			print "Disabling host %s because or error during check: %s" % (h, exc)
 			host.enabled = False
 			host.save()
-	task.done()
+	tasks.get_current_task().done()
+	tasks.set_current_task(None)
 
 if not config.TESTING:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
@@ -630,11 +683,10 @@ if not config.TESTING:
 	atexit.register(host_check_task.stop)
 
 def host_check(host):
-	import tasks
 	t = tasks.TaskStatus(host.check)
 	t.subtasks_total = 7
 	t.start()
 	return t.id
 
-def special_features():
-	return [sfg.to_dict(True) for sfg in SpecialFeatureGroup.objects.all()]
+def external_networks():
+	return [en.to_dict(True) for en in ExternalNetwork.objects.all()]

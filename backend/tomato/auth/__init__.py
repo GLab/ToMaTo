@@ -53,6 +53,8 @@ def login(username, password):
 		if cached.password == password:
 			return cached.user 
 	user = provider_login(username, password)
+	if not user:
+		return None
 	cached = CachedUser(user, password)
 	users[username] = cached
-	return cached.user		
+	return cached.user

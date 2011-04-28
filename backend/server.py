@@ -40,7 +40,8 @@ class Introspection():
 			return "Unknown method: %s" % method
 		import inspect
 		argspec = inspect.getargspec(func)
-		return "%s(" % method + ", ".join(argspec.args[:-1]) + ")"
+		argstr = inspect.formatargspec(argspec.args[:-1], defaults=argspec.defaults[:-1])
+		return method + argstr
 
 	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		func = getattr(self.api, method)
@@ -67,7 +68,7 @@ class APIServer(xmlrpc.XMLRPC):
 	def execute(self, function, args, user):
 		try:
 			self.log(function, args, user)
-			return function(*args, user=user) #pylint: disable-msg=W0142
+			return function(*(args[0]), user=user, **(args[1])) #pylint: disable-msg=W0142
 		except xmlrpc.Fault:
 			raise
 		except Exception, exc:
@@ -91,8 +92,8 @@ class APIServer(xmlrpc.XMLRPC):
 		function = None
 		if hasattr(self.api, functionPath):
 			function=getattr(self.api, functionPath)
-		if functionPath.startswith("system."):
-			functionPath = functionPath[7:]
+		if functionPath.startswith("_"):
+			functionPath = functionPath[1:]
 		if hasattr(self.introspection, functionPath):
 			function=getattr(self.introspection, functionPath)
 		if function:

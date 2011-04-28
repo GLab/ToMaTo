@@ -18,7 +18,7 @@
 from django.db import models
 import os, datetime, util, atexit
 import config, log, fault, tasks
-import topology_analysis, generic
+import generic, attributes
 
 class Topology(models.Model):
 	"""
@@ -30,19 +30,11 @@ class Topology(models.Model):
 	
 	name = models.CharField(max_length=30, blank=True)
 	# The name of the topology.
-		
+
 	owner = models.CharField(max_length=30)
 
-	date_created = models.DateTimeField(auto_now_add=True)
-	
-	date_modified = models.DateTimeField(auto_now=True)
-
-	date_usage = models.DateTimeField()
-
-	task = models.CharField(max_length=100, blank=True, null=True)
-
-	resources = models.ForeignKey(generic.ResourceSet, null=True)
-
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+		
 	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.timeout_remove_weeks)
@@ -58,19 +50,18 @@ class Topology(models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
-		self.date_usage = datetime.datetime.now()
-		self.save()
+		self.renew()
 		self.name = "Topology_%s" % self.id
 		self.save()
 
 	def renew(self):
-		self.date_usage = datetime.datetime.now()
+		self.attributes["date_usage"] = datetime.datetime.now()
 		self.save()
 
 	def max_state(self):
 		max_state = generic.State.CREATED
 		for con in self.connector_set_all():
-			if not con.is_special():
+			if not con.is_external():
 				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 					max_state = generic.State.PREPARED
 				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
@@ -84,25 +75,28 @@ class Topology(models.Model):
 
 	def check_timeout(self):
 		now = datetime.datetime.now()
-		if now > self.date_usage + self.REMOVE_TIMEOUT:
+		date = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
+		if not date:
+			return
+		if now > date + self.REMOVE_TIMEOUT:
 			self.logger().log("timeout: removing topology")
-			self.remove()
-		elif now > self.date_usage + self.DESTROY_TIMEOUT:
+			self.remove(True)
+		elif now > date + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
 			max_state = self.max_state()
 			if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
 				self.destroy(False)
-		elif now > self.date_usage + self.STOP_TIMEOUT:
+		elif now > date + self.STOP_TIMEOUT:
 			self.logger().log("timeout: stopping topology")
 			if self.max_state() == generic.State.STARTED:
 				self.stop(False)
 		
 	def get_task(self):
-		if not self.task:
+		if not self.attributes["task"]:
 			return None
-		if not tasks.TaskStatus.tasks.has_key(self.task):
+		if not tasks.TaskStatus.tasks.has_key(self.attributes["task"]):
 			return None
-		return tasks.TaskStatus.tasks[self.task]
+		return tasks.TaskStatus.tasks[self.attributes["task"]]
 
 	def is_busy(self):
 		t = self.get_task()
@@ -110,17 +104,17 @@ class Topology(models.Model):
 			return False
 		return t.is_active()
 
-	def start_task(self, func, *args, **kwargs):
+	def start_task(self, func, direct=False, *args, **kwargs):
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		task = tasks.TaskStatus(func, *args, **kwargs)
-		task.start()
-		self.task = task.id
+		self.attributes["task"] = task.id
 		self.save()
+		if direct:
+			task._run()
+		else:
+			task.start()
 		return task
-
-	def analysis(self):
-		return topology_analysis.analyze(self)
 
 	def device_set_all(self):
 		return self.device_set.all() # pylint: disable-msg=E1101
@@ -168,127 +162,123 @@ class Topology(models.Model):
 		"""
 		return config.remote_control_dir+"/"+str(self.id)
 
-	def start(self):
+	def start(self, direct):
 		"""
 		Starts the topology.
 		This will fail if the topology has not been prepared yet or is already started.
 		"""
 		self.renew()
-		if len(self.analysis()["problems"]) > 0:
-			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		task = self.start_task(self.start_run)
+		task = self.start_task(self.start_run, direct)
 		return task.id
 
-	def start_run(self, task):
+	def start_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run(task)
+				dev.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run(task)
+				con.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.PREPARED:
 				task.output.write("\n# starting " + con.name + "\n") 
-				con.upcast().start_run(task)
+				con.upcast().start_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.PREPARED:
 				task.output.write("\n# starting " + dev.name + "\n") 
-				dev.upcast().start_run(task)
-		task.done()
+				dev.upcast().start_run()
 
-	def stop(self, renew=True):
+	def stop(self, direct, renew=True):
 		"""
 		Stops the topology.
 		This will fail if the topology has not been prepared yet.
 		"""
 		if renew:
 			self.renew()
-		task = self.start_task(self.stop_run)
+		task = self.start_task(self.stop_run, direct)
 		return task.id
 
-	def stop_run(self, task):
+	def stop_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
 				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run(task)
+				dev.upcast().stop_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
 				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run(task)
-		task.done()
+				con.upcast().stop_run()
 
-	def prepare(self):
+	def prepare(self, direct):
 		"""
 		Prepares the topology.
 		This will fail if the topology is already prepared or started.
 		"""
 		self.renew()
-		if len(self.analysis()["problems"]) > 0:
-			raise fault.new(fault.TOPOLOGY_HAS_PROBLEMS, "topology has problems")
-		task = self.start_task(self.prepare_run)
+		task = self.start_task(self.prepare_run, direct)
 		return task.id
 
-	def prepare_run(self, task):
+	def prepare_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
 				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run(task)
+				dev.upcast().prepare_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
 				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run(task)
-		task.done()
+				con.upcast().prepare_run()
 
-	def destroy(self, renew=True):
+	def destroy(self, direct, renew=True):
 		"""
 		Destroys the topology.
 		This will fail if the topology has not been uploaded yet or is already started.
 		"""
 		if renew:
 			self.renew()
-		task = self.start_task(self.destroy_run)
+		task = self.start_task(self.destroy_run, direct)
 		return task.id
 
-	def destroy_run(self, task):
+	def destroy_run(self):
+		task = tasks.get_current_task()
 		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run(task)
+				con.upcast().stop_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
 				task.subtasks_total = task.subtasks_total + 1
 				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run(task)
+				dev.upcast().stop_run()
 		for con in self.connector_set_all():
 			if con.state == generic.State.PREPARED or con.state == generic.State.CREATED:
 				task.output.write("\n# destroying " + con.name + "\n") 
-				con.upcast().destroy_run(task)
+				con.upcast().destroy_run()
 		for dev in self.device_set_all():
 			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
 				task.output.write("\n# destroying " + dev.name + "\n") 
-				dev.upcast().destroy_run(task)
+				dev.upcast().destroy_run()
 		task.done()
 
-	def remove(self):
+	def remove(self, direct):
 		"""
 		Removes the topology.
 		"""
-		task = self.start_task(self.remove_run)
+		task = self.start_task(self.remove_run, direct)
 		return task.id
 
-	def remove_run(self, task):
-		self.destroy_run(task)
+	def remove_run(self):
+		self.destroy_run()
 		self.delete()
-		task.done()
 			
 	def _log(self, task, output):
 		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
@@ -351,19 +341,31 @@ class Topology(models.Model):
 		if atype == Permission.ROLE_USER:
 			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
-	def update_resource_usage(self):
-		if not self.resources:
-			r = generic.ResourceSet()
-			r.save()
-			self.resources = r 
-			self.save()
-		self.resources.clean()
-		for dev in self.device_set_all():
-			self.resources.add(dev.update_resource_usage())
-		for con in self.connector_set_all():
-			self.resources.add(con.update_resource_usage())
-		self.resources.save()
+	def resources(self):
+		res = {}
+		for key in self.attributes:
+			if key.startswith("resources_"):
+				res[key[10:]] = self.attributes[key]
 
+	def update_resource_usage(self):
+		res = {}
+		for dev in self.device_set_all():
+			dev.update_resource_usage()
+			for key in dev.attributes:
+				if key.startswith("resources_"):
+					if not key in res:
+						res[key] = 0
+					res[key] += float(dev.attributes[key])
+		for con in self.connector_set_all():
+			con.update_resource_usage()
+			for key in con.attributes:
+				if key.startswith("resources_"):
+					if not key in res:
+						res[key] = 0
+					res[key] += float(con.attributes[key])
+		for key in res:
+			self.attributes[key] = res[key]
+		
 	def to_dict(self, auth, detail):
 		"""
 		Prepares a topology for serialization.
@@ -375,34 +377,30 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
+		last_usage = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.max_state(), "owner": self.owner,
 					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
-					"date_created": str(self.date_created), "date_modified": str(self.date_modified), "date_usage": str(self.date_usage)
+					"stop_timeout": str(last_usage + self.STOP_TIMEOUT), "destroy_timeout": str(last_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(last_usage + self.REMOVE_TIMEOUT) 
 					}
 			}
+		res["attrs"].update(self.attributes.items())
 		if detail:
-			try:
-				analysis = self.analysis()
-			except Exception, exc: #pylint: disable-msg=W0703
-				analysis = "Error in analysis: %s" % exc
-				import traceback
-				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
-			res.update({"analysis": analysis, 
-				"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
+			res.update({"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
 				"connectors": dict([[v.name, v.upcast().to_dict(auth)] for v in self.connector_set_all()])
 				})
-			if auth:
-				task = self.get_task()
-				if self.resources:
-					res.update(resources=self.resources.encode())
-				if task:
-					if task.is_active():
-						res.update(running_task=task.id)
-					else:
-						res.update(finished_task=task.id)
-				res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
-				res["permissions"][self.owner]="owner";
+			res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
+			res["permissions"][self.owner]="owner";
+		if "task" in res["attrs"]:
+			del res["attrs"]["task"]
+		if auth:
+			task = self.get_task()
+			if task:
+				if task.is_active():
+					res.update(running_task=task.id)
+				else:
+					res.update(finished_task=task.id)
+
 		return res
 
 						

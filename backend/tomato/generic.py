@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import hosts, fault
+import fault, hosts, attributes
 
 class State(): #pylint: disable-msg=W0232
 	"""
@@ -31,62 +31,6 @@ class State(): #pylint: disable-msg=W0232
 	PREPARED="prepared"
 	STARTED="started"
 
-class ResourceSet(models.Model):
-
-	def clean(self):
-		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			r.delete()
-
-	def add(self, res):
-		for r in res.resourceentry_set.all(): # pylint: disable-msg=E1101
-			self.set(r.type, self.get(r.type) + r.value)
-
-	def set(self, rtype, value):
-		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
-			res = ResourceEntry(resource_set=self, type=rtype, value=value)
-			res.save()
-			self.resourceentry_set.add(res) # pylint: disable-msg=E1101
-		else:
-			res = self.resourceentry_set.all().get(type=rtype) # pylint: disable-msg=E1101
-			res.value = value
-			res.save()
-	
-	def get(self, rtype):
-		if len(self.resourceentry_set.filter(type=rtype)) == 0: # pylint: disable-msg=E1101
-			return 0
-		else:
-			res = self.resourceentry_set.get(type=rtype) # pylint: disable-msg=E1101
-			return res.value
-		
-	def decode(self, res):
-		for k, v in res.items():
-			self.set(k, v)
-			
-	def encode(self):
-		res = {}
-		for r in self.resourceentry_set.all(): # pylint: disable-msg=E1101
-			res[r.type] = r.value if abs(r.value) < 0x7FFFFFFF else str(r.value)
-		return res
-
-def add_encoded_resources(r1, r2):
-	res = {}
-	for k, v in r1.items():
-		if k in res:
-			res[k] = str(int(res[k]) + int(v))
-		else:
-			res[k] = v
-	for k, v in r2.items():
-		if k in res:
-			res[k] = str(int(res[k]) + int(v))
-		else:
-			res[k] = v
-	return res
-
-class ResourceEntry(models.Model):
-	resource_set = models.ForeignKey(ResourceSet)
-	type = models.CharField(max_length=20)
-	value = models.BigIntegerField()
-
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
@@ -96,10 +40,8 @@ class Device(models.Model):
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	pos = models.CharField(max_length=10, null=True)
 	host = models.ForeignKey(hosts.Host, null=True)
-	hostgroup = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(ResourceSet, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def interface_set_get(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
@@ -125,7 +67,7 @@ class Device(models.Model):
 	
 	def host_preferences(self):
 		prefs = ObjectPreferences(True)
-		for h in hosts.get_hosts(self.hostgroup):
+		for h in hosts.get_hosts(self.attributes.get("hostgroup")):
 			if h.enabled:
 				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
 		#print "Host preferences for %s: %s" % (self, prefs) 
@@ -134,7 +76,8 @@ class Device(models.Model):
 	def host_options(self):
 		options = self.host_preferences()
 		for iface in self.interface_set_all():
-			options = options.combine(iface.connection.connector.upcast().host_preferences())
+			if iface.is_connected():
+				options = options.combine(iface.connection.connector.upcast().host_preferences())
 		return options
 
 	def download_supported(self):
@@ -154,7 +97,18 @@ class Device(models.Model):
 		except: #pylint: disable-msg=W0702
 			return None		
 	
-	def start(self):
+	def migrate(self, direct):
+		self.topology.renew()
+		if self.topology.is_busy():
+			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		if direct:
+			return self.upcast().migrate_run()
+		else:
+			task = self.topology.start_task(self.upcast().migrate_run)
+			task.subtasks_total = 1
+			return task.id
+
+	def start(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -162,21 +116,27 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().start_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().start_run()
+		else:
+			task = self.topology.start_task(self.upcast().start_run)
+			task.subtasks_total = 1
+			return task.id
 		
-	def stop(self):
+	def stop(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		task = self.topology.start_task(self.upcast().stop_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().stop_run()
+		else:
+			task = self.topology.start_task(self.upcast().stop_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def prepare(self):
+	def prepare(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -184,56 +144,62 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().prepare_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().prepare_run()
+		else:
+			task = self.topology.start_task(self.upcast().prepare_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def destroy(self):
+	def destroy(self, direct):
 		for iface in self.interface_set_all():
 			if iface.is_connected():
 				con = iface.connection.connector
-				if not con.is_special() and not con.state == State.CREATED:
+				if not con.is_external() and not con.state == State.CREATED:
 					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().destroy_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().destroy_run()
+		else:
+			task = self.topology.start_task(self.upcast().destroy_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def start_run(self, task):
+	def start_run(self):
 		pass
 
-	def stop_run(self, task):
+	def stop_run(self):
 		pass
 
-	def prepare_run(self, task):
+	def prepare_run(self):
 		pass
 
-	def destroy_run(self, task):
+	def destroy_run(self):
 		pass
 	
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if "pos" in properties:
-			self.pos = properties["pos"]
+	def configure(self, properties):
 		if "hostgroup" in properties:
 			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
-			self.hostgroup = properties["hostgroup"]
-			if self.hostgroup == "auto":
-				self.hostgroup = ""
+			if properties["hostgroup"] == "auto":
+				properties["hostgroup"] = ""
+		for key in properties:
+			self.attributes[key] = properties[key]
+		del self.attributes["host"]			
+		del self.attributes["name"]			
+		del self.attributes["type"]			
+		del self.attributes["state"]			
+		del self.attributes["download_supported"]			
+		del self.attributes["upload_supported"]			
 		self.save()
 
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = ResourceSet()
-			r.save()
-			self.resources = r 
-			self.save()
-		self.resources.decode(res)
-		return self.resources
+		for key in res:
+			self.attributes["resources_%s" % key] = res[key]
 
 	def __unicode__(self):
 		return self.name
@@ -248,15 +214,12 @@ class Device(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"host": str(self.host) if self.host else None,
-					"name": self.name, "type": self.type,
-					"state": self.state, "hostgroup": self.hostgroup, "pos": self.pos,
+					"name": self.name, "type": self.type, "state": self.state,
 					"download_supported": self.download_supported(), "upload_supported": self.upload_supported() 
 					},
 			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
 		}
-		if auth:
-			if self.resources:
-				res.update(resources=self.resources.encode())
+		res["attrs"].update(self.attributes.items())
 		return res
 	
 	def upload_image_grant(self, redirect):
@@ -267,21 +230,23 @@ class Device(models.Model):
 			return {"upload_url": self.host.upload_grant(filename, redirect), "redirect_url": redirect}
 		else:
 			return None
-		
+	
 	def download_image_uri(self):
 		if self.host:
-			filename = self.prepare_downloadable_image()
+			filename = self.upcast().prepare_downloadable_image()
 			return self.host.download_grant(filename, filename)
 		else:
 			return None
 			
 	def use_uploaded_image(self, filename):
-		return self.topology.start_task(self.upcast().use_uploaded_image_run, filename).id
+		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
+		return self.topology.start_task(self.upcast().use_uploaded_image_run, path).id
 			
 			
 class Interface(models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def is_configured(self):
 		try:
@@ -297,6 +262,12 @@ class Interface(models.Model):
 		except: #pylint: disable-msg=W0702
 			return False	
 	
+	def configure(self, properties):
+		for key in properties:
+			self.attributes[key] = properties[key]
+		del self.attributes["name"]			
+		self.save()
+
 	def upcast(self):
 		if self.is_configured():
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
@@ -315,18 +286,18 @@ class Interface(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name}}
+		res["attrs"].update(self.attributes.items())
 		return res
 
 
 class Connector(models.Model):
-	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('special', 'Special feature') )
+	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20)
 	from topology import Topology
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	pos = models.CharField(max_length=10, null=True)
-	resources = models.ForeignKey(ResourceSet, null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def connection_set_add(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
@@ -340,14 +311,14 @@ class Connector(models.Model):
 	def is_tinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
 
-	def is_special(self):
-		return self.type=='special'
+	def is_external(self):
+		return self.type=='external'
 
 	def upcast(self):
 		if self.is_tinc():
 			return self.tincconnector.upcast() # pylint: disable-msg=E1101
-		if self.is_special():
-			return self.specialfeatureconnector.upcast() # pylint: disable-msg=E1101
+		if self.is_external():
+			return self.externalnetworkconnector.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def host_preferences(self):
@@ -365,7 +336,7 @@ class Connector(models.Model):
 	def affected_hosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
-	def start(self):
+	def start(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -373,21 +344,27 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().start_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().start_run()
+		else:
+			task = self.topology.start_task(self.upcast().start_run)
+			task.subtasks_total = 1
+			return task.id
 		
-	def stop(self):
+	def stop(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		task = self.topology.start_task(self.upcast().stop_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().stop_run()
+		else:
+			task = self.topology.start_task(self.upcast().stop_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def prepare(self):
+	def prepare(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
@@ -395,59 +372,63 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().prepare_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().prepare_run()
+		else:
+			task = self.topology.start_task(self.upcast().prepare_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def destroy(self):
+	def destroy(self, direct):
 		self.topology.renew()
 		if self.topology.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		task = self.topology.start_task(self.upcast().destroy_run)
-		task.subtasks_total = 1
-		return task.id
+		if direct:
+			return self.upcast().destroy_run()
+		else:
+			task = self.topology.start_task(self.upcast().destroy_run)
+			task.subtasks_total = 1
+			return task.id
 
-	def start_run(self, task):
+	def start_run(self):
 		for con in self.connection_set_all():
-			con.upcast().start_run(task)
+			con.upcast().start_run()
 
-	def stop_run(self, task):
+	def stop_run(self):
 		for con in self.connection_set_all():
-			con.upcast().stop_run(task)
+			con.upcast().stop_run()
 
-	def prepare_run(self, task):
+	def prepare_run(self):
 		for con in self.connection_set_all():
 			if con.interface.device.state == State.CREATED:
 				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
 		for con in self.connection_set_all():
-			con.upcast().prepare_run(task)
+			con.upcast().prepare_run()
 
-	def destroy_run(self, task):
+	def destroy_run(self):
 		for con in self.connection_set_all():
-			con.upcast().destroy_run(task)
+			con.upcast().destroy_run()
 
 	def __unicode__(self):
 		return self.name
-
-	def configure(self, properties, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if "pos" in properties:
-			self.pos = properties["pos"]
-		self.save()
 				
 	def update_resource_usage(self):
 		res = self.upcast().get_resource_usage()
-		if not self.resources:
-			r = ResourceSet()
-			r.save()
-			self.resources = r 
-			self.save()
-		self.resources.decode(res)
-		return self.resources
+		for key in res:
+			self.attributes["resources_%s" % key] = res[key]
 	
 	def bridge_name(self, interface):
-		return "gbr_%s" % interface.connection.bridge_id
+		return "gbr_%s" % interface.connection.bridge_id()
+
+	def configure(self, properties):
+		for key in properties:
+			self.attributes[key] = properties[key]
+		del self.attributes["name"]			
+		del self.attributes["type"]			
+		del self.attributes["state"]			
+		self.save()
 
 	def to_dict(self, auth):
 		"""
@@ -458,20 +439,17 @@ class Connector(models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
-						"pos": self.pos},
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
 			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
 			}
-		if auth:
-			if self.resources:
-				res.update(resources=self.resources.encode())
+		res["attrs"].update(self.attributes.items())
 		return res
 
 
 class Connection(models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(Interface)
-	bridge_id = models.IntegerField(null=True)
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
 	def is_emulated(self):
 		try:
@@ -485,33 +463,41 @@ class Connection(models.Model):
 			return self.emulatedconnection.upcast() # pylint: disable-msg=E1101
 		return self
 
+	def bridge_id(self):
+		if not self.attributes.get("bridge_id"):
+			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
+		return self.attributes["bridge_id"]
+
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
 				
-	def start_run(self, task):
+	def start_run(self):
 		host = self.interface.device.host
-		if not self.connector.is_special():
+		if not self.connector.is_external():
 			host.bridge_create(self.bridge_name())
-			host.execute("ip link set %s up" % self.bridge_name(), task)
+			host.execute("ip link set %s up" % self.bridge_name())
 
-	def stop_run(self, task):
+	def stop_run(self):
 		host = self.interface.device.host
 		if not host:
 			return
-		if not self.connector.is_special():
-			host.execute("ip link set %s down" % self.bridge_name(), task)
+		if not self.connector.is_external():
+			host.execute("ip link set %s down" % self.bridge_name())
 
-	def prepare_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
-		if not self.bridge_id:
-			self.bridge_id = self.interface.device.host.next_free_bridge()
-			self.save()		
+	def prepare_run(self):
+		if not self.attributes.get("bridge_id"):
+			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
 
-	def destroy_run(self, task): #@UnusedVariable, pylint: disable-msg=W0613
-		self.bridge_id=None
-		self.save()
+	def destroy_run(self):
+		del self.attributes["bridge_id"]
 
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
+
+	def configure(self, properties):
+		for key in properties:
+			self.attributes[key] = properties[key]
+		self.save()
 
 	def to_dict(self, auth):
 		"""
@@ -523,6 +509,7 @@ class Connection(models.Model):
 		@rtype: dict
 		"""
 		res = {"interface": str(self.interface), "attrs":{}}
+		res["attrs"].update(self.attributes.items())
 		return res
 
 class ObjectPreferences:

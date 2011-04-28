@@ -154,6 +154,12 @@ if (!Array.prototype.indexOf) {
   };
 }
 
+if (!Array.prototype.forEach) {
+  Array.prototype.forEach = function(func) {
+    for (var i = 0; i < this.length; i++) func(this[i]);
+  };
+}
+
 var Vector = Class.extend({
 	init: function(coord) {
 		this.c = coord;
@@ -197,6 +203,15 @@ table_row = function(elements) {
 	var tr = $('<tr/>');
 	for (var i=0; i<elements.length; i++) tr.append($('<td/>').append(elements[i]));
 	return tr;
+};
+
+pattern = {
+	int: /^\d+$/,
+	float: /^\d+\.\d+$/,
+	ip4: /^\d+\.\d+\.\d+\.\d+$/,		
+	ip6: /^([0-9A-Fa-f]{1,4}:){0,7}([0-9A-Fa-f]{1,4})?(:[0-9A-Fa-f]{1,4}){0,7}$/,		
+	ip4net: /^\d+\.\d+\.\d+\.\d+\/\d+$/,
+	ip6net: /^([0-9A-Fa-f]{1,4}:){0,7}([0-9A-Fa-f]{1,4})?(:[0-9A-Fa-f]{1,4}){0,7}\/\d+$/
 };
 
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);
