@@ -42,7 +42,7 @@ class Host(models.Model):
 			tpl.upload_to_host(self)
 
 	def check_save(self):
-		tasks.get_current_task().subtasks_total = 10
+		tasks.get_current_task().subtasks_total = 7
 		self.check()
 		self.save()
 
@@ -65,6 +65,16 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "Login error"
 		task.subtasks_done = task.subtasks_done + 1
 		
+		task.output.write("checking for tomato-host...\n")
+		res = self.execute("dpkg-query -s tomato-host | fgrep Version | awk '{ print $2 }'")
+		task.output.write(res)
+		try:
+			version = float(res.strip())
+		except:
+			assert False, "tomato-host not found"
+		assert version >= 0.6, "tomato-host version error, is %s" % version
+		task.subtasks_done = task.subtasks_done + 1
+		
 		task.output.write("checking for openvz...\n")
 		res = self.execute("vzctl --version; echo $?")
 		task.output.write(res)
@@ -77,36 +87,12 @@ class Host(models.Model):
 		assert res.split("\n")[-2] == "0", "OpenVZ error"
 		task.subtasks_done = task.subtasks_done + 1
 		
-		task.output.write("checking for bridge utils...\n")
-		res = self.execute("brctl --version; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "brctl error"
-		task.subtasks_done = task.subtasks_done + 1
-		
 		task.output.write("checking for dummynet...\n")
 		res = self.execute("modprobe ipfw_mod && ipfw list; echo $?")
 		task.output.write(res)
 		assert res.split("\n")[-2] == "0", "dumynet error"
 		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for tinc...\n")
-		res = self.execute("tincd --version; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "tinc error"
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for curl...\n")
-		res = self.execute("curl --version; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "curl error"
-		task.subtasks_done = task.subtasks_done + 1
-
-		task.output.write("checking for timeout...\n")
-		res = self.execute("timeout 1 true; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "timeout error"
-		task.subtasks_done = task.subtasks_done + 1
-		
+				
 		task.output.write("checking for hostserver...\n")
 		res = self.execute("/etc/init.d/tomato-hostserver status; echo $?")
 		task.output.write(res)
@@ -121,6 +107,7 @@ class Host(models.Model):
 			task.output.write("node is cluster member\n\n")
 		elif cluster_state == ClusterState.NONE:
 			task.output.write("node is not part of a cluster\n\n")
+		task.subtasks_done = task.subtasks_done + 1
 		
 		self.fetch_hostserver_config()
 		self.hostserver_cleanup()
@@ -668,7 +655,7 @@ def check_all_hosts():
 			if host.enabled:
 				host.check()
 		except Exception, exc:
-			print "Disabling host %s because or error during check: %s" % (h, exc)
+			print "Disabling host %s because of error during check: %s" % (host, exc)
 			host.enabled = False
 			host.save()
 	tasks.get_current_task().done()
