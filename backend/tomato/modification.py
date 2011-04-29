@@ -134,17 +134,11 @@ def modify_task_run(top_id, mods):
 		mod.run(top)
 
 def modify(top, mods, direct):
-	top.renew()
-	if direct:
-		import tasks
-		task = tasks.TaskStatus(modify_task_run, top.id, mods)
-		top.task = task.id
-		task._run()
-		return task.dict()
-	else:
-		task = top.start_task(modify_task_run, top.id, mods)
-		task.subtasks_total = len(mods)
-		return task.id
+	import tasks
+	proc = tasks.Process("modify-topology")
+	proc.addTask(tasks.Task("renew", top.renew))
+	proc.addTask(tasks.Task("modify", util.curry(modify_task_run, [top.id, mods])))
+	return top.start_process(proc, direct)
 
 def modify_list(top, mods, direct):
 	mods = read_from_list(mods)

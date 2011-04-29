@@ -41,78 +41,39 @@ class Host(models.Model):
 		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
 			tpl.upload_to_host(self)
 
-	def check_save(self):
-		tasks.get_current_task().subtasks_total = 7
-		self.check()
-		self.save()
-
 	def check(self):
-		"""
-		Checks if the host is reachable, login works and the needed software is installed
-		
-		@param task: the task object to use
-		@type task: tasks.TaskStatus
-		@raise AssertionError: is something looks wrong
-		@rtype: None   
-		"""
 		if config.remote_dry_run:
 			return True
-		task = tasks.get_current_task()
-		
-		task.output.write("checking login...\n")
-		res = self.execute("true; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "Login error"
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for tomato-host...\n")
+		return tasks.Process("check", tasks=[
+		  tasks.Task("login", util.curry(self._check_cmd, ["true", "Login error"]), reverseFn=self.disable),
+		  tasks.Task("tomato-host", self._check_tomato_host_version, reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("openvz", util.curry(self._check_cmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("kvm", util.curry(self._check_cmd, ["qm list", "KVM error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("ipfw", util.curry(self._check_cmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("hostserver", util.curry(self._check_cmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("hostserver-config", self.fetch_hostserver_config, reverseFn=self.disable, depends=["hostserver"]),
+		  tasks.Task("hostserver-cleanup", self.hostserver_cleanup, reverseFn=self.disable, depends=["hostserver"]),
+		  tasks.Task("templates", self.fetch_all_templates, reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("save", self.fetch_all_templates, reverseFn=self.disable, depends=["hostserver-config"]),			
+		]).start()
+
+	def disable(self):
+		print "Disabling host %s because of error during check" % self
+		self.enabled = False
+		self.save()
+
+	def _check_cmd(self, cmd, errormsg):
+		res = self.execute("%s; echo $?" % cmd)
+		assert res.split("\n")[-2] == "0", errormsg
+
+	def _check_tomato_host_version(self):
 		res = self.execute("dpkg-query -s tomato-host | fgrep Version | awk '{ print $2 }'")
-		task.output.write(res)
 		try:
 			version = float(res.strip())
 		except:
 			assert False, "tomato-host not found"
 		assert version >= 0.6, "tomato-host version error, is %s" % version
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for openvz...\n")
-		res = self.execute("vzctl --version; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "OpenVZ error"
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for kvm...\n")
-		res = self.execute("qm list; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "OpenVZ error"
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking for dummynet...\n")
-		res = self.execute("modprobe ipfw_mod && ipfw list; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "dumynet error"
-		task.subtasks_done = task.subtasks_done + 1
-				
-		task.output.write("checking for hostserver...\n")
-		res = self.execute("/etc/init.d/tomato-hostserver status; echo $?")
-		task.output.write(res)
-		assert res.split("\n")[-2] == "0", "hostserver error"
-		task.subtasks_done = task.subtasks_done + 1
-		
-		task.output.write("checking cluster membership...\n")
-		cluster_state = self.cluster_state()
-		if cluster_state == ClusterState.MASTER:
-			task.output.write("node is cluster master\n\n")
-		elif cluster_state == ClusterState.NODE:
-			task.output.write("node is cluster member\n\n")
-		elif cluster_state == ClusterState.NONE:
-			task.output.write("node is not part of a cluster\n\n")
-		task.subtasks_done = task.subtasks_done + 1
-		
-		self.fetch_hostserver_config()
-		self.hostserver_cleanup()
-		self.fetch_all_templates()
-				
+
 	def fetch_hostserver_config(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
 		self.attributes["hostserver_port"] = int(res[0])
@@ -588,11 +549,7 @@ def create(host_name, group_name, enabled, attrs):
 	host = Host(name=host_name, enabled=enabled, group=group_name)
 	host.save()
 	host.configure(attrs)
-	import tasks
-	t = tasks.TaskStatus(host.check_save)
-	t.subtasks_total = 1
-	t.start()
-	return t.id
+	return host.check()
 
 def change(host_name, group_name, enabled, attrs):
 	host = get_host(host_name)
@@ -647,19 +604,8 @@ def measure_physical_links():
 					pass
 
 def check_all_hosts():
-	if config.remote_dry_run:
-		return
-	tasks.set_current_task(tasks.TaskStatus(None))
 	for host in get_hosts():
-		try:
-			if host.enabled:
-				host.check()
-		except Exception, exc:
-			print "Disabling host %s because of error during check: %s" % (host, exc)
-			host.enabled = False
-			host.save()
-	tasks.get_current_task().done()
-	tasks.set_current_task(None)
+		host.check()
 
 if not config.TESTING:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
@@ -670,10 +616,7 @@ if not config.TESTING:
 	atexit.register(host_check_task.stop)
 
 def host_check(host):
-	t = tasks.TaskStatus(host.check)
-	t.subtasks_total = 7
-	t.start()
-	return t.id
+	return host.check()
 
 def external_networks():
 	return [en.to_dict(True) for en in ExternalNetwork.objects.all()]

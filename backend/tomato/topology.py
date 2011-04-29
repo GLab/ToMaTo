@@ -94,27 +94,25 @@ class Topology(models.Model):
 	def get_task(self):
 		if not self.attributes["task"]:
 			return None
-		if not tasks.TaskStatus.tasks.has_key(self.attributes["task"]):
+		if not tasks.processes.has_key(self.attributes["task"]):
 			return None
-		return tasks.TaskStatus.tasks[self.attributes["task"]]
+		return tasks.processes[self.attributes["task"]]
 
 	def is_busy(self):
 		t = self.get_task()
 		if not t:
 			return False
-		return t.is_active()
+		return t.isActive()
 
-	def start_task(self, func, direct=False, *args, **kwargs):
+	def check_busy(self):
 		if self.is_busy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		task = tasks.TaskStatus(func, *args, **kwargs)
-		self.attributes["task"] = task.id
+
+	def start_process(self, process, direct=False):
+		self.check_busy()
+		self.attributes["task"] = process.id
 		self.save()
-		if direct:
-			task._run()
-		else:
-			task.start()
-		return task
+		return process.start(direct)
 
 	def device_set_all(self):
 		return self.device_set.all() # pylint: disable-msg=E1101
@@ -163,122 +161,75 @@ class Topology(models.Model):
 		return config.remote_control_dir+"/"+str(self.id)
 
 	def start(self, direct):
-		"""
-		Starts the topology.
-		This will fail if the topology has not been prepared yet or is already started.
-		"""
-		self.renew()
-		task = self.start_task(self.start_run, direct)
-		return task.id
-
-	def start_run(self):
-		task = tasks.get_current_task()
-		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
+		proc = tasks.Process("topology-start")
+		proc.addTask(tasks.Task("renew", self.renew))
 		for dev in self.device_set_all():
-			if dev.state == generic.State.CREATED:
-				task.subtasks_total = task.subtasks_total + 1
-				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run()
+			proc.addTask(tasks.Task("%s-prepare" % dev.name, dev.upcast().prepare_run))
+		devs = [dev.name for dev in self.device_set_all()]
+		proc.addTask(tasks.Task("devices-prepared", depends=["%s-prepare" % d for d in devs]))
 		for con in self.connector_set_all():
-			if con.state == generic.State.CREATED:
-				task.subtasks_total = task.subtasks_total + 1
-				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run()
+			proc.addTask(tasks.Task("%s-prepare" % con.name, con.upcast().prepare_run, depends=["devices-prepared"]))
 		for con in self.connector_set_all():
-			if con.state == generic.State.PREPARED:
-				task.output.write("\n# starting " + con.name + "\n") 
-				con.upcast().start_run()
+			proc.addTask(tasks.Task("%s-start" % con.name, con.upcast().start_run, depends=["%s-prepare" % con.name]))
+		cons = [con.name for con in self.connector_set_all()]
+		proc.addTask(tasks.Task("connectors-started", depends=["%s-start" % c for c in cons]))
 		for dev in self.device_set_all():
-			if dev.state == generic.State.PREPARED:
-				task.output.write("\n# starting " + dev.name + "\n") 
-				dev.upcast().start_run()
+			proc.addTask(tasks.Task("%s-start" % dev.name, dev.upcast().start_run, depends=["connectors-started", "%s-prepare" % dev.name]))
+		return self.start_process(proc, direct)
 
 	def stop(self, direct, renew=True):
-		"""
-		Stops the topology.
-		This will fail if the topology has not been prepared yet.
-		"""
+		proc = tasks.Process("topology-stop")
 		if renew:
-			self.renew()
-		task = self.start_task(self.stop_run, direct)
-		return task.id
-
-	def stop_run(self):
-		task = tasks.get_current_task()
-		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
-		for dev in self.device_set_all():
-			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
-				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run()
+			proc.addTask(tasks.Task("renew", self.renew))
 		for con in self.connector_set_all():
-			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
-				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run()
+			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
+		for dev in self.device_set_all():
+			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
+		return self.start_process(proc, direct)
 
 	def prepare(self, direct):
-		"""
-		Prepares the topology.
-		This will fail if the topology is already prepared or started.
-		"""
-		self.renew()
-		task = self.start_task(self.prepare_run, direct)
-		return task.id
-
-	def prepare_run(self):
-		task = tasks.get_current_task()
-		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
+		proc = tasks.Process("topology-prepare")
+		proc.addTask(tasks.Task("renew", self.renew))
 		for dev in self.device_set_all():
-			if dev.state == generic.State.CREATED:
-				task.output.write("\n# preparing " + dev.name + "\n") 
-				dev.upcast().prepare_run()
+			proc.addTask(tasks.Task("%s-prepare" % dev.name, dev.upcast().prepare_run))
+		devs = [dev.name for dev in self.device_set_all()]
+		proc.addTask(tasks.Task("devices-prepared", depends=["%s-prepare" % d for d in devs]))
 		for con in self.connector_set_all():
-			if con.state == generic.State.CREATED:
-				task.output.write("\n# preparing " + con.name + "\n") 
-				con.upcast().prepare_run()
+			proc.addTask(tasks.Task("%s-prepare" % con.name, con.upcast().prepare_run, depends=["devices-prepared"]))
+		return self.start_process(proc, direct)
 
 	def destroy(self, direct, renew=True):
-		"""
-		Destroys the topology.
-		This will fail if the topology has not been uploaded yet or is already started.
-		"""
+		proc = tasks.Process("topology-destroy")
 		if renew:
-			self.renew()
-		task = self.start_task(self.destroy_run, direct)
-		return task.id
-
-	def destroy_run(self):
-		task = tasks.get_current_task()
-		task.subtasks_total = self.device_set_all().count() + self.connector_set_all().count() 
-		for con in self.connector_set_all():
-			if con.state == generic.State.STARTED or con.state == generic.State.PREPARED:
-				task.subtasks_total = task.subtasks_total + 1
-				task.output.write("\n# stopping " + con.name + "\n") 
-				con.upcast().stop_run()
+			proc.addTask(tasks.Task("renew", self.renew))
 		for dev in self.device_set_all():
-			if dev.state == generic.State.STARTED or dev.state == generic.State.PREPARED:
-				task.subtasks_total = task.subtasks_total + 1
-				task.output.write("\n# stopping " + dev.name + "\n") 
-				dev.upcast().stop_run()
+			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
 		for con in self.connector_set_all():
-			if con.state == generic.State.PREPARED or con.state == generic.State.CREATED:
-				task.output.write("\n# destroying " + con.name + "\n") 
-				con.upcast().destroy_run()
+			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
+		for con in self.connector_set_all():
+			proc.addTask(tasks.Task("%s-destroy" % con.name, con.upcast().destroy_run, depends=["%s-stop" % con.name]))
+		cons = [con.name for con in self.connector_set_all()]
+		proc.addTask(tasks.Task("connectors-destroyed", depends=["%s-destroy" % c for c in cons]))
 		for dev in self.device_set_all():
-			if dev.state == generic.State.PREPARED or dev.state == generic.State.CREATED:
-				task.output.write("\n# destroying " + dev.name + "\n") 
-				dev.upcast().destroy_run()
-		task.done()
+			proc.addTask(tasks.Task("%s-destroy" % dev.name, dev.upcast().destroy_run, depends=["%s-stop" % dev.name, "connectors-destroyed"]))
+		return self.start_process(proc, direct)
 
 	def remove(self, direct):
-		"""
-		Removes the topology.
-		"""
-		task = self.start_task(self.remove_run, direct)
-		return task.id
-
-	def remove_run(self):
-		self.destroy_run()
-		self.delete()
+		proc = tasks.Process("topology-remove")
+		for dev in self.device_set_all():
+			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
+		for con in self.connector_set_all():
+			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
+		for con in self.connector_set_all():
+			proc.addTask(tasks.Task("%s-destroy" % con.name, con.upcast().destroy_run, depends=["%s-stop" % con.name]))
+		cons = [con.name for con in self.connector_set_all()]
+		proc.addTask(tasks.Task("connectors-destroyed", depends=["%s-destroy" % c for c in cons]))
+		for dev in self.device_set_all():
+			proc.addTask(tasks.Task("%s-destroy" % dev.name, dev.upcast().destroy_run, depends=["%s-stop" % dev.name, "connectors-destroyed"]))
+		devs = [dev.name for dev in self.connector_set_all()]
+		proc.addTask(tasks.Task("devices-destroyed", depends=["%s-destroy" % d for d in devs]))
+		proc.addTask(tasks.Task("remove", self.delete, depends=["connectors-destroyed", "devices-destroyed"]))			
+		return self.start_process(proc, direct)
 			
 	def _log(self, task, output):
 		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
@@ -396,7 +347,7 @@ class Topology(models.Model):
 		if auth:
 			task = self.get_task()
 			if task:
-				if task.is_active():
+				if task.isActive():
 					res.update(running_task=task.id)
 				else:
 					res.update(finished_task=task.id)

@@ -22,9 +22,9 @@ from tomato.util import curry
 class Test(unittest.TestCase):
 	def setUp(self):
 		self.var = []
-	def _fails(self, task, depends):
+	def _fails(self):
 		assert False
-	def _succeeds(self, task, depends):
+	def _succeeds(self):
 		return "success"
 	def _add(self, var, val):
 		var.append(val)
@@ -83,4 +83,12 @@ class Test(unittest.TestCase):
 			raise
 		except:
 			assert False, "must not throw exception"
-	
+	def testDict(self):
+		proc = Process("name")
+		proc.addTask(Task("t1", self._succeeds, None, curry(self._add, [self.var, "t1"]), []))
+		proc.addTask(Task("t2", self._succeeds, None, curry(self._add, [self.var, "t2"]), []))
+		proc.addTask(Task("t3", self._fails, None, curry(self._add, [self.var, "t3"]), ["t1", "t2"]))
+		proc.addTask(Task("t4", self._succeeds, None, curry(self._add, [self.var, "t4"]), ["t3"]))
+		d = proc.dict()
+		assert str(d) > 100, "dict too small"
+		assert "tasks" in d and len(d["tasks"])==4, "dict does not contain tasks"

@@ -23,8 +23,8 @@ class OpenVZDevice(generic.Device):
 	def upcast(self):
 		return self
 
-	def _vzctl(self, cmd, params="", timeout=None):
-		return self.host.execute("%svzctl %s %s %s" % ("timeout %s " % timeout if timeout else "", cmd, self.attributes["vmid"], params) )
+	def _vzctl(self, cmd, params=""):
+		return self.host.execute("vzctl %s %s %s" % (cmd, self.attributes["vmid"], params) )
 
 	def _exec(self, cmd):
 		return self._vzctl("exec", cmd)
@@ -78,7 +78,8 @@ class OpenVZDevice(generic.Device):
 				assert bridge, "Interface has no bridge %s" % iface
 				self.host.bridge_create(bridge)
 				self.host.execute("ip link set %s up" % bridge)
-		self._vzctl("start", "--wait", timeout=10)
+		self._vzctl("start")
+		self._exec("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for iface in self.interface_set_all():
 			if iface.is_configured():
 				iface = iface.upcast()

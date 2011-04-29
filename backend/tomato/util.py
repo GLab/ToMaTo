@@ -176,3 +176,16 @@ def parse_xml(xml, root_tag):
 		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
 	except Exception, exc:
 		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
+
+def nothing():
+	pass
+
+def datestr(date):
+	import datetime
+	return datetime.datetime.fromtimestamp(date).strftime("%Y-%m-%d %H:%M:%S.%f")
+
+def timediffstr(date1, date2):
+	import datetime
+	d1 = datetime.datetime.fromtimestamp(date1)
+	d2 = datetime.datetime.fromtimestamp(date2)
+	return str(d2-d1)
