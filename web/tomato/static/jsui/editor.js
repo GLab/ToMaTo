@@ -586,6 +586,7 @@ var ExternalConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/external.png", {x: 32, y: 32}, pos);
 		this.form = new ExternalConnectorWindow(this);
+		this.setAttribute("network_type", "internet");
 	},
 	nextIPHint: function() {
 		return "dhcp";
