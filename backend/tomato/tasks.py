@@ -187,9 +187,13 @@ class Process():
 					return
 			else:
 				self.lock.release()
-				self.finished = time.time()
-				self._runOnFinished()
-				return
+				if not self.isActive():
+					if not self.finished:
+						self.finished = time.time()
+						self._runOnFinished()
+					return
+				else:
+					time.sleep(1)
 	def dict(self):
 		res = {"id": self.id, "status": self.getStatus(), "active": self.isActive(), "name": self.name,
 			"started": util.datestr(self.started) if self.started else None,
@@ -222,7 +226,7 @@ class Process():
 			workerthreads -= 1
 
 	def check_delete(self):
-		if (time.time() - self.started > 3600*24*3) or (time.time() - self.started > 3600 and not self.isActive()):
+		if (self.started and time.time() - self.started > 3600*24*3) or (self.finished and time.time() - self.finished > 3600 and not self.isActive()):
 			if not os.path.exists(config.log_dir + "/tasks"):
 				os.makedirs(config.log_dir + "/tasks")
 			logger = log.get_logger(config.log_dir + "/tasks/%s"%self.id)

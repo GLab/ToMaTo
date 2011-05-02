@@ -17,6 +17,8 @@
 	<input type="submit"/>
 </form>
 <h2>Public key</h2>
-Please save <a href="{%url host.public_key %}">this key</a> to a file and add it to the host via <pre>ssh-copy-id -i KEYFILE root@HOSTNAME</pre>
+Please save <a href="{%url host.public_key %}">this key</a> to a file and add it to the host via 
+<pre>ssh root@HOSTNAME "umask 077; test -d ~/.ssh || mkdir ~/.ssh ; cat >> ~/.ssh/authorized_keys" < KEYFILE</pre>
+Note: HOSTNAME and KEYFILE are placeholders for the name or address of the host and the path of the downloaded key file.
 {% endif %}
 {% endblock %}

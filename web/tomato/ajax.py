@@ -32,8 +32,8 @@ def modify(api, request, top_id):
 	mods = json.loads(request.REQUEST["mods"])
 	res = api.top_modify(top_id, mods, True)
 	if res["status"] == "failed":
-		raise Exception(res["output"]);
-	return res["output"]
+		raise Exception(res);
+	return res
 
 @wrap_json
 def info(api, request, top_id):

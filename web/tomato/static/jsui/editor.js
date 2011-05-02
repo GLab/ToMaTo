@@ -977,19 +977,27 @@ var Editor = Class.extend({
 		followTask.update = function() {
 			followTask.t._ajax("task/"+followTask.task, null, function(output){
 				 followTask.dialog.empty();
-				 followTask.dialog.append("<pre>"+output.output+"</pre>");
+				 var ul = $("<ul/>");
+				 for (var i=0; i<output.tasks.length; i++){
+					 task = output.tasks[i];
+					 ul.append("<li>"+task.name+": "+task.status+"</li>")
+				 }
+				 followTask.dialog.append(ul);
 				 followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
 				 switch (output.status) {
-				 	case "active":
+				 	case "waiting":
+				 	case "running":
+				 	case "reversing":
 				 		window.setTimeout("followTask.update()", 250);
 				 		break;
-				 	case "done":
+				 	case "succeeded":
 						followTask.closable = true;
 						followTask.dialog.dialog("close");
 				 		var fT = followTask;
 				 		delete followTask;
 				 		if (fT.onSuccess) fT.onSuccess();
 				 		break;
+				 	case "aborted":
 				 	case "failed":
 						followTask.closable = true;
 						followTask.dialog.bind("dialogclose", function(){

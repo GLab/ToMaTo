@@ -116,6 +116,7 @@ class OpenVZDevice(generic.Device):
 			self.host = self.host_options().best()
 			if not self.host:
 				raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
+			self.save()
 		if not self.attributes.get("vmid"):
 			self.attributes["vmid"] = self.host.next_free_vm_id()
 			self.save()

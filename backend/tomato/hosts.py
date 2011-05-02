@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import config, fault, util, sys, atexit, attributes, tasks
+import config, fault, util, sys, atexit, attributes, tasks, threading
 from django.db.models import Q, Sum
 
 class ClusterState:
@@ -32,7 +32,8 @@ class Host(models.Model):
 	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)	
+	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+	lock = threading.Lock()
 
 	def __unicode__(self):
 		return self.name
@@ -43,7 +44,7 @@ class Host(models.Model):
 
 	def check(self):
 		if config.remote_dry_run:
-			return True
+			return "---"
 		return tasks.Process("check", tasks=[
 		  tasks.Task("login", util.curry(self._check_cmd, ["true", "Login error"]), reverseFn=self.disable),
 		  tasks.Task("tomato-host", self._check_tomato_host_version, reverseFn=self.disable, depends=["login"]),
@@ -92,49 +93,64 @@ class Host(models.Model):
 			return ClusterState.NONE
 				
 	def next_free_vm_id (self):
-		ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
-		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-			if dev.attributes.get("vmid"):
-				ids.remove(int(dev.attributes["vmid"]))
-		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-			if dev.attributes.get("vmid"):
-				ids.remove(int(dev.attributes["vmid"]))
 		try:
+			self.lock.acquire()
+			ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
+			import openvz
+			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.attributes.get("vmid"):
+					if int(dev.attributes["vmid"]) in ids:
+						ids.remove(int(dev.attributes["vmid"]))
+			import kvm
+			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.attributes.get("vmid"):
+					if int(dev.attributes["vmid"]) in ids:
+						ids.remove(int(dev.attributes["vmid"]))
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
+		finally:
+			self.lock.release()
 
 	def next_free_port(self):
-		ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
-		import openvz
-		for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-			if dev.attributes.get("vnc_port"):
-				ids.remove(int(dev.attributes["vnc_port"]))
-		import kvm
-		for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-			if dev.attributes.get("vnc_port"):
-				ids.remove(int(dev.attributes["vnc_port"]))
-		import tinc
-		for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-			if con.attributes.get("tinc_port"):
-				ids.remove(int(con.attributes["tinc_port"]))
 		try:
+			self.lock.acquire()
+			ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
+			import openvz
+			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.attributes.get("vnc_port"):
+					if int(dev.attributes["vnc_port"]) in ids:
+						ids.remove(int(dev.attributes["vnc_port"]))
+			import kvm
+			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.attributes.get("vnc_port"):
+					if int(dev.attributes["vnc_port"]) in ids:
+						ids.remove(int(dev.attributes["vnc_port"]))
+			import tinc
+			for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+				if con.attributes.get("tinc_port"):
+					if int(con.attributes["tinc_port"]) in ids:
+						ids.remove(int(con.attributes["tinc_port"]))
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
+		finally:
+			self.lock.release()
 
 	def next_free_bridge(self):
-		ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
-		import generic
-		for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-			if con.attributes.get("bridge_id"):
-				ids.remove(int(con.attributes["bridge_id"]))
 		try:
+			self.lock.acquire()
+			ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
+			import generic
+			for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+				if con.attributes.get("bridge_id"):
+					if int(con.attributes["bridge_id"]) in ids:
+						ids.remove(int(con.attributes["bridge_id"]))
 			return ids[0]
 		except:
 			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
+		finally:
+			self.lock.release()
 	
 	def _exec(self, cmd):
 		if config.TESTING:

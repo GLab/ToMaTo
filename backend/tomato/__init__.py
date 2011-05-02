@@ -327,7 +327,7 @@ def top_info(top_id, user=None):
 	Returns: information about the topology
 
 	Errors:
-		fault.Error: if the topology is not found      
+		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
 	return top.to_dict(top.check_access("user", user), True)
