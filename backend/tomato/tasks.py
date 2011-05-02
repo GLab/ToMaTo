@@ -45,9 +45,14 @@ class Task():
 		self.finished = None
 	def getStatus(self):
 		return self.status
-	def isActive(self):
-		status = self.getStatus()
+	def isActive(self, status=None):
+		if not status:
+			status = self.getStatus()
 		return status == Status.RUNNING or status == Status.REVERSING
+	def isDone(self, status=None):
+		if not status:
+			status = self.getStatus()
+		return status == Status.FAILED or status == Status.ABORTED or status == Status.SUCCEEDED
 	def getOutput(self):
 		return self.output.getvalue()
 	def getResult(self):
@@ -104,8 +109,9 @@ class Task():
 		self._runOnFinished()
 		self.finished = time.time()
 	def dict(self):
-		return {"name": self.name, "status": self.getStatus(), "active": self.isActive(),
-			"depends": self.depends,
+		status = self.getStatus()
+		return {"name": self.name, "status": status, "active": self.isActive(status),
+			"done": self.isDone(status), "depends": self.depends,
 			"output": self.getOutput(), "result": self.getResult(),
 			"started": util.datestr(self.started) if self.started else None,
 			"finished": util.datestr(self.finished) if self.finished else None,
@@ -135,14 +141,14 @@ class Process():
 				task.status = Status.ABORTED
 	def getStatus(self):
 		for task in self.tasks:
-			if task.status == Status.FAILED:
-				return Status.FAILED
-		for task in self.tasks:
 			if task.status == Status.REVERSING:
 				return Status.REVERSING
 		for task in self.tasks:
 			if task.status == Status.RUNNING:
 				return Status.RUNNING
+		for task in self.tasks:
+			if task.status == Status.FAILED:
+				return Status.FAILED
 		for task in self.tasks:
 			if task.status == Status.ABORTED:
 				return Status.ABORTED
@@ -150,9 +156,14 @@ class Process():
 			if task.status == Status.SUCCEEDED:
 				return Status.SUCCEEDED
 		return Status.WAITING
-	def isActive(self):
-		status = self.getStatus()
+	def isActive(self, status=None):
+		if not status:
+			status = self.getStatus()
 		return status == Status.RUNNING or status == Status.REVERSING
+	def isDone(self, status=None):
+		if not status:
+			status = self.getStatus()
+		return status == Status.FAILED or status == Status.ABORTED or status == Status.SUCCEEDED
 	def _canrun(self, task):
 		if task.status != Status.WAITING:
 			return False
@@ -195,13 +206,24 @@ class Process():
 				else:
 					time.sleep(1)
 	def dict(self):
-		res = {"id": self.id, "status": self.getStatus(), "active": self.isActive(), "name": self.name,
+		status = self.getStatus()
+		res = {"id": self.id, "status": status, "active": self.isActive(status), 
+			"done": self.isDone(status), "name": self.name,
 			"started": util.datestr(self.started) if self.started else None,
 			"finished": util.datestr(self.finished) if self.finished else None,
 			"duration": util.timediffstr(self.started, self.finished if self.finished else time.time()) if self.started else None,
-			"tasks":[]}
+			"tasks":[], "tasks_total": len(self.tasks)}
+		active = 0
+		done = 0
 		for task in self.tasks:
-			res["tasks"].append(task.dict())
+			d = task.dict()
+			res["tasks"].append(d)
+			if d["active"]:
+				active += 1
+			if d["done"]:
+				done += 1
+		res["tasks_active"] = active
+		res["tasks_done"] = done			
 		return res
 	def start(self, direct=False):
 		try:
@@ -209,7 +231,7 @@ class Process():
 				self.run()
 				return self.dict()
 			else:
-				workers = max(min(MAX_WORKERS - workerthreads, len(self.tasks)), 1)
+				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:
 					util.start_thread(self._worker)
 					workers -= 1
@@ -234,7 +256,8 @@ class Process():
 			logger.close()
 			del processes[self.id]
 
-MAX_WORKERS = 3
+MAX_WORKERS = 100
+MAX_WORKERS_PROCESS = 25
 workerthreads = 0
 processes={}
 					

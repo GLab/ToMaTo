@@ -12,7 +12,7 @@
 <body onload="window.scrollTo(0,document.body.scrollHeight);">
 
 <h1>Process: {{task.name}} ({{task.status}})</h1>
-Status: {{task.status}}<br/>
+Status: {{task.status}} {% if task.active %}{{task.tasks_done}}/{{task.tasks_total}}{% endif %}<br/>
 Started: {{task.started}}<br/>
 Finished: {{task.finished}}<br/>
 Duration: {{task.duration}}<br/>
