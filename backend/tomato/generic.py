@@ -214,7 +214,9 @@ class Device(models.Model):
 			
 	def use_uploaded_image(self, filename):
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
-		return self.topology.start_task(self.upcast().use_uploaded_image_run, path).id
+		proc = tasks.Process("use-uploaded-image")
+		proc.addTask("main", self.upcast().use_uploaded_image_run, args=(path,))
+		return proc.start()
 			
 			
 class Interface(models.Model):

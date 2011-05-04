@@ -30,10 +30,14 @@ class Status():
 	FAILED = "failed"
 	
 class Task():
-	def __init__(self, name, fn=None, reverseFn=None, onFinished=None, depends=[], callWithTask=False):
+	def __init__(self, name, fn=None, args=(), kwargs={}, reverseFn=None, reverseArgs=(), reverseKwargs={}, onFinished=None, depends=[], callWithTask=False):
 		self.name = name
 		self.fn = fn
+		self.args = args
+		self.kwargs = kwargs
 		self.reverseFn = reverseFn
+		self.reverseArgs = reverseArgs
+		self.reverseKwargs = reverseKwargs
 		self.onFinished = onFinished
 		self.status = Status.WAITING
 		self.output = StringIO()
@@ -68,9 +72,9 @@ class Task():
 		self.status = Status.REVERSING
 		try:
 			if self.callWithTask:
-				self.result = self.reverseFn(self)
+				self.result = self.reverseFn(self, *(self.reverseArgs), **(self.reverseKwargs))
 			else:
-				self.result = self.reverseFn()
+				self.result = self.reverseFn(*(self.reverseArgs), **(self.reverseKwargs))
 			self.status = Status.ABORTED
 		except Exception, exc:
 			self.status = Status.FAILED
@@ -79,9 +83,9 @@ class Task():
 	def _run(self):
 		self.status = Status.RUNNING
 		if self.callWithTask:
-			self.result = self.fn(self)
+			self.result = self.fn(self, *(self.args), **(self.kwargs))
 		else:
-			self.result = self.fn()
+			self.result = self.fn(*(self.args), **(self.kwargs))
 		self.status = Status.SUCCEEDED
 	def _runOnFinished(self):
 		try:
@@ -257,7 +261,7 @@ class Process():
 			del processes[self.id]
 
 MAX_WORKERS = 100
-MAX_WORKERS_PROCESS = 25
+MAX_WORKERS_PROCESS = 5
 workerthreads = 0
 processes={}
 					
@@ -276,8 +280,8 @@ def keep_running():
 	i = 0
 	while running_processes() and i < 300:
 		print "%s processes still running" % len(running_processes())
-		time.sleep(1)
-		i=i+1
+		time.sleep(10)
+		i=i+10
 		
 _current_task = threading.local()
 

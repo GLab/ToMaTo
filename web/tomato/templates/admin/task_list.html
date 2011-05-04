@@ -7,14 +7,14 @@
 
 <table class="sortable,filterable">
   <tr>
-    <th>ID</th>
+    <th>Name</th>
     <th>Date</th>
     <th>Status</th>
     <th>Subtasks</th>
   </tr>
 {% for task in tasks %}
   <tr>
-    <td><a href="{%url main.task_status task.id%}">{{task.id}}</a></td>
+    <td><a href="{%url main.task_status task.id%}">{{task.name}}</a></td>
     <td>{{task.started}}</td>
     <td>{{task.status}}</td>
     <td>{{task.tasks_done}}/{{task.tasks_total}}</td>

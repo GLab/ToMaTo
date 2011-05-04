@@ -409,10 +409,6 @@ class Template(models.Model):
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	
-	def upload_to_all(self):
-		for host in Host.objects.all(): # pylint: disable-msg=E1101
-			self.upload_to_host(host)
-		
 	def upload_to_host(self, host):
 		if host.cluster_state() == ClusterState.NODE:
 			return
@@ -545,11 +541,10 @@ def get_template(ttype, name):
 
 def add_template(name, template_type, url):
 	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
-	import tasks
-	t = tasks.TaskStatus(tpl.upload_to_all)
-	t.subtasks_total = 1
-	t.start()
-	return t.id
+	proc = tasks.Process("upload-template")
+	for host in get_hosts():
+		proc.addTask(tasks.Task(host.name, fn=tpl.upload_to_host, args=(host,)))
+	return proc.start()
 	
 def remove_template(name):
 	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
