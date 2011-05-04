@@ -497,6 +497,14 @@ var Interface = NetElement.extend({
 		delete this.con;
 		delete this.dev;
 	},
+	setAttribute: function(name, value){
+		this._super(name, value);
+		if (name == "name") {
+			this.form.setTitle(value);
+			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+			this.name = value;
+		}
+	},
 	_click: function(event) {
 		var p = this.parent;
 		p.onClick(event);
