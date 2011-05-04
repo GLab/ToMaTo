@@ -64,30 +64,27 @@ class ExternalNetworkConnector(generic.Connector):
 			options.add(en, 1.0)
 		return options
 		
-	def start_run(self):
-		generic.Connector.start_run(self)
-		self.state = generic.State.STARTED
-		self.save()
-
-	def stop_run(self):
-		generic.Connector.stop_run(self)
-		self.state = generic.State.PREPARED
-		self.save()
-
-	def prepare_run(self):
-		generic.Connector.prepare_run(self)
+	def _select_used_network(self):
 		self.used_network = self.network_options().best()
-		if not self.used_network:
-			raise fault.new(fault.NO_RESOURCES, "No free external network of type %s" % self.attributes["network_type"])
-		self.state = generic.State.PREPARED
-		self.save()
-
-	def destroy_run(self):
-		generic.Connector.destroy_run(self)
-		self.used_network = None		
-		self.state = generic.State.CREATED
+		assert self.used_network, "No free external network of type %s" % self.attributes["network_type"]
 		self.save()
 		
+	def get_prepare_tasks(self):
+		import tasks
+		taskset = generic.Connector.get_prepare_tasks(self)
+		taskset.addTask(tasks.Task("select-network", self._select_used_network))
+		return taskset
+
+	def _unselect_used_network(self):
+		self.used_network = None
+		self.save()	
+	
+	def get_destroy_tasks(self):
+		import tasks
+		taskset = generic.Connector.get_destroy_tasks(self)
+		taskset.addTask(tasks.Task("unselect-network", self._unselect_used_network))
+		return taskset
+
 	def configure(self, properties):
 		if "network_type" in properties and self.state != generic.State.CREATED: 
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of external network with prepared connections: %s" % self.name )

@@ -9,7 +9,7 @@
 <meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}?backurl={{backurl}}" /> 
 {% endif %}
 </head>
-<body onload="window.scrollTo(0,document.body.scrollHeight);">
+<body>
 
 <h1>Process: {{task.name}} ({{task.status}})</h1>
 Status: {{task.status}} {% if task.active %}{{task.tasks_done}}/{{task.tasks_total}}{% endif %}<br/>

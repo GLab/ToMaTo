@@ -75,73 +75,99 @@ class KVMDevice(generic.Device):
 		vmid = self.attributes["vmid"]
 		self.host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], vmid, self.vnc_password(), self.name ))
 
-	def start_run(self):
-		generic.Device.start_run(self)
-		self._qm("start")
-		for iface in self.interface_set_all():
-			bridge = self.bridge_name(iface)
-			self.host.bridge_create(bridge)
-			self.host.bridge_connect(bridge, self.interface_device(iface) )
-			self.host.execute("ip link set %s up" % bridge)
-		self._start_vnc()
-		self.state = generic.State.STARTED #for dry-run
+	def _start_iface(self, iface):
+		bridge = self.bridge_name(iface)
+		self.host.bridge_create(bridge)
+		self.host.bridge_connect(bridge, self.interface_device(iface) )
+		self.host.execute("ip link set %s up" % bridge)		
+
+	def _check_state(self, asserted):
+		self.state = asserted #for dry-run
 		self.state = self.get_state()
 		self.save()
-		assert self.state == generic.State.STARTED, "VM is not started"
+		assert self.state == asserted, "VM in wrong state"
+
+	def get_start_tasks(self):
+		import tasks
+		taskset = generic.Device.get_start_tasks(self)
+		taskset.addTask(tasks.Task("start-vm", self._qm, args=("start",)))
+		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.STARTED,), depends="start-vm"))
+		for iface in self.interface_set_all():
+			taskset.addTask(tasks.Task("start-interface-%s" % iface, self._start_iface, args=(iface,), depends="check-state"))
+		taskset.addTask(tasks.Task("start-vnc", self._start_vnc, depends="check-state"))
+		return taskset
 
 	def _stop_vnc(self):
 		self.host.process_kill("vnc-%s.pid" % self.name)
 		self.host.free_port(self.attributes["vnc_port"])		
 		del self.attributes["vnc_port"]
 	
-	def stop_run(self):
-		generic.Device.stop_run(self)
-		self._stop_vnc()
-		self._qm("stop")
-		self.state = generic.State.PREPARED #for dry-run
-		self.state = self.get_state()
-		self.save()
-		assert self.state == generic.State.PREPARED, "VM is not prepared"
+	def get_stop_tasks(self):
+		import tasks
+		taskset = generic.Device.get_stop_tasks(self)
+		taskset.addTask(tasks.Task("stop-vm", self._qm, args=("stop",)))
+		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.PREPARED,), depends="stop-vm"))
+		taskset.addTask(tasks.Task("stop-vnc", self._stop_vnc))
+		return taskset
 
-	def prepare_run(self):
-		generic.Device.prepare_run(self)
+	def _assign_template(self):
 		self.attributes["template"] = hosts.get_template_name("kvm", self.attributes.get("template"))
+		assert self.attributes["template"] and self.attributes["template"] != "None", "Template not found"
+
+	def _assign_host(self):
 		if not self.host:
 			self.host = self.host_options().best()
-			if not self.host:
-				raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
+			assert self.host, "No matching host found"
+			self.save()
+
+	def _assign_vmid(self):
 		if not self.attributes.get("vmid"):
 			self.attributes["vmid"] = self.host.next_free_vm_id()
-			self.save()
+
+	def _use_template(self):
 		vmid = self.attributes["vmid"]
-		self._qm("create")
 		self.host.file_mkdir("/var/lib/vz/images/%s" % vmid)
 		self.host.file_copy("/var/lib/vz/template/qemu/%s.qcow2" % self.attributes["template"], self._image_path())
 		self._qm("set", "--ide0 local:%s/disk.qcow2" % vmid)
-		self._qm("set", "--name \"%s_%s\"" % (self.topology.name, self.name))
-		for iface in self.interface_set_all():
-			iface_id = re.match("eth(\d+)", iface.name).group(1)
-			self.host.bridge_create("vmbr%s" % iface_id)
-			self._qm("set", "--vlan%s e1000" % iface_id)
-		self.state = generic.State.PREPARED #for dry-run
-		self.state = self.get_state()
-		self.save()
-		assert self.state == generic.State.PREPARED, "VM is not prepared"
 
-	def destroy_run(self):
-		generic.Device.destroy_run(self)
-		if not self.host:
-			self.state = self.get_state()
-			self.save()
-			return
-		self._qm("destroy")
-		self.state = generic.State.CREATED #for dry-run
-		self.state = self.get_state()
-		assert self.state == generic.State.CREATED, "VM still exists"
-		del self.attributes["vmid"]
+	def _configure_vm(self):
+		self._qm("set", "--name \"%s_%s\"" % (self.topology.name, self.name))
+
+	def _create_iface(self, iface):
+		iface_id = re.match("eth(\d+)", iface.name).group(1)
+		self.host.bridge_create("vmbr%s" % iface_id)
+		self._qm("set", "--vlan%s e1000" % iface_id)			
+	
+	def get_prepare_tasks(self):
+		import tasks
+		taskset = generic.Device.get_prepare_tasks(self)
+		taskset.addTask(tasks.Task("assign-template", self._assign_template))
+		taskset.addTask(tasks.Task("assign-host", self._assign_host))		
+		taskset.addTask(tasks.Task("assign-vmid", self._assign_vmid, depends="assign-host"))
+		taskset.addTask(tasks.Task("create-vm", self._qm, args=("create",), depends="assign-vmid"))
+		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.PREPARED,), depends="create-vm"))
+		taskset.addTask(tasks.Task("use-template", self._use_template, depends="check-state"))
+		taskset.addTask(tasks.Task("configure-vm", self._configure_vm, depends="check-state"))
+		for iface in self.interface_set_all():
+			taskset.addTask(tasks.Task("create-interface-%s" % iface.name, self._create_iface, args=(iface,), depends="check-state"))
+		return taskset
+
+	def _unassign_host(self):
 		self.host = None
-		self.save()
 		
+	def _unassign_vmid(self):
+		del self.attributes["vmid"]
+
+	def get_destroy_tasks(self):
+		import tasks
+		taskset = generic.Device.get_destroy_tasks(self)
+		if self.host:
+			taskset.addTask(tasks.Task("destroy-vm", self._qm, args=("destroy",)))
+			taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.CREATED,), depends="destroy-vm"))
+			taskset.addTask(tasks.Task("unassign-host", self._unassign_host, depends="check-state"))
+			taskset.addTask(tasks.Task("unassign-vmid", self._unassign_vmid, depends="check-state"))
+		return taskset
+
 	def configure(self, properties):
 		if "template" in properties:
 			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name

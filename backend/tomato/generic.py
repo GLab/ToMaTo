@@ -143,17 +143,29 @@ class Device(models.Model):
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTask(tasks.Task("destroy", self.upcast().destroy_run))
 
-	def start_run(self):
-		pass
+	def _change_state(self, state):
+		self.state = state
+		self.save()
 
-	def stop_run(self):
-		pass
-
-	def prepare_run(self):
-		pass
-
-	def destroy_run(self):
-		pass
+	def get_start_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.STARTED,))
+		return taskset
+	
+	def get_stop_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		return taskset
+	
+	def get_prepare_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		return taskset
+	
+	def get_destroy_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.CREATED,))
+		return taskset
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
@@ -265,6 +277,18 @@ class Interface(models.Model):
 		res["attrs"].update(self.attributes.items())
 		return res
 
+	def get_start_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_stop_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_prepare_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_destroy_tasks(self):
+		return tasks.TaskSet()
+
 
 class Connector(models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
@@ -348,6 +372,30 @@ class Connector(models.Model):
 		proc.addTask(tasks.Task("destroy", self.upcast().destroy_run))
 		return self.topology.start_process(proc, direct)
 
+	def _change_state(self, state):
+		self.state = state
+		self.save()
+
+	def get_start_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.STARTED,))
+		return taskset
+	
+	def get_stop_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		return taskset
+	
+	def get_prepare_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		return taskset
+	
+	def get_destroy_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask("change-state", self._change_state, args=(State.CREATED,))
+		return taskset
+	
 	def start_run(self):
 		for con in self.connection_set_all():
 			con.upcast().start_run()
@@ -426,6 +474,18 @@ class Connection(models.Model):
 
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
+
+	def get_start_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_stop_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_prepare_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_destroy_tasks(self):
+		return tasks.TaskSet()
 				
 	def start_run(self):
 		host = self.interface.device.host

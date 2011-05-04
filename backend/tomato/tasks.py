@@ -43,7 +43,10 @@ class Task():
 		self.output = StringIO()
 		self.result = None
 		self.process = None
-		self.depends = depends[:]
+		if isinstance(depends, str):
+			self.depends = [depends]
+		else:
+			self.depends = depends[:]
 		self.callWithTask = callWithTask
 		self.started = None
 		self.finished = None
@@ -121,6 +124,60 @@ class Task():
 			"finished": util.datestr(self.finished) if self.finished else None,
 			"duration": util.timediffstr(self.started, self.finished if self.finished else time.time()) if self.started else None,
 			}
+		
+class TaskSet():
+	def __init__(self):
+		self.tasks = []
+		self.tasksmap = {}
+		self.firstTask = None
+		self.lastTask = None
+	def addTask(self, task):
+		self.tasks.append(task)
+		self.tasksmap[task.name] = task
+		if self.firstTask:
+			task.depends.append(self.firstTask.name)
+		if self.lastTask:
+			self.lastTask.depends.append(task.name)
+		task.process = self
+	def addFirstTask(self, task):
+		self.addTask(task)
+		self.firstTask = task
+	def addLastTask(self, task):
+		self.addTask(task)
+		self.lastTask = task
+	def addPrefix(self, prefix):
+		self.tasksmap = {}
+		for task in self.tasks:
+			task.name = prefix + "-" + task.name
+			self.tasksmap[task.name] = task
+			newdeps = []
+			for d in task.depends:
+				newdeps.append(prefix + "-" + d)
+			task.depends = newdeps
+	def _makeFirstTask(self, task):
+		for t in self.tasks:
+			t.depends.append(task.name)		
+	def _createFirstTask(self):
+		task = Task("dummy-first")
+		self._makeFirstTask(task)
+		self.addFirstTask(task)
+	def getFirstTask(self):
+		if not self.firstTask:
+			self._createFirstTask()
+		self._makeFirstTask(self.firstTask)
+		return self.firstTask
+	def _makeLastTask(self, task):
+		for t in self.tasks:
+			task.depends.append(t.name)
+	def _createLastTask(self):
+		task = Task("dummy-last")
+		self._makeLastTask(task)
+		self.addLastTask(task)
+	def getLastTask(self):
+		if not self.lastTask:
+			self._createLastTask()
+		self._makeLastTask(self.lastTask)
+		return self.lastTask			
 		
 class Process():
 	def __init__(self, name=None, tasks=[], onFinished=None):

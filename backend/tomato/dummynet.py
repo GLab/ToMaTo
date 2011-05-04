@@ -82,47 +82,71 @@ class EmulatedConnection(generic.Connection):
 		host.execute("ip link set up %s" % self.bridge_name())
 		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), directory, directory ))		
 
-	def start_run(self):
-		generic.Connection.start_run(self)
-		host = self.interface.device.host
-		if not host:
-			import fault
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot start dummynet, device must be created first: %s" % self.interface.device)
-		pipe_id = int(self.bridge_id()) * 10
-		host.execute("modprobe ipfw_mod")
-		self._ipfw("add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))
-		self._config_link()
-		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)")
-		if "capture" in self.attributes:
-			self._start_capture()
+	def _load_ipfw_module(self):
+		self.interface.device.host.execute("modprobe ipfw_mod")
 
+	def _create_pipe(self):
+		pipe_id = int(self.bridge_id()) * 10
+		self._ipfw("add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))		
+
+	def _ensure_tcpdump_running(self):
+		host = self.interface.device.host
+		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)")
+
+	def get_start_tasks(self):
+		import tasks
+		taskset = generic.Connection.get_start_tasks(self)
+		taskset.addTask(tasks.Task("load-ipfw-module", self._load_ipfw_module))
+		taskset.addTask(tasks.Task("create-pipe", self._create_pipe, depends="load-ipfw-module"))
+		taskset.addTask(tasks.Task("configure-link", self._config_link, depends="create-pipe"))
+		if "capture" in self.attributes:
+			taskset.addTask(tasks.Task("start-capture", self._start_capture))
+		else:
+			taskset.addTask(tasks.Task("ensure-tcpdump-running", self._ensure_tcpdump_running))
+		return taskset
+	
 	def _stop_capture(self):
 		host = self.interface.device.host
 		directory = self._capture_dir()
 		host.process_kill("%s.pid" % directory)
 
-	def stop_run(self):
-		generic.Connection.stop_run(self)
-		if "bridge_id" in self.attributes:
-			pipe_id = int(self.bridge_id()) * 10
-			self._ipfw("delete %d" % pipe_id)
-			self._ipfw("pipe delete %d" % pipe_id)
-			self._ipfw("delete %d" % ( pipe_id + 1 ))
-		if "capture" in self.attributes:
-			self._stop_capture()
+	def _delete_pipes(self):
+		pipe_id = int(self.bridge_id()) * 10
+		self._ipfw("delete %d" % pipe_id)
+		self._ipfw("pipe delete %d" % pipe_id)
+		self._ipfw("delete %d" % ( pipe_id + 1 ))		
 
-	def prepare_run(self):
+	def get_stop_tasks(self):
+		import tasks
+		taskset = generic.Connection.get_stop_tasks(self)
+		if "bridge_id" in self.attributes:
+			taskset.addTask(tasks.Task("delete-pipes", self._delete_pipes))
+		if "capture" in self.attributes:
+			taskset.addTask(tasks.Task("stop-capture", self._stop_capture))
+		return taskset
+	
+	def _create_dummy_bridge(self):
 		host = self.interface.device.host
 		host.bridge_create("dummy")
 		host.execute("ifconfig dummy 0.0.0.0 up")
-		generic.Connection.prepare_run(self)
 
-	def destroy_run(self):
-		generic.Connection.destroy_run(self)
+	def get_prepare_taskset(self):
+		import tasks
+		taskset = generic.Connection.get_prepare_tasks(self)
+		taskset.addTask(tasks.Task("create-dummy-bridge", self._create_dummy_bridge))
+		return taskset
+
+	def _remove_capture_dir(self):
 		host = self.interface.device.host
 		directory = self._capture_dir()
 		if host:
 			host.file_delete(directory, recursive=True)
+		
+	def get_destroy_tasks(self):
+		import tasks
+		taskset = generic.Connection.get_destroy_tasks(self)
+		taskset.addTask(tasks.Task("remove-capture-dir", self._remove_capture_dir))
+		return taskset
 
 	def download_supported(self):
 		return not self.connector.state == generic.State.CREATED and "capture" in self.attributes
