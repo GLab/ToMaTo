@@ -41,6 +41,7 @@ class Modification():
 				dev = openvz.OpenVZDevice()
 			else:
 				raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Unknown device type: %s" % type )
+			dev.init()
 			dev.type = dtype
 			dev.topology = top
 			dev.name = self.properties["name"]
@@ -86,6 +87,7 @@ class Modification():
 				con = tinc.TincConnector()
 			else:
 				raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Unknown connector type: %s" % type )
+			con.init()
 			con.type = ctype
 			con.topology = top
 			con.name = self.properties["name"]

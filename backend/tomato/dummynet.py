@@ -22,6 +22,11 @@ import generic, util
 
 class EmulatedConnection(generic.Connection):
 	
+	def init(self):
+		self.attributes["lossratio"] = "0.0"
+		self.attributes["delay"] = "0"
+		self.attributes["bandwidth"] = "10000"
+	
 	def _ipfw(self, cmd):
 		self.interface.device.host.execute("ipfw %s" % cmd)
 		

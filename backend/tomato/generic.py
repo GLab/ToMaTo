@@ -43,6 +43,9 @@ class Device(models.Model):
 	host = models.ForeignKey(hosts.Host, null=True)
 	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
+	def init(self):
+		pass
+		
 	def interface_set_get(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
@@ -248,6 +251,9 @@ class Interface(models.Model):
 	device = models.ForeignKey(Device)
 	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
+	def init(self):
+		pass
+		
 	def is_configured(self):
 		try:
 			self.configuredinterface # pylint: disable-msg=E1101,W0104
@@ -299,6 +305,9 @@ class Connector(models.Model):
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
+	def init(self):
+		pass
+		
 	def connection_set_add(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
 
@@ -451,6 +460,9 @@ class Connection(models.Model):
 	interface = models.OneToOneField(Interface)
 	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
 
+	def init(self):
+		pass
+		
 	def is_emulated(self):
 		try:
 			self.emulatedconnection # pylint: disable-msg=E1101,W0104
