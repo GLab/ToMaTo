@@ -1543,7 +1543,7 @@ var CheckField = EditElement.extend({
 		this.input.attr({disabled: !editable});
 	},
 	setValue: function(value) {
-		this.input[0].checked = Boolean(value);
+		this.input[0].checked = Boolean.parse(value);
 	},
 	getValue: function() {
 		return this.input[0].checked;
