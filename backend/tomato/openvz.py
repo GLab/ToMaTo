@@ -23,6 +23,10 @@ class OpenVZDevice(generic.Device):
 	def upcast(self):
 		return self
 
+	def init(self):
+		self.attributes["root_password"] = "glabroot"
+		self.attributes["template"] = ""
+
 	def _vzctl(self, cmd, params="", timeout=None):
 		return self.host.execute("%svzctl %s %s %s" % ("timeout %s " % timeout if timeout else "", cmd, self.attributes["vmid"], params) )
 
@@ -172,6 +176,7 @@ class OpenVZDevice(generic.Device):
 		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
+		iface.init()
 		iface.name = name
 		iface.device = self
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
@@ -365,6 +370,9 @@ class OpenVZDevice(generic.Device):
 		return res
 
 class ConfiguredInterface(generic.Interface):
+	def init(self):
+		self.attributes["use_dhcp"] = False
+	
 	def upcast(self):
 		return self
 

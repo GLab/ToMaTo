@@ -150,6 +150,7 @@ class TincConnector(generic.Connector):
 		if iface.is_connected():
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to connected interface: %s -> %s" % (iface_name, self.name) )
 		con = TincConnection ()
+		con.init()
 		con.connector = self
 		con.interface = iface
 		con.configure(properties)

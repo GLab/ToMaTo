@@ -160,6 +160,18 @@ if (!Array.prototype.forEach) {
   };
 }
 
+Boolean.parse = function (str) {
+  if (str == true || str == false) return str;
+  switch (str.toLowerCase ()) {
+    case "true":
+      return true;
+    case "false":
+      return false;
+    default:
+      throw new Error ("Boolean.parse: Cannot convert string to boolean.");
+  }
+};
+
 var Vector = Class.extend({
 	init: function(coord) {
 		this.c = coord;

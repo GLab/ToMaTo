@@ -23,6 +23,9 @@ class KVMDevice(generic.Device):
 	def upcast(self):
 		return self
 
+	def init(self):
+		self.attributes["template"] = ""
+
 	def _qm(self, cmd, params=""):
 		return self.host.execute("qm %s %s %s" % (cmd, self.attributes["vmid"], params))
 
@@ -158,6 +161,7 @@ class KVMDevice(generic.Device):
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		iface = generic.Interface()
+		iface.init()
 		try:
 			if self.interface_set_get(name):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)

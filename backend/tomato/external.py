@@ -24,6 +24,10 @@ class ExternalNetworkConnector(generic.Connector):
 	def upcast(self):
 		return self
 
+	def init(self):
+		self.attributes["network_type"] = "internet"
+		self.attributes["network_group"] = None
+
 	def _update_host_preferences(self, prefs, en):
 		if not en.has_free_slots():
 			return
@@ -103,6 +107,7 @@ class ExternalNetworkConnector(generic.Connector):
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
 		con = generic.Connection ()
+		con.init()
 		con.connector = self
 		con.interface = iface
 		con.save()

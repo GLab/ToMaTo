@@ -329,7 +329,7 @@ var Connection = NetElement.extend({
 	},
 	connect: function(iface) {
 		this.iface = iface;
-		this.editor.ajaxModify([this.modification("create", {"interface": this.getSubElementName()})], function(res) {});
+		this.editor.ajaxModify([this.modification("create", {"interface": this.getSubElementName(), "properties": this.attributes})], function(res) {});
 	},
 	getElementType: function () {
 		return "connection";
@@ -403,6 +403,10 @@ var EmulatedConnection = Connection.extend({
 		this.handle.attr({fill: this.editor.glabColor});
 		this.form = new EmulatedConnectionWindow(this);
 		this.IPHintNumber = this.con.nextIPHintNumber++;
+		// not using setAttribute to avoid direct modify call 
+		this.attributes["bandwidth"] = "10000";
+		this.attributes["latency"] = "0";
+		this.attributes["lossratio"] = "0.0";
 	},
 	getIPHint: function() {
 		return {ipv4: "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24", 
@@ -496,6 +500,14 @@ var Interface = NetElement.extend({
 		if (this.dev) this.dev.removeInterface(this);
 		delete this.con;
 		delete this.dev;
+	},
+	setAttribute: function(name, value){
+		this._super(name, value);
+		if (name == "name") {
+			this.form.setTitle(value);
+			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+			this.name = value;
+		}
 	},
 	_click: function(event) {
 		var p = this.parent;
@@ -798,6 +810,7 @@ var OpenVZDevice = Device.extend({
 	init: function(editor, name, pos) {
 		this._super(editor, name, "images/openvz.png", {x: 32, y: 32}, pos);
 		this.form = new OpenVZDeviceWindow(this);
+		this.setAttribute("root_password", "glabroot");
 	},
 	baseName: function() {
 		return "openvz";
@@ -1535,7 +1548,7 @@ var CheckField = EditElement.extend({
 		this.input.attr({disabled: !editable});
 	},
 	setValue: function(value) {
-		this.input[0].checked = Boolean(value);
+		this.input[0].checked = Boolean.parse(value);
 	},
 	getValue: function() {
 		return this.input[0].checked;
@@ -1927,7 +1940,7 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
-		this.attrs.addField(new TextField("root_password", "glabroot"), "root&nbsp;password");
+		this.attrs.addField(new TextField("root_password", ""), "root&nbsp;password");
 		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
 		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6, ""), "gateway6");
 	}
@@ -1974,7 +1987,7 @@ var ExternalConnectorWindow = ConnectorWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		var t = this;
-		this.attrs.addField(new SelectField("network_type", getKeys(this.obj.editor.externalNetworks), "internet", function(value) {
+		this.attrs.addField(new SelectField("network_type", getKeys(this.obj.editor.externalNetworks), "", function(value) {
 			t._typeChanged(value);
 		}), "type");
 		this.attrs.addField(new SelectField("network_group", [], "auto"), "group");
@@ -2025,9 +2038,9 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs = new AttributeForm(obj);
-		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, "10000"), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.attrs.addField(new MagicTextField("delay", pattern.int, "0"), "latency&nbsp;(in&nbsp;ms)");
-		this.attrs.addField(new MagicTextField("lossratio", pattern.float, "0.0"), "packet&nbsp;loss");
+		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, ""), "bandwidth&nbsp;(in&nbsp;kb/s)");
+		this.attrs.addField(new MagicTextField("delay", pattern.int, ""), "latency&nbsp;(in&nbsp;ms)");
+		this.attrs.addField(new MagicTextField("lossratio", pattern.float, ""), "packet&nbsp;loss");
 		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
 		this.add(this.attrs.getDiv());
 	},
