@@ -93,7 +93,7 @@ class EmulatedConnection(generic.Connection):
 		self._ipfw("add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))
 		self._config_link()
 		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)")
-		if "capture" in self.attributes:
+		if util.parse_bool(self.attributes["capture"]):
 			self._start_capture()
 
 	def _stop_capture(self):
@@ -108,7 +108,7 @@ class EmulatedConnection(generic.Connection):
 			self._ipfw("delete %d" % pipe_id)
 			self._ipfw("pipe delete %d" % pipe_id)
 			self._ipfw("delete %d" % ( pipe_id + 1 ))
-		if "capture" in self.attributes:
+		if util.parse_bool(self.attributes["capture"]):
 			self._stop_capture()
 
 	def prepare_run(self):
