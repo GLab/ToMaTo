@@ -605,7 +605,7 @@ def resource_usage_by_user(user=None):
 		else:
 			d = top.resources()
 			for key in d:
-				if usage[top.owner][key]:
+				if usage[top.owner].has_key(key):
 					usage[top.owner][key] = float(usage[top.owner][key]) + float(d[key]) 
 				else:
 					usage[top.owner][key] = float(d[key]) 

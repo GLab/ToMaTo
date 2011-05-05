@@ -15,7 +15,7 @@
 	</tr>
 {% for name, res in usage %}
 	<tr>
-		<td><a href="{% if by_user %}{%url top.index%}?owner_filter={{name}}{%else%}{%url top.details res.top_id%}{%endif%}">{{name}}</a></td>
+		<td><a href="{% if by_user %}{%url top.index%}?owner_filter={{name}}{%else%}{%url top.show res.top_id%}{%endif%}">{{name}}</a></td>
 		<td enhancetable_customkey="{{res.disk}}">{{res.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.memory}}">{{res.memory|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.traffic}}">{{res.traffic|filesizeformat}}</td>
