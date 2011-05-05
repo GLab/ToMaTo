@@ -1832,6 +1832,7 @@ var AnalysisPanel = Class.extend({
 		this.div.append((this.obj.errors == 0 && this.obj.warnings == 0) ? "<p>No errors or warnings</p>" : ul);
 		this.div.append(new Button("check", 'Run again', function(){
 			t.obj.editor.analyze();
+			t.load();
 		}).getInputElement());
 	},
 	getDiv: function() {
