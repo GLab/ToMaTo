@@ -917,7 +917,7 @@ var Editor = Class.extend({
 					}
 					if (con.getAttribute("lossratio")) {
 						var val = con.getAttribute("lossratio");
-						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid packet loss ratio");
+						if (! pattern.float.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid packet loss ratio");
 						var val = parseFloat(val);
 						if (val >= 0.9) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 90% packet loss configured");
 						if (val >= 1.0) top.errors.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has 100% or more packet loss configured");
