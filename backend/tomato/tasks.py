@@ -139,6 +139,14 @@ class TaskSet():
 		if self.lastTask:
 			self.lastTask.depends.append(task.name)
 		task.process = self
+	def addTaskSet(self, prefix, taskset):
+		taskset.addPrefix(prefix)
+		for t in taskset.tasks:
+			self.addTask(t)
+	def addGlobalDepends(self, dep):
+		for t in self.tasks:
+			t.deps.append(dep)
+		return self
 	def addFirstTask(self, task):
 		self.addTask(task)
 		self.firstTask = task
@@ -152,8 +160,12 @@ class TaskSet():
 			self.tasksmap[task.name] = task
 			newdeps = []
 			for d in task.depends:
-				newdeps.append(prefix + "-" + d)
+				if d in self.tasksmap.values():
+					newdeps.append(prefix + "-" + d)
+				else:
+					newdeps.append(d)
 			task.depends = newdeps
+		return self
 	def _makeFirstTask(self, task):
 		for t in self.tasks:
 			t.depends.append(task.name)		
