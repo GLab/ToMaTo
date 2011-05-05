@@ -661,7 +661,7 @@ def check_all_hosts():
 	tasks.get_current_task().done()
 	tasks.set_current_task(None)
 
-if not config.TESTING:				
+if not config.TESTING and not config.MAINTENANCE:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
 	measurement_task.start()
 	host_check_task = util.RepeatedTimer(3600*6, check_all_hosts)

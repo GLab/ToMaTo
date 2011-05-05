@@ -433,7 +433,7 @@ def update_resource_usage():
 	for top in all():
 		top.update_resource_usage()
 
-if not config.TESTING:
+if not config.TESTING and not config.MAINTENANCE:
 	cleanup_task = util.RepeatedTimer(300, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)

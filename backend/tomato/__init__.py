@@ -39,9 +39,12 @@ def db_migrate():
 	from south.management.commands import migrate
 	cmd = migrate.Command()
 	cmd.handle(app="tomato", verbosity=1)
-db_migrate()
-
+	
 import config, util
+	
+if not config.MAINTENANCE:
+	db_migrate()
+
 from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
 
 import log, generic, topology, hosts, fault, tasks
@@ -327,7 +330,7 @@ def top_info(top_id, user=None):
 	Returns: information about the topology
 
 	Errors:
-		fault.Error: if the topology is not found      
+		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
 	return top.to_dict(top.check_access("user", user), True)

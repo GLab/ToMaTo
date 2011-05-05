@@ -230,7 +230,7 @@ def get_current_task():
 	else:
 		return None
 		
-if not config.TESTING:	
+if not config.TESTING and not config.MAINTENANCE:	
 	cleanup_task = util.RepeatedTimer(3, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)

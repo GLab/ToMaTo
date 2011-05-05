@@ -16,20 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import os
+os.environ['TOMATO_MAINTENANCE']="true"
+
 import sys, tomato #@UnusedImport, pylint: disable-msg=W0611
 
-try:
-	from south.management.commands import schemamigration, datamigration
-	opt = sys.argv[1]
-	name = sys.argv[2]
-	if opt == "--initial":
-		schemamigration.Command().handle(app="tomato", name=name, initial=True)
-	elif opt == "--schema":
-		schemamigration.Command().handle(app="tomato", name=name, initial=False, auto=True)
-	elif opt == "--data":
-		datamigration.Command().handle(app="tomato", name=name)		
-except: #pylint: disable-msg=W0702
-	from south.management.commands import startmigration
-	cmd = startmigration.Command()
-	initial = sys.argv[1] == "initial"
-	cmd.handle(app="tomato", name=sys.argv[1], initial=initial, auto=True)
+from django.core.management import call_command
+
+opt = sys.argv[1]
+if opt in ("cleanup", "compilemessages", "convert_to_south", "createcachetable", \
+		"makemessages", "runfcgi", "runserver", "startapp", "testserver"):
+	print "This command is not supported in ToMaTo"
+else:
+	from django.core.management import execute_manager
+	if __name__ == "__main__":
+		execute_manager(tomato.config)

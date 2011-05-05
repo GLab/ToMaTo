@@ -90,4 +90,6 @@ if TESTING:
     if os.path.exists(DATABASE_NAME):
         os.remove(DATABASE_NAME)
     remote_dry_run = True
-    auth_provider = "dummy" 
+    auth_provider = "dummy"
+    
+MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
