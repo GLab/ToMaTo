@@ -346,6 +346,7 @@ class Topology(models.Model):
 		for key in self.attributes:
 			if key.startswith("resources_"):
 				res[key[10:]] = self.attributes[key]
+		return res
 
 	def update_resource_usage(self):
 		res = {}
