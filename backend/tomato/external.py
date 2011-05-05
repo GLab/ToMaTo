@@ -60,10 +60,32 @@ class ExternalNetworkConnector(generic.Connector):
 		ens = hosts.ExternalNetwork.objects.filter(type=self.attributes["network_type"])
 		if self.attributes["network_group"]:
 			ens = ens.filter(group=self.attributes["network_group"])
+		joins = 0
+		# filter statements must be limited because each one causes an 
+		# additional table to be added to a join statement
+		# SQLite has an internal limit of 64 tables
 		for con in self.connection_set_all():
 			dev = con.interface.device
 			if dev.host:
+				joins = joins + 1
 				ens = ens.filter(externalnetworkbridge__host=dev.host)
+				if joins > 10:
+					#break the loop here keeping the filtered set
+					break
+		if joins > 10:
+			#continue the filtering manually
+			enshosts = {}
+			for en in ens:
+				enshosts[en] = set()
+				for enb in en.externalnetworkbridge_set.all():
+					enshosts[en].add(enb.host)
+			for con in self.connection_set_all():
+				dev = con.interface.device
+				if dev.host:
+					for en in enshosts.keys():
+						if not dev.host in enshosts[en]:
+							enshosts.remove(en)
+			ens = enshosts.keys()
 		for en in ens:
 			options.add(en, 1.0)
 		return options

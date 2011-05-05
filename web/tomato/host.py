@@ -41,7 +41,6 @@ def index(api, request):
 
 @wrap_rpc
 def detail(api, request, hostname):
-	print api.host_info(hostname)
 	return render_to_response("admin/host_detail.html", {'host': api.host_info(hostname), 'external_networks': api.external_networks()})
 
 @wrap_rpc
