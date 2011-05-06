@@ -26,14 +26,10 @@ class RepeatedTimer(threading.Thread):
 		threading.Thread.__init__(self)
 		self.event = threading.Event()
 		self.daemon = True
-		self.firstRun = True
 	def run(self):
 		while not self.event.isSet():
 			try:
-				if self.firstRun:
-					self.firstRun = False
-				else:
-					self.event.wait(self.timeout)
+				self.event.wait(self.timeout)
 			except: #pylint: disable-msg=W0702
 				return
 			if not self.event.isSet():

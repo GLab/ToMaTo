@@ -172,7 +172,7 @@ class Topology(models.Model):
 				sset = dev.upcast().get_start_tasks()
 				sset.addGlobalDepends(pset.getLastTask().name)
 				proc.addTaskSet("start-device-%s" % dev.name, sset)
-			elif dev.state == generic.State.STARTED:
+			elif dev.state == generic.State.PREPARED:
 				sset = dev.upcast().get_start_tasks()
 				proc.addTaskSet("start-device-%s" % dev.name, sset)
 		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
@@ -183,9 +183,11 @@ class Topology(models.Model):
 				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
 				sset = con.upcast().get_start_tasks()
 				sset.addGlobalDepends(pset.getLastTask().name)
+				sset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("start-connector-%s" % con.name, sset)
-			elif con.state == generic.State.STARTED:
+			elif con.state == generic.State.PREPARED:
 				sset = con.upcast().get_start_tasks()
+				sset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("start-connector-%s" % con.name, sset)
 		return self.start_process(proc, direct)
 

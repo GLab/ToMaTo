@@ -84,6 +84,7 @@ class Task():
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 	def _run(self):
+		print "Running %s" % self.name
 		self.status = Status.RUNNING
 		if self.callWithTask:
 			self.result = self.fn(self, *(self.args), **(self.kwargs))
@@ -145,7 +146,7 @@ class TaskSet():
 			self.addTask(t)
 	def addGlobalDepends(self, dep):
 		for t in self.tasks:
-			t.deps.append(dep)
+			t.depends.append(dep)
 		return self
 	def addFirstTask(self, task):
 		self.addTask(task)
@@ -154,13 +155,14 @@ class TaskSet():
 		self.addTask(task)
 		self.lastTask = task
 	def addPrefix(self, prefix):
+		oldnames = self.tasksmap.keys()[:] 
 		self.tasksmap = {}
 		for task in self.tasks:
 			task.name = prefix + "-" + task.name
 			self.tasksmap[task.name] = task
 			newdeps = []
 			for d in task.depends:
-				if d in self.tasksmap.values():
+				if d in oldnames:
 					newdeps.append(prefix + "-" + d)
 				else:
 					newdeps.append(d)
@@ -168,7 +170,8 @@ class TaskSet():
 		return self
 	def _makeFirstTask(self, task):
 		for t in self.tasks:
-			t.depends.append(task.name)		
+			if task != t:
+				t.depends.append(task.name)		
 	def _createFirstTask(self):
 		task = Task("dummy-first")
 		self._makeFirstTask(task)
@@ -180,7 +183,8 @@ class TaskSet():
 		return self.firstTask
 	def _makeLastTask(self, task):
 		for t in self.tasks:
-			task.depends.append(t.name)
+			if task != t:
+				task.depends.append(t.name)
 	def _createLastTask(self):
 		task = Task("dummy-last")
 		self._makeLastTask(task)
@@ -208,6 +212,10 @@ class Process():
 		self.tasks.append(task)
 		self.tasksmap[task.name] = task
 		task.process = self
+	def addTaskSet(self, prefix, taskset):
+		taskset.addPrefix(prefix)
+		for t in taskset.tasks:
+			self.addTask(t)
 	def abort(self):
 		for task in self.tasks:
 			if task.status == Status.WAITING:
@@ -240,7 +248,9 @@ class Process():
 	def _canrun(self, task):
 		if task.status != Status.WAITING:
 			return False
+		assert not task.name in task.depends, "Task depends on itself: %s" % task.name
 		for dep in task.depends:
+			assert self.tasksmap.has_key(dep), "Undefined dependency: %s" % dep
 			if self.tasksmap[dep].status != Status.SUCCEEDED:
 				return False
 		return True

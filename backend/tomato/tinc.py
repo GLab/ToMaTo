@@ -29,21 +29,21 @@ class TincConnector(generic.Connector):
 
 	def get_start_tasks(self):
 		import tasks
-		taskset = generic.Device.get_start_tasks(self)
+		taskset = generic.Connector.get_start_tasks(self)
 		for con in self.connection_set_all():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_start_tasks())
 		return taskset
 
 	def get_stop_tasks(self):
 		import tasks
-		taskset = generic.Device.get_stop_tasks(self)
+		taskset = generic.Connector.get_stop_tasks(self)
 		for con in self.connection_set_all():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_stop_tasks())
 		return taskset
 		
 	def get_prepare_tasks(self):
 		import tasks
-		taskset = generic.Device.get_stop_tasks(self)
+		taskset = generic.Connector.get_prepare_tasks(self)
 		for con in self.connection_set_all():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_prepare_tasks())
 		taskset.addTask(tasks.Task("created-host-files", depends=["connection-%s-create-host-file" % con for con in self.connection_set_all()]))
@@ -51,7 +51,7 @@ class TincConnector(generic.Connector):
 
 	def get_destroy_tasks(self):
 		import tasks
-		taskset = generic.Device.get_stop_tasks(self)
+		taskset = generic.Connector.get_destroy_tasks(self)
 		for con in self.connection_set_all():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_destroy_tasks())
 		return taskset
@@ -201,6 +201,7 @@ class TincConnection(dummynet.EmulatedConnection):
 			taskset.addTask(tasks.Task("stop-tinc", self._stop_tinc))
 			if self.connector.type == "router":
 				taskset.addTask(tasks.Task("teardown-routing", self._teardown_routing))
+		return taskset
 
 	def _assign_bridge_id(self):
 		if not self.attributes["bridge_id"]:
@@ -256,11 +257,11 @@ class TincConnection(dummynet.EmulatedConnection):
 		tincname = connector.tincname(self)
 		path = connector.topology.get_control_dir(host.name) + "/" + tincname
 		for con2 in connector.connection_set_all():
-			if self == con2:
-				continue
 			host2 = con2.interface.device.host
 			tincname2 = connector.tincname(con2)
 			path2 = connector.topology.get_control_dir(host2.name) + "/" + tincname2
+			if tincname == tincname2:
+				continue
 			shutil.copy(path2+"/hosts/"+tincname2, path+"/hosts/"+tincname2)
 
 	def _upload_files(self):
