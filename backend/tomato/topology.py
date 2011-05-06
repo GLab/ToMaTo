@@ -163,72 +163,122 @@ class Topology(models.Model):
 	def start(self, direct):
 		proc = tasks.Process("topology-start")
 		proc.addTask(tasks.Task("renew", self.renew))
+		devs_prepared = []
 		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-prepare" % dev.name, dev.upcast().prepare_run))
-		devs = [dev.name for dev in self.device_set_all()]
-		proc.addTask(tasks.Task("devices-prepared", depends=["%s-prepare" % d for d in devs]))
+			if dev.state == generic.State.CREATED:
+				pset = dev.upcast().get_prepare_tasks()
+				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
+				devs_prepared.append(pset.getLastTask().name)
+				sset = dev.upcast().get_start_tasks()
+				sset.addGlobalDepends(pset.getLastTask().name)
+				proc.addTaskSet("start-device-%s" % dev.name, sset)
+			elif dev.state == generic.State.STARTED:
+				sset = dev.upcast().get_start_tasks()
+				proc.addTaskSet("start-device-%s" % dev.name, sset)
+		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
 		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-prepare" % con.name, con.upcast().prepare_run, depends=["devices-prepared"]))
-		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-start" % con.name, con.upcast().start_run, depends=["%s-prepare" % con.name]))
-		cons = [con.name for con in self.connector_set_all()]
-		proc.addTask(tasks.Task("connectors-started", depends=["%s-start" % c for c in cons]))
-		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-start" % dev.name, dev.upcast().start_run, depends=["connectors-started", "%s-prepare" % dev.name]))
+			if con.state == generic.State.CREATED:
+				pset = con.upcast().get_prepare_tasks()
+				pset.addGlobalDepends("devices-prepared")
+				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
+				sset = con.upcast().get_start_tasks()
+				sset.addGlobalDepends(pset.getLastTask().name)
+				proc.addTaskSet("start-connector-%s" % con.name, sset)
+			elif con.state == generic.State.STARTED:
+				sset = con.upcast().get_start_tasks()
+				proc.addTaskSet("start-connector-%s" % con.name, sset)
 		return self.start_process(proc, direct)
 
 	def stop(self, direct, renew=True):
 		proc = tasks.Process("topology-stop")
 		if renew:
 			proc.addTask(tasks.Task("renew", self.renew))
-		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
 		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
+			if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
+				sset = dev.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-device-%s" % dev.name, sset)
+		for con in self.connector_set_all():
+			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
+				sset = con.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-connector-%s" % con.name, sset)
 		return self.start_process(proc, direct)
 
 	def prepare(self, direct):
 		proc = tasks.Process("topology-prepare")
 		proc.addTask(tasks.Task("renew", self.renew))
+		devs_prepared = []
 		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-prepare" % dev.name, dev.upcast().prepare_run))
-		devs = [dev.name for dev in self.device_set_all()]
-		proc.addTask(tasks.Task("devices-prepared", depends=["%s-prepare" % d for d in devs]))
+			if dev.state == generic.State.CREATED:
+				pset = dev.upcast().get_prepare_tasks()
+				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
+				devs_prepared.append(pset.getLastTask().name)
+		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
 		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-prepare" % con.name, con.upcast().prepare_run, depends=["devices-prepared"]))
+			if con.state == generic.State.CREATED:
+				pset = con.upcast().get_prepare_tasks()
+				pset.addGlobalDepends("devices-prepared")
+				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
 		return self.start_process(proc, direct)
 
 	def destroy(self, direct, renew=True):
 		proc = tasks.Process("topology-destroy")
 		if renew:
 			proc.addTask(tasks.Task("renew", self.renew))
-		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
+		cons_destroyed = []	
 		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
-		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-destroy" % con.name, con.upcast().destroy_run, depends=["%s-stop" % con.name]))
-		cons = [con.name for con in self.connector_set_all()]
-		proc.addTask(tasks.Task("connectors-destroyed", depends=["%s-destroy" % c for c in cons]))
+			if con.state == generic.State.STARTED:
+				sset = con.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-connector-%s" % con.name, sset)
+				dset = con.upcast().get_destroy_tasks()
+				dset.addGlobalDepends(sset.getLastTask().name)
+				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
+				cons_destroyed.append(dset.getLastTask().name)
+			elif con.state == generic.State.PREPARED:
+				dset = con.upcast().get_destroy_tasks()
+				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
+		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-destroy" % dev.name, dev.upcast().destroy_run, depends=["%s-stop" % dev.name, "connectors-destroyed"]))
+			if dev.state == generic.State.STARTED:
+				sset = dev.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-device-%s" % dev.name, sset)
+				dset = dev.upcast().get_destroy_tasks()
+				dset.addGlobalDepends(sset.getLastTask().name)
+				dset.addGlobalDepends("connectors-destroyed")
+				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
+			elif dev.state == generic.State.PREPARED:
+				dset = dev.upcast().get_destroy_tasks()
+				dset.addGlobalDepends("connectors-destroyed")
+				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 		return self.start_process(proc, direct)
 
 	def remove(self, direct):
 		proc = tasks.Process("topology-remove")
-		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-stop" % dev.name, dev.upcast().stop_run))
+		cons_destroyed = []	
 		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-stop" % con.name, con.upcast().stop_run))
-		for con in self.connector_set_all():
-			proc.addTask(tasks.Task("%s-destroy" % con.name, con.upcast().destroy_run, depends=["%s-stop" % con.name]))
-		cons = [con.name for con in self.connector_set_all()]
-		proc.addTask(tasks.Task("connectors-destroyed", depends=["%s-destroy" % c for c in cons]))
+			if con.state == generic.State.STARTED:
+				sset = con.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-connector-%s" % con.name, sset)
+				dset = con.upcast().get_destroy_tasks()
+				dset.addGlobalDepends(sset.getLastTask().name)
+				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
+				cons_destroyed.append(dset.getLastTask().name)
+			elif con.state == generic.State.PREPARED:
+				dset = con.upcast().get_destroy_tasks()
+				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
+		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.device_set_all():
-			proc.addTask(tasks.Task("%s-destroy" % dev.name, dev.upcast().destroy_run, depends=["%s-stop" % dev.name, "connectors-destroyed"]))
-		devs = [dev.name for dev in self.connector_set_all()]
-		proc.addTask(tasks.Task("devices-destroyed", depends=["%s-destroy" % d for d in devs]))
-		proc.addTask(tasks.Task("remove", self.delete, depends=["connectors-destroyed", "devices-destroyed"]))			
+			if dev.state == generic.State.STARTED:
+				sset = dev.upcast().get_stop_tasks()
+				proc.addTaskSet("stop-device-%s" % dev.name, sset)
+				dset = dev.upcast().get_destroy_tasks()
+				dset.addGlobalDepends(sset.getLastTask().name)
+				dset.addGlobalDepends("connectors-destroyed")
+				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
+			elif dev.state == generic.State.PREPARED:
+				dset = dev.upcast().get_destroy_tasks()
+				dset.addGlobalDepends("connectors-destroyed")
+				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
+		proc.addTask(tasks.Task("remove", self.delete, [t.name for t in proc.tasks]))
 		return self.start_process(proc, direct)
 			
 	def _log(self, task, output):

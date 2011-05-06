@@ -110,7 +110,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("start", self.upcast().start_run))
+		proc.addTaskSet("start", self.upcast().get_start_tasks())
 		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
@@ -118,7 +118,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("stop", self.upcast().stop_run))
+		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
@@ -128,7 +128,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("prepare", self.upcast().prepare_run))
+		proc.addTaskSet("prepare", self.upcast().get_preapre_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
@@ -141,7 +141,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("destroy", self.upcast().destroy_run))
+		proc.addTaskTask("destroy", self.upcast().get_destroy_tasks())
 
 	def _change_state(self, state):
 		self.state = state
@@ -149,22 +149,22 @@ class Device(models.Model):
 
 	def get_start_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.STARTED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
 		return taskset
 	
 	def get_stop_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
 		return taskset
 	
 	def get_prepare_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
 		return taskset
 	
 	def get_destroy_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.CREATED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
 		return taskset
 	
 	def configure(self, properties):
@@ -343,7 +343,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("start", self.upcast().start_run))
+		proc.addTaskSet("start", self.upcast().get_start_tasks())
 		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
@@ -351,7 +351,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("stop", self.upcast().stop_run))
+		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
@@ -361,7 +361,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("prepare", self.upcast().prepare_run))
+		proc.addTaskSet("prepare", self.upcast().get_prepare_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
@@ -369,7 +369,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("destroy", self.upcast().destroy_run))
+		proc.addTaskSet("destroy", self.upcast().get_destroy_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def _change_state(self, state):
@@ -378,22 +378,22 @@ class Connector(models.Model):
 
 	def get_start_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.STARTED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
 		return taskset
 	
 	def get_stop_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
 		return taskset
 	
 	def get_prepare_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.PREPARED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
 		return taskset
 	
 	def get_destroy_tasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask("change-state", self._change_state, args=(State.CREATED,))
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
 		return taskset
 	
 	def start_run(self):
