@@ -77,16 +77,16 @@ class OpenVZDevice(generic.Device):
 
 	def _wait_until_started(self):
 		self._exec("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
-		import time
-		for i in self.interface_set_all():
-			if not self.host.interface_exists(self.interface_device(i)):
-				time.sleep(0.25)
 	
 	def _check_state(self, asserted):
 		self.state = asserted #for dry-run
 		self.state = self.get_state()
 		self.save()
 		assert self.state == asserted, "VM in wrong state, is %s, should be %s" % ( self.state, asserted )
+
+	def _check_interfaces_exist(self):
+		for i in self.interface_set_all():
+			assert self.host.interface_exists(self.interface_device(i))
 
 	def _create_bridges(self):
 		for iface in self.interface_set_all():
@@ -109,8 +109,9 @@ class OpenVZDevice(generic.Device):
 		taskset.addTask(tasks.Task("start-vm", self._vzctl, args=("start",), depends="create-bridges"))
 		taskset.addTask(tasks.Task("wait-start", self._wait_until_started, depends="start-vm"))
 		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.STARTED,), depends="wait-start"))
+		taskset.addTask(tasks.Task("check-interfaces-exist", self._check_interfaces_exist, depends="check-state"))
 		for iface in self.interface_set_all():
-			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().get_start_tasks().addGlobalDepends("check-state"))
+			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().get_start_tasks().addGlobalDepends("check-interfaces-exist"))
 		taskset.addTask(tasks.Task("configure-routes", self._configure_routes, depends="check-state"))
 		taskset.addTask(tasks.Task("start-vnc", self._start_vnc, depends="check-state"))
 		return taskset

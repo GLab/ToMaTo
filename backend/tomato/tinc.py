@@ -41,9 +41,132 @@ class TincConnector(generic.Connector):
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_stop_tasks())
 		return taskset
 		
+	def _cluster_connections(self):
+		"""
+A network with N nodes and cluster_size k has the following properties:
+
+Number of connections is about: N * (k+1)
+
+Network diameter is bounded by: 4 * ( log_k(N) + 2 )
+Proof sketch:
+- A network with N nodes has a clustering hierarchy depth that is at most log_k(N) + 2
+  - In the worst case the site and host clustering split off only a minor part of the nodes but increase the depth by 2
+- At each hierarchy level all clusters are connected by pairs of random nodes
+  - In the worst case the path from the source to the pair and from the pair to the destination are both maximal
+  - In the worst case the path to a connecting node on a higher level leads to a different node in the same lowest level cluster
+  - The path has to be taken the whole hierarchy upwards to the root and downwards again
+  
+Maximal number of connections on a node is bounded by 2 * (k-1) * ( log_k(N) + 2 )
+Proof sketch:
+- A network with N nodes has a clustering hierarchy depth that is at most log_k(N) + 2
+  - In the worst case the site and host clustering split off only a minor part of the nodes but increase the depth by 2
+- At each each hierarchy level all clusters are interconnected by random nodes
+  - In the worst case the same node is chosen over and over again as a random node
+  - Every cluster has an outgoing and an incoming connection to other silbling clusters
+  
+Some nice properties:
+- The shortest path between nodes on different sites will not contain nodes on a third site
+- The shortest path between nodes on the same site will be completely within this site
+- The shortest path between nodes on different hosts will not contain nodes on a third host
+- The shortest path between nodes on the same host will be completely within this host
+=> Latencies stay routhly the same as in a full mesh
+=> Traffic is stays local if possible
+"""
+		CLUSTER_SIZE=10
+		def is_node(n):
+			return not isinstance(n, list)
+		def divide_any(nodes):
+			if is_node(nodes):
+				return nodes
+			if len(nodes) <= CLUSTER_SIZE:
+				return nodes
+			clusters={}
+			for i in range(0,CLUSTER_SIZE):
+				clusters[i]=[]
+			i = 0
+			for n in nodes:
+				clusters[i].append(n)
+				i = (i + 1) % CLUSTER_SIZE
+			for i in range(0,CLUSTER_SIZE):
+				if len(clusters[i]) == 1:
+					clusters[i] = clusters[i][0]
+			return [divide_any(c) for c in clusters.values()]
+		def get_host(node):
+			return node.interface.device.host.name
+		def divide_host(nodes):
+			if len(nodes) <= CLUSTER_SIZE:
+				return nodes
+			clusters = {}
+			for n in nodes:
+				if not get_host(n) in clusters:
+					clusters[get_host(n)] = []
+				clusters[get_host(n)].append(n)
+			return [divide_any(c) for c in clusters.values()]
+		def get_site(node):
+			return node.interface.device.host.group
+		def divide_site(nodes):
+			if len(nodes) <= CLUSTER_SIZE:
+				return nodes
+			clusters = {}
+			for n in nodes:
+				if not get_site(n) in clusters:
+					clusters[get_site(n)] = []
+				clusters[get_site(n)].append(n)
+			return [divide_host(c) for c in clusters.values()]
+		import random
+		def random_node(cluster):
+			if is_node(cluster):
+				return cluster
+			else:
+				return random_node(random.choice(cluster))
+		def connection_list(cluster):
+			cons = []
+			if is_node(cluster):
+				return cons
+			for a in cluster:
+				#connect cluster internally
+				cons += connection_list(a)
+				#connect cluster externally
+				for b in cluster:
+					if a is b:
+						#do not connect cluster with itself
+						continue
+					if is_node(a) and is_node(b) and repr(a) <= repr(b):
+						#connect nodes only once but clusters twice
+						continue
+					cons.append((random_node(a), random_node(b))) 
+			return cons
+		def connection_id_map(clist):
+			cmap = {}
+			for (a, b) in clist:
+				if not cmap.has_key(a.id):
+					cmap[a.id] = set()
+				cmap[a.id].add(b.id)
+				if not cmap.has_key(b.id):
+					cmap[b.id] = set()
+				cmap[b.id].add(a.id)
+			return cmap
+		def dot_file(file, clist):
+			fp = open(file, "w")
+			fp.write("graph G {\n")
+			for (a, b) in clist:
+				aname = "\"%s.%s.%s\"" % (get_site(a), get_host(a), a.id)
+				bname = "\"%s.%s.%s\"" % (get_site(b), get_host(b), b.id)
+				fp.write("\t%s -- %s;\n" % (aname, bname) )
+			fp.write("}\n")
+			fp.close()
+		allnodes = self.connection_set_all()
+		clustered = divide_site(allnodes)
+		clist = connection_list(clustered)
+		#print len(clist)*2
+		#dot_file("graph", clist)
+		cidmap = connection_id_map(clist)
+		return cidmap
+		
 	def get_prepare_tasks(self):
 		import tasks
 		taskset = generic.Connector.get_prepare_tasks(self)
+		taskset.addTask(tasks.Task("cluster-connections", self._cluster_connections))
 		for con in self.connection_set_all():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_prepare_tasks())
 		taskset.addTask(tasks.Task("created-host-files", depends=["connection-%s-create-host-file" % con for con in self.connection_set_all()]))
@@ -221,7 +344,10 @@ class TincConnection(dummynet.EmulatedConnection):
 		tincport = self.attributes["tinc_port"] 
 		path = connector.topology.get_control_dir(host.name) + "/" + tincname
 		if not os.path.exists(path+"/hosts"):
-			os.makedirs(path+"/hosts")
+			try:
+				os.makedirs(path+"/hosts")
+			except:
+				pass
 		subprocess.check_call (["openssl",  "genrsa",  "-out",  path + "/rsa_key.priv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		self_host_fd = open(path+"/hosts/"+tincname, "w")
 		self_host_fd.write("Address=%s\n" % host.name)
@@ -237,32 +363,42 @@ class TincConnection(dummynet.EmulatedConnection):
 		self_host_fd.close()
 		self_host_pub_fd.close()
 		
-	def _create_config_file(self):
+	def _create_config_file(self, task):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
 		path = connector.topology.get_control_dir(host.name) + "/" + tincname
+		if not os.path.exists(path):
+			try:
+				os.makedirs(path)
+			except:
+				pass
 		tinc_conf_fd = open(path+"/tinc.conf", "w")
 		tinc_conf_fd.write ( "Mode=%s\n" % connector.type )
 		tinc_conf_fd.write ( "Name=%s\n" % tincname )
 		tinc_conf_fd.write ( "AddressFamily=ipv4\n" )
+		connections = task.getDependency("cluster-connections").getResult()
 		for con2 in connector.connection_set_all():
+			if not con2.id in connections[self.id]:
+				#not connected
+				continue
 			tincname2 = connector.tincname(con2)
-			if not tincname == tincname2:
-				tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
+			tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 		tinc_conf_fd.close()
 
-	def _collect_host_files(self):
+	def _collect_host_files(self, task):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
 		path = connector.topology.get_control_dir(host.name) + "/" + tincname
+		connections = task.getDependency("cluster-connections").getResult()
 		for con2 in connector.connection_set_all():
+			if not con2.id in connections[self.id]:
+				#not connected
+				continue
 			host2 = con2.interface.device.host
 			tincname2 = connector.tincname(con2)
 			path2 = connector.topology.get_control_dir(host2.name) + "/" + tincname2
-			if tincname == tincname2:
-				continue
 			shutil.copy(path2+"/hosts/"+tincname2, path+"/hosts/"+tincname2)
 
 	def _upload_files(self):
@@ -278,8 +414,8 @@ class TincConnection(dummynet.EmulatedConnection):
 		taskset.addTask(tasks.Task("assign-bridge-id", self._assign_bridge_id))
 		taskset.addTask(tasks.Task("assign-tinc-port", self._assign_tinc_port))
 		taskset.addTask(tasks.Task("create-host-file", self._create_host_file, depends=["assign-bridge-id", "assign-tinc-port"]))
-		taskset.addTask(tasks.Task("create-config-file", self._create_config_file, depends=["assign-bridge-id", "assign-tinc-port"]))
-		taskset.addTask(tasks.Task("collect-host-files", self._collect_host_files, depends="created-host-files"))
+		taskset.addTask(tasks.Task("create-config-file", self._create_config_file, depends=["assign-bridge-id", "assign-tinc-port", "cluster-connections"], callWithTask=True))
+		taskset.addTask(tasks.Task("collect-host-files", self._collect_host_files, depends=["created-host-files", "cluster-connections"], callWithTask=True))
 		taskset.addTask(tasks.Task("upload-files", self._upload_files, depends=["collect-host-files", "create-config-file"]))
 		return taskset
 		

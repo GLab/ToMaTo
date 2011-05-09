@@ -131,7 +131,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("prepare", self.upcast().get_preapre_tasks())
+		proc.addTaskSet("prepare", self.upcast().get_prepare_tasks())
 		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
@@ -144,7 +144,8 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskTask("destroy", self.upcast().get_destroy_tasks())
+		proc.addTaskSet("destroy", self.upcast().get_destroy_tasks())
+		return self.topology.start_process(proc, direct)
 
 	def _change_state(self, state):
 		self.state = state

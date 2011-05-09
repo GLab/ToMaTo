@@ -70,6 +70,9 @@ class Task():
 		if name in self.depends:
 			return self.process.tasksmap[name]
 		else:
+			for n in self.depends:
+				if n.endswith(name):
+					return self.getDependency(n)
 			return None
 	def _reverse(self):
 		self.status = Status.REVERSING
@@ -120,7 +123,7 @@ class Task():
 		status = self.getStatus()
 		return {"name": self.name, "status": status, "active": self.isActive(status),
 			"done": self.isDone(status), "depends": self.depends,
-			"output": self.getOutput(), "result": self.getResult(),
+			"output": self.getOutput(), "result": "%s" % self.getResult(),
 			"started": util.datestr(self.started) if self.started else None,
 			"finished": util.datestr(self.finished) if self.finished else None,
 			"duration": util.timediffstr(self.started, self.finished if self.finished else time.time()) if self.started else None,
