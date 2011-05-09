@@ -249,6 +249,7 @@ class OpenVZDevice(generic.Device):
 		self.attributes["vnc_port"] = env["vnc_port"]
 
 	def migrate_run(self, host=None):
+		#FIXME: both vmids must be reserved the whole time
 		if self.state == generic.State.CREATED:
 			self.host = None
 			self.save()
