@@ -84,7 +84,7 @@ class Task():
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 	def _run(self):
-		print "Running %s" % self.name
+		#print "Running %s" % self.name
 		self.status = Status.RUNNING
 		if self.callWithTask:
 			self.result = self.fn(self, *(self.args), **(self.kwargs))

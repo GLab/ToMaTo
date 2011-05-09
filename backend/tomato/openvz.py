@@ -28,10 +28,11 @@ class OpenVZDevice(generic.Device):
 		self.attributes["template"] = ""
 
 	def _vzctl(self, cmd, params=""):
+		#FIXME: make synchronized because vzctl creates a lock
 		return self.host.execute("vzctl %s %s %s" % (cmd, self.attributes["vmid"], params) )
 
 	def _exec(self, cmd):
-		return self._vzctl("exec", cmd)
+		return self._vzctl("exec", "'%s'" % cmd)
 
 	def _image_path(self):
 		return "/var/lib/vz/private/%s" % self.attributes["vmid"]
@@ -76,12 +77,16 @@ class OpenVZDevice(generic.Device):
 
 	def _wait_until_started(self):
 		self._exec("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
+		import time
+		for i in self.interface_set_all():
+			if not self.host.interface_exists(self.interface_device(i)):
+				time.sleep(0.25)
 	
 	def _check_state(self, asserted):
 		self.state = asserted #for dry-run
 		self.state = self.get_state()
 		self.save()
-		assert self.state == asserted, "VM in wrong state"
+		assert self.state == asserted, "VM in wrong state, is %s, should be %s" % ( self.state, asserted )
 
 	def _create_bridges(self):
 		for iface in self.interface_set_all():
@@ -149,6 +154,10 @@ class OpenVZDevice(generic.Device):
 			self._vzctl("set", "--userpasswd root:%s --save" % self.attributes["root_password"])
 		self._vzctl("set", "--hostname %s-%s --save" % (self.topology.name.replace("_","-"), self.name ))
 
+	def _create_interfaces(self):
+		for iface in self.interface_set_all():
+			iface.upcast()._create_interface()
+
 	def get_prepare_tasks(self):
 		import tasks
 		taskset = generic.Device.get_prepare_tasks(self)
@@ -158,8 +167,7 @@ class OpenVZDevice(generic.Device):
 		taskset.addTask(tasks.Task("create-vm", self._vzctl, args=("create","--ostemplate %s" % self.attributes["template"]), depends="assign-vmid"))
 		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.PREPARED,), depends="create-vm"))
 		taskset.addTask(tasks.Task("configure-vm", self._configure_vm, depends="check-state"))
-		for iface in self.interface_set_all():
-			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().get_prepare_tasks().addGlobalDepends("check-state"))
+		taskset.addTask(tasks.Task("create-interfaces", self._create_interfaces, depends="configure-vm"))
 		return taskset
 
 	def _unassign_host(self):
@@ -459,10 +467,7 @@ class ConfiguredInterface(generic.Interface):
 		dev._vzctl("set", "--ifname %s --host_ifname %s --save" % ( self.name, self.interface_name()))
 		
 	def get_prepare_tasks(self):
-		import tasks
-		taskset = generic.Interface.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("create-interface", self._create_interface))
-		return taskset
+		return generic.Interface.get_prepare_tasks(self)
 
 	def to_dict(self, auth):
 		res = generic.Interface.to_dict(self, auth)		
