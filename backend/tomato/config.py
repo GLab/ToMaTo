@@ -76,6 +76,11 @@ server_ssl_ca_key = get("server", "ssl_ca_key", "")
 
 DATABASE_ENGINE = get("local", "database_engine", 'sqlite3')
 DATABASE_NAME = get("local", "database_name", 'db.sqlite')
+DATABASE_HOST = get("local", "database_host", '')
+DATABASE_PORT = get("local", "database_port", '')
+DATABASE_USER = get("local", "database_user", '')
+DATABASE_PASSWORD = get("local", "database_password", '')
+
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 

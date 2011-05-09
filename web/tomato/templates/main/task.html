@@ -9,12 +9,32 @@
 <meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}?backurl={{backurl}}" /> 
 {% endif %}
 </head>
-<body onload="window.scrollTo(0,document.body.scrollHeight);">
+<body>
 
-<b>
-Progress: 
-{% if task.done %}
-done
+<h1>Process: {{task.name}} ({{task.status}})</h1>
+Status: {{task.status}} {% if task.active %}{{task.tasks_done}}/{{task.tasks_total}}{% endif %}<br/>
+Started: {{task.started}}<br/>
+Finished: {{task.finished}}<br/>
+Duration: {{task.duration}}<br/>
+
+{% for t in task.tasks %}
+<h2>Subtask: {{t.name}} {%if t.active%}({{t.status}}){%endif%}</h2>
+{% if t.depends %}Dependencies: {{t.depends|join:", "}}<br/>{% endif %}
+Status: {{t.status}}<br/>
+Started: {{t.started}}<br/>
+Finished: {{t.finished}}<br/>
+Duration: {{t.duration}}<br/>
+{% if t.result %}Result: <tt>{{t.result}}</tt><br/>{% endif %}
+
+Output:
+<pre>
+{{t.output}}
+</pre>
+
+
+{% endfor %}
+ 
+{% if task.status == "succeeded" %}
 {% if backurl %}
 <script language="javascript"><!--
   function back(){
@@ -23,14 +43,7 @@ done
   setTimeout("back()",1000)
 //--></script>
 {% endif %}
-{% else %}
-{{task.status}} {{task.subtasks_done}}/{{task.subtasks_total}}
 {% endif %}
-</b>
-
-<pre>
-{{task.output}}
-</pre>
 
 </body>
 </html>

@@ -8,7 +8,6 @@ class Migration(SchemaMigration):
 	
 	def forwards(self, orm):
 		db.rename_table('tomato_specialfeatureconnector', 'tomato_externalnetworkconnector')
-		db.rename_column('tomato_externalnetworkconnector', 'used_feature_group', 'used_network')
 		db.rename_column('tomato_externalnetworkconnector', 'used_feature_group_id', 'used_network_id')
 		for con in orm["tomato.connector"].objects.filter(type="special"):
 			con.type = "external"
@@ -16,7 +15,6 @@ class Migration(SchemaMigration):
 
 		db.rename_table('tomato_specialfeature', 'tomato_externalnetworkbridge')
 		db.rename_column('tomato_externalnetworkbridge', 'feature_group_id', 'network_id')
-		db.rename_column('tomato_externalnetworkbridge', 'feature_group', 'network')
 
 		db.rename_table('tomato_specialfeaturegroup', 'tomato_externalnetwork')
 		db.rename_column('tomato_externalnetwork', 'group_name', 'group')

@@ -17,7 +17,7 @@
 
 from django.db import models
 
-import fault, hosts, attributes
+import fault, hosts, attributes, tasks
 
 class State(): #pylint: disable-msg=W0232
 	"""
@@ -101,58 +101,38 @@ class Device(models.Model):
 			return None		
 	
 	def migrate(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		if direct:
-			return self.upcast().migrate_run()
-		else:
-			task = self.topology.start_task(self.upcast().migrate_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("migrate")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTask(tasks.Task("migrate", self.upcast().migrate_run))
+		return self.topology.start_process(proc, direct)
 
 	def start(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().start_run()
-		else:
-			task = self.topology.start_task(self.upcast().start_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("start")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("start", self.upcast().get_start_tasks())
+		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		if direct:
-			return self.upcast().stop_run()
-		else:
-			task = self.topology.start_task(self.upcast().stop_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("stop")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
+		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().prepare_run()
-		else:
-			task = self.topology.start_task(self.upcast().prepare_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("prepare")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("prepare", self.upcast().get_preapre_tasks())
+		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
 		for iface in self.interface_set_all():
@@ -160,29 +140,35 @@ class Device(models.Model):
 				con = iface.connection.connector
 				if not con.is_external() and not con.state == State.CREATED:
 					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().destroy_run()
-		else:
-			task = self.topology.start_task(self.upcast().destroy_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("destroy")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskTask("destroy", self.upcast().get_destroy_tasks())
 
-	def start_run(self):
-		pass
+	def _change_state(self, state):
+		self.state = state
+		self.save()
 
-	def stop_run(self):
-		pass
-
-	def prepare_run(self):
-		pass
-
-	def destroy_run(self):
-		pass
+	def get_start_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
+		return taskset
+	
+	def get_stop_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		return taskset
+	
+	def get_prepare_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		return taskset
+	
+	def get_destroy_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
+		return taskset
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
@@ -243,7 +229,9 @@ class Device(models.Model):
 			
 	def use_uploaded_image(self, filename):
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
-		return self.topology.start_task(self.upcast().use_uploaded_image_run, path).id
+		proc = tasks.Process("use-uploaded-image")
+		proc.addTask("main", self.upcast().use_uploaded_image_run, args=(path,))
+		return proc.start()
 			
 			
 class Interface(models.Model):
@@ -294,6 +282,18 @@ class Interface(models.Model):
 		res = {"attrs": {"name": self.name}}
 		res["attrs"].update(self.attributes.items())
 		return res
+
+	def get_start_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_stop_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_prepare_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_destroy_tasks(self):
+		return tasks.TaskSet()
 
 
 class Connector(models.Model):
@@ -346,61 +346,65 @@ class Connector(models.Model):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
 	def start(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().start_run()
-		else:
-			task = self.topology.start_task(self.upcast().start_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("start")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("start", self.upcast().get_start_tasks())
+		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.CREATED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		if direct:
-			return self.upcast().stop_run()
-		else:
-			task = self.topology.start_task(self.upcast().stop_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("stop")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
+		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.PREPARED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().prepare_run()
-		else:
-			task = self.topology.start_task(self.upcast().prepare_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("prepare")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("prepare", self.upcast().get_prepare_tasks())
+		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
-		self.topology.renew()
-		if self.topology.is_busy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
-		if direct:
-			return self.upcast().destroy_run()
-		else:
-			task = self.topology.start_task(self.upcast().destroy_run)
-			task.subtasks_total = 1
-			return task.id
+		proc = tasks.Process("destroy")
+		proc.addTask(tasks.Task("renew", self.topology.renew))
+		proc.addTaskSet("destroy", self.upcast().get_destroy_tasks())
+		return self.topology.start_process(proc, direct)
 
+	def _change_state(self, state):
+		self.state = state
+		self.save()
+
+	def get_start_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
+		return taskset
+	
+	def get_stop_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		return taskset
+	
+	def get_prepare_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		return taskset
+	
+	def get_destroy_tasks(self):
+		taskset = tasks.TaskSet()
+		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
+		return taskset
+	
 	def start_run(self):
 		for con in self.connection_set_all():
 			con.upcast().start_run()
@@ -482,6 +486,18 @@ class Connection(models.Model):
 
 	def bridge_name(self):
 		return self.connector.upcast().bridge_name(self.interface)
+
+	def get_start_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_stop_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_prepare_tasks(self):
+		return tasks.TaskSet()
+	
+	def get_destroy_tasks(self):
+		return tasks.TaskSet()
 				
 	def start_run(self):
 		host = self.interface.device.host

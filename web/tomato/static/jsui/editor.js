@@ -985,31 +985,47 @@ var Editor = Class.extend({
 	},
 	followTask: function(task, onSuccess) {
 		followTask = {t: this, task: task, onSuccess: onSuccess, closable: false};
-		followTask.dialog = this.infoMessageBig("Task", "");
+		followTask.dialog = this.infoMessage("Task", "");
 		followTask.dialog.bind("dialogbeforeclose", function() {return followTask.closable;});
+		followTask.progress = $("<div/>");
+		followTask.progress.progressbar({value: 0});
+		followTask.info = $("<div/>");
+		followTask.details = $("<div/>");
+		followTask.dialog.append(followTask.info);
+		followTask.dialog.append(followTask.progress);
+		followTask.dialog.append(followTask.details);
 		followTask.update = function() {
 			followTask.t._ajax("task/"+followTask.task, null, function(output){
-				 followTask.dialog.empty();
-				 followTask.dialog.append("<pre>"+output.output+"</pre>");
-				 followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
-				 switch (output.status) {
-				 	case "active":
-				 		window.setTimeout("followTask.update()", 250);
-				 		break;
-				 	case "done":
+				followTask.dialog.dialog("option", "title", "Task " + output.name);
+				followTask.progress.progressbar("value", output.tasks_done*100/output.tasks_total);
+				followTask.info.empty();
+				followTask.info.append("<b>Status: " + output.status + (output.active ? (" (" +output.tasks_done+"/"+output.tasks_total+")") : "") + "</b><br/>");
+				followTask.details.empty();
+				followTask.details.append("Started: " + output.started + "<br/>" );
+				followTask.details.append("Duration: " + output.duration + "<br/>" );
+				if (output.finished) followTask.details.append("Finished: " + output.finished + "<br/>" );
+				followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
+				switch (output.status) {
+					case "waiting":
+					case "running":
+					case "reversing":
+						window.setTimeout("followTask.update()", 500);
+						break;
+					case "succeeded":
 						followTask.closable = true;
 						followTask.dialog.dialog("close");
 				 		var fT = followTask;
 				 		delete followTask;
 				 		if (fT.onSuccess) fT.onSuccess();
 				 		break;
+				 	case "aborted":
 				 	case "failed":
 						followTask.closable = true;
 						followTask.dialog.bind("dialogclose", function(){
 							window.location.reload();						
 						});
 				 		break;
-				 }
+				}
 			});			
 		};
 		followTask.update();
@@ -1156,6 +1172,7 @@ var Editor = Class.extend({
 		this.analyze();
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
+		if (top.running_task) this.followTask(top.running_task);
 	},
 	reloadTopology: function(callback) {
 		var editor = this;
