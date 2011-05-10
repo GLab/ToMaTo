@@ -85,13 +85,13 @@ class OpenVZDevice(generic.Device):
 		assert self.state == asserted, "VM in wrong state, is %s, should be %s" % ( self.state, asserted )
 
 	def _check_interfaces_exist(self):
-		for i in self.interface_set_all():
+		for i in self.interfaceSetAll():
 			assert self.host.interface_exists(self.interface_device(i))
 
 	def _create_bridges(self):
-		for iface in self.interface_set_all():
-			if iface.is_connected():
-				bridge = self.bridge_name(iface)
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
+				bridge = self.bridgeName(iface)
 				assert bridge, "Interface has no bridge %s" % iface
 				self.host.bridge_create(bridge)
 				self.host.execute("ip link set %s up" % bridge)
@@ -110,7 +110,7 @@ class OpenVZDevice(generic.Device):
 		taskset.addTask(tasks.Task("wait-start", self._wait_until_started, depends="start-vm"))
 		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.STARTED,), depends="wait-start"))
 		taskset.addTask(tasks.Task("check-interfaces-exist", self._check_interfaces_exist, depends="check-state"))
-		for iface in self.interface_set_all():
+		for iface in self.interfaceSetAll():
 			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().get_start_tasks().addGlobalDepends("check-interfaces-exist"))
 		taskset.addTask(tasks.Task("configure-routes", self._configure_routes, depends="check-state"))
 		taskset.addTask(tasks.Task("start-vnc", self._start_vnc, depends="check-state"))
@@ -135,7 +135,7 @@ class OpenVZDevice(generic.Device):
 
 	def _assign_host(self):
 		if not self.host:
-			self.host = self.host_options().best()
+			self.host = self.hostOptions().best()
 			assert self.host, "No matching host found"
 			self.save()
 
@@ -156,7 +156,7 @@ class OpenVZDevice(generic.Device):
 		self._vzctl("set", "--hostname %s-%s --save" % (self.topology.name.replace("_","-"), self.name ))
 
 	def _create_interfaces(self):
-		for iface in self.interface_set_all():
+		for iface in self.interfaceSetAll():
 			iface.upcast()._create_interface()
 
 	def get_prepare_tasks(self):
@@ -213,7 +213,7 @@ class OpenVZDevice(generic.Device):
 		if not re.match("eth(\d+)", name):
 			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
 		try:
-			if self.interface_set_get(name):
+			if self.interfaceSetGet(name):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
 		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
@@ -225,18 +225,18 @@ class OpenVZDevice(generic.Device):
 			iface.prepare_run()
 		iface.configure(properties)
 		iface.save()
-		generic.Device.interface_set_add(self, iface)
+		generic.Device.interfaceSetAdd(self, iface)
 
 	def interfaces_configure(self, name, properties):
-		iface = self.interface_set_get(name).upcast()
+		iface = self.interfaceSetGet(name).upcast()
 		iface.configure(properties)
 
 	def interfaces_rename(self, name, properties):
-		iface = self.interface_set_get(name).upcast()
+		iface = self.interfaceSetGet(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self._vzctl("set", "--netif_del %s --save\n" % iface.name)
 		try:
-			if self.interface_set_get(properties["name"]):
+			if self.interfaceSetGet(properties["name"]):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % properties["name"])
 		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
@@ -248,7 +248,7 @@ class OpenVZDevice(generic.Device):
 		iface.save()
 
 	def interfaces_delete(self, name):
-		iface = self.interface_set_get(name).upcast()
+		iface = self.interfaceSetGet(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
 			self._vzctl("set", "--netif_del %s --save\n" % iface.name)
 		iface.delete()
@@ -269,7 +269,7 @@ class OpenVZDevice(generic.Device):
 			self.save()
 			return
 		if not host:
-			host = self.host_options().best()
+			host = self.hostOptions().best()
 		if not host:
 			raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
 		#save old data
@@ -296,8 +296,8 @@ class OpenVZDevice(generic.Device):
 		newhost.execute("gunzip < %s/disk.tar.gz > %s/disk.tar" % (tmp, tmp))
 		#stop all connectors
 		constates={}
-		for iface in self.interface_set_all():
-			if iface.is_connected():
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
 				con = iface.connection.connector
 				if con.name in constates:
 					continue
@@ -343,8 +343,8 @@ class OpenVZDevice(generic.Device):
 		#save changes
 		self.save()
 		#redeploy all connectors
-		for iface in self.interface_set_all():
-			if iface.is_connected():
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
 				con = iface.connection.connector
 				if not con.name in constates:
 					continue
@@ -438,8 +438,8 @@ class ConfiguredInterface(generic.Interface):
 
 	def _connect_to_bridge(self):
 		dev = self.device.upcast()
-		bridge = dev.bridge_name(self)
-		if self.is_connected():
+		bridge = dev.bridgeName(self)
+		if self.isConnected():
 			dev.host.bridge_connect(bridge, self.interface_name())
 			dev.host.execute("ip link set %s up" % bridge)
 			

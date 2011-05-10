@@ -101,7 +101,7 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Returns: a dict of host details if host exists or False otherwise
 	"""
 	try:
-		return hosts.get_host(hostname).to_dict()
+		return hosts.get_host(hostname).toDict()
 	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
@@ -120,7 +120,7 @@ def host_list(group_filter=None, user=None): #@UnusedVariable, pylint: disable-m
 	if group_filter:
 		qs=qs.filter(group=group_filter)
 	for h in qs:
-		res.append(h.to_dict())
+		res.append(h.toDict())
 	return res
 
 def host_add(host_name, group_name, enabled, attrs, user=None):
@@ -333,7 +333,7 @@ def top_info(top_id, user=None):
 		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
-	return top.to_dict(top.check_access("user", user), True)
+	return top.toDict(top.check_access("user", user), True)
 
 def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
 	"""
@@ -357,7 +357,7 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:
 		if (not access_filter) or t.check_access(access_filter, user):
-			tops.append(t.to_dict(t.check_access("user", user), False))
+			tops.append(t.toDict(t.check_access("user", user), False))
 	return tops
 	
 def top_create(user=None):
@@ -437,7 +437,7 @@ def top_action(top_id, element_type, element_name, action, attrs={}, direct=Fals
 		task_id = element.migrate(direct)
 	elif action == "execute" and element_type =="device":
 		_top_access(top, "user", user)
-		if element.is_openvz:
+		if element.isOpenvz:
 			return element.upcast().execute(attrs["cmd"])
 		raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Execute is only supported for openvz devices")
 	if element_type == "topology":
@@ -477,16 +477,16 @@ def upload_image_uri(top_id, device_id, redirect, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
 	dev=top.device_set_get(device_id)
-	if not dev.upload_supported():
+	if not dev.uploadSupported():
 		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
 	top.logger().log("upload image grant %s" % device_id, user=user.name)
-	return dev.upload_image_grant(redirect)
+	return dev.uploadImageGrant(redirect)
 
 def use_uploaded_image(top_id, device_id, filename, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
 	dev=top.device_set_get(device_id)
-	if not dev.upload_supported():
+	if not dev.uploadSupported():
 		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
 	top.logger().log("use uploaded image %s %s" % (device_id, filename), user=user.name)
 	return dev.use_uploaded_image(filename)	
@@ -515,7 +515,7 @@ def template_list(template_type="", user=None): #@UnusedVariable, pylint: disabl
 	"""
 	if not template_type:
 		template_type = None
-	return [t.to_dict() for t in hosts.get_templates(template_type)]
+	return [t.toDict() for t in hosts.get_templates(template_type)]
 
 def template_add(name, template_type, url, user=None):
 	"""
@@ -563,7 +563,7 @@ def errors_all(user=None):
 	Returns: list of all errors
 	"""
 	_admin_access(user)
-	return [f.to_dict() for f in fault.errors_all()]
+	return [f.toDict() for f in fault.errors_all()]
 
 def errors_remove(error_id, user=None):
 	"""
@@ -639,7 +639,7 @@ def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylin
 	
 	Returns: physical link statistics
 	"""
-	return hosts.get_physical_link(src_group, dst_group).to_dict()
+	return hosts.get_physical_link(src_group, dst_group).toDict()
 	
 def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -647,7 +647,7 @@ def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W06
 
 	Returns: list of all physical link statistics
 	"""
-	return [l.to_dict() for l in hosts.get_all_physical_links()]
+	return [l.toDict() for l in hosts.get_all_physical_links()]
 
 def admin_public_key(user=None):
 	"""

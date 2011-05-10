@@ -56,6 +56,9 @@ def print_except(func, *args, **kwargs):
 def start_thread(func, *args, **kwargs):
 	return thread.start_new_thread(print_except_helper, (func, args, kwargs))
 
+def lines(str):
+	return str.strip().split("\n")
+
 def run_shell(cmd, pretend=False):
 	if pretend:
 		cmd.insert(0,"echo")

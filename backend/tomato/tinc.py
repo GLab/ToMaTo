@@ -30,14 +30,14 @@ class TincConnector(generic.Connector):
 	def get_start_tasks(self):
 		import tasks
 		taskset = generic.Connector.get_start_tasks(self)
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_start_tasks())
 		return taskset
 
 	def get_stop_tasks(self):
 		import tasks
 		taskset = generic.Connector.get_stop_tasks(self)
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_stop_tasks())
 		return taskset
 		
@@ -155,7 +155,7 @@ Some nice properties:
 				fp.write("\t%s -- %s;\n" % (aname, bname) )
 			fp.write("}\n")
 			fp.close()
-		allnodes = self.connection_set_all()
+		allnodes = self.connectionSetAll()
 		#print allnodes
 		clustered = divide_site(allnodes)
 		#print clustered
@@ -171,15 +171,15 @@ Some nice properties:
 		import tasks
 		taskset = generic.Connector.get_prepare_tasks(self)
 		taskset.addTask(tasks.Task("cluster-connections", self._cluster_connections))
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_prepare_tasks())
-		taskset.addTask(tasks.Task("created-host-files", depends=["connection-%s-create-host-file" % con for con in self.connection_set_all()]))
+		taskset.addTask(tasks.Task("created-host-files", depends=["connection-%s-create-host-file" % con for con in self.connectionSetAll()]))
 		return taskset
 
 	def get_destroy_tasks(self):
 		import tasks
 		taskset = generic.Connector.get_destroy_tasks(self)
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			taskset.addTaskSet("connection-%s" % con, con.upcast().get_destroy_tasks())
 		return taskset
 
@@ -192,7 +192,7 @@ Some nice properties:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
-		if iface.is_connected():
+		if iface.isConnected():
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to connected interface: %s -> %s" % (iface_name, self.name) )
 		con = TincConnection ()
 		con.init()
@@ -203,7 +203,7 @@ Some nice properties:
 
 	def connections_configure(self, iface_name, properties):
 		iface = self.topology.interfaces_get(iface_name)
-		con = self.connection_set_get(iface)
+		con = self.connectionSetGet(iface)
 		con.configure(properties)
 		con.save()	
 	
@@ -213,7 +213,7 @@ Some nice properties:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
-		con = self.connection_set_get(iface)
+		con = self.connectionSetGet(iface)
 		con.delete()
 
 	def get_resource_usage(self):
@@ -222,16 +222,16 @@ Some nice properties:
 		else:
 			disk = 10000   
 		if self.state == generic.State.STARTED:
-			ports = len(self.connection_set_all())
+			ports = len(self.connectionSetAll())
 			memory = ( 1200 + 250 * ports ) * 1024
 		else:
 			memory = 0
 			ports = 0
 		traffic = 0
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			dev = con.interface.device
 			if dev.host:
-				br = self.bridge_name(con.interface)
+				br = self.bridgeName(con.interface)
 				try:
 					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (br, br) ))
 					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (br, br) ))
@@ -276,22 +276,22 @@ class TincConnection(dummynet.EmulatedConnection):
 		host.execute ("sysctl -q -w net.ipv4.conf.all.forwarding=1");
 		table_in = 1000 + 2 * self.id
 		table_out = 1000 + 2 * self.id + 1 
-		host.execute ( "ip addr add %s dev %s" % (self.attributes["gateway4"], self.bridge_name()))
-		host.execute ( "ip addr add %s dev %s" % (self.attributes["gateway6"], self.bridge_name()))
-		host.execute ( "ip link set up dev %s" % self.bridge_name())
+		host.execute ( "ip addr add %s dev %s" % (self.attributes["gateway4"], self.bridgeName()))
+		host.execute ( "ip addr add %s dev %s" % (self.attributes["gateway6"], self.bridgeName()))
+		host.execute ( "ip link set up dev %s" % self.bridgeName())
 		host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ))
 		host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ))
 		host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-		host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( self.bridge_name(), table_out ))
+		host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( self.bridgeName(), table_out ))
 		host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_in), table_in ))
 		host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_out), table_out ))
-		host.execute ( "ip route add table %s default dev %s" % ( table_in, self.bridge_name() ))
+		host.execute ( "ip route add table %s default dev %s" % ( table_in, self.bridgeName() ))
 		host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
 
 	def _connect_bridge(self):
 		host = self.interface.device.host
 		tincname = self.connector.upcast().tincname(self)
-		host.bridge_connect(self.bridge_name(), tincname)
+		host.bridge_connect(self.bridgeName(), tincname)
 		
 	def get_start_tasks(self):
 		import tasks
@@ -310,10 +310,10 @@ class TincConnection(dummynet.EmulatedConnection):
 		table_in = 1000 + 2 * self.id
 		table_out = 1000 + 2 * self.id + 1
 		host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-		host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( self.bridge_name(), table_out ))
+		host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( self.bridgeName(), table_out ))
 		host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ))
 		host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ))
-		host.execute ( "ip route del table %s default dev %s" % ( table_in, self.bridge_name() ))
+		host.execute ( "ip route del table %s default dev %s" % ( table_in, self.bridgeName() ))
 		host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ))
 		
 	def _stop_tinc(self):
@@ -382,7 +382,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		tinc_conf_fd.write ( "Name=%s\n" % tincname )
 		tinc_conf_fd.write ( "AddressFamily=ipv4\n" )
 		connections = task.getDependency("cluster-connections").getResult()
-		for con2 in connector.connection_set_all():
+		for con2 in connector.connectionSetAll():
 			if not con2.id in connections[self.id]:
 				#not connected
 				continue
@@ -396,7 +396,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		tincname = connector.tincname(self)
 		path = connector.topology.get_control_dir(host.name) + "/" + tincname
 		connections = task.getDependency("cluster-connections").getResult()
-		for con2 in connector.connection_set_all():
+		for con2 in connector.connectionSetAll():
 			if not con2.id in connections[self.id]:
 				#not connected
 				continue

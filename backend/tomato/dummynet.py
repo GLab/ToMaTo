@@ -15,155 +15,158 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
-
-import uuid
 import generic, util
+
+from lib import ipfw, tcpdump
+
+DEFAULT_LOSSRATIO = 0.0
+DEFAULT_DELAY = 0
+DEFAULT_BANDWIDTH = 10000
+DEFAULT_CAPTURING = False
 
 class EmulatedConnection(generic.Connection):
 	
 	def init(self):
-		self.attributes["lossratio"] = "0.0"
-		self.attributes["delay"] = "0"
-		self.attributes["bandwidth"] = "10000"
-	
-	def _ipfw(self, cmd):
-		self.interface.device.host.execute("ipfw %s" % cmd)
-		
+		self.setBandwidth(DEFAULT_BANDWIDTH)
+		self.setDelay(DEFAULT_DELAY)
+		self.setLossRatio(DEFAULT_LOSSRATIO)
 	
 	def upcast(self):
-		if self.is_tinc():
+		if self.isTinc():
 			return self.tincconnection # pylint: disable-msg=E1101
 		return self
 
-	def is_tinc(self):
+	def isTinc(self):
 		try:
 			self.tincconnection # pylint: disable-msg=E1101,W0104
 			return True
 		except: #pylint: disable-msg=W0702
 			return False
 				
-	def configure(self, properties):
-		old_capture = self.attributes["capture"]
-		generic.Connection.configure(self, properties)
-		if self.connector.state == generic.State.STARTED:
-			self._config_link()
-			if old_capture and not self.attributes.get("capture"):
-				self._stop_capture()
-			if self.attributes.get("capture") and not old_capture:
-				self._start_capture()
-			
-	def _config_link(self):
-		pipe_id = int(self.bridge_id()) * 10
-		pipe_config=""
-		if "delay" in self.attributes:
-			try:
-				delay = int(self.attributes["delay"])
-			except: #pylint: disable-msg=W0702
-				delay = 0
-			pipe_config = pipe_config + " " + "delay %sms" % delay
-		if "bandwidth" in self.attributes:		
-			try:
-				bandwidth = int(self.attributes["bandwidth"])			
-			except: #pylint: disable-msg=W0702
-				bandwidth = 10000
-			pipe_config = pipe_config + " " + "bw %sk" % bandwidth
+	def getLossRatio(self):
 		if "lossratio" in self.attributes:
 			try:
-				lossratio = float(self.attributes["lossratio"])
+				return float(self.attributes["lossratio"])
 			except: #pylint: disable-msg=W0702
-				lossratio = 0.0
-			pipe_config = pipe_config + " " + "plr %s" % lossratio
-		self._ipfw("pipe %d config %s" % ( pipe_id, pipe_config ))
+				return DEFAULT_LOSSRATIO
+		return DEFAULT_LOSSRATIO
+	
+	def setLossRatio(self, value):
+		self.attributes["lossratio", str(float(value))]
+	
+	def getDelay(self):
+		if "delay" in self.attributes:
+			try:
+				return int(self.attributes["delay"])
+			except: #pylint: disable-msg=W0702
+				return DEFAULT_DELAY
+		return DEFAULT_DELAY 
 		
-	def _capture_dir(self):
-		return "%s/captures-%s" % ( self.connector.topology.get_remote_control_dir(), self.id ) # pylint: disable-msg=E1101
+	def setDelay(self, value):
+		self.attributes["delay", str(int(value))]
 
-	def _start_capture(self):
+	def getBandwidth(self):
+		if "bandwidth" in self.attributes:
+			try:
+				return int(self.attributes["bandwidth"])
+			except:
+				return DEFAULT_BANDWIDTH
+		return DEFAULT_BANDWIDTH
+				
+	def setBandwidth(self, value):
+		self.attributes["bandwidth", str(int(value))]
+
+	def getCapturing(self):
+		if "capture" in self.attributes:
+			try:
+				return util.parse_bool(self.attributes["capture"])
+			except:
+				return DEFAULT_CAPTURING
+		return DEFAULT_CAPTURING
+	
+	def setCapturing(self, value):
+		self.attributes["capture", str(bool(value))]
+
+	def configure(self, properties):
+		oldCapturing = self.getCapturing()
+		generic.Connection.configure(self, properties)
+		if self.connector.state == generic.State.STARTED:
+			self._configLink()
+			if oldCapturing and not self.getCapturing():
+				self._stopCapture()
+			if self.getCapturing() and not oldCapturing:
+				self._startCapture()
+			
+	def getHost(self):
 		host = self.interface.device.host
-		directory = self._capture_dir()
-		host.file_mkdir(directory)
-		host.bridge_create(self.bridge_name())
-		host.execute("ip link set up %s" % self.bridge_name())
-		host.execute("tcpdump -i %s -n -C 10 -w %s/capture -W 5 -s0 >/dev/null 2>&1 </dev/null & echo $! > %s.pid" % ( self.bridge_name(), directory, directory ))		
-
-	def _load_ipfw_module(self):
-		self.interface.device.host.execute("modprobe ipfw_mod")
-
-	def _create_pipe(self):
-		pipe_id = int(self.bridge_id()) * 10
-		self._ipfw("add %d pipe %d via %s out" % ( pipe_id, pipe_id, self.bridge_name() ))		
-
-	def _ensure_tcpdump_running(self):
+		assert host
+		return host
+			
+	def _configLink(self):
+		pipe_id = int(self.bridgeId())
+		host = self.getHost()
+		ipfw.configurePipe(host, pipe_id, delay=self.getDelay(), bandwidth=self.getBandwidth(), lossratio=self.getLossRatio())
+		
+	def _captureName(self):
+		return "%s-%s-%s" % (self.connector.topology.name, self.connector.name, self)
+		
+	def _startCapture(self):
 		host = self.interface.device.host
-		host.execute("pidof tcpdump >/dev/null || (tcpdump -i dummy >/dev/null 2>&1 </dev/null &)")
+		tcpdump.startCapture(host, self._captureName(), self.bridgeName())
 
-	def get_start_tasks(self):
+	def _createPipe(self):
+		pipe_id = int(self.bridgeId())
+		host = self.getHost()
+		ipfw.loadModule(host)
+		ipfw.createPipe(host, pipe_id, self.bridgeName(), dir="out")
+
+	def getStartTasks(self):
 		import tasks
-		taskset = generic.Connection.get_start_tasks(self)
-		taskset.addTask(tasks.Task("load-ipfw-module", self._load_ipfw_module))
-		taskset.addTask(tasks.Task("create-pipe", self._create_pipe, depends="load-ipfw-module"))
-		taskset.addTask(tasks.Task("configure-link", self._config_link, depends="create-pipe"))
-		if util.parse_bool(self.attributes["capture"]):
-			taskset.addTask(tasks.Task("start-capture", self._start_capture))
-		else:
-			taskset.addTask(tasks.Task("ensure-tcpdump-running", self._ensure_tcpdump_running))
+		taskset = generic.Connection.getStartTasks(self)
+		taskset.addTask(tasks.Task("create-pipe", self._createPipe))
+		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="configure-link"))
+		if self.getCapturing():
+			taskset.addTask(tasks.Task("start-capture", self._startCapture))
 		return taskset
 	
-	def _stop_capture(self):
-		host = self.interface.device.host
-		directory = self._capture_dir()
-		host.process_kill("%s.pid" % directory)
+	def _stopCapture(self):
+		host = self.getHost()
+		tcpdump.stopCapture(host, self._captureName())
 
-	def _delete_pipes(self):
-		pipe_id = int(self.bridge_id()) * 10
-		self._ipfw("delete %d" % pipe_id)
-		self._ipfw("pipe delete %d" % pipe_id)
-		self._ipfw("delete %d" % ( pipe_id + 1 ))		
+	def _deletePipes(self):
+		ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
 
-	def get_stop_tasks(self):
+	def getStopTasks(self):
 		import tasks
-		taskset = generic.Connection.get_stop_tasks(self)
-		if "bridge_id" in self.attributes:
-			taskset.addTask(tasks.Task("delete-pipes", self._delete_pipes))
-		if util.parse_bool(self.attributes["capture"]):
-			taskset.addTask(tasks.Task("stop-capture", self._stop_capture))
+		taskset = generic.Connection.getStopTasks(self)
+		if "bridgeId" in self.attributes:
+			taskset.addTask(tasks.Task("delete-pipes", self._deletePipes))
+		if self.getCapturing():
+			taskset.addTask(tasks.Task("stop-capture", self._stopCapture))
 		return taskset
 	
-	def _create_dummy_bridge(self):
-		host = self.interface.device.host
-		host.bridge_create("dummy")
-		host.execute("ifconfig dummy 0.0.0.0 up")
+	def getPrepareTasks(self):
+		return generic.Connection.getPrepareTasks(self)
 
-	def get_prepare_taskset(self):
-		import tasks
-		taskset = generic.Connection.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("create-dummy-bridge", self._create_dummy_bridge))
-		return taskset
-
-	def _remove_capture_dir(self):
-		host = self.interface.device.host
-		directory = self._capture_dir()
+	def _removeCaptureDir(self):
+		host = self.getHost()
 		if host:
-			host.file_delete(directory, recursive=True)
+			tcpdump.removeCapture(host, self._captureName())
 		
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		import tasks
-		taskset = generic.Connection.get_destroy_tasks(self)
-		taskset.addTask(tasks.Task("remove-capture-dir", self._remove_capture_dir))
+		taskset = generic.Connection.getDestroyTasks(self)
+		taskset.addTask(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
-	def download_supported(self):
-		return not self.connector.state == generic.State.CREATED and "capture" in self.attributes
+	def downloadSupported(self):
+		return not self.connector.state == generic.State.CREATED and self.getCapturing()
 
-	def download_capture_uri(self):
-		filename = "%s_%s_%s.tar.gz" % (self.connector, self.interface, uuid.uuid1())
-		host = self.interface.device.host
-		path = "%s/%s" % (host.hostserver_basedir, filename)
-		host.execute("tar -czf %s -C %s . " % ( path, self._capture_dir() ) )
-		return host.download_grant(filename, filename)
+	def downloadCaptureUri(self):
+		host = self.getHost()
+		return tcpdump.downloadCaptureUri(host, self._captureName())
 	
-	def to_dict(self, auth):
-		res = generic.Connection.to_dict(self, auth)		
+	def toDict(self, auth):
+		res = generic.Connection.toDict(self, auth)		
 		return res
 	

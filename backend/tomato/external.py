@@ -18,6 +18,8 @@
 from django.db import models
 import generic, fault, hosts
 
+from lib import ifaceutil
+
 class ExternalNetworkConnector(generic.Connector):
 	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
 	
@@ -25,16 +27,28 @@ class ExternalNetworkConnector(generic.Connector):
 		return self
 
 	def init(self):
-		self.attributes["network_type"] = "internet"
-		self.attributes["network_group"] = None
+		self.setNetworkType("internet")
+		self.setNetworkGroup("")
 
-	def _update_host_preferences(self, prefs, en):
+	def getNetworkType(self):
+		return self.attributes["network_type"]
+	
+	def setNetworkType(self, value):
+		self.attributes["network_type"] = value
+
+	def getNetworkGroup(self):
+		return self.attributes["network_group"]
+	
+	def setNetworkGroup(self, value):
+		self.attributes["network_group"] = value
+
+	def _updateHostPreferences(self, prefs, en):
 		if not en.has_free_slots():
 			return
 		hosts = []
 		used = en.usage_count()
 		if en.avoid_duplicates:
-			for con in self.connection_set_all():
+			for con in self.connectionSetAll():
 				dev = con.interface.device
 				if dev.host:
 					hosts.append(dev.host)
@@ -45,26 +59,26 @@ class ExternalNetworkConnector(generic.Connector):
 				else:
 					prefs.add(enb.host, 1.0)
 		
-	def host_preferences(self):
+	def hostPreferences(self):
 		prefs = generic.ObjectPreferences(True)
 		if self.used_network:
-			self._update_host_preferences(prefs, self.used_network)
+			self._updateHostPreferences(prefs, self.used_network)
 		else:
-			for en in self.network_options().objects:
-				self._update_host_preferences(prefs, en)
+			for en in self.networkOptions().objects:
+				self._updateHostPreferences(prefs, en)
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
-	def network_options(self):
+	def networkOptions(self):
 		options = generic.ObjectPreferences(True)
-		ens = hosts.ExternalNetwork.objects.filter(type=self.attributes["network_type"])
-		if self.attributes["network_group"]:
-			ens = ens.filter(group=self.attributes["network_group"])
+		ens = hosts.ExternalNetwork.objects.filter(type=self.getNetworkType())
+		if self.getNetworkGroup():
+			ens = ens.filter(group=self.getNetworkGroup())
 		joins = 0
 		# filter statements must be limited because each one causes an 
 		# additional table to be added to a join statement
 		# SQLite has an internal limit of 64 tables
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			dev = con.interface.device
 			if dev.host:
 				joins = joins + 1
@@ -79,7 +93,7 @@ class ExternalNetworkConnector(generic.Connector):
 				enshosts[en] = set()
 				for enb in en.externalnetworkbridge_set.all():
 					enshosts[en].add(enb.host)
-			for con in self.connection_set_all():
+			for con in self.connectionSetAll():
 				dev = con.interface.device
 				if dev.host:
 					for en in enshosts.keys():
@@ -90,25 +104,25 @@ class ExternalNetworkConnector(generic.Connector):
 			options.add(en, 1.0)
 		return options
 		
-	def _select_used_network(self):
-		self.used_network = self.network_options().best()
+	def _selectUsedNetwork(self):
+		self.used_network = self.networkOptions().best()
 		assert self.used_network, "No free external network of type %s" % self.attributes["network_type"]
 		self.save()
 		
-	def get_prepare_tasks(self):
+	def getPrepareTasks(self):
 		import tasks
-		taskset = generic.Connector.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("select-network", self._select_used_network))
+		taskset = generic.Connector.getPrepareTasks(self)
+		taskset.addTask(tasks.Task("select-network", self._selectUsedNetwork))
 		return taskset
 
-	def _unselect_used_network(self):
+	def _unselectUsedNetwork(self):
 		self.used_network = None
 		self.save()	
 	
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		import tasks
-		taskset = generic.Connector.get_destroy_tasks(self)
-		taskset.addTask(tasks.Task("unselect-network", self._unselect_used_network))
+		taskset = generic.Connector.getDestroyTasks(self)
+		taskset.addTask(tasks.Task("unselect-network", self._unselectUsedNetwork))
 		return taskset
 
 	def configure(self, properties):
@@ -121,7 +135,7 @@ class ExternalNetworkConnector(generic.Connector):
 			self.attributes["network_group"] = ""
 		self.save()		
 	
-	def connections_add(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
+	def connectionsAdd(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
@@ -131,33 +145,32 @@ class ExternalNetworkConnector(generic.Connector):
 		con.interface = iface
 		con.save()
 
-	def connections_configure(self, iface_name, properties):
+	def connectionsConfigure(self, iface_name, properties):
 		pass
 	
-	def connections_delete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
+	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfaces_get(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
-		con = self.connection_set_get(iface)
+		con = self.connectionSetGet(iface)
 		con.delete()
 		
-	def get_resource_usage(self):
+	def getResourceUsage(self):
 		external = 0
 		traffic = 0
-		for con in self.connection_set_all():
+		for con in self.connectionSetAll():
 			if con.interface.device.state == generic.State.STARTED:
 				external += 1
 			dev = con.interface.device
 			if dev.host and dev.state == generic.State.STARTED:
 				iface = dev.upcast().interface_device(con.interface)
 				try:
-					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface) ))
-					traffic += int(dev.host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface) ))
+					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface) 
 				except:
 					traffic = -1
 		return {"external": external, "traffic": traffic}		
 
-	def bridge_name(self, interface):
+	def bridgeName(self, interface):
 		if not interface.device.host:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE, "Interface is not prepared: %s" % interface)
 		for enb in self.used_network.externalnetworkbridge_set.all():
@@ -165,7 +178,7 @@ class ExternalNetworkConnector(generic.Connector):
 				return enb.bridge
 		raise fault.Fault(fault.NO_RESOURCES, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host))
 	
-	def to_dict(self, auth):
-		res = generic.Connector.to_dict(self, auth)
+	def toDict(self, auth):
+		res = generic.Connector.toDict(self, auth)
 		res["attrs"].update(used_network=self.used_network)
 		return res

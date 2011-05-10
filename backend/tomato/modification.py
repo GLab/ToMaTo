@@ -64,19 +64,19 @@ class Modification():
 		elif self.type == "interface-create":
 			device = top.device_set_get(self.element).upcast()
 			name = self.properties["name"]
-			device.interfaces_add(name, self.properties)
+			device.interfacesAdd(name, self.properties)
 		elif self.type == "interface-rename":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_rename(name, self.properties)
+			device.interfacesRename(name, self.properties)
 		elif self.type == "interface-configure":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_configure(name, self.properties)
+			device.interfacesConfigure(name, self.properties)
 		elif self.type == "interface-delete":
 			device = top.device_set_get(self.element).upcast()
 			name = self.subelement
-			device.interfaces_delete(name)
+			device.interfacesDelete(name)
 		
 		elif self.type == "connector-create":
 			ctype = self.properties["type"]
@@ -104,22 +104,22 @@ class Modification():
 			con.configure(self.properties)
 		elif self.type == "connector-delete":
 			con = top.connector_set_get(self.element).upcast()
-			if not con.is_external(): 
+			if not con.isExternal(): 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		
 		elif self.type == "connection-create":
 			con = top.connector_set_get(self.element).upcast()
 			interface = self.properties["interface"]
-			con.connections_add(interface, self.properties)
+			con.connectionsAdd(interface, self.properties)
 		elif self.type == "connection-configure":
 			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
-			con.connections_configure(name, self.properties)
+			con.connectionsConfigure(name, self.properties)
 		elif self.type == "connection-delete":
 			con = top.connector_set_get(self.element).upcast()
 			name = self.subelement
-			con.connections_delete(name)
+			con.connectionsDelete(name)
 			
 		else:
 			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)

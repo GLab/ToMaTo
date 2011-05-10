@@ -19,6 +19,8 @@ from django.db import models
 
 import fault, hosts, attributes, tasks
 
+from lib import ifaceutil
+
 class State(): #pylint: disable-msg=W0232
 	"""
 	The state of the element, this is an assigned value. The states are considered to be in order:
@@ -46,29 +48,29 @@ class Device(models.Model):
 	def init(self):
 		pass
 		
-	def interface_set_get(self, name):
+	def interfaceSetGet(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
-	def interface_set_add(self, iface):
+	def interfaceSetAdd(self, iface):
 		return self.interface_set.add(iface) # pylint: disable-msg=E1101
 
-	def interface_set_all(self):
+	def interfaceSetAll(self):
 		return self.interface_set.all() # pylint: disable-msg=E1101
 
 	def upcast(self):
-		if self.is_kvm():
+		if self.isKvm():
 			return self.kvmdevice.upcast() # pylint: disable-msg=E1101
-		if self.is_openvz():
+		if self.isOpenvz():
 			return self.openvzdevice.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def is_openvz(self):
+	def isOpenvz(self):
 		return self.type == Device.TYPE_OPENVZ
 
-	def is_kvm(self):
+	def isKvm(self):
 		return self.type == Device.TYPE_KVM
 	
-	def host_preferences(self):
+	def hostPreferences(self):
 		prefs = ObjectPreferences(True)
 		for h in hosts.get_hosts(self.attributes.get("hostgroup")):
 			if h.enabled:
@@ -76,34 +78,34 @@ class Device(models.Model):
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
-	def host_options(self):
-		options = self.host_preferences()
-		for iface in self.interface_set_all():
-			if iface.is_connected():
-				options = options.combine(iface.connection.connector.upcast().host_preferences())
+	def hostOptions(self):
+		options = self.hostPreferences()
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
+				options = options.combine(iface.connection.connector.upcast().hostPreferences())
 		return options
 
-	def download_supported(self):
+	def downloadSupported(self):
 		return False
 		
-	def upload_supported(self):
+	def uploadSupported(self):
 		return False
 		
-	def bridge_name(self, interface):
+	def bridgeName(self, interface):
 		"""
 		Returns the name of the bridge for the connection of the given interface
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
 		try:
-			return interface.connection.bridge_name()
+			return interface.connection.bridgeName()
 		except: #pylint: disable-msg=W0702
 			return None		
 	
 	def migrate(self, direct):
 		proc = tasks.Process("migrate")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("migrate", self.upcast().migrate_run))
+		proc.addTask(tasks.Task("migrate", self.upcast().migrateRun))
 		return self.topology.start_process(proc, direct)
 
 	def start(self, direct):
@@ -113,7 +115,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("start", self.upcast().get_start_tasks())
+		proc.addTaskSet("start", self.upcast().getStartTasks())
 		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
@@ -121,7 +123,7 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
+		proc.addTaskSet("stop", self.upcast().getStopTasks())
 		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
@@ -131,44 +133,44 @@ class Device(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("prepare", self.upcast().get_prepare_tasks())
+		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
 		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
-		for iface in self.interface_set_all():
-			if iface.is_connected():
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
 				con = iface.connection.connector
-				if not con.is_external() and not con.state == State.CREATED:
+				if not con.isExternal() and not con.state == State.CREATED:
 					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("destroy", self.upcast().get_destroy_tasks())
+		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
 		return self.topology.start_process(proc, direct)
 
-	def _change_state(self, state):
+	def _changeState(self, state):
 		self.state = state
 		self.save()
 
-	def get_start_tasks(self):
+	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.STARTED,)))
 		return taskset
 	
-	def get_stop_tasks(self):
+	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
 		return taskset
 	
-	def get_prepare_tasks(self):
+	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
 		return taskset
 	
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.CREATED,)))
 		return taskset
 	
 	def configure(self, properties):
@@ -186,15 +188,15 @@ class Device(models.Model):
 		del self.attributes["upload_supported"]			
 		self.save()
 
-	def update_resource_usage(self):
-		res = self.upcast().get_resource_usage()
+	def updateResourceUsage(self):
+		res = self.upcast().getResourceUsage()
 		for key in res:
 			self.attributes["resources_%s" % key] = res[key]
 
 	def __unicode__(self):
 		return self.name
 		
-	def to_dict(self, auth):
+	def toDict(self, auth):
 		"""
 		Prepares a device for serialization.
 		
@@ -205,14 +207,14 @@ class Device(models.Model):
 		"""
 		res = {"attrs": {"host": str(self.host) if self.host else None,
 					"name": self.name, "type": self.type, "state": self.state,
-					"download_supported": self.download_supported(), "upload_supported": self.upload_supported() 
+					"download_supported": self.downloadSupported(), "upload_supported": self.uploadSupported() 
 					},
-			"interfaces": dict([[i.name, i.upcast().to_dict(auth)] for i in self.interface_set_all()]),
+			"interfaces": dict([[i.name, i.upcast().toDict(auth)] for i in self.interfaceSetAll()]),
 		}
 		res["attrs"].update(self.attributes.items())
 		return res
 	
-	def upload_image_grant(self, redirect):
+	def uploadImageGrant(self, redirect):
 		import uuid
 		if self.host:
 			filename = str(uuid.uuid1())
@@ -220,18 +222,11 @@ class Device(models.Model):
 			return {"upload_url": self.host.upload_grant(filename, redirect), "redirect_url": redirect}
 		else:
 			return None
-	
-	def download_image_uri(self):
-		if self.host:
-			filename = self.upcast().prepare_downloadable_image()
-			return self.host.download_grant(filename, filename)
-		else:
-			return None
-			
-	def use_uploaded_image(self, filename):
+				
+	def useUploadedImage(self, filename):
 		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
 		proc = tasks.Process("use-uploaded-image")
-		proc.addTask("main", self.upcast().use_uploaded_image_run, args=(path,))
+		proc.addTask("main", self.upcast().useUploadedImageRun, args=(path,))
 		return proc.start()
 			
 			
@@ -243,14 +238,14 @@ class Interface(models.Model):
 	def init(self):
 		pass
 		
-	def is_configured(self):
+	def isConfigured(self):
 		try:
 			self.configuredinterface # pylint: disable-msg=E1101,W0104
 			return True
 		except: #pylint: disable-msg=W0702
 			return False
 	
-	def is_connected(self):
+	def isConnected(self):
 		try:
 			self.connection # pylint: disable-msg=E1101,W0104
 			return True
@@ -264,14 +259,14 @@ class Interface(models.Model):
 		self.save()
 
 	def upcast(self):
-		if self.is_configured():
+		if self.isConfigured():
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
-	def to_dict(self, auth):
+	def toDict(self, auth):
 		"""
 		Prepares an interface for serialization.
 		
@@ -284,16 +279,16 @@ class Interface(models.Model):
 		res["attrs"].update(self.attributes.items())
 		return res
 
-	def get_start_tasks(self):
+	def getStartTasks(self):
 		return tasks.TaskSet()
 	
-	def get_stop_tasks(self):
+	def getStopTasks(self):
 		return tasks.TaskSet()
 	
-	def get_prepare_tasks(self):
+	def getPrepareTasks(self):
 		return tasks.TaskSet()
 	
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		return tasks.TaskSet()
 
 
@@ -309,32 +304,32 @@ class Connector(models.Model):
 	def init(self):
 		pass
 		
-	def connection_set_add(self, con):
+	def connectionSetAdd(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
 
-	def connection_set_all(self):
+	def connectionSetAll(self):
 		return self.connection_set.all() # pylint: disable-msg=E1101
 
-	def connection_set_get(self, interface):
+	def connectionSetGet(self, interface):
 		return self.connection_set.get(interface=interface).upcast() # pylint: disable-msg=E1101
 
-	def is_tinc(self):
+	def isTinc(self):
 		return self.type=='router' or self.type=='switch' or self.type=='hub'
 
-	def is_external(self):
+	def isExternal(self):
 		return self.type=='external'
 
 	def upcast(self):
-		if self.is_tinc():
+		if self.isTinc():
 			return self.tincconnector.upcast() # pylint: disable-msg=E1101
-		if self.is_external():
+		if self.isExternal():
 			return self.externalnetworkconnector.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def host_preferences(self):
+	def hostPreferences(self):
 		prefs = ObjectPreferences()
 		# keep it local
-		for c in self.connection_set_all():
+		for c in self.connectionSetAll():
 			dev = c.interface.device
 			if dev.host:
 				prefs.add(dev.host, -0.1)
@@ -343,7 +338,7 @@ class Connector(models.Model):
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
-	def affected_hosts(self):
+	def affectedHosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
 	def start(self, direct):
@@ -353,7 +348,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("start", self.upcast().get_start_tasks())
+		proc.addTaskSet("start", self.upcast().getStartTasks())
 		return self.topology.start_process(proc, direct)
 		
 	def stop(self, direct):
@@ -361,7 +356,7 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("stop", self.upcast().get_stop_tasks())
+		proc.addTaskSet("stop", self.upcast().getStopTasks())
 		return self.topology.start_process(proc, direct)
 
 	def prepare(self, direct):
@@ -369,9 +364,12 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
 		if self.state == State.STARTED:
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		for con in self.connectionSetAll():
+			if con.interface.device.state == State.CREATED:
+				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("prepare", self.upcast().get_prepare_tasks())
+		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
 		return self.topology.start_process(proc, direct)
 
 	def destroy(self, direct):
@@ -379,62 +377,43 @@ class Connector(models.Model):
 			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("destroy", self.upcast().get_destroy_tasks())
+		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
 		return self.topology.start_process(proc, direct)
 
-	def _change_state(self, state):
+	def _changeState(self, state):
 		self.state = state
 		self.save()
 
-	def get_start_tasks(self):
+	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.STARTED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.STARTED,)))
 		return taskset
 	
-	def get_stop_tasks(self):
+	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
 		return taskset
 	
-	def get_prepare_tasks(self):
+	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.PREPARED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
 		return taskset
 	
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._change_state, args=(State.CREATED,)))
+		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.CREATED,)))
 		return taskset
 	
-	def start_run(self):
-		for con in self.connection_set_all():
-			con.upcast().start_run()
-
-	def stop_run(self):
-		for con in self.connection_set_all():
-			con.upcast().stop_run()
-
-	def prepare_run(self):
-		for con in self.connection_set_all():
-			if con.interface.device.state == State.CREATED:
-				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
-		for con in self.connection_set_all():
-			con.upcast().prepare_run()
-
-	def destroy_run(self):
-		for con in self.connection_set_all():
-			con.upcast().destroy_run()
-
 	def __unicode__(self):
 		return self.name
 				
-	def update_resource_usage(self):
-		res = self.upcast().get_resource_usage()
+	def updateResourceUsage(self):
+		res = self.upcast().getResourceUsage()
 		for key in res:
 			self.attributes["resources_%s" % key] = res[key]
 	
-	def bridge_name(self, interface):
-		return "gbr_%s" % interface.connection.bridge_id()
+	def bridgeName(self, interface):
+		return "gbr_%s" % interface.connection.bridgeId()
 
 	def configure(self, properties):
 		for key in properties:
@@ -444,7 +423,7 @@ class Connector(models.Model):
 		del self.attributes["state"]			
 		self.save()
 
-	def to_dict(self, auth):
+	def toDict(self, auth):
 		"""
 		Prepares a connector for serialization.
 		
@@ -454,7 +433,7 @@ class Connector(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
-			"connections": dict([[str(c.interface), c.upcast().to_dict(auth)] for c in self.connection_set_all()]),
+			"connections": dict([[str(c.interface), c.upcast().toDict(auth)] for c in self.connectionSetAll()]),
 			}
 		res["attrs"].update(self.attributes.items())
 		return res
@@ -468,7 +447,7 @@ class Connection(models.Model):
 	def init(self):
 		pass
 		
-	def is_emulated(self):
+	def isEmulated(self):
 		try:
 			self.emulatedconnection # pylint: disable-msg=E1101,W0104
 			return True
@@ -476,50 +455,30 @@ class Connection(models.Model):
 			return False
 
 	def upcast(self):
-		if self.is_emulated():
+		if self.isEmulated():
 			return self.emulatedconnection.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def bridge_id(self):
-		if not self.attributes.get("bridge_id"):
-			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
-		return self.attributes["bridge_id"]
+	def bridgeId(self):
+		if not self.attributes.get("bridgeId"):
+			self.attributes["bridgeId"] = self.interface.device.host.next_free_bridge()
+		return self.attributes["bridgeId"]
 
-	def bridge_name(self):
-		return self.connector.upcast().bridge_name(self.interface)
+	def bridgeName(self):
+		return self.connector.upcast().bridgeName(self.interface)
 
-	def get_start_tasks(self):
+	def getStartTasks(self):
 		return tasks.TaskSet()
 	
-	def get_stop_tasks(self):
+	def getStopTasks(self):
 		return tasks.TaskSet()
 	
-	def get_prepare_tasks(self):
+	def getPrepareTasks(self):
 		return tasks.TaskSet()
 	
-	def get_destroy_tasks(self):
+	def getDestroyTasks(self):
 		return tasks.TaskSet()
 				
-	def start_run(self):
-		host = self.interface.device.host
-		if not self.connector.is_external():
-			host.bridge_create(self.bridge_name())
-			host.execute("ip link set %s up" % self.bridge_name())
-
-	def stop_run(self):
-		host = self.interface.device.host
-		if not host:
-			return
-		if not self.connector.is_external():
-			host.execute("ip link set %s down" % self.bridge_name())
-
-	def prepare_run(self):
-		if not self.attributes.get("bridge_id"):
-			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()
-
-	def destroy_run(self):
-		del self.attributes["bridge_id"]
-
 	def __unicode__(self):
 		return str(self.connector) + "<->" + str(self.interface)
 
@@ -528,7 +487,7 @@ class Connection(models.Model):
 			self.attributes[key] = properties[key]
 		self.save()
 
-	def to_dict(self, auth):
+	def toDict(self, auth):
 		"""
 		Prepares a connection for serialization.
 		

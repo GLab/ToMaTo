@@ -61,7 +61,7 @@ class Topology(models.Model):
 	def max_state(self):
 		max_state = generic.State.CREATED
 		for con in self.connector_set_all():
-			if not con.is_external():
+			if not con.isExternal():
 				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 					max_state = generic.State.PREPARED
 				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
@@ -122,7 +122,7 @@ class Topology(models.Model):
 	
 	def interfaces_get(self, iface_name):
 		iface_name = iface_name.split(".")
-		return self.device_set_get(iface_name[0]).interface_set_get(iface_name[1])
+		return self.device_set_get(iface_name[0]).interfaceSetGet(iface_name[1])
 
 	def device_set_add(self, dev):
 		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0: # pylint: disable-msg=E1101
@@ -166,27 +166,27 @@ class Topology(models.Model):
 		devs_prepared = []
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
-				pset = dev.upcast().get_prepare_tasks()
+				pset = dev.upcast().getPrepareTasks()
 				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
 				devs_prepared.append(pset.getLastTask().name)
-				sset = dev.upcast().get_start_tasks()
+				sset = dev.upcast().getStartTasks()
 				sset.addGlobalDepends(pset.getLastTask().name)
 				proc.addTaskSet("start-device-%s" % dev.name, sset)
 			elif dev.state == generic.State.PREPARED:
-				sset = dev.upcast().get_start_tasks()
+				sset = dev.upcast().getStartTasks()
 				proc.addTaskSet("start-device-%s" % dev.name, sset)
 		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
-				pset = con.upcast().get_prepare_tasks()
+				pset = con.upcast().getPrepareTasks()
 				pset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
-				sset = con.upcast().get_start_tasks()
+				sset = con.upcast().getStartTasks()
 				sset.addGlobalDepends(pset.getLastTask().name)
 				sset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("start-connector-%s" % con.name, sset)
 			elif con.state == generic.State.PREPARED:
-				sset = con.upcast().get_start_tasks()
+				sset = con.upcast().getStartTasks()
 				sset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("start-connector-%s" % con.name, sset)
 		return self.start_process(proc, direct)
@@ -197,11 +197,11 @@ class Topology(models.Model):
 			proc.addTask(tasks.Task("renew", self.renew))
 		for dev in self.device_set_all():
 			if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
-				sset = dev.upcast().get_stop_tasks()
+				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
 		for con in self.connector_set_all():
 			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
-				sset = con.upcast().get_stop_tasks()
+				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
 		return self.start_process(proc, direct)
 
@@ -211,13 +211,13 @@ class Topology(models.Model):
 		devs_prepared = []
 		for dev in self.device_set_all():
 			if dev.state == generic.State.CREATED:
-				pset = dev.upcast().get_prepare_tasks()
+				pset = dev.upcast().getPrepareTasks()
 				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
 				devs_prepared.append(pset.getLastTask().name)
 		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
 		for con in self.connector_set_all():
 			if con.state == generic.State.CREATED:
-				pset = con.upcast().get_prepare_tasks()
+				pset = con.upcast().getPrepareTasks()
 				pset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
 		return self.start_process(proc, direct)
@@ -229,26 +229,26 @@ class Topology(models.Model):
 		cons_destroyed = []	
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED:
-				sset = con.upcast().get_stop_tasks()
+				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
-				dset = con.upcast().get_destroy_tasks()
+				dset = con.upcast().getDestroyTasks()
 				dset.addGlobalDepends(sset.getLastTask().name)
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
 				cons_destroyed.append(dset.getLastTask().name)
 			elif con.state == generic.State.PREPARED:
-				dset = con.upcast().get_destroy_tasks()
+				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED:
-				sset = dev.upcast().get_stop_tasks()
+				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-				dset = dev.upcast().get_destroy_tasks()
+				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends(sset.getLastTask().name)
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 			elif dev.state == generic.State.PREPARED:
-				dset = dev.upcast().get_destroy_tasks()
+				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 		return self.start_process(proc, direct)
@@ -258,26 +258,26 @@ class Topology(models.Model):
 		cons_destroyed = []	
 		for con in self.connector_set_all():
 			if con.state == generic.State.STARTED:
-				sset = con.upcast().get_stop_tasks()
+				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
-				dset = con.upcast().get_destroy_tasks()
+				dset = con.upcast().getDestroyTasks()
 				dset.addGlobalDepends(sset.getLastTask().name)
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
 				cons_destroyed.append(dset.getLastTask().name)
 			elif con.state == generic.State.PREPARED:
-				dset = con.upcast().get_destroy_tasks()
+				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.device_set_all():
 			if dev.state == generic.State.STARTED:
-				sset = dev.upcast().get_stop_tasks()
+				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-				dset = dev.upcast().get_destroy_tasks()
+				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends(sset.getLastTask().name)
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 			elif dev.state == generic.State.PREPARED:
-				dset = dev.upcast().get_destroy_tasks()
+				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 		proc.addTask(tasks.Task("remove", self.delete, [t.name for t in proc.tasks]))
@@ -294,7 +294,7 @@ class Topology(models.Model):
 		device = self.device_set_get(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		if not device.upcast().download_supported():
+		if not device.upcast().downloadSupported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
 		return device.upcast().download_image_uri()
 
@@ -306,11 +306,11 @@ class Topology(models.Model):
 		device = self.device_set_get(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		interface = device.interface_set_get(interface_id)
+		interface = device.interfaceSetGet(interface_id)
 		if not interface:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such interface: %s.%s" % (device_id, interface_id))
 		con = interface.connection
-		if not con.upcast().download_supported():
+		if not con.upcast().downloadSupported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Connection does not support capture download: %s" % con)
 		return con.upcast().download_capture_uri()
 

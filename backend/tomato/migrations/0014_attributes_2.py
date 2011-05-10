@@ -61,8 +61,8 @@ class Migration(DataMigration):
 			attrs = orm.AttributeSet()
 			attrs.save()
 			obj.attributes = attrs
-			if obj.bridge_id:
-				attrs.attributeentry_set.add(orm.AttributeEntry(name="bridge_id", value=obj.bridge_id, attribute_set=attrs))
+			if obj.bridgeId:
+				attrs.attributeentry_set.add(orm.AttributeEntry(name="bridgeId", value=obj.bridgeId, attribute_set=attrs))
 			obj.save() 
 		for obj in orm.EmulatedConnection.objects.all():
 			if obj.delay:
@@ -137,7 +137,7 @@ class Migration(DataMigration):
 		'tomato.connection': {
 			'Meta': {'object_name': 'Connection'},
 			'attributes': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.AttributeSet']", 'null': 'True'}),
-			'bridge_id': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+			'bridgeId': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
 			'connector': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Connector']"}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'interface': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True'})

@@ -173,45 +173,6 @@ class Host(models.Model):
 			fd.write(res)
 		return res
 	
-	def _calc_grant(self, params):
-		list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
-		list.sort()
-		import hashlib
-		return hashlib.sha1("&".join(list)+"|"+self.attributes["hostserver_secret_key"]).hexdigest()
-	
-	def upload_grant(self, filename, redirect):
-		import urllib, base64, time
-		params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
-		params.update(grant=self._calc_grant(params))
-		qstr = urllib.urlencode(params)
-		return "http://%s:%s/upload?%s" % (self.name, self.attributes["hostserver_port"], qstr)
-	
-	def download_grant(self, file, name):
-		import time
-		params={"file": file, "valid_until": str(time.time()+3600), "name": name}
-		params.update(grant=self._calc_grant(params))
-		import urllib
-		qstr = urllib.urlencode(params)
-		return "http://%s:%s/download?%s" % (self.name, self.attributes["hostserver_port"], qstr)
-
-	def file_transfer(self, local_file, host, remote_file, direct=False):
-		direct = False #FIXME: remove statement
-		if direct:
-			src = local_file
-			mode = host.execute("stat -c %%a %s" % local_file).strip()
-		else:
-			import uuid
-			src = "%s/%s" % (self.attributes["hostserver_basedir"], uuid.uuid1())
-			self.file_copy(local_file, src)
-		self.file_chmod(src, 644)
-		url = self.download_grant(src, "file")
-		res = host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (remote_file, url))
-		assert res.splitlines()[-1] == "0", "Failure to transfer file"
-		if not direct:
-			self.file_delete(src)
-		else:
-			self.file_chmod(local_file, mode)
-		
 	def file_put(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
@@ -224,7 +185,7 @@ class Host(models.Model):
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
-	
+
 	def file_get(self, remote_file, local_file):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
@@ -236,24 +197,6 @@ class Host(models.Model):
 		res = self._exec(cmd)
 		fd.write(res)
 		return res
-	
-	def file_move(self, src, dst):
-		return self.execute("mv \"%s\" \"%s\"" % (src, dst))
-	
-	def file_copy(self, src, dst):
-		return self.execute("cp -a \"%s\" \"%s\"" % (src, dst))
-
-	def file_chown(self, file, owner, recursive=False):
-		return self.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", owner, file))
-
-	def file_chmod(self, file, mode, recursive=False):
-		return self.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", mode, file))
-
-	def file_mkdir(self, dir):
-		return self.execute("mkdir -p \"%s\"" % dir)
-
-	def file_delete(self, path, recursive=False):
-		return self.execute("rm %s -f \"%s\"" % ("-r" if recursive else "", path))
 
 	def _first_line(self, line):
 		if not line:
@@ -263,69 +206,6 @@ class Host(models.Model):
 			return ""
 		else:
 			return line[0]
-
-	def process_kill(self, pidfile):
-		self.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})
-
-	def free_port(self, port):
-		self.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
-		self.execute("lsof -i:%s -t | xargs -r kill" % port)
-
-	def bridge_exists(self, bridge):
-		if config.remote_dry_run:
-			return
-		return self._first_line(self.execute("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge)) == "0"
-
-	def bridge_create(self, bridge):
-		if config.remote_dry_run:
-			return
-		self.execute("brctl addbr %s" % bridge)
-		assert self.bridge_exists(bridge), "Bridge cannot be created: %s" % bridge
-		
-	def bridge_remove(self, bridge):
-		if config.remote_dry_run:
-			return
-		self.execute("brctl delbr %s" % bridge)
-		assert not self.bridge_exists(bridge), "Bridge cannot be removed: %s" % bridge
-		
-	def bridge_interfaces(self, bridge):
-		if config.remote_dry_run:
-			return
-		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge 
-		return self.execute("ls /sys/class/net/%s/brif" % bridge).split()
-		
-	def bridge_disconnect(self, bridge, iface):
-		if config.remote_dry_run:
-			return
-		assert self.bridge_exists(bridge), "Bridge does not exist: %s" % bridge
-		if not iface in self.bridge_interfaces(bridge):
-			return
-		self.execute("brctl delif %s %s" % (bridge, iface))
-		assert not iface in self.bridge_interfaces(bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
-		
-	def bridge_connect(self, bridge, iface):
-		if config.remote_dry_run:
-			return
-		if iface in self.bridge_interfaces(bridge):
-			return
-		assert self.interface_exists(iface), "Interface does not exist: %s" % iface
-		if not self.bridge_exists(bridge):
-			self.bridge_create(bridge)
-		oldbridge = self.interface_bridge(iface)
-		if oldbridge:
-			self.bridge_disconnect(oldbridge, iface)
-		self.execute("brctl addif %s %s" % (bridge, iface))
-		assert iface in self.bridge_interfaces(bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
-		
-	def interface_bridge(self, iface):
-		if config.remote_dry_run:
-			return
-		return self._first_line(self.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))
-			
-	def interface_exists(self, iface):
-		if config.remote_dry_run:
-			return
-		return self._first_line(self.execute("[ -d /sys/class/net/%s ]; echo $?" % iface)) == "0"
 
 	def debug_info(self):		
 		result={}

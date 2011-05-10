@@ -22,7 +22,7 @@ class AttributeSet(models.Model):
 		for r in self.attributeentry_set.all(): # pylint: disable-msg=E1101
 			r.delete()
 	def set(self, name, value):
-		entr = self.get_entry(name)
+		entr = self.getEntry(name)
 		if not entr:
 			if value is None:
 				return
@@ -36,13 +36,13 @@ class AttributeSet(models.Model):
 			entr.value = value
 			entr.save()
 		self.save()
-	def get_entry(self, name):
+	def getEntry(self, name):
 		if len(self.attributeentry_set.filter(name=name)) == 0: # pylint: disable-msg=E1101
 			return None
 		else:
 			return self.attributeentry_set.get(name=name) # pylint: disable-msg=E1101
 	def get(self, name):
-		entr = self.get_entry(name)
+		entr = self.getEntry(name)
 		return entr.value if entr else None
 	
 	#dict methods
@@ -53,7 +53,7 @@ class AttributeSet(models.Model):
 	def __setitem__(self, key, value):
 		self.set(key, value)
 	def __delitem__(self, key):
-		entr = self.get_entry(key)
+		entr = self.getEntry(key)
 		if not entr:
 			#raise KeyError("no such key: %s" % key)
 			return
