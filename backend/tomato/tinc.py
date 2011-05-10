@@ -74,7 +74,7 @@ Some nice properties:
 """
 		CLUSTER_SIZE=10
 		def is_node(n):
-			return not isinstance(n, list)
+			return isinstance(n, generic.Connection)
 		def divide_any(nodes):
 			if is_node(nodes):
 				return nodes
@@ -134,7 +134,7 @@ Some nice properties:
 					if is_node(a) and is_node(b) and repr(a) <= repr(b):
 						#connect nodes only once but clusters twice
 						continue
-					cons.append((random_node(a), random_node(b))) 
+					cons.append((random_node(a), random_node(b)))
 			return cons
 		def connection_id_map(clist):
 			cmap = {}
@@ -156,11 +156,15 @@ Some nice properties:
 			fp.write("}\n")
 			fp.close()
 		allnodes = self.connection_set_all()
+		#print allnodes
 		clustered = divide_site(allnodes)
+		#print clustered
 		clist = connection_list(clustered)
+		#print clist
 		#print len(clist)*2
 		#dot_file("graph", clist)
 		cidmap = connection_id_map(clist)
+		#print cidmap
 		return cidmap
 		
 	def get_prepare_tasks(self):
