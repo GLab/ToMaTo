@@ -40,14 +40,15 @@ def db_migrate():
 	cmd = migrate.Command()
 	cmd.handle(app="tomato", verbosity=1)
 	
-import config, util
+import config
 	
 if not config.MAINTENANCE:
 	db_migrate()
 
 from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
 
-import log, generic, topology, hosts, fault, tasks
+import generic, topology, hosts, fault
+from lib import log, tasks
 import tinc, kvm, openvz
 
 def _top_access(top, role, user):
@@ -64,7 +65,7 @@ def _top_access(top, role, user):
 	@rtype: None
 	@raise fault.Error: when the user does not have the required privileges 
 	"""
-	if not top.check_access(role, user):
+	if not top.checkAccess(role, user):
 		raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
 
 def _admin_access(user):
@@ -101,7 +102,7 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Returns: a dict of host details if host exists or False otherwise
 	"""
 	try:
-		return hosts.get_host(hostname).toDict()
+		return hosts.getHost(hostname).toDict()
 	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
@@ -189,8 +190,8 @@ def host_debug(host_name, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.get_host(host_name)
-	return host.debug_info()
+	host = hosts.getHost(host_name)
+	return host.debugInfo()
 
 def host_check(host_name, user=None):
 	"""
@@ -206,8 +207,8 @@ def host_check(host_name, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.get_host(host_name)
-	return hosts.host_check(host)
+	host = hosts.getHost(host_name)
+	return hosts.hostCheck(host)
 
 def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -215,7 +216,7 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	
 	Returns: list of all host group names
 	"""
-	return hosts.get_host_groups()
+	return hosts.getHostGroups()
 
 def external_network_add(type, group, params, user=None):
 	"""
@@ -289,8 +290,8 @@ def external_network_bridge_add(host_name, type, group, bridge, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.get_host(host_name)
-	host.external_networks_add(type, group, bridge)
+	host = hosts.getHost(host_name)
+	host.externalNetworksAdd(type, group, bridge)
 
 def external_network_bridge_remove(host_name, type, group, user=None):
 	"""
@@ -305,8 +306,8 @@ def external_network_bridge_remove(host_name, type, group, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.get_host(host_name)
-	host.external_networks_remove(type, group)
+	host = hosts.getHost(host_name)
+	host.externalNetworksRemove(type, group)
 
 def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -317,7 +318,7 @@ def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
-	return hosts.external_networks()
+	return hosts.externalNetworks()
 
 def top_info(top_id, user=None):
 	"""
@@ -333,7 +334,7 @@ def top_info(top_id, user=None):
 		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
-	return top.toDict(top.check_access("user", user), True)
+	return top.toDict(top.checkAccess("user", user), True)
 
 def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
 	"""
@@ -356,8 +357,8 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 	if host_filter:
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:
-		if (not access_filter) or t.check_access(access_filter, user):
-			tops.append(t.toDict(t.check_access("user", user), False))
+		if (not access_filter) or t.checkAccess(access_filter, user):
+			tops.append(t.toDict(t.checkAccess("user", user), False))
 	return tops
 	
 def top_create(user=None):
@@ -392,7 +393,7 @@ def top_modify(top_id, mods, direct=False, user=None):
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
 	import modification
-	res = modification.modify_list(top, mods, direct)
+	res = modification.modifyList(top, mods, direct)
 	if not direct:
 		top.logger().log("started task %s" % res, user=user.name)
 	return res
@@ -417,9 +418,9 @@ def top_action(top_id, element_type, element_name, action, attrs={}, direct=Fals
 	if element_type == "topology":
 		element = top
 	elif element_type == "device":
-		element = top.device_set_get(element_name)
+		element = top.deviceSetGet(element_name)
 	elif element_type == "connector":
-		element = top.connector_set_get(element_name)
+		element = top.connectorSetGet(element_name)
 	if action == "prepare":
 		_top_access(top, "manager", user)
 		task_id = element.prepare(direct)
@@ -476,7 +477,7 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 def upload_image_uri(top_id, device_id, redirect, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
-	dev=top.device_set_get(device_id)
+	dev=top.deviceSetGet(device_id)
 	if not dev.uploadSupported():
 		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
 	top.logger().log("upload image grant %s" % device_id, user=user.name)
@@ -485,7 +486,7 @@ def upload_image_uri(top_id, device_id, redirect, user=None):
 def use_uploaded_image(top_id, device_id, filename, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
-	dev=top.device_set_get(device_id)
+	dev=top.deviceSetGet(device_id)
 	if not dev.uploadSupported():
 		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
 	top.logger().log("use uploaded image %s %s" % (device_id, filename), user=user.name)
@@ -515,7 +516,7 @@ def template_list(template_type="", user=None): #@UnusedVariable, pylint: disabl
 	"""
 	if not template_type:
 		template_type = None
-	return [t.toDict() for t in hosts.get_templates(template_type)]
+	return [t.toDict() for t in hosts.getTemplates(template_type)]
 
 def template_add(name, template_type, url, user=None):
 	"""
@@ -530,7 +531,7 @@ def template_add(name, template_type, url, user=None):
 	Returns: task id
 	"""
 	_admin_access(user)
-	return hosts.add_template(name, template_type, url)
+	return hosts.addTemplate(name, template_type, url)
 
 def template_remove(name, user=None):
 	"""
@@ -541,7 +542,7 @@ def template_remove(name, user=None):
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.remove_template(name)
+	hosts.removeTemplate(name)
 
 def template_set_default(template_type, name, user=None):
 	"""
@@ -553,7 +554,7 @@ def template_set_default(template_type, name, user=None):
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.get_template(template_type, name).set_default()
+	hosts.getTemplate(template_type, name).setDefault()
 
 def errors_all(user=None):
 	"""
@@ -588,9 +589,9 @@ def permission_set(top_id, user_name, role, user=None):
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
 	if user_name != top.owner:
-		top.permissions_remove(user_name)
+		top.permissionsRemove(user_name)
 	if role:
-		top.permissions_add(user_name, role)
+		top.permissionsAdd(user_name, role)
 	top.logger().log("set permission: %s=%s" % (user_name, role))
 		
 def resource_usage_by_user(user=None):
@@ -639,7 +640,7 @@ def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylin
 	
 	Returns: physical link statistics
 	"""
-	return hosts.get_physical_link(src_group, dst_group).toDict()
+	return hosts.getPhysicalLink(src_group, dst_group).toDict()
 	
 def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -647,7 +648,7 @@ def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W06
 
 	Returns: list of all physical link statistics
 	"""
-	return [l.toDict() for l in hosts.get_all_physical_links()]
+	return [l.toDict() for l in hosts.getAllPhysicalLinks()]
 
 def admin_public_key(user=None):
 	"""

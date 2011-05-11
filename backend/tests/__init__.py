@@ -56,7 +56,7 @@ def default_tearDown():
 		api.host_remove(host["name"], user=admin)
 	for template in api.template_list("", user=admin):
 		api.template_remove(template["name"], user=admin)
-	for en in api.external_networks(user=admin):
+	for en in api.externalNetworks(user=admin):
 		api.external_network_remove(en["type"], en["group"], user=admin)
 		
 def encode_mod(type, element, subelement, properties):

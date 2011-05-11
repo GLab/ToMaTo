@@ -46,7 +46,7 @@ class Logger():
 		
 loggers={}		
 		
-def get_logger(filename):
+def getLogger(filename):
 	if loggers.has_key(filename):
 		return loggers[filename]
 	else:

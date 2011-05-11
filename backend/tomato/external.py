@@ -43,10 +43,10 @@ class ExternalNetworkConnector(generic.Connector):
 		self.attributes["network_group"] = value
 
 	def _updateHostPreferences(self, prefs, en):
-		if not en.has_free_slots():
+		if not en.hasFreeSlots():
 			return
 		hosts = []
-		used = en.usage_count()
+		used = en.usageCount()
 		if en.avoid_duplicates:
 			for con in self.connectionSetAll():
 				dev = con.interface.device
@@ -110,7 +110,7 @@ class ExternalNetworkConnector(generic.Connector):
 		self.save()
 		
 	def getPrepareTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Connector.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("select-network", self._selectUsedNetwork))
 		return taskset
@@ -120,7 +120,7 @@ class ExternalNetworkConnector(generic.Connector):
 		self.save()	
 	
 	def getDestroyTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Connector.getDestroyTasks(self)
 		taskset.addTask(tasks.Task("unselect-network", self._unselectUsedNetwork))
 		return taskset
@@ -136,7 +136,7 @@ class ExternalNetworkConnector(generic.Connector):
 		self.save()		
 	
 	def connectionsAdd(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
-		iface = self.topology.interfaces_get(iface_name)
+		iface = self.topology.interfacesGet(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
 		con = generic.Connection ()
@@ -149,7 +149,7 @@ class ExternalNetworkConnector(generic.Connector):
 		pass
 	
 	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
-		iface = self.topology.interfaces_get(iface_name)
+		iface = self.topology.interfacesGet(iface_name)
 		if iface.device.state == generic.State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
 		con = self.connectionSetGet(iface)
@@ -163,7 +163,7 @@ class ExternalNetworkConnector(generic.Connector):
 				external += 1
 			dev = con.interface.device
 			if dev.host and dev.state == generic.State.STARTED:
-				iface = dev.upcast().interface_device(con.interface)
+				iface = dev.upcast().interfaceDevice(con.interface)
 				try:
 					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface) 
 				except:

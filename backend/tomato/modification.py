@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util, fault, topology, generic
+import fault, topology, generic
+
+from lib import util
 
 class Modification():
 	def __init__(self, mtype, element, subelement, properties):
@@ -45,36 +47,36 @@ class Modification():
 			dev.type = dtype
 			dev.topology = top
 			dev.name = self.properties["name"]
-			top.device_set_add(dev)
+			top.deviceSetAdd(dev)
 			dev.configure(self.properties)
 			dev.save()
 		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
-			device = top.device_set_get(self.element)
+			device = top.deviceSetGet(self.element)
 			device.name = self.properties["name"]
 			device.save()
 		elif self.type == "device-configure":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			device.configure(self.properties)
 		elif self.type == "device-delete":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			assert device.state == generic.State.CREATED, "Cannot delete a running or prepared device"
 			device.delete()
 		
 		elif self.type == "interface-create":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			name = self.properties["name"]
 			device.interfacesAdd(name, self.properties)
 		elif self.type == "interface-rename":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			name = self.subelement
 			device.interfacesRename(name, self.properties)
 		elif self.type == "interface-configure":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			name = self.subelement
 			device.interfacesConfigure(name, self.properties)
 		elif self.type == "interface-delete":
-			device = top.device_set_get(self.element).upcast()
+			device = top.deviceSetGet(self.element).upcast()
 			name = self.subelement
 			device.interfacesDelete(name)
 		
@@ -91,57 +93,57 @@ class Modification():
 			con.type = ctype
 			con.topology = top
 			con.name = self.properties["name"]
-			top.connector_set_add(con)
+			top.connectorSetAdd(con)
 			con.configure(self.properties)
 			con.save()
 		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
-			con = top.connector_set_get(self.element)
+			con = top.connectorSetGet(self.element)
 			con.name = self.properties["name"]
 			con.save()
 		elif self.type == "connector-configure":
-			con = top.connector_set_get(self.element).upcast()
+			con = top.connectorSetGet(self.element).upcast()
 			con.configure(self.properties)
 		elif self.type == "connector-delete":
-			con = top.connector_set_get(self.element).upcast()
+			con = top.connectorSetGet(self.element).upcast()
 			if not con.isExternal(): 
 				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
 			con.delete()
 		
 		elif self.type == "connection-create":
-			con = top.connector_set_get(self.element).upcast()
+			con = top.connectorSetGet(self.element).upcast()
 			interface = self.properties["interface"]
 			con.connectionsAdd(interface, self.properties)
 		elif self.type == "connection-configure":
-			con = top.connector_set_get(self.element).upcast()
+			con = top.connectorSetGet(self.element).upcast()
 			name = self.subelement
 			con.connectionsConfigure(name, self.properties)
 		elif self.type == "connection-delete":
-			con = top.connector_set_get(self.element).upcast()
+			con = top.connectorSetGet(self.element).upcast()
 			name = self.subelement
 			con.connectionsDelete(name)
 			
 		else:
 			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
 							
-def read_from_list(mods):
+def readFromList(mods):
 	modlist = []
 	for mod in mods:
 		modlist.append(Modification(mod["type"], mod["element"], mod["subelement"], mod["properties"]))
 	return modlist
 
-def modify_task_run(top_id, mods):
+def modifyTaskRun(top_id, mods):
 	for mod in mods:
 		top = topology.get(top_id)
 		mod.run(top)
 
 def modify(top, mods, direct):
-	import tasks
+	from lib import tasks
 	proc = tasks.Process("modify-topology")
 	proc.addTask(tasks.Task("renew", top.renew))
-	proc.addTask(tasks.Task("modify", util.curry(modify_task_run, [top.id, mods])))
-	return top.start_process(proc, direct)
+	proc.addTask(tasks.Task("modify", util.curry(modifyTaskRun, [top.id, mods])))
+	return top.startProcess(proc, direct)
 
-def modify_list(top, mods, direct):
-	mods = read_from_list(mods)
+def modifyList(top, mods, direct):
+	mods = readFromList(mods)
 	return modify(top, mods, direct)

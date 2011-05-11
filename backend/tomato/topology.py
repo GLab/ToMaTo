@@ -16,9 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import os, datetime, util, atexit
-import config, log, fault, tasks
-import generic, attributes
+import os, datetime, atexit
+import config, fault, generic, attributes
+
+from lib import log, tasks, util
 
 class Topology(models.Model):
 	"""
@@ -42,7 +43,7 @@ class Topology(models.Model):
 	def logger(self):
 		if not os.path.exists(config.log_dir + "/top"):
 			os.makedirs(config.log_dir + "/top")
-		return log.get_logger(config.log_dir + "/top/%s"%self.id)
+		return log.getLogger(config.log_dir + "/top/%s"%self.id)
 
 	def init (self, owner):
 		"""
@@ -58,22 +59,22 @@ class Topology(models.Model):
 		self.attributes["date_usage"] = datetime.datetime.now()
 		self.save()
 
-	def max_state(self):
+	def maxState(self):
 		max_state = generic.State.CREATED
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if not con.isExternal():
 				if con.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 					max_state = generic.State.PREPARED
 				if con.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
 					max_state = generic.State.STARTED
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.PREPARED and max_state == generic.State.CREATED:
 				max_state = generic.State.PREPARED
 			if dev.state == generic.State.STARTED and (max_state == generic.State.CREATED or max_state == generic.State.PREPARED):
 				max_state = generic.State.STARTED
 		return max_state
 
-	def check_timeout(self):
+	def checkTimeout(self):
 		now = datetime.datetime.now()
 		date = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		if not date:
@@ -83,78 +84,78 @@ class Topology(models.Model):
 			self.remove(True)
 		elif now > date + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
-			max_state = self.max_state()
+			max_state = self.maxState()
 			if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
 				self.destroy(False)
 		elif now > date + self.STOP_TIMEOUT:
 			self.logger().log("timeout: stopping topology")
-			if self.max_state() == generic.State.STARTED:
+			if self.maxState() == generic.State.STARTED:
 				self.stop(False)
 		
-	def get_task(self):
+	def getTask(self):
 		if not self.attributes["task"]:
 			return None
 		if not tasks.processes.has_key(self.attributes["task"]):
 			return None
 		return tasks.processes[self.attributes["task"]]
 
-	def is_busy(self):
-		t = self.get_task()
+	def isBusy(self):
+		t = self.getTask()
 		if not t:
 			return False
 		return t.isActive()
 
-	def check_busy(self):
-		if self.is_busy():
+	def checkBusy(self):
+		if self.isBusy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 
-	def start_process(self, process, direct=False):
-		self.check_busy()
+	def startProcess(self, process, direct=False):
+		self.checkBusy()
 		self.attributes["task"] = process.id
 		self.save()
 		return process.start(direct)
 
-	def device_set_all(self):
+	def deviceSetAll(self):
 		return self.device_set.all() # pylint: disable-msg=E1101
 	
-	def device_set_get(self, name):
+	def deviceSetGet(self, name):
 		return self.device_set.get(name=name).upcast() # pylint: disable-msg=E1101
 	
-	def interfaces_get(self, iface_name):
+	def interfacesGet(self, iface_name):
 		iface_name = iface_name.split(".")
-		return self.device_set_get(iface_name[0]).interfaceSetGet(iface_name[1])
+		return self.deviceSetGet(iface_name[0]).interfaceSetGet(iface_name[1])
 
-	def device_set_add(self, dev):
+	def deviceSetAdd(self, dev):
 		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0: # pylint: disable-msg=E1101
 			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
 		self.device_set.add(dev) # pylint: disable-msg=E1101
 
-	def connector_set_all(self):
+	def connectorSetAll(self):
 		return self.connector_set.all() # pylint: disable-msg=E1101
 	
-	def connector_set_get(self, name):
+	def connectorSetGet(self, name):
 		return self.connector_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
-	def connector_set_add(self, con):
+	def connectorSetAdd(self, con):
 		if self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0: # pylint: disable-msg=E1101
 			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
 		self.connector_set.add(con) # pylint: disable-msg=E1101
 
-	def affected_hosts (self):
+	def affectedHosts (self):
 		"""
 		The set of all hosts that this topology has devices on.
 		"""
 		import hosts
 		return hosts.Host.objects.filter(device__topology=self).distinct() # pylint: disable-msg=E1101
 	
-	def get_control_dir(self,host_name):
+	def getControlDir(self,host_name):
 		"""
 		The local directory where all control scripts and files are stored.
 		@param host_name the name of the host for the deployment
 		"""
 		return config.local_control_dir+"/"+host_name
 
-	def get_remote_control_dir(self):
+	def getRemoteControlDir(self):
 		"""
 		The remote directory where all control scripts and files will be copied to.
 		"""
@@ -164,7 +165,7 @@ class Topology(models.Model):
 		proc = tasks.Process("topology-start")
 		proc.addTask(tasks.Task("renew", self.renew))
 		devs_prepared = []
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.CREATED:
 				pset = dev.upcast().getPrepareTasks()
 				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
@@ -176,7 +177,7 @@ class Topology(models.Model):
 				sset = dev.upcast().getStartTasks()
 				proc.addTaskSet("start-device-%s" % dev.name, sset)
 		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if con.state == generic.State.CREATED:
 				pset = con.upcast().getPrepareTasks()
 				pset.addGlobalDepends("devices-prepared")
@@ -189,45 +190,45 @@ class Topology(models.Model):
 				sset = con.upcast().getStartTasks()
 				sset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("start-connector-%s" % con.name, sset)
-		return self.start_process(proc, direct)
+		return self.startProcess(proc, direct)
 
 	def stop(self, direct, renew=True):
 		proc = tasks.Process("topology-stop")
 		if renew:
 			proc.addTask(tasks.Task("renew", self.renew))
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
 				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
 				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
-		return self.start_process(proc, direct)
+		return self.startProcess(proc, direct)
 
 	def prepare(self, direct):
 		proc = tasks.Process("topology-prepare")
 		proc.addTask(tasks.Task("renew", self.renew))
 		devs_prepared = []
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.CREATED:
 				pset = dev.upcast().getPrepareTasks()
 				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
 				devs_prepared.append(pset.getLastTask().name)
 		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if con.state == generic.State.CREATED:
 				pset = con.upcast().getPrepareTasks()
 				pset.addGlobalDepends("devices-prepared")
 				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
-		return self.start_process(proc, direct)
+		return self.startProcess(proc, direct)
 
 	def destroy(self, direct, renew=True):
 		proc = tasks.Process("topology-destroy")
 		if renew:
 			proc.addTask(tasks.Task("renew", self.renew))
 		cons_destroyed = []	
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if con.state == generic.State.STARTED:
 				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
@@ -239,7 +240,7 @@ class Topology(models.Model):
 				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.STARTED:
 				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
@@ -251,12 +252,12 @@ class Topology(models.Model):
 				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-		return self.start_process(proc, direct)
+		return self.startProcess(proc, direct)
 
 	def remove(self, direct):
 		proc = tasks.Process("topology-remove")
 		cons_destroyed = []	
-		for con in self.connector_set_all():
+		for con in self.connectorSetAll():
 			if con.state == generic.State.STARTED:
 				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
@@ -268,7 +269,7 @@ class Topology(models.Model):
 				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
-		for dev in self.device_set_all():
+		for dev in self.deviceSetAll():
 			if dev.state == generic.State.STARTED:
 				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
@@ -281,29 +282,29 @@ class Topology(models.Model):
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
 		proc.addTask(tasks.Task("remove", self.delete, [t.name for t in proc.tasks]))
-		return self.start_process(proc, direct)
+		return self.startProcess(proc, direct)
 			
 	def _log(self, task, output):
-		logger = log.get_logger(config.log_dir+"/top_%s.log" % self.id)
+		logger = log.getLogger(config.log_dir+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
 		
-	def download_image_uri(self, device_id):
+	def downloadImageUri(self, device_id):
 		self.renew()
-		if self.is_busy():
+		if self.isBusy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		device = self.device_set_get(device_id)
+		device = self.deviceSetGet(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		if not device.upcast().downloadSupported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
-		return device.upcast().download_image_uri()
+		return device.upcast().downloadImageUri()
 
-	def download_capture_uri(self, connector_id, ifname): #@UnusedVariable, pylint: disable-msg=W0613
+	def downloadCaptureUri(self, connector_id, ifname): #@UnusedVariable, pylint: disable-msg=W0613
 		self.renew()
-		if self.is_busy():
+		if self.isBusy():
 			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
 		device_id, interface_id = ifname.split(".")
-		device = self.device_set_get(device_id)
+		device = self.deviceSetGet(device_id)
 		if not device:
 			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
 		interface = device.interfaceSetGet(interface_id)
@@ -312,37 +313,37 @@ class Topology(models.Model):
 		con = interface.connection
 		if not con.upcast().downloadSupported():
 			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Connection does not support capture download: %s" % con)
-		return con.upcast().download_capture_uri()
+		return con.upcast().downloadCaptureUri()
 
-	def permissions_add(self, user_name, role):
+	def permissionsAdd(self, user_name, role):
 		self.renew()
 		self.permission_set.add(Permission(user=user_name, role=role)) # pylint: disable-msg=E1101
 		self.save()
 	
-	def permissions_all(self):
+	def permissionsAll(self):
 		return self.permission_set.all() # pylint: disable-msg=E1101
 	
-	def permissions_remove(self, user_name):
+	def permissionsRemove(self, user_name):
 		self.renew()
 		self.permission_set.filter(user=user_name).delete() # pylint: disable-msg=E1101
 		self.save()
 		
-	def permissions_get(self, user_name):
+	def permissionsGet(self, user_name):
 		pset = self.permission_set.filter(user=user_name) # pylint: disable-msg=E1101
 		if pset.count() > 0:
 			return pset[0].role
 		else:
 			return None
 		
-	def check_access(self, atype, user):
+	def checkAccess(self, atype, user):
 		if user.is_admin:
 			return True
 		if user.name == self.owner:
 			return True
 		if atype == Permission.ROLE_MANAGER:
-			return self.permissions_get(user.name) == Permission.ROLE_MANAGER
+			return self.permissionsGet(user.name) == Permission.ROLE_MANAGER
 		if atype == Permission.ROLE_USER:
-			return self.permissions_get(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
+			return self.permissionsGet(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
 	def resources(self):
 		res = {}
@@ -351,17 +352,17 @@ class Topology(models.Model):
 				res[key[10:]] = self.attributes[key]
 		return res
 
-	def update_resource_usage(self):
+	def updateResourceUsage(self):
 		res = {}
-		for dev in self.device_set_all():
-			dev.update_resource_usage()
+		for dev in self.deviceSetAll():
+			dev.updateResourceUsage()
 			for key in dev.attributes:
 				if key.startswith("resources_"):
 					if not key in res:
 						res[key] = 0
 					res[key] += float(dev.attributes[key])
-		for con in self.connector_set_all():
-			con.update_resource_usage()
+		for con in self.connectorSetAll():
+			con.updateResourceUsage()
 			for key in con.attributes:
 				if key.startswith("resources_"):
 					if not key in res:
@@ -370,7 +371,7 @@ class Topology(models.Model):
 		for key in res:
 			self.attributes[key] = res[key]
 		
-	def to_dict(self, auth, detail):
+	def toDict(self, auth, detail):
 		"""
 		Prepares a topology for serialization.
 		
@@ -383,22 +384,22 @@ class Topology(models.Model):
 		"""
 		last_usage = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		res = {"id": self.id, 
-			"attrs": {"name": self.name, "state": self.max_state(), "owner": self.owner,
-					"device_count": len(self.device_set_all()), "connector_count": len(self.connector_set_all()),
+			"attrs": {"name": self.name, "state": self.maxState(), "owner": self.owner,
+					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
 					"stop_timeout": str(last_usage + self.STOP_TIMEOUT), "destroy_timeout": str(last_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(last_usage + self.REMOVE_TIMEOUT) 
 					}
 			}
 		res["attrs"].update(self.attributes.items())
 		if detail:
-			res.update({"devices": dict([[v.name, v.upcast().to_dict(auth)] for v in self.device_set_all()]),
-				"connectors": dict([[v.name, v.upcast().to_dict(auth)] for v in self.connector_set_all()])
+			res.update({"devices": dict([[v.name, v.upcast().toDict(auth)] for v in self.deviceSetAll()]),
+				"connectors": dict([[v.name, v.upcast().toDict(auth)] for v in self.connectorSetAll()])
 				})
-			res.update(permissions=dict([[p.user, p.role] for p in self.permissions_all()]))
+			res.update(permissions=dict([[p.user, p.role] for p in self.permissionsAll()]))
 			res["permissions"][self.owner]="owner";
 		if "task" in res["attrs"]:
 			del res["attrs"]["task"]
 		if auth:
-			task = self.get_task()
+			task = self.getTask()
 			if task:
 				if task.isActive():
 					res.update(running_task=task.id)
@@ -431,11 +432,11 @@ def create(owner):
 
 def cleanup():
 	for top in all():
-		top.check_timeout()
+		top.checkTimeout()
 
-def update_resource_usage():
+def updateResourceUsage():
 	for top in all():
-		top.update_resource_usage()
+		top.updateResourceUsage()
 
 if not config.TESTING and not config.MAINTENANCE:
 	cleanup_task = util.RepeatedTimer(300, cleanup)

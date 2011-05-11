@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from util import parse_bool 
+from lib import util
 
 import ConfigParser, os
 
@@ -56,7 +56,7 @@ log_dir = get("local", "log_dir", "logs")
 remote_control_dir = get("remote", "control_dir", "/root/tomato")
 # The remote directory to use for control scripts
 
-remote_dry_run = parse_bool(get("remote", "dry_run", True))
+remote_dry_run = util.parse_bool(get("remote", "dry_run", True))
 # If this is true all remote commands are just printed but not executed
 
 remote_ssh_key = get("remote", "ssh_key", os.path.expanduser('~/.ssh/id_rsa'))
@@ -70,7 +70,7 @@ timeout_destroy_weeks = int(get("timeout", "destroy", 12))
 timeout_remove_weeks = int(get("timeout", "remove", 24))
 
 server_port = int(get("server", "port", 8000))
-server_ssl = parse_bool(get("server", "ssl", False))
+server_ssl = util.parse_bool(get("server", "ssl", False))
 server_ssl_private_key = get("server", "ssl_private_key", "")
 server_ssl_ca_key = get("server", "ssl_ca_key", "")
 

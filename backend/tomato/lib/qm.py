@@ -17,7 +17,7 @@
 
 import re, uuid
 
-from tomato import util, config, generic
+from tomato import config, generic
 
 import fileutil, process, ifaceutil
 
@@ -92,6 +92,11 @@ def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to remove interfaces"
 	iface_id = re.match("eth(\d+)", iface.name).group(1)
 	_qm(host, vmid, "set", "--vlan%d undef\n" % iface_id)			
+		
+def copyImage(host, vmid, file):
+	assert getState(host, vmid) != generic.State.CREATED, "VM must be prepared"
+	fileutil.copy(host, _imagePath(vmid), file)
+	assert fileutil.existsFile(host, file)
 		
 def getDiskUsage(host, vmid):
 	if getState(host, vmid) != generic.State.CREATED:

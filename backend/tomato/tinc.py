@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+import dummynet, generic, config, os, subprocess, shutil, fault
 
-import dummynet, generic, config, os, subprocess, shutil, fault, util
+from lib import util
 
 # Interesting: http://minerva.netgroup.uniroma2.it/fairvpn
 class TincConnector(generic.Connector):
@@ -27,21 +27,19 @@ class TincConnector(generic.Connector):
 	def tincname(self, con):
 		return "tinc_%s" % con.id
 
-	def get_start_tasks(self):
-		import tasks
-		taskset = generic.Connector.get_start_tasks(self)
+	def getStartTasks(self):
+		taskset = generic.Connector.getStartTasks(self)
 		for con in self.connectionSetAll():
-			taskset.addTaskSet("connection-%s" % con, con.upcast().get_start_tasks())
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getStartTasks())
 		return taskset
 
-	def get_stop_tasks(self):
-		import tasks
-		taskset = generic.Connector.get_stop_tasks(self)
+	def getStopTasks(self):
+		taskset = generic.Connector.getStopTasks(self)
 		for con in self.connectionSetAll():
-			taskset.addTaskSet("connection-%s" % con, con.upcast().get_stop_tasks())
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getStopTasks())
 		return taskset
 		
-	def _cluster_connections(self):
+	def _clusterConnections(self):
 		"""
 A network with N nodes and cluster_size k has the following properties:
 
@@ -73,10 +71,10 @@ Some nice properties:
 => Traffic is stays local if possible
 """
 		CLUSTER_SIZE=10
-		def is_node(n):
+		def isNode(n):
 			return isinstance(n, generic.Connection)
-		def divide_any(nodes):
-			if is_node(nodes):
+		def divide(nodes):
+			if isNode(nodes):
 				return nodes
 			if len(nodes) <= CLUSTER_SIZE:
 				return nodes
@@ -90,53 +88,53 @@ Some nice properties:
 			for i in range(0,CLUSTER_SIZE):
 				if len(clusters[i]) == 1:
 					clusters[i] = clusters[i][0]
-			return [divide_any(c) for c in clusters.values()]
-		def get_host(node):
+			return [divide(c) for c in clusters.values()]
+		def getHost(node):
 			return node.interface.device.host.name
-		def divide_host(nodes):
+		def divideByHost(nodes):
 			if len(nodes) <= CLUSTER_SIZE:
 				return nodes
 			clusters = {}
 			for n in nodes:
-				if not get_host(n) in clusters:
-					clusters[get_host(n)] = []
-				clusters[get_host(n)].append(n)
-			return [divide_any(c) for c in clusters.values()]
-		def get_site(node):
+				if not getHost(n) in clusters:
+					clusters[getHost(n)] = []
+				clusters[getHost(n)].append(n)
+			return [divide(c) for c in clusters.values()]
+		def getSite(node):
 			return node.interface.device.host.group
-		def divide_site(nodes):
+		def divideBySite(nodes):
 			if len(nodes) <= CLUSTER_SIZE:
 				return nodes
 			clusters = {}
 			for n in nodes:
-				if not get_site(n) in clusters:
-					clusters[get_site(n)] = []
-				clusters[get_site(n)].append(n)
-			return [divide_host(c) for c in clusters.values()]
+				if not getSite(n) in clusters:
+					clusters[getSite(n)] = []
+				clusters[getSite(n)].append(n)
+			return [divideByHost(c) for c in clusters.values()]
 		import random
-		def random_node(cluster):
-			if is_node(cluster):
+		def randomNode(cluster):
+			if isNode(cluster):
 				return cluster
 			else:
-				return random_node(random.choice(cluster))
-		def connection_list(cluster):
+				return randomNode(random.choice(cluster))
+		def connectionList(cluster):
 			cons = []
-			if is_node(cluster):
+			if isNode(cluster):
 				return cons
 			for a in cluster:
 				#connect cluster internally
-				cons += connection_list(a)
+				cons += connectionList(a)
 				#connect cluster externally
 				for b in cluster:
 					if a is b:
 						#do not connect cluster with itself
 						continue
-					if is_node(a) and is_node(b) and repr(a) <= repr(b):
+					if isNode(a) and isNode(b) and repr(a) <= repr(b):
 						#connect nodes only once but clusters twice
 						continue
-					cons.append((random_node(a), random_node(b)))
+					cons.append((randomNode(a), randomNode(b)))
 			return cons
-		def connection_id_map(clist):
+		def connectionIdMap(clist):
 			cmap = {}
 			for (a, b) in clist:
 				if not cmap.has_key(a.id):
@@ -146,48 +144,47 @@ Some nice properties:
 					cmap[b.id] = set()
 				cmap[b.id].add(a.id)
 			return cmap
-		def dot_file(file, clist):
+		def writeDotFile(file, clist):
 			fp = open(file, "w")
 			fp.write("graph G {\n")
 			for (a, b) in clist:
-				aname = "\"%s.%s.%s\"" % (get_site(a), get_host(a), a.id)
-				bname = "\"%s.%s.%s\"" % (get_site(b), get_host(b), b.id)
+				aname = "\"%s.%s.%s\"" % (getSite(a), getHost(a), a.id)
+				bname = "\"%s.%s.%s\"" % (getSite(b), getHost(b), b.id)
 				fp.write("\t%s -- %s;\n" % (aname, bname) )
 			fp.write("}\n")
 			fp.close()
 		allnodes = self.connectionSetAll()
 		#print allnodes
-		clustered = divide_site(allnodes)
+		clustered = divideBySite(allnodes)
 		#print clustered
-		clist = connection_list(clustered)
+		clist = connectionList(clustered)
 		#print clist
 		#print len(clist)*2
-		#dot_file("graph", clist)
-		cidmap = connection_id_map(clist)
+		#writeDotFile("graph", clist)
+		cidmap = connectionIdMap(clist)
 		#print cidmap
 		return cidmap
 		
-	def get_prepare_tasks(self):
-		import tasks
-		taskset = generic.Connector.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("cluster-connections", self._cluster_connections))
+	def getPrepareTasks(self):
+		from lib import tasks
+		taskset = generic.Connector.getPrepareTasks(self)
+		taskset.addTask(tasks.Task("cluster-connections", self._clusterConnections))
 		for con in self.connectionSetAll():
-			taskset.addTaskSet("connection-%s" % con, con.upcast().get_prepare_tasks())
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getPrepareTasks())
 		taskset.addTask(tasks.Task("created-host-files", depends=["connection-%s-create-host-file" % con for con in self.connectionSetAll()]))
 		return taskset
 
-	def get_destroy_tasks(self):
-		import tasks
-		taskset = generic.Connector.get_destroy_tasks(self)
+	def getDestroyTasks(self):
+		taskset = generic.Connector.getDestroyTasks(self)
 		for con in self.connectionSetAll():
-			taskset.addTaskSet("connection-%s" % con, con.upcast().get_destroy_tasks())
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getDestroyTasks())
 		return taskset
 
 	def configure(self, properties):
 		generic.Connector.configure(self, properties)
 	
-	def connections_add(self, iface_name, properties):
-		iface = self.topology.interfaces_get(iface_name)
+	def connectionsAdd(self, iface_name, properties):
+		iface = self.topology.interfacesGet(iface_name)
 		if self.state == generic.State.STARTED or self.state == generic.State.PREPARED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
@@ -201,14 +198,14 @@ Some nice properties:
 		con.configure(properties)
 		con.save()
 
-	def connections_configure(self, iface_name, properties):
-		iface = self.topology.interfaces_get(iface_name)
+	def connectionsConfigure(self, iface_name, properties):
+		iface = self.topology.interfacesGet(iface_name)
 		con = self.connectionSetGet(iface)
 		con.configure(properties)
 		con.save()	
 	
-	def connections_delete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
-		iface = self.topology.interfaces_get(iface_name)
+	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
+		iface = self.topology.interfacesGet(iface_name)
 		if self.state == generic.State.STARTED or self.state == generic.State.PREPARED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
 		if iface.device.state == generic.State.STARTED:
@@ -216,7 +213,7 @@ Some nice properties:
 		con = self.connectionSetGet(iface)
 		con.delete()
 
-	def get_resource_usage(self):
+	def getResourceUsage(self):
 		if self.state == generic.State.CREATED:
 			disk = 0
 		else:
@@ -258,7 +255,7 @@ class TincConnection(dummynet.EmulatedConnection):
 			if not len(self.attributes["gateway6"].split("/")) == 2:
 				self.attributes["gateway6"] = self.attributes["gateway6"] + "/80"
 		
-	def _start_tinc(self):
+	def _startTinc(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
@@ -268,7 +265,7 @@ class TincConnection(dummynet.EmulatedConnection):
 			assert host.interface_exists(tincname), "Tinc deamon did not start"
 		host.execute ( "ifconfig %s 0.0.0.0 up" %  tincname)
 
-	def _setup_routing(self):
+	def _setupRouting(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
@@ -288,22 +285,22 @@ class TincConnection(dummynet.EmulatedConnection):
 		host.execute ( "ip route add table %s default dev %s" % ( table_in, self.bridgeName() ))
 		host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
 
-	def _connect_bridge(self):
+	def _connectBridge(self):
 		host = self.interface.device.host
 		tincname = self.connector.upcast().tincname(self)
 		host.bridge_connect(self.bridgeName(), tincname)
 		
-	def get_start_tasks(self):
-		import tasks
-		taskset = dummynet.EmulatedConnection.get_start_tasks(self)
-		taskset.addTask(tasks.Task("start-tinc", self._start_tinc))
+	def getStartTasks(self):
+		from lib import tasks
+		taskset = dummynet.EmulatedConnection.getStartTasks(self)
+		taskset.addTask(tasks.Task("start-tinc", self._startTinc))
 		if self.connector.type == "router":
-			taskset.addTask(tasks.Task("setup-routing", self._setup_routing, depends="start-tinc"))
+			taskset.addTask(tasks.Task("setup-routing", self._setupRouting, depends="start-tinc"))
 		else:
-			taskset.addTask(tasks.Task("connect-bridge", self._connect_bridge, depends="start-tinc"))
+			taskset.addTask(tasks.Task("connect-bridge", self._connectBridge, depends="start-tinc"))
 		return taskset
 		
-	def _teardown_routing(self):
+	def _teardownRouting(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
@@ -316,37 +313,37 @@ class TincConnection(dummynet.EmulatedConnection):
 		host.execute ( "ip route del table %s default dev %s" % ( table_in, self.bridgeName() ))
 		host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ))
 		
-	def _stop_tinc(self):
+	def _stopTinc(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
 		host.execute ( "tincd --net=%s -k" % tincname)		
 		
-	def get_stop_tasks(self):
-		import tasks
-		taskset = dummynet.EmulatedConnection.get_stop_tasks(self)
+	def getStopTasks(self):
+		from lib import tasks
+		taskset = dummynet.EmulatedConnection.getStopTasks(self)
 		if self.interface.device.host:
-			taskset.addTask(tasks.Task("stop-tinc", self._stop_tinc))
+			taskset.addTask(tasks.Task("stop-tinc", self._stopTinc))
 			if self.connector.type == "router":
-				taskset.addTask(tasks.Task("teardown-routing", self._teardown_routing))
+				taskset.addTask(tasks.Task("teardown-routing", self._teardownRouting))
 		return taskset
 
-	def _assign_bridge_id(self):
+	def _assignBridgeId(self):
 		if not self.attributes["bridge_id"]:
-			self.attributes["bridge_id"] = self.interface.device.host.next_free_bridge()		
+			self.attributes["bridge_id"] = self.interface.device.host.nextFreeBridge()		
 			self.save()
 
-	def _assign_tinc_port(self):
+	def _assignTincPort(self):
 		if not self.attributes["tinc_port"]:
-			self.attributes["tinc_port"] = self.interface.device.host.next_free_port()
+			self.attributes["tinc_port"] = self.interface.device.host.nextFreePort()
 			self.save()
 
-	def _create_host_file(self):
+	def _createHostFile(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
 		tincport = self.attributes["tinc_port"] 
-		path = connector.topology.get_control_dir(host.name) + "/" + tincname
+		path = connector.topology.getControlDir(host.name) + "/" + tincname
 		if not os.path.exists(path+"/hosts"):
 			try:
 				os.makedirs(path+"/hosts")
@@ -367,11 +364,11 @@ class TincConnection(dummynet.EmulatedConnection):
 		self_host_fd.close()
 		self_host_pub_fd.close()
 		
-	def _create_config_file(self, task):
+	def _createConfigFile(self, task):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
-		path = connector.topology.get_control_dir(host.name) + "/" + tincname
+		path = connector.topology.getControlDir(host.name) + "/" + tincname
 		if not os.path.exists(path):
 			try:
 				os.makedirs(path)
@@ -390,11 +387,11 @@ class TincConnection(dummynet.EmulatedConnection):
 			tinc_conf_fd.write ( "ConnectTo=%s\n" % tincname2 )
 		tinc_conf_fd.close()
 
-	def _collect_host_files(self, task):
+	def _collectHostFiles(self, task):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
-		path = connector.topology.get_control_dir(host.name) + "/" + tincname
+		path = connector.topology.getControlDir(host.name) + "/" + tincname
 		connections = task.getDependency("cluster-connections").getResult()
 		for con2 in connector.connectionSetAll():
 			if not con2.id in connections[self.id]:
@@ -402,50 +399,50 @@ class TincConnection(dummynet.EmulatedConnection):
 				continue
 			host2 = con2.interface.device.host
 			tincname2 = connector.tincname(con2)
-			path2 = connector.topology.get_control_dir(host2.name) + "/" + tincname2
+			path2 = connector.topology.getControlDir(host2.name) + "/" + tincname2
 			shutil.copy(path2+"/hosts/"+tincname2, path+"/hosts/"+tincname2)
 
-	def _upload_files(self):
+	def _uploadFiles(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
-		path = connector.topology.get_control_dir(host.name) + "/" + tincname + "/"
-		host.file_put(path, "/etc/tinc/" + tincname)
+		path = connector.topology.getControlDir(host.name) + "/" + tincname + "/"
+		host.filePut(path, "/etc/tinc/" + tincname)
 
-	def get_prepare_tasks(self):
-		import tasks
-		taskset = dummynet.EmulatedConnection.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("assign-bridge-id", self._assign_bridge_id))
-		taskset.addTask(tasks.Task("assign-tinc-port", self._assign_tinc_port))
-		taskset.addTask(tasks.Task("create-host-file", self._create_host_file, depends=["assign-bridge-id", "assign-tinc-port"]))
-		taskset.addTask(tasks.Task("create-config-file", self._create_config_file, depends=["assign-bridge-id", "assign-tinc-port", "cluster-connections"], callWithTask=True))
-		taskset.addTask(tasks.Task("collect-host-files", self._collect_host_files, depends=["created-host-files", "cluster-connections"], callWithTask=True))
-		taskset.addTask(tasks.Task("upload-files", self._upload_files, depends=["collect-host-files", "create-config-file"]))
+	def getPrepareTasks(self):
+		from lib import tasks
+		taskset = dummynet.EmulatedConnection.getPrepareTasks(self)
+		taskset.addTask(tasks.Task("assign-bridge-id", self._assignBridgeId))
+		taskset.addTask(tasks.Task("assign-tinc-port", self._assignTincPort))
+		taskset.addTask(tasks.Task("create-host-file", self._createHostFile, depends=["assign-bridge-id", "assign-tinc-port"]))
+		taskset.addTask(tasks.Task("create-config-file", self._createConfigFile, depends=["assign-bridge-id", "assign-tinc-port", "cluster-connections"], callWithTask=True))
+		taskset.addTask(tasks.Task("collect-host-files", self._collectHostFiles, depends=["created-host-files", "cluster-connections"], callWithTask=True))
+		taskset.addTask(tasks.Task("upload-files", self._uploadFiles, depends=["collect-host-files", "create-config-file"]))
 		return taskset
 		
-	def _unassign_bridge_id(self):
+	def _unassignBridgeId(self):
 		del self.attributes["bridge_id"]
 
-	def _unassign_tinc_port(self):
+	def _unassignTincPort(self):
 		del self.attributes["tinc_port"]
 
-	def _delete_files(self):
+	def _deleteFiles(self):
 		host = self.interface.device.host
 		connector = self.connector.upcast()
 		tincname = connector.tincname(self)
 		host.file_delete ( "/etc/tinc/%s" % tincname, recursive=True)
 		
-	def get_destroy_tasks(self):
-		import tasks
-		taskset = dummynet.EmulatedConnection.get_destroy_tasks(self)
+	def getDestroyTasks(self):
+		from lib import tasks
+		taskset = dummynet.EmulatedConnection.getDestroyTasks(self)
 		if self.interface.device.host:
-			taskset.addTask(tasks.Task("delete-files", self._delete_files))
-		taskset.addTask(tasks.Task("unassign-bridge-id", self._unassign_bridge_id))
-		taskset.addTask(tasks.Task("unassign-tinc-port", self._unassign_tinc_port))
+			taskset.addTask(tasks.Task("delete-files", self._deleteFiles))
+		taskset.addTask(tasks.Task("unassign-bridge-id", self._unassignBridgeId))
+		taskset.addTask(tasks.Task("unassign-tinc-port", self._unassignTincPort))
 		return taskset
 
-	def to_dict(self, auth):
-		res = dummynet.EmulatedConnection.to_dict(self, auth)	
+	def toDict(self, auth):
+		res = dummynet.EmulatedConnection.toDict(self, auth)	
 		if not auth:
 			del res["attrs"]["tinc_port"]	
 			del res["attrs"]["bridge_id"]	

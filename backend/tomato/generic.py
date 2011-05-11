@@ -17,9 +17,8 @@
 
 from django.db import models
 
-import fault, hosts, attributes, tasks
-
-from lib import ifaceutil
+import fault, hosts, attributes
+from lib import tasks
 
 class State(): #pylint: disable-msg=W0232
 	"""
@@ -72,7 +71,7 @@ class Device(models.Model):
 	
 	def hostPreferences(self):
 		prefs = ObjectPreferences(True)
-		for h in hosts.get_hosts(self.attributes.get("hostgroup")):
+		for h in hosts.getHosts(self.attributes.get("hostgroup")):
 			if h.enabled:
 				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
 		#print "Host preferences for %s: %s" % (self, prefs) 
@@ -106,7 +105,7 @@ class Device(models.Model):
 		proc = tasks.Process("migrate")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTask(tasks.Task("migrate", self.upcast().migrateRun))
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def start(self, direct):
 		if self.state == State.CREATED:
@@ -116,7 +115,7 @@ class Device(models.Model):
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("start", self.upcast().getStartTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		if self.state == State.CREATED:
@@ -124,7 +123,7 @@ class Device(models.Model):
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("stop", self.upcast().getStopTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
 		if self.state == State.PREPARED:
@@ -134,7 +133,7 @@ class Device(models.Model):
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
 		for iface in self.interfaceSetAll():
@@ -147,7 +146,7 @@ class Device(models.Model):
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
 		self.state = state
@@ -333,7 +332,7 @@ class Connector(models.Model):
 			dev = c.interface.device
 			if dev.host:
 				prefs.add(dev.host, -0.1)
-				for h in hosts.get_hosts(dev.host.group):
+				for h in hosts.getHosts(dev.host.group):
 					prefs.add(h, 0.01)
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
@@ -349,7 +348,7 @@ class Connector(models.Model):
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("start", self.upcast().getStartTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		if self.state == State.CREATED:
@@ -357,7 +356,7 @@ class Connector(models.Model):
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("stop", self.upcast().getStopTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
 		if self.state == State.PREPARED:
@@ -370,7 +369,7 @@ class Connector(models.Model):
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
 		if self.state == State.STARTED:
@@ -378,7 +377,7 @@ class Connector(models.Model):
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
-		return self.topology.start_process(proc, direct)
+		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
 		self.state = state
@@ -461,7 +460,7 @@ class Connection(models.Model):
 
 	def bridgeId(self):
 		if not self.attributes.get("bridgeId"):
-			self.attributes["bridgeId"] = self.interface.device.host.next_free_bridge()
+			self.attributes["bridgeId"] = self.interface.device.host.nextFreeBridge()
 		return self.attributes["bridgeId"]
 
 	def bridgeName(self):

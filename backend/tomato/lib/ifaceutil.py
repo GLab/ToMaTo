@@ -17,7 +17,7 @@
 
 import tomato.config as config
 
-from tomato import util
+import util
 
 def bridgeExists(host, bridge):
 	if config.remote_dry_run:
@@ -82,6 +82,16 @@ def ifup(host, iface):
 def ifdown(host, iface):
 	assert interfaceExists(host, iface)
 	host.execute("ip link set down %s" % iface)
+	
+def setDefaultRoute(host, via):
+	host.execute("ip route add default via %s" % via)
+	
+def addAddress(host, iface, address):
+	host.execute("ip addr add %s dev %s" % (address, iface))
+	
+def startDhcp(host, iface):
+	host.execute("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % iface)
+	host.execute("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % iface)
 	
 def getRxBytes(host, iface):
 	assert interfaceExists(host, iface)

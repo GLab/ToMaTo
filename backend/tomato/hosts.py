@@ -38,24 +38,24 @@ class Host(models.Model):
 	def __unicode__(self):
 		return self.name
 
-	def fetch_all_templates(self):
+	def fetchAllTemplates(self):
 		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
-			tpl.upload_to_host(self)
+			tpl.uploadToHost(self)
 
 	def check(self):
 		if config.remote_dry_run:
 			return "---"
 		return tasks.Process("check", tasks=[
-		  tasks.Task("login", util.curry(self._check_cmd, ["true", "Login error"]), reverseFn=self.disable),
-		  tasks.Task("tomato-host", self._check_tomato_host_version, reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("openvz", util.curry(self._check_cmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("kvm", util.curry(self._check_cmd, ["qm list", "KVM error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("ipfw", util.curry(self._check_cmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("hostserver", util.curry(self._check_cmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("hostserver-config", self.fetch_hostserver_config, reverseFn=self.disable, depends=["hostserver"]),
-		  tasks.Task("hostserver-cleanup", self.hostserver_cleanup, reverseFn=self.disable, depends=["hostserver"]),
-		  tasks.Task("templates", self.fetch_all_templates, reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("save", self.fetch_all_templates, reverseFn=self.disable, depends=["hostserver-config"]),			
+		  tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable),
+		  tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("ipfw", util.curry(self._checkCmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, depends=["hostserver"]),
+		  tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, depends=["hostserver"]),
+		  tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("save", self.fetchAllTemplates, reverseFn=self.disable, depends=["hostserver-config"]),			
 		]).start()
 
 	def disable(self):
@@ -63,11 +63,11 @@ class Host(models.Model):
 		self.enabled = False
 		self.save()
 
-	def _check_cmd(self, cmd, errormsg):
+	def _checkCmd(self, cmd, errormsg):
 		res = self.execute("%s; echo $?" % cmd)
 		assert res.split("\n")[-2] == "0", errormsg
 
-	def _check_tomato_host_version(self):
+	def _checkTomatoHostVersion(self):
 		res = self.execute("dpkg-query -s tomato-host | fgrep Version | awk '{ print $2 }'")
 		try:
 			version = float(res.strip())
@@ -75,24 +75,25 @@ class Host(models.Model):
 			assert False, "tomato-host not found"
 		assert version >= 0.6, "tomato-host version error, is %s" % version
 
-	def fetch_hostserver_config(self):
+	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
 		self.attributes["hostserver_port"] = int(res[0])
 		self.attributes["hostserver_basedir"] = res[1]
 		self.attributes["hostserver_secret_key"] = res[2]
 				
-	def hostserver_cleanup(self):
+	def hostserverCleanup(self):
 		if self.attributes.get("hostserver_basedir"):
 			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"])
 			
-	def cluster_state(self):
+	def clusterState(self):
 		try:
 			res = self.execute("pveca -i 2>/dev/null | tail -n 1")
 			return res.split("\n")[-2].split(" ")[-1]
 		except:
 			return ClusterState.NONE
 				
-	def next_free_vm_id (self):
+	def nextFreeVmId (self):
+		#FIXME: redesign
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
@@ -112,7 +113,8 @@ class Host(models.Model):
 		finally:
 			self.lock.release()
 
-	def next_free_port(self):
+	def nextFreePort(self):
+		#FIXME: redesign
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
@@ -137,7 +139,8 @@ class Host(models.Model):
 		finally:
 			self.lock.release()
 
-	def next_free_bridge(self):
+	def nextFreeBridge(self):
+		#FIXME: redesign
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
@@ -173,7 +176,7 @@ class Host(models.Model):
 			fd.write(res)
 		return res
 	
-	def file_put(self, local_file, remote_file):
+	def filePut(self, local_file, remote_file):
 		cmd = Host.RSYNC_COMMAND + [local_file, "root@%s:%s" % (self.name, remote_file)]
 		log_str = self.name + ": " + local_file + " -> " + remote_file  + "\n"
 		self.execute("mkdir -p $(dirname %s)" % remote_file)
@@ -186,7 +189,7 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 
-	def file_get(self, remote_file, local_file):
+	def fileGet(self, remote_file, local_file):
 		cmd = Host.RSYNC_COMMAND + ["root@%s:%s" % (self.name, remote_file), local_file]
 		log_str = self.name + ": " + local_file + " <- " + remote_file  + "\n"
 		if tasks.get_current_task():
@@ -198,7 +201,7 @@ class Host(models.Model):
 		fd.write(res)
 		return res
 
-	def _first_line(self, line):
+	def _firstLine(self, line):
 		if not line:
 			return line
 		line = line.splitlines()
@@ -207,7 +210,7 @@ class Host(models.Model):
 		else:
 			return line[0]
 
-	def debug_info(self):		
+	def debugInfo(self):		
 		result={}
 		result["top"] = self.execute("top -b -n 1")
 		result["OpenVZ"] = self.execute("vzlist -a")
@@ -224,18 +227,18 @@ class Host(models.Model):
 		result["hostserver-files"] = self.execute("ls -l /var/lib/vz/hostserver")		
 		return result
 	
-	def external_networks(self):
+	def externalNetworks(self):
 		return self.externalnetworkbridge_set.all() # pylint: disable-msg=E1101
 	
-	def external_networks_add(self, type, group, bridge):
+	def externalNetworksAdd(self, type, group, bridge):
 		en = ExternalNetwork.objects.get(type=type, group=group)
 		enb = ExternalNetworkBridge(host=self, network=en, bridge=bridge)
 		enb.save()
 		self.externalnetworkbridge_set.add(enb) # pylint: disable-msg=E1101
 		
-	def external_networks_remove(self, type, group):
+	def externalNetworksRemove(self, type, group):
 		en = ExternalNetwork.objects.get(type=type, group=group)
-		for enb in self.external_networks():
+		for enb in self.externalNetworks():
 			if enb.feature_group == en:
 				enb.delete()
 
@@ -249,7 +252,7 @@ class Host(models.Model):
 		del self.attributes["group"]
 		self.save()
 	
-	def to_dict(self):
+	def toDict(self):
 		"""
 		Prepares a host for serialization.
 		
@@ -258,7 +261,7 @@ class Host(models.Model):
 		"""
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"external_networks": [enb.to_dict() for enb in self.external_networks()]}
+			"externalNetworks": [enb.toDict() for enb in self.externalNetworks()]}
 		res.update(self.attributes.items())
 		return res
 
@@ -278,28 +281,28 @@ class Template(models.Model):
 		self.download_url = download_url
 		self.save()
 
-	def set_default(self):
+	def setDefault(self):
 		Template.objects.filter(type=self.type).update(default=False) # pylint: disable-msg=E1101
 		self.default=True
 		self.save()
 		
-	def get_filename(self):
+	def getFilename(self):
 		if self.type == "kvm":
 			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
 	
-	def upload_to_host(self, host):
-		if host.cluster_state() == ClusterState.NODE:
+	def uploadToHost(self, host):
+		if host.clusterState() == ClusterState.NODE:
 			return
-		dst = self.get_filename()
+		dst = self.getFilename()
 		if self.download_url:
 			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
-	def to_dict(self):
+	def toDict(self):
 		"""
 		Prepares a template for serialization.
 			
@@ -324,7 +327,7 @@ class PhysicalLink(models.Model):
 		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
 	
-	def to_dict(self):
+	def toDict(self):
 		"""
 		Prepares a physical link object for serialization.
 		
@@ -341,16 +344,16 @@ class ExternalNetwork(models.Model):
 	max_devices = models.IntegerField(null=True)
 	avoid_duplicates = models.BooleanField(default=False)
 
-	def has_free_slots(self):
-		return not (self.max_devices and self.usage_count() >= self.max_devices) 
+	def hasFreeSlots(self):
+		return not (self.max_devices and self.usageCount() >= self.max_devices) 
 
-	def usage_count(self):
+	def usageCount(self):
 		import external
 		connectors = external.ExternalNetworkConnector.objects.filter(used_network=self)
 		num = connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
 		return num if num else 0
 		
-	def to_dict(self, bridges=False):
+	def toDict(self, bridges=False):
 		"""
 		Prepares an object for serialization.
 		
@@ -359,7 +362,7 @@ class ExternalNetwork(models.Model):
 		"""
 		data = {"type": self.type, "group": self.group, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
 		if bridges:
-			data["bridges"] = [enb.to_dict() for enb in self.externalnetworkbridge_set.all()]
+			data["bridges"] = [enb.toDict() for enb in self.externalnetworkbridge_set.all()]
 		return data
 
 	
@@ -368,7 +371,7 @@ class ExternalNetworkBridge(models.Model):
 	network = models.ForeignKey(ExternalNetwork)
 	bridge = models.CharField(max_length=10)
 
-	def to_dict(self):
+	def toDict(self):
 		"""
 		Prepares an object for serialization.
 		
@@ -378,23 +381,23 @@ class ExternalNetworkBridge(models.Model):
 		return {"host": self.host.name, "type": self.network.type, "group": self.network.group, "bridge": self.bridge}
 
 	
-def get_host_groups():
+def getHostGroups():
 	groups = []
 	for h in Host.objects.all(): # pylint: disable-msg=E1101
 		if not h.group in groups:
 			groups.append(h.group)
 	return groups
 	
-def get_host(name):
+def getHost(name):
 	return Host.objects.get(name=name) # pylint: disable-msg=E1101
 
-def get_hosts(group=None):
+def getHosts(group=None):
 	hosts = Host.objects.all()
 	if group:
 		hosts = hosts.filter(group=group)
 	return hosts
 
-def get_best_host(group):
+def getBestHost(group):
 	all_hosts = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
 	if group:
 		all_hosts = all_hosts.filter(group=group)
@@ -404,32 +407,32 @@ def get_best_host(group):
 	else:
 		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
 
-def get_templates(ttype=None):
+def getTemplates(ttype=None):
 	tpls = Template.objects.all() # pylint: disable-msg=E1101
 	if ttype:
 		tpls = tpls.filter(type=ttype)
 	return tpls
 
-def get_template_name(ttype, name):
+def getTemplateName(ttype, name):
 	try:
 		return Template.objects.get(type=ttype, name=name).name # pylint: disable-msg=E1101
 	except: #pylint: disable-msg=W0702
-		return get_default_template(ttype)
+		return getDefaultTemplate(ttype)
 
-def get_template(ttype, name):
+def getTemplate(ttype, name):
 	return Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
 
-def add_template(name, template_type, url):
+def addTemplate(name, template_type, url):
 	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
 	proc = tasks.Process("upload-template")
-	for host in get_hosts():
-		proc.addTask(tasks.Task(host.name, fn=tpl.upload_to_host, args=(host,)))
+	for host in getHosts():
+		proc.addTask(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
 	return proc.start()
 	
-def remove_template(name):
+def removeTemplate(name):
 	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
 	
-def get_default_template(ttype):
+def getDefaultTemplate(ttype):
 	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101
 	if tpls.count() >= 1:
 		return tpls[0].name
@@ -443,24 +446,24 @@ def create(host_name, group_name, enabled, attrs):
 	return host.check()
 
 def change(host_name, group_name, enabled, attrs):
-	host = get_host(host_name)
+	host = getHost(host_name)
 	host.enabled=enabled
 	host.group=group_name
 	host.configure(attrs)
 	host.save()
 	
 def remove(host_name):
-	host = get_host(host_name)
+	host = getHost(host_name)
 	assert len(host.device_set.all()) == 0, "Cannot remove hosts that are used"
 	host.delete()
 		
-def get_physical_link(srcg_name, dstg_name):
+def getPhysicalLink(srcg_name, dstg_name):
 	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name) # pylint: disable-msg=E1101		
 		
-def get_all_physical_links():
+def getAllPhysicalLinks():
 	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 		
-def measure_link_properties(src, dst):
+def measureLinkProperties(src, dst):
 	res = src.execute("ping -A -c 500 -n -q -w 300 %s" % dst.name)
 	if not res:
 		return
@@ -480,34 +483,34 @@ def measure_link_properties(src, dst):
 def measure_physical_links():
 	if config.remote_dry_run:
 		return
-	for srcg in get_host_groups():
-		for dstg in get_host_groups():
+	for srcg in getHostGroups():
+		for dstg in getHostGroups():
 			if not srcg == dstg:
 				try:
-					src = get_best_host(srcg)
-					dst = get_best_host(dstg)
-					(loss, delay_avg, delay_stddev) = measure_link_properties(src, dst)
-					link = get_physical_link(srcg, dstg)
+					src = getBestHost(srcg)
+					dst = getBestHost(dstg)
+					(loss, delay_avg, delay_stddev) = measureLinkProperties(src, dst)
+					link = getPhysicalLink(srcg, dstg)
 					link.adapt(loss, delay_avg, delay_stddev) 
 				except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
 					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
 				except fault.Fault:
 					pass
 
-def check_all_hosts():
-	for host in get_hosts():
+def checkAllHosts():
+	for host in getHosts():
 		host.check()
 
 if not config.TESTING and not config.MAINTENANCE:				
 	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
 	measurement_task.start()
-	host_check_task = util.RepeatedTimer(3600*6, check_all_hosts)
+	host_check_task = util.RepeatedTimer(3600*6, checkAllHosts)
 	host_check_task.start()
 	atexit.register(measurement_task.stop)
 	atexit.register(host_check_task.stop)
 
-def host_check(host):
+def hostCheck(host):
 	return host.check()
 
-def external_networks():
-	return [en.to_dict(True) for en in ExternalNetwork.objects.all()]
+def externalNetworks():
+	return [en.toDict(True) for en in ExternalNetwork.objects.all()]

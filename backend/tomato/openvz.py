@@ -15,176 +15,171 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+import generic, hosts, hashlib, config
 
-import generic, util, hosts, hashlib, config, fault, os, uuid
+from lib import util, vzctl, ifaceutil, hostserver
 
 class OpenVZDevice(generic.Device):
 	def upcast(self):
 		return self
 
 	def init(self):
-		self.attributes["root_password"] = "glabroot"
-		self.attributes["template"] = ""
+		self.setTemplate("")
+		self.setRootPassword("glabroot")
 
-	def _vzctl(self, cmd, params=""):
-		#FIXME: make synchronized because vzctl creates a lock
-		return self.host.execute("vzctl %s %s %s" % (cmd, self.attributes["vmid"], params) )
+	def setVmid(self, value):
+		self.attributes["vmid"] = value
 
-	def _exec(self, cmd):
-		return self._vzctl("exec", "'%s'" % cmd)
+	def getVmid(self):
+		return self.attributes.get("vmid")
 
-	def _image_path(self):
-		return "/var/lib/vz/private/%s" % self.attributes["vmid"]
+	def setVncPort(self, value):
+		self.attributes["vnc_port"] = value
+
+	def getVncPort(self):
+		return self.attributes.get("vnc_port")
+
+	def setTemplate(self, value):
+		self.attributes["template"] = value
+
+	def getTemplate(self):
+		return self.attributes["template"]
+
+	def setRootPassword(self, value):
+		self.attributes["root_password"] = value
+
+	def getRootPassword(self):
+		return self.attributes["root_password"]
+
+	def getState(self):
+		if config.remote_dry_run:
+			return self.state
+		if not self.getVmid() or not self.host:
+			return generic.State.CREATED
+		return vzctl.getState(self.host, self.getVmid()) 
 
 	def execute(self, cmd):
-		if self.state == generic.State.STARTED:
-			return self._exec(cmd)
-		else:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE, "Device must be running to execute commands on it: %s" % self.name)
+		assert self.state == generic.State.STARTED, "Device must be running to execute commands on it: %s" % self.name
+		return vzctl.execute(self.host, self.getVmid(), cmd)
 
-	def vnc_password(self):
-		if not self.attributes.get("vnc_port"):
+	def vncPassword(self):
+		if not self.getVncPort():
 			return None 
 		m = hashlib.md5()
 		m.update(config.password_salt)
 		m.update(str(self.name))
-		m.update(str(self.attributes["vmid"]))
-		m.update(str(self.attributes["vnc_port"]))
+		m.update(str(self.getVmid()))
+		m.update(str(self.getVncPort()))
 		m.update(str(self.topology.owner))
 		return m.hexdigest()
 	
-	def get_state(self):
-		if config.remote_dry_run:
-			return self.state
-		if not self.attributes["vmid"]:
-			return generic.State.CREATED
-		res = self._vzctl("status")
-		if "exist" in res and "running" in res:
-			return generic.State.STARTED
-		if "exist" in res and "down" in res:
-			return generic.State.PREPARED
-		if "deleted" in res:
-			return generic.State.CREATED
-		raise fault.new(fault.UNKNOWN, "Unable to determine openvz state for %s: %s" % ( self, res ) )
-	
-	def _start_vnc(self):
-		if not self.attributes.get("vnc_port"):
-			self.attributes["vnc_port"] = self.host.next_free_port()
-			self.save()		
-		self.host.free_port(self.attributes["vnc_port"])		
-		self.host.execute("( while true; do vncterm -rfbport %s -passwd %s -c vzctl enter %s ; done ) >/dev/null 2>&1 & echo $! > vnc-%s.pid" % ( self.attributes["vnc_port"], self.vnc_password(), self.attributes["vmid"], self.name ))
+	def _startVnc(self):
+		if not self.getVncPort():
+			self.setVncPort(self.host.nextFreePort())
+		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
-	def _wait_until_started(self):
-		self._exec("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
-	
-	def _check_state(self, asserted):
-		self.state = asserted #for dry-run
-		self.state = self.get_state()
-		self.save()
-		assert self.state == asserted, "VM in wrong state, is %s, should be %s" % ( self.state, asserted )
+	def _startVm(self):
+		vzctl.start(self.host, self.getVmid())
 
-	def _check_interfaces_exist(self):
+	def _checkInterfacesExist(self):
 		for i in self.interfaceSetAll():
-			assert self.host.interface_exists(self.interface_device(i))
+			assert self.host.interface_exists(self.interfaceDevice(i))
 
-	def _create_bridges(self):
+	def _createBridges(self):
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
 				bridge = self.bridgeName(iface)
 				assert bridge, "Interface has no bridge %s" % iface
-				self.host.bridge_create(bridge)
-				self.host.execute("ip link set %s up" % bridge)
+				ifaceutil.bridgeCreate(self.host, bridge)
+				ifaceutil.ifup(self.host, bridge)
 
-	def _configure_routes(self):
+	def _configureRoutes(self):
+		#Note: usage of self as host is intentional
 		if self.attributes.get("gateway4"):
-			self._exec("ip route add default via %s" % self.attributes["gateway4"]) 
+			ifaceutil.setDefaultRoute(self, self.attributes["gateway4"]) 
 		if self.attributes.get("gateway6"):
-			self._exec("ip route add default via %s" % self.attributes["gateway6"]) 
+			ifaceutil.setDefaultRoute(self, self.attributes["gateway6"]) 
 
-	def get_start_tasks(self):
-		import tasks
-		taskset = generic.Device.get_start_tasks(self)
-		taskset.addTask(tasks.Task("create-bridges", self._create_bridges))
-		taskset.addTask(tasks.Task("start-vm", self._vzctl, args=("start",), depends="create-bridges"))
-		taskset.addTask(tasks.Task("wait-start", self._wait_until_started, depends="start-vm"))
-		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.STARTED,), depends="wait-start"))
-		taskset.addTask(tasks.Task("check-interfaces-exist", self._check_interfaces_exist, depends="check-state"))
+	def getStartTasks(self):
+		from lib import tasks
+		taskset = generic.Device.getStartTasks(self)
+		taskset.addTask(tasks.Task("create-bridges", self._createBridges))
+		taskset.addTask(tasks.Task("start-vm", self._startVm, depends="create-bridges"))
+		taskset.addTask(tasks.Task("check-interfaces-exist", self._checkInterfacesExist, depends="start-vm"))
 		for iface in self.interfaceSetAll():
-			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().get_start_tasks().addGlobalDepends("check-interfaces-exist"))
-		taskset.addTask(tasks.Task("configure-routes", self._configure_routes, depends="check-state"))
-		taskset.addTask(tasks.Task("start-vnc", self._start_vnc, depends="check-state"))
+			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().getStartTasks().addGlobalDepends("check-interfaces-exist"))
+		taskset.addTask(tasks.Task("configure-routes", self._configureRoutes, depends="start-vm"))
+		taskset.addTask(tasks.Task("start-vnc", self._startVnc, depends="start-vm"))
 		return taskset
 
-	def _stop_vnc(self):
-		self.host.process_kill("vnc-%s.pid" % self.name)
-		self.host.free_port(self.attributes["vnc_port"])		
+	def _stopVnc(self):
+		vzctl.stopVnc(self.host, self.getVmid(), self.getVncPort())
 		del self.attributes["vnc_port"]
+	
+	def _stopVm(self):
+		vzctl.stop(self.host, self.getVmid())
 
-	def get_stop_tasks(self):
-		import tasks
-		taskset = generic.Device.get_stop_tasks(self)
-		taskset.addTask(tasks.Task("stop-vnc", self._stop_vnc))
-		taskset.addTask(tasks.Task("stop-vm", self._vzctl, args=("stop",)))
-		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.PREPARED,), depends="stop-vm"))
+	def getStopTasks(self):
+		from lib import tasks
+		taskset = generic.Device.getStopTasks(self)
+		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc))
+		taskset.addTask(tasks.Task("stop-vm", self._stopVm))
 		return taskset	
 
-	def _assign_template(self):
-		self.attributes["template"] = hosts.get_template_name("openvz", self.attributes.get("template"))
-		assert self.attributes["template"] and self.attributes["template"] != "None", "Template not found"
+	def _assignTemplate(self):
+		self.setTemplate(hosts.getTemplateName(self.type, self.getTemplate()))
+		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
-	def _assign_host(self):
+	def _assignHost(self):
 		if not self.host:
 			self.host = self.hostOptions().best()
 			assert self.host, "No matching host found"
 			self.save()
 
-	def _assign_vmid(self):
-		if not self.attributes.get("vmid"):
-			self.attributes["vmid"] = self.host.next_free_vm_id()
+	def _assignVmid(self):
+		assert self.host
+		if not self.getVmid():
+			self.setVmid(self.host.nextFreeVmId())
 
-	def _use_template(self):
-		vmid = self.attributes["vmid"]
-		self.host.file_mkdir("/var/lib/vz/images/%s" % vmid)
-		self.host.file_copy("/var/lib/vz/template/qemu/%s.qcow2" % self.attributes["template"], self._image_path())
-		self._qm("set", "--ide0 local:%s/disk.qcow2" % vmid)
+	def _configureVm(self):
+		if self.getRootPassword():
+			vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
+		vzctl.setHostname(self.host, self.getVmid(), "%s-%s" % (self.topology.name.replace("_","-"), self.name ))
 
-	def _configure_vm(self):
-		self._vzctl("set", "--devices c:10:200:rw --capability net_admin:on --save")
-		if self.attributes.get("root_password"):
-			self._vzctl("set", "--userpasswd root:%s --save" % self.attributes["root_password"])
-		self._vzctl("set", "--hostname %s-%s --save" % (self.topology.name.replace("_","-"), self.name ))
-
-	def _create_interfaces(self):
+	def _createInterfaces(self):
 		for iface in self.interfaceSetAll():
-			iface.upcast()._create_interface()
+			vzctl.addInterface(self.host, self.getVmid(), iface.name)
 
-	def get_prepare_tasks(self):
-		import tasks
-		taskset = generic.Device.get_prepare_tasks(self)
-		taskset.addTask(tasks.Task("assign-template", self._assign_template))
-		taskset.addTask(tasks.Task("assign-host", self._assign_host))		
-		taskset.addTask(tasks.Task("assign-vmid", self._assign_vmid, depends="assign-host"))
-		taskset.addTask(tasks.Task("create-vm", self._vzctl, args=("create","--ostemplate %s" % self.attributes["template"]), depends="assign-vmid"))
-		taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.PREPARED,), depends="create-vm"))
-		taskset.addTask(tasks.Task("configure-vm", self._configure_vm, depends="check-state"))
-		taskset.addTask(tasks.Task("create-interfaces", self._create_interfaces, depends="configure-vm"))
+	def _createVm(self):
+		vzctl.create(self.host, self.getVmid(), self.getTemplate())
+
+	def getPrepareTasks(self):
+		from lib import tasks
+		taskset = generic.Device.getPrepareTasks(self)
+		taskset.addTask(tasks.Task("assign-template", self._assignTemplate))
+		taskset.addTask(tasks.Task("assign-host", self._assignHost))		
+		taskset.addTask(tasks.Task("assign-vmid", self._assignVmid, depends="assign-host"))
+		taskset.addTask(tasks.Task("create-vm", self._createVm, depends="assign-vmid"))
+		taskset.addTask(tasks.Task("configure-vm", self._configureVm, depends="create-vm"))
+		taskset.addTask(tasks.Task("create-interfaces", self._createInterfaces, depends="configure-vm"))
 		return taskset
 
-	def _unassign_host(self):
+	def _unassignHost(self):
 		self.host = None
 		
-	def _unassign_vmid(self):
+	def _unassignVmid(self):
 		del self.attributes["vmid"]
 
-	def get_destroy_tasks(self):
-		import tasks
-		taskset = generic.Device.get_destroy_tasks(self)
+	def _destroyVm(self):
+		vzctl.destroy(self.host, self.getVmid())
+
+	def getDestroyTasks(self):
+		from lib import tasks
+		taskset = generic.Device.getDestroyTasks(self)
 		if self.host:
-			taskset.addTask(tasks.Task("destroy-vm", self._vzctl, args=("destroy",)))
-			taskset.addTask(tasks.Task("check-state", self._check_state, args=(generic.State.CREATED,), depends="destroy-vm"))
-			taskset.addTask(tasks.Task("unassign-host", self._unassign_host, depends="check-state"))
-			taskset.addTask(tasks.Task("unassign-vmid", self._unassign_vmid, depends="check-state"))
+			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm))
+			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="destroy-vm"))
+			taskset.addTask(tasks.Task("unassign-vmid", self._unassignVmid, depends="destroy-vm"))
 		return taskset
 
 	def configure(self, properties):
@@ -192,29 +187,27 @@ class OpenVZDevice(generic.Device):
 			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
 		generic.Device.configure(self, properties)
 		if "root_password" in properties:
-			if self.state == "prepared" or self.state == "started":
-				self._vzctl("set", "--userpasswd root:%s --save\n" % self.attributes["root_password"])
+			if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+				vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		if "gateway4" in properties:
-			if self.attributes["gateway4"] and self.state == "started":
-				self._exec("ip route add default via %s" % self.attributes["gateway4"])
+			if self.attributes["gateway4"] and self.state == generic.State.STARTED:
+				#Note: usage of self as host is intentional
+				ifaceutil.setDefaultRoute(self, self.attributes["gateway4"])
 		if "gateway6" in properties:
-			if self.attributes["gateway6"] and self.state == "started":
-				self._exec("ip route add default via %s" % self.attributes["gateway6"])
+			if self.attributes["gateway6"] and self.state == generic.State.STARTED:
+				#Note: usage of self as host is intentional
+				ifaceutil.setDefaultRoute(self, self.attributes["gateway6"])
 		if "template" in properties:
-			self.attributes["template"] = hosts.get_template_name(self.type, properties["template"]) #pylint: disable-msg=W0201
-			if not self.attributes["template"]:
-				raise fault.new(fault.NO_SUCH_TEMPLATE, "Template not found: %s" % properties["template"])
+			self._assignTemplate()
+			assert self.getTemplate(), "Template not found: %s" % properties["template"]
 		self.save()
 
-	def interfaces_add(self, name, properties):
-		if self.state == generic.State.STARTED:
-			raise fault.new(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
+	def interfacesAdd(self, name, properties):
+		assert self.state != generic.State.STARTED, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name
 		import re
-		if not re.match("eth(\d+)", name):
-			raise fault.new(fault.INVALID_INTERFACE_NAME, "Invalid interface name: %s" % name)
+		assert re.match("eth(\d+)", name), "Invalid interface name: %s" % name
 		try:
-			if self.interfaceSetGet(name):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
+			assert not self.interfaceSetGet(name), "Duplicate interface name: %s" % name
 		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
@@ -227,17 +220,16 @@ class OpenVZDevice(generic.Device):
 		iface.save()
 		generic.Device.interfaceSetAdd(self, iface)
 
-	def interfaces_configure(self, name, properties):
+	def interfacesConfigure(self, name, properties):
 		iface = self.interfaceSetGet(name).upcast()
 		iface.configure(properties)
 
-	def interfaces_rename(self, name, properties):
+	def interfacesRename(self, name, properties):
 		iface = self.interfaceSetGet(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
-			self._vzctl("set", "--netif_del %s --save\n" % iface.name)
+			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		try:
-			if self.interfaceSetGet(properties["name"]):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % properties["name"])
+			assert not self.interfaceSetGet(properties["name"]), "Duplicate interface name: %s" % properties["name"]
 		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]
@@ -247,54 +239,35 @@ class OpenVZDevice(generic.Device):
 			iface.start_run()	
 		iface.save()
 
-	def interfaces_delete(self, name):
+	def interfacesDelete(self, name):
 		iface = self.interfaceSetGet(name).upcast()
 		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
-			self._vzctl("set", "--netif_del %s --save\n" % iface.name)
+			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()
 
-	def _get_env(self):
-		return {"host": self.host, "vmid": self.attributes["vmid"], "vnc_port": self.attributes["vnc_port"], "state": self.state}
-
-	def _set_env(self, env):
-		self.state = env["state"]
-		self.host = env["host"]
-		self.attributes["vmid"] = env["vmid"]
-		self.attributes["vnc_port"] = env["vnc_port"]
-
-	def migrate_run(self, host=None):
+	def migrateRun(self, host=None):
 		#FIXME: both vmids must be reserved the whole time
 		if self.state == generic.State.CREATED:
-			self.host = None
-			self.save()
+			self._unassignHost()
+			self._unassignVmid()
 			return
-		if not host:
-			host = self.hostOptions().best()
-		if not host:
-			raise fault.new(fault.NO_HOSTS_AVAILABLE, "No matching host found")
-		#save old data
-		oldhost = self.host
-		oldenv = self._get_env()
-		oldstate = self.state
-		#save new data
-		newhost = host
-		newvmid = newhost.next_free_vm_id()
-		newenv = {"host": newhost, "state": generic.State.CREATED, "vmid": newvmid, "vnc_port": None}
-		#prepare new vm
-		self._set_env(newenv)
-		self.prepare(True)
-		newenv = self._get_env()
-		#create a tmp directory on both hosts
-		tmp = "/tmp/%s" % uuid.uuid1()
-		oldhost.file_mkdir(tmp)
-		newhost.file_mkdir(tmp)
-		#transfer vm disk image
-		self._set_env(oldenv)
-		targz = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image())
-		oldhost.file_move(targz, "%s/disk.tar.gz" % tmp)
-		oldhost.file_transfer("%s/disk.tar.gz" % tmp, newhost, "%s/disk.tar.gz" % tmp, direct=True)
-		newhost.execute("gunzip < %s/disk.tar.gz > %s/disk.tar" % (tmp, tmp))
-		#stop all connectors
+		#save src data
+		src_host = self.host
+		src_vmid = self.getVmid()
+		#assign new host and vmid
+		self._unassignHost()
+		self._unassignVmid()
+		if host:
+			self.host = host
+		else:
+			self._assignHost()
+		self._assignVmid()
+		dst_host = self.host
+		dst_vmid = self.getVmid()
+		#reassign host and vmid
+		self.host = src_host
+		self.setVmid(src_vmid)
+		#destroy all connectors and save their state
 		constates={}
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
@@ -305,43 +278,16 @@ class OpenVZDevice(generic.Device):
 				if con.state == generic.State.STARTED:
 					con.stop(True)
 				if con.state == generic.State.PREPARED:
-					con.destroy(True)		
-		if oldstate == generic.State.STARTED:
-			#prepare rdiff before snapshot to save time
-			oldhost.execute("gunzip < %(tmp)s/disk.tar.gz > %(tmp)s/disk.tar" % {"tmp": tmp})
-			oldhost.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": tmp})
-			#create a memory snapshot on old host and transfer it
-			self._stop_vnc()
-			import time
-			time.sleep(10)
-			self._vzctl("chkpnt", "--dumpfile %s/openvz.dump" % tmp)
-			self.state = generic.State.PREPARED
-			oldhost.file_transfer("%s/openvz.dump" % tmp, newhost, "%s/openvz.dump" % tmp, direct=True)
-			#create and transfer a disk image rdiff
-			targz2 = "%s/%s" % (self.host.attributes["hostserver_basedir"], self.prepare_downloadable_image(gzip=False))
-			oldhost.execute("rdiff -- delta %s/rdiff.sigs %s - | gzip > %s/disk.rdiff.gz" % (tmp, targz2, tmp))
-			oldhost.file_delete(targz2)
-			oldhost.file_transfer("%s/disk.rdiff.gz" % tmp, newhost, "%s/disk.rdiff.gz" % tmp)
-			#patch disk image with the rdiff
-			newhost.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": tmp})
-			newhost.file_move("%s/disk-patched.tar" % tmp, "%s/disk.tar" % tmp)
-		#destroy vm on old host
-		self.destroy(True)
-		oldenv = self._get_env()
-		#use disk image on new host
-		self._set_env(newenv)
-		self.use_uploaded_image_run("%s/disk.tar" % tmp, gzip=False)
-		if oldstate == generic.State.STARTED:
-			#restore memory snapshot on new host
-			self._vzctl("restore", "--dumpfile %s/openvz.dump" % tmp)
-			assert self.get_state() == generic.State.STARTED 
-			self._start_vnc()
-			self.state = generic.State.STARTED
-		#remove tmp directories
-		oldhost.file_delete(tmp, recursive=True)
-		newhost.file_delete(tmp, recursive=True)
-		#save changes
-		self.save()
+					con.destroy(True)
+		#actually migrate the vm
+		if self.state == generic.State.STARTED:
+			self._stopVnc()
+		vzctl.migrate(src_host, src_vmid, dst_host, dst_vmid)
+		if self.state == generic.State.STARTED:
+			self._startVnc()
+		#switch host and vmid
+		self.host = dst_host
+		self.setVmid(dst_vmid)
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
@@ -354,62 +300,44 @@ class OpenVZDevice(generic.Device):
 					con.prepare(True)
 				if state == generic.State.STARTED:
 					con.start(True)
-
-
-	def upload_supported(self):
+		
+	def uploadSupported(self):
 		return self.state == generic.State.PREPARED
 
-	def use_uploaded_image_run(self, path, gzip=True):
-		self.host.file_delete(self._image_path(), recursive=True)
-		self.host.file_mkdir(self._image_path())
-		self.host.execute("tar -x%sf %s -C %s" % ( "z" if gzip else "", path, self._image_path() ))
-		self.host.file_delete(path)
-		self.attributes["template"] = "***custom***"
-		self.save()
+	def useUploadedImageRun(self, path):
+		assert self.uploadSupported(), "Upload not supported"
+		vzctl.useImage(self.host, self.getVmid(), path, forceGzip=True)
+		self.setTemplate("***custom***")
 
-	def download_supported(self):
+	def downloadSupported(self):
 		return self.state == generic.State.PREPARED
 
-	def prepare_downloadable_image(self, gzip=True):
-		filename = "%s_%s_%s.tar%s" % (self.topology.id, self.name, uuid.uuid1(), ".gz" if gzip else "")
-		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
-		self.host.execute("tar --numeric-owner -c%sf %s -C %s . " % ( "z" if gzip else "", path, self._image_path() ) )
-		return filename
-	
-	def get_resource_usage(self):
-		if self.state == generic.State.CREATED:
-			disk = 0
-		elif self.state == generic.State.STARTED:
-			try:
-				disk = int(self.host.execute("grep -h -A 1 -E '^%s:' /proc/vz/vzquota | tail -n 1 | awk '{print $2}'" % self.attributes["vmid"]))*1024
-			except:
-				disk = -1
-		else:
-			try:
-				disk = int(self.host.execute("du -sb %s | awk '{print $1}'" % self._image_path()))
-			except: #pylint: disable-msg=W0702
-				disk = -1
-		if self.state == generic.State.STARTED:
-			try:
-				memory = int(self.host.execute("grep -e '^[ ]*%s:' -A 20 /proc/user_beancounters | fgrep privvmpages | awk '{print $2}'" % self.attributes["vmid"]))*4*1024
-			except:
-				memory = -1
-			ports = 1
-		else:
-			memory = 0
-			ports = 0
+	def downloadImageUri(self):
+		assert self.downloadSupported(), "Download not supported"
+		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
+		file = hostserver.randomFilename(self.host)
+		vzctl.copyImage(self.host, self.getVmid(), file)
+		return hostserver.downloadGrant(self.host, file, filename)
+
+	def getResourceUsage(self):
+		disk = 0
+		memory = 0
+		ports = 1 if self.state == generic.State.STARTED else 0		
+		if self.host and self.getVmid():
+			disk = vzctl.getDiskUsage(self.host, self.getVmid())
+			memory = vzctl.getMemoryUsage(self.host, self.getVmid())
 		return {"disk": disk, "memory": memory, "ports": ports}		
 
-	def interface_device(self, iface):
-		return "veth%s.%s" % ( self.attributes["vmid"], iface.name )
+	def interfaceDevice(self, iface):
+		return vzctl.interfaceDevice(self.getVmid(), iface.name)
 
-	def to_dict(self, auth):
-		res = generic.Device.to_dict(self, auth)
+	def toDict(self, auth):
+		res = generic.Device.toDict(self, auth)
 		if not auth:
 			del res["attrs"]["vnc_port"]
 			del	res["attrs"]["root_password"]
 		else:
-			res["attrs"]["vnc_password"] = self.vnc_password()
+			res["attrs"]["vnc_password"] = self.vncPassword()
 		return res
 
 class ConfiguredInterface(generic.Interface):
@@ -419,8 +347,8 @@ class ConfiguredInterface(generic.Interface):
 	def upcast(self):
 		return self
 
-	def interface_name(self):
-		return self.device.upcast().interface_device(self)
+	def interfaceName(self):
+		return self.device.upcast().interfaceDevice(self)
 		
 	def configure(self, properties):
 		generic.Interface.configure(self, properties)
@@ -436,40 +364,35 @@ class ConfiguredInterface(generic.Interface):
 				self.start_run()
 			self.save()
 
-	def _connect_to_bridge(self):
+	def _connectToBridge(self):
 		dev = self.device.upcast()
 		bridge = dev.bridgeName(self)
 		if self.isConnected():
-			dev.host.bridge_connect(bridge, self.interface_name())
-			dev.host.execute("ip link set %s up" % bridge)
+			ifaceutil.bridgeConnect(dev.host, bridge, self.interfaceName())
+			ifaceutil.ifup(dev.host, self.interfaceName())
 			
-	def _configure_network(self):
+	def _configureNetwork(self):
 		dev = self.device.upcast()
+		#Note usage of dev instead of host is intentional
 		if self.attributes["ip4address"]:
-			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip4address"], self.name )) 
-			dev._exec("ip link set up dev %s" % self.name ) 
+			ifaceutil.addAddress(dev, self.name, self.attributes["ip4address"])
+			ifaceutil.ifup(dev, self.name) 
 		if self.attributes["ip6address"]:
-			dev._exec("ip addr add %s dev %s" % ( self.attributes["ip6address"], self.name )) 
-			dev._exec("ip link set up dev %s" % self.name ) 
+			ifaceutil.addAddress(dev, self.name, self.attributes["ip6address"])
+			ifaceutil.ifup(dev, self.name) 
 		if self.attributes["use_dhcp"] and util.parse_bool(self.attributes["use_dhcp"]):
-			dev._exec("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % self.name)
-			dev._exec("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % self.name)
+			ifaceutil.startDhcp(dev, self.name)
 			
-	def get_start_tasks(self):
-		import tasks
-		taskset = generic.Interface.get_start_tasks(self)
-		taskset.addTask(tasks.Task("connect-to-bridge", self._connect_to_bridge))
-		taskset.addTask(tasks.Task("configure-network", self._configure_network, depends="connect-to-bridge"))
+	def getStartTasks(self):
+		from lib import tasks
+		taskset = generic.Interface.getStartTasks(self)
+		taskset.addTask(tasks.Task("connect-to-bridge", self._connectToBridge))
+		taskset.addTask(tasks.Task("configure-network", self._configureNetwork, depends="connect-to-bridge"))
 		return taskset
 
-	def _create_interface(self):
-		dev = self.device.upcast()
-		dev._vzctl("set", "--netif_add %s --save" % self.name)
-		dev._vzctl("set", "--ifname %s --host_ifname %s --save" % ( self.name, self.interface_name()))
-		
-	def get_prepare_tasks(self):
-		return generic.Interface.get_prepare_tasks(self)
+	def getPrepareTasks(self):
+		return generic.Interface.getPrepareTasks(self)
 
-	def to_dict(self, auth):
-		res = generic.Interface.to_dict(self, auth)		
+	def toDict(self, auth):
+		res = generic.Interface.toDict(self, auth)		
 		return res				

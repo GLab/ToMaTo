@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import util
+import util
 
 def killPidfile(host, pidfile):
 	host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})

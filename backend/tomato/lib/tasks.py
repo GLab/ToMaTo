@@ -17,7 +17,9 @@
 
 import uuid, os, traceback, threading
 
-import config, util, fault, atexit, time, log
+import util, atexit, time, log
+
+from tomato import config, fault
 
 from cStringIO import StringIO
 
@@ -337,7 +339,7 @@ class Process():
 		if (self.started and time.time() - self.started > 3600*24*3) or (self.finished and time.time() - self.finished > 3600 and not self.isActive()):
 			if not os.path.exists(config.log_dir + "/tasks"):
 				os.makedirs(config.log_dir + "/tasks")
-			logger = log.get_logger(config.log_dir + "/tasks/%s"%self.id)
+			logger = log.getLogger(config.log_dir + "/tasks/%s"%self.id)
 			logger.lograw(self.dict())
 			logger.close()
 			del processes[self.id]

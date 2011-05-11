@@ -166,7 +166,7 @@ def parse_xml(xml, root_tag):
 	@rtype: minidom.Element
 	@raise fault.Error: if the input is not well-formed or the root tag is not found      
 	""" 
-	import fault
+	from tomato import fault
 	try:
 		from xml.dom import minidom
 		dom = minidom.parseString(xml)

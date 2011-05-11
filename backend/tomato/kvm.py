@@ -60,7 +60,7 @@ class KVMDevice(generic.Device):
 		assert self.downloadSupported(), "Download not supported"
 		filename = "%s_%s.qcow2" % (self.topology.name, self.name)
 		file = hostserver.randomFilename(self.host)
-		fileutil.copy(self.host, qm._imagePath(self.getVmid()), file)
+		qm.copyImage(self.host, self.getVmid(), file)
 		return hostserver.downloadGrant(self.host, file, filename)
 
 	def uploadSupported(self):
@@ -73,29 +73,20 @@ class KVMDevice(generic.Device):
 
 	def _startVnc(self):
 		if not self.getVncPort():
-			self.setVncPort(self.host.next_free_port())
+			self.setVncPort(self.host.nextFreePort())
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def _startIface(self, iface):
 		bridge = self.bridgeName(iface)
 		ifaceutil.bridgeCreate(self.host, bridge)
-		ifaceutil.bridgeConnect(self.host, bridge, _interfaceDevice(iface))
+		ifaceutil.bridgeConnect(self.host, bridge, self._interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
 	def _startVm(self):
 		qm.start(self.host, self.getVmid())
 
-	def _checkState(self, asserted):
-		if not config.remote_dry_run:
-			self.state = self.getState()
-			self.save()
-			assert self.state == asserted, "VM in wrong state"
-		else:
-			self.state = asserted
-			self.save()
-
 	def getStartTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Device.getStartTasks(self)
 		taskset.addTask(tasks.Task("start-vm", self._startVm))
 		for iface in self.interfaceSetAll():
@@ -111,14 +102,14 @@ class KVMDevice(generic.Device):
 		qm.stop(self.host, self.getVmid())
 	
 	def getStopTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Device.getStopTasks(self)
 		taskset.addTask(tasks.Task("stop-vm", self._stopVm))
 		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc))
 		return taskset
 
 	def _assignTemplate(self):
-		self.setTemplate(hosts.get_template_name(self.type, self.getTemplate()))
+		self.setTemplate(hosts.getTemplateName(self.type, self.getTemplate()))
 		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
 	def _assignHost(self):
@@ -130,7 +121,7 @@ class KVMDevice(generic.Device):
 	def _assignVmid(self):
 		assert self.host
 		if not self.getVmid():
-			self.setVmid(self.host.next_free_vm_id())
+			self.setVmid(self.host.nextFreeVmId())
 
 	def _useTemplate(self):
 		qm.useTemplate(self.host, self.getVmid(), self.getTemplate())
@@ -145,7 +136,7 @@ class KVMDevice(generic.Device):
 		qm.create(self.host, self.getVmid())
 
 	def getPrepareTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Device.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("assign-template", self._assignTemplate))
 		taskset.addTask(tasks.Task("assign-host", self._assignHost))		
@@ -168,7 +159,7 @@ class KVMDevice(generic.Device):
 		qm.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Device.getDestroyTasks(self)
 		if self.host:
 			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm))
@@ -273,7 +264,11 @@ class KVMDevice(generic.Device):
 				if con.state == generic.State.PREPARED:
 					con.destroy(True)
 		#actually migrate the vm
+		if self.state == generic.State.STARTED:
+			self._stopVnc()
 		qm.migrate(src_host, src_vmid, dst_host, dst_vmid)
+		if self.state == generic.State.STARTED:
+			self._startVnc()
 		#switch host and vmid
 		self.host = dst_host
 		self.setVmid(dst_vmid)

@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import generic, util
+import generic
 
-from lib import ipfw, tcpdump
+from lib import ipfw, tcpdump, util
 
 DEFAULT_LOSSRATIO = 0.0
 DEFAULT_DELAY = 0
@@ -121,7 +121,7 @@ class EmulatedConnection(generic.Connection):
 		ipfw.createPipe(host, pipe_id, self.bridgeName(), dir="out")
 
 	def getStartTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Connection.getStartTasks(self)
 		taskset.addTask(tasks.Task("create-pipe", self._createPipe))
 		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="configure-link"))
@@ -137,7 +137,7 @@ class EmulatedConnection(generic.Connection):
 		ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
 
 	def getStopTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Connection.getStopTasks(self)
 		if "bridgeId" in self.attributes:
 			taskset.addTask(tasks.Task("delete-pipes", self._deletePipes))
@@ -154,7 +154,7 @@ class EmulatedConnection(generic.Connection):
 			tcpdump.removeCapture(host, self._captureName())
 		
 	def getDestroyTasks(self):
-		import tasks
+		from lib import tasks
 		taskset = generic.Connection.getDestroyTasks(self)
 		taskset.addTask(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
