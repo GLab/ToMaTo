@@ -17,6 +17,8 @@
 
 import fault, topology, generic
 
+from devices import kvm, openvz
+from connectors import external, vpn
 from lib import util
 
 class Modification():
@@ -36,7 +38,6 @@ class Modification():
 			top.save()
 		elif self.type == "device-create":
 			dtype = self.properties["type"]
-			import kvm, openvz
 			if dtype == "kvm":
 				dev = kvm.KVMDevice()
 			elif dtype == "openvz":
@@ -82,11 +83,10 @@ class Modification():
 		
 		elif self.type == "connector-create":
 			ctype = self.properties["type"]
-			import tinc, external
 			if ctype == "external":
 				con = external.ExternalNetworkConnector()
 			elif ctype == "hub" or ctype =="switch" or ctype == "router":
-				con = tinc.TincConnector()
+				con = vpn.TincConnector()
 			else:
 				raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Unknown connector type: %s" % type )
 			con.init()

@@ -49,7 +49,7 @@ from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
 
 import generic, topology, hosts, fault
 from lib import log, tasks
-import tinc, kvm, openvz
+import vpn, kvm, openvz
 
 def _top_access(top, role, user):
 	"""
@@ -102,7 +102,7 @@ def host_info(hostname, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Returns: a dict of host details if host exists or False otherwise
 	"""
 	try:
-		return hosts.getHost(hostname).toDict()
+		return hosts.getHostName(hostname).toDict()
 	except hosts.Host.DoesNotExist: # pylint: disable-msg=E1101
 		return False
 
@@ -190,7 +190,7 @@ def host_debug(host_name, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.getHost(host_name)
+	host = hosts.getHostName(host_name)
 	return host.debugInfo()
 
 def host_check(host_name, user=None):
@@ -207,8 +207,8 @@ def host_check(host_name, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.getHost(host_name)
-	return hosts.hostCheck(host)
+	host = hosts.getHostName(host_name)
+	return hosts.check(host)
 
 def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -216,7 +216,7 @@ def host_groups(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	
 	Returns: list of all host group names
 	"""
-	return hosts.getHostGroups()
+	return hosts.getGroups()
 
 def external_network_add(type, group, params, user=None):
 	"""
@@ -290,7 +290,7 @@ def external_network_bridge_add(host_name, type, group, bridge, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.getHost(host_name)
+	host = hosts.getHostName(host_name)
 	host.externalNetworksAdd(type, group, bridge)
 
 def external_network_bridge_remove(host_name, type, group, user=None):
@@ -306,7 +306,7 @@ def external_network_bridge_remove(host_name, type, group, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	host = hosts.getHost(host_name)
+	host = hosts.getHostName(host_name)
 	host.externalNetworksRemove(type, group)
 
 def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
@@ -318,7 +318,7 @@ def external_networks(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
-	return hosts.externalNetworks()
+	return hosts.getAll()
 
 def top_info(top_id, user=None):
 	"""
@@ -516,7 +516,7 @@ def template_list(template_type="", user=None): #@UnusedVariable, pylint: disabl
 	"""
 	if not template_type:
 		template_type = None
-	return [t.toDict() for t in hosts.getTemplates(template_type)]
+	return [t.toDict() for t in hosts.getAll(template_type)]
 
 def template_add(name, template_type, url, user=None):
 	"""
@@ -531,7 +531,7 @@ def template_add(name, template_type, url, user=None):
 	Returns: task id
 	"""
 	_admin_access(user)
-	return hosts.addTemplate(name, template_type, url)
+	return hosts.add(name, template_type, url)
 
 def template_remove(name, user=None):
 	"""
@@ -542,7 +542,7 @@ def template_remove(name, user=None):
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.removeTemplate(name)
+	hosts.remove(name)
 
 def template_set_default(template_type, name, user=None):
 	"""
@@ -554,7 +554,7 @@ def template_set_default(template_type, name, user=None):
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.getTemplate(template_type, name).setDefault()
+	hosts.get(template_type, name).setDefault()
 
 def errors_all(user=None):
 	"""
@@ -640,7 +640,7 @@ def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylin
 	
 	Returns: physical link statistics
 	"""
-	return hosts.getPhysicalLink(src_group, dst_group).toDict()
+	return hosts.get(src_group, dst_group).toDict()
 	
 def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -648,7 +648,7 @@ def physical_links_get_all(user=None): #@UnusedVariable, pylint: disable-msg=W06
 
 	Returns: list of all physical link statistics
 	"""
-	return [l.toDict() for l in hosts.getAllPhysicalLinks()]
+	return [l.toDict() for l in hosts.getAll()]
 
 def admin_public_key(user=None):
 	"""

@@ -15,13 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from dummynet import * #@UnusedWildImport
-from generic import * #@UnusedWildImport
-from hosts import * #@UnusedWildImport
-from kvm import * #@UnusedWildImport
-from openvz import * #@UnusedWildImport
-from tinc import * #@UnusedWildImport
-from topology import * #@UnusedWildImport
-from fault import * #@UnusedWildImport
-from external import * #@UnusedWildImport
-from attributes import *  #@UnusedWildImport
+
+from connectors import Connector, Connection #@UnusedImport
+from connectors.dummynet import EmulatedConnection #@UnusedImport
+from connectors.external import ExternalNetworkConnector #@UnusedImport
+from connectors.vpn import TincConnector, TincConnection #@UnusedImport
+from devices import Device, Interface #@UnusedImport
+from devices.kvm import KVMDevice #@UnusedImport
+from devices.openvz import OpenVZDevice, ConfiguredInterface #@UnusedImport
+from topology import Topology, Permission #@UnusedImport
+from attributes import AttributeSet, AttributeEntry #@UnusedImport
+from fault import Error #@UnusedImport
+from hosts import Host, ExternalNetwork, ExternalNetworkBridge, PhysicalLink, Template #@UnusedImport

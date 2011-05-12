@@ -16,11 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import generic, fault, hosts
+from tomato import fault, hosts
 
-from lib import ifaceutil
+from tomato.connectors import Connector, Connection
+from tomato.generic import State, ObjectPreferences
+from tomato.lib import ifaceutil, tasks
 
-class ExternalNetworkConnector(generic.Connector):
+class ExternalNetworkConnector(Connector):
 	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
 	
 	def upcast(self):
@@ -60,7 +62,7 @@ class ExternalNetworkConnector(generic.Connector):
 					prefs.add(enb.host, 1.0)
 		
 	def hostPreferences(self):
-		prefs = generic.ObjectPreferences(True)
+		prefs = ObjectPreferences(True)
 		if self.used_network:
 			self._updateHostPreferences(prefs, self.used_network)
 		else:
@@ -70,7 +72,7 @@ class ExternalNetworkConnector(generic.Connector):
 		return prefs
 
 	def networkOptions(self):
-		options = generic.ObjectPreferences(True)
+		options = ObjectPreferences(True)
 		ens = hosts.ExternalNetwork.objects.filter(type=self.getNetworkType())
 		if self.getNetworkGroup():
 			ens = ens.filter(group=self.getNetworkGroup())
@@ -110,8 +112,7 @@ class ExternalNetworkConnector(generic.Connector):
 		self.save()
 		
 	def getPrepareTasks(self):
-		from lib import tasks
-		taskset = generic.Connector.getPrepareTasks(self)
+		taskset = Connector.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("select-network", self._selectUsedNetwork))
 		return taskset
 
@@ -120,26 +121,25 @@ class ExternalNetworkConnector(generic.Connector):
 		self.save()	
 	
 	def getDestroyTasks(self):
-		from lib import tasks
-		taskset = generic.Connector.getDestroyTasks(self)
+		taskset = Connector.getDestroyTasks(self)
 		taskset.addTask(tasks.Task("unselect-network", self._unselectUsedNetwork))
 		return taskset
 
 	def configure(self, properties):
-		if "network_type" in properties and self.state != generic.State.CREATED: 
+		if "network_type" in properties and self.state != State.CREATED: 
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of external network with prepared connections: %s" % self.name )
-		if "network_group" in properties and self.state != generic.State.CREATED:
+		if "network_group" in properties and self.state != State.CREATED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of external network with prepared connections: %s" % self.name )
-		generic.Connector.configure(self, properties)
+		Connector.configure(self, properties)
 		if self.attributes["network_group"] == "auto":
 			self.attributes["network_group"] = ""
 		self.save()		
 	
 	def connectionsAdd(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfacesGet(iface_name)
-		if iface.device.state == generic.State.STARTED:
+		if iface.device.state == State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
-		con = generic.Connection ()
+		con = Connection ()
 		con.init()
 		con.connector = self
 		con.interface = iface
@@ -150,7 +150,7 @@ class ExternalNetworkConnector(generic.Connector):
 	
 	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfacesGet(iface_name)
-		if iface.device.state == generic.State.STARTED:
+		if iface.device.state == State.STARTED:
 			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
 		con = self.connectionSetGet(iface)
 		con.delete()
@@ -159,10 +159,10 @@ class ExternalNetworkConnector(generic.Connector):
 		external = 0
 		traffic = 0
 		for con in self.connectionSetAll():
-			if con.interface.device.state == generic.State.STARTED:
+			if con.interface.device.state == State.STARTED:
 				external += 1
 			dev = con.interface.device
-			if dev.host and dev.state == generic.State.STARTED:
+			if dev.host and dev.state == State.STARTED:
 				iface = dev.upcast().interfaceDevice(con.interface)
 				try:
 					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface) 
@@ -179,6 +179,6 @@ class ExternalNetworkConnector(generic.Connector):
 		raise fault.Fault(fault.NO_RESOURCES, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host))
 	
 	def toDict(self, auth):
-		res = generic.Connector.toDict(self, auth)
+		res = Connector.toDict(self, auth)
 		res["attrs"].update(used_network=self.used_network)
 		return res

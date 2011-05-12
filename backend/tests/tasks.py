@@ -33,13 +33,13 @@ class Test(unittest.TestCase):
 		proc = Process("name")
 		proc.addTask(Task("name", self._succeeds, None, None, []))
 		proc.run()
-		assert proc.getStatus() == Status.SUCCEEDED, proc.getStatus()
+		assert proc.getState() == Status.SUCCEEDED, proc.getState()
 	def testFails(self):
 		proc = Process("name")
 		proc.addTask(Task("name", self._fails, None, None, []))
 		try:
 			proc.run()
-			assert proc.getStatus() == Status.FAILED, proc.getStatus()
+			assert proc.getState() == Status.FAILED, proc.getState()
 		except AssertionError:
 			raise
 		except:
@@ -48,12 +48,12 @@ class Test(unittest.TestCase):
 		proc = Process("name")
 		proc.addTask(Task("t1", self._succeeds, None, curry(self._add, [self.var, "t1"]), []))
 		proc.run()
-		assert proc.getStatus() == Status.SUCCEEDED, proc.getStatus()
+		assert proc.getState() == Status.SUCCEEDED, proc.getState()
 		assert "t1" in self.var, "task.onFinished not executed"
 		proc = Process("name", onFinished=curry(self._add, [self.var, "t2"]))
 		proc.addTask(Task("t2", self._succeeds, None, None, []))
 		proc.run()
-		assert proc.getStatus() == Status.SUCCEEDED, proc.getStatus()
+		assert proc.getState() == Status.SUCCEEDED, proc.getState()
 		assert "t2" in self.var, "process.onFinished not executed"
 	def testReverse(self):
 		proc = Process("name")
@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
 		try:
 			proc.run()
 			assert "t1" in self.var, "task not reversed"
-			assert proc.getStatus() == Status.ABORTED, proc.getStatus()
+			assert proc.getState() == Status.ABORTED, proc.getState()
 		except AssertionError:
 			raise
 		except:
@@ -78,7 +78,7 @@ class Test(unittest.TestCase):
 			assert "t2" in self.var, "t2 not executed"
 			assert "t3" in self.var, "t3 not executed"
 			assert "t4" not in self.var, "t4 executed"
-			assert proc.getStatus() == Status.FAILED, proc.getStatus()
+			assert proc.getState() == Status.FAILED, proc.getState()
 		except AssertionError:
 			raise
 		except:

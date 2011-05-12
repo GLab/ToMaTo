@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from tomato.devices import Device, Interface
+from tomato import hosts, fault, config
+from tomato.generic import State
+import hashlib, re
 
-import generic, hosts, fault, config, hashlib, re, uuid, os
+from tomato.lib import tasks, qm, hostserver, ifaceutil
 
-from lib import qm, fileutil, hostserver, ifaceutil
-
-class KVMDevice(generic.Device):
+class KVMDevice(Device):
 	def upcast(self):
 		return self
 
@@ -50,11 +51,11 @@ class KVMDevice(generic.Device):
 		if config.remote_dry_run:
 			return self.state
 		if not self.getVmid() or not self.host:
-			return generic.State.CREATED
+			return State.CREATED
 		return qm.getState(self.host, self.getVmid()) 
 
 	def downloadSupported(self):
-		return self.state == generic.State.PREPARED
+		return self.state == State.PREPARED
 
 	def downloadImageUri(self):
 		assert self.downloadSupported(), "Download not supported"
@@ -64,7 +65,7 @@ class KVMDevice(generic.Device):
 		return hostserver.downloadGrant(self.host, file, filename)
 
 	def uploadSupported(self):
-		return self.state == generic.State.PREPARED
+		return self.state == State.PREPARED
 
 	def useUploadedImageRun(self, path):
 		assert self.uploadSupported(), "Upload not supported"
@@ -86,8 +87,7 @@ class KVMDevice(generic.Device):
 		qm.start(self.host, self.getVmid())
 
 	def getStartTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getStartTasks(self)
+		taskset = Device.getStartTasks(self)
 		taskset.addTask(tasks.Task("start-vm", self._startVm))
 		for iface in self.interfaceSetAll():
 			taskset.addTask(tasks.Task("start-interface-%s" % iface, self._startIface, args=(iface,), depends="start-vm"))
@@ -102,14 +102,13 @@ class KVMDevice(generic.Device):
 		qm.stop(self.host, self.getVmid())
 	
 	def getStopTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getStopTasks(self)
+		taskset = Device.getStopTasks(self)
 		taskset.addTask(tasks.Task("stop-vm", self._stopVm))
 		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc))
 		return taskset
 
 	def _assignTemplate(self):
-		self.setTemplate(hosts.getTemplateName(self.type, self.getTemplate()))
+		self.setTemplate(hosts.findName(self.type, self.getTemplate()))
 		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
 	def _assignHost(self):
@@ -136,8 +135,7 @@ class KVMDevice(generic.Device):
 		qm.create(self.host, self.getVmid())
 
 	def getPrepareTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getPrepareTasks(self)
+		taskset = Device.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("assign-template", self._assignTemplate))
 		taskset.addTask(tasks.Task("assign-host", self._assignHost))		
 		taskset.addTask(tasks.Task("assign-vmid", self._assignVmid, depends="assign-host"))
@@ -159,8 +157,7 @@ class KVMDevice(generic.Device):
 		qm.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getDestroyTasks(self)
+		taskset = Device.getDestroyTasks(self)
 		if self.host:
 			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm))
 			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="destroy-vm"))
@@ -169,28 +166,28 @@ class KVMDevice(generic.Device):
 
 	def configure(self, properties):
 		if "template" in properties:
-			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
-		generic.Device.configure(self, properties)
+			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
+		Device.configure(self, properties)
 		if "template" in properties:
 			self._assignTemplate()
 		self.save()
 			
 	def interfacesAdd(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
-		assert self.state != generic.State.STARTED, "Changes of running KVMs are not supported"
+		assert self.state != State.STARTED, "Changes of running KVMs are not supported"
 		assert re.match("eth(\d+)", name), "Invalid interface name: %s" % name
-		iface = generic.Interface()
+		iface = Interface()
 		iface.init()
 		try:
 			if self.interfaceSetGet(name):
 				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
-		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
+		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = name
 		iface.device = self
-		if self.state == generic.State.PREPARED:
+		if self.state == State.PREPARED:
 			qm.addInterface(self.host, self.getVmid(), iface.name)
 		iface.save()
-		generic.Device.interfaceSetAdd(self, iface)
+		Device.interfaceSetAdd(self, iface)
 
 	def interfacesConfigure(self, name, properties):
 		pass
@@ -200,9 +197,9 @@ class KVMDevice(generic.Device):
 		assert False, "KVM does not support renaming interfaces: %s" % name
 	
 	def interfacesDelete(self, name): #@UnusedVariable, pylint: disable-msg=W0613
-		assert self.state != generic.State.STARTED, "Changes of running KVMs are not supported"
+		assert self.state != State.STARTED, "Changes of running KVMs are not supported"
 		iface = self.interfaceSetGet(name)
-		if self.state == generic.State.PREPARED:
+		if self.state == State.PREPARED:
 			qm.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()
 		
@@ -220,7 +217,7 @@ class KVMDevice(generic.Device):
 	def getResourceUsage(self):
 		disk = 0
 		memory = 0
-		ports = 1 if self.state == generic.State.STARTED else 0		
+		ports = 1 if self.state == State.STARTED else 0		
 		if self.host and self.getVmid():
 			disk = qm.getDiskUsage(self.host, self.getVmid())
 			memory = qm.getMemoryUsage(self.host, self.getVmid())
@@ -231,7 +228,7 @@ class KVMDevice(generic.Device):
 
 	def migrateRun(self, host=None):
 		#FIXME: both vmids must be reserved the whole time
-		if self.state == generic.State.CREATED:
+		if self.state == State.CREATED:
 			self._unassignHost()
 			self._unassignVmid()
 			return
@@ -259,15 +256,15 @@ class KVMDevice(generic.Device):
 				if con.name in constates:
 					continue
 				constates[con.name] = con.state
-				if con.state == generic.State.STARTED:
+				if con.state == State.STARTED:
 					con.stop(True)
-				if con.state == generic.State.PREPARED:
+				if con.state == State.PREPARED:
 					con.destroy(True)
 		#actually migrate the vm
-		if self.state == generic.State.STARTED:
+		if self.state == State.STARTED:
 			self._stopVnc()
 		qm.migrate(src_host, src_vmid, dst_host, dst_vmid)
-		if self.state == generic.State.STARTED:
+		if self.state == State.STARTED:
 			self._startVnc()
 		#switch host and vmid
 		self.host = dst_host
@@ -280,13 +277,13 @@ class KVMDevice(generic.Device):
 					continue
 				state = constates[con.name]
 				del constates[con.name]
-				if state == generic.State.PREPARED or state == generic.State.STARTED:
+				if state == State.PREPARED or state == State.STARTED:
 					con.prepare(True)
-				if state == generic.State.STARTED:
+				if state == State.STARTED:
 					con.start(True)
 
 	def toDict(self, auth):
-		res = generic.Device.toDict(self, auth)
+		res = Device.toDict(self, auth)
 		if not auth:
 			del res["attrs"]["vnc_port"]
 		else:

@@ -15,16 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import generic
-
-from lib import ipfw, tcpdump, util
+from tomato.connectors import Connection
+from tomato.generic import State
+from tomato.lib import ipfw, tcpdump, util, tasks
 
 DEFAULT_LOSSRATIO = 0.0
 DEFAULT_DELAY = 0
 DEFAULT_BANDWIDTH = 10000
 DEFAULT_CAPTURING = False
 
-class EmulatedConnection(generic.Connection):
+class EmulatedConnection(Connection):
 	
 	def init(self):
 		self.setBandwidth(DEFAULT_BANDWIDTH)
@@ -89,8 +89,8 @@ class EmulatedConnection(generic.Connection):
 
 	def configure(self, properties):
 		oldCapturing = self.getCapturing()
-		generic.Connection.configure(self, properties)
-		if self.connector.state == generic.State.STARTED:
+		Connection.configure(self, properties)
+		if self.connector.state == State.STARTED:
 			self._configLink()
 			if oldCapturing and not self.getCapturing():
 				self._stopCapture()
@@ -121,8 +121,7 @@ class EmulatedConnection(generic.Connection):
 		ipfw.createPipe(host, pipe_id, self.bridgeName(), dir="out")
 
 	def getStartTasks(self):
-		from lib import tasks
-		taskset = generic.Connection.getStartTasks(self)
+		taskset = Connection.getStartTasks(self)
 		taskset.addTask(tasks.Task("create-pipe", self._createPipe))
 		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="configure-link"))
 		if self.getCapturing():
@@ -137,8 +136,7 @@ class EmulatedConnection(generic.Connection):
 		ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
 
 	def getStopTasks(self):
-		from lib import tasks
-		taskset = generic.Connection.getStopTasks(self)
+		taskset = Connection.getStopTasks(self)
 		if "bridgeId" in self.attributes:
 			taskset.addTask(tasks.Task("delete-pipes", self._deletePipes))
 		if self.getCapturing():
@@ -146,7 +144,7 @@ class EmulatedConnection(generic.Connection):
 		return taskset
 	
 	def getPrepareTasks(self):
-		return generic.Connection.getPrepareTasks(self)
+		return Connection.getPrepareTasks(self)
 
 	def _removeCaptureDir(self):
 		host = self.getHost()
@@ -154,19 +152,18 @@ class EmulatedConnection(generic.Connection):
 			tcpdump.removeCapture(host, self._captureName())
 		
 	def getDestroyTasks(self):
-		from lib import tasks
-		taskset = generic.Connection.getDestroyTasks(self)
+		taskset = Connection.getDestroyTasks(self)
 		taskset.addTask(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
 	def downloadSupported(self):
-		return not self.connector.state == generic.State.CREATED and self.getCapturing()
+		return not self.connector.state == State.CREATED and self.getCapturing()
 
 	def downloadCaptureUri(self):
 		host = self.getHost()
 		return tcpdump.downloadCaptureUri(host, self._captureName())
 	
 	def toDict(self, auth):
-		res = generic.Connection.toDict(self, auth)		
+		res = Connection.toDict(self, auth)		
 		return res
 	

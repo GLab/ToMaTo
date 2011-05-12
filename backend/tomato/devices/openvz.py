@@ -15,11 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import generic, hosts, hashlib, config
+from tomato import hosts, config
+from tomato.generic import State
+from tomato.devices import Device, Interface
+import hashlib
 
-from lib import util, vzctl, ifaceutil, hostserver
+from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks
 
-class OpenVZDevice(generic.Device):
+class OpenVZDevice(Device):
 	def upcast(self):
 		return self
 
@@ -55,11 +58,11 @@ class OpenVZDevice(generic.Device):
 		if config.remote_dry_run:
 			return self.state
 		if not self.getVmid() or not self.host:
-			return generic.State.CREATED
+			return State.CREATED
 		return vzctl.getState(self.host, self.getVmid()) 
 
 	def execute(self, cmd):
-		assert self.state == generic.State.STARTED, "Device must be running to execute commands on it: %s" % self.name
+		assert self.state == State.STARTED, "Device must be running to execute commands on it: %s" % self.name
 		return vzctl.execute(self.host, self.getVmid(), cmd)
 
 	def vncPassword(self):
@@ -101,8 +104,7 @@ class OpenVZDevice(generic.Device):
 			ifaceutil.setDefaultRoute(self, self.attributes["gateway6"]) 
 
 	def getStartTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getStartTasks(self)
+		taskset = Device.getStartTasks(self)
 		taskset.addTask(tasks.Task("create-bridges", self._createBridges))
 		taskset.addTask(tasks.Task("start-vm", self._startVm, depends="create-bridges"))
 		taskset.addTask(tasks.Task("check-interfaces-exist", self._checkInterfacesExist, depends="start-vm"))
@@ -120,14 +122,13 @@ class OpenVZDevice(generic.Device):
 		vzctl.stop(self.host, self.getVmid())
 
 	def getStopTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getStopTasks(self)
+		taskset = Device.getStopTasks(self)
 		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc))
 		taskset.addTask(tasks.Task("stop-vm", self._stopVm))
 		return taskset	
 
 	def _assignTemplate(self):
-		self.setTemplate(hosts.getTemplateName(self.type, self.getTemplate()))
+		self.setTemplate(hosts.findName(self.type, self.getTemplate()))
 		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
 	def _assignHost(self):
@@ -154,8 +155,7 @@ class OpenVZDevice(generic.Device):
 		vzctl.create(self.host, self.getVmid(), self.getTemplate())
 
 	def getPrepareTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getPrepareTasks(self)
+		taskset = Device.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("assign-template", self._assignTemplate))
 		taskset.addTask(tasks.Task("assign-host", self._assignHost))		
 		taskset.addTask(tasks.Task("assign-vmid", self._assignVmid, depends="assign-host"))
@@ -174,8 +174,7 @@ class OpenVZDevice(generic.Device):
 		vzctl.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
-		from lib import tasks
-		taskset = generic.Device.getDestroyTasks(self)
+		taskset = Device.getDestroyTasks(self)
 		if self.host:
 			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm))
 			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="destroy-vm"))
@@ -184,17 +183,17 @@ class OpenVZDevice(generic.Device):
 
 	def configure(self, properties):
 		if "template" in properties:
-			assert self.state == generic.State.CREATED, "Cannot change template of prepared device: %s" % self.name
-		generic.Device.configure(self, properties)
+			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
+		Device.configure(self, properties)
 		if "root_password" in properties:
-			if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+			if self.state == State.PREPARED or self.state == State.STARTED:
 				vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		if "gateway4" in properties:
-			if self.attributes["gateway4"] and self.state == generic.State.STARTED:
+			if self.attributes["gateway4"] and self.state == State.STARTED:
 				#Note: usage of self as host is intentional
 				ifaceutil.setDefaultRoute(self, self.attributes["gateway4"])
 		if "gateway6" in properties:
-			if self.attributes["gateway6"] and self.state == generic.State.STARTED:
+			if self.attributes["gateway6"] and self.state == State.STARTED:
 				#Note: usage of self as host is intentional
 				ifaceutil.setDefaultRoute(self, self.attributes["gateway6"])
 		if "template" in properties:
@@ -203,22 +202,22 @@ class OpenVZDevice(generic.Device):
 		self.save()
 
 	def interfacesAdd(self, name, properties):
-		assert self.state != generic.State.STARTED, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name
+		assert self.state != State.STARTED, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name
 		import re
 		assert re.match("eth(\d+)", name), "Invalid interface name: %s" % name
 		try:
 			assert not self.interfaceSetGet(name), "Duplicate interface name: %s" % name
-		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
+		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
 		iface.init()
 		iface.name = name
 		iface.device = self
-		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+		if self.state == State.PREPARED or self.state == State.STARTED:
 			iface.prepare_run()
 		iface.configure(properties)
 		iface.save()
-		generic.Device.interfaceSetAdd(self, iface)
+		Device.interfaceSetAdd(self, iface)
 
 	def interfacesConfigure(self, name, properties):
 		iface = self.interfaceSetGet(name).upcast()
@@ -226,28 +225,28 @@ class OpenVZDevice(generic.Device):
 
 	def interfacesRename(self, name, properties):
 		iface = self.interfaceSetGet(name).upcast()
-		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+		if self.state == State.PREPARED or self.state == State.STARTED:
 			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		try:
 			assert not self.interfaceSetGet(properties["name"]), "Duplicate interface name: %s" % properties["name"]
-		except generic.Interface.DoesNotExist: #pylint: disable-msg=W0702
+		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]
-		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+		if self.state == State.PREPARED or self.state == State.STARTED:
 			iface.prepare_run()
-		if self.state == generic.State.STARTED:
+		if self.state == State.STARTED:
 			iface.start_run()	
 		iface.save()
 
 	def interfacesDelete(self, name):
 		iface = self.interfaceSetGet(name).upcast()
-		if self.state == generic.State.PREPARED or self.state == generic.State.STARTED:
+		if self.state == State.PREPARED or self.state == State.STARTED:
 			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()
 
 	def migrateRun(self, host=None):
 		#FIXME: both vmids must be reserved the whole time
-		if self.state == generic.State.CREATED:
+		if self.state == State.CREATED:
 			self._unassignHost()
 			self._unassignVmid()
 			return
@@ -275,15 +274,15 @@ class OpenVZDevice(generic.Device):
 				if con.name in constates:
 					continue
 				constates[con.name] = con.state
-				if con.state == generic.State.STARTED:
+				if con.state == State.STARTED:
 					con.stop(True)
-				if con.state == generic.State.PREPARED:
+				if con.state == State.PREPARED:
 					con.destroy(True)
 		#actually migrate the vm
-		if self.state == generic.State.STARTED:
+		if self.state == State.STARTED:
 			self._stopVnc()
 		vzctl.migrate(src_host, src_vmid, dst_host, dst_vmid)
-		if self.state == generic.State.STARTED:
+		if self.state == State.STARTED:
 			self._startVnc()
 		#switch host and vmid
 		self.host = dst_host
@@ -296,13 +295,13 @@ class OpenVZDevice(generic.Device):
 					continue
 				state = constates[con.name]
 				del constates[con.name]
-				if state == generic.State.PREPARED or state == generic.State.STARTED:
+				if state == State.PREPARED or state == State.STARTED:
 					con.prepare(True)
-				if state == generic.State.STARTED:
+				if state == State.STARTED:
 					con.start(True)
 		
 	def uploadSupported(self):
-		return self.state == generic.State.PREPARED
+		return self.state == State.PREPARED
 
 	def useUploadedImageRun(self, path):
 		assert self.uploadSupported(), "Upload not supported"
@@ -310,7 +309,7 @@ class OpenVZDevice(generic.Device):
 		self.setTemplate("***custom***")
 
 	def downloadSupported(self):
-		return self.state == generic.State.PREPARED
+		return self.state == State.PREPARED
 
 	def downloadImageUri(self):
 		assert self.downloadSupported(), "Download not supported"
@@ -322,7 +321,7 @@ class OpenVZDevice(generic.Device):
 	def getResourceUsage(self):
 		disk = 0
 		memory = 0
-		ports = 1 if self.state == generic.State.STARTED else 0		
+		ports = 1 if self.state == State.STARTED else 0		
 		if self.host and self.getVmid():
 			disk = vzctl.getDiskUsage(self.host, self.getVmid())
 			memory = vzctl.getMemoryUsage(self.host, self.getVmid())
@@ -332,7 +331,7 @@ class OpenVZDevice(generic.Device):
 		return vzctl.interfaceDevice(self.getVmid(), iface.name)
 
 	def toDict(self, auth):
-		res = generic.Device.toDict(self, auth)
+		res = Device.toDict(self, auth)
 		if not auth:
 			del res["attrs"]["vnc_port"]
 			del	res["attrs"]["root_password"]
@@ -340,7 +339,7 @@ class OpenVZDevice(generic.Device):
 			res["attrs"]["vnc_password"] = self.vncPassword()
 		return res
 
-class ConfiguredInterface(generic.Interface):
+class ConfiguredInterface(Interface):
 	def init(self):
 		self.attributes["use_dhcp"] = False
 	
@@ -351,7 +350,7 @@ class ConfiguredInterface(generic.Interface):
 		return self.device.upcast().interfaceDevice(self)
 		
 	def configure(self, properties):
-		generic.Interface.configure(self, properties)
+		Interface.configure(self, properties)
 		changed=False
 		if "use_dhcp" in properties:
 			changed = True
@@ -360,7 +359,7 @@ class ConfiguredInterface(generic.Interface):
 		if "ip6address" in properties:
 			changed = True
 		if changed:
-			if self.device.state == generic.State.STARTED:
+			if self.device.state == State.STARTED:
 				self.start_run()
 			self.save()
 
@@ -384,15 +383,14 @@ class ConfiguredInterface(generic.Interface):
 			ifaceutil.startDhcp(dev, self.name)
 			
 	def getStartTasks(self):
-		from lib import tasks
-		taskset = generic.Interface.getStartTasks(self)
+		taskset = Interface.getStartTasks(self)
 		taskset.addTask(tasks.Task("connect-to-bridge", self._connectToBridge))
 		taskset.addTask(tasks.Task("configure-network", self._configureNetwork, depends="connect-to-bridge"))
 		return taskset
 
 	def getPrepareTasks(self):
-		return generic.Interface.getPrepareTasks(self)
+		return Interface.getPrepareTasks(self)
 
 	def toDict(self, auth):
-		res = generic.Interface.toDict(self, auth)		
+		res = Interface.toDict(self, auth)		
 		return res				

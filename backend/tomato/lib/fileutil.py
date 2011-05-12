@@ -72,6 +72,7 @@ def mkdir(host, dir):
 	return host.execute("mkdir -p \"%s\"" % dir)
 
 def delete(host, path, recursive=False):
+	assert path, "No file to delete"
 	return host.execute("rm %s -f \"%s\"" % ("-r" if recursive else "", path))
 
 def packdir(host, archive, dir, args=""):

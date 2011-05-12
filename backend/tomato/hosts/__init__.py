@@ -15,9 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+import templates
+from external_networks import ExternalNetwork, ExternalNetworkBridge
+from tomato import config, fault, attributes
+from tomato.lib import util, tasks
 
-import config, fault, util, sys, atexit, attributes, tasks, threading
+import sys, atexit, threading
+
+from django.db import models
 from django.db.models import Q, Sum
 
 class ClusterState:
@@ -39,7 +44,7 @@ class Host(models.Model):
 		return self.name
 
 	def fetchAllTemplates(self):
-		for tpl in Template.objects.all(): # pylint: disable-msg=E1101
+		for tpl in templates.getAll(): # pylint: disable-msg=E1101
 			tpl.uploadToHost(self)
 
 	def check(self):
@@ -97,13 +102,8 @@ class Host(models.Model):
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
-			import openvz
-			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.attributes.get("vmid"):
-					if int(dev.attributes["vmid"]) in ids:
-						ids.remove(int(dev.attributes["vmid"]))
-			import kvm
-			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			from tomato.devices import Device
+			for dev in Device.objects.filter(host=self): # pylint: disable-msg=E1101
 				if dev.attributes.get("vmid"):
 					if int(dev.attributes["vmid"]) in ids:
 						ids.remove(int(dev.attributes["vmid"]))
@@ -118,18 +118,13 @@ class Host(models.Model):
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
-			import openvz
-			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+			from tomato.devices import Device
+			for dev in Device.objects.filter(host=self): # pylint: disable-msg=E1101
 				if dev.attributes.get("vnc_port"):
 					if int(dev.attributes["vnc_port"]) in ids:
 						ids.remove(int(dev.attributes["vnc_port"]))
-			import kvm
-			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.attributes.get("vnc_port"):
-					if int(dev.attributes["vnc_port"]) in ids:
-						ids.remove(int(dev.attributes["vnc_port"]))
-			import tinc
-			for con in tinc.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			from tomato.connectors import Connection
+			for con in Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
 				if con.attributes.get("tinc_port"):
 					if int(con.attributes["tinc_port"]) in ids:
 						ids.remove(int(con.attributes["tinc_port"]))
@@ -144,8 +139,8 @@ class Host(models.Model):
 		try:
 			self.lock.acquire()
 			ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
-			import generic
-			for con in generic.Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+			from tomato.connectors import Connection
+			for con in Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
 				if con.attributes.get("bridge_id"):
 					if int(con.attributes["bridge_id"]) in ids:
 						ids.remove(int(con.attributes["bridge_id"]))
@@ -264,140 +259,24 @@ class Host(models.Model):
 			"externalNetworks": [enb.toDict() for enb in self.externalNetworks()]}
 		res.update(self.attributes.items())
 		return res
-
 	
-class Template(models.Model):
-	name = models.CharField(max_length=100)
-	type = models.CharField(max_length=12)
-	default = models.BooleanField(default=False)
-	download_url = models.CharField(max_length=255, default="")
-		
-	def init(self, name, ttype, download_url):
-		import re
-		if not re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name) or name.endswith(".tar.gz") or name.endswith(".qcow2"):
-			raise fault.new(0, "Name must be in the format NAME-VERSION")
-		self.name = name
-		self.type = ttype
-		self.download_url = download_url
-		self.save()
-
-	def setDefault(self):
-		Template.objects.filter(type=self.type).update(default=False) # pylint: disable-msg=E1101
-		self.default=True
-		self.save()
-		
-	def getFilename(self):
-		if self.type == "kvm":
-			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
-		if self.type == "openvz":
-			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
-	
-	def uploadToHost(self, host):
-		if host.clusterState() == ClusterState.NODE:
-			return
-		dst = self.getFilename()
-		if self.download_url:
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
-
-	def __unicode__(self):
-		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
-			
-	def toDict(self):
-		"""
-		Prepares a template for serialization.
-			
-		@return: a dict containing information about the template
-		@rtype: dict
-		"""
-		return {"name": self.name, "type": self.type, "default": self.default, "url": self.download_url}
-
-			
-class PhysicalLink(models.Model):
-	src_group = models.CharField(max_length=10)
-	dst_group = models.CharField(max_length=10)
-	loss = models.FloatField()
-	delay_avg = models.FloatField()
-	delay_stddev = models.FloatField()
-			
-	sliding_factor = 0.25
-			
-	def adapt(self, loss, delay_avg, delay_stddev):
-		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss
-		self.delay_avg = ( 1.0 - self.sliding_factor ) * self.delay_avg + self.sliding_factor * delay_avg
-		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
-		self.save()
-	
-	def toDict(self):
-		"""
-		Prepares a physical link object for serialization.
-		
-		@return: a dict containing information about the physical link
-		@rtype: dict
-		"""
-		return {"src": self.src_group, "dst": self.dst_group, "loss": self.loss,
-			"delay_avg": self.delay_avg, "delay_stddev": self.delay_stddev}
-	
-
-class ExternalNetwork(models.Model):
-	type = models.CharField(max_length=50)
-	group = models.CharField(max_length=50)
-	max_devices = models.IntegerField(null=True)
-	avoid_duplicates = models.BooleanField(default=False)
-
-	def hasFreeSlots(self):
-		return not (self.max_devices and self.usageCount() >= self.max_devices) 
-
-	def usageCount(self):
-		import external
-		connectors = external.ExternalNetworkConnector.objects.filter(used_network=self)
-		num = connectors.annotate(num_connections=models.Count('connection')).aggregate(Sum('num_connections'))["num_connections__sum"]
-		return num if num else 0
-		
-	def toDict(self, bridges=False):
-		"""
-		Prepares an object for serialization.
-		
-		@return: a dict containing information about the object
-		@rtype: dict
-		"""
-		data = {"type": self.type, "group": self.group, "max_devices": (self.max_devices if self.max_devices else False), "avoid_duplicates": self.avoid_duplicates}
-		if bridges:
-			data["bridges"] = [enb.toDict() for enb in self.externalnetworkbridge_set.all()]
-		return data
-
-	
-class ExternalNetworkBridge(models.Model):
-	host = models.ForeignKey(Host)
-	network = models.ForeignKey(ExternalNetwork)
-	bridge = models.CharField(max_length=10)
-
-	def toDict(self):
-		"""
-		Prepares an object for serialization.
-		
-		@return: a dict containing information about the object
-		@rtype: dict
-		"""
-		return {"host": self.host.name, "type": self.network.type, "group": self.network.group, "bridge": self.bridge}
-
-	
-def getHostGroups():
+def getGroups():
 	groups = []
 	for h in Host.objects.all(): # pylint: disable-msg=E1101
 		if not h.group in groups:
 			groups.append(h.group)
 	return groups
 	
-def getHost(name):
+def get(name):
 	return Host.objects.get(name=name) # pylint: disable-msg=E1101
 
-def getHosts(group=None):
+def getAll(group=None):
 	hosts = Host.objects.all()
 	if group:
 		hosts = hosts.filter(group=group)
 	return hosts
 
-def getBestHost(group):
+def getBest(group):
 	all_hosts = Host.objects.filter(enabled=True) # pylint: disable-msg=E1101
 	if group:
 		all_hosts = all_hosts.filter(group=group)
@@ -406,38 +285,6 @@ def getBestHost(group):
 		return hosts[0]
 	else:
 		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
-
-def getTemplates(ttype=None):
-	tpls = Template.objects.all() # pylint: disable-msg=E1101
-	if ttype:
-		tpls = tpls.filter(type=ttype)
-	return tpls
-
-def getTemplateName(ttype, name):
-	try:
-		return Template.objects.get(type=ttype, name=name).name # pylint: disable-msg=E1101
-	except: #pylint: disable-msg=W0702
-		return getDefaultTemplate(ttype)
-
-def getTemplate(ttype, name):
-	return Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
-
-def addTemplate(name, template_type, url):
-	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
-	proc = tasks.Process("upload-template")
-	for host in getHosts():
-		proc.addTask(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
-	return proc.start()
-	
-def removeTemplate(name):
-	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
-	
-def getDefaultTemplate(ttype):
-	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101
-	if tpls.count() >= 1:
-		return tpls[0].name
-	else:
-		return None
 	
 def create(host_name, group_name, enabled, attrs):
 	host = Host(name=host_name, enabled=enabled, group=group_name)
@@ -446,22 +293,16 @@ def create(host_name, group_name, enabled, attrs):
 	return host.check()
 
 def change(host_name, group_name, enabled, attrs):
-	host = getHost(host_name)
+	host = get(host_name)
 	host.enabled=enabled
 	host.group=group_name
 	host.configure(attrs)
 	host.save()
 	
 def remove(host_name):
-	host = getHost(host_name)
+	host = get(host_name)
 	assert len(host.device_set.all()) == 0, "Cannot remove hosts that are used"
 	host.delete()
-		
-def getPhysicalLink(srcg_name, dstg_name):
-	return PhysicalLink.objects.get(src_group = srcg_name, dst_group = dstg_name) # pylint: disable-msg=E1101		
-		
-def getAllPhysicalLinks():
-	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 		
 def measureLinkProperties(src, dst):
 	res = src.execute("ping -A -c 500 -n -q -w 300 %s" % dst.name)
@@ -480,37 +321,14 @@ def measureLinkProperties(src, dst):
 		stddev = stddev * 1000.0
 	return (loss, avg, stddev)
 				
-def measure_physical_links():
-	if config.remote_dry_run:
-		return
-	for srcg in getHostGroups():
-		for dstg in getHostGroups():
-			if not srcg == dstg:
-				try:
-					src = getBestHost(srcg)
-					dst = getBestHost(dstg)
-					(loss, delay_avg, delay_stddev) = measureLinkProperties(src, dst)
-					link = getPhysicalLink(srcg, dstg)
-					link.adapt(loss, delay_avg, delay_stddev) 
-				except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
-					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
-				except fault.Fault:
-					pass
-
-def checkAllHosts():
-	for host in getHosts():
+def checkAll():
+	for host in getAll():
 		host.check()
 
-if not config.TESTING and not config.MAINTENANCE:				
-	measurement_task = util.RepeatedTimer(3600, measure_physical_links)
-	measurement_task.start()
-	host_check_task = util.RepeatedTimer(3600*6, checkAllHosts)
-	host_check_task.start()
-	atexit.register(measurement_task.stop)
-	atexit.register(host_check_task.stop)
-
-def hostCheck(host):
+def check(host):
 	return host.check()
 
-def externalNetworks():
-	return [en.toDict(True) for en in ExternalNetwork.objects.all()]
+if not config.TESTING and not config.MAINTENANCE:				
+	host_check_task = util.RepeatedTimer(3600*6, checkAll)
+	host_check_task.start()
+	atexit.register(host_check_task.stop)

@@ -442,6 +442,6 @@ if not config.TESTING and not config.MAINTENANCE:
 	cleanup_task = util.RepeatedTimer(300, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)
-	update_resource_usage_task = util.RepeatedTimer(10000, update_resource_usage)
+	update_resource_usage_task = util.RepeatedTimer(10000, updateResourceUsage)
 	update_resource_usage_task.start()
 	atexit.register(update_resource_usage_task.stop)
