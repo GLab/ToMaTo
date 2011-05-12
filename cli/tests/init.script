@@ -1,0 +1,33 @@
+print "Checking that database is empty..."
+assert not template_list(), "Templates exist"
+assert not external_networks(), "External networks exist"
+assert not host_list(), "Hosts exist"
+assert not top_list(), "Topologies exist"
+print "Database is empty"	
+
+print "Loading data from init.data..."
+import os
+load("%s/init.data" % os.path.dirname(script))
+
+print "Adding external networks..."
+for en in external_networks:
+	print "\t%s (%s)" % ( en["type"], en["group"] )
+	external_network_add(en["type"], en["group"], en)
+	
+print "Adding templates..."
+for (type, tpls) in templates.iteritems():
+	for tpl in tpls:
+		print "\t%s (%s)" % ( tpl["name"], type )
+		template_add(tpl["name"], type, tpl["url"])
+
+print "Setting default templates..."
+for (type, tpl) in default_templates.iteritems():
+	print "\t%s: %s" % (type, tpl)
+	template_set_default(type, tpl)
+	
+print "Adding hosts..."
+for host in hosts:
+	print "\t%s (%s)" % (host["name"], host["group"])
+	host_add(host["name"], host["group"], host["enabled"], host)
+
+print "done."	

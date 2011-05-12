@@ -15,15 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import templates
-from external_networks import ExternalNetwork, ExternalNetworkBridge
-from tomato import config, fault, attributes
-from tomato.lib import util, tasks
-
 import sys, atexit, threading
 
 from django.db import models
 from django.db.models import Q, Sum
+
+from tomato import config, attributes
 
 class ClusterState:
 	MASTER = "M"
@@ -327,6 +324,12 @@ def checkAll():
 
 def check(host):
 	return host.check()
+
+# keep internal imports at the bottom to avoid dependency problems
+import templates
+from external_networks import ExternalNetwork, ExternalNetworkBridge
+from tomato import fault
+from tomato.lib import util, tasks
 
 if not config.TESTING and not config.MAINTENANCE:				
 	host_check_task = util.RepeatedTimer(3600*6, checkAll)

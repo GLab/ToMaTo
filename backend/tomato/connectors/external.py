@@ -25,6 +25,9 @@ from tomato.lib import ifaceutil, tasks
 class ExternalNetworkConnector(Connector):
 	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
 	
+	class Meta:
+		db_table = "tomato_externalnetworkconnector"
+
 	def upcast(self):
 		return self
 

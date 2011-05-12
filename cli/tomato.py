@@ -50,9 +50,7 @@ class ServerProxy(object):
 api=ServerProxy('%s://%s:%s@%s:%s' % ('https' if options.ssl else 'http', options.username, options.password, options.hostname, options.port), allow_none=True)
 
 # Readline and tab completion support
-import atexit
-import readline
-import rlcompleter
+import atexit, string, readline, rlcompleter
 from traceback import print_exc
 
 def get_name(instance):
@@ -70,15 +68,6 @@ def help(method=None):
 		print "Signature: " + api._methodSignature(method)
 		print api._methodHelp(method)
 
-globals = {"help": help}
-try:
-	for func in api._listMethods():
-		globals[func] = getattr(api, func)
-except xmlrpclib.ProtocolError, err:
-	print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
-	sys.exit(-1)
-
-
 def read_command_keyboard(prompt):
 	command = ""
 	while True:
@@ -89,27 +78,10 @@ def read_command_keyboard(prompt):
 			print ""
 			return "q"
 		command += line
-		if line == "" or (command == line and line[-1] != ':'):
+		if line == "" or (command == line and not line[-1] in ':({[,'):
 			break
 		command += os.linesep
 	return command 
-
-def read_command_fd(fd):
-	command = ""
-	while True:
-		line = fd.readline()
-		if line == "":
-			if command == "":
-				raise EOFError
-			else:
-				return command
-		else:
-			line = line[:-1]
-		command += line
-		if line == "" or (command == line and line[-1] != ':'):
-			break
-		command += os.linesep
-	return command
 
 def exec_command(command):
 	# Blank line
@@ -120,21 +92,18 @@ def exec_command(command):
 		sys.exit(0)
 
 	try:
-		try:
-			# Try evaluating as an expression and printing the result
-			result = eval(command, globals)
-			if result is not None:
-				print result
-		except SyntaxError:
-			# Fall back to executing as a statement
-			exec command in globals
-		except xmlrpclib.ProtocolError, err:
-			# Avoid revealing password in error url
-			print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
-		except xmlrpclib.Fault, f:
-			print f
-	except Exception, err:
-		print_exc()
+		# Try evaluating as an expression and printing the result
+		result = eval(command, globals)
+		if result is not None:
+			print result
+	except SyntaxError:
+		# Fall back to executing as a statement
+		exec command in globals
+	except xmlrpclib.ProtocolError, err:
+		# Avoid revealing password in error url
+		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+	except xmlrpclib.Fault, f:
+		print f
 
 def run_interactive():
 	print 'Type "help()" or "help(method)" for more information.'
@@ -143,21 +112,33 @@ def run_interactive():
 	readline.set_completer(rlcompleter.Completer(globals).complete)
 	try:
 		while True:
-			exec_command(read_command_keyboard(prompt))
+			try:
+				exec_command(read_command_keyboard(prompt))
+			except Exception, err:
+				print_exc()
 	except EOFError:
 		print
 	
 def run_file(file):
 	fd = open(file, "r")
+	content = "".join(fd.readlines())
 	try:
-		while True:
-			exec_command(read_command_fd(fd))
-	except EOFError:
-		print
+		exec_command(content)
+	except Exception, err:
+		print_exc()
 		
+globals = {"help": help, "load": run_file}
+try:
+	for func in api._listMethods():
+		globals[func] = getattr(api, func)
+except xmlrpclib.ProtocolError, err:
+	print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+	sys.exit(-1)
+				
 if options.call:
 	exec_command(options.call)
 elif options.file:
+	globals.update(script=options.file)
 	run_file(options.file)
 else:
 	run_interactive()

@@ -26,4 +26,7 @@ from devices.openvz import OpenVZDevice, ConfiguredInterface #@UnusedImport
 from topology import Topology, Permission #@UnusedImport
 from attributes import AttributeSet, AttributeEntry #@UnusedImport
 from fault import Error #@UnusedImport
-from hosts import Host, ExternalNetwork, ExternalNetworkBridge, PhysicalLink, Template #@UnusedImport
+from hosts import Host #@UnusedImport
+from hosts.external_networks import ExternalNetwork, ExternalNetworkBridge #@UnusedImport
+from hosts.physical_links import  PhysicalLink #@UnusedImport
+from hosts.templates import Template #@UnusedImport

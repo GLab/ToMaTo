@@ -23,6 +23,10 @@ from tomato.connectors import Connector
 from tomato.lib import util, tinc, tasks
 
 class TincConnector(Connector):
+
+	class Meta:
+		db_table = "tomato_tincconnector"
+
 	def upcast(self):
 		return self
 
@@ -119,6 +123,10 @@ class TincConnector(Connector):
 
 
 class TincConnection(dummynet.EmulatedConnection):
+
+	class Meta:
+		db_table = "tomato_tincconnection"
+
 	def upcast(self):
 		return self
 	

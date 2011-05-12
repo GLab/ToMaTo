@@ -23,6 +23,10 @@ import hashlib, re
 from tomato.lib import tasks, qm, hostserver, ifaceutil
 
 class KVMDevice(Device):
+	
+	class Meta:
+		db_table = "tomato_kvmdevice"
+
 	def upcast(self):
 		return self
 

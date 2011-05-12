@@ -30,6 +30,9 @@ class PhysicalLink(models.Model):
 	delay_stddev = models.FloatField()
 			
 	sliding_factor = 0.25
+		
+	class Meta:
+		db_table = "tomato_physicallink"		
 			
 	def adapt(self, loss, delay_avg, delay_stddev):
 		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss

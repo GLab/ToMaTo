@@ -26,6 +26,9 @@ DEFAULT_CAPTURING = False
 
 class EmulatedConnection(Connection):
 	
+	class Meta:
+		db_table = "tomato_emulatedconnection"
+
 	def init(self):
 		self.setBandwidth(DEFAULT_BANDWIDTH)
 		self.setDelay(DEFAULT_DELAY)

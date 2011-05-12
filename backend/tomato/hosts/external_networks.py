@@ -26,6 +26,9 @@ class ExternalNetwork(models.Model):
 	max_devices = models.IntegerField(null=True)
 	avoid_duplicates = models.BooleanField(default=False)
 
+	class Meta:
+		db_table = "tomato_externalnetwork"
+
 	def hasFreeSlots(self):
 		return not (self.max_devices and self.usageCount() >= self.max_devices) 
 
@@ -52,6 +55,9 @@ class ExternalNetworkBridge(models.Model):
 	host = models.ForeignKey(Host)
 	network = models.ForeignKey(ExternalNetwork)
 	bridge = models.CharField(max_length=10)
+
+	class Meta:
+		db_table = "tomato_externalnetworkbridge"
 
 	def toDict(self):
 		"""

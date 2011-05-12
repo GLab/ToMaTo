@@ -23,6 +23,10 @@ import hashlib
 from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks
 
 class OpenVZDevice(Device):
+
+	class Meta:
+		db_table = "tomato_openvzdevice"
+
 	def upcast(self):
 		return self
 
@@ -340,6 +344,10 @@ class OpenVZDevice(Device):
 		return res
 
 class ConfiguredInterface(Interface):
+
+	class Meta:
+		db_table = "tomato_configuredinterface"
+	
 	def init(self):
 		self.attributes["use_dhcp"] = False
 	

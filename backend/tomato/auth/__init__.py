@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import tomato.config as config
-import tomato.util as util
+from tomato import config
+from tomato.lib import util
 import time, atexit
 
 class User():

@@ -17,15 +17,15 @@
 
 from django.db import models
 
-import fault, hosts, attributes
-from lib import tasks
+from tomato import attributes, hosts
+from tomato.topology import Topology
+from tomato.generic import State, ObjectPreferences
 
 class Device(models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
 	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )
 	name = models.CharField(max_length=20)
-	from topology import Topology
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
@@ -277,3 +277,7 @@ class Interface(models.Model):
 	
 	def getDestroyTasks(self):
 		return tasks.TaskSet()
+
+# keep internal imports at the bottom to avoid dependency problems
+from tomato import fault
+from tomato.lib import tasks

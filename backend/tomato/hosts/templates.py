@@ -15,13 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-
-from tomato import config, fault, hosts
-from tomato.lib import util, tasks
-from tomato.hosts import ClusterState
-
-import atexit
-
 from django.db import models
 
 class Template(models.Model):
@@ -29,6 +22,9 @@ class Template(models.Model):
 	type = models.CharField(max_length=12)
 	default = models.BooleanField(default=False)
 	download_url = models.CharField(max_length=255, default="")
+		
+	class Meta:
+		db_table = "tomato_template"
 		
 	def init(self, name, ttype, download_url):
 		import re
@@ -87,7 +83,7 @@ def get(ttype, name):
 def add(name, template_type, url):
 	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
 	proc = tasks.Process("upload-template")
-	for host in hosts.getAll():
+	for host in getAllHosts():
 		proc.addTask(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
 	return proc.start()
 	
@@ -100,3 +96,9 @@ def getDefault(ttype):
 		return tpls[0].name
 	else:
 		return None
+	
+# keep internal imports at the bottom to avoid dependency problems
+from tomato.hosts import getAll as getAllHosts
+from tomato import fault
+from tomato.lib import tasks
+from tomato.hosts import ClusterState
