@@ -106,7 +106,7 @@ class Host(models.Model):
 						ids.remove(int(dev.attributes["vmid"]))
 			return ids[0]
 		except:
-			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" + self)
+			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" % self)
 		finally:
 			self.lock.release()
 

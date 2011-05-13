@@ -21,7 +21,7 @@
 Requires python-ldap, python-twisted-web
 """
 
-import tomato
+import tomato.lib.log
 
 import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
@@ -53,11 +53,12 @@ class Introspection():
 		return doc
 		
 class APIServer(xmlrpc.XMLRPC):
-	def __init__(self, papi):
+	def __init__(self, papi, login):
 		self.api=papi
+		self.login=login
 		self.introspection=Introspection(self.api)
 		xmlrpc.XMLRPC.__init__(self, allowNone=True)
-		self.logger = tomato.log.Logger(tomato.config.log_dir + "/api.log")
+		self.logger = tomato.lib.log.Logger(tomato.config.log_dir + "/api.log")
 
 	def log(self, function, args, user):
 		if len(str(args)) < 50:
@@ -80,7 +81,7 @@ class APIServer(xmlrpc.XMLRPC):
 	def render(self, request):
 		username=request.getUser()
 		passwd=request.getPassword()
-		user=self.api.login(username, passwd)
+		user=self.login(username, passwd)
 		if not user:
 			request.setResponseCode(http.UNAUTHORIZED)
 			if username=='' and passwd=='':
@@ -102,7 +103,7 @@ class APIServer(xmlrpc.XMLRPC):
 			return server.NOT_DONE_YET
 
 def runserver():
-	api_server=APIServer(tomato)
+	api_server=APIServer(tomato.api, tomato.login)
 	if tomato.config.server_ssl:
 		sslContext = ssl.DefaultOpenSSLContextFactory(tomato.config.server_ssl_private_key, tomato.config.server_ssl_ca_key) 
 		reactor.listenSSL(tomato.config.server_port, server.Site(api_server), contextFactory = sslContext) #@UndefinedVariable, pylint: disable-msg=E1101

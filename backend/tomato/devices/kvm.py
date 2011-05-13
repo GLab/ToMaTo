@@ -16,11 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.devices import Device, Interface
-from tomato import hosts, fault, config
+from tomato import fault, config
+from tomato.hosts import templates
 from tomato.generic import State
+from tomato.lib import qm, hostserver, tasks, ifaceutil
 import hashlib, re
-
-from tomato.lib import tasks, qm, hostserver, ifaceutil
 
 class KVMDevice(Device):
 	
@@ -112,7 +112,7 @@ class KVMDevice(Device):
 		return taskset
 
 	def _assignTemplate(self):
-		self.setTemplate(hosts.findName(self.type, self.getTemplate()))
+		self.setTemplate(templates.findName(self.type, self.getTemplate()))
 		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
 	def _assignHost(self):

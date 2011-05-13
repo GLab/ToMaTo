@@ -126,7 +126,10 @@ def run_file(file):
 		exec_command(content)
 	except Exception, err:
 		print_exc()
-		
+
+def run_file_relative(file):
+	run_file(os.path.dirname(options.file) + "/" + file)
+
 globals = {"help": help, "load": run_file}
 try:
 	for func in api._listMethods():
@@ -138,7 +141,7 @@ except xmlrpclib.ProtocolError, err:
 if options.call:
 	exec_command(options.call)
 elif options.file:
-	globals.update(script=options.file)
+	globals.update(script=options.file, loadRel=run_file_relative)
 	run_file(options.file)
 else:
 	run_interactive()

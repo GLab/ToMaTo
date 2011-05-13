@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import uuid, os, traceback, threading
-
 import util, atexit, time, log
 
 from tomato import config, fault
@@ -111,7 +110,7 @@ class Task():
 				self._run()
 			except Exception, exc:
 				self.result = exc
-				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), "%sCaller was:%s" % (traceback.format_exc(), self.process.trace))
 				self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 				if self.reverseFn:
 					self._reverse()
@@ -212,6 +211,7 @@ class Process():
 		processes[self.id]=self
 		self.started = None
 		self.finished = None
+		self.trace = None
 		self.lock = threading.Lock()
 	def addTask(self, task):
 		self.tasks.append(task)
@@ -319,6 +319,7 @@ class Process():
 				self.run()
 				return self.dict()
 			else:
+				self.trace = traceback.extract_stack()
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:
 					util.start_thread(self._worker)

@@ -1,0 +1,26 @@
+def waitForTask(task, assertSuccess=False):
+	import time
+	while task_status(task)["active"]:
+		time.sleep(0.25)
+	ts = task_status(task)
+	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts["name"]
+	return ts
+
+def jsonToMods(json):
+	import simplejson
+	top = simplejson.loads(json)
+	mods = []
+	mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
+	for devname, dev in top["devices"].iteritems():
+		mods.append({"type": "device-create", "element": None, "subelement": None, "properties": dev["attrs"]})
+		for iface in dev["interfaces"].values():
+			mods.append({"type": "interface-create", "element": devname, "subelement": None, "properties": iface["attrs"]})
+	for conname, con in top["connectors"].iteritems():
+		mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
+		for c in con["connections"].values():
+			mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
+	return mods
+
+def errors_print():
+	for err in errors_all():
+		print err["message"]

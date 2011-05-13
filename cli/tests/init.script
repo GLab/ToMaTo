@@ -1,3 +1,5 @@
+loadRel("misc.lib")
+
 print "Checking that database is empty..."
 assert not template_list(), "Templates exist"
 assert not external_networks(), "External networks exist"
@@ -6,8 +8,7 @@ assert not top_list(), "Topologies exist"
 print "Database is empty"	
 
 print "Loading data from init.data..."
-import os
-load("%s/init.data" % os.path.dirname(script))
+loadRel("init.data")
 
 print "Adding external networks..."
 for en in external_networks:
@@ -28,6 +29,6 @@ for (type, tpl) in default_templates.iteritems():
 print "Adding hosts..."
 for host in hosts:
 	print "\t%s (%s)" % (host["name"], host["group"])
-	host_add(host["name"], host["group"], host["enabled"], host)
-
+	task = host_add(host["name"], host["group"], host["enabled"], host)
+	assert waitForTask(task)["status"] == "succeeded"
 print "done."	

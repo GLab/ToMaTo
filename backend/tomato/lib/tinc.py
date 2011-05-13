@@ -27,19 +27,25 @@ class Mode:
 	HUB = "hub"
 
 class Endpoint:
-	def __init__(self, site, host, id, port, bridge, subnets=[]):
-		self.site = site
-		self.host = host
-		self.id = id
-		self.port = port
-		self.bridge = bridge
-		self.subnets = subnets
+	#All other endpoints must be subclasses of this class
+	def getSite(self):
+		pass
+	def getHost(self):
+		pass
+	def getId(self):
+		pass
+	def getPort(self):
+		pass
+	def getBridge(self):
+		pass
+	def getSubnets(self):
+		pass
 
 def _getHostName(node):
-	return node.host
+	return node.getHost()
 
 def _getSiteName(node):
-	return node.site
+	return node.getSite()
 
 def _randomNode(cluster):
 	if _isEndpoint(cluster):
@@ -49,6 +55,12 @@ def _randomNode(cluster):
 
 def _isEndpoint(n):
 	return isinstance(n, Endpoint)
+
+def _areEndpoints(list):
+	for n in list:
+		if not _isEndpoint(n):
+			return False
+	return True
 
 """
 Cluster a list of tinc endpoints called "nodes" and create a list of connections to set up.
@@ -221,7 +233,7 @@ def _writeDotFile(file, clist):
 	fp.close()
 	
 def _tincName(endpoint):
-	return "tinc_%d" % endpoint.id
+	return "tinc_%d" % endpoint.getId()
 	
 def _pidFile(endpoint):
 	return "/var/run/tinc.%s.pid" % _tincName(endpoint)
@@ -230,100 +242,131 @@ def _configDir(endpoint):
 	return "/etc/tinc/%s" % _tincName(endpoint)
 	
 def getState(endpoint):
-	if not fileutil.existsDir(endpoint.host, _configDir(endpoint)):
+	assert _isEndpoint(endpoint)
+	host = endpoint.getHost()
+	assert host
+	if not fileutil.existsDir(host, _configDir(endpoint)):
 		return generic.State.CREATED
-	if not fileutil.existsFile(endpoint.host, _pidFile(endpoint)):
+	if not fileutil.existsFile(host, _pidFile(endpoint)):
 		return generic.State.PREPARED
-	if not process.processRunning(endpoint.host, _pidFile(endpoint), "tincd"):
+	if not process.processRunning(host, _pidFile(endpoint), "tincd"):
 		return generic.State.PREPARED
 	return generic.State.STARTED
 	
 def _startEndpoint(endpoint):
 	assert getState(endpoint) == generic.State.PREPARED
+	host = endpoint.getHost()
+	assert host
 	iface = _tincName(endpoint)
-	endpoint.host.execute("tincd --net=%s" % iface )
-	assert endpoint.host.interface_exists(iface), "Tinc deamon did not start"
-	ifaceutil.ifup(endpoint.host, iface)
+	host.execute("tincd --net=%s" % iface )
+	assert host.interface_exists(iface), "Tinc deamon did not start"
+	ifaceutil.ifup(host, iface)
 
 def _stopEndpoint(endpoint):
 	assert getState(endpoint) != generic.State.CREATED
-	endpoint.host.execute("tincd --net=%s -k" % _tincName(endpoint))
+	host = endpoint.getHost()
+	assert host
+	host.execute("tincd --net=%s -k" % _tincName(endpoint))
 	assert getState(endpoint) == generic.State.PREPARED
 
 def _setupRouting(endpoint):
-	assert endpoint.bridge
-	assert ifaceutil.bridgeExists(endpoint.host, endpoint.bridge)
+	host = endpoint.getHost()
+	assert host
+	bridge = endpoint.getBridge()
+	assert bridge
+	id = endpoint.getId()
+	assert id
+	assert ifaceutil.bridgeExists(host, bridge)
 	tincname = _tincName(endpoint)
-	assert ifaceutil.interfaceExists(endpoint.host, tincname)
-	assert not ifaceutil.interfaceBridge(endpoint.host, tincname)
+	assert ifaceutil.interfaceExists(host, tincname)
+	assert not ifaceutil.interfaceBridge(host, tincname)
 	#enable ip forwarding
-	endpoint.host.execute ("sysctl -q -w net.ipv6.conf.all.forwarding=1");
-	endpoint.host.execute ("sysctl -q -w net.ipv4.conf.all.forwarding=1");
+	host.execute ("sysctl -q -w net.ipv6.conf.all.forwarding=1");
+	host.execute ("sysctl -q -w net.ipv4.conf.all.forwarding=1");
 	#calculate unique table ids
-	table_in = 1000 + 2 * endpoint.id
-	table_out = 1000 + 2 * endpoint.id + 1
+	table_in = 1000 + 2 * id
+	table_out = 1000 + 2 * id + 1
 	#create tables in rt_tables if they don't exist 
-	endpoint.host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ))
-	endpoint.host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ))
+	host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ))
+	host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ))
 	#mark all packages based on incoming interfaces
-	endpoint.host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-	endpoint.host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( endpoint.bridge, table_out ))
+	host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
+	host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( bridge, table_out ))
 	#create rules to use routing tables according to the marks of the packages
-	endpoint.host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_in), table_in ))
-	endpoint.host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_out), table_out ))
+	host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_in), table_in ))
+	host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_out), table_out ))
 	#create routing table with only a default device
-	endpoint.host.execute ( "ip route add table %s default dev %s" % ( table_in, endpoint.bridge ))
-	endpoint.host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
+	host.execute ( "ip route add table %s default dev %s" % ( table_in, bridge ))
+	host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
 
 def _teardownRouting(endpoint):
+	host = endpoint.getHost()
+	assert host
+	id = endpoint.getId()
+	assert id
+	bridge = endpoint.getBridge()
+	assert bridge
 	assert getState(endpoint) != generic.State.CREATED
 	tincname = _tincName(endpoint)
 	#not disabling ip forwarding
-	table_in = 1000 + 2 * endpoint.id
-	table_out = 1000 + 2 * endpoint.id + 1
-	endpoint.host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-	endpoint.host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( endpoint.bridge, table_out ))
-	endpoint.host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ))
-	endpoint.host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ))
-	endpoint.host.execute ( "ip route del table %s default dev %s" % ( table_in, endpoint.bridge ))
-	endpoint.host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ))
+	table_in = 1000 + 2 * id
+	table_out = 1000 + 2 * id + 1
+	host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
+	host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( bridge, table_out ))
+	host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ))
+	host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ))
+	host.execute ( "ip route del table %s default dev %s" % ( table_in, bridge ))
+	host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ))
 		
 def _connectEndpoint(endpoint, mode):
-	if not ifaceutil.bridgeExists(endpoint.host, endpoint.bridge):
-		ifaceutil.bridgeCreate(endpoint.host, endpoint.bridge)
+	host = endpoint.getHost()
+	assert host
+	bridge = endpoint.getBridge()
+	assert bridge
+	if not ifaceutil.bridgeExists(host, bridge):
+		ifaceutil.bridgeCreate(host, bridge)
 	if mode == Mode.ROUTER:
 		_setupRouting(endpoint)
 	else:
-		ifaceutil.ifup(endpoint.host, endpoint.bridge)
-		ifaceutil.bridgeConnect(endpoint.host, endpoint.bridge, _tincName(endpoint))
+		ifaceutil.ifup(host, bridge)
+		ifaceutil.bridgeConnect(host, bridge, _tincName(endpoint))
 		
 def startNetwork(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	for ep in endpoints:
 		_startEndpoint(ep)
 		_connectEndpoint(ep, mode)
 
 def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
 	for ep in endpoints:
-		taskset.addTask(tasks.Task("start-endpoint-%s" % ep.id, _startEndpoint, args=(ep,)))
-		taskset.addTask(tasks.Task("connect-endpoint-%s" % ep.id, _connectEndpoint, args=(ep,), depends="start-endpoint-%s" % ep.id))
+		id = ep.getId()
+		assert id
+		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,)))
+		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,), depends="start-endpoint-%s" % id))
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	for ep in endpoints:
 		if mode == Mode.ROUTER:
 			_teardownRouting(ep)
 		_stopEndpoint(ep)
 
 def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
 	for ep in endpoints:
+		id = ep.getId()
+		assert id
 		if mode == Mode.ROUTER:
-			taskset.addTask(tasks.Task("teardown-routing-%s" % ep.id, _teardownRouting, args=(ep,)))
-		taskset.addTask(tasks.Task("stop-endpoint-%s" % ep.id, _stopEndpoint, args=(ep,)))
+			taskset.addTask(tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,)))
+		taskset.addTask(tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,)))
 	return taskset
 
 def prepareNetwork(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	connections = _determineConnections(endpoints)
 	for ep in endpoints:
 		_createHostFile(ep)
@@ -348,26 +391,37 @@ def _useConfigTask(ep):
 	_removeTemporaryFiles(ep)
 
 def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
 	taskset.addTask(tasks.Task("determine-connections", _determineConnections, args=(endpoints,)))
 	for ep in endpoints:
-		taskset.addTask(tasks.Task("create-config-%s" % ep.id, _createConfigTask, args=(ep, mode,), callWithTask=True, depends="determine-connections"))
-	alldeps = ["create-config-%s" % ep.id for ep in endpoints]
+		id = ep.getId()
+		assert id
+		taskset.addTask(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, depends="determine-connections"))
+	alldeps = ["create-config-%s" % ep.getId() for ep in endpoints]
 	for ep in endpoints:		
-		taskset.addTask(tasks.Task("collect-config-%s" % ep.id, _collectConfigTask, args=(ep,), callWithTask=True, depends=alldeps))
-	alldeps = ["collect-config-%s" % ep.id for ep in endpoints]
+		id = ep.getId()
+		assert id
+		taskset.addTask(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, depends=alldeps))
+	alldeps = ["collect-config-%s" % ep.getId() for ep in endpoints]
 	for ep in endpoints:		
-		taskset.addTask(tasks.Task("use-config-%s" % ep.id, _useConfigTask, args=(ep,), depends=alldeps))
+		id = ep.getId()
+		assert id
+		taskset.addTask(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), depends=alldeps))
 	return taskset
 
 def destroyNetwork(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	for ep in endpoints:
 		_deleteFiles(ep)
 
 def getDestroyNetworkTasks(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
 	for ep in endpoints:
-		taskset.addTask(tasks.Task("delete-files-%s" % ep.id, _deleteFiles, args=(ep,)))
+		id = ep.getId()
+		assert id
+		taskset.addTask(tasks.Task("delete-files-%s" % id, _deleteFiles, args=(ep,)))
 	return taskset
 	
 def _tmpPath(endpoint):
@@ -378,8 +432,8 @@ def _createHostFile(endpoint):
 	fileutil.mkdir(util.localhost, path+"/hosts")
 	util.localhost.execute("openssl genrsa -out %s/rsa_key.priv" % path)
 	hostFd = open("%s/hosts/%s" % (path, _tincName(endpoint)), "w")
-	hostFd.write("Address=%s\n" % endpoint.host)
-	hostFd.write("Port=%s\n" % endpoint.port)
+	hostFd.write("Address=%s\n" % endpoint.getHost())
+	hostFd.write("Port=%s\n" % endpoint.getPort())
 	hostFd.write("Cipher=none\n")
 	hostFd.write("Digest=none\n")
 	for sn in endpoint.subnets:
@@ -415,11 +469,11 @@ def _removeTemporaryFiles(endpoint):
 
 def _uploadFiles(endpoint):
 	assert getState(endpoint) == generic.State.CREATED
-	endpoint.host.filePut(_tmpPath(endpoint), _configDir(endpoint))
+	endpoint.getHost().filePut(_tmpPath(endpoint), _configDir(endpoint))
 
 def _deleteFiles(endpoint):
 	assert getState(endpoint) != generic.State.STARTED
-	fileutil.delete(endpoint.host, _configDir(endpoint), recursive=True)
+	fileutil.delete(endpoint.getHost(), _configDir(endpoint), recursive=True)
 	
 def estimateDiskUsage(numNodes):
 	# for each node:

@@ -87,8 +87,8 @@ def add(name, template_type, url):
 		proc.addTask(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
 	return proc.start()
 	
-def remove(name):
-	Template.objects.filter(name=name).delete() # pylint: disable-msg=E1101
+def remove(template_type, name):
+	Template.objects.filter(type=template_type, name=name).delete() # pylint: disable-msg=E1101
 	
 def getDefault(ttype):
 	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101

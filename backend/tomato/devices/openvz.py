@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import hosts, config
+from tomato import config
+from tomato.hosts import templates
 from tomato.generic import State
 from tomato.devices import Device, Interface
 import hashlib
@@ -132,7 +133,7 @@ class OpenVZDevice(Device):
 		return taskset	
 
 	def _assignTemplate(self):
-		self.setTemplate(hosts.findName(self.type, self.getTemplate()))
+		self.setTemplate(templates.findName(self.type, self.getTemplate()))
 		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
 
 	def _assignHost(self):

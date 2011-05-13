@@ -22,6 +22,33 @@ from tomato.generic import State
 from tomato.connectors import Connector
 from tomato.lib import util, tinc, tasks
 
+class ConnectionEndpoint(tinc.Endpoint):
+	def __init__(self, con):
+		self.con = con
+	def getSite(self):
+		return self.getHost().group
+	def getHost(self):
+		host = self.con.interface.device.host
+		assert host
+		return host
+	def getId(self):
+		return self.con.id
+	def getPort(self):
+		port = self.con.attributes["tinc_port"]
+		assert port
+		return port
+	def getBridge(self):
+		bridge = self.con.upcast().bridgeName()
+		assert bridge
+		return bridge
+	def getSubnets(self):
+		subnets = []
+		if self.con.connector.type == tinc.Mode.ROUTER:
+			subnets.append(util.calculate_subnet4(self.con.attributes["gateway4"]))
+			subnets.append(util.calculate_subnet6(self.con.attributes["gateway6"]))
+		return subnets
+
+
 class TincConnector(Connector):
 
 	class Meta:
@@ -33,19 +60,7 @@ class TincConnector(Connector):
 	def _endpoints(self):
 		endpoints = set()
 		for con in self.connectionSetAll():
-			host = con.interface.device.host
-			site = host.group
-			id = con.id
-			port = con.attributes["tinc_port"]
-			bridge = con.upcast().bridgeName()
-			assert host
-			assert port
-			assert bridge
-			subnets = []
-			if self.type == tinc.Mode.ROUTER:
-				util.calculate_subnet4(self.attributes["gateway4"])
-				util.calculate_subnet6(self.attributes["gateway6"])
-			endpoints.add(tinc.Endpoint(host, site, id, port, bridge, subnets))
+			endpoints.add(ConnectionEndpoint(con))
 		return endpoints
 		
 	def getStartTasks(self):
