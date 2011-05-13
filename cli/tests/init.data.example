@@ -40,6 +40,13 @@ hosts = (
 	"name": "131.246.112.42",
 	"group": "ukl",
 	"enabled": True,
-	"attrs": {}
+	"attrs": {},
+	"external_networks": (
+		{
+		"type": "internet",
+		"group": "ukl",
+		"bridge": "vmbr0",
+		},
+	),
 	},
 )

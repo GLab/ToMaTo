@@ -6,7 +6,7 @@ if input != "erase all data":
 
 print "Erasing all topologies..."
 for top in top_list():
-	print "\t%s [%s]" % (top["name"], topd["id"])
+	print "\t%s [%s]" % (top["attrs"]["name"], top["id"])
 	top_action(top["id"], "remove", direct=True)
 
 print "Erasing all templates..."
@@ -14,16 +14,16 @@ for tpl in template_list():
 	print "\t%s (%s)" % (tpl["name"], tpl["type"])
 	template_remove(tpl["type"], tpl["name"])
 
-print "Erasing all external networks..."
-for en in external_networks():
-	print "\t%s (%s)" % (en["type"], en["group"])
-	external_network_remove(en["type"], en["group"])
-
 print "Erasing all hosts..."
 for h in host_list():
 	print "\t%s (%s)" % (h["name"], h["group"])
 	host_remove(h["name"])
 	
+print "Erasing all external networks..."
+for en in external_networks():
+	print "\t%s (%s)" % (en["type"], en["group"])
+	external_network_remove(en["type"], en["group"])
+
 print "Erasing all errors..."
 errors_remove(None)
 

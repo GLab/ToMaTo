@@ -28,8 +28,11 @@ def _monitor(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
 	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid})
 
+def _imagePathDir(vmid):
+	return "/var/lib/vz/images/%d" % vmid
+
 def _imagePath(vmid):
-	return "/var/lib/vz/images/%d/disk.qcow2" % vmid
+	return _imagePathDir(vmid) + "/disk.qcow2"
 
 def getState(host, vmid):
 	if not vmid:
@@ -48,7 +51,7 @@ def useImage(host, vmid, image, move=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to change image"
 	_qm(host, vmid, "set", "--ide0 undef")
 	imagePath = _imagePath(vmid)
-	fileutil.mkdir(host, imagePath)
+	fileutil.mkdir(host, _imagePathDir(vmid))
 	if move:
 		fileutil.move(host, image, imagePath)
 	else:
@@ -81,7 +84,7 @@ def setName(host, vmid, name):
 
 def addInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to add interfaces"
-	iface_id = re.match("eth(\d+)", iface).group(1)
+	iface_id = int(re.match("eth(\d+)", iface).group(1))
 	# qm automatically connects ethN to vmbrN
 	# if this bridge does not exist, kvm start fails
 	if not ifaceutil.interfaceExists(host, "vmbr%d" % iface_id):
@@ -90,7 +93,7 @@ def addInterface(host, vmid, iface):
 	
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to remove interfaces"
-	iface_id = re.match("eth(\d+)", iface.name).group(1)
+	iface_id = int(re.match("eth(\d+)", iface.name).group(1))
 	_qm(host, vmid, "set", "--vlan%d undef\n" % iface_id)			
 		
 def copyImage(host, vmid, file):
@@ -151,7 +154,7 @@ def stop(host, vmid):
 def destroy(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not stopped"
 	res = _qm(host, vmid, "destroy")
-	assert getState(host, vmid) == generic.State.STARTED, "Failed to destroy VM: %s" % res
+	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def migrate(src_host, src_vmid, dst_host, dst_vmid):
 	assert getState(dst_host, dst_vmid) == generic.State.CREATED, "Destination VM already exists"

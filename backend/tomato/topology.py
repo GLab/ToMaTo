@@ -281,7 +281,7 @@ class Topology(models.Model):
 				dset = dev.upcast().getDestroyTasks()
 				dset.addGlobalDepends("connectors-destroyed")
 				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-		proc.addTask(tasks.Task("remove", self.delete, [t.name for t in proc.tasks]))
+		proc.addTask(tasks.Task("remove", self.delete, depends=[t.name for t in proc.tasks]))
 		return self.startProcess(proc, direct)
 			
 	def _log(self, task, output):

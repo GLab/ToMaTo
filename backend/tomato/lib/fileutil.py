@@ -48,10 +48,10 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 			chmod(src_host, src_path, mode)
 			
 def existsFile(host, file):
-	return "exists" in host.execute("[ -f \"%s\"] && echo exists")
+	return "exists" in host.execute("[ -f \"%s\" ] && echo exists" % file)
 			
 def existsDir(host, file):
-	return "exists" in host.execute("[ -d \"%s\"] && echo exists")
+	return "exists" in host.execute("[ -d \"%s\" ] && echo exists" % file)
 
 def fetch(host, url, dst):
 	return host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (dst, url))

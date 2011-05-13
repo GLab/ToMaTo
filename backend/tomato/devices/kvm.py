@@ -34,16 +34,22 @@ class KVMDevice(Device):
 		self.setTemplate("")
 
 	def setVmid(self, value):
-		self.attributes["vmid"] = value
+		self.attributes["vmid"] = str(int(value))
 
 	def getVmid(self):
-		return self.attributes.get("vmid")
+		try:
+			return int(self.attributes.get("vmid"))
+		except:
+			return None
 
 	def setVncPort(self, value):
-		self.attributes["vnc_port"] = value
+		try:
+			return int(self.attributes.get("vnc_port"))
+		except:
+			return None
 
 	def getVncPort(self):
-		return self.attributes.get("vnc_port")
+		return int(self.attributes.get("vnc_port"))
 
 	def setTemplate(self, value):
 		self.attributes["template"] = value

@@ -174,15 +174,15 @@ def _connectionMap(connections):
 def _isConnected(nodes, connections):
 	map = _connectionMap(connections)
 	nIn = set()
-	nTodo = set()
-	nTodo.add(nodes[0])
+	nTodo = []
+	nTodo.append(_randomNode(list(nodes)))
 	while nTodo:
 		n = random.choice(nTodo)
 		nTodo.remove(n)
 		nIn.add(n)
 		for n in map[n]:
-			if not n in nIn:
-				nTodo.add(n)
+			if not n in nIn and not n in nTodo:
+				nTodo.append(n)
 	return len(nIn) == len(nodes)
 
 def _shortestPaths(nodes, connections):
@@ -399,6 +399,7 @@ def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
 		assert id
 		taskset.addTask(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, depends="determine-connections"))
 	alldeps = ["create-config-%s" % ep.getId() for ep in endpoints]
+	alldeps.append("determine-connections")
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
@@ -436,7 +437,7 @@ def _createHostFile(endpoint):
 	hostFd.write("Port=%s\n" % endpoint.getPort())
 	hostFd.write("Cipher=none\n")
 	hostFd.write("Digest=none\n")
-	for sn in endpoint.subnets:
+	for sn in endpoint.getSubnets():
 		hostFd.write("Subnet=%s\n" % sn)
 	util.localhost.execute("openssl rsa -pubout -in %s/rsa_key.priv -out %s/hosts/%s.pub" % (path, path, _tincName(endpoint)))
 	hostPubFd = open("%s/hosts/%s.pub" % (path, _tincName(endpoint)), "r")

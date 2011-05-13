@@ -23,4 +23,4 @@ def jsonToMods(json):
 
 def errors_print():
 	for err in errors_all():
-		print err["message"]
+		print err["message"] + "\n\n"

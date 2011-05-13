@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import uuid
+
 from tomato import generic, config
 
 import process, fileutil, ifaceutil
@@ -77,7 +79,7 @@ def stop(host, vmid):
 def destroy(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not stopped"
 	res = _vzctl(host, vmid, "destroy")
-	assert getState(host, vmid) == generic.State.STARTED, "Failed to destroy VM: %s" % res
+	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def setUserPassword(host, vmid, password, username="root"):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"

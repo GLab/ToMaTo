@@ -107,18 +107,19 @@ simpleTop="""
     "switch1": {
       "connections": {
         "openvz1.eth0": {
-          "interface": "openvz1.eth0", 
           "attrs": {
             "interface": "openvz1.eth0", 
             "delay": "20", 
-            "properties": "{'latency': '0', 'bandwidth': '10000', 'lossratio': '0.0'}"
+            "bandwidth": "10000",
+            "lossratio": "0.0"
           }
         }, 
         "openvz2.eth0": {
-          "interface": "openvz2.eth0", 
           "attrs": {
             "interface": "openvz2.eth0", 
-            "properties": "{'latency': '0', 'bandwidth': '10000', 'lossratio': '0.0'}"
+            "latency": "0",
+            "bandwidth": "10000",
+            "lossratio": "0.0"
           }
         }
       }, 
@@ -132,22 +133,24 @@ simpleTop="""
     "router1": {
       "connections": {
         "kvm1.eth0": {
-          "interface": "kvm1.eth0", 
           "attrs": {
-            "interface": "kvm1.eth0", 
+  		    "interface": "kvm1.eth0", 
             "gateway6": "fd01:ab1a:b1ab:1:2:FFFF:FFFF:FFFF/80", 
             "gateway4": "10.1.2.254/24", 
-            "properties": "{'gateway6': 'fd01:ab1a:b1ab:1:2:FFFF:FFFF:FFFF/80', 'latency': '0', 'bandwidth': '10000', 'gateway4': '10.1.2.254/24', 'lossratio': '0.0'}"
+            "latency": "0",
+            "bandwidth": "10000",
+            "gateway4": "10.1.2.254/24",
+            "lossratio": "0.0"
           }
         }, 
         "openvz1.eth1": {
-          "interface": "openvz1.eth1", 
           "attrs": {
-            "interface": "openvz1.eth1", 
+		    "interface": "openvz1.eth1", 
             "gateway6": "fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF/80", 
             "gateway4": "10.1.1.254/24", 
             "bandwidth": "1000", 
-            "properties": "{'gateway6': 'fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF/80', 'latency': '0', 'bandwidth': '10000', 'gateway4': '10.1.1.254/24', 'lossratio': '0.0'}"
+            "latency": "0",
+            "lossratio": "0.0"
           }
         }
       }, 
@@ -161,18 +164,19 @@ simpleTop="""
     "hub1": {
       "connections": {
         "kvm1.eth2": {
-          "interface": "kvm1.eth2", 
           "attrs": {
-            "interface": "kvm1.eth2", 
-            "properties": "{'latency': '0', 'bandwidth': '10000', 'lossratio': '0.0'}"
+		    "interface": "kvm1.eth2", 
+            "latency": "0",
+            "bandwidth": "10000",
+            "lossratio": "0.0"
           }
         }, 
         "openvz2.eth1": {
-          "interface": "openvz2.eth1", 
           "attrs": {
-            "interface": "openvz2.eth1", 
+		    "interface": "openvz2.eth1", 
             "capture": "True", 
-            "properties": "{'latency': '0', 'bandwidth': '10000', 'lossratio': '0.0'}", 
+            "latency": "0",
+            "bandwidth": "10000",
             "lossratio": "0.5"
           }
         }
@@ -187,8 +191,9 @@ simpleTop="""
     "internet": {
       "connections": {
         "kvm1.eth1": {
-          "interface": "kvm1.eth1", 
-          "attrs": {}
+          "attrs": {
+		    "interface": "kvm1.eth1" 
+          }
         }
       }, 
       "attrs": {
@@ -220,11 +225,19 @@ simpleTop="""
 }
 """
 
+from datetime import datetime
+
+print datetime.now()
 errors_remove()
+print datetime.now()
 topId = top_create()
 try:
+	print datetime.now()
 	top_modify(topId, jsonToMods(simpleTop), True)
-	top_action(topId, "prepare", direct=True)
+	print datetime.now()
+	print top_action(topId, "prepare", direct=True)
+	print datetime.now()
+	assert False
 	task = top_action(topId, "destroy")
 	waitForTask(task, assertSuccess=True)
 	task = top_action(topId, "start")

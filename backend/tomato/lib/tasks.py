@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import uuid, os, traceback, threading
+import uuid, os, threading
 import util, atexit, time, log
 
 from tomato import config, fault
@@ -85,6 +85,7 @@ class Task():
 			self.status = Status.ABORTED
 		except Exception, exc:
 			self.status = Status.FAILED
+			import traceback
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 	def _run(self):
@@ -100,6 +101,7 @@ class Task():
 			if self.onFinished:
 				self.onFinished()
 		except Exception, exc:
+			import traceback
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def run(self):
 		set_current_task(self)
@@ -110,7 +112,12 @@ class Task():
 				self._run()
 			except Exception, exc:
 				self.result = exc
-				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), "%sCaller was:%s" % (traceback.format_exc(), self.process.trace))
+				import traceback
+				excstr = traceback.format_exc()
+				tracestr = None
+				if self.process.trace:
+					tracestr = "".join(traceback.format_list(self.process.trace))
+				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), "%sCaller was:%s" % (excstr, tracestr))
 				self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 				if self.reverseFn:
 					self._reverse()
@@ -268,6 +275,7 @@ class Process():
 			if self.onFinished:
 				self.onFinished()
 		except Exception, exc:
+			import traceback
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
 	def run(self):
 		self.started = time.time()
@@ -319,6 +327,7 @@ class Process():
 				self.run()
 				return self.dict()
 			else:
+				import traceback
 				self.trace = traceback.extract_stack()
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:

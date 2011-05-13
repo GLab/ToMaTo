@@ -329,7 +329,8 @@ var Connection = NetElement.extend({
 	},
 	connect: function(iface) {
 		this.iface = iface;
-		this.editor.ajaxModify([this.modification("create", {"interface": this.getSubElementName(), "properties": this.attributes})], function(res) {});
+		this.attributes["interface"] = this.getSubElementName()
+		this.editor.ajaxModify([this.modification("create", this.attributes)], function(res) {});
 	},
 	getElementType: function () {
 		return "connection";

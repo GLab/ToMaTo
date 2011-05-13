@@ -31,4 +31,7 @@ for host in hosts:
 	print "\t%s (%s)" % (host["name"], host["group"])
 	task = host_add(host["name"], host["group"], host["enabled"], host)
 	assert waitForTask(task)["status"] == "succeeded"
+	for en in host["external_networks"]:
+		print "\t\t%s: %s (%s)" % ( en["bridge"], en["type"], en["group"])
+		external_network_bridge_add(host["name"], en["type"], en["group"], en["bridge"])
 print "done."	
