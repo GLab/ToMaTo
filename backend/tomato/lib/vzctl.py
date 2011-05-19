@@ -44,16 +44,18 @@ def getState(host, vmid):
 		return generic.State.CREATED
 	assert False, "Unable to determine openvz state"
 
+def _vncPidfile(vmid):
+	return "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
+
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, password, vmid, pidfile ))
+	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, password, vmid, _vncPidfile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
-	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	process.killPidfile(pidfile)
+	process.killPidfile(host, _vncPidfile(vmid))
+	process.killPortUser(host, port)
 	assert process.portFree(host, port)
 	
 def _templatePath(name):

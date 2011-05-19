@@ -114,10 +114,7 @@ class Task():
 				self.result = exc
 				import traceback
 				excstr = traceback.format_exc()
-				tracestr = None
-				if self.process.trace:
-					tracestr = "".join(traceback.format_list(self.process.trace))
-				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), "%sCaller was:%s" % (excstr, tracestr))
+				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), excstr)
 				self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 				if self.reverseFn:
 					self._reverse()
@@ -160,11 +157,15 @@ class TaskSet():
 			t.depends.append(dep)
 		return self
 	def addFirstTask(self, task):
+		self.firstTask = None
 		self.addTask(task)
 		self.firstTask = task
+		self._makeFirstTask(task)
 	def addLastTask(self, task):
+		self.lastTask = None
 		self.addTask(task)
 		self.lastTask = task
+		self._makeLastTask(task)
 	def addPrefix(self, prefix):
 		oldnames = self.tasksmap.keys()[:] 
 		self.tasksmap = {}
@@ -248,6 +249,8 @@ class Process():
 		for task in self.tasks:
 			if task.status == Status.SUCCEEDED:
 				return Status.SUCCEEDED
+		if not self.tasks:
+			return Status.SUCCEEDED
 		return Status.WAITING
 	def isActive(self, status=None):
 		if not status:
@@ -335,7 +338,6 @@ class Process():
 				return self.dict()
 			else:
 				import traceback
-				self.trace = traceback.extract_stack()
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:
 					util.start_thread(self._worker)

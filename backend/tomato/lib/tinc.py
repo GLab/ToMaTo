@@ -259,7 +259,7 @@ def _startEndpoint(endpoint):
 	assert host
 	iface = _tincName(endpoint)
 	host.execute("tincd --net=%s" % iface )
-	assert host.interface_exists(iface), "Tinc deamon did not start"
+	assert ifaceutil.interfaceExists(host, iface), "Tinc deamon did not start"
 	ifaceutil.ifup(host, iface)
 
 def _stopEndpoint(endpoint):
@@ -344,7 +344,7 @@ def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
 		id = ep.getId()
 		assert id
 		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,)))
-		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,), depends="start-endpoint-%s" % id))
+		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), depends="start-endpoint-%s" % id))
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
@@ -470,7 +470,7 @@ def _removeTemporaryFiles(endpoint):
 
 def _uploadFiles(endpoint):
 	assert getState(endpoint) == generic.State.CREATED
-	endpoint.getHost().filePut(_tmpPath(endpoint), _configDir(endpoint))
+	endpoint.getHost().filePut(_tmpPath(endpoint)+"/", _configDir(endpoint))
 
 def _deleteFiles(endpoint):
 	assert getState(endpoint) != generic.State.STARTED

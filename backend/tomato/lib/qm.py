@@ -60,20 +60,20 @@ def useImage(host, vmid, image, move=False):
 	_qm(host, vmid, "set", "--ide0=local:%s/disk.qcow2" % vmid)
 	assert fileutil.existsFile(host, imagePath)
 
+def _vncPidfile(vmid):
+	return "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
+
 def vncRunning(host, vmid, port):
-	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	return process.processRunning(host, pidfile, "tcpserver")
+	return process.processRunning(host, _vncPidfile(vmid), "tcpserver")
 
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > %s" % ( port, vmid, password, pidfile ))
+	host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > %s" % ( port, vmid, password, _vncPidfile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
-	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	process.killPidfile(host, pidfile)
+	process.killPidfile(host, _vncPidfile(vmid))
 	assert process.portFree(host, port)
 	
 def _templatePath(name):
