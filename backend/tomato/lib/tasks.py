@@ -267,9 +267,16 @@ class Process():
 				return False
 		return True
 	def _findTaskToRun(self):
+		waiting = 0
+		active = 0
 		for task in self.tasks:
+			if task.status == Status.WAITING:
+				waiting += 1
+			if task.isActive():
+				active += 1
 			if self._canrun(task):
 				return task
+		assert active or not waiting, "No tasks active but still some tasks waiting"
 	def _runOnFinished(self):
 		try:
 			if self.onFinished:
@@ -342,6 +349,10 @@ class Process():
 		workerthreads += 1
 		try:
 			self.run()
+		except:
+			import traceback
+			#FIXME: handle exception properly
+			traceback.print_exc()
 		finally:
 			workerthreads -= 1
 

@@ -48,3 +48,5 @@ if not config.MAINTENANCE:
 from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
 
 import api
+
+from rpcserver import run as runRPCserver

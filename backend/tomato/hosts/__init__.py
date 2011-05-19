@@ -22,6 +22,8 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
+from tomato.lib import fileutil
+
 class ClusterState:
 	MASTER = "M"
 	NODE = "N"
@@ -52,6 +54,11 @@ class Host(models.Model):
 		for tpl in templates.getAll(): # pylint: disable-msg=E1101
 			tpl.uploadToHost(self)
 
+	def folderExists(self):
+		if not fileutil.existsDir(self, config.remote_control_dir):
+			fileutil.mkdir(self, config.remote_control_dir)
+		assert fileutil.existsDir(self, config.remote_control_dir)
+
 	def check(self):
 		if config.remote_dry_run:
 			return "---"
@@ -65,6 +72,7 @@ class Host(models.Model):
 		  tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, depends=["hostserver"]),
 		  tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, depends=["hostserver"]),
 		  tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, depends=["login"]),
+		  tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, depends=["login"]),
 		  tasks.Task("save", self.fetchAllTemplates, reverseFn=self.disable, depends=["hostserver-config"]),			
 		]).start()
 

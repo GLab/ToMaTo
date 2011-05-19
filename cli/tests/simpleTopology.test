@@ -227,17 +227,11 @@ simpleTop="""
 
 from datetime import datetime
 
-print datetime.now()
 errors_remove()
-print datetime.now()
 topId = top_create()
 try:
-	print datetime.now()
 	top_modify(topId, jsonToMods(simpleTop), True)
-	print datetime.now()
-	print top_action(topId, "prepare", direct=True)
-	print datetime.now()
-	assert False
+	top_action(topId, "prepare", direct=True)
 	task = top_action(topId, "destroy")
 	waitForTask(task, assertSuccess=True)
 	task = top_action(topId, "start")

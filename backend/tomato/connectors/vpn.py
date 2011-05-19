@@ -92,8 +92,8 @@ class TincConnector(Connector):
 	def getDestroyTasks(self):
 		taskset = Connector.getDestroyTasks(self)
 		ts = tinc.getDestroyNetworkTasks(self._endpoints(), self.type)
-		taskset.addTaskSet("tinc-destroy", ts)
 		last = ts.getLastTask()
+		taskset.addTaskSet("tinc-destroy", ts)
 		taskset.addLastTask(tasks.Task("unassign-resources", self._unassignResources, depends=last.name))
 		return taskset
 

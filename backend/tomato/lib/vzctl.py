@@ -72,12 +72,12 @@ def start(host, vmid):
 	execute(host, vmid, "while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 
 def stop(host, vmid):
-	assert getState(host, vmid) == generic.State.STARTED, "VM not running"
+	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
 	res = _vzctl(host, vmid, "stop")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to stop VM: %s" % res
 
 def destroy(host, vmid):
-	assert getState(host, vmid) == generic.State.PREPARED, "VM not stopped"
+	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
 	res = _vzctl(host, vmid, "destroy")
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 

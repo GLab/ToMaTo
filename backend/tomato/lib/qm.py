@@ -60,6 +60,10 @@ def useImage(host, vmid, image, move=False):
 	_qm(host, vmid, "set", "--ide0=local:%s/disk.qcow2" % vmid)
 	assert fileutil.existsFile(host, imagePath)
 
+def vncRunning(host, vmid, port):
+	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
+	return process.processRunning(host, pidfile, "tcpserver")
+
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
@@ -69,7 +73,7 @@ def startVnc(host, vmid, port, password):
 
 def stopVnc(host, vmid, port):
 	pidfile = "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
-	process.killPidfile(pidfile)
+	process.killPidfile(host, pidfile)
 	assert process.portFree(host, port)
 	
 def _templatePath(name):
@@ -147,12 +151,12 @@ def start(host, vmid):
 	assert getState(host, vmid) == generic.State.STARTED, "Failed to start VM: %s" % res
 
 def stop(host, vmid):
-	assert getState(host, vmid) == generic.State.STARTED, "VM not running"
+	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
 	res = _qm(host, vmid, "stop")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to stop VM: %s" % res
 
 def destroy(host, vmid):
-	assert getState(host, vmid) == generic.State.PREPARED, "VM not stopped"
+	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
 	res = _qm(host, vmid, "destroy")
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 

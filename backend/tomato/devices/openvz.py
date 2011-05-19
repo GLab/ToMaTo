@@ -39,13 +39,19 @@ class OpenVZDevice(Device):
 		self.attributes["vmid"] = value
 
 	def getVmid(self):
-		return self.attributes.get("vmid")
+		try:
+			return int(self.attributes.get("vmid"))
+		except:
+			return None
 
 	def setVncPort(self, value):
 		self.attributes["vnc_port"] = value
 
 	def getVncPort(self):
-		return self.attributes.get("vnc_port")
+		try:
+			return int(self.attributes.get("vnc_port"))
+		except:
+			return None
 
 	def setTemplate(self, value):
 		self.attributes["template"] = value
@@ -67,7 +73,7 @@ class OpenVZDevice(Device):
 		return vzctl.getState(self.host, self.getVmid()) 
 
 	def execute(self, cmd):
-		assert self.state == State.STARTED, "Device must be running to execute commands on it: %s" % self.name
+		#not asserting state==Started because this is called during startup
 		return vzctl.execute(self.host, self.getVmid(), cmd)
 
 	def vncPassword(self):
@@ -91,7 +97,7 @@ class OpenVZDevice(Device):
 
 	def _checkInterfacesExist(self):
 		for i in self.interfaceSetAll():
-			assert self.host.interface_exists(self.interfaceDevice(i))
+			assert ifaceutil.interfaceExists(self.host, self.interfaceDevice(i))
 
 	def _createBridges(self):
 		for iface in self.interfaceSetAll():
