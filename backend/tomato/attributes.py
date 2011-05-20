@@ -65,7 +65,7 @@ class AttributeSet(models.Model):
 	def items(self):
 		return ((entr.name, entr.value) for entr in self.attributeentry_set.all())
 	def __contains__(self, key):
-		return self.get(key) is None
+		return not self.get(key) is None
 
 class AttributeEntry(models.Model):
 	attribute_set = models.ForeignKey(AttributeSet)

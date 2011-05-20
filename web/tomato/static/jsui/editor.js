@@ -405,7 +405,7 @@ var EmulatedConnection = Connection.extend({
 		this.IPHintNumber = this.con.nextIPHintNumber++;
 		// not using setAttribute to avoid direct modify call 
 		this.attributes["bandwidth"] = "10000";
-		this.attributes["latency"] = "0";
+		this.attributes["delay"] = "0";
 		this.attributes["lossratio"] = "0.0";
 	},
 	getIPHint: function() {
