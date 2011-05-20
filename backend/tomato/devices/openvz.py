@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config
+from tomato import config, fault
 from tomato.hosts import templates
 from tomato.generic import State
 from tomato.devices import Device, Interface
@@ -140,12 +140,12 @@ class OpenVZDevice(Device):
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
+		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
 
 	def _assignHost(self):
 		if not self.host:
 			self.host = self.hostOptions().best()
-			assert self.host, "No matching host found"
+			fault.check(self.host, "No matching host found")
 			self.save()
 
 	def _assignVmid(self):
@@ -194,7 +194,7 @@ class OpenVZDevice(Device):
 
 	def configure(self, properties):
 		if "template" in properties:
-			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
 		if "root_password" in properties:
 			if self.state == State.PREPARED or self.state == State.STARTED:
@@ -209,15 +209,15 @@ class OpenVZDevice(Device):
 				ifaceutil.setDefaultRoute(self, self.attributes["gateway6"])
 		if "template" in properties:
 			self._assignTemplate()
-			assert self.getTemplate(), "Template not found: %s" % properties["template"]
+			fault.check(self.getTemplate(), "Template not found: %s" % properties["template"])
 		self.save()
 
 	def interfacesAdd(self, name, properties):
-		assert self.state != State.STARTED, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name
+		fault.check(self.state != State.STARTED, "OpenVZ does not support adding interfaces to running VMs: %s" % self.name)
 		import re
-		assert re.match("eth(\d+)", name), "Invalid interface name: %s" % name
+		fault.check(re.match("eth(\d+)", name), "Invalid interface name: %s" % name)
 		try:
-			assert not self.interfaceSetGet(name), "Duplicate interface name: %s" % name
+			fault.check(not self.interfaceSetGet(name), "Duplicate interface name: %s" % name)
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
@@ -239,7 +239,7 @@ class OpenVZDevice(Device):
 		if self.state == State.PREPARED or self.state == State.STARTED:
 			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		try:
-			assert not self.interfaceSetGet(properties["name"]), "Duplicate interface name: %s" % properties["name"]
+			fault.check(not self.interfaceSetGet(properties["name"]), "Duplicate interface name: %s" % properties["name"])
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]

@@ -106,8 +106,7 @@ class Topology(models.Model):
 		return t.isActive()
 
 	def checkBusy(self):
-		if self.isBusy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		fault.check(not self.isBusy(), "Topology is busy with a task")
 
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
@@ -126,8 +125,8 @@ class Topology(models.Model):
 		return self.deviceSetGet(iface_name[0]).interfaceSetGet(iface_name[1])
 
 	def deviceSetAdd(self, dev):
-		if self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0: # pylint: disable-msg=E1101
-			raise fault.new(fault.DUPLICATE_DEVICE_ID, "Duplicate device id: %s" % dev.name)
+		exists = self.device_set.filter(name=dev.name).exclude(id=dev.id).count() > 0
+		fault.check(not exists, "Duplicate device id: %s", dev.name)
 		self.device_set.add(dev) # pylint: disable-msg=E1101
 
 	def connectorSetAll(self):
@@ -137,8 +136,8 @@ class Topology(models.Model):
 		return self.connector_set.get(name=name).upcast() # pylint: disable-msg=E1101
 
 	def connectorSetAdd(self, con):
-		if self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0: # pylint: disable-msg=E1101
-			raise fault.new(fault.DUPLICATE_CONNECTOR_ID, "Duplicate connector id: %s" % con.name)
+		exists = self.connector_set.filter(name=con.name).exclude(id=con.id).count() > 0 # pylint: disable-msg=E1101
+		fault.check(not exists, "Duplicate connector id: %s", con.name)
 		self.connector_set.add(con) # pylint: disable-msg=E1101
 
 	def affectedHosts (self):
@@ -290,30 +289,20 @@ class Topology(models.Model):
 		
 	def downloadImageUri(self, device_id):
 		self.renew()
-		if self.isBusy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
+		fault.check(not self.isBusy(), "Topology is busy with a task")
 		device = self.deviceSetGet(device_id)
-		if not device:
-			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		if not device.upcast().downloadSupported():
-			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Device does not support image download: %s" % device_id)
+		fault.check(device, "No such device: %s", device_id)
+		fault.check(device.upcast().downloadSupported(), "Device does not support image download: %s", device_id)
 		return device.upcast().downloadImageUri()
 
 	def downloadCaptureUri(self, connector_id, ifname): #@UnusedVariable, pylint: disable-msg=W0613
 		self.renew()
-		if self.isBusy():
-			raise fault.new(fault.TOPOLOGY_BUSY, "topology is busy with a task")
-		device_id, interface_id = ifname.split(".")
-		device = self.deviceSetGet(device_id)
-		if not device:
-			raise fault.new(fault.NO_SUCH_DEVICE, "No such device: %s" % device_id)
-		interface = device.interfaceSetGet(interface_id)
-		if not interface:
-			raise fault.new(fault.NO_SUCH_DEVICE, "No such interface: %s.%s" % (device_id, interface_id))
-		con = interface.connection
-		if not con.upcast().downloadSupported():
-			raise fault.new(fault.DOWNLOAD_NOT_SUPPORTED, "Connection does not support capture download: %s" % con)
-		return con.upcast().downloadCaptureUri()
+		fault.check(not self.isBusy(), "Topology is busy with a task")
+		interface = self.interfacesGet(ifname)
+		fault.check(interface, "No such interface: %s", ifname)
+		con = interface.connection.upcast()
+		fault.check(con.downloadSupported(), "Connection does not support capture download: %s" , con)
+		return con.downloadCaptureUri()
 
 	def permissionsAdd(self, user_name, role):
 		self.renew()
@@ -420,7 +409,7 @@ def get(top_id):
 	try:
 		return Topology.objects.get(id=top_id) # pylint: disable-msg=E1101
 	except Topology.DoesNotExist: # pylint: disable-msg=E1101
-		raise fault.new(fault.NO_SUCH_TOPOLOGY, "No such topology: %s" % top_id)
+		raise fault.new("No such topology: %s" % top_id)
 
 def all(): #pylint: disable-msg=W0622
 	return Topology.objects.all() # pylint: disable-msg=E1101

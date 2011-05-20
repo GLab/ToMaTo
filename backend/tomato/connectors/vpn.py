@@ -102,12 +102,9 @@ class TincConnector(Connector):
 	
 	def connectionsAdd(self, iface_name, properties):
 		iface = self.topology.interfacesGet(iface_name)
-		if self.state == State.STARTED or self.state == State.PREPARED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
-		if iface.device.state == State.STARTED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
-		if iface.isConnected():
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to connected interface: %s -> %s" % (iface_name, self.name) )
+		fault.check(self.state == State.CREATED, "Cannot add connections to started or prepared connector: %s -> %s", (iface_name, self.name) )
+		fault.check(iface.device.state != State.STARTED, "Cannot add connections to running device: %s -> %s", (iface_name, self.name) )
+		fault.check(not iface.isConnected(), "Cannot add connections to connected interface: %s -> %s", (iface_name, self.name) )
 		con = TincConnection ()
 		con.init()
 		con.connector = self
@@ -123,10 +120,8 @@ class TincConnector(Connector):
 	
 	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfacesGet(iface_name)
-		if self.state == State.STARTED or self.state == State.PREPARED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to started or prepared connector: %s -> %s" % (iface_name, self.name) )
-		if iface.device.state == State.STARTED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
+		fault.check(self.state == State.CREATED, "Cannot delete connections from started or prepared connector: %s -> %s", (iface_name, self.name) )
+		fault.check(iface.device.state != State.STARTED, "Cannot delete connections from running device: %s -> %s", (iface_name, self.name) )
 		con = self.connectionSetGet(iface)
 		con.delete()
 
@@ -147,7 +142,7 @@ class TincConnection(dummynet.EmulatedConnection):
 	
 	def configure(self, properties):
 		if "gateway4" in properties or "gateway6" in properties:
-			assert self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self
+			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
 		dummynet.EmulatedConnection.configure(self, properties)
 		if self.connector.type == "router":
 			if not self.attributes["gateway4"]:

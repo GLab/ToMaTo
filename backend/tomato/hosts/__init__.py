@@ -120,11 +120,10 @@ class Host(models.Model):
 				if dev.attributes.get("vmid"):
 					if int(dev.attributes["vmid"]) in ids:
 						ids.remove(int(dev.attributes["vmid"]))
-			return ids[0]
-		except:
-			raise fault.new(fault.NO_RESOURCES, "No more free VM ids on %s" % self)
 		finally:
 			self.lock.release()
+		fault.check(len(ids), "No more free VMIDs on host %s", self.name)
+		return ids[0]
 
 	def nextFreePort(self):
 		#FIXME: redesign
@@ -141,11 +140,10 @@ class Host(models.Model):
 				if con.attributes.get("tinc_port"):
 					if int(con.attributes["tinc_port"]) in ids:
 						ids.remove(int(con.attributes["tinc_port"]))
-			return ids[0]
-		except:
-			raise fault.new(fault.NO_RESOURCES, "No more free ports on %s" + self)
 		finally:
 			self.lock.release()
+		fault.check(len(ids), "No more free ports on host %s", self.name)
+		return ids[0]
 
 	def nextFreeBridge(self):
 		#FIXME: redesign
@@ -157,18 +155,15 @@ class Host(models.Model):
 				if con.attributes.get("bridge_id"):
 					if int(con.attributes["bridge_id"]) in ids:
 						ids.remove(int(con.attributes["bridge_id"]))
-			return ids[0]
-		except:
-			raise fault.new(fault.NO_RESOURCES, "No more free bridge ids on %s" + self)
 		finally:
 			self.lock.release()
+		fault.check(len(ids), "No more free bridge ids on host %s", self.name)
+		return ids[0]
 	
 	def _exec(self, cmd):
 		if config.TESTING:
 			return "\n"
 		res = util.run_shell(cmd, config.remote_dry_run)
-		#if res[0] == 255:
-		#	raise fault.Fault(fault.UNKNOWN, "Failed to execute command %s on host %s: %s" % (cmd, self.name, res) )
 		return res[1]
 	
 	def execute(self, command):
@@ -294,10 +289,8 @@ def getBest(group):
 	if group:
 		all_hosts = all_hosts.filter(group=group)
 	hosts = all_hosts.annotate(num_devices=models.Count('device')).order_by('num_devices', '?')
-	if len(hosts) > 0:
-		return hosts[0]
-	else:
-		raise fault.new(fault.NO_HOSTS_AVAILABLE, "No hosts available")
+	fault.check(hosts, "No hosts available")
+	return hosts[0]
 	
 def create(host_name, group_name, enabled, attrs):
 	host = Host(name=host_name, enabled=enabled, group=group_name)
@@ -315,7 +308,7 @@ def change(host_name, group_name, enabled, attrs):
 	
 def remove(host_name):
 	host = get(host_name)
-	assert len(host.device_set.all()) == 0, "Cannot remove hosts that are used"
+	fault.check(len(host.device_set.all()) == 0, "Cannot remove hosts that are used")
 	host.delete()
 		
 def measureLinkProperties(src, dst):

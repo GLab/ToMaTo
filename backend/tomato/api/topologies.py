@@ -63,8 +63,7 @@ def top_create(user=None):
 	
 	Returns: the id of the new topology
 	""" 
-	if not user.is_user:
-		raise fault.new(fault.NOT_A_REGULAR_USER, "only regular users can create topologies")
+	fault.check(user.is_user, "only regular users can create topologies")
 	top=topology.create(user.name)
 	top.save()
 	top.logger().log("created", user=user.name)
@@ -117,7 +116,7 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 	elif element_type == "connector":
 		element = top.connectorSetGet(element_name)
 	else:
-		assert False, "Unknown element tpye: %s" % element_type
+		fault.check(False, "Unknown element tpye: %s", element_type)
 	if action == "prepare":
 		_top_access(top, "manager", user)
 		task_id = element.prepare(direct)
@@ -135,9 +134,8 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 		task_id = element.migrate(direct)
 	elif action == "execute" and element_type =="device":
 		_top_access(top, "user", user)
-		if element.isOpenvz:
-			return element.upcast().execute(attrs["cmd"])
-		raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Execute is only supported for openvz devices")
+		fault.check(element.isOpenvz(), "Execute is only supported for openvz devices")
+		return element.upcast().execute(attrs["cmd"])
 	if element_type == "topology":
 		if action == "remove":
 			_top_access(top, "owner", user)

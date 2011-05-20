@@ -43,7 +43,7 @@ class Modification():
 			elif dtype == "openvz":
 				dev = openvz.OpenVZDevice()
 			else:
-				raise fault.new(fault.UNKNOWN_DEVICE_TYPE, "Unknown device type: %s" % type )
+				raise fault.new("Unknown device type: %s" % type )
 			dev.init()
 			dev.type = dtype
 			dev.topology = top
@@ -61,7 +61,7 @@ class Modification():
 			device.configure(self.properties)
 		elif self.type == "device-delete":
 			device = top.deviceSetGet(self.element).upcast()
-			assert device.state == generic.State.CREATED, "Cannot delete a running or prepared device"
+			fault.check(device.state == generic.State.CREATED, "Cannot delete a running or prepared device")
 			device.delete()
 		
 		elif self.type == "interface-create":
@@ -88,7 +88,7 @@ class Modification():
 			elif ctype == "hub" or ctype =="switch" or ctype == "router":
 				con = vpn.TincConnector()
 			else:
-				raise fault.new(fault.UNKNOWN_CONNECTOR_TYPE, "Unknown connector type: %s" % type )
+				raise fault.new("Unknown connector type: %s" % type )
 			con.init()
 			con.type = ctype
 			con.topology = top
@@ -107,7 +107,7 @@ class Modification():
 		elif self.type == "connector-delete":
 			con = top.connectorSetGet(self.element).upcast()
 			if not con.isExternal(): 
-				assert con.state == generic.State.CREATED, "Cannot delete a running or prepared connector"
+				fault.check(con.state == generic.State.CREATED, "Cannot delete a running or prepared connector")
 			con.delete()
 		
 		elif self.type == "connection-create":
@@ -124,7 +124,7 @@ class Modification():
 			con.connectionsDelete(name)
 			
 		else:
-			raise fault.Fault(fault.IMPOSSIBLE_TOPOLOGY_CHANGE, "Unknown modification type: %s" % self.type)
+			raise fault.Fault("Unknown modification type: %s" % self.type)
 							
 def readFromList(mods):
 	modlist = []

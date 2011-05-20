@@ -69,8 +69,7 @@ def external_network_remove(type, group, user=None):
 	"""
 	_admin_access(user)
 	en = hosts.ExternalNetwork.objects.get(type=type, group=group)
-	if len(en.externalnetworkbridge_set.all()):
-		raise fault.new(fault.EXTERNAL_NETWORK_HAS_BRIDGES, "External network still has bridges")
+	fault.check(not len(en.externalnetworkbridge_set.all()), "External network still has bridges: %s", en)
 	en.delete()
 
 def external_network_bridge_add(host_name, type, group, bridge, user=None):

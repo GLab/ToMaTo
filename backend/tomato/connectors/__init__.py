@@ -71,39 +71,31 @@ class Connector(models.Model):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
 	def start(self, direct):
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		fault.check(self.state == State.PREPARED, "Connector must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("start", self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		fault.check(self.state != State.CREATED, "Connector must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("stop", self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
-		if self.state == State.PREPARED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		fault.check(self.state == State.CREATED, "Connector must be created to be prepared but is %s: %s", (self.state, self.name))
 		for con in self.connectionSetAll():
-			if con.interface.device.state == State.CREATED:
-				raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Device must be prepared first: %s" % con.interface.device )
+			dev = con.interface.device
+			fault.check(dev.state != State.CREATED, "Device %s must be prepared before connector %s", (dev.name, self.name))
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		fault.check(self.state != State.STARTED, "Connector must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())

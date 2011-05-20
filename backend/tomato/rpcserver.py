@@ -23,6 +23,8 @@ import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, reactor, ssl
 
+from tomato import fault
+
 class Introspection():
 	def __init__(self, papi):
 		self.api=papi
@@ -66,13 +68,13 @@ class APIServer(xmlrpc.XMLRPC):
 		try:
 			self.log(function, args, user)
 			return function(*(args[0]), user=user, **(args[1])) #pylint: disable-msg=W0142
-		except xmlrpc.Fault:
+		except xmlrpc.Fault, exc:
+			fault.log(exc)
 			raise
 		except Exception, exc:
-			traceback.print_exc()
-			tomato.fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+			fault.log(exc)
 			self.logger.log("Exception: %s" % exc, user=user.name)
-			raise tomato.fault.new(tomato.fault.UNKNOWN, '%s:%s' % (exc.__class__.__name__, exc) )
+			raise fault.wrap(exc)
 
 	def render(self, request):
 		username=request.getUser()

@@ -111,7 +111,7 @@ class ExternalNetworkConnector(Connector):
 		
 	def _selectUsedNetwork(self):
 		self.used_network = self.networkOptions().best()
-		assert self.used_network, "No free external network of type %s" % self.attributes["network_type"]
+		fault.check(self.used_network, "No free external network of type %s", self.attributes["network_type"])
 		self.save()
 		
 	def getPrepareTasks(self):
@@ -129,10 +129,9 @@ class ExternalNetworkConnector(Connector):
 		return taskset
 
 	def configure(self, properties):
-		if "network_type" in properties and self.state != State.CREATED: 
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change type of external network with prepared connections: %s" % self.name )
-		if "network_group" in properties and self.state != State.CREATED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot change group of external network with prepared connections: %s" % self.name )
+		if self.state != State.CREATED:
+			fault.check(not "network_type" in properties, "Cannot change type of external network with prepared connections: %s", self.name)
+			fault.check(not "network_group" in properties, "Cannot change group of external network with prepared connections: %s", self.name)
 		Connector.configure(self, properties)
 		if self.attributes["network_group"] == "auto":
 			self.attributes["network_group"] = ""
@@ -140,8 +139,7 @@ class ExternalNetworkConnector(Connector):
 	
 	def connectionsAdd(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfacesGet(iface_name)
-		if iface.device.state == State.STARTED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot add connections to running device: %s -> %s" % (iface_name, self.name) )
+		fault.check(iface.device.state != State.STARTED, "Cannot add connections to running device: %s -> %s", (iface_name, self.name) )
 		con = Connection ()
 		con.init()
 		con.connector = self
@@ -153,8 +151,7 @@ class ExternalNetworkConnector(Connector):
 	
 	def connectionsDelete(self, iface_name): #@UnusedVariable, pylint: disable-msg=W0613
 		iface = self.topology.interfacesGet(iface_name)
-		if iface.device.state == State.STARTED:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Cannot delete connections to running devices: %s -> %s" % (iface_name, self.name) )
+		fault.check(iface.device.state != State.STARTED, "Cannot delete connections to running devices: %s -> %s", (iface_name, self.name) )
 		con = self.connectionSetGet(iface)
 		con.delete()
 		
@@ -174,12 +171,11 @@ class ExternalNetworkConnector(Connector):
 		return {"external": external, "traffic": traffic}		
 
 	def bridgeName(self, interface):
-		if not interface.device.host:
-			raise fault.Fault(fault.INVALID_TOPOLOGY_STATE, "Interface is not prepared: %s" % interface)
+		assert interface.device.host, "Interface is not prepared: %s" % interface
 		for enb in self.used_network.externalnetworkbridge_set.all():
 			if enb.host == interface.device.host:
 				return enb.bridge
-		raise fault.Fault(fault.NO_RESOURCES, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host))
+		assert False, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host)
 	
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)

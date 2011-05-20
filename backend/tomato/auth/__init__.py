@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config
+from tomato import config, fault
 from tomato.lib import util
 import time, atexit
 
@@ -43,7 +43,7 @@ cleanup_task.start()
 atexit.register(cleanup_task.stop)
 
 def provider_login(user, password):
-	raise Exception("No auth provider used")
+	fault.new("No auth provider used", fault.AUTHENTICATION_ERROR)
 
 exec("from %s_provider import login as provider_login" % config.auth_provider) #pylint: disable-msg=W0122
 

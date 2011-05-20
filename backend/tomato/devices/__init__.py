@@ -96,41 +96,32 @@ class Device(models.Model):
 		return self.topology.startProcess(proc, direct)
 
 	def start(self, direct):
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		fault.check(self.state == State.PREPARED, "Device must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("start", self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
-		if self.state == State.CREATED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Not yet prepared")
+		fault.check(self.state != State.CREATED, "Device must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("stop", self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
-		if self.state == State.PREPARED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already prepared")
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+		fault.check(self.state == State.CREATED, "Device must be created to be prepared but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("prepare")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
+		fault.check(self.state != State.STARTED, "Device must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
 				con = iface.connection.connector
-				if not con.isExternal() and not con.state == State.CREATED:
-					raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Connector must be destroyed first: %s" % con )		
-		if self.state == State.STARTED:
-			raise fault.new(fault.INVALID_TOPOLOGY_STATE_TRANSITION, "Already started")
+				fault.check(con.state == State.CREATED, "Connector %s must be destroyed before device %s", (con.name, self.name))
 		proc = tasks.Process("destroy")
 		proc.addTask(tasks.Task("renew", self.topology.renew))
 		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
@@ -162,7 +153,7 @@ class Device(models.Model):
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
-			assert self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name
+			fault.check(self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name)
 			if properties["hostgroup"] == "auto":
 				properties["hostgroup"] = ""
 		for key in properties:

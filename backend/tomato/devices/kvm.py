@@ -129,12 +129,12 @@ class KVMDevice(Device):
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		assert self.getTemplate() and self.getTemplate() != "None", "Template not found"
+		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
 
 	def _assignHost(self):
 		if not self.host:
 			self.host = self.hostOptions().best()
-			assert self.host, "No matching host found"
+			fault.check(self.host, "No matching host found")
 			self.save()
 
 	def _assignVmid(self):
@@ -200,20 +200,20 @@ class KVMDevice(Device):
 
 	def configure(self, properties):
 		if "template" in properties:
-			assert self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name
+			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
 		if "template" in properties:
 			self._assignTemplate()
 		self.save()
 			
 	def interfacesAdd(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
-		assert self.state != State.STARTED, "Changes of running KVMs are not supported"
-		assert re.match("eth(\d+)", name), "Invalid interface name: %s" % name
+		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
+		fault.check(re.match("eth(\d+)", name), "Invalid interface name: %s" % name)
 		iface = Interface()
 		iface.init()
 		try:
 			if self.interfaceSetGet(name):
-				raise fault.new(fault.DUPLICATE_INTERFACE_NAME, "Duplicate interface name: %s" % name)
+				raise fault.new("Duplicate interface name: %s" % name)
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = name
@@ -228,10 +228,10 @@ class KVMDevice(Device):
 	
 	def interfacesRename(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		#FIXME: implement by delete-add
-		assert False, "KVM does not support renaming interfaces: %s" % name
+		fault.check(False, "KVM does not support renaming interfaces: %s" % name)
 	
 	def interfacesDelete(self, name): #@UnusedVariable, pylint: disable-msg=W0613
-		assert self.state != State.STARTED, "Changes of running KVMs are not supported"
+		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
 		iface = self.interfaceSetGet(name)
 		if self.state == State.PREPARED:
 			qm.deleteInterface(self.host, self.getVmid(), iface.name)
@@ -321,6 +321,6 @@ class KVMDevice(Device):
 		if not auth:
 			del res["attrs"]["vnc_port"]
 		else:
-			res["attrs"]["vncPassword"] = self.vncPassword()
+			res["attrs"]["vnc_password"] = self.vncPassword()
 		return res
 

@@ -28,8 +28,8 @@ class Template(models.Model):
 		
 	def init(self, name, ttype, download_url):
 		import re
-		if not re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name) or name.endswith(".tar.gz") or name.endswith(".qcow2"):
-			raise fault.new(0, "Name must be in the format NAME-VERSION")
+		fault.check(re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name), "Name must be in the format NAME-VERSION")
+		fault.check(not name.endswith(".tar.gz") and not name.endswith(".qcow2"), "Name must not contain file extensions")
 		self.name = name
 		self.type = ttype
 		self.download_url = download_url

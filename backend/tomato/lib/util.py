@@ -153,29 +153,6 @@ def calculate_subnet6(ip_with_prefix):
 		ip_num = ip_num // (1<<16)
 	return ":".join(ip)+"/"+prefix
 
-def parse_xml(xml, root_tag):
-	"""
-	Parses an xml document. The input must be a string containing a well-formed
-	xml document containing the given root tag.
-	
-	@param xml: well-formed xml document to be parsed
-	@type xml: string
-	@param root_tag: the name of the expected root tag
-	@type root_tag: string
-	@return: the parsed xml element of the root tag
-	@rtype: minidom.Element
-	@raise fault.Error: if the input is not well-formed or the root tag is not found      
-	""" 
-	from tomato import fault
-	try:
-		from xml.dom import minidom
-		dom = minidom.parseString(xml)
-		return dom.getElementsByTagName ( root_tag )[0]
-	except IndexError:
-		raise fault.new(fault.MALFORMED_TOPOLOGY_DESCRIPTION, "Malformed xml: must contain a <%s> tag" % root_tag)
-	except Exception, exc:
-		raise fault.new(fault.MALFORMED_XML, "Malformed XML: %s" % exc )
-
 def nothing():
 	pass
 

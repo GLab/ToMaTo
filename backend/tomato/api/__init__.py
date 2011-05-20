@@ -29,8 +29,7 @@ def _top_access(top, role, user):
 	@rtype: None
 	@raise fault.Error: when the user does not have the required privileges 
 	"""
-	if not top.checkAccess(role, user):
-		raise fault.new(fault.ACCESS_TO_TOPOLOGY_DENIED, "access to topology %s denied" % top.id)
+	fault.check(top.checkAccess(role, user), "access to topology %s denied", top.id, code=fault.AUTHENTICATION_ERROR)
 
 def _admin_access(user):
 	"""
@@ -42,8 +41,7 @@ def _admin_access(user):
 	@rtype: None
 	@raise fault.Error: when the user does not have the required privileges 
 	"""
-	if not user.is_admin:
-		raise fault.new(fault.ADMIN_ACCESS_DENIED, "admin access denied")
+	fault.check(user.is_admin, "admin access denied", code=fault.AUTHENTICATION_ERROR)
 	
 from external_networks import *
 from hosts import *

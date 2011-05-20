@@ -112,9 +112,7 @@ class Task():
 				self._run()
 			except Exception, exc:
 				self.result = exc
-				import traceback
-				excstr = traceback.format_exc()
-				fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), excstr)
+				fault.log(exc)
 				self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 				if self.reverseFn:
 					self._reverse()
@@ -301,7 +299,10 @@ class Process():
 					self.abort()
 					self.finished = time.time()
 					self._runOnFinished()
-					return
+					if isinstance(task.result, Exception):
+						raise task.result
+					else:
+						return
 			else:
 				self.lock.release()
 				if not self.isActive():
@@ -337,24 +338,22 @@ class Process():
 				self.run()
 				return self.dict()
 			else:
-				import traceback
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:
 					util.start_thread(self._worker)
 					workers -= 1
 				return self.id
-		except:
-			import traceback
-			traceback.print_exc()
+		except Exception, exc:
+			fault.log(exc)
+			if direct:
+				raise
 	def _worker(self):
 		global workerthreads
 		workerthreads += 1
 		try:
 			self.run()
-		except:
-			import traceback
-			#FIXME: handle exception properly
-			traceback.print_exc()
+		except Exception, exc:
+			fault.log(exc)
 		finally:
 			workerthreads -= 1
 
@@ -363,7 +362,7 @@ class Process():
 			if not os.path.exists(config.log_dir + "/tasks"):
 				os.makedirs(config.log_dir + "/tasks")
 			logger = log.getLogger(config.log_dir + "/tasks/%s"%self.id)
-			logger.lograw(self.dict())
+			logger.lograw(str(self.dict()))
 			logger.close()
 			del processes[self.id]
 

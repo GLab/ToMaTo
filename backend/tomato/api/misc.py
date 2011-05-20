@@ -51,8 +51,7 @@ def upload_image_uri(top_id, device_id, redirect, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
 	dev=top.deviceSetGet(device_id)
-	if not dev.uploadSupported():
-		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
+	fault.check(dev.uploadSupported(), "Upload not supported for device %s", dev)
 	top.logger().log("upload image grant %s" % device_id, user=user.name)
 	return dev.uploadImageGrant(redirect)
 
@@ -60,8 +59,7 @@ def use_uploaded_image(top_id, device_id, filename, user=None):
 	top=topology.get(top_id)
 	_top_access(top, "manager", user)
 	dev=top.deviceSetGet(device_id)
-	if not dev.uploadSupported():
-		raise fault.new(fault.UPLOAD_NOT_SUPPORTED, "Upload not supported for device %s" % dev)
+	fault.check(dev.uploadSupported(), "Upload not supported for device %s", dev)
 	top.logger().log("use uploaded image %s %s" % (device_id, filename), user=user.name)
 	return dev.use_uploaded_image(filename)	
 
