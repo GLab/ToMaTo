@@ -15,64 +15,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from lib.db import JSONField
+
 from django.db import models
 
-class AttributeSet(models.Model):
-	def clean(self):
-		for r in self.attributeentry_set.all(): # pylint: disable-msg=E1101
-			r.delete()
-	def set(self, name, value):
-		entr = self.getEntry(name)
-		if not entr:
-			if value is None:
-				return
-			entr = AttributeEntry(attribute_set=self, name=name, value=value)
-			entr.save()
-			self.attributeentry_set.add(entr) # pylint: disable-msg=E1101
-		else:
-			if value is None:
-				entr.delete();
-				return
-			entr.value = value
-			entr.save()
+from south.modelsinspector import add_introspection_rules
+add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
+
+class Mixin:
+	def hasAttribute(self, name):
+		assert isinstance(self.attrs, dict)
+		return name in self.attrs
+	def getAttribute(self, name, default=None):
+		assert isinstance(self.attrs, dict)
+		try:
+			return self.attrs[name]
+		except:
+			return default
+	def getAttributes(self):
+		assert isinstance(self.attrs, dict)
+		return self.attrs.copy()
+	def setAttribute(self, name, value):
+		assert isinstance(self.attrs, dict)
+		self.attrs[name] = value
 		self.save()
-	def getEntry(self, name):
-		if len(self.attributeentry_set.filter(name=name)) == 0: # pylint: disable-msg=E1101
-			return None
-		else:
-			return self.attributeentry_set.get(name=name) # pylint: disable-msg=E1101
-	def get(self, name):
-		entr = self.getEntry(name)
-		return entr.value if entr else None
-	
-	#dict methods
-	def __len__(self):
-		return len(self.attributeentry_set.all())
-	def __getitem__(self, key):
-		return self.get(key)
-	def __setitem__(self, key, value):
-		self.set(key, value)
-	def __delitem__(self, key):
-		entr = self.getEntry(key)
-		if not entr:
-			#raise KeyError("no such key: %s" % key)
-			return
-		entr.delete()
-	def __iter__(self):
-		return (entr.name for entr in self.attributeentry_set.all())
-	def iterkeys(self):
-		return self.__iter__()
-	def items(self):
-		return ((entr.name, entr.value) for entr in self.attributeentry_set.all())
-	def __contains__(self, key):
-		return not self.get(key) is None
-
-class AttributeEntry(models.Model):
-	attribute_set = models.ForeignKey(AttributeSet)
-	name = models.CharField(max_length=250)
-	value = models.CharField(max_length=250, null=True)
-
-def create():
-	attr = AttributeSet()
-	attr.save()
-	return attr
+	def setAttributes(self, attrs):
+		assert isinstance(self.attrs, dict)
+		self.attrs.update(attrs)
+		self.save()
+	def deleteAttribute(self, name):
+		assert isinstance(self.attrs, dict)
+		try:
+			del self.attrs[name]
+			self.save()
+		except KeyError:
+			pass
+	def clearAttributes(self):
+		self.attrs = None
+		self.save()

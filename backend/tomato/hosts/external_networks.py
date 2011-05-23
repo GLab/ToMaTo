@@ -28,6 +28,7 @@ class ExternalNetwork(models.Model):
 
 	class Meta:
 		db_table = "tomato_externalnetwork"
+		app_label = 'tomato'
 
 	def hasFreeSlots(self):
 		return not (self.max_devices and self.usageCount() >= self.max_devices) 
@@ -58,6 +59,7 @@ class ExternalNetworkBridge(models.Model):
 
 	class Meta:
 		db_table = "tomato_externalnetworkbridge"
+		app_label = 'tomato'
 
 	def toDict(self):
 		"""

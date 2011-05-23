@@ -329,7 +329,7 @@ var Connection = NetElement.extend({
 	},
 	connect: function(iface) {
 		this.iface = iface;
-		this.attributes["interface"] = this.getSubElementName()
+		this.attributes["interface"] = this.getSubElementName();
 		this.editor.ajaxModify([this.modification("create", this.attributes)], function(res) {});
 	},
 	getElementType: function () {
@@ -1111,7 +1111,7 @@ var Editor = Class.extend({
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
-			var pos = attrs.pos.split(",");
+			var pos = attrs.pos ? attrs.pos.split(",") : [0,0];
 			var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
 			var type = attrs.type;
 			var el;

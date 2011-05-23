@@ -116,7 +116,7 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 	elif element_type == "connector":
 		element = top.connectorSetGet(element_name)
 	else:
-		fault.check(False, "Unknown element tpye: %s", element_type)
+		fault.check(False, "Unknown element type: %s", element_type)
 	if action == "prepare":
 		_top_access(top, "manager", user)
 		task_id = element.prepare(direct)

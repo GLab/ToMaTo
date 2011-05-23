@@ -20,42 +20,47 @@ from tomato import fault, config
 from tomato.hosts import templates
 from tomato.generic import State
 from tomato.lib import qm, hostserver, tasks, ifaceutil
+
 import hashlib, re
+from django.db import models
 
 class KVMDevice(Device):
 	
+	vmid = models.PositiveIntegerField(null=True)
+	vnc_port = models.PositiveIntegerField(null=True)
+	template = models.CharField(max_length=255, null=True)
+	
 	class Meta:
 		db_table = "tomato_kvmdevice"
+		app_label = 'tomato'
 
 	def upcast(self):
 		return self
 
 	def init(self):
+		self.attrs = {}
 		self.setTemplate("")
 
 	def setVmid(self, value):
-		self.attributes["vmid"] = str(int(value))
+		self.vmid = value
+		self.save()
 
 	def getVmid(self):
-		try:
-			return int(self.attributes.get("vmid"))
-		except:
-			return None
+		return self.vmid
 
 	def setVncPort(self, value):
-		self.attributes["vnc_port"] = str(int(value))
+		self.vnc_port = value
+		self.save()
 
 	def getVncPort(self):
-		if self.attributes.get("vnc_port"):
-			return int(self.attributes.get("vnc_port"))
-		else:
-			return None
+		return self.vnc_port
 
 	def setTemplate(self, value):
-		self.attributes["template"] = value
+		self.template = value
+		self.save()
 
 	def getTemplate(self):
-		return self.attributes["template"]
+		return self.template
 
 	def getState(self):
 		if config.remote_dry_run:
@@ -107,7 +112,6 @@ class KVMDevice(Device):
 
 	def _stopVnc(self):
 		qm.stopVnc(self.host, self.getVmid(), self.getVncPort())
-		del self.attributes["vnc_port"]
 	
 	def _stopVm(self):
 		qm.stop(self.host, self.getVmid())
@@ -182,10 +186,10 @@ class KVMDevice(Device):
 		self.save()
 		
 	def _unassignVmid(self):
-		del self.attributes["vmid"]
+		self.setVmid(None)
 
 	def _unassignVncPort(self):
-		del self.attributes["vnc_port"]
+		self.setVncPort(None)
 
 	def _destroyVm(self):
 		qm.destroy(self.host, self.getVmid())
@@ -318,9 +322,8 @@ class KVMDevice(Device):
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		if not auth:
-			del res["attrs"]["vnc_port"]
-		else:
-			res["attrs"]["vnc_password"] = self.vncPassword()
+		res["attrs"].update(vmid=self.getVmid(), template=self.getTemplate())
+		if auth:
+			res["attrs"].update(vnc_password=self.vncPassword(), vnc_port=self.getVncPort())
 		return res
 

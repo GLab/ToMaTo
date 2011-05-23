@@ -25,6 +25,7 @@ class Template(models.Model):
 		
 	class Meta:
 		db_table = "tomato_template"
+		app_label = 'tomato'
 		
 	def init(self, name, ttype, download_url):
 		import re

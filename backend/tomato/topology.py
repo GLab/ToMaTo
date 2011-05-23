@@ -19,9 +19,9 @@ from django.db import models
 import os, datetime, atexit
 import config, fault, generic, attributes
 
-from lib import log, tasks, util
+from lib import log, tasks, util, db
 
-class Topology(models.Model):
+class Topology(attributes.Mixin, models.Model):
 	"""
 	This class represents a whole topology and offers methods to work with it
 	"""
@@ -34,7 +34,11 @@ class Topology(models.Model):
 
 	owner = models.CharField(max_length=30)
 
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+	date_usage = models.DateTimeField(null=True)
+	
+	task = models.CharField(max_length=250, null=True)
+		
+	attrs = db.JSONField(default={})
 		
 	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
@@ -56,7 +60,7 @@ class Topology(models.Model):
 		self.save()
 
 	def renew(self):
-		self.attributes["date_usage"] = datetime.datetime.now()
+		self.date_usage = datetime.datetime.now()
 		self.save()
 
 	def maxState(self):
@@ -76,7 +80,7 @@ class Topology(models.Model):
 
 	def checkTimeout(self):
 		now = datetime.datetime.now()
-		date = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
+		date = self.date_usage
 		if not date:
 			return
 		if now > date + self.REMOVE_TIMEOUT:
@@ -93,11 +97,11 @@ class Topology(models.Model):
 				self.stop(False)
 		
 	def getTask(self):
-		if not self.attributes["task"]:
+		if not self.task:
 			return None
-		if not tasks.processes.has_key(self.attributes["task"]):
+		if not tasks.processes.has_key(self.task):
 			return None
-		return tasks.processes[self.attributes["task"]]
+		return tasks.processes[self.task]
 
 	def isBusy(self):
 		t = self.getTask()
@@ -110,7 +114,7 @@ class Topology(models.Model):
 
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
-		self.attributes["task"] = process.id
+		self.task = process.id
 		self.save()
 		return process.start(direct)
 
@@ -335,30 +339,25 @@ class Topology(models.Model):
 			return self.permissionsGet(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
 	def resources(self):
-		res = {}
-		for key in self.attributes:
-			if key.startswith("resources_"):
-				res[key[10:]] = self.attributes[key]
-		return res
+		return self.getAttribute("resources")
 
 	def updateResourceUsage(self):
 		res = {}
 		for dev in self.deviceSetAll():
 			dev.updateResourceUsage()
-			for key in dev.attributes:
-				if key.startswith("resources_"):
-					if not key in res:
-						res[key] = 0
-					res[key] += float(dev.attributes[key])
+			r = dev.getAttribute("resources")
+			for key in r:
+				if not key in res:
+					res[key] = 0
+				res[key] += r[key]
 		for con in self.connectorSetAll():
 			con.updateResourceUsage()
-			for key in con.attributes:
-				if key.startswith("resources_"):
-					if not key in res:
-						res[key] = 0
-					res[key] += float(con.attributes[key])
-		for key in res:
-			self.attributes[key] = res[key]
+			r = dev.getAttribute("resources")
+			for key in r:
+				if not key in res:
+					res[key] = 0
+				res[key] += r[key]
+		self.setAttribute("resources", res)
 		
 	def toDict(self, auth, detail):
 		"""
@@ -371,22 +370,19 @@ class Topology(models.Model):
 		@return: a dict containing information about the topology
 		@rtype: dict
 		"""
-		last_usage = datetime.datetime.strptime(self.attributes["date_usage"], "%Y-%m-%d %H:%M:%S.%f")
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.maxState(), "owner": self.owner,
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
-					"stop_timeout": str(last_usage + self.STOP_TIMEOUT), "destroy_timeout": str(last_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(last_usage + self.REMOVE_TIMEOUT) 
-					}
+					"stop_timeout": str(self.date_usage + self.STOP_TIMEOUT), "destroy_timeout": str(self.date_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(self.date_usage + self.REMOVE_TIMEOUT) 
+					},
+			"resources": self.resources(),
 			}
-		res["attrs"].update(self.attributes.items())
 		if detail:
 			res.update({"devices": dict([[v.name, v.upcast().toDict(auth)] for v in self.deviceSetAll()]),
 				"connectors": dict([[v.name, v.upcast().toDict(auth)] for v in self.connectorSetAll()])
 				})
 			res.update(permissions=dict([[p.user, p.role] for p in self.permissionsAll()]))
 			res["permissions"][self.owner]="owner";
-		if "task" in res["attrs"]:
-			del res["attrs"]["task"]
 		if auth:
 			task = self.getTask()
 			if task:

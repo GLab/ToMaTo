@@ -20,8 +20,9 @@ from django.db import models
 from tomato import attributes, hosts
 from tomato.topology import Topology
 from tomato.generic import State, ObjectPreferences
+from tomato.lib import db
 
-class Device(models.Model):
+class Device(attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
 	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )
@@ -30,10 +31,12 @@ class Device(models.Model):
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	host = models.ForeignKey(hosts.Host, null=True)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+	hostgroup = models.CharField(max_length=20, null=True)
+
+	attrs = db.JSONField(null=True)
 
 	def init(self):
-		pass
+		self.attrs = {}
 		
 	def interfaceSetGet(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
@@ -59,7 +62,7 @@ class Device(models.Model):
 	
 	def hostPreferences(self):
 		prefs = ObjectPreferences(True)
-		for h in hosts.getAll(self.attributes.get("hostgroup")):
+		for h in hosts.getAll(self.hostgroup):
 			if h.enabled:
 				prefs.add(h, 1.0 - len(h.device_set.all())/100.0)
 		#print "Host preferences for %s: %s" % (self, prefs) 
@@ -156,20 +159,13 @@ class Device(models.Model):
 			fault.check(self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name)
 			if properties["hostgroup"] == "auto":
 				properties["hostgroup"] = ""
-		for key in properties:
-			self.attributes[key] = properties[key]
-		del self.attributes["host"]			
-		del self.attributes["name"]			
-		del self.attributes["type"]			
-		del self.attributes["state"]			
-		del self.attributes["download_supported"]			
-		del self.attributes["upload_supported"]			
+		if "pos" in properties:
+			self.setAttribute("pos", properties["pos"])
 		self.save()
 
 	def updateResourceUsage(self):
 		res = self.upcast().getResourceUsage()
-		for key in res:
-			self.attributes["resources_%s" % key] = res[key]
+		self.setAttribute("resources",res)
 
 	def __unicode__(self):
 		return self.name
@@ -187,9 +183,9 @@ class Device(models.Model):
 					"name": self.name, "type": self.type, "state": self.state,
 					"download_supported": self.downloadSupported(), "upload_supported": self.uploadSupported() 
 					},
+			"resources" : self.getAttribute("resources"),
 			"interfaces": dict([[i.name, i.upcast().toDict(auth)] for i in self.interfaceSetAll()]),
 		}
-		res["attrs"].update(self.attributes.items())
 		return res
 	
 	def uploadImageGrant(self, redirect):
@@ -202,19 +198,20 @@ class Device(models.Model):
 			return None
 				
 	def useUploadedImage(self, filename):
-		path = "%s/%s" % (self.host.attributes["hostserver_basedir"], filename)
+		path = "%s/%s" % (self.host.hostServerBasedir(), filename)
 		proc = tasks.Process("use-uploaded-image")
 		proc.addTask("main", self.upcast().useUploadedImageRun, args=(path,))
 		return proc.start()
 			
 			
-class Interface(models.Model):
+class Interface(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=5)
 	device = models.ForeignKey(Device)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+
+	attrs = db.JSONField(default={})
 
 	def init(self):
-		pass
+		self.attrs = {}
 		
 	def isConfigured(self):
 		try:
@@ -231,10 +228,7 @@ class Interface(models.Model):
 			return False	
 	
 	def configure(self, properties):
-		for key in properties:
-			self.attributes[key] = properties[key]
-		del self.attributes["name"]			
-		self.save()
+		pass
 
 	def upcast(self):
 		if self.isConfigured():
@@ -254,7 +248,6 @@ class Interface(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name}}
-		res["attrs"].update(self.attributes.items())
 		return res
 
 	def getStartTasks(self):

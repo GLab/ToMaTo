@@ -45,7 +45,7 @@ def action(api, request, top_id):
 	if not request.REQUEST.has_key("action"):
 		raise Exception("action not found") 
 	action = json.loads(request.REQUEST["action"])
-	res = api.top_action(top_id, action["element_type"], action["element_name"], action["action"], action["attrs"]);
+	res = api.top_action(top_id, action["action"], action["element_type"], action["element_name"], action["attrs"]);
 	return res
 	
 @wrap_json

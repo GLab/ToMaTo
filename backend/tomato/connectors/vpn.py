@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from django.db import models
+
 import dummynet
 
 from tomato import fault
@@ -34,7 +36,7 @@ class ConnectionEndpoint(tinc.Endpoint):
 	def getId(self):
 		return self.con.id
 	def getPort(self):
-		port = self.con.attributes["tinc_port"]
+		port = self.con.upcast().tinc_port
 		assert port
 		return port
 	def getBridge(self):
@@ -44,15 +46,17 @@ class ConnectionEndpoint(tinc.Endpoint):
 	def getSubnets(self):
 		subnets = []
 		if self.con.connector.type == tinc.Mode.ROUTER:
-			subnets.append(util.calculate_subnet4(self.con.attributes["gateway4"]))
-			subnets.append(util.calculate_subnet6(self.con.attributes["gateway6"]))
+			subnets.append(util.calculate_subnet4(self.con.getAttribute("gateway4")))
+			subnets.append(util.calculate_subnet6(self.con.getAttribute("gateway6")))
 		return subnets
-
+	def __unicode__(self):
+		return self.con
 
 class TincConnector(Connector):
 
 	class Meta:
 		db_table = "tomato_tincconnector"
+		app_label = 'tomato'
 
 	def upcast(self):
 		return self
@@ -134,8 +138,11 @@ class TincConnector(Connector):
 
 class TincConnection(dummynet.EmulatedConnection):
 
+	tinc_port = models.PositiveIntegerField(null=True)
+
 	class Meta:
 		db_table = "tomato_tincconnection"
+		app_label = 'tomato'
 
 	def upcast(self):
 		return self
@@ -145,34 +152,36 @@ class TincConnection(dummynet.EmulatedConnection):
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
 		dummynet.EmulatedConnection.configure(self, properties)
 		if self.connector.type == "router":
-			if not self.attributes["gateway4"]:
-				self.attributes["gateway4"] = "10.0.0.254/24" 
-			if not self.attributes["gateway6"]:
-				self.attributes["gateway6"] = "fd01:ab1a:b1ab:0:0:FFFF:FFFF:FFFF/80" 
-			if not len(self.attributes["gateway4"].split("/")) == 2:
-				self.attributes["gateway4"] = self.attributes["gateway4"] + "/24"
-			if not len(self.attributes["gateway6"].split("/")) == 2:
-				self.attributes["gateway6"] = self.attributes["gateway6"] + "/80"
+			if not self.hasAttribute("gateway4"):
+				self.setAttribute("gateway4", "10.0.0.254/24") 
+			if not self.hasAttribute("gateway6"):
+				self.setAttribute("gateway6", "fd01:ab1a:b1ab:0:0:FFFF:FFFF:FFFF/80") 
+			if not len(self.getAttribute("gateway4").split("/")) == 2:
+				self.setAttribute("gateway4", self.getAttribute("gateway4") + "/24")
+			if not len(self.getAttribute("gateway6").split("/")) == 2:
+				self.setAttribute("gateway6", self.getAttribute("gateway6") + "/80")
 		
 	def _assignBridgeId(self):
-		if not self.attributes["bridge_id"]:
-			self.attributes["bridge_id"] = self.interface.device.host.nextFreeBridge()		
+		if not self.bridge_id:
+			self.bridge_id = self.interface.device.host.nextFreeBridge()		
 			self.save()
 
 	def _assignTincPort(self):
-		if not self.attributes["tinc_port"]:
-			self.attributes["tinc_port"] = self.interface.device.host.nextFreePort()
+		if not self.tinc_port:
+			self.tinc_port = self.interface.device.host.nextFreePort()
 			self.save()
 
 	def _unassignBridgeId(self):
-		del self.attributes["bridge_id"]
+		self.bridge_id = None
+		self.save()
 
 	def _unassignTincPort(self):
-		del self.attributes["tinc_port"]
+		self.tinc_port = None
+		self.save()
 
 	def toDict(self, auth):
-		res = dummynet.EmulatedConnection.toDict(self, auth)	
-		if not auth:
-			del res["attrs"]["tinc_port"]	
-			del res["attrs"]["bridge_id"]	
+		res = dummynet.EmulatedConnection.toDict(self, auth)
+		res["attrs"].update(gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))	
+		if auth:
+			res["attrs"]["tinc_port"] = self.tinc_port	
 		return res

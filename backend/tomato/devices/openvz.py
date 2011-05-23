@@ -19,51 +19,56 @@ from tomato import config, fault
 from tomato.hosts import templates
 from tomato.generic import State
 from tomato.devices import Device, Interface
+
+from django.db import models
 import hashlib
 
 from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks
 
 class OpenVZDevice(Device):
 
+	vmid = models.PositiveIntegerField(null=True)
+	vnc_port = models.PositiveIntegerField(null=True)
+	template = models.CharField(max_length=255, null=True)
+
 	class Meta:
 		db_table = "tomato_openvzdevice"
+		app_label = 'tomato'
 
 	def upcast(self):
 		return self
 
 	def init(self):
+		self.attrs = {}
 		self.setTemplate("")
 		self.setRootPassword("glabroot")
 
 	def setVmid(self, value):
-		self.attributes["vmid"] = value
+		self.vmid = value
+		self.save()
 
 	def getVmid(self):
-		try:
-			return int(self.attributes.get("vmid"))
-		except:
-			return None
+		return self.vmid
 
 	def setVncPort(self, value):
-		self.attributes["vnc_port"] = value
+		self.vnc_port = value
+		self.save()
 
 	def getVncPort(self):
-		try:
-			return int(self.attributes.get("vnc_port"))
-		except:
-			return None
+		return self.vnc_port
 
 	def setTemplate(self, value):
-		self.attributes["template"] = value
+		self.template = value
+		self.save()
 
 	def getTemplate(self):
-		return self.attributes["template"]
+		return self.template
 
 	def setRootPassword(self, value):
-		self.attributes["root_password"] = value
+		self.setAttribute("root_password", value)
 
 	def getRootPassword(self):
-		return self.attributes["root_password"]
+		return self.getAttribute("root_password")
 
 	def getState(self):
 		if config.remote_dry_run:
@@ -109,10 +114,10 @@ class OpenVZDevice(Device):
 
 	def _configureRoutes(self):
 		#Note: usage of self as host is intentional
-		if self.attributes.get("gateway4"):
-			ifaceutil.setDefaultRoute(self, self.attributes["gateway4"]) 
-		if self.attributes.get("gateway6"):
-			ifaceutil.setDefaultRoute(self, self.attributes["gateway6"]) 
+		if self.hasAttribute("gateway4"):
+			ifaceutil.setDefaultRoute(self, self.getAttribute("gateway4")) 
+		if self.hasAttribute("gateway6"):
+			ifaceutil.setDefaultRoute(self, self.getAttribute("gateway6")) 
 
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
@@ -127,7 +132,7 @@ class OpenVZDevice(Device):
 
 	def _stopVnc(self):
 		vzctl.stopVnc(self.host, self.getVmid(), self.getVncPort())
-		del self.attributes["vnc_port"]
+		self.setVncPort(None)
 	
 	def _stopVm(self):
 		vzctl.stop(self.host, self.getVmid())
@@ -179,7 +184,7 @@ class OpenVZDevice(Device):
 		self.host = None
 		
 	def _unassignVmid(self):
-		del self.attributes["vmid"]
+		self.setVmid(None)
 
 	def _destroyVm(self):
 		vzctl.destroy(self.host, self.getVmid())
@@ -197,17 +202,21 @@ class OpenVZDevice(Device):
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
 		if "root_password" in properties:
+			self.setRootPassword(properties["root_password"])
 			if self.state == State.PREPARED or self.state == State.STARTED:
 				vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		if "gateway4" in properties:
-			if self.attributes["gateway4"] and self.state == State.STARTED:
+			self.setAttribute("gateway4", properties["gateway4"])
+			if self.getAttribute("gateway4") and self.state == State.STARTED:
 				#Note: usage of self as host is intentional
-				ifaceutil.setDefaultRoute(self, self.attributes["gateway4"])
+				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway4"))
 		if "gateway6" in properties:
-			if self.attributes["gateway6"] and self.state == State.STARTED:
+			self.setAttribute("gateway4", properties["gateway4"])
+			if self.getAttribute("gateway6") and self.state == State.STARTED:
 				#Note: usage of self as host is intentional
-				ifaceutil.setDefaultRoute(self, self.attributes["gateway6"])
+				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway6"))
 		if "template" in properties:
+			self.setTemplate(properties["template"])
 			self._assignTemplate()
 			fault.check(self.getTemplate(), "Template not found: %s" % properties["template"])
 		self.save()
@@ -343,20 +352,21 @@ class OpenVZDevice(Device):
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		if not auth:
-			del res["attrs"]["vnc_port"]
-			del	res["attrs"]["root_password"]
-		else:
-			res["attrs"]["vnc_password"] = self.vncPassword()
+		res["attrs"].update(vmid=self.getVmid(), vnc_port=self.getVmid(), template=self.getTemplate(),
+			gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))
+		if auth:
+			res["attrs"].update(root_password=self.getRootPassword(), vnc_password = self.vncPassword())
 		return res
 
 class ConfiguredInterface(Interface):
 
 	class Meta:
 		db_table = "tomato_configuredinterface"
+		app_label = 'tomato'
 	
 	def init(self):
-		self.attributes["use_dhcp"] = False
+		self.attrs = {}		
+		self.setAttribute("use_dhcp", False)
 	
 	def upcast(self):
 		return self
@@ -368,14 +378,17 @@ class ConfiguredInterface(Interface):
 		Interface.configure(self, properties)
 		changed=False
 		if "use_dhcp" in properties:
+			self.setAttribute("use_dhcp", properties["use_dhcp"])
 			changed = True
 		if "ip4address" in properties:
+			self.setAttribute("ip4address", properties["ip4address"])
 			changed = True
 		if "ip6address" in properties:
+			self.setAttribute("ip6address", properties["ip6address"])
 			changed = True
 		if changed:
 			if self.device.state == State.STARTED:
-				self.start_run()
+				self._configureNetwork()
 			self.save()
 
 	def _connectToBridge(self):
@@ -388,13 +401,13 @@ class ConfiguredInterface(Interface):
 	def _configureNetwork(self):
 		dev = self.device.upcast()
 		#Note usage of dev instead of host is intentional
-		if self.attributes["ip4address"]:
-			ifaceutil.addAddress(dev, self.name, self.attributes["ip4address"])
+		if self.hasAttribute("ip4address"):
+			ifaceutil.addAddress(dev, self.name, self.getAttribute("ip4address"))
 			ifaceutil.ifup(dev, self.name) 
-		if self.attributes["ip6address"]:
-			ifaceutil.addAddress(dev, self.name, self.attributes["ip6address"])
+		if self.hasAttribute("ip6address"):
+			ifaceutil.addAddress(dev, self.name, self.getAttribute("ip6address"))
 			ifaceutil.ifup(dev, self.name) 
-		if self.attributes["use_dhcp"] and util.parse_bool(self.attributes["use_dhcp"]):
+		if self.hasAttribute("use_dhcp") and util.parse_bool(self.getAttribute("use_dhcp")):
 			ifaceutil.startDhcp(dev, self.name)
 			
 	def getStartTasks(self):
@@ -407,5 +420,7 @@ class ConfiguredInterface(Interface):
 		return Interface.getPrepareTasks(self)
 
 	def toDict(self, auth):
-		res = Interface.toDict(self, auth)		
+		res = Interface.toDict(self, auth)
+		res["attrs"].update(ip4address=self.getAttribute("ip4address"), ip6address=self.getAttribute("ip6address"),
+			use_dhcp=self.getAttribute("use_dhcp"))	
 		return res				

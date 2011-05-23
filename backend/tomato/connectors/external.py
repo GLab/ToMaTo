@@ -24,28 +24,30 @@ from tomato.lib import ifaceutil, tasks
 
 class ExternalNetworkConnector(Connector):
 	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
+	network_type = models.CharField(max_length=20, default="internet")
+	network_group = models.CharField(max_length=20, null=True)
 	
 	class Meta:
 		db_table = "tomato_externalnetworkconnector"
+		app_label = 'tomato'
+
+	def init(self):
+		self.attrs = {}
 
 	def upcast(self):
 		return self
 
-	def init(self):
-		self.setNetworkType("internet")
-		self.setNetworkGroup("")
-
 	def getNetworkType(self):
-		return self.attributes["network_type"]
+		return self.network_type
 	
 	def setNetworkType(self, value):
-		self.attributes["network_type"] = value
+		self.network_type = value
 
 	def getNetworkGroup(self):
-		return self.attributes["network_group"]
+		return self.network_group
 	
 	def setNetworkGroup(self, value):
-		self.attributes["network_group"] = value
+		self.network_group = value
 
 	def _updateHostPreferences(self, prefs, en):
 		if not en.hasFreeSlots():
@@ -111,7 +113,7 @@ class ExternalNetworkConnector(Connector):
 		
 	def _selectUsedNetwork(self):
 		self.used_network = self.networkOptions().best()
-		fault.check(self.used_network, "No free external network of type %s", self.attributes["network_type"])
+		fault.check(self.used_network, "No free external network of type %s", self.getNetworkType())
 		self.save()
 		
 	def getPrepareTasks(self):
@@ -133,8 +135,8 @@ class ExternalNetworkConnector(Connector):
 			fault.check(not "network_type" in properties, "Cannot change type of external network with prepared connections: %s", self.name)
 			fault.check(not "network_group" in properties, "Cannot change group of external network with prepared connections: %s", self.name)
 		Connector.configure(self, properties)
-		if self.attributes["network_group"] == "auto":
-			self.attributes["network_group"] = ""
+		if self.getNetworkGroup() == "auto":
+			self.setNetworkGroup(None)
 		self.save()		
 	
 	def connectionsAdd(self, iface_name, properties): #@UnusedVariable, pylint: disable-msg=W0613
@@ -175,9 +177,9 @@ class ExternalNetworkConnector(Connector):
 		for enb in self.used_network.externalnetworkbridge_set.all():
 			if enb.host == interface.device.host:
 				return enb.bridge
-		assert False, "No external network bridge %s(%s) on host %s" % (self.attributes["network_type"], self.attributes["network_group"], interface.device.host)
+		assert False, "No external network bridge %s(%s) on host %s" % (self.getNetworkType(), self.getNetworkGroup(), interface.device.host)
 	
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)
-		res["attrs"].update(used_network=self.used_network)
+		res["attrs"].update(used_network=self.used_network, network_type=self.network_type, network_group=self.network_group)
 		return res

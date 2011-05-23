@@ -24,7 +24,6 @@ from devices import Device, Interface #@UnusedImport
 from devices.kvm import KVMDevice #@UnusedImport
 from devices.openvz import OpenVZDevice, ConfiguredInterface #@UnusedImport
 from topology import Topology, Permission #@UnusedImport
-from attributes import AttributeSet, AttributeEntry #@UnusedImport
 from fault import Error #@UnusedImport
 from hosts import Host #@UnusedImport
 from hosts.external_networks import ExternalNetwork, ExternalNetworkBridge #@UnusedImport

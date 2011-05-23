@@ -20,19 +20,19 @@ import hashlib, urllib, base64, time, uuid
 def _calcGrant(host, params):
 	list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
 	list.sort()
-	return hashlib.sha1("&".join(list)+"|"+host.attributes["hostserver_secret_key"]).hexdigest()
+	return hashlib.sha1("&".join(list)+"|"+host.getAttribute("hostserver_secret_key")).hexdigest()
 
 def randomFilename(host):
-	return "%s/%s" % (host.attributes["hostserver_basedir"], uuid.uuid1())
+	return "%s/%s" % (host.getAttribute("hostserver_basedir"), uuid.uuid1())
 
 def uploadGrant(host, filename, redirect):
 	params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
 	params.update(grant=_calcGrant(params))
 	qstr = urllib.urlencode(params)
-	return "http://%s:%s/upload?%s" % (host.name, host.attributes["hostserver_port"], qstr)
+	return "http://%s:%s/upload?%s" % (host.name, host.getAttributes("hostserver_port"), qstr)
 	
 def downloadGrant(host, file, name):
 	params={"file": file, "valid_until": str(time.time()+3600), "name": name}
 	params.update(grant=_calcGrant(params))
 	qstr = urllib.urlencode(params)
-	return "http://%s:%s/download?%s" % (host.name, host.attributes["hostserver_port"], qstr)
+	return "http://%s:%s/download?%s" % (host.name, host.getAttributes("hostserver_port"), qstr)

@@ -49,7 +49,7 @@ INTERNAL_ERROR = 500
 
 def _must_log(exc):
 	if isinstance(exc, Fault):
-		return exc.code != USER_ERROR
+		return exc.faultCode != USER_ERROR
 	return True 
 
 def log(exc):

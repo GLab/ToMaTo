@@ -22,30 +22,33 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil
+from tomato.lib import fileutil, db
 
 class ClusterState:
 	MASTER = "M"
 	NODE = "N"
 	NONE = "-"
 
-class Host(models.Model):
+class Host(attributes.Mixin, models.Model):
 	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.remote_ssh_key]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
 	group = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+	
+	attrs = db.JSONField(default={})
+	
 	lock = threading.Lock()
 
 	def init(self):
-		self.attributes["port_start"] = "7000"
-		self.attributes["port_count"] = "1000"
-		self.attributes["vmid_start"] = "1000"
-		self.attributes["vmid_count"] = "200"
-		self.attributes["bridge_start"] = "1000"
-		self.attributes["bridge_count"] = "1000"
+		self.attrs = {}
+		self.setAttribute("port_start", 7000)
+		self.setAttribute("port_count", 1000)
+		self.setAttribute("vmid_start", 1000)
+		self.setAttribute("vmid_count", 200)
+		self.setAttribute("bridge_start", 1000)
+		self.setAttribute("bridge_count", 1000)
 
 	def __unicode__(self):
 		return self.name
@@ -95,13 +98,13 @@ class Host(models.Model):
 
 	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
-		self.attributes["hostserver_port"] = int(res[0])
-		self.attributes["hostserver_basedir"] = res[1]
-		self.attributes["hostserver_secret_key"] = res[2]
+		self.setAttribute("hostserver_port", int(res[0]))
+		self.setAttribute("hostserver_basedir", res[1])
+		self.setAttribute("hostserver_secret_key", res[2])
 				
 	def hostserverCleanup(self):
-		if self.attributes.get("hostserver_basedir"):
-			self.execute("find %s -type f -mtime +0 -delete" % self.attributes["hostserver_basedir"])
+		if self.hasAttribute("hostserver_basedir"):
+			self.execute("find %s -type f -mtime +0 -delete" % self.getAttribute("hostserver_basedir"))
 			
 	def clusterState(self):
 		try:
@@ -110,16 +113,23 @@ class Host(models.Model):
 		except:
 			return ClusterState.NONE
 				
+	def hostServerBasedir(self):
+		return self.getAttribute("hostserver_basedir") 
+				
 	def nextFreeVmId (self):
 		#FIXME: redesign
 		try:
 			self.lock.acquire()
-			ids = range(int(self.attributes["vmid_start"]),int(self.attributes["vmid_start"])+int(self.attributes["vmid_count"]))
-			from tomato.devices import Device
-			for dev in Device.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.attributes.get("vmid"):
-					if int(dev.attributes["vmid"]) in ids:
-						ids.remove(int(dev.attributes["vmid"]))
+			ids = range(self.getAttribute("vmid_start"),self.getAttribute("vmid_start")+self.getAttribute("vmid_count"))
+			from tomato.devices import openvz, kvm
+			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.vmid:
+					if dev.vmid in ids:
+						ids.remove(dev.vmid)
+			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.vmid:
+					if dev.vmid in ids:
+						ids.remove(dev.vmid)
 		finally:
 			self.lock.release()
 		fault.check(len(ids), "No more free VMIDs on host %s", self.name)
@@ -129,17 +139,21 @@ class Host(models.Model):
 		#FIXME: redesign
 		try:
 			self.lock.acquire()
-			ids = range(int(self.attributes["port_start"]),int(self.attributes["port_start"])+int(self.attributes["port_count"]))
-			from tomato.devices import Device
-			for dev in Device.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.attributes.get("vnc_port"):
-					if int(dev.attributes["vnc_port"]) in ids:
-						ids.remove(int(dev.attributes["vnc_port"]))
-			from tomato.connectors import Connection
-			for con in Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-				if con.attributes.get("tinc_port"):
-					if int(con.attributes["tinc_port"]) in ids:
-						ids.remove(int(con.attributes["tinc_port"]))
+			ids = range(self.getAttribute("port_start"),self.getAttribute("port_start")+self.getAttribute("port_count"))
+			from tomato.devices import openvz, kvm
+			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.vnc_port:
+					if dev.vnc_port in ids:
+						ids.remove(dev.vnc_port)
+			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
+				if dev.vnc_port:
+					if dev.vnc_port in ids:
+						ids.remove(dev.vnc_port)
+			from tomato.connectors import vpn
+			for con in vpn.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
+				if con.tinc_port:
+					if con.tinc_port in ids:
+						ids.remove(con.tinc_port)
 		finally:
 			self.lock.release()
 		fault.check(len(ids), "No more free ports on host %s", self.name)
@@ -149,12 +163,12 @@ class Host(models.Model):
 		#FIXME: redesign
 		try:
 			self.lock.acquire()
-			ids = range(int(self.attributes["bridge_start"]),int(self.attributes["bridge_start"])+int(self.attributes["bridge_count"]))
+			ids = range(self.getAttribute("bridge_start"),self.getAttribute("bridge_start")+self.getAttribute("bridge_count"))
 			from tomato.connectors import Connection
 			for con in Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-				if con.attributes.get("bridge_id"):
-					if int(con.attributes["bridge_id"]) in ids:
-						ids.remove(int(con.attributes["bridge_id"]))
+				if con.bridge_id:
+					if con.bridge_id in ids:
+						ids.remove(con.bridge_id)
 		finally:
 			self.lock.release()
 		fault.check(len(ids), "No more free bridge ids on host %s", self.name)
@@ -248,11 +262,11 @@ class Host(models.Model):
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		if "enabled" in properties:
 			self.enabled = util.parse_bool(properties["enabled"])
-		for key in properties:
-			self.attributes[key] = properties[key]
-		del self.attributes["enabled"]
-		del self.attributes["name"]
-		del self.attributes["group"]
+		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count"]:
+			if var in properties:
+				self.setAttribute(var, int(properties[var]))
+		if "group" in properties:
+			self.group = properties["group"]
 		self.save()
 	
 	def toDict(self):
@@ -265,7 +279,7 @@ class Host(models.Model):
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
 			"externalNetworks": [enb.toDict() for enb in self.externalNetworks()]}
-		res.update(self.attributes.items())
+		res.update(self.getAttributes().items())
 		return res
 	
 def getGroups():

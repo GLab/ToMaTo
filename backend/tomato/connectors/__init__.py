@@ -19,19 +19,20 @@ from django.db import models
 
 from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import tasks
+from tomato.lib import tasks, db
 
-class Connector(models.Model):
+class Connector(attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20)
 	from tomato.topology import Topology
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+
+	attrs = db.JSONField(default={})
 
 	def init(self):
-		pass
+		self.attrs = {}
 		
 	def connectionSetAdd(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
@@ -130,18 +131,14 @@ class Connector(models.Model):
 				
 	def updateResourceUsage(self):
 		res = self.upcast().getResourceUsage()
-		for key in res:
-			self.attributes["resources_%s" % key] = res[key]
+		self.setAttribute("resources",res)
 	
 	def bridgeName(self, interface):
 		return "gbr_%s" % interface.connection.bridgeId()
 
 	def configure(self, properties):
-		for key in properties:
-			self.attributes[key] = properties[key]
-		del self.attributes["name"]			
-		del self.attributes["type"]			
-		del self.attributes["state"]			
+		if "pos" in properties:
+			self.setAttribute("pos", properties["pos"])
 		self.save()
 
 	def toDict(self, auth):
@@ -154,19 +151,21 @@ class Connector(models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
+			"resources": self.getAttribute("resources"),
 			"connections": dict([[str(c.interface), c.upcast().toDict(auth)] for c in self.connectionSetAll()]),
 			}
-		res["attrs"].update(self.attributes.items())
 		return res
 
 
-class Connection(models.Model):
+class Connection(attributes.Mixin, models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(devices.Interface)
-	attributes = models.ForeignKey(attributes.AttributeSet, default=attributes.create)
+	bridge_id = models.PositiveIntegerField(null=True)
+
+	attrs = db.JSONField(default={})
 
 	def init(self):
-		pass
+		self.attrs = {}
 		
 	def isEmulated(self):
 		try:
@@ -181,9 +180,10 @@ class Connection(models.Model):
 		return self
 
 	def bridgeId(self):
-		if not self.attributes.get("bridgeId"):
-			self.attributes["bridgeId"] = self.interface.device.host.nextFreeBridge()
-		return self.attributes["bridgeId"]
+		if not self.bridge_id:
+			self.bridge_id = self.interface.device.host.nextFreeBridge()
+			self.save()
+		return self.bridge_id
 
 	def bridgeName(self):
 		return self.connector.upcast().bridgeName(self.interface)
@@ -204,9 +204,7 @@ class Connection(models.Model):
 		return str(self.connector) + "<->" + str(self.interface)
 
 	def configure(self, properties):
-		for key in properties:
-			self.attributes[key] = properties[key]
-		self.save()
+		pass
 
 	def toDict(self, auth):
 		"""
@@ -217,6 +215,5 @@ class Connection(models.Model):
 		@return: a dict containing information about the connection
 		@rtype: dict
 		"""
-		res = {"interface": str(self.interface), "attrs":{}}
-		res["attrs"].update(self.attributes.items())
+		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}}
 		return res

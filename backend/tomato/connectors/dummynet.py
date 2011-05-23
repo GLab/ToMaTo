@@ -17,7 +17,7 @@
 
 from tomato.connectors import Connection
 from tomato.generic import State
-from tomato.lib import ipfw, tcpdump, util, tasks
+from tomato.lib import ipfw, tcpdump, tasks
 
 DEFAULT_LOSSRATIO = 0.0
 DEFAULT_DELAY = 0
@@ -28,8 +28,10 @@ class EmulatedConnection(Connection):
 	
 	class Meta:
 		db_table = "tomato_emulatedconnection"
+		app_label = 'tomato'
 
 	def init(self):
+		self.attrs = {}
 		self.setBandwidth(DEFAULT_BANDWIDTH)
 		self.setDelay(DEFAULT_DELAY)
 		self.setLossRatio(DEFAULT_LOSSRATIO)
@@ -47,51 +49,39 @@ class EmulatedConnection(Connection):
 			return False
 				
 	def getLossRatio(self):
-		if "lossratio" in self.attributes:
-			try:
-				return float(self.attributes["lossratio"])
-			except: #pylint: disable-msg=W0702
-				return DEFAULT_LOSSRATIO
-		return DEFAULT_LOSSRATIO
+		return self.getAttribute("lossratio", DEFAULT_LOSSRATIO)
 	
 	def setLossRatio(self, value):
-		self.attributes["lossratio", str(float(value))]
+		self.setAttribute("lossratio", float(value))
 	
 	def getDelay(self):
-		if "delay" in self.attributes:
-			try:
-				return int(self.attributes["delay"])
-			except: #pylint: disable-msg=W0702
-				return DEFAULT_DELAY
-		return DEFAULT_DELAY 
+		return self.getAttribute("delay", DEFAULT_DELAY)
 		
 	def setDelay(self, value):
-		self.attributes["delay", str(int(value))]
+		self.setAttribute("delay", int(value))
 
 	def getBandwidth(self):
-		if "bandwidth" in self.attributes:
-			try:
-				return int(self.attributes["bandwidth"])
-			except:
-				return DEFAULT_BANDWIDTH
-		return DEFAULT_BANDWIDTH
+		return self.getAttribute("bandwidth", DEFAULT_BANDWIDTH)
 				
 	def setBandwidth(self, value):
-		self.attributes["bandwidth", str(int(value))]
+		self.setAttribute("bandwidth", int(value))
 
 	def getCapturing(self):
-		if "capture" in self.attributes:
-			try:
-				return util.parse_bool(self.attributes["capture"])
-			except:
-				return DEFAULT_CAPTURING
-		return DEFAULT_CAPTURING
+		return self.getAttribute("capture", DEFAULT_CAPTURING)
 	
 	def setCapturing(self, value):
-		self.attributes["capture", str(bool(value))]
+		self.setAttribute("capture", bool(value))
 
 	def configure(self, properties):
-		oldCapturing = self.getCapturing()
+		if "capture" in properties:
+			oldCapturing = self.getCapturing()
+			self.setCapturing(properties["capture"])
+		if "delay" in properties:
+			self.setDelay(properties["delay"])
+		if "bandwidth" in properties:
+			self.setBandwidth(properties["bandwidth"])
+		if "lossratio" in properties:
+			self.setLossRatio(properties["lossratio"])
 		Connection.configure(self, properties)
 		if self.connector.state == State.STARTED:
 			self._configLink()
@@ -140,7 +130,7 @@ class EmulatedConnection(Connection):
 
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		if "bridgeId" in self.attributes:
+		if self.bridge_id:
 			taskset.addTask(tasks.Task("delete-pipes", self._deletePipes))
 		if self.getCapturing():
 			taskset.addTask(tasks.Task("stop-capture", self._stopCapture))
@@ -167,6 +157,7 @@ class EmulatedConnection(Connection):
 		return tcpdump.downloadCaptureUri(host, self._captureName())
 	
 	def toDict(self, auth):
-		res = Connection.toDict(self, auth)		
+		res = Connection.toDict(self, auth)
+		res["attrs"].update(self.getAttributes())		
 		return res
 	

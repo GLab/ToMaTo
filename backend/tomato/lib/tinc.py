@@ -344,7 +344,7 @@ def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
 		id = ep.getId()
 		assert id
 		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,)))
-		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), depends="start-endpoint-%s" % id))
+		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=_tryStopEndpoint, depends="start-endpoint-%s" % id))
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
@@ -353,6 +353,17 @@ def stopNetwork(endpoints, mode=Mode.SWITCH):
 		if mode == Mode.ROUTER:
 			_teardownRouting(ep)
 		_stopEndpoint(ep)
+
+def _tryStopEndpoint(ep, mode=Mode.SWITCH):
+	if mode == Mode.ROUTER:
+		try:
+			_teardownRouting(ep)
+		except:
+			pass
+	try:
+		_stopEndpoint(ep)
+	except:
+		pass
 
 def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
@@ -469,7 +480,7 @@ def _removeTemporaryFiles(endpoint):
 	fileutil.delete(util.localhost, _tmpPath(endpoint), recursive=True)
 
 def _uploadFiles(endpoint):
-	assert getState(endpoint) == generic.State.CREATED
+	assert getState(endpoint) == generic.State.CREATED, "endpoint was not created: %s: %s" % (endpoint, getState(endpoint))
 	endpoint.getHost().filePut(_tmpPath(endpoint)+"/", _configDir(endpoint))
 
 def _deleteFiles(endpoint):

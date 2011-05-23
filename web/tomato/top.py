@@ -118,67 +118,67 @@ def show(api, request, top_id):
 
 @wrap_rpc
 def remove(api, request, top_id):
-	api.top_action(int(top_id), "topology", None, "remove")
+	api.top_action(int(top_id), "remove", "topology", None)
 	return index(request)
 
 @wrap_rpc
 def prepare(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "topology", None)
 	return _display_top(api, top_id, task_id, "Prepare topology")
 
 @wrap_rpc
 def destroy(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "topology", None)
 	return _display_top(api, top_id, task_id, "Destroy topology")
 
 @wrap_rpc
 def start(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "start")
+	task_id=api.top_action(int(top_id), "start", "topology", None)
 	return _display_top(api, top_id, task_id, "Start topology")
 
 @wrap_rpc
 def stop(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "stop")
+	task_id=api.top_action(int(top_id), "stop", "topology", None, "stop")
 	return _display_top(api, top_id, task_id, "Stop topology")
 
 @wrap_rpc
 def dev_prepare(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "device", device_id)
 	return _display_top(api, top_id, task_id, "Prepare device")
 
 @wrap_rpc
 def dev_destroy(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "device", device_id)
 	return _display_top(api, top_id, task_id, "Destroy device")
 
 @wrap_rpc
 def dev_start(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "start")
+	task_id=api.top_action(int(top_id), "start", "device", device_id)
 	return _display_top(api, top_id, task_id, "Start device")
 
 @wrap_rpc
 def dev_stop(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "stop")
+	task_id=api.top_action(int(top_id), "stop", "device", device_id)
 	return _display_top(api, top_id, task_id, "Stop device")
 
 @wrap_rpc
 def con_prepare(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Prepare connector")
 
 @wrap_rpc
 def con_destroy(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Destroy connector")
 
 @wrap_rpc
 def con_start(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "start")
+	task_id=api.top_action(int(top_id), "start", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Start connector")
 
 @wrap_rpc
 def con_stop(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "stop")
+	task_id=api.top_action(int(top_id), "stop", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Stop connector")
 
 @wrap_rpc

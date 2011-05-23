@@ -21,8 +21,6 @@ os.environ['TOMATO_MAINTENANCE']="true"
 
 import sys, tomato #@UnusedImport, pylint: disable-msg=W0611
 
-from django.core.management import call_command
-
 opt = sys.argv[1]
 if opt in ("cleanup", "compilemessages", "convert_to_south", "createcachetable", \
 		"makemessages", "runfcgi", "runserver", "startapp", "testserver"):

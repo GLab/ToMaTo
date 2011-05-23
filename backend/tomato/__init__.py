@@ -41,6 +41,7 @@ def db_migrate():
 	cmd.handle(app="tomato", verbosity=1)
 	
 import config
+from models import *
 	
 if not config.MAINTENANCE:
 	db_migrate()
