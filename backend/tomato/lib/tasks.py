@@ -300,7 +300,7 @@ class Process():
 					self.finished = time.time()
 					self._runOnFinished()
 					if isinstance(task.result, Exception):
-						raise task.result
+						raise fault.new("Task failed", code=fault.USER_ERROR)
 					else:
 						return
 			else:

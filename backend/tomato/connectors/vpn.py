@@ -49,8 +49,8 @@ class ConnectionEndpoint(tinc.Endpoint):
 			subnets.append(util.calculate_subnet4(self.con.getAttribute("gateway4")))
 			subnets.append(util.calculate_subnet6(self.con.getAttribute("gateway6")))
 		return subnets
-	def __unicode__(self):
-		return self.con
+	def __repr__(self):
+		return str(self.con)
 
 class TincConnector(Connector):
 

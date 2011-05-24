@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato import config, fault, hosts
-from tomato.lib import util
+from tomato.lib import util, ifaceutil
 
 import atexit
 
@@ -66,7 +66,7 @@ def measureRun():
 				try:
 					src = hosts.getBest(srcg)
 					dst = hosts.getBest(dstg)
-					(loss, delay_avg, delay_stddev) = hosts.measureLinkProperties(src, dst)
+					(loss, delay_avg, delay_stddev) = ifaceutil.ping(src, dst.name, 500, 300)
 					link = get(srcg, dstg)
 					link.adapt(loss, delay_avg, delay_stddev) 
 				except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101

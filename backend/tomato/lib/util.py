@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import subprocess, threading, thread, traceback
+import subprocess, threading, thread, traceback, time
 
 class RepeatedTimer(threading.Thread):
 	def __init__(self, timeout, func, *args, **kwargs):
@@ -165,6 +165,15 @@ def timediffstr(date1, date2):
 	d1 = datetime.datetime.fromtimestamp(date1)
 	d2 = datetime.datetime.fromtimestamp(date2)
 	return str(d2-d1)
+
+def waitFor(conditionFn, maxWait=5, waitStep=0.1):
+	#wait up to 5 sec for interface to appear
+	waited = 0
+	while waited < maxWait and not conditionFn():
+		time.sleep(waitStep)
+		waited += waitStep
+	return waited < maxWait
+
 
 class Localhost:
 	def execute(self, cmd):

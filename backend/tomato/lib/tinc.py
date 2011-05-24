@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import random, math, shutil
+import random, math, shutil, time
 
 from tomato import generic, config
 
@@ -257,8 +257,10 @@ def _startEndpoint(endpoint):
 	assert getState(endpoint) == generic.State.PREPARED
 	host = endpoint.getHost()
 	assert host
+	assert process.portFree(host, endpoint.getPort())
 	iface = _tincName(endpoint)
 	host.execute("tincd --net=%s" % iface )
+	util.waitFor(lambda :ifaceutil.interfaceExists(host, iface))
 	assert ifaceutil.interfaceExists(host, iface), "Tinc deamon did not start"
 	ifaceutil.ifup(host, iface)
 
@@ -480,6 +482,8 @@ def _removeTemporaryFiles(endpoint):
 	fileutil.delete(util.localhost, _tmpPath(endpoint), recursive=True)
 
 def _uploadFiles(endpoint):
+	if getState(endpoint) == generic.State.PREPARED:
+		_deleteFiles(endpoint)
 	assert getState(endpoint) == generic.State.CREATED, "endpoint was not created: %s: %s" % (endpoint, getState(endpoint))
 	endpoint.getHost().filePut(_tmpPath(endpoint)+"/", _configDir(endpoint))
 

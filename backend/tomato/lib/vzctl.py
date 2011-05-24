@@ -19,7 +19,7 @@ import uuid
 
 from tomato import generic, config
 
-import process, fileutil, ifaceutil
+import process, fileutil, ifaceutil, util
 
 def _vzctl(host, vmid, cmd, params=""):
 	#FIXME: make synchronized because vzctl creates a lock
@@ -70,6 +70,9 @@ def create(host, vmid, template):
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
 	res = _vzctl(host, vmid, "start")
+	util.waitFor (lambda :getState(host, vmid) == generic.State.STARTED)
+	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start: %s" % res
+
 	assert getState(host, vmid) == generic.State.STARTED, "Failed to start VM: %s" % res
 	execute(host, vmid, "while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 

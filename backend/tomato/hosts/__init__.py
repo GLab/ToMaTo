@@ -22,7 +22,7 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db
+from tomato.lib import fileutil, db, process
 
 class ClusterState:
 	MASTER = "M"
@@ -157,7 +157,10 @@ class Host(attributes.Mixin, models.Model):
 		finally:
 			self.lock.release()
 		fault.check(len(ids), "No more free ports on host %s", self.name)
-		return ids[0]
+		freePort = ids[0]
+		if not process.portFree(self, freePort):
+			process.killPortUser(self, freePort)
+		return freePort
 
 	def nextFreeBridge(self):
 		#FIXME: redesign
@@ -324,24 +327,7 @@ def remove(host_name):
 	host = get(host_name)
 	fault.check(len(host.device_set.all()) == 0, "Cannot remove hosts that are used")
 	host.delete()
-		
-def measureLinkProperties(src, dst):
-	res = src.execute("ping -A -c 500 -n -q -w 300 %s" % dst.name)
-	if not res:
-		return
-	lines = res.splitlines()
-	loss = float(lines[3].split()[5][:-1])/100.0
-	import math
-	loss = 1.0 - math.sqrt(1.0 - loss)
-	times = lines[4].split()[3].split("/")
-	unit = lines[4].split()[4][:-1]
-	avg = float(times[1]) / 2.0
-	stddev = float(times[3]) / 2.0
-	if unit == "s":
-		avg = avg * 1000.0
-		stddev = stddev * 1000.0
-	return (loss, avg, stddev)
-				
+						
 def checkAll():
 	for host in getAll():
 		host.check()

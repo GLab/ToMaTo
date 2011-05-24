@@ -117,12 +117,16 @@ class KVMDevice(Device):
 		qm.stop(self.host, self.getVmid())
 
 	def _fallbackStop(self):
-		if self.getState() == State.STARTED:
+		self.state = self.getState()
+		self.save()
+		if self.state == State.STARTED:
 			self._stopVm()
 		if self.getVncPort():
 			if qm.vncRunning(self.host, self.getVmid(), self.getVncPort()):
 				self._stopVnc()
 			self._unassignVncPort()
+		self.state = self.getState()
+		self.save()
 	
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
@@ -168,6 +172,8 @@ class KVMDevice(Device):
 		if self.host and self.getVmid():
 			if self.getState() == State.PREPARED:
 				self._destroyVm()
+		self.state = self.getState()
+		self.save()
 
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)

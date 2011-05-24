@@ -100,3 +100,20 @@ def getRxBytes(host, iface):
 def getTxBytes(host, iface):
 	assert interfaceExists(host, iface)
 	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0"))
+
+def ping(host, ip, samples=10, maxWait=5):
+	res = host.execute("ping -A -c %d -n -q -w %d %s" % (samples, maxWait, ip))
+	if not res:
+		return
+	lines = res.splitlines()
+	loss = float(lines[3].split()[5][:-1])/100.0
+	import math
+	loss = 1.0 - math.sqrt(1.0 - loss)
+	times = lines[4].split()[3].split("/")
+	unit = lines[4].split()[4][:-1]
+	avg = float(times[1]) / 2.0
+	stddev = float(times[3]) / 2.0
+	if unit == "s":
+		avg = avg * 1000.0
+		stddev = stddev * 1000.0
+	return (loss, avg, stddev)

@@ -150,7 +150,9 @@ class Connector(attributes.Mixin, models.Model):
 		@return: a dict containing information about the connector
 		@rtype: dict
 		"""
-		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
+					"pos": self.getAttribute("pos"),
+				},
 			"resources": self.getAttribute("resources"),
 			"connections": dict([[str(c.interface), c.upcast().toDict(auth)] for c in self.connectionSetAll()]),
 			}

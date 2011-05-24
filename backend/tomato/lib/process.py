@@ -21,8 +21,9 @@ def killPidfile(host, pidfile):
 	host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})
 
 def killPortUser(host, port):
-	host.execute("for i in $(lsof -i:%s -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
-	host.execute("lsof -i:%s -t | xargs -r kill" % port)
+	assert port
+	host.execute("for i in $(lsof -i:%d -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
+	host.execute("lsof -i:%d -t | xargs -r kill" % port)
 
 def portFree(host, port):
 	return len(host.execute("lsof -i:%s -t" % port).strip()) == 0

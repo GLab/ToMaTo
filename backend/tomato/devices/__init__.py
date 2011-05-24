@@ -180,6 +180,7 @@ class Device(attributes.Mixin, models.Model):
 		@rtype: dict
 		"""
 		res = {"attrs": {"host": str(self.host) if self.host else None,
+					"pos": self.getAttribute("pos"),
 					"name": self.name, "type": self.type, "state": self.state,
 					"download_supported": self.downloadSupported(), "upload_supported": self.uploadSupported() 
 					},
