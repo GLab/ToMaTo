@@ -29,7 +29,7 @@ strings.
 
 class JSONDateEncoder(json.JSONEncoder):
 	def default(self, obj):
-		if isinstance(obj, datetime):
+		if isinstance(obj, datetime.datetime):
 			return obj.strftime('%Y-%m-%d %H:%M:%S')
 		elif isinstance(obj, datetime.date):
 			return obj.strftime('%Y-%m-%d')
@@ -70,3 +70,13 @@ class JSONField(models.TextField):
 		if isinstance(value, dict):
 			value = self._dumps(value)
 		return super(JSONField, self).get_db_prep_save(value)
+	
+class ReloadMixin:
+	def reload(self):
+		from_db = self.__class__.objects.get(pk=self.pk)
+		fields = self.__class__._meta.get_all_field_names()
+		for field in fields:
+			try:
+				setattr(self, field, getattr(from_db, field)) #update this instances info from returned Model
+			except:
+				continue

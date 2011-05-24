@@ -147,6 +147,12 @@ class TincConnection(dummynet.EmulatedConnection):
 	def upcast(self):
 		return self
 	
+	def getIdUsage(self):
+		ids = dummynet.EmulatedConnection.getIdUsage(self)
+		if self.tinc_port:
+			ids["port"] = ids.get("port", set()) | set((self.tinc_port,))
+		return ids
+	
 	def configure(self, properties):
 		if "gateway4" in properties or "gateway6" in properties:
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
@@ -163,19 +169,25 @@ class TincConnection(dummynet.EmulatedConnection):
 		
 	def _assignBridgeId(self):
 		if not self.bridge_id:
-			self.bridge_id = self.interface.device.host.nextFreeBridge()		
-			self.save()
+			self.interface.device.host.takeId("bridge", self._setBridgeId)		
 
+	def _setTincPort(self, port):
+		self.tinc_port = port
+		self.save()
+			
 	def _assignTincPort(self):
 		if not self.tinc_port:
-			self.tinc_port = self.interface.device.host.nextFreePort()
-			self.save()
+			self.interface.device.host.takeId("port", self._setTincPort)
 
 	def _unassignBridgeId(self):
+		if self.bridge_id:
+			self.interface.device.host.giveId("bridge", self.bridge_id)
 		self.bridge_id = None
 		self.save()
 
 	def _unassignTincPort(self):
+		if self.tinc_port:
+			self.interface.device.host.giveId("port", self.tinc_port)
 		self.tinc_port = None
 		self.save()
 

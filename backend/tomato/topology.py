@@ -200,11 +200,11 @@ class Topology(attributes.Mixin, models.Model):
 		if renew:
 			proc.addTask(tasks.Task("renew", self.renew))
 		for dev in self.deviceSetAll():
-			if dev.state == generic.State.PREPARED or dev.state == generic.State.STARTED:
+			if dev.state == generic.State.STARTED:
 				sset = dev.upcast().getStopTasks()
 				proc.addTaskSet("stop-device-%s" % dev.name, sset)
 		for con in self.connectorSetAll():
-			if con.state == generic.State.PREPARED or con.state == generic.State.STARTED:
+			if con.state == generic.State.STARTED:
 				sset = con.upcast().getStopTasks()
 				proc.addTaskSet("stop-connector-%s" % con.name, sset)
 		return self.startProcess(proc, direct)
@@ -242,6 +242,7 @@ class Topology(attributes.Mixin, models.Model):
 			elif con.state == generic.State.PREPARED:
 				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
+				cons_destroyed.append(dset.getLastTask().name)
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.STARTED:
@@ -271,6 +272,7 @@ class Topology(attributes.Mixin, models.Model):
 			elif con.state == generic.State.PREPARED:
 				dset = con.upcast().getDestroyTasks()
 				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
+				cons_destroyed.append(dset.getLastTask().name)
 		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.STARTED:
@@ -340,6 +342,16 @@ class Topology(attributes.Mixin, models.Model):
 
 	def resources(self):
 		return self.getAttribute("resources")
+
+	def getIdUsage(self):
+		ids = {}
+		for dev in self.deviceSetAll():
+			for (key, value) in dev.upcast().getIdUsage().iteritems():
+				ids[key] = ids.get(key, set()) | value
+		for con in self.connectorSetAll():
+			for (key, value) in con.upcast().getIdUsage().iteritems():
+				ids[key] = ids.get(key, set()) | value
+		return ids
 
 	def updateResourceUsage(self):
 		res = {}

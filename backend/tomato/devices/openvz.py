@@ -93,8 +93,6 @@ class OpenVZDevice(Device):
 		return m.hexdigest()
 	
 	def _startVnc(self):
-		if not self.getVncPort():
-			self.setVncPort(self.host.nextFreePort())
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def _startVm(self):
@@ -137,7 +135,8 @@ class OpenVZDevice(Device):
 		for iface in self.interfaceSetAll():
 			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().getStartTasks().addGlobalDepends("check-interfaces-exist"))
 		taskset.addTask(tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, depends="start-vm"))
-		taskset.addTask(tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, depends="start-vm"))
+		taskset.addTask(tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop))
+		taskset.addTask(tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, depends=["start-vm", "assign-vnc-port"]))
 		return taskset
 
 	def _stopVnc(self):
@@ -152,11 +151,16 @@ class OpenVZDevice(Device):
 		taskset = Device.getStopTasks(self)
 		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop))
 		taskset.addTask(tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop))
+		taskset.addTask(tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, depends="stop-vnc"))
 		return taskset	
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
 		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
+
+	def _unassignHost(self):
+		self.host = None
+		self.save()
 
 	def _assignHost(self):
 		if not self.host:
@@ -167,7 +171,12 @@ class OpenVZDevice(Device):
 	def _assignVmid(self):
 		assert self.host
 		if not self.getVmid():
-			self.setVmid(self.host.nextFreeVmId())
+			self.host.takeId("vmid", self.setVmid)
+
+	def _assignVncPort(self):
+		assert self.host
+		if not self.getVncPort():
+			self.host.takeId("port", self.setVncPort)
 
 	def _configureVm(self):
 		if self.getRootPassword():
@@ -199,11 +208,15 @@ class OpenVZDevice(Device):
 		taskset.addTask(tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, depends="configure-vm"))
 		return taskset
 
-	def _unassignHost(self):
-		self.host = None
-		
 	def _unassignVmid(self):
+		if self.vmid:
+			self.host.giveId("vmid", self.vmid)
 		self.setVmid(None)
+
+	def _unassignVncPort(self):
+		if self.vnc_port:
+			self.host.giveId("port", self.vnc_port)
+		self.setVncPort(None)
 
 	def _destroyVm(self):
 		vzctl.destroy(self.host, self.getVmid())
@@ -212,8 +225,8 @@ class OpenVZDevice(Device):
 		taskset = Device.getDestroyTasks(self)
 		if self.host:
 			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy))
-			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="destroy-vm", reverseFn=self._fallbackDestroy))
 			taskset.addTask(tasks.Task("unassign-vmid", self._unassignVmid, depends="destroy-vm", reverseFn=self._fallbackDestroy))
+			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="unassign-vmid", reverseFn=self._fallbackDestroy))
 		return taskset
 
 	def configure(self, properties):
@@ -365,6 +378,14 @@ class OpenVZDevice(Device):
 			disk = vzctl.getDiskUsage(self.host, self.getVmid())
 			memory = vzctl.getMemoryUsage(self.host, self.getVmid())
 		return {"disk": disk, "memory": memory, "ports": ports}		
+
+	def getIdUsage(self):
+		ids = Device.getIdUsage(self)
+		if self.vnc_port:
+			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
+		if self.vmid:
+			ids["vmid"] = ids.get("vmid", set()) | set((self.vmid,))
+		return ids
 
 	def interfaceDevice(self, iface):
 		return vzctl.interfaceDevice(self.getVmid(), iface.name)

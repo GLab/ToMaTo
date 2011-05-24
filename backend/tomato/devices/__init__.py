@@ -170,6 +170,13 @@ class Device(attributes.Mixin, models.Model):
 	def __unicode__(self):
 		return self.name
 		
+	def getIdUsage(self):
+		ids = {}
+		for iface in self.interfaceSetAll():
+			for (key, value) in iface.upcast().getIdUsage().iteritems():
+				ids[key] = ids.get(key, set()) | value
+		return ids
+		
 	def toDict(self, auth):
 		"""
 		Prepares a device for serialization.
@@ -213,6 +220,9 @@ class Interface(attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
+		
+	def getIdUsage(self):
+		return {}
 		
 	def isConfigured(self):
 		try:

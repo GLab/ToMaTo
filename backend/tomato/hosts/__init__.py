@@ -29,7 +29,7 @@ class ClusterState:
 	NODE = "N"
 	NONE = "-"
 
-class Host(attributes.Mixin, models.Model):
+class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.remote_ssh_key]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
@@ -115,67 +115,107 @@ class Host(attributes.Mixin, models.Model):
 				
 	def hostServerBasedir(self):
 		return self.getAttribute("hostserver_basedir") 
+
+	def _calcFreeIds(self):
+		types = ["vmid", "port", "bridge"]
+		ids = {}
+		for t in types:
+			ids[t] = range(self.getAttribute("%s_start" % t),self.getAttribute("%s_start" % t)+self.getAttribute("%s_count" % t))
+		from tomato import topology
+		for top in topology.all():
+			usage = top.getIdUsage()
+			for (t, used) in usage.iteritems():
+				assert t in types, "Unknown id type: %s" % t
+				assert set(ids[t]) >= used, "Topology %s uses %s ids that are not available: %s" % (top, t, used-ids[t])
+				ids[t] = list(set(ids[t]) - used)
+		return ids			
 				
-	def nextFreeVmId (self):
-		#FIXME: redesign
-		try:
-			self.lock.acquire()
-			ids = range(self.getAttribute("vmid_start"),self.getAttribute("vmid_start")+self.getAttribute("vmid_count"))
-			from tomato.devices import openvz, kvm
-			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.vmid:
-					if dev.vmid in ids:
-						ids.remove(dev.vmid)
-			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.vmid:
-					if dev.vmid in ids:
-						ids.remove(dev.vmid)
-		finally:
-			self.lock.release()
-		fault.check(len(ids), "No more free VMIDs on host %s", self.name)
-		return ids[0]
+	def _getFreeIds(self):
+		self.reload()
+		if self.getAttribute("free_ids"):
+			return self._unpackIds(self.getAttribute("free_ids"))
+		ids = self._calcFreeIds()
+		self._setFreeIds(ids)
+		return ids
 
-	def nextFreePort(self):
-		#FIXME: redesign
-		try:
-			self.lock.acquire()
-			ids = range(self.getAttribute("port_start"),self.getAttribute("port_start")+self.getAttribute("port_count"))
-			from tomato.devices import openvz, kvm
-			for dev in openvz.OpenVZDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.vnc_port:
-					if dev.vnc_port in ids:
-						ids.remove(dev.vnc_port)
-			for dev in kvm.KVMDevice.objects.filter(host=self): # pylint: disable-msg=E1101
-				if dev.vnc_port:
-					if dev.vnc_port in ids:
-						ids.remove(dev.vnc_port)
-			from tomato.connectors import vpn
-			for con in vpn.TincConnection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-				if con.tinc_port:
-					if con.tinc_port in ids:
-						ids.remove(con.tinc_port)
-		finally:
-			self.lock.release()
-		fault.check(len(ids), "No more free ports on host %s", self.name)
-		freePort = ids[0]
-		if not process.portFree(self, freePort):
-			process.killPortUser(self, freePort)
-		return freePort
+	def _setFreeIds(self, ids):
+		self.setAttribute("free_ids", self._packIds(ids))
+		self.save()
+			
+	def _packList(self, ids):
+		packed = []
+		start = None
+		last = None
+		for i in sorted(ids):
+			assert isinstance(i, int), "List items must be int, was %s: %s" % (type(i), i)
+			if not last or (i != last + 1):
+				if not start is None:
+					if start == last:
+						packed.append(last)
+					else:
+						packed.append((start, last))						
+				start = i
+				last = i
+			else:
+				last += 1
+		if not start is None:
+			if start == last:
+				packed.append(last)
+			else:
+				packed.append((start, last))
+		return packed
+				
+	def _unpackList(self, packed):
+		ids = []
+		for i in packed:
+			if not isinstance(i, int):
+				i = tuple(i)
+				(start, end) = i
+				ids.extend(range(start, end+1))
+			else:
+				ids.append(i)
+		return ids
 
-	def nextFreeBridge(self):
-		#FIXME: redesign
+	def _packIds(self, ids):
+		packed = {}
+		for (key, value) in ids.iteritems():
+			packed[key] = self._packList(value)
+		return packed
+
+	def _unpackIds(self, packed):
+		ids = {}
+		for (key, value) in packed.iteritems():
+			ids[key] = self._unpackList(value)
+		return ids
+
+	def takeId(self, type, callback):
 		try:
-			self.lock.acquire()
-			ids = range(self.getAttribute("bridge_start"),self.getAttribute("bridge_start")+self.getAttribute("bridge_count"))
-			from tomato.connectors import Connection
-			for con in Connection.objects.filter(interface__device__host=self): # pylint: disable-msg=E1101
-				if con.bridge_id:
-					if con.bridge_id in ids:
-						ids.remove(con.bridge_id)
+			Host.lock.acquire()
+			#print "enter"
+			ids = self._getFreeIds()
+			fault.check(len(ids[type]), "No more free %ss on host %s", (type, self.name))
+			#print self._packList(ids[type])
+			id = sorted(ids[type])[0]
+			ids[type].remove(id)
+			self._setFreeIds(ids)
+			callback(id)
+			#print "taken free %s: %d" % (type, id)
+			#assert not id in self._calcFreeIds()[type], "Id was not properly reserved"
+			#print "exit"
 		finally:
-			self.lock.release()
-		fault.check(len(ids), "No more free bridge ids on host %s", self.name)
-		return ids[0]
+			Host.lock.release()
+			
+	def giveId(self, type, id):
+		try:
+			Host.lock.acquire()
+			assert id in xrange(self.getAttribute("%s_start" % type),self.getAttribute("%s_start" % type)+self.getAttribute("%s_count" % type))
+			ids = self._getFreeIds()
+			assert not id in ids[type], "%s %s was not reserved" % (type, id)
+			ids[type].append(id)
+			self._setFreeIds(ids) 
+			#print "returned free %s: %d" % (type, id)
+		finally:
+			Host.lock.release()			
 	
 	def _exec(self, cmd):
 		if config.TESTING:

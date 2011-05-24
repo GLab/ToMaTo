@@ -141,6 +141,13 @@ class Connector(attributes.Mixin, models.Model):
 			self.setAttribute("pos", properties["pos"])
 		self.save()
 
+	def getIdUsage(self):
+		ids = {}
+		for con in self.connectionSetAll():
+			for (key, value) in con.upcast().getIdUsage().iteritems():
+				ids[key] = ids.get(key, set()) | value
+		return ids
+
 	def toDict(self, auth):
 		"""
 		Prepares a connector for serialization.
@@ -166,6 +173,16 @@ class Connection(attributes.Mixin, models.Model):
 
 	attrs = db.JSONField(default={})
 
+	def getIdUsage(self):
+		ids = {}
+		if self.bridge_id:
+			ids.update(bridge=set((self.bridge_id,)))
+		return ids
+
+	def _setBridgeId(self, id):
+		self.bridge_id = id
+		self.save()
+
 	def init(self):
 		self.attrs = {}
 		
@@ -183,8 +200,7 @@ class Connection(attributes.Mixin, models.Model):
 
 	def bridgeId(self):
 		if not self.bridge_id:
-			self.bridge_id = self.interface.device.host.nextFreeBridge()
-			self.save()
+			self.interface.device.host.takeId("bridge", self._setBridgeId)
 		return self.bridge_id
 
 	def bridgeName(self):

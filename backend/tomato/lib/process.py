@@ -26,7 +26,7 @@ def killPortUser(host, port):
 	host.execute("lsof -i:%d -t | xargs -r kill" % port)
 
 def portFree(host, port):
-	return len(host.execute("lsof -i:%s -t" % port).strip()) == 0
+	return len(host.execute("lsof -i:%d -t" % port).strip()) == 0
 
 def processRunning(host, pidfile, name=""):
 	cmdline = util.lines(host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r ps --no-headers --format cmd --pid)" % {"pidfile": pidfile}))
