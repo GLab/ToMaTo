@@ -34,6 +34,22 @@ def _imagePathDir(vmid):
 def _imagePath(vmid):
 	return _imagePathDir(vmid) + "/disk.qcow2"
 
+def _translateKeycode(keycode):
+	trans = {"enter": "ret", "\n": "ret", "return": "ret",
+			"-": "minus", "+": "plus"}
+	if len(keycode) == 1:
+		if keycode.islower():
+			return keycode
+		if keycode.isupper():
+			return "shift-%s" % keycode.lower()
+	for (key, value) in trans.iteritems():
+		if keycode == key:
+			return value
+	return keycode
+
+def sendKeys(host, vmid, keycodes):
+	return _monitor(host, vmid, "\n".join(map(lambda k: "sendkey %s 10" % _translateKeycode(k), keycodes)))
+
 def getState(host, vmid):
 	if not vmid:
 		return generic.State.CREATED

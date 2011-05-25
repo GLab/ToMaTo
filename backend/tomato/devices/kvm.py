@@ -62,6 +62,10 @@ class KVMDevice(Device):
 	def getTemplate(self):
 		return self.template
 
+	def sendKeys(self, keycodes):
+		#not asserting state==Started because this is called during startup
+		return qm.sendKeys(self.host, self.getVmid(), keycodes)
+
 	def getState(self):
 		if config.remote_dry_run:
 			return self.state

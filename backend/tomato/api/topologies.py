@@ -136,6 +136,11 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 		_top_access(top, "user", user)
 		fault.check(element.isOpenvz(), "Execute is only supported for openvz devices")
 		return element.upcast().execute(attrs["cmd"])
+	elif action == "send_keys" and element_type =="device":
+		_top_access(top, "user", user)
+		fault.check(element.isKvm(), "Send_keys is only supported for KVM devices")
+		element.upcast().sendKeys(attrs["keycodes"])
+		return
 	if element_type == "topology":
 		if action == "remove":
 			_top_access(top, "owner", user)
