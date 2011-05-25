@@ -73,8 +73,8 @@ class EmulatedConnection(Connection):
 		self.setAttribute("capture", bool(value))
 
 	def configure(self, properties):
+		oldCapturing = self.getCapturing()
 		if "capture" in properties:
-			oldCapturing = self.getCapturing()
 			self.setCapturing(properties["capture"])
 		if "delay" in properties:
 			self.setDelay(properties["delay"])
@@ -116,7 +116,7 @@ class EmulatedConnection(Connection):
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
 		taskset.addTask(tasks.Task("create-pipe", self._createPipe))
-		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="configure-link"))
+		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="create-pipe"))
 		if self.getCapturing():
 			taskset.addTask(tasks.Task("start-capture", self._startCapture))
 		return taskset

@@ -134,7 +134,7 @@ class Connector(attributes.Mixin, models.Model):
 		self.setAttribute("resources",res)
 	
 	def bridgeName(self, interface):
-		return "gbr_%s" % interface.connection.bridgeId()
+		return "gbr_%d" % interface.connection.bridgeId()
 
 	def configure(self, properties):
 		if "pos" in properties:

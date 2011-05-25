@@ -31,7 +31,7 @@ def _startDummyCapture(host):
 		tcpdump.startCapture(host, "_dummy", "dummy")
 
 def configurePipe(host, pipe, delay=0, bandwidth=None, lossratio=0.0):
-	assert pipeExists(host, pipe), "Pipe does not exist"
+	assert pipeExists(host, pipe), "Pipe does not exist %s on host %s" % (pipe, host)
 	_startDummyCapture(host)
 	pipe_config=""
 	if delay:

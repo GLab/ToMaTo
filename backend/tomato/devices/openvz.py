@@ -392,7 +392,7 @@ class OpenVZDevice(Device):
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		res["attrs"].update(vmid=self.getVmid(), vnc_port=self.getVmid(), template=self.getTemplate(),
+		res["attrs"].update(vmid=self.getVmid(), vnc_port=self.getVncPort(), template=self.getTemplate(),
 			gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))
 		if auth:
 			res["attrs"].update(root_password=self.getRootPassword(), vnc_password = self.vncPassword())

@@ -22,7 +22,7 @@ import dummynet
 from tomato import fault
 from tomato.generic import State
 from tomato.connectors import Connector
-from tomato.lib import util, tinc, tasks
+from tomato.lib import util, tinc, tasks, ifaceutil
 
 class ConnectionEndpoint(tinc.Endpoint):
 	def __init__(self, con):
@@ -69,12 +69,18 @@ class TincConnector(Connector):
 		
 	def getStartTasks(self):
 		taskset = Connector.getStartTasks(self)
-		taskset.addTaskSet("tinc-start", tinc.getStartNetworkTasks(self._endpoints(), self.type))
+		ts = tinc.getStartNetworkTasks(self._endpoints(), self.type)
+		last = ts.getLastTask()
+		taskset.addTaskSet("tinc-start", ts)		
+		for con in self.connectionSetAll():
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getStartTasks().addGlobalDepends(last.name))
 		return taskset
 
 	def getStopTasks(self):
 		taskset = Connector.getStopTasks(self)
 		taskset.addTaskSet("tinc-stop", tinc.getStopNetworkTasks(self._endpoints(), self.type))
+		for con in self.connectionSetAll():
+			taskset.addTaskSet("connection-%s" % con, con.upcast().getStopTasks())
 		return taskset
 		
 	def _assignResources(self):
@@ -82,11 +88,20 @@ class TincConnector(Connector):
 			con.upcast()._assignTincPort()
 			con.upcast()._assignBridgeId()
 		
+	def _createBridges(self):
+		for con in self.connectionSetAll():
+			ifaceutil.bridgeCreate(con.interface.device.host, self.bridgeName(con.interface))
+		
 	def getPrepareTasks(self):
 		taskset = Connector.getPrepareTasks(self)
 		taskset.addTask(tasks.Task("assign-resources", self._assignResources))
+		taskset.addTask(tasks.Task("create-bridges", self._createBridges, depends="assign-resources"))
 		taskset.addTaskSet("tinc-prepare", tinc.getPrepareNetworkTasks(self._endpoints(), self.type).addGlobalDepends("assign-resources"))
 		return taskset
+
+	def _deleteBridges(self):
+		for con in self.connectionSetAll():
+			ifaceutil.bridgeRemove(con.interface.device.host, self.bridgeName(con.interface))
 
 	def _unassignResources(self):
 		for con in self.connectionSetAll():
@@ -98,7 +113,8 @@ class TincConnector(Connector):
 		ts = tinc.getDestroyNetworkTasks(self._endpoints(), self.type)
 		last = ts.getLastTask()
 		taskset.addTaskSet("tinc-destroy", ts)
-		taskset.addLastTask(tasks.Task("unassign-resources", self._unassignResources, depends=last.name))
+		taskset.addTask(tasks.Task("delete-bridges", self._deleteBridges, depends=last.name))
+		taskset.addLastTask(tasks.Task("unassign-resources", self._unassignResources, depends="delete-bridges"))
 		return taskset
 
 	def configure(self, properties):

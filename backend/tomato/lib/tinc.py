@@ -342,11 +342,12 @@ def startNetwork(endpoints, mode=Mode.SWITCH):
 def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
+	reverse = util.curry(_tryStopNetwork, [endpoints, mode])
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,)))
-		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=_tryStopEndpoint, depends="start-endpoint-%s" % id))
+		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,), reverseFn=reverse))
+		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=reverse, depends="start-endpoint-%s" % id))
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
@@ -356,26 +357,28 @@ def stopNetwork(endpoints, mode=Mode.SWITCH):
 			_teardownRouting(ep)
 		_stopEndpoint(ep)
 
-def _tryStopEndpoint(ep, mode=Mode.SWITCH):
-	if mode == Mode.ROUTER:
+def _tryStopNetwork(endpoints, mode=Mode.SWITCH, *args):
+	for ep in endpoints:
+		if mode == Mode.ROUTER:
+			try:
+				_teardownRouting(ep)
+			except:
+				pass
 		try:
-			_teardownRouting(ep)
+			_stopEndpoint(ep)
 		except:
 			pass
-	try:
-		_stopEndpoint(ep)
-	except:
-		pass
 
 def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
+	reverse = util.curry(_tryStopNetwork, [endpoints, mode])
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
 		if mode == Mode.ROUTER:
-			taskset.addTask(tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,)))
-		taskset.addTask(tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,)))
+			taskset.addTask(tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,), reverseFn=reverse))
+		taskset.addTask(tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse))
 	return taskset
 
 def prepareNetwork(endpoints, mode=Mode.SWITCH):
@@ -405,23 +408,24 @@ def _useConfigTask(ep):
 
 def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
+	reverse = util.curry(_tryDestroyNetwork, [endpoints, mode])
 	taskset = tasks.TaskSet()
 	taskset.addTask(tasks.Task("determine-connections", _determineConnections, args=(endpoints,)))
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, depends="determine-connections"))
+		taskset.addTask(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, reverseFn=reverse, depends="determine-connections"))
 	alldeps = ["create-config-%s" % ep.getId() for ep in endpoints]
 	alldeps.append("determine-connections")
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, depends=alldeps))
+		taskset.addTask(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, depends=alldeps))
 	alldeps = ["collect-config-%s" % ep.getId() for ep in endpoints]
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), depends=alldeps))
+		taskset.addTask(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, depends=alldeps))
 	return taskset
 
 def destroyNetwork(endpoints, mode=Mode.SWITCH):
@@ -429,13 +433,22 @@ def destroyNetwork(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		_deleteFiles(ep)
 
+def _tryDestroyNetwork(endpoints, mode=Mode.SWITCH, *args):
+	_tryStopNetwork(endpoints, mode)
+	for ep in endpoints:
+		try:
+			_deleteFiles(ep)
+		except:
+			pass
+
 def getDestroyNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
+	reverse = util.curry(_tryDestroyNetwork, [endpoints, mode])
 	taskset = tasks.TaskSet()
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("delete-files-%s" % id, _deleteFiles, args=(ep,)))
+		taskset.addTask(tasks.Task("delete-files-%s" % id, _deleteFiles, reverseFn=reverse, args=(ep,)))
 	return taskset
 	
 def _tmpPath(endpoint):

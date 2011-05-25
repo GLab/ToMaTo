@@ -1,6 +1,5 @@
 simpleTop="""
 {
-  "finished_task": "2af5f9de-7d3e-11e0-bc97-0021853c4d55", 
   "devices": {
     "kvm1": {
       "interfaces": {
@@ -21,16 +20,11 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "upload_supported": false, 
-        "vncPassword": "---", 
         "name": "kvm1", 
         "pos": "324.63314014775955,198.04655380292638", 
         "gateway6": "fd01:ab1a:b1ab:1:2:FFFF:FFFF:FFFF", 
         "gateway4": "10.1.2.254", 
-        "state": "created", 
         "template": "", 
-        "host": null, 
-        "download_supported": false, 
         "type": "kvm"
       }
     }, 
@@ -54,18 +48,13 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "upload_supported": false, 
         "name": "openvz1", 
         "gateway4": "10.1.1.254", 
         "pos": "239.43011233356827,364.5779393802325", 
         "gateway6": "fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF", 
-        "state": "created", 
         "root_password": "glabroot", 
         "template": "", 
-        "host": null, 
-        "download_supported": false, 
-        "type": "openvz", 
-        "vnc_password": null
+        "type": "openvz"
       }
     }, 
     "openvz2": {
@@ -88,16 +77,11 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "upload_supported": false, 
         "name": "openvz2", 
-        "host": null, 
         "pos": "415.3253309652951,361.69189514413586", 
-        "state": "created", 
         "root_password": "glabroot", 
         "template": "", 
-        "download_supported": false, 
-        "type": "openvz", 
-        "vnc_password": null
+        "type": "openvz"
       }
     }
   }, 
@@ -122,7 +106,6 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "state": "created", 
         "type": "switch", 
         "name": "switch1", 
         "pos": "330.21751983360576,362.3420810476748"
@@ -153,7 +136,6 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "state": "created", 
         "type": "router", 
         "name": "router1", 
         "pos": "283.62906210229033,282.87548737394656"
@@ -180,7 +162,6 @@ simpleTop="""
         }
       }, 
       "attrs": {
-        "state": "created", 
         "type": "hub", 
         "name": "hub1", 
         "pos": "371.7312219132281,279.2482063903265"
@@ -198,27 +179,43 @@ simpleTop="""
         "name": "internet", 
         "network_group": "", 
         "pos": "321.7498714530068,96.27027741727849", 
-        "state": "created", 
-        "used_network": null, 
         "type": "external", 
         "network_type": "internet"
       }
     }
   }, 
   "attrs": {
-    "name": "Topology_1", 
-    "date_usage": "2011-05-13 10:51:18.511266", 
-    "destroy_timeout": "2011-08-05 10:51:18.511266", 
-    "connector_count": 4, 
-    "state": "created", 
-    "stop_timeout": "2011-06-10 10:51:18.511266", 
-    "device_count": 3, 
-    "remove_timeout": "2011-10-28 10:51:18.511266", 
-    "owner": "admin"
-  }, 
-  "id": 1, 
-  "permissions": {
-    "admin": "owner"
+    "name": "Topology_1"
   }
 }
 """
+
+def simpleTop_checkLinkEmulation(topId):
+	# throw away the first few samples
+	link_info(topId, "openvz1", "10.0.0.2", samples=10)
+	link_info(topId, "openvz2", "10.0.0.1", samples=10)
+	# set link config to 0
+	link_config(topId, "switch1", "openvz1.eth0", {"delay": 0, "lossratio": "0"}) 
+	link_config(topId, "switch1", "openvz2.eth0", {"delay": 0, "lossratio": "0"})
+	# first test with loss=0 and delay=0
+	li = link_info(topId, "openvz1", "10.0.0.2", samples=100)
+	assert li["lossratio"] == 0.0, "Lossratio should be %s but was %s" %(0.0, li["lossratio"])
+	assert li["delay"] <= 1.0, "Delay should be %s but was %s" %(0.0, li["delay"])
+	# delay=10ms
+	link_config(topId, "switch1", "openvz2.eth0", {"delay": 10})
+	li = link_info(topId, "openvz2", "10.0.0.1", samples=100)
+	assert li["lossratio"] == 0.0, "Lossratio should be %s but was %s" %(0.0, li["lossratio"])
+	assert abs(li["delay"] - 10) < 1.0, "Delay should be %s but was %s" %(10.0, li["delay"])
+	# delay+=15ms
+	link_config(topId, "switch1", "openvz1.eth0", {"delay": 15})
+	li = link_info(topId, "openvz1", "10.0.0.2", samples=100)
+	assert li["lossratio"] == 0.0, "Lossratio should be %s but was %s" %(0.0, li["lossratio"])
+	assert abs(li["delay"] - 25) < 1.0, "Delay should be %s but was %s" %(25.0, li["delay"])
+	# loss=30%
+	link_config(topId, "switch1", "openvz1.eth0", {"lossratio": 0.3})
+	li = link_info(topId, "openvz1", "10.0.0.2", samples=250)
+	assert abs(li["lossratio"] - 0.3) < 0.1, "Lossratio should be %s but was %s" %(0.3, li["lossratio"])
+	# loss=10%
+	link_config(topId, "switch1", "openvz1.eth0", {"lossratio": 0.1})
+	li = link_info(topId, "openvz2", "10.0.0.1", samples=250)
+	assert abs(li["lossratio"] - 0.1) < 0.1, "Lossratio should be %s but was %s" %(0.1, li["lossratio"])
