@@ -19,7 +19,7 @@ from tomato.devices import Device, Interface
 from tomato import fault, config
 from tomato.hosts import templates
 from tomato.generic import State
-from tomato.lib import qm, hostserver, tasks, ifaceutil
+from tomato.lib import qm, hostserver, tasks, ifaceutil, db
 
 import hashlib, re
 from django.db import models
@@ -28,7 +28,7 @@ class KVMDevice(Device):
 	
 	vmid = models.PositiveIntegerField(null=True)
 	vnc_port = models.PositiveIntegerField(null=True)
-	template = models.CharField(max_length=255, null=True)
+	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
 	
 	class Meta:
 		db_table = "tomato_kvmdevice"
@@ -67,8 +67,6 @@ class KVMDevice(Device):
 		return qm.sendKeys(self.host, self.getVmid(), keycodes)
 
 	def getState(self):
-		if config.remote_dry_run:
-			return self.state
 		if not self.getVmid() or not self.host:
 			return State.CREATED
 		return qm.getState(self.host, self.getVmid()) 
@@ -107,11 +105,12 @@ class KVMDevice(Device):
 
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
-		taskset.addTask(tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop))
+		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop)
 		for iface in self.interfaceSetAll():
-			taskset.addTask(tasks.Task("start-interface-%s" % iface, self._startIface, args=(iface,), reverseFn=self._fallbackStop, depends="start-vm"))
-		taskset.addTask(tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, depends=["start-vm", "assign-vnc-port"]))
+			taskset.add(tasks.Task("start-interface-%s" % iface, self._startIface, args=(iface,), reverseFn=self._fallbackStop, after=start_vm))
+		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
+		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
+		taskset.add([start_vm, assign_vnc_port, start_vnc])
 		return taskset
 
 	def _stopVnc(self):
@@ -134,9 +133,10 @@ class KVMDevice(Device):
 	
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
-		taskset.addTask(tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, depends="stop-vnc"))
+		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
+		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
+		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
+		taskset.add([stop_vm, stop_vnc, unassign_vnc_port])
 		return taskset
 
 	def _assignTemplate(self):
@@ -181,14 +181,15 @@ class KVMDevice(Device):
 
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		taskset.addTask(tasks.Task("assign-template", self._assignTemplate))
-		taskset.addTask(tasks.Task("assign-host", self._assignHost))		
-		taskset.addTask(tasks.Task("assign-vmid", self._assignVmid, depends="assign-host"))
-		taskset.addTask(tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, depends="assign-vmid"))
-		taskset.addTask(tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, depends="create-vm"))
-		taskset.addTask(tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, depends="create-vm"))
+		assign_template = tasks.Task("assign-template", self._assignTemplate)
+		assign_host = tasks.Task("assign-host", self._assignHost)
+		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, after=assign_host)
+		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
+		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
+		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
 		for iface in self.interfaceSetAll():
-			taskset.addTask(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, depends="create-vm"))
+			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=create_vm))
+		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm])
 		return taskset
 
 	def _unassignHost(self):
@@ -206,14 +207,15 @@ class KVMDevice(Device):
 		self.setVncPort(None)
 
 	def _destroyVm(self):
-		qm.destroy(self.host, self.getVmid())
+		if self.host:
+			qm.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
-		if self.host:
-			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy))
-			taskset.addTask(tasks.Task("unassign-vmid", self._unassignVmid, reverseFn=self._fallbackDestroy, depends="destroy-vm"))
-			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, depends="unassign-vmid"))
+		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
+		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, reverseFn=self._fallbackDestroy, after=destroy_vm)
+		unassign_host = tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, after=unassign_vmid)
+		taskset.add([destroy_vm, unassign_host, unassign_vmid])
 		return taskset
 
 	def configure(self, properties):

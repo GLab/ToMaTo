@@ -26,14 +26,17 @@ class Device(attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
 	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )
-	name = models.CharField(max_length=20)
+	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
-	type = models.CharField(max_length=10, choices=TYPES)
+	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	host = models.ForeignKey(hosts.Host, null=True)
-	hostgroup = models.CharField(max_length=20, null=True)
+	hostgroup = models.CharField(max_length=20, validators=[db.nameValidator], null=True)
 
-	attrs = db.JSONField(null=True)
+	attrs = db.JSONField()
+	
+	class Meta:
+		unique_together = (("topology", "name"),)
 
 	def init(self):
 		self.attrs = {}
@@ -87,10 +90,7 @@ class Device(attributes.Mixin, models.Model):
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
-		try:
-			return interface.connection.bridgeName()
-		except: #pylint: disable-msg=W0702
-			return None		
+		return interface.connection.bridgeName()
 	
 	def migrate(self, direct):
 		proc = tasks.Process("migrate")
@@ -213,10 +213,13 @@ class Device(attributes.Mixin, models.Model):
 			
 			
 class Interface(attributes.Mixin, models.Model):
-	name = models.CharField(max_length=5)
+	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
 	device = models.ForeignKey(Device)
 
 	attrs = db.JSONField(default={})
+
+	class Meta:
+		unique_together = (("device", "name"),)
 
 	def init(self):
 		self.attrs = {}

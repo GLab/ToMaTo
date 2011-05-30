@@ -20,31 +20,21 @@ import tomato.config as config
 import util
 
 def bridgeExists(host, bridge):
-	if config.remote_dry_run:
-		return
 	return util.lines(host.execute("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge))[0] == "0"
 
 def bridgeCreate(host, bridge):
-	if config.remote_dry_run:
-		return
 	host.execute("brctl addbr %s" % bridge)
 	assert bridgeExists(host, bridge), "Bridge cannot be created: %s" % bridge
 		
 def bridgeRemove(host, bridge):
-	if config.remote_dry_run:
-		return
 	host.execute("brctl delbr %s" % bridge)
 	assert not bridgeExists(host, bridge), "Bridge cannot be removed: %s" % bridge
 		
 def bridgeInterfaces(host, bridge):
-	if config.remote_dry_run:
-		return
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge 
 	return host.execute("ls /sys/class/net/%s/brif" % bridge).split()
 		
 def bridgeDisconnect(host, bridge, iface):
-	if config.remote_dry_run:
-		return
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge
 	if not iface in bridgeInterfaces(host, bridge):
 		return
@@ -52,8 +42,6 @@ def bridgeDisconnect(host, bridge, iface):
 	assert not iface in bridgeInterfaces(host, bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
 		
 def bridgeConnect(host, bridge, iface):
-	if config.remote_dry_run:
-		return
 	if iface in bridgeInterfaces(host, bridge):
 		return
 	assert interfaceExists(host, iface), "Interface does not exist: %s" % iface
@@ -66,13 +54,9 @@ def bridgeConnect(host, bridge, iface):
 	assert iface in bridgeInterfaces(host, bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
 		
 def interfaceBridge(host, iface):
-	if config.remote_dry_run:
-		return
 	return util.lines(host.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))[0]
 			
 def interfaceExists(host, iface):
-	if config.remote_dry_run:
-		return
 	return util.lines(host.execute("[ -d /sys/class/net/%s ]; echo $?" % iface))[0] == "0"
 
 def ifup(host, iface):

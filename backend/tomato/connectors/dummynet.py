@@ -104,8 +104,9 @@ class EmulatedConnection(Connection):
 		return "%s-%s-%s" % (self.connector.topology.name, self.connector.name, self)
 		
 	def _startCapture(self):
-		host = self.interface.device.host
-		tcpdump.startCapture(host, self._captureName(), self.bridgeName())
+		if self.getCapturing():
+			host = self.interface.device.host
+			tcpdump.startCapture(host, self._captureName(), self.bridgeName())
 
 	def _createPipe(self):
 		pipe_id = int(self.bridgeId())
@@ -115,25 +116,26 @@ class EmulatedConnection(Connection):
 
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
-		taskset.addTask(tasks.Task("create-pipe", self._createPipe))
-		taskset.addTask(tasks.Task("configure-link", self._configLink, depends="create-pipe"))
-		if self.getCapturing():
-			taskset.addTask(tasks.Task("start-capture", self._startCapture))
+		create_pipe = tasks.Task("create-pipe", self._createPipe)
+		configure_link = tasks.Task("configure-link", self._configLink, after=create_pipe)
+		start_capture = tasks.Task("start-capture", self._startCapture)
+		taskset.add([create_pipe, configure_link, start_capture])
 		return taskset
 	
 	def _stopCapture(self):
-		host = self.getHost()
-		tcpdump.stopCapture(host, self._captureName())
+		if self.getCapturing():
+			host = self.getHost()
+			tcpdump.stopCapture(host, self._captureName())
 
 	def _deletePipes(self):
-		ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
+		if self.bridge_id:
+			ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
 
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		if self.bridge_id:
-			taskset.addTask(tasks.Task("delete-pipes", self._deletePipes))
-		if self.getCapturing():
-			taskset.addTask(tasks.Task("stop-capture", self._stopCapture))
+		delete_pipes = tasks.Task("delete-pipes", self._deletePipes)
+		stop_capture = tasks.Task("stop-capture", self._stopCapture)
+		taskset.add([delete_pipes, stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):
@@ -146,7 +148,7 @@ class EmulatedConnection(Connection):
 		
 	def getDestroyTasks(self):
 		taskset = Connection.getDestroyTasks(self)
-		taskset.addTask(tasks.Task("remove-capture-dir", self._removeCaptureDir))
+		taskset.add(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
 	def downloadSupported(self):

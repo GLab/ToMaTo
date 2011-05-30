@@ -118,7 +118,7 @@ class ExternalNetworkConnector(Connector):
 		
 	def getPrepareTasks(self):
 		taskset = Connector.getPrepareTasks(self)
-		taskset.addTask(tasks.Task("select-network", self._selectUsedNetwork))
+		taskset.add(tasks.Task("select-network", self._selectUsedNetwork))
 		return taskset
 
 	def _unselectUsedNetwork(self):
@@ -127,7 +127,7 @@ class ExternalNetworkConnector(Connector):
 	
 	def getDestroyTasks(self):
 		taskset = Connector.getDestroyTasks(self)
-		taskset.addTask(tasks.Task("unselect-network", self._unselectUsedNetwork))
+		taskset.add(tasks.Task("unselect-network", self._unselectUsedNetwork))
 		return taskset
 
 	def configure(self, properties):

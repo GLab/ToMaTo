@@ -31,7 +31,7 @@ class Status():
 	FAILED = "failed"
 	
 class Task():
-	def __init__(self, name, fn=None, args=(), kwargs={}, reverseFn=None, reverseArgs=(), reverseKwargs={}, onFinished=None, depends=[], callWithTask=False):
+	def __init__(self, name, fn=None, args=(), kwargs={}, reverseFn=None, reverseArgs=(), reverseKwargs={}, onFinished=None, before=[], after=[], callWithTask=False):
 		self.name = name
 		self.fn = fn
 		self.args = args
@@ -44,10 +44,10 @@ class Task():
 		self.output = StringIO()
 		self.result = None
 		self.process = None
-		if isinstance(depends, str):
-			self.depends = [depends]
-		else:
-			self.depends = depends[:]
+		self.after = set()
+		self.before = set()
+		self.after(after)
+		self.before(before)
 		self.callWithTask = callWithTask
 		self.started = None
 		self.finished = None
@@ -61,20 +61,34 @@ class Task():
 		if not status:
 			status = self.getStatus()
 		return status == Status.FAILED or status == Status.ABORTED or status == Status.SUCCEEDED
+	def isSucceeded(self):
+		return self.status == Status.SUCCEEDED
 	def getOutput(self):
 		return self.output.getvalue()
 	def getResult(self):
 		return self.result
+	def getBefore(self):
+		return self.before
+	def getAfter(self):
+		return self.after
+	def after(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.after(t)
+		self.after.add(task)
+		return self
+	def before(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.before(t)
+		self.before.add(task)
+		return self
 	def getProcess(self):
 		return self.process
 	def getDependency(self, name):
-		if name in self.depends:
-			return self.process.tasksmap[name]
-		else:
-			for n in self.depends:
-				if n.endswith(name):
-					return self.getDependency(n)
-			return None
+		for t in self.depends:
+			if t.name.endswith(name):
+				return t
 	def _reverse(self):
 		self.status = Status.REVERSING
 		try:
@@ -133,83 +147,37 @@ class Task():
 			}
 		
 class TaskSet():
-	def __init__(self):
-		self.tasks = []
-		self.tasksmap = {}
-		self.firstTask = None
-		self.lastTask = None
-	def addTask(self, task):
-		self.tasks.append(task)
-		self.tasksmap[task.name] = task
-		if self.firstTask:
-			task.depends.append(self.firstTask.name)
-		if self.lastTask:
-			self.lastTask.depends.append(task.name)
-		task.process = self
-	def addTaskSet(self, prefix, taskset):
-		taskset.addPrefix(prefix)
-		for t in taskset.tasks:
-			self.addTask(t)
-	def addGlobalDepends(self, dep):
+	def __init__(self, tasks=[]):
+		self.tasks = set()
+		self.add(tasks)
+	def add(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.add(t)
+		self.tasks.add(task)
+	def after(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.after(t)
 		for t in self.tasks:
-			t.depends.append(dep)
+			t.after(task)
 		return self
-	def addFirstTask(self, task):
-		self.firstTask = None
-		self.addTask(task)
-		self.firstTask = task
-		self._makeFirstTask(task)
-	def addLastTask(self, task):
-		self.lastTask = None
-		self.addTask(task)
-		self.lastTask = task
-		self._makeLastTask(task)
-	def addPrefix(self, prefix):
-		oldnames = self.tasksmap.keys()[:] 
-		self.tasksmap = {}
-		for task in self.tasks:
-			task.name = prefix + "-" + task.name
-			self.tasksmap[task.name] = task
-			newdeps = []
-			for d in task.depends:
-				if d in oldnames:
-					newdeps.append(prefix + "-" + d)
-				else:
-					newdeps.append(d)
-			task.depends = newdeps
+	def before(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.before(t)
+		for t in self.tasks:
+			t.before(task)
 		return self
-	def _makeFirstTask(self, task):
-		for t in self.tasks:
-			if task != t:
-				t.depends.append(task.name)		
-	def _createFirstTask(self):
-		task = Task("dummy-first")
-		self._makeFirstTask(task)
-		self.addFirstTask(task)
-	def getFirstTask(self):
-		if not self.firstTask:
-			self._createFirstTask()
-		self._makeFirstTask(self.firstTask)
-		return self.firstTask
-	def _makeLastTask(self, task):
-		for t in self.tasks:
-			if task != t:
-				task.depends.append(t.name)
-	def _createLastTask(self):
-		task = Task("dummy-last")
-		self._makeLastTask(task)
-		self.addLastTask(task)
-	def getLastTask(self):
-		if not self.lastTask:
-			self._createLastTask()
-		self._makeLastTask(self.lastTask)
-		return self.lastTask			
+	def __len__(self):
+		return len(self.tasks)
+	def __iter__(self):
+		return self.tasks.__iter__()
 		
 class Process():
 	def __init__(self, name=None, tasks=[], onFinished=None):
 		self.name = name
-		self.tasks = []
-		self.tasksmap = {}
+		self.tasks = set()
 		for t in tasks:
 			self.addTask(t)
 		self.onFinished = onFinished
@@ -219,18 +187,34 @@ class Process():
 		self.finished = None
 		self.trace = None
 		self.lock = threading.Lock()
-	def addTask(self, task):
-		self.tasks.append(task)
-		self.tasksmap[task.name] = task
+		self.dependencies = {}
+		self.readyTasks = set()
+	def _prepare(self):
+		for task in self.tasks:
+			for t in task.getAfter():
+				t.before(task)
+			for t in task.getBefore():
+				t.after(task)
+		for task in self.tasks:
+			self.dependencies[task] = set(task.getAfter())
+			if not task.getAfter():
+				self.readyTasks.add(task)
+	def _taskDone(self, task):
+		for t in task.getBefore():
+			self.dependencies[t].remove(task)
+			if not self.dependencies[t]:
+				self.readyTasks.add(t)
+	def add(self, task):
+		if not isinstance(task, Task):
+			for t in task:
+				self.add(t)
+		self.tasks.add(task)
 		task.process = self
-	def addTaskSet(self, prefix, taskset):
-		taskset.addPrefix(prefix)
-		for t in taskset.tasks:
-			self.addTask(t)
 	def abort(self):
 		for task in self.tasks:
 			if task.status == Status.WAITING:
 				task.status = Status.ABORTED
+		self.readyTasks.clear()
 	def getStatus(self):
 		for task in self.tasks:
 			if task.status == Status.REVERSING:
@@ -258,26 +242,6 @@ class Process():
 		if not status:
 			status = self.getStatus()
 		return status == Status.FAILED or status == Status.ABORTED or status == Status.SUCCEEDED
-	def _canrun(self, task):
-		if task.status != Status.WAITING:
-			return False
-		assert not task.name in task.depends, "Task depends on itself: %s" % task.name
-		for dep in task.depends:
-			assert self.tasksmap.has_key(dep), "Undefined dependency: %s" % dep
-			if self.tasksmap[dep].status != Status.SUCCEEDED:
-				return False
-		return True
-	def _findTaskToRun(self):
-		waiting = 0
-		active = 0
-		for task in self.tasks:
-			if task.status == Status.WAITING:
-				waiting += 1
-			if task.isActive():
-				active += 1
-			if self._canrun(task):
-				return task
-		assert active or not waiting, "No tasks active but still some tasks waiting"
 	def _runOnFinished(self):
 		try:
 			if self.onFinished:
@@ -285,17 +249,28 @@ class Process():
 		except Exception, exc:
 			import traceback
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+	def _getReadyTask(self):
+		try:
+			self.lock.acquire()
+			if not self.readyTasks:
+				return
+			task = list(self.readyTasks)[0]
+			self.readyTasks.remove(task)
+			return task
+		finally:
+			self.lock.release()
 	def run(self):
 		self.started = time.time()
 		while True:
 			self.lock.acquire()
-			task = self._findTaskToRun()
+			task = self._getReadyTask()
 			if task:
 				assert task.status == Status.WAITING
 				task.status = Status.RUNNING
-				self.lock.release()
 				task.run()
-				if task.status != Status.SUCCEEDED:
+				if task.status == Status.SUCCEEDED:
+					self._taskDone(task)
+				else:
 					self.abort()
 					self.finished = time.time()
 					self._runOnFinished()
@@ -304,7 +279,6 @@ class Process():
 					else:
 						return
 			else:
-				self.lock.release()
 				if not self.isActive():
 					if not self.finished:
 						self.finished = time.time()
@@ -359,9 +333,9 @@ class Process():
 
 	def check_delete(self):
 		if (self.started and time.time() - self.started > 3600*24*3) or (self.finished and time.time() - self.finished > 3600 and not self.isActive()):
-			if not os.path.exists(config.log_dir + "/tasks"):
-				os.makedirs(config.log_dir + "/tasks")
-			logger = log.getLogger(config.log_dir + "/tasks/%s"%self.id)
+			if not os.path.exists(config.LOG_DIR + "/tasks"):
+				os.makedirs(config.LOG_DIR + "/tasks")
+			logger = log.getLogger(config.LOG_DIR + "/tasks/%s"%self.id)
 			logger.lograw(str(self.dict()))
 			logger.close()
 			del processes[self.id]
@@ -400,7 +374,7 @@ def get_current_task():
 	else:
 		return None
 		
-if not config.TESTING and not config.MAINTENANCE:	
+if not config.MAINTENANCE:	
 	cleanup_task = util.RepeatedTimer(3, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)

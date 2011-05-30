@@ -16,16 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+from django.core import validators
+
+from tomato.lib import db
 
 class Template(models.Model):
-	name = models.CharField(max_length=100)
-	type = models.CharField(max_length=12)
+	name = models.CharField(max_length=100, validators=[db.templateValidator])
+	type = models.CharField(max_length=12, validators=[db.nameValidator])
 	default = models.BooleanField(default=False)
-	download_url = models.CharField(max_length=255, default="")
+	download_url = models.CharField(max_length=255, validators=[validators.URLValidator(verify_exists=True)])
 		
 	class Meta:
 		db_table = "tomato_template"
 		app_label = 'tomato'
+		unique_together = (("name", "type"),)
 		
 	def init(self, name, ttype, download_url):
 		import re

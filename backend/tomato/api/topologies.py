@@ -64,7 +64,7 @@ def top_create(user=None):
 	Returns: the id of the new topology
 	""" 
 	fault.check(user.is_user, "only regular users can create topologies")
-	top=topology.create(user.name)
+	top=topology.create(user)
 	top.save()
 	top.logger().log("created", user=user.name)
 	return top.id

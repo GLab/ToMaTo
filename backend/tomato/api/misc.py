@@ -24,7 +24,7 @@ def account(user=None):
 	
 	Returns: the user object of the current user
 	"""
-	return user
+	return user.toDict()
 
 def task_list(user=None):
 	"""

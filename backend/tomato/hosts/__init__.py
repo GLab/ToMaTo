@@ -30,10 +30,10 @@ class ClusterState:
 	NONE = "-"
 
 class Host(db.ReloadMixin, attributes.Mixin, models.Model):
-	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.remote_ssh_key]
+	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
-	group = models.CharField(max_length=10, blank=True)
+	group = models.CharField(max_length=10, validators=[db.nameValidator])
 	name = models.CharField(max_length=50, unique=True)
 	enabled = models.BooleanField(default=True)
 	
@@ -58,26 +58,24 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			tpl.uploadToHost(self)
 
 	def folderExists(self):
-		if not fileutil.existsDir(self, config.remote_control_dir):
-			fileutil.mkdir(self, config.remote_control_dir)
-		assert fileutil.existsDir(self, config.remote_control_dir)
+		if not fileutil.existsDir(self, config.REMOTE_DIR):
+			fileutil.mkdir(self, config.REMOTE_DIR)
+		assert fileutil.existsDir(self, config.REMOTE_DIR)
 
 	def check(self):
-		if config.remote_dry_run:
-			return "---"
-		return tasks.Process("check", tasks=[
-		  tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable),
-		  tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("ipfw", util.curry(self._checkCmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, depends=["hostserver"]),
-		  tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, depends=["hostserver"]),
-		  tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, depends=["login"]),
-		  tasks.Task("save", self.fetchAllTemplates, reverseFn=self.disable, depends=["hostserver-config"]),			
-		]).start()
+		proc = tasks.Process("check")
+		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable)
+		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
+		openvz = tasks.task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, after=login)
+		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
+		ipfw = tasks.Task("ipfw", util.curry(self._checkCmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, after=login)
+		hostserver = tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, after=login)
+		hostserver_config = tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, after=hostserver)
+		hostserver_cleanup = tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, after=hostserver)
+		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
+		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
+		proc.add([login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists])
+		return proc.start()
 
 	def disable(self):
 		print "Disabling host %s because of error during check" % self
@@ -218,9 +216,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			Host.lock.release()			
 	
 	def _exec(self, cmd):
-		if config.TESTING:
-			return "\n"
-		res = util.run_shell(cmd, config.remote_dry_run)
+		res = util.run_shell(cmd)
 		return res[1]
 	
 	def execute(self, command):
@@ -232,8 +228,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			fd = sys.stdout
 		fd.write(log_str)
 		res = self._exec(cmd)
-		if not config.remote_dry_run:
-			fd.write(res)
+		fd.write(res)
 		return res
 	
 	def filePut(self, local_file, remote_file):
@@ -381,7 +376,7 @@ from external_networks import ExternalNetwork, ExternalNetworkBridge
 from tomato import fault
 from tomato.lib import util, tasks
 
-if not config.TESTING and not config.MAINTENANCE:				
+if not config.MAINTENANCE:				
 	host_check_task = util.RepeatedTimer(3600*6, checkAll)
 	host_check_task.start()
 	atexit.register(host_check_task.stop)

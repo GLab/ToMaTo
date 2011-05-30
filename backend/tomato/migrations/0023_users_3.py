@@ -1,73 +1,33 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 	
 	def forwards(self, orm):
-		
-		# Deleting model 'AttributeSet'
-		db.delete_table('tomato_attributeset')
-
-		# Deleting model 'AttributeEntry'
-		db.delete_table('tomato_attributeentry')
-
-		# Deleting field 'Connection.attributes'
-		db.delete_column('tomato_connection', 'attributes_id')
-
-		# Deleting field 'Connector.attributes'
-		db.delete_column('tomato_connector', 'attributes_id')
-
-		# Deleting field 'Interface.attributes'
-		db.delete_column('tomato_interface', 'attributes_id')
-
-		# Deleting field 'Device.attributes'
-		db.delete_column('tomato_device', 'attributes_id')
-
-		# Deleting field 'Host.attributes'
-		db.delete_column('tomato_host', 'attributes_id')
-
-		# Deleting field 'Topology.attributes'
-		db.delete_column('tomato_topology', 'attributes_id')
-	
+		for top in orm.Topology.objects.all():
+			try:
+				user = orm.User.objects.get(name=top.owner_name)
+			except:
+				user = orm.User(name=top.owner_name)
+				user.save()
+			top.owner = user
+			top.owner_name = None
+			top.save()
+		for perm in orm.Permission.objects.all():
+			try:
+				user = orm.User.objects.get(name=perm.user_name)
+			except:
+				user = orm.user(name=perm.user_name)
+				user.save()
+			perm.user = user
+			perm.user_name = None
+			perm.save()
 	
 	def backwards(self, orm):
-		
-		# Adding model 'AttributeSet'
-		db.create_table('tomato_attributeset', (
-			('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-		))
-		db.send_create_signal('tomato', ['AttributeSet'])
-
-		# Adding model 'AttributeEntry'
-		db.create_table('tomato_attributeentry', (
-			('attribute_set', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.AttributeSet'])),
-			('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-			('value', self.gf('django.db.models.fields.CharField')(max_length=250, null=True)),
-			('name', self.gf('django.db.models.fields.CharField')(max_length=250)),
-		))
-		db.send_create_signal('tomato', ['AttributeEntry'])
-
-		# Adding field 'Connection.attributes'
-		db.add_column('tomato_connection', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-
-		# Adding field 'Connector.attributes'
-		db.add_column('tomato_connector', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-
-		# Adding field 'Interface.attributes'
-		db.add_column('tomato_interface', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-
-		# Adding field 'Device.attributes'
-		db.add_column('tomato_device', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-
-		# Adding field 'Host.attributes'
-		db.add_column('tomato_host', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-
-		# Adding field 'Topology.attributes'
-		db.add_column('tomato_topology', 'attributes', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['tomato.AttributeSet']), keep_default=False)
-	
+		raise Exception("not supported")
 	
 	models = {
 		'tomato.configuredinterface': {
@@ -75,7 +35,7 @@ class Migration(SchemaMigration):
 			'interface_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True', 'primary_key': 'True'})
 		},
 		'tomato.connection': {
-			'Meta': {'object_name': 'Connection'},
+			'Meta': {'unique_together': "(('connector', 'interface'),)", 'object_name': 'Connection'},
 			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
 			'bridge_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
 			'connector': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Connector']"}),
@@ -83,7 +43,7 @@ class Migration(SchemaMigration):
 			'interface': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True'})
 		},
 		'tomato.connector': {
-			'Meta': {'object_name': 'Connector'},
+			'Meta': {'unique_together': "(('topology', 'name'),)", 'object_name': 'Connector'},
 			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'name': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
@@ -92,8 +52,8 @@ class Migration(SchemaMigration):
 			'type': ('django.db.models.fields.CharField', [], {'max_length': '10'})
 		},
 		'tomato.device': {
-			'Meta': {'object_name': 'Device'},
-			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
+			'Meta': {'unique_together': "(('topology', 'name'),)", 'object_name': 'Device'},
+			'attrs': ('tomato.lib.db.JSONField', [], {}),
 			'host': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Host']", 'null': 'True'}),
 			'hostgroup': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -114,7 +74,7 @@ class Migration(SchemaMigration):
 			'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
 		},
 		'tomato.externalnetwork': {
-			'Meta': {'object_name': 'ExternalNetwork'},
+			'Meta': {'unique_together': "(('group', 'type'),)", 'object_name': 'ExternalNetwork'},
 			'avoid_duplicates': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
 			'group': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -139,12 +99,12 @@ class Migration(SchemaMigration):
 			'Meta': {'object_name': 'Host'},
 			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
 			'enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-			'group': ('django.db.models.fields.CharField', [], {'max_length': '10', 'blank': 'True'}),
+			'group': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'})
 		},
 		'tomato.interface': {
-			'Meta': {'object_name': 'Interface'},
+			'Meta': {'unique_together': "(('device', 'name'),)", 'object_name': 'Interface'},
 			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
 			'device': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Device']"}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -165,14 +125,15 @@ class Migration(SchemaMigration):
 			'vnc_port': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'})
 		},
 		'tomato.permission': {
-			'Meta': {'object_name': 'Permission'},
+			'Meta': {'unique_together': "(('topology', 'user_name'),)", 'object_name': 'Permission'},
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'role': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
 			'topology': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Topology']"}),
-			'user': ('django.db.models.fields.CharField', [], {'max_length': '30'})
+			'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.User']", 'null': 'True'}),
+			'user_name': ('django.db.models.fields.CharField', [], {'max_length': '30'})
 		},
 		'tomato.physicallink': {
-			'Meta': {'object_name': 'PhysicalLink'},
+			'Meta': {'unique_together': "(('src_group', 'dst_group'),)", 'object_name': 'PhysicalLink'},
 			'delay_avg': ('django.db.models.fields.FloatField', [], {}),
 			'delay_stddev': ('django.db.models.fields.FloatField', [], {}),
 			'dst_group': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
@@ -181,9 +142,9 @@ class Migration(SchemaMigration):
 			'src_group': ('django.db.models.fields.CharField', [], {'max_length': '10'})
 		},
 		'tomato.template': {
-			'Meta': {'object_name': 'Template'},
+			'Meta': {'unique_together': "(('name', 'type'),)", 'object_name': 'Template'},
 			'default': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-			'download_url': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
+			'download_url': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
 			'type': ('django.db.models.fields.CharField', [], {'max_length': '12'})
@@ -203,8 +164,19 @@ class Migration(SchemaMigration):
 			'date_usage': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-			'owner': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
+			'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.User']", 'null': 'True'}),
+			'owner_name': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
 			'task': ('django.db.models.fields.CharField', [], {'max_length': '250', 'null': 'True'})
+		},
+		'tomato.user': {
+			'Meta': {'unique_together': "(('name', 'origin'),)", 'object_name': 'User'},
+			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+			'is_admin': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+			'is_user': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+			'name': ('django.db.models.fields.CharField', [], {'max_length': '250'}),
+			'origin': ('django.db.models.fields.CharField', [], {'max_length': '250', 'null': 'True'}),
+			'password': ('django.db.models.fields.CharField', [], {'max_length': '250', 'null': 'True'}),
+			'password_time': ('django.db.models.fields.DateTimeField', [], {'null': 'True'})
 		}
 	}
 	

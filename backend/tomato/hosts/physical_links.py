@@ -16,15 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato import config, fault, hosts
-from tomato.lib import util, ifaceutil
+from tomato.lib import util, ifaceutil, db
 
 import atexit
 
 from django.db import models
 
 class PhysicalLink(models.Model):
-	src_group = models.CharField(max_length=10)
-	dst_group = models.CharField(max_length=10)
+	src_group = models.CharField(max_length=10, validators=[db.nameValidator])
+	dst_group = models.CharField(max_length=10, validators=[db.nameValidator])
 	loss = models.FloatField()
 	delay_avg = models.FloatField()
 	delay_stddev = models.FloatField()
@@ -34,6 +34,7 @@ class PhysicalLink(models.Model):
 	class Meta:
 		db_table = "tomato_physicallink"	
 		app_label = 'tomato'
+		unique_together = (("src_group", "dst_group"),)		
 			
 	def adapt(self, loss, delay_avg, delay_stddev):
 		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss
@@ -58,8 +59,6 @@ def getAll():
 	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
 	
 def measureRun():
-	if config.remote_dry_run:
-		return
 	for srcg in hosts.getGroups():
 		for dstg in hosts.getGroups():
 			if not srcg == dstg:
@@ -74,7 +73,7 @@ def measureRun():
 				except fault.Fault:
 					pass
 
-if not config.TESTING and not config.MAINTENANCE:				
+if not config.MAINTENANCE:				
 	measurement_task = util.RepeatedTimer(3600, measureRun)
 	measurement_task.start()
 	atexit.register(measurement_task.stop)

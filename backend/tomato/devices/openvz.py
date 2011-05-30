@@ -23,13 +23,13 @@ from tomato.devices import Device, Interface
 from django.db import models
 import hashlib
 
-from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks
+from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db
 
 class OpenVZDevice(Device):
 
 	vmid = models.PositiveIntegerField(null=True)
 	vnc_port = models.PositiveIntegerField(null=True)
-	template = models.CharField(max_length=255, null=True)
+	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
 
 	class Meta:
 		db_table = "tomato_openvzdevice"
@@ -71,8 +71,6 @@ class OpenVZDevice(Device):
 		return self.getAttribute("root_password")
 
 	def getState(self):
-		if config.remote_dry_run:
-			return self.state
 		if not self.getVmid() or not self.host:
 			return State.CREATED
 		return vzctl.getState(self.host, self.getVmid()) 
@@ -129,14 +127,17 @@ class OpenVZDevice(Device):
 		
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
-		taskset.addTask(tasks.Task("create-bridges", self._createBridges, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop, depends="create-bridges"))
-		taskset.addTask(tasks.Task("check-interfaces-exist", self._checkInterfacesExist, reverseFn=self._fallbackStop, depends="start-vm"))
+		create_bridges = tasks.Task("create-bridges", self._createBridges, reverseFn=self._fallbackStop)
+		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop, after=create_bridges)
+		check_interfaces_exist = tasks.Task("check-interfaces-exist", self._checkInterfacesExist, reverseFn=self._fallbackStop, after=start_vm)
 		for iface in self.interfaceSetAll():
-			taskset.addTaskSet("interface-%s" % iface.name, iface.upcast().getStartTasks().addGlobalDepends("check-interfaces-exist"))
-		taskset.addTask(tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, depends="start-vm"))
-		taskset.addTask(tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, depends=["start-vm", "assign-vnc-port"]))
+			ts = iface.upcast().getStartTasks()
+			ts.after(check_interfaces_exist)
+			taskset.add(ts)
+		configure_routes = tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, after=start_vm)
+		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
+		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
+		taskset.add([create_bridges, start_vm, check_interfaces_exist, configure_routes, assign_vnc_port, start_vnc])
 		return taskset
 
 	def _stopVnc(self):
@@ -149,9 +150,10 @@ class OpenVZDevice(Device):
 
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
-		taskset.addTask(tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop))
-		taskset.addTask(tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, depends="stop-vnc"))
+		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
+		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
+		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
+		taskset.add(stop_vnc, stop_vm, unassign_vnc_port)
 		return taskset	
 
 	def _assignTemplate(self):
@@ -200,12 +202,13 @@ class OpenVZDevice(Device):
 
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		taskset.addTask(tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy))
-		taskset.addTask(tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy))		
-		taskset.addTask(tasks.Task("assign-vmid", self._assignVmid, reverseFn=self._fallbackDestroy, depends="assign-host"))
-		taskset.addTask(tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, depends="assign-vmid"))
-		taskset.addTask(tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, depends="create-vm"))
-		taskset.addTask(tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, depends="configure-vm"))
+		assign_template = tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy)
+		assign_host = tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy)
+		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, reverseFn=self._fallbackDestroy, after=assign_host)
+		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
+		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
+		create_interfaces = tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
+		taskset.add([assign_template, assign_host, assign_vmid, create_vm, configure_vm, create_interfaces])
 		return taskset
 
 	def _unassignVmid(self):
@@ -214,19 +217,20 @@ class OpenVZDevice(Device):
 		self.setVmid(None)
 
 	def _unassignVncPort(self):
-		if self.vnc_port:
+		if self.vnc_port and self.host:
 			self.host.giveId("port", self.vnc_port)
 		self.setVncPort(None)
 
 	def _destroyVm(self):
-		vzctl.destroy(self.host, self.getVmid())
+		if self.host:
+			vzctl.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
-		if self.host:
-			taskset.addTask(tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy))
-			taskset.addTask(tasks.Task("unassign-vmid", self._unassignVmid, depends="destroy-vm", reverseFn=self._fallbackDestroy))
-			taskset.addTask(tasks.Task("unassign-host", self._unassignHost, depends="unassign-vmid", reverseFn=self._fallbackDestroy))
+		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
+		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, after=destroy_vm, reverseFn=self._fallbackDestroy)
+		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=unassign_vmid, reverseFn=self._fallbackDestroy)
+		taskset.add([destroy_vm, unassign_host, unassign_vmid])
 		return taskset
 
 	def configure(self, properties):

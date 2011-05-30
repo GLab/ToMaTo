@@ -20,16 +20,19 @@ from django.db import models
 from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import tasks, db
+from tomato.topology import Topology
 
 class Connector(attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
-	name = models.CharField(max_length=20)
-	from tomato.topology import Topology
+	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
-	type = models.CharField(max_length=10, choices=TYPES)
+	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=TYPES)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 
 	attrs = db.JSONField(default={})
+
+	class Meta:
+		unique_together = (("topology", "name"),)
 
 	def init(self):
 		self.attrs = {}
@@ -134,7 +137,8 @@ class Connector(attributes.Mixin, models.Model):
 		self.setAttribute("resources",res)
 	
 	def bridgeName(self, interface):
-		return "gbr_%d" % interface.connection.bridgeId()
+		assert interface.connection.bridge_id
+		return "gbr_%d" % interface.connection.bridge_id
 
 	def configure(self, properties):
 		if "pos" in properties:
@@ -172,6 +176,9 @@ class Connection(attributes.Mixin, models.Model):
 	bridge_id = models.PositiveIntegerField(null=True)
 
 	attrs = db.JSONField(default={})
+
+	class Meta:
+		unique_together = (("connector", "interface"),)
 
 	def getIdUsage(self):
 		ids = {}

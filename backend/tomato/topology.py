@@ -17,7 +17,7 @@
 
 from django.db import models
 import os, datetime, atexit
-import config, fault, generic, attributes
+import config, fault, generic, attributes, auth
 
 from lib import log, tasks, util, db
 
@@ -32,7 +32,7 @@ class Topology(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=30, blank=True)
 	# The name of the topology.
 
-	owner = models.CharField(max_length=30)
+	owner = models.ForeignKey(auth.User)
 
 	date_usage = models.DateTimeField(null=True)
 	
@@ -40,14 +40,14 @@ class Topology(attributes.Mixin, models.Model):
 		
 	attrs = db.JSONField(default={})
 		
-	STOP_TIMEOUT = datetime.timedelta(weeks=config.timeout_stop_weeks)
-	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.timeout_destroy_weeks)
-	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.timeout_remove_weeks)
+	STOP_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["STOP"])
+	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["DESTROY"])
+	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["REMOVE"])
 
 	def logger(self):
-		if not os.path.exists(config.log_dir + "/top"):
-			os.makedirs(config.log_dir + "/top")
-		return log.getLogger(config.log_dir + "/top/%s"%self.id)
+		if not os.path.exists(config.LOG_DIR + "/top"):
+			os.makedirs(config.LOG_DIR + "/top")
+		return log.getLogger(config.LOG_DIR + "/top/%s"%self.id)
 
 	def init (self, owner):
 		"""
@@ -156,141 +156,98 @@ class Topology(attributes.Mixin, models.Model):
 		The local directory where all control scripts and files are stored.
 		@param host_name the name of the host for the deployment
 		"""
-		return config.local_control_dir+"/"+host_name
+		return config.LOCAL_TMP_DIR+"/"+host_name
 
 	def getRemoteControlDir(self):
 		"""
 		The remote directory where all control scripts and files will be copied to.
 		"""
-		return config.remote_control_dir+"/"+str(self.id)
+		return config.REMOTE_DIR+"/"+str(self.id)
 
-	def start(self, direct):
-		proc = tasks.Process("topology-start")
-		proc.addTask(tasks.Task("renew", self.renew))
-		devs_prepared = []
+	def _getTasks(self):
+		tmap = {"start": {}, "stop": {}, "prepare": {}, "destroy": {}}
+		for dev in self.deviceSetAll():
+			tmap["start"][dev] = dev.upcast().getStartTasks()
+			tmap["stop"][dev] = dev.upcast().getStopTasks()
+			tmap["prepare"][dev] = dev.upcast().getPrepareTasks()
+			tmap["destroy"][dev] = dev.upcast().getDestroyTasks()
+		for con in self.connectorSetAll():
+			tmap["start"][con] = con.upcast().getStartTasks()
+			tmap["stop"][con] = con.upcast().getStopTasks()
+			tmap["prepare"][con] = con.upcast().getPrepareTasks()
+			tmap["destroy"][con] = con.upcast().getDestroyTasks()
+		return tmap
+		
+	def _stateForward(self, start, direct):
+		proc = tasks.Process("topology-%s" % "start" if start else "prepare")
+		proc.add(tasks.Task("renew", self.renew))
+		tmap = self._getTasks()
+		devs_prepare = tasks.TaskSet()
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.CREATED:
-				pset = dev.upcast().getPrepareTasks()
-				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
-				devs_prepared.append(pset.getLastTask().name)
-				sset = dev.upcast().getStartTasks()
-				sset.addGlobalDepends(pset.getLastTask().name)
-				proc.addTaskSet("start-device-%s" % dev.name, sset)
-			elif dev.state == generic.State.PREPARED:
-				sset = dev.upcast().getStartTasks()
-				proc.addTaskSet("start-device-%s" % dev.name, sset)
-		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
+				devs_prepare.add(tmap["prepare"][dev])
+		cons_prepare = tasks.TaskSet()
 		for con in self.connectorSetAll():
 			if con.state == generic.State.CREATED:
-				pset = con.upcast().getPrepareTasks()
-				pset.addGlobalDepends("devices-prepared")
-				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
-				sset = con.upcast().getStartTasks()
-				sset.addGlobalDepends(pset.getLastTask().name)
-				sset.addGlobalDepends("devices-prepared")
-				proc.addTaskSet("start-connector-%s" % con.name, sset)
-			elif con.state == generic.State.PREPARED:
-				sset = con.upcast().getStartTasks()
-				sset.addGlobalDepends("devices-prepared")
-				proc.addTaskSet("start-connector-%s" % con.name, sset)
-		return self.startProcess(proc, direct)
-
-	def stop(self, direct, renew=True):
-		proc = tasks.Process("topology-stop")
-		if renew:
-			proc.addTask(tasks.Task("renew", self.renew))
-		for dev in self.deviceSetAll():
-			if dev.state == generic.State.STARTED:
-				sset = dev.upcast().getStopTasks()
-				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-		for con in self.connectorSetAll():
-			if con.state == generic.State.STARTED:
-				sset = con.upcast().getStopTasks()
-				proc.addTaskSet("stop-connector-%s" % con.name, sset)
+				cons_prepare.add(tmap["prepare"][con].after(devs_prepare))
+		proc.add([devs_prepare, cons_prepare])
+		if start:
+			devs_start = tasks.TaskSet()
+			for dev in self.deviceSetAll():
+				if dev.state != generic.State.STARTED:
+					devs_start.add(tmap["start"][dev].after([devs_prepare,cons_prepare]))
+			cons_start = tasks.TaskSet()
+			for con in self.connectorSetAll():
+				if con.state != generic.State.STARTED:
+					cons_start.add(tmap["start"][con].after([devs_prepare,cons_prepare]))
+			proc.add([devs_start, cons_start])		
 		return self.startProcess(proc, direct)
 
 	def prepare(self, direct):
-		proc = tasks.Process("topology-prepare")
-		proc.addTask(tasks.Task("renew", self.renew))
-		devs_prepared = []
+		return self._stateForward(False, direct)
+
+	def start(self, direct):
+		return self._stateForward(True, direct)
+
+	def _stateBackward(self, destroy, remove, direct, renew):
+		proc = tasks.Process("topology-%s" % "remove" if remove else "destroy" if destroy else "stop")
+		if renew:
+			proc.add(tasks.Task("renew", self.renew))
+		tmap = self._getTasks()
+		devs_stop = tasks.TaskSet()
 		for dev in self.deviceSetAll():
-			if dev.state == generic.State.CREATED:
-				pset = dev.upcast().getPrepareTasks()
-				proc.addTaskSet("prepare-device-%s" % dev.name, pset)
-				devs_prepared.append(pset.getLastTask().name)
-		proc.addTask(tasks.Task("devices-prepared", depends=devs_prepared))
+			if dev.state == generic.State.STARTED:
+				devs_stop.add(tmap["stop"][dev])
+		cons_stop = tasks.TaskSet()
 		for con in self.connectorSetAll():
-			if con.state == generic.State.CREATED:
-				pset = con.upcast().getPrepareTasks()
-				pset.addGlobalDepends("devices-prepared")
-				proc.addTaskSet("prepare-connector-%s" % con.name, pset)
+			if con.state == generic.State.STARTED:
+				cons_stop.add(tmap["stop"][con])
+		proc.add([devs_stop, cons_stop])
+		if destroy:
+			cons_destroy = tasks.TaskSet()
+			for con in self.connectorSetAll():
+				if con.state != generic.State.CREATED:
+					cons_destroy.add(tmap["destroy"][con].after([devs_stop,cons_stop]))
+			devs_destroy = tasks.TaskSet()
+			for dev in self.deviceSetAll():
+				if dev.state != generic.State.CREATED:
+					devs_destroy.add(tmap["destroy"][dev].after([devs_stop,cons_destroy]))
+			proc.add([devs_destroy, cons_destroy])		
+			if remove:
+				proc.addTask(tasks.Task("remove", self.delete, after=[devs_destroy, cons_destroy]))
 		return self.startProcess(proc, direct)
+
+	def stop(self, direct, renew=True):
+		return self._stateBackward(False, False, direct, renew)
 
 	def destroy(self, direct, renew=True):
-		proc = tasks.Process("topology-destroy")
-		if renew:
-			proc.addTask(tasks.Task("renew", self.renew))
-		cons_destroyed = []	
-		for con in self.connectorSetAll():
-			if con.state == generic.State.STARTED:
-				sset = con.upcast().getStopTasks()
-				proc.addTaskSet("stop-connector-%s" % con.name, sset)
-				dset = con.upcast().getDestroyTasks()
-				dset.addGlobalDepends(sset.getLastTask().name)
-				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
-				cons_destroyed.append(dset.getLastTask().name)
-			elif con.state == generic.State.PREPARED:
-				dset = con.upcast().getDestroyTasks()
-				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
-				cons_destroyed.append(dset.getLastTask().name)
-		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
-		for dev in self.deviceSetAll():
-			if dev.state == generic.State.STARTED:
-				sset = dev.upcast().getStopTasks()
-				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-				dset = dev.upcast().getDestroyTasks()
-				dset.addGlobalDepends(sset.getLastTask().name)
-				dset.addGlobalDepends("connectors-destroyed")
-				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-			elif dev.state == generic.State.PREPARED:
-				dset = dev.upcast().getDestroyTasks()
-				dset.addGlobalDepends("connectors-destroyed")
-				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-		return self.startProcess(proc, direct)
+		return self._stateBackward(True, False, direct, renew)
 
 	def remove(self, direct):
-		proc = tasks.Process("topology-remove")
-		cons_destroyed = []	
-		for con in self.connectorSetAll():
-			if con.state == generic.State.STARTED:
-				sset = con.upcast().getStopTasks()
-				proc.addTaskSet("stop-connector-%s" % con.name, sset)
-				dset = con.upcast().getDestroyTasks()
-				dset.addGlobalDepends(sset.getLastTask().name)
-				proc.addTaskSet("destroy-connector-%s" % con.name, dset)
-				cons_destroyed.append(dset.getLastTask().name)
-			elif con.state == generic.State.PREPARED:
-				dset = con.upcast().getDestroyTasks()
-				proc.addTaskSet("destroy-connector-%s" % con.name, dset)				
-				cons_destroyed.append(dset.getLastTask().name)
-		proc.addTask(tasks.Task("connectors-destroyed", depends=cons_destroyed))				
-		for dev in self.deviceSetAll():
-			if dev.state == generic.State.STARTED:
-				sset = dev.upcast().getStopTasks()
-				proc.addTaskSet("stop-device-%s" % dev.name, sset)
-				dset = dev.upcast().getDestroyTasks()
-				dset.addGlobalDepends(sset.getLastTask().name)
-				dset.addGlobalDepends("connectors-destroyed")
-				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-			elif dev.state == generic.State.PREPARED:
-				dset = dev.upcast().getDestroyTasks()
-				dset.addGlobalDepends("connectors-destroyed")
-				proc.addTaskSet("destroy-device-%s" % dev.name, dset)
-		proc.addTask(tasks.Task("remove", self.delete, depends=[t.name for t in proc.tasks]))
-		return self.startProcess(proc, direct)
+		return self._stateBackward(True, True, direct, False)
 			
 	def _log(self, task, output):
-		logger = log.getLogger(config.log_dir+"/top_%s.log" % self.id)
+		logger = log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
 		
 	def downloadImageUri(self, device_id):
@@ -320,11 +277,11 @@ class Topology(attributes.Mixin, models.Model):
 	
 	def permissionsRemove(self, user_name):
 		self.renew()
-		self.permission_set.filter(user=user_name).delete() # pylint: disable-msg=E1101
+		self.permission_set.filter(user__name=user_name).delete() # pylint: disable-msg=E1101
 		self.save()
 		
-	def permissionsGet(self, user_name):
-		pset = self.permission_set.filter(user=user_name) # pylint: disable-msg=E1101
+	def permissionsGet(self, user):
+		pset = self.permission_set.filter(user=user) # pylint: disable-msg=E1101
 		if pset.count() > 0:
 			return pset[0].role
 		else:
@@ -333,12 +290,12 @@ class Topology(attributes.Mixin, models.Model):
 	def checkAccess(self, atype, user):
 		if user.is_admin:
 			return True
-		if user.name == self.owner:
+		if user == self.owner:
 			return True
 		if atype == Permission.ROLE_MANAGER:
-			return self.permissionsGet(user.name) == Permission.ROLE_MANAGER
+			return self.permissionsGet(user) == Permission.ROLE_MANAGER
 		if atype == Permission.ROLE_USER:
-			return self.permissionsGet(user.name) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
+			return self.permissionsGet(user) in [Permission.ROLE_USER, Permission.ROLE_MANAGER]
 
 	def resources(self):
 		return self.getAttribute("resources")
@@ -410,8 +367,12 @@ class Permission(models.Model):
 	ROLE_USER="user"
 	ROLE_MANAGER="manager"
 	topology = models.ForeignKey(Topology)
-	user = models.CharField(max_length=30)
+	user = models.ForeignKey(auth.User)
 	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))
+
+	class Meta:
+		unique_together = (("topology", "user"),)
+
 
 def get(top_id):
 	try:
@@ -435,7 +396,7 @@ def updateResourceUsage():
 	for top in all():
 		top.updateResourceUsage()
 
-if not config.TESTING and not config.MAINTENANCE:
+if not config.MAINTENANCE:
 	cleanup_task = util.RepeatedTimer(300, cleanup)
 	cleanup_task.start()
 	atexit.register(cleanup_task.stop)

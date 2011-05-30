@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import random, math, shutil, time
+import random, math, shutil
 
 from tomato import generic, config
 
@@ -301,7 +301,9 @@ def _setupRouting(endpoint):
 	host.execute ( "ip route add table %s default dev %s" % ( table_in, bridge ))
 	host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
 
-def _teardownRouting(endpoint):
+def _teardownRouting(endpoint, mode):
+	if mode != Mode.ROUTER:
+		return
 	host = endpoint.getHost()
 	assert host
 	id = endpoint.getId()
@@ -346,24 +348,23 @@ def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,), reverseFn=reverse))
-		taskset.addTask(tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=reverse, depends="start-endpoint-%s" % id))
+		start_ep = tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,), reverseFn=reverse)
+		connect_ep = tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=reverse, after=start_ep)
+		taskset.add([start_ep, connect_ep])
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	for ep in endpoints:
-		if mode == Mode.ROUTER:
-			_teardownRouting(ep)
+		_teardownRouting(ep, mode)
 		_stopEndpoint(ep)
 
 def _tryStopNetwork(endpoints, mode=Mode.SWITCH, *args):
 	for ep in endpoints:
-		if mode == Mode.ROUTER:
-			try:
-				_teardownRouting(ep)
-			except:
-				pass
+		try:
+			_teardownRouting(ep, mode)
+		except:
+			pass
 		try:
 			_stopEndpoint(ep)
 		except:
@@ -376,9 +377,9 @@ def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		if mode == Mode.ROUTER:
-			taskset.addTask(tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,), reverseFn=reverse))
-		taskset.addTask(tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse))
+		teardown_ep = tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,mode,), reverseFn=reverse)
+		stop_ep = tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse)
+		taskset.add([teardown_ep, stop_ep])
 	return taskset
 
 def prepareNetwork(endpoints, mode=Mode.SWITCH):
@@ -410,22 +411,22 @@ def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	reverse = util.curry(_tryDestroyNetwork, [endpoints, mode])
 	taskset = tasks.TaskSet()
-	taskset.addTask(tasks.Task("determine-connections", _determineConnections, args=(endpoints,)))
+	determine_connections = tasks.Task("determine-connections", _determineConnections, args=(endpoints,))
+	create_config_all = []
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, reverseFn=reverse, depends="determine-connections"))
-	alldeps = ["create-config-%s" % ep.getId() for ep in endpoints]
-	alldeps.append("determine-connections")
+		create_config_all.append(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, reverseFn=reverse, after=determine_connections))
+	collect_config_all = []
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, depends=alldeps))
-	alldeps = ["collect-config-%s" % ep.getId() for ep in endpoints]
+		collect_config_all.append(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, after=create_config_all))
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, depends=alldeps))
+		taskset.add(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, depends=collect_config_all))
+	taskset.add([determine_connections, create_config_all, collect_config_all])
 	return taskset
 
 def destroyNetwork(endpoints, mode=Mode.SWITCH):
@@ -448,11 +449,11 @@ def getDestroyNetworkTasks(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.addTask(tasks.Task("delete-files-%s" % id, _deleteFiles, reverseFn=reverse, args=(ep,)))
+		taskset.add(tasks.Task("delete-files-%s" % id, _deleteFiles, reverseFn=reverse, args=(ep,)))
 	return taskset
 	
 def _tmpPath(endpoint):
-	return "%s/%s" % ( config.local_control_dir, _tincName(endpoint) )
+	return "%s/%s" % ( config.LOCAL_TMP_DIR, _tincName(endpoint) )
 	
 def _createHostFile(endpoint):
 	path = _tmpPath(endpoint)

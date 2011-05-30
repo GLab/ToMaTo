@@ -56,7 +56,7 @@ class APIServer(xmlrpc.XMLRPC):
 		self.login=login
 		self.introspection=Introspection(self.api)
 		xmlrpc.XMLRPC.__init__(self, allowNone=True)
-		self.logger = tomato.lib.log.Logger(tomato.config.log_dir + "/api.log")
+		self.logger = tomato.lib.log.Logger(tomato.config.LOG_DIR + "/api.log")
 
 	def log(self, function, args, user):
 		if len(str(args)) < 50:
@@ -102,11 +102,12 @@ class APIServer(xmlrpc.XMLRPC):
 
 def run():
 	api_server=APIServer(tomato.api, tomato.login)
-	if tomato.config.server_ssl:
-		sslContext = ssl.DefaultOpenSSLContextFactory(tomato.config.server_ssl_private_key, tomato.config.server_ssl_ca_key) 
-		reactor.listenSSL(tomato.config.server_port, server.Site(api_server), contextFactory = sslContext) #@UndefinedVariable, pylint: disable-msg=E1101
+	settings = tomato.config.SERVER
+	if settings["SSL"]:
+		sslContext = ssl.DefaultOpenSSLContextFactory(settings["SSL_OPTS"]["private_key"], settings["SSL_OPTS"]["ca_key"])
+		reactor.listenSSL(settings["PORT"], server.Site(api_server), contextFactory = sslContext) #@UndefinedVariable, pylint: disable-msg=E1101
 	else:
-		reactor.listenTCP(tomato.config.server_port, server.Site(api_server)) #@UndefinedVariable, pylint: disable-msg=E1101
+		reactor.listenTCP(settings["PORT"], server.Site(api_server)) #@UndefinedVariable, pylint: disable-msg=E1101
 	reactor.run() #@UndefinedVariable, pylint: disable-msg=E1101
 	
 if __name__ == "__main__":

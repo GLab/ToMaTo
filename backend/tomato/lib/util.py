@@ -59,9 +59,7 @@ def start_thread(func, *args, **kwargs):
 def lines(str):
 	return str.strip().split("\n")
 
-def run_shell(cmd, pretend=False, shell=False):
-	if pretend:
-		cmd.insert(0,"echo")
+def run_shell(cmd, shell=False):
 	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell)
 	res=proc.communicate()
 	return (proc.returncode,)+res

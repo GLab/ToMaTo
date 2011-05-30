@@ -17,20 +17,18 @@
 
 from tomato.auth import User
 
-def login(username, password): #@UnusedVariable, pylint: disable-msg=W0613
-	"""
-	Authenticates a user.
+class Provider:
+	def __init__(self, guest_user="guest", admin_user="admin"):
+		self.guest_user = guest_user
+		self.admin_user = admin_user
 	
-	@type username: string
-	@param username: The users name  
-	@type password: string
-	@param password: The users password  
-	@rtype: generic.User
-	@raise fault.Error: when the user does not exist or the password is wrong 
-	"""
-	if username=="guest":
-		return User(username, False, False)
-	elif username=="admin":
-		return User(username, True, True)
-	else:
-		return User(username, True, False)
+	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
+		if username==self.guest_user:
+			return User(name=username, is_user=False)
+		elif username==self.admin_user:
+			return User(name=username, is_admin=True)
+		else:
+			return User(name=username)
+
+def init(**kwargs):
+	return Provider(**kwargs)

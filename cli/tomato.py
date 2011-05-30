@@ -74,6 +74,9 @@ def read_command_keyboard(prompt):
 		try:
 			sep = "> " if command == "" else "~ "
 			line = raw_input(prompt + sep)
+		except EOFError:
+			print ""
+			return "q"
 		except KeyboardInterrupt:
 			print ""
 			return "q"
