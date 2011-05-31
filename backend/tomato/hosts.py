@@ -356,7 +356,7 @@ class Host(models.Model):
 	def external_networks_remove(self, type, group):
 		en = ExternalNetwork.objects.get(type=type, group=group)
 		for enb in self.external_networks():
-			if enb.feature_group == en:
+			if enb.network == en:
 				enb.delete()
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
