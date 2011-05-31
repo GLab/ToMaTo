@@ -77,15 +77,15 @@ class Connector(attributes.Mixin, models.Model):
 	def start(self, direct):
 		fault.check(self.state == State.PREPARED, "Connector must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("start", self.upcast().getStartTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("start", self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		fault.check(self.state != State.CREATED, "Connector must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("stop", self.upcast().getStopTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("stop", self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
@@ -94,15 +94,15 @@ class Connector(attributes.Mixin, models.Model):
 			dev = con.interface.device
 			fault.check(dev.state != State.CREATED, "Device %s must be prepared before connector %s", (dev.name, self.name))
 		proc = tasks.Process("prepare")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("prepare", self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
 		fault.check(self.state != State.STARTED, "Connector must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("destroy")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("destroy", self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
@@ -111,22 +111,22 @@ class Connector(attributes.Mixin, models.Model):
 
 	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.STARTED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset))
 		return taskset
 	
 	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
 		return taskset
 	
 	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
 		return taskset
 	
 	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.CREATED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset))
 		return taskset
 	
 	def __unicode__(self):
@@ -170,7 +170,7 @@ class Connector(attributes.Mixin, models.Model):
 		return res
 
 
-class Connection(attributes.Mixin, models.Model):
+class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(devices.Interface)
 	bridge_id = models.PositiveIntegerField(null=True)
@@ -207,7 +207,7 @@ class Connection(attributes.Mixin, models.Model):
 
 	def bridgeId(self):
 		if not self.bridge_id:
-			self.interface.device.host.takeId("bridge", self._setBridgeId)
+			self.reload()
 		return self.bridge_id
 
 	def bridgeName(self):

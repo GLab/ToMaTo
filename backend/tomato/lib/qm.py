@@ -77,7 +77,7 @@ def useImage(host, vmid, image, move=False):
 	assert fileutil.existsFile(host, imagePath)
 
 def _vncPidfile(vmid):
-	return "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
+	return "%s/vnc-%s.pid" % (config.REMOTE_DIR, vmid)
 
 def vncRunning(host, vmid, port):
 	return process.processRunning(host, _vncPidfile(vmid), "tcpserver")

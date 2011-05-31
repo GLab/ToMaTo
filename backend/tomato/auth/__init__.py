@@ -48,6 +48,9 @@ class User(models.Model):
 	def toDict(self):
 		return {"name": self.name, "origin": self.origin, "is_user": self.is_user, "is_admin": self.is_admin}
 
+	def __str__(self):
+		return self.__unicode__()
+
 	def __unicode__(self):
 		return "%s@%s" % ( self.name, self.origin ) if self.origin else self.name
 		

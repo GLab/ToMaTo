@@ -421,11 +421,11 @@ def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		collect_config_all.append(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, after=create_config_all))
+		collect_config_all.append(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, after=[create_config_all, determine_connections]))
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		taskset.add(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, depends=collect_config_all))
+		taskset.add(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, after=collect_config_all))
 	taskset.add([determine_connections, create_config_all, collect_config_all])
 	return taskset
 

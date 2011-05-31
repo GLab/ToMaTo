@@ -140,8 +140,8 @@ def modifyTaskRun(top_id, mods):
 def modify(top, mods, direct):
 	from lib import tasks
 	proc = tasks.Process("modify-topology")
-	proc.addTask(tasks.Task("renew", top.renew))
-	proc.addTask(tasks.Task("modify", util.curry(modifyTaskRun, [top.id, mods])))
+	proc.add(tasks.Task("renew", top.renew))
+	proc.add(tasks.Task("modify", util.curry(modifyTaskRun, [top.id, mods])))
 	return top.startProcess(proc, direct)
 
 def modifyList(top, mods, direct):

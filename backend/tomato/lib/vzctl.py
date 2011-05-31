@@ -45,7 +45,7 @@ def getState(host, vmid):
 	assert False, "Unable to determine openvz state"
 
 def _vncPidfile(vmid):
-	return "%s/vnc-%s.pid" % (config.remote_control_dir, vmid)
+	return "%s/vnc-%s.pid" % (config.REMOTE_DIR, vmid)
 
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"

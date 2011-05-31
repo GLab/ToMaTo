@@ -23,7 +23,7 @@ def _tcpdump(host, cmd):
 	return host.execute("tcpdump %s" % cmd)
 	
 def _remoteDir(name):
-	return "%s/%s" % (config.remote_control_dir, name)
+	return "%s/%s" % (config.REMOTE_DIR, name)
 	
 def _checkSyntax(host, iface, filter):
 	return _tcpdump(host, "-i %s -d %s >/dev/null 2>&1; echo $?" % (iface, filter)).strip() == "0"

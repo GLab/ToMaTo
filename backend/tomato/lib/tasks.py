@@ -44,8 +44,8 @@ class Task():
 		self.output = StringIO()
 		self.result = None
 		self.process = None
-		self.after = set()
-		self.before = set()
+		self.afterSet = set()
+		self.beforeSet = set()
 		self.after(after)
 		self.before(before)
 		self.callWithTask = callWithTask
@@ -68,25 +68,33 @@ class Task():
 	def getResult(self):
 		return self.result
 	def getBefore(self):
-		return self.before
+		return self.beforeSet
 	def getAfter(self):
-		return self.after
+		return self.afterSet
 	def after(self, task):
 		if not isinstance(task, Task):
 			for t in task:
 				self.after(t)
-		self.after.add(task)
+		else:
+			self.afterSet.add(task)
 		return self
 	def before(self, task):
 		if not isinstance(task, Task):
 			for t in task:
 				self.before(t)
-		self.before.add(task)
+		else:
+			self.beforeSet.add(task)
+		return self
+	def prefix(self, prefix):
+		self.name = "%s-%s" % (prefix, self.name)
 		return self
 	def getProcess(self):
 		return self.process
 	def getDependency(self, name):
-		for t in self.depends:
+		for t in self.afterSet:
+			if t.name.endswith(name):
+				return t
+		for t in self.beforeSet:
 			if t.name.endswith(name):
 				return t
 	def _reverse(self):
@@ -139,7 +147,7 @@ class Task():
 	def dict(self):
 		status = self.getStatus()
 		return {"name": self.name, "status": status, "active": self.isActive(status),
-			"done": self.isDone(status), "depends": self.depends,
+			"done": self.isDone(status), "after": [t.name for t in self.afterSet], "before": [t.name for t in self.beforeSet],
 			"output": self.getOutput(), "result": "%s" % self.getResult(),
 			"started": util.datestr(self.started) if self.started else None,
 			"finished": util.datestr(self.finished) if self.finished else None,
@@ -154,20 +162,27 @@ class TaskSet():
 		if not isinstance(task, Task):
 			for t in task:
 				self.add(t)
-		self.tasks.add(task)
+		else:
+			self.tasks.add(task)
 	def after(self, task):
 		if not isinstance(task, Task):
 			for t in task:
 				self.after(t)
-		for t in self.tasks:
-			t.after(task)
+		else:
+			for t in self.tasks:
+				t.after(task)
 		return self
 	def before(self, task):
 		if not isinstance(task, Task):
 			for t in task:
 				self.before(t)
+		else:
+			for t in self.tasks:
+				t.before(task)
+		return self
+	def prefix(self, prefix):
 		for t in self.tasks:
-			t.before(task)
+			t.prefix(prefix)
 		return self
 	def __len__(self):
 		return len(self.tasks)
@@ -179,7 +194,7 @@ class Process():
 		self.name = name
 		self.tasks = set()
 		for t in tasks:
-			self.addTask(t)
+			self.add(t)
 		self.onFinished = onFinished
 		self.id = str(uuid.uuid1())
 		processes[self.id]=self
@@ -208,13 +223,14 @@ class Process():
 		if not isinstance(task, Task):
 			for t in task:
 				self.add(t)
-		self.tasks.add(task)
-		task.process = self
+		else:
+			self.tasks.add(task)
+			task.process = self
 	def abort(self):
+		self.readyTasks.clear()
 		for task in self.tasks:
 			if task.status == Status.WAITING:
 				task.status = Status.ABORTED
-		self.readyTasks.clear()
 	def getStatus(self):
 		for task in self.tasks:
 			if task.status == Status.REVERSING:
@@ -262,7 +278,6 @@ class Process():
 	def run(self):
 		self.started = time.time()
 		while True:
-			self.lock.acquire()
 			task = self._getReadyTask()
 			if task:
 				assert task.status == Status.WAITING
@@ -308,6 +323,7 @@ class Process():
 		return res
 	def start(self, direct=False):
 		try:
+			self._prepare()
 			if direct:
 				self.run()
 				return self.dict()

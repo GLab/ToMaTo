@@ -83,7 +83,7 @@ class OpenVZDevice(Device):
 		if not self.getVncPort():
 			return None 
 		m = hashlib.md5()
-		m.update(config.password_salt)
+		m.update(config.PASSWORD_SALT)
 		m.update(str(self.name))
 		m.update(str(self.getVmid()))
 		m.update(str(self.getVncPort()))
@@ -132,7 +132,7 @@ class OpenVZDevice(Device):
 		check_interfaces_exist = tasks.Task("check-interfaces-exist", self._checkInterfacesExist, reverseFn=self._fallbackStop, after=start_vm)
 		for iface in self.interfaceSetAll():
 			ts = iface.upcast().getStartTasks()
-			ts.after(check_interfaces_exist)
+			ts.prefix(iface).after(check_interfaces_exist)
 			taskset.add(ts)
 		configure_routes = tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, after=start_vm)
 		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
@@ -153,7 +153,7 @@ class OpenVZDevice(Device):
 		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
 		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
 		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
-		taskset.add(stop_vnc, stop_vm, unassign_vnc_port)
+		taskset.add([stop_vnc, stop_vm, unassign_vnc_port])
 		return taskset	
 
 	def _assignTemplate(self):
@@ -456,8 +456,9 @@ class ConfiguredInterface(Interface):
 			
 	def getStartTasks(self):
 		taskset = Interface.getStartTasks(self)
-		taskset.addTask(tasks.Task("connect-to-bridge", self._connectToBridge))
-		taskset.addTask(tasks.Task("configure-network", self._configureNetwork, depends="connect-to-bridge"))
+		connect_to_bridge = tasks.Task("connect-to-bridge", self._connectToBridge)
+		taskset.add(connect_to_bridge)
+		taskset.add(tasks.Task("configure-network", self._configureNetwork, after=connect_to_bridge))
 		return taskset
 
 	def getPrepareTasks(self):

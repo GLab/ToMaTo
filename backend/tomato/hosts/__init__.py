@@ -186,6 +186,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			ids[key] = self._unpackList(value)
 		return ids
 
+	#FIXME: implement a task that checks for used ids
+
 	def takeId(self, type, callback):
 		try:
 			Host.lock.acquire()

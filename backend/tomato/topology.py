@@ -167,15 +167,15 @@ class Topology(attributes.Mixin, models.Model):
 	def _getTasks(self):
 		tmap = {"start": {}, "stop": {}, "prepare": {}, "destroy": {}}
 		for dev in self.deviceSetAll():
-			tmap["start"][dev] = dev.upcast().getStartTasks()
-			tmap["stop"][dev] = dev.upcast().getStopTasks()
-			tmap["prepare"][dev] = dev.upcast().getPrepareTasks()
-			tmap["destroy"][dev] = dev.upcast().getDestroyTasks()
+			tmap["start"][dev] = dev.upcast().getStartTasks().prefix("start-%s" % dev)
+			tmap["stop"][dev] = dev.upcast().getStopTasks().prefix("stop-%s" % dev)
+			tmap["prepare"][dev] = dev.upcast().getPrepareTasks().prefix("prepare-%s" % dev)
+			tmap["destroy"][dev] = dev.upcast().getDestroyTasks().prefix("destroy-%s" % dev)
 		for con in self.connectorSetAll():
-			tmap["start"][con] = con.upcast().getStartTasks()
-			tmap["stop"][con] = con.upcast().getStopTasks()
-			tmap["prepare"][con] = con.upcast().getPrepareTasks()
-			tmap["destroy"][con] = con.upcast().getDestroyTasks()
+			tmap["start"][con] = con.upcast().getStartTasks().prefix("start-%s" % con)
+			tmap["stop"][con] = con.upcast().getStopTasks().prefix("stop-%s" % con)
+			tmap["prepare"][con] = con.upcast().getPrepareTasks().prefix("prepare-%s" % con)
+			tmap["destroy"][con] = con.upcast().getDestroyTasks().prefix("destroy-%s" % con)
 		return tmap
 		
 	def _stateForward(self, start, direct):
@@ -234,7 +234,7 @@ class Topology(attributes.Mixin, models.Model):
 					devs_destroy.add(tmap["destroy"][dev].after([devs_stop,cons_destroy]))
 			proc.add([devs_destroy, cons_destroy])		
 			if remove:
-				proc.addTask(tasks.Task("remove", self.delete, after=[devs_destroy, cons_destroy]))
+				proc.add(tasks.Task("remove", self.delete, after=[devs_destroy, cons_destroy]))
 		return self.startProcess(proc, direct)
 
 	def stop(self, direct, renew=True):
@@ -340,7 +340,7 @@ class Topology(attributes.Mixin, models.Model):
 		@rtype: dict
 		"""
 		res = {"id": self.id, 
-			"attrs": {"name": self.name, "state": self.maxState(), "owner": self.owner,
+			"attrs": {"name": self.name, "state": self.maxState(), "owner": str(self.owner),
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
 					"stop_timeout": str(self.date_usage + self.STOP_TIMEOUT), "destroy_timeout": str(self.date_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(self.date_usage + self.REMOVE_TIMEOUT) 
 					},
@@ -350,8 +350,8 @@ class Topology(attributes.Mixin, models.Model):
 			res.update({"devices": dict([[v.name, v.upcast().toDict(auth)] for v in self.deviceSetAll()]),
 				"connectors": dict([[v.name, v.upcast().toDict(auth)] for v in self.connectorSetAll()])
 				})
-			res.update(permissions=dict([[p.user, p.role] for p in self.permissionsAll()]))
-			res["permissions"][self.owner]="owner";
+			res.update(permissions=dict([[str(p.user), p.role] for p in self.permissionsAll()]))
+			res["permissions"][str(self.owner)]="owner";
 		if auth:
 			task = self.getTask()
 			if task:

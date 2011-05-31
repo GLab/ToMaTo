@@ -197,7 +197,7 @@ class KVMDevice(Device):
 		self.save()
 		
 	def _unassignVmid(self):
-		if self.vmid:
+		if self.vmid and self.host:
 			self.host.giveId("vmid", self.vmid)
 		self.setVmid(None)
 
@@ -261,7 +261,7 @@ class KVMDevice(Device):
 		if not self.getVmid():
 			return "---"
 		m = hashlib.md5()
-		m.update(config.password_salt)
+		m.update(config.PASSWORD_SALT)
 		m.update(str(self.name))
 		m.update(str(self.getVmid()))
 		m.update(str(self.getVncPort()))

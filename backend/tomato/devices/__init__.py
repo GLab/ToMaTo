@@ -94,29 +94,29 @@ class Device(attributes.Mixin, models.Model):
 	
 	def migrate(self, direct):
 		proc = tasks.Process("migrate")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTask(tasks.Task("migrate", self.upcast().migrateRun))
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add(tasks.Task("migrate", self.upcast().migrateRun))
 		return self.topology.startProcess(proc, direct)
 
 	def start(self, direct):
 		fault.check(self.state == State.PREPARED, "Device must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("start", self.upcast().getStartTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("start", self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		fault.check(self.state != State.CREATED, "Device must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("stop", self.upcast().getStopTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("stop", self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
 		fault.check(self.state == State.CREATED, "Device must be created to be prepared but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("prepare")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("prepare", self.upcast().getPrepareTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("prepare", self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
@@ -126,8 +126,8 @@ class Device(attributes.Mixin, models.Model):
 				con = iface.connection.connector
 				fault.check(con.state == State.CREATED, "Connector %s must be destroyed before device %s", (con.name, self.name))
 		proc = tasks.Process("destroy")
-		proc.addTask(tasks.Task("renew", self.topology.renew))
-		proc.addTaskSet("destroy", self.upcast().getDestroyTasks())
+		proc.add(tasks.Task("renew", self.topology.renew))
+		proc.add("destroy", self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
@@ -136,22 +136,22 @@ class Device(attributes.Mixin, models.Model):
 
 	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.STARTED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset))
 		return taskset
 	
 	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
 		return taskset
 	
 	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.PREPARED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
 		return taskset
 	
 	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.addLastTask(tasks.Task("change-state", self._changeState, args=(State.CREATED,)))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset))
 		return taskset
 	
 	def configure(self, properties):
@@ -208,7 +208,7 @@ class Device(attributes.Mixin, models.Model):
 	def useUploadedImage(self, filename):
 		path = "%s/%s" % (self.host.hostServerBasedir(), filename)
 		proc = tasks.Process("use-uploaded-image")
-		proc.addTask("main", self.upcast().useUploadedImageRun, args=(path,))
+		proc.add("main", self.upcast().useUploadedImageRun, args=(path,))
 		return proc.start()
 			
 			

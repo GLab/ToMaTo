@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import tomato.config as config
-
 import util
 
 def bridgeExists(host, bridge):
@@ -26,7 +24,15 @@ def bridgeCreate(host, bridge):
 	host.execute("brctl addbr %s" % bridge)
 	assert bridgeExists(host, bridge), "Bridge cannot be created: %s" % bridge
 		
-def bridgeRemove(host, bridge):
+def bridgeRemove(host, bridge, disconnectAll=False, setIfdown=True):
+	if not bridgeExists(host, bridge):
+		return
+	if disconnectAll:
+		for iface in bridgeInterfaces(host, bridge):
+			bridgeDisconnect(host, bridge, iface)
+	assert not bridgeInterfaces(host, bridge)
+	if setIfdown:
+		ifdown(host, bridge)
 	host.execute("brctl delbr %s" % bridge)
 	assert not bridgeExists(host, bridge), "Bridge cannot be removed: %s" % bridge
 		

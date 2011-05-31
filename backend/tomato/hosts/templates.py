@@ -89,7 +89,7 @@ def add(name, template_type, url):
 	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
 	proc = tasks.Process("upload-template")
 	for host in getAllHosts():
-		proc.addTask(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
+		proc.add(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
 	return proc.start()
 	
 def remove(template_type, name):
