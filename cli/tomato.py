@@ -1,43 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, xmlrpclib, getpass, getopt, os
+import sys, xmlrpclib, os
 
-class options:
-	ssl = False
-	hostname = None
-	port = 8000
-	username = None
-	file = None
-	call = None
-	password = None
+def parseArgs():
+	import argparse, getpass
+	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client")
+	parser.add_argument("--hostname" , "-H", required=True, help="the host of the server")
+	parser.add_argument("--port", "-P", default=8000, help="the port of the server")
+	parser.add_argument("--ssl", "-s", action="store_true", default=False, help="whether to use ssl")
+	parser.add_argument("--username", "-u", help="the username to use for login")
+	parser.add_argument("--password", "-p", help="the password to use for login")
+	parser.add_argument("--file", "-f", help="a file to execute")
+	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
+	options = parser.parse_args()
+	if not options.username:
+		options.username=raw_input("Username: ")
+	if not options.password:
+		options.password=getpass.getpass("Password: ")
+	return options
 
-optlist, args = getopt.getopt(sys.argv[1:], 'h:p:su:f:c:', ['hostname=', 'port=', 'ssl', 'username=', 'file=', 'call='])
-
-for (opt, val) in optlist:
-	if opt == "-h" or opt == "--hostname":
-		options.hostname = val
-	elif opt == "-p" or opt == "--port":
-		options.port = int(val)
-	elif opt == "-s" or opt == "--ssl":
-		options.ssl = True
-	elif opt == "-u" or opt == "--username":
-		options.username = val
-	elif opt == "-f" or opt == "--file":
-		options.file = val
-	elif opt == "-c" or opt == "--call":
-		options.call = val
-
-if not options.hostname:
-	print "No hostname given"
-	sys.exit(1)
-
-if not options.username:
-	options.username=raw_input("Username: ")
-	
-if not options.password:
-	options.password=getpass.getpass("Password: ")
-	
 class ServerProxy(object):
     def __init__(self, url, **kwargs):
         self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
@@ -46,105 +28,75 @@ class ServerProxy(object):
         def _call(*args, **kwargs):
             return call_proxy(args, kwargs)
         return _call
+
+def getConnection(hostname, port, ssl, username, password):
+	return ServerProxy('%s://%s:%s@%s:%s' % ('https' if ssl else 'http', username, password, hostname, port), allow_none=True)
 	
-api=ServerProxy('%s://%s:%s@%s:%s' % ('https' if options.ssl else 'http', options.username, options.password, options.hostname, options.port), allow_none=True)
 
 # Readline and tab completion support
 import atexit, string, readline, rlcompleter
 from traceback import print_exc
 
-def get_name(instance):
-	for name in globals:
-		if globals[name] is instance:
-			return name
-
-def help(method=None):
-	if method is None:
-		print "Available methods:\tType help(method) for more infos."
-		print ", ".join(api._listMethods())
-	else:
-		if type(method) != type('str'):
-			method = get_name(method)
-		print "Signature: " + api._methodSignature(method)
-		print api._methodHelp(method)
-
-def read_command_keyboard(prompt):
-	command = ""
-	while True:
-		try:
-			sep = "> " if command == "" else "~ "
-			line = raw_input(prompt + sep)
-		except EOFError:
-			print ""
-			return "q"
-		except KeyboardInterrupt:
-			print ""
-			return "q"
-		command += line
-		if line == "" or (command == line and not line[-1] in ':({[,'):
-			break
-		command += os.linesep
-	return command 
-
-def exec_command(command):
-	# Blank line
-	if command == "":
-		return
-	# Quit
-	elif command in ["q", "quit", "exit"]:
-		sys.exit(0)
-
-	try:
-		# Try evaluating as an expression and printing the result
-		result = eval(command, globals)
-		if result is not None:
-			print result
-	except SyntaxError:
-		# Fall back to executing as a statement
-		exec command in globals
-	except xmlrpclib.ProtocolError, err:
-		# Avoid revealing password in error url
-		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
-	except xmlrpclib.Fault, f:
-		print f
-
-def run_interactive():
-	print 'Type "help()" or "help(method)" for more information.'
+def runInteractive(locals):
 	prompt = "ToMaTo"
+	import readline, rlcompleter, code
 	readline.parse_and_bind("tab: complete")
-	readline.set_completer(rlcompleter.Completer(globals).complete)
-	try:
-		while True:
-			try:
-				exec_command(read_command_keyboard(prompt))
-			except Exception, err:
-				print_exc()
-	except EOFError:
-		print
+	readline.set_completer(rlcompleter.Completer(locals).complete)
+	console = code.InteractiveConsole(locals)
+	console.interact('Type "help()" or "help(method)" for more information.')
 	
-def run_file(file):
-	fd = open(file, "r")
-	content = "".join(fd.readlines())
+def runSource(locals, source):
+	import code
+	interpreter = code.InteractiveInterpreter(locals)
+	interpreter.runsource(source)
+
+def runFile(locals, file):
+	import sys, os
+	sys.path.insert(0, os.path.dirname(file))
+	execfile(file, locals)
+	sys.path.pop(0)
+
+def getLocals(api):
+	locals = {}
+	def help(method=None):
+		if method is None:
+			print "Available methods:\tType help(method) for more infos."
+			print ", ".join(api._listMethods())
+		else:
+			if not isinstance(method, str):
+				method = filter(lambda name: locals[name] is method, locals)[0]
+			print "Signature: " + api._methodSignature(method)
+			print api._methodHelp(method)
+	def load(file, name=None):
+		import imp, os, sys
+		files = filter(lambda dir: os.path.exists(os.path.join(dir, file)), sys.path)
+		if files:
+			file = os.path.join(files[0], file)
+		if not name:
+			name = os.path.basename(file)
+		mod = imp.load_source(name, file)
+		locals[name] = mod
+		return mod
+	locals.update(help=help, load=load)
 	try:
-		exec_command(content)
-	except Exception, err:
-		print_exc()
+		for func in api._listMethods():
+			locals[func] = getattr(api, func)
+	except xmlrpclib.ProtocolError, err:
+		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+		sys.exit(-1)
+	return locals
 
-def run_file_relative(file):
-	run_file(os.path.dirname(options.file) + "/" + file)
-
-globals = {"help": help, "load": run_file}
-try:
-	for func in api._listMethods():
-		globals[func] = getattr(api, func)
-except xmlrpclib.ProtocolError, err:
-	print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
-	sys.exit(-1)
-				
-if options.call:
-	exec_command(options.call)
-elif options.file:
-	globals.update(script=options.file, loadRel=run_file_relative)
-	run_file(options.file)
-else:
-	run_interactive()
+def run():
+	options = parseArgs()
+	api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password)
+	locals = getLocals(api)
+	if options.arguments:
+		runSource(locals, options.arguments)
+	elif options.file:
+		locals.update(file=options.file)
+		runFile(locals, options.file)
+	else:
+		runInteractive(locals)
+	
+if __name__ == "__main__":
+	run()
