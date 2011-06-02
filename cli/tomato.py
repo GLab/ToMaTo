@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, xmlrpclib, os
-
 def parseArgs():
 	import argparse, getpass
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client")
@@ -21,22 +19,18 @@ def parseArgs():
 	return options
 
 class ServerProxy(object):
-    def __init__(self, url, **kwargs):
-        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
-    def __getattr__(self, name):
-        call_proxy = getattr(self._xmlrpc_server_proxy, name)
-        def _call(*args, **kwargs):
-            return call_proxy(args, kwargs)
-        return _call
+	def __init__(self, url, **kwargs):
+		import xmlrpclib
+		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+	def __getattr__(self, name):
+		call_proxy = getattr(self._xmlrpc_server_proxy, name)
+		def _call(*args, **kwargs):
+			return call_proxy(args, kwargs)
+		return _call
 
 def getConnection(hostname, port, ssl, username, password):
 	return ServerProxy('%s://%s:%s@%s:%s' % ('https' if ssl else 'http', username, password, hostname, port), allow_none=True)
 	
-
-# Readline and tab completion support
-import atexit, string, readline, rlcompleter
-from traceback import print_exc
-
 def runInteractive(locals):
 	prompt = "ToMaTo"
 	import readline, rlcompleter, code
@@ -53,6 +47,9 @@ def runSource(locals, source):
 def runFile(locals, file):
 	import sys, os
 	sys.path.insert(0, os.path.dirname(file))
+	__builtins__.__dict__.update(locals)
+	locals["__name__"]="__main__"
+	locals["__file__"]=file
 	execfile(file, locals)
 	sys.path.pop(0)
 
@@ -77,7 +74,8 @@ def getLocals(api):
 		mod = imp.load_source(name, file)
 		locals[name] = mod
 		return mod
-	locals.update(help=help, load=load)
+	locals.update(api=api, help=help, load=load)
+	import xmlrpclib
 	try:
 		for func in api._listMethods():
 			locals[func] = getattr(api, func)
@@ -93,7 +91,6 @@ def run():
 	if options.arguments:
 		runSource(locals, options.arguments)
 	elif options.file:
-		locals.update(file=options.file)
 		runFile(locals, options.file)
 	else:
 		runInteractive(locals)

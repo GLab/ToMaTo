@@ -124,7 +124,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			usage = top.getIdUsage()
 			for (t, used) in usage.iteritems():
 				assert t in types, "Unknown id type: %s" % t
-				assert set(ids[t]) >= used, "Topology %s uses %s ids that are not available: %s" % (top, t, used-ids[t])
+				assert set(ids[t]) >= used, "Topology %s uses %s ids that are not available: %s" % (top, t, used-set(ids[t]))
 				ids[t] = list(set(ids[t]) - used)
 		return ids			
 				

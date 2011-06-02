@@ -1,4 +1,4 @@
-loadRel("misc.lib")
+from lib.misc import *
 
 def simpleTop_checkStateTransitions(topId):
 	print "preparing topology..."
@@ -18,13 +18,13 @@ def simpleTop_checkStateTransitions(topId):
 	print "destroying topology..."
 	top_action(topId, "destroy", direct=True)
 
-if script.endswith("stateTransitions.test"):
-	loadRel("simple.top")
+if __name__ == "__main__":
+	from tests.top.simple import top
 	errors_remove()
 	topId = top_create()
 	try:
 		print "creating topology..."
-		top_modify(topId, jsonToMods(simpleTop), True)
+		top_modify(topId, jsonToMods(top), True)
 
 		print "testing link emulation..."
 		simpleTop_checkStateTrnasitions(topId)

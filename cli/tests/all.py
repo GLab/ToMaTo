@@ -1,19 +1,21 @@
-loadRel("stateTransitions.test")
-loadRel("linkEmulation.test")
+from lib.misc import *
 
-if script.endswith("all.test"):
-	loadRel("simple.top")
+import stateTransitions
+import linkEmulation
+
+if __name__ == "__main__":
+	from tests.top.simple import top
 	errors_remove()
 	topId = top_create()
 	try:
 		print "creating topology..."
-		top_modify(topId, jsonToMods(simpleTop), True)
+		top_modify(topId, jsonToMods(top), True)
 
 		print "testing state transitions..."
-		simpleTop_checkStateTransitions(topId)
+		stateTransitions.simpleTop_checkStateTransitions(topId)
 
 		print "testing link emulation..."
-		simpleTop_checkLinkEmulation(topId)
+		linkEmulation.simpleTop_checkLinkEmulation(topId)
 
 		print "destroying topology..."
 		top_action(topId, "destroy", direct=True)

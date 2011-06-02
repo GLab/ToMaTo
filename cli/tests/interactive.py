@@ -1,13 +1,13 @@
-loadRel("misc.lib")
+from lib.misc import *
 
-loadRel("simple.top")
+from tests.top.simple import top
 
 from datetime import datetime
 
 errors_remove()
 topId = top_create()
 try:
-	top_modify(topId, jsonToMods(simpleTop), True)
+	top_modify(topId, jsonToMods(top), True)
 	raw_input("Press enter to prepare topology")
 	task = top_action(topId, "prepare")
 	waitForTask(task, assertSuccess=True)

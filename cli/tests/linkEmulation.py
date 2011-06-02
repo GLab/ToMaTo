@@ -1,4 +1,4 @@
-loadRel("misc.lib")
+from lib.misc import *
 
 def simpleTop_checkLinkEmulation(topId):
 	#make sure topology is started
@@ -33,13 +33,13 @@ def simpleTop_checkLinkEmulation(topId):
 	li = link_info(topId, "openvz2", "10.0.0.1", samples=250)
 	assert abs(li["lossratio"] - 0.1) < 0.1, "Lossratio should be %s but was %s" %(0.1, li["lossratio"])
 
-if script.endswith("linkEmulation.test"):
-	loadRel("simple.top")
+if __name__ == "__main__":
+	from tests.top.simple import top
 	errors_remove()
 	topId = top_create()
 	try:
 		print "creating topology..."
-		top_modify(topId, jsonToMods(simpleTop), True)
+		top_modify(topId, jsonToMods(top), True)
 
 		print "starting topology..."
 		task = top_action(topId, "start")
