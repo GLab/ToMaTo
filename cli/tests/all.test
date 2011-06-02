@@ -1,0 +1,30 @@
+loadRel("stateTransitions.test")
+loadRel("linkEmulation.test")
+
+if script.endswith("all.test"):
+	loadRel("simple.top")
+	errors_remove()
+	topId = top_create()
+	try:
+		print "creating topology..."
+		top_modify(topId, jsonToMods(simpleTop), True)
+
+		print "testing state transitions..."
+		simpleTop_checkStateTransitions(topId)
+
+		print "testing link emulation..."
+		simpleTop_checkLinkEmulation(topId)
+
+		print "destroying topology..."
+		top_action(topId, "destroy", direct=True)
+	except:
+		import traceback
+		traceback.print_exc()
+		print "-" * 50
+		errors_print()
+		print "-" * 50
+		print "Topology id is: %d" % topId
+		raw_input("Press enter to remove topology")
+	finally:
+		top_action(topId, "remove", direct=True)
+	

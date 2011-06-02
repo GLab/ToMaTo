@@ -22,7 +22,7 @@ from tomato.topology import Topology
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import db
 
-class Device(attributes.Mixin, models.Model):
+class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
 	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )

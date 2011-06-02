@@ -180,6 +180,13 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 	class Meta:
 		unique_together = (("connector", "interface"),)
 
+	def getHost(self):
+		if not self.interface:
+			return None
+		if not self.interface.device.host:
+			self.interface.device.reload()
+		return self.interface.device.host
+
 	def getIdUsage(self):
 		ids = {}
 		if self.bridge_id:
