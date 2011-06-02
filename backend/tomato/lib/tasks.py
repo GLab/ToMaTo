@@ -215,10 +215,11 @@ class Process():
 			if not task.getAfter():
 				self.readyTasks.add(task)
 	def _taskDone(self, task):
-		for t in task.getBefore():
-			self.dependencies[t].remove(task)
-			if not self.dependencies[t]:
-				self.readyTasks.add(t)
+		if task.status == Status.SUCCEEDED:
+			for t in task.getBefore():
+				self.dependencies[t].remove(task)
+				if not self.dependencies[t] and t.status == Status.WAITING:
+					self.readyTasks.add(t)
 	def add(self, task):
 		if not isinstance(task, Task):
 			for t in task:
