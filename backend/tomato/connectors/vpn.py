@@ -129,9 +129,9 @@ class TincConnector(Connector):
 		fault.check(iface.device.state != State.STARTED, "Cannot add connections to running device: %s -> %s", (iface_name, self.name) )
 		fault.check(not iface.isConnected(), "Cannot add connections to connected interface: %s -> %s", (iface_name, self.name) )
 		con = TincConnection ()
-		con.init()
 		con.connector = self
 		con.interface = iface
+		con.init()
 		con.configure(properties)
 		con.save()
 

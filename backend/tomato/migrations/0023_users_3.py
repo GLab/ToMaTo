@@ -14,7 +14,6 @@ class Migration(DataMigration):
 				user = orm.User(name=top.owner_name)
 				user.save()
 			top.owner = user
-			top.owner_name = None
 			top.save()
 		for perm in orm.Permission.objects.all():
 			try:

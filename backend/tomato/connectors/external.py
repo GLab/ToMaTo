@@ -143,9 +143,9 @@ class ExternalNetworkConnector(Connector):
 		iface = self.topology.interfacesGet(iface_name)
 		fault.check(iface.device.state != State.STARTED, "Cannot add connections to running device: %s -> %s", (iface_name, self.name) )
 		con = Connection ()
-		con.init()
 		con.connector = self
 		con.interface = iface
+		con.init()
 		con.save()
 
 	def connectionsConfigure(self, iface_name, properties):

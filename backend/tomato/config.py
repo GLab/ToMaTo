@@ -62,7 +62,7 @@ INSTALLED_APPS = ('tomato', 'south')
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 try:
-	import imp, tempfile
+	import imp, tempfile, sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
 		file = open(path, "r")
 		with file:
@@ -70,7 +70,7 @@ try:
 			try:
 				imp.load_source("backend_config", tmp, file)
 				from backend_config import *
-				print "Loaded config from %s" % path
+				print >>sys.stderr, "Loaded config from %s" % path
 			finally:
 				if os.path.exists(tmp+"c"):
 					os.remove(tmp+"c")

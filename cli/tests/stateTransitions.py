@@ -12,9 +12,6 @@ def simpleTop_checkStateTransitions(topId):
 	task = top_action(topId, "start")
 	waitForTask(task, assertSuccess=True)
 
-	print "testing link emulation..."
-	simpleTop_checkLinkEmulation(topId)
-
 	print "destroying topology..."
 	top_action(topId, "destroy", direct=True)
 
@@ -27,7 +24,7 @@ if __name__ == "__main__":
 		top_modify(topId, jsonToMods(top), True)
 
 		print "testing link emulation..."
-		simpleTop_checkStateTrnasitions(topId)
+		simpleTop_checkStateTransitions(topId)
 
 		print "destroying topology..."
 		top_action(topId, "destroy", direct=True)

@@ -27,7 +27,7 @@ class Mixin:
 		assert isinstance(self.attrs, dict)
 		return name in self.attrs
 	def getAttribute(self, name, default=None):
-		assert isinstance(self.attrs, dict)
+		assert isinstance(self.attrs, dict), type(self.attrs)
 		try:
 			return self.attrs[name]
 		except:
@@ -35,10 +35,11 @@ class Mixin:
 	def getAttributes(self):
 		assert isinstance(self.attrs, dict)
 		return self.attrs.copy()
-	def setAttribute(self, name, value):
+	def setAttribute(self, name, value, save=True):
 		assert isinstance(self.attrs, dict)
 		self.attrs[name] = value
-		self.save()
+		if save:
+			self.save()
 	def setAttributes(self, attrs):
 		assert isinstance(self.attrs, dict)
 		self.attrs.update(attrs)

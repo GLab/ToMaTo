@@ -39,7 +39,6 @@ class KVMDevice(Device):
 
 	def init(self):
 		self.attrs = {}
-		self.setTemplate("")
 
 	def setVmid(self, value):
 		self.vmid = value
@@ -207,7 +206,7 @@ class KVMDevice(Device):
 		self.setVncPort(None)
 
 	def _destroyVm(self):
-		if self.host:
+		if self.host and self.getVmid():
 			qm.destroy(self.host, self.getVmid())
 
 	def getDestroyTasks(self):
@@ -230,7 +229,6 @@ class KVMDevice(Device):
 		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
 		fault.check(re.match("eth(\d+)", name), "Invalid interface name: %s" % name)
 		iface = Interface()
-		iface.init()
 		try:
 			if self.interfaceSetGet(name):
 				raise fault.new("Duplicate interface name: %s" % name)
@@ -238,6 +236,7 @@ class KVMDevice(Device):
 			pass
 		iface.name = name
 		iface.device = self
+		iface.init()
 		if self.state == State.PREPARED:
 			qm.addInterface(self.host, self.getVmid(), iface.name)
 		iface.save()

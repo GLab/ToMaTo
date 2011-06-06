@@ -17,7 +17,7 @@
 
 from tomato import config, fault
 from tomato.lib import util
-import time, atexit, datetime, crypt, string, random
+import time, atexit, datetime, crypt, string, random, sys
 
 from django.db import models
 
@@ -95,13 +95,13 @@ cleanup_task.start()
 atexit.register(cleanup_task.stop)
 
 providers = []
-print "Loading auth modules..."
+print >>sys.stderr, "Loading auth modules..."
 for conf in config.AUTH:
 	provider = None #make eclipse shut up
 	exec("import %s_provider as provider" % conf["PROVIDER"]) #pylint: disable-msg=W0122
 	prov = provider.init(**(conf["OPTIONS"]))
 	prov.name = conf["NAME"]
 	providers.append(prov)
-	print " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
+	print >>sys.stderr, " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
 if not providers:
-	print "Warning: No authentication modules configured."
+	print >>sys.stderr, "Warning: No authentication modules configured."

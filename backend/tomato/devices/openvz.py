@@ -40,8 +40,7 @@ class OpenVZDevice(Device):
 
 	def init(self):
 		self.attrs = {}
-		self.setTemplate("")
-		self.setRootPassword("glabroot")
+		self.setAttribute("root_password", "glabroot", save=False)
 
 	def setVmid(self, value):
 		self.vmid = value
@@ -266,9 +265,9 @@ class OpenVZDevice(Device):
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
-		iface.init()
 		iface.name = name
 		iface.device = self
+		iface.init()
 		if self.state == State.PREPARED or self.state == State.STARTED:
 			iface.prepare_run()
 		iface.configure(properties)
@@ -410,7 +409,7 @@ class ConfiguredInterface(Interface):
 	
 	def init(self):
 		self.attrs = {}		
-		self.setAttribute("use_dhcp", False)
+		self.setAttribute("use_dhcp", False, save=False)
 	
 	def upcast(self):
 		return self

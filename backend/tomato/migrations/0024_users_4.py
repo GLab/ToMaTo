@@ -14,9 +14,6 @@ class Migration(SchemaMigration):
         # Changing field 'Permission.user'
         db.alter_column('tomato_permission', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.User']))
 
-        # Removing unique constraint on 'Permission', fields ['user_name', 'topology']
-        db.delete_unique('tomato_permission', ['user_name', 'topology_id'])
-
         # Adding unique constraint on 'Permission', fields ['user', 'topology']
         db.create_unique('tomato_permission', ['user_id', 'topology_id'])
 

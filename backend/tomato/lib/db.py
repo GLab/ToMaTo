@@ -30,7 +30,9 @@ strings.
 
 class JSONDateEncoder(json.JSONEncoder):
 	def default(self, obj):
-		if isinstance(obj, datetime.datetime):
+		if isinstance(obj, basestring):
+			return obj
+		elif isinstance(obj, datetime.datetime):
 			return obj.strftime('%Y-%m-%d %H:%M:%S')
 		elif isinstance(obj, datetime.date):
 			return obj.strftime('%Y-%m-%d')
@@ -61,6 +63,9 @@ class JSONField(models.TextField):
 			if isinstance(value, basestring):
 				return self._loads(value)
 		except ValueError:
+			print value
+			import traceback
+			traceback.print_exc()
 			pass
 		return value
 

@@ -44,10 +44,11 @@ class Modification():
 				dev = openvz.OpenVZDevice()
 			else:
 				raise fault.new("Unknown device type: %s" % type )
-			dev.init()
-			dev.type = dtype
 			dev.topology = top
+			dev.type = dtype
 			dev.name = self.properties["name"]
+			dev.init()
+			dev.save()
 			top.deviceSetAdd(dev)
 			dev.configure(self.properties)
 			dev.save()
@@ -89,10 +90,10 @@ class Modification():
 				con = vpn.TincConnector()
 			else:
 				raise fault.new("Unknown connector type: %s" % type )
-			con.init()
 			con.type = ctype
 			con.topology = top
 			con.name = self.properties["name"]
+			con.init()
 			top.connectorSetAdd(con)
 			con.configure(self.properties)
 			con.save()
