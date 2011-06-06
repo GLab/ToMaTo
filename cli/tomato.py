@@ -81,6 +81,7 @@ def getLocals(api):
 			locals[func] = getattr(api, func)
 	except xmlrpclib.ProtocolError, err:
 		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+		import sys
 		sys.exit(-1)
 	return locals
 

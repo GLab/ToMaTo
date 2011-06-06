@@ -22,7 +22,7 @@ from tomato.generic import State, ObjectPreferences
 from tomato.lib import tasks, db
 from tomato.topology import Topology
 
-class Connector(attributes.Mixin, models.Model):
+class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
