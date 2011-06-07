@@ -70,7 +70,7 @@ def download_capture_uri(api, request, top_id, connector, ifname):
 
 @wrap_json
 def upload_image_uri(api, request, top_id, device):
-	redirect = request.build_absolute_uri(reverse('tomato.ajax.use_uploaded_image', kwargs={"top_id": top_id, "device": device})) + "?filename=%s" 
+	redirect = request.build_absolute_uri(reverse('tomato.ajax.use_uploaded_image', kwargs={"top_id": top_id, "device": device})) + "?filename=%(filename)s" 
 	return api.upload_image_uri(top_id, device, redirect)
 
 @wrap_json

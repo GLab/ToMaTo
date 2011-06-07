@@ -370,7 +370,7 @@ class OpenVZDevice(Device):
 		assert self.downloadSupported(), "Download not supported"
 		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
 		file = hostserver.randomFilename(self.host)
-		vzctl.copyImage(self.host, self.getVmid(), file)
+		vzctl.copyImage(self.host, self.getVmid(), file, forceGzip=True)
 		return hostserver.downloadGrant(self.host, file, filename)
 
 	def getResourceUsage(self):

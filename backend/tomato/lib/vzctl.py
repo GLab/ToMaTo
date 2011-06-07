@@ -27,7 +27,7 @@ def _vzctl(host, vmid, cmd, params=""):
 
 def execute(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to execute commands on it"
-	return _vzctl(host, vmid, "exec", "'%s'" % cmd)
+	return _vzctl(host, vmid, "exec", repr(str(cmd)))
 
 def _imagePath(vmid):
 	return "/var/lib/vz/private/%s" % vmid

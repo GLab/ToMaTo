@@ -20,7 +20,7 @@ from django.db import models
 from tomato import attributes, hosts
 from tomato.topology import Topology
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import db
+from tomato.lib import db, hostserver
 
 class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
@@ -200,16 +200,16 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		import uuid
 		if self.host:
 			filename = str(uuid.uuid1())
-			redirect = redirect % filename
-			return {"upload_url": self.host.upload_grant(filename, redirect), "redirect_url": redirect}
+			redirect = redirect % {"filename": filename}
+			return {"upload_url": hostserver.uploadGrant(self.host, filename, redirect), "redirect_url": redirect, "filename": filename}
 		else:
 			return None
 				
-	def useUploadedImage(self, filename):
+	def useUploadedImage(self, filename, direct=False):
 		path = "%s/%s" % (self.host.hostServerBasedir(), filename)
 		proc = tasks.Process("use-uploaded-image")
-		proc.add("main", self.upcast().useUploadedImageRun, args=(path,))
-		return proc.start()
+		proc.add(tasks.Task("main", self.upcast().useUploadedImageRun, args=(path,)))
+		return proc.start(direct)
 			
 			
 class Interface(attributes.Mixin, models.Model):

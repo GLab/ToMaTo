@@ -2,6 +2,7 @@ from lib.misc import *
 
 import stateTransitions
 import linkEmulation
+import images
 
 if __name__ == "__main__":
 	from tests.top.simple import top
@@ -13,6 +14,9 @@ if __name__ == "__main__":
 
 		print "testing state transitions..."
 		stateTransitions.simpleTop_checkStateTransitions(topId)
+
+		print "testing images..."
+		images.simpleTop_checkImages(topId)
 
 		print "testing link emulation..."
 		linkEmulation.simpleTop_checkLinkEmulation(topId)
