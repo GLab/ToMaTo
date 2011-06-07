@@ -26,6 +26,7 @@ from lib import *
 import xmlrpclib, tempfile
 
 def _display_top(api, top_id, task_id=None, action=None):
+	#FIXME: check for existence
 	return render_to_response("top/edit_jsui.html", {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
 
 @wrap_rpc
@@ -88,6 +89,7 @@ def renew(api, request, top_id):
 
 @wrap_rpc
 def edit(api, request, top_id):
+	#FIXME: check for existence
 	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
 	enlist = api.external_networks()

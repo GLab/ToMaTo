@@ -30,14 +30,18 @@ def link_info(top, dev, ip, samples=10, maxWait=5):
 	import re
 	spattern = re.compile("(\d+) packets transmitted, (\d+) received(, \+(\d+) errors)?, (\d+)% packet loss, time (\d+)(m?s)")
 	dpattern = re.compile("rtt min/avg/max/mdev = (\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+) (m?s)(, pipe \d+)?, ipg/ewma (\d+\.\d+)/(\d+\.\d+) (m?s)")
+	summary = False
+	details = False
 	for line in res.splitlines():
 		if spattern.match(line):
 			(transmitted, received, dummy, errors, loss, total, unit) = spattern.match(line).groups()
 			(transmitted, received, errors, loss, total) = (int(transmitted), int(received), int(errors) if errors else None, float(loss)/100.0, float(total))
+			summary = True
 		if dpattern.match(line):
 			(rttmin, rttavg, rttmax, rttstddev, rttunit, dummy, ipg, ewma, ipg_ewma_unit) = dpattern.match(line).groups()
 			(rttmin, rttavg, rttmax, rttstddev, ipg, ewma) = (float(rttmin), float(rttavg), float(rttmax), float(rttstddev), float(ipg), float(ewma))
-	if errors:
+			details = True
+	if not summary or not details or errors:
 		return
 	import math
 	loss = 1.0 - math.sqrt(1.0 - loss)

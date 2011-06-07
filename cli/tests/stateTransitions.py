@@ -1,18 +1,18 @@
 from lib.misc import *
 
 def simpleTop_checkStateTransitions(topId):
-	print "preparing topology..."
+	print "\tpreparing topology..."
 	top_action(topId, "prepare", direct=True)
 
-	print "destroying topology..."
+	print "\tdestroying topology..."
 	task = top_action(topId, "destroy")
 	waitForTask(task, assertSuccess=True)
 
-	print "starting topology..."
+	print "\tstarting topology..."
 	task = top_action(topId, "start")
 	waitForTask(task, assertSuccess=True)
 
-	print "destroying topology..."
+	print "\tdestroying topology..."
 	top_action(topId, "destroy", direct=True)
 
 if __name__ == "__main__":
