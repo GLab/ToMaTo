@@ -19,6 +19,7 @@ from tomato import config, fault
 from tomato.hosts import templates
 from tomato.generic import State
 from tomato.devices import Device, Interface
+from tomato.topology import Permission
 
 from django.db import models
 import hashlib
@@ -77,6 +78,29 @@ class OpenVZDevice(Device):
 	def execute(self, cmd):
 		#not asserting state==Started because this is called during startup
 		return vzctl.execute(self.host, self.getVmid(), cmd)
+
+	def getCapabilities(self, user):
+		capabilities = Device.getCapabilities(self, user)
+		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
+		capabilities["configure"].update({
+			"template": self.state == State.CREATED,
+			"root_password": True,
+			"gateway4": True,
+			"gateway6": True,
+		})
+		capabilities["action"].update({
+			"execute": isUser and self.state == State.STARTED,
+		})
+		capabilities.update(other={
+			"console": isUser and self.getVncPort() and self.state == State.STARTED
+		})
+		return capabilities
+
+	def _runAction(self, action, attrs, direct):
+		if action == "execute":
+			return self.execute(attrs["cmd"])
+		else:
+			return Device._runAction(self, action, attrs, direct)
 
 	def vncPassword(self):
 		if not self.getVncPort():
@@ -355,19 +379,13 @@ class OpenVZDevice(Device):
 				if state == State.STARTED:
 					con.start(True)
 		
-	def uploadSupported(self):
-		return self.state == State.PREPARED
-
 	def useUploadedImageRun(self, path):
-		assert self.uploadSupported(), "Upload not supported"
+		assert self.state == State.PREPARED, "Upload not supported"
 		vzctl.useImage(self.host, self.getVmid(), path, forceGzip=True)
 		self.setTemplate("***custom***")
 
-	def downloadSupported(self):
-		return self.state == State.PREPARED
-
 	def downloadImageUri(self):
-		assert self.downloadSupported(), "Download not supported"
+		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
 		file = hostserver.randomFilename(self.host)
 		vzctl.copyImage(self.host, self.getVmid(), file, forceGzip=True)
@@ -413,6 +431,15 @@ class ConfiguredInterface(Interface):
 	
 	def upcast(self):
 		return self
+
+	def getCapabilities(self, user):
+		capabilities = Interface.getCapabilities(self, user)
+		capabilities["configure"].update({
+			"use_dhcp": True,
+			"ip4address": True,
+			"ip6address": True,
+		})
+		return capabilities
 
 	def interfaceName(self):
 		return self.device.upcast().interfaceDevice(self)

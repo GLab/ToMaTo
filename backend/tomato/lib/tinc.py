@@ -269,6 +269,7 @@ def _stopEndpoint(endpoint):
 	host = endpoint.getHost()
 	assert host
 	host.execute("tincd --net=%s -k" % _tincName(endpoint))
+	util.waitFor(lambda :getState(endpoint) == generic.State.PREPARED, 5.0)
 	assert getState(endpoint) == generic.State.PREPARED
 
 def _setupRouting(endpoint):

@@ -57,6 +57,7 @@ class User(models.Model):
 timeout = datetime.timedelta(hours=config.LOGIN_TIMEOUT)
 
 def cleanup():
+	#FIXME: delete users that have timed out and are unreferenced
 	for user in User.objects.filter(password_time__lte = datetime.datetime.now() - timeout):
 		user.password = None
 		user.password_time = None

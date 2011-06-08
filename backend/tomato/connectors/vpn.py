@@ -23,6 +23,7 @@ from tomato import fault
 from tomato.generic import State
 from tomato.connectors import Connector
 from tomato.lib import util, tinc, tasks, ifaceutil
+from tomato.topology import Permission 
 
 class ConnectionEndpoint(tinc.Endpoint):
 	def __init__(self, con):
@@ -52,6 +53,7 @@ class ConnectionEndpoint(tinc.Endpoint):
 	def __repr__(self):
 		return str(self.con)
 
+
 class TincConnector(Connector):
 
 	class Meta:
@@ -66,7 +68,24 @@ class TincConnector(Connector):
 		for con in self.connectionSetAll():
 			endpoints.add(ConnectionEndpoint(con))
 		return endpoints
-		
+			
+	def getCapabilities(self, user):
+		capabilities = Connector.getCapabilities(self, user)
+		capabilities["action"].update({
+			"download_capture": self.state != State.CREATED,
+		})
+		return capabilities
+
+	def _runAction(self, action, attrs, direct):
+		if action == "download_capture":
+			interface = self.topology.interfacesGet(attrs["iface"])
+			fault.check(interface, "No such interface: %s", attrs["iface"])
+			con = interface.connection.upcast()
+			assert con.connector == self
+			return con.downloadCaptureUri()
+		else:
+			return Connector._runAction(self, action, attrs, direct)			
+				
 	def getStartTasks(self):
 		taskset = Connector.getStartTasks(self)
 		tinc_tasks = tinc.getStartNetworkTasks(self._endpoints(), self.type)
@@ -171,6 +190,15 @@ class TincConnection(dummynet.EmulatedConnection):
 		if self.tinc_port:
 			ids["port"] = ids.get("port", set()) | set((self.tinc_port,))
 		return ids
+
+	def getCapabilities(self, user):
+		capabilities = dummynet.EmulatedConnection.getCapabilities(self, user)
+		con = self.connector
+		capabilities["configure"].update({
+			"gateway4": con.state == State.CREATED and con.type == "router",
+			"gateway6": con.state == State.CREATED and con.type == "router",
+		})
+		return capabilities
 	
 	def configure(self, properties):
 		if "gateway4" in properties or "gateway6" in properties:

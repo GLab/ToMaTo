@@ -250,23 +250,41 @@ class Topology(attributes.Mixin, models.Model):
 		logger = log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id)
 		logger.log(task, bigmessage=output)
 		
-	def downloadImageUri(self, device_id):
-		self.renew()
-		fault.check(not self.isBusy(), "Topology is busy with a task")
-		device = self.deviceSetGet(device_id)
-		fault.check(device, "No such device: %s", device_id)
-		fault.check(device.upcast().downloadSupported(), "Device does not support image download: %s", device_id)
-		return device.upcast().downloadImageUri()
-
-	def downloadCaptureUri(self, connector_id, ifname): #@UnusedVariable, pylint: disable-msg=W0613
-		self.renew()
-		fault.check(not self.isBusy(), "Topology is busy with a task")
-		interface = self.interfacesGet(ifname)
-		fault.check(interface, "No such interface: %s", ifname)
-		con = interface.connection.upcast()
-		fault.check(con.downloadSupported(), "Connection does not support capture download: %s" , con)
-		return con.downloadCaptureUri()
-
+	def getCapabilities(self, user):
+		isOwner = self.checkAccess(Permission.ROLE_OWNER, user)
+		isManager = self.checkAccess(Permission.ROLE_MANAGER, user)
+		isUser = self.checkAccess(Permission.ROLE_USER, user)
+		isBusy = self.isBusy()
+		return {
+			"action": {
+				"start": isUser and not isBusy, 
+				"stop": isUser and not isBusy,
+				"prepare": isManager and not isBusy,
+				"destroy": isManager and not isBusy,
+				"remove": isOwner and not isBusy,
+				"renew": isUser
+			},
+			"modify": isManager and not isBusy,
+			"permission_set": isOwner
+		}
+		
+	def action(self, user, action, attrs, direct):
+		capabilities = self.getCapabilities(user)
+		fault.check(action in capabilities["action"], "Unknown action: %s", action)
+		fault.check(capabilities["action"][action], "Action %s not available", action)
+		if action == "start":
+			return self.start(direct)
+		elif action == "stop":
+			return self.stop(direct)
+		elif action == "prepare":
+			return self.prepare(direct)
+		elif action == "destroy":
+			return self.destroy(direct)
+		elif action == "remove":
+			return self.remove(direct)
+		elif action == "renew":
+			return self.renew()
+		
 	def permissionsAdd(self, user_name, role):
 		self.renew()
 		self.permission_set.add(Permission(user=user_name, role=role)) # pylint: disable-msg=E1101
@@ -328,17 +346,7 @@ class Topology(attributes.Mixin, models.Model):
 				res[key] += r[key]
 		self.setAttribute("resources", res)
 		
-	def toDict(self, auth, detail):
-		"""
-		Prepares a topology for serialization.
-		
-		@type auth: boolean
-		@param auth: Whether to include confidential information
-		@type detail: boolean
-		@param detail: Whether to include details of topology elements  
-		@return: a dict containing information about the topology
-		@rtype: dict
-		"""
+	def toDict(self, user, detail):
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.maxState(), "owner": str(self.owner),
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
@@ -347,12 +355,13 @@ class Topology(attributes.Mixin, models.Model):
 			"resources": self.resources(),
 			}
 		if detail:
-			res.update({"devices": dict([[v.name, v.upcast().toDict(auth)] for v in self.deviceSetAll()]),
-				"connectors": dict([[v.name, v.upcast().toDict(auth)] for v in self.connectorSetAll()])
+			res.update({"devices": dict([[v.name, v.upcast().toDict(user)] for v in self.deviceSetAll()]),
+				"connectors": dict([[v.name, v.upcast().toDict(user)] for v in self.connectorSetAll()])
 				})
 			res.update(permissions=dict([[str(p.user), p.role] for p in self.permissionsAll()]))
 			res["permissions"][str(self.owner)]="owner";
-		if auth:
+			res["capabilities"] = self.getCapabilities(user)
+		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
 			if task:
 				if task.isActive():
@@ -366,6 +375,7 @@ class Topology(attributes.Mixin, models.Model):
 class Permission(models.Model):
 	ROLE_USER="user"
 	ROLE_MANAGER="manager"
+	ROLE_OWNER="owner"
 	topology = models.ForeignKey(Topology)
 	user = models.ForeignKey(auth.User)
 	role = models.CharField(max_length=10, choices=((ROLE_USER, 'User'), (ROLE_MANAGER, 'Manager')))

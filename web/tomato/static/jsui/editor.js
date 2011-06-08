@@ -92,6 +92,9 @@ var NetElement = Class.extend({
 		for (var key in attrs) this.setAttribute(key, attrs[key]);
 		if (this.form && this.form.reload) this.form.reload();
 	},
+	setCapabilities: function(capabilities) {
+		this.capabilities = capabilities;
+	},
 	getElementType: function() {
 		return "";
 	},
@@ -103,10 +106,8 @@ var NetElement = Class.extend({
 	},
 	stateAction: function(action) {
 		var t = this;
-		this.editor.ajaxAction(this.action(action), function(task_id) {
-			t.editor.followTask(task_id, function(){
-				t.editor.reloadTopology();
-			});
+		this.editor.ajaxAction(this.action(action), function() {
+			t.editor.reloadTopology();			
 		});
 	}
 });
@@ -414,7 +415,7 @@ var EmulatedConnection = Connection.extend({
 			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/64"};
 	},
 	downloadSupported: function() {
-		return this.getAttribute("download_supported");
+		return this.capabilities && this.capabilities.action && this.capabilities.action.download_capture;
 	},
 	downloadCapture: function(btn) {
 		btn.setEditable(false);
@@ -749,13 +750,13 @@ var Device = IconElement.extend({
 		}
 	},
 	consoleSupported: function() {
-		return this.getAttribute("vnc_port") && this.getAttribute("vnc_password");
+		return this.capabilities && this.capabilities.other && this.capabilities.other.console;
 	},
 	downloadSupported: function() {
-		return this.getAttribute("download_supported");
+		return this.capabilities && this.capabilities.action && this.capabilities.action.download_image;
 	},
 	uploadSupported: function() {
-		return this.getAttribute("upload_supported");
+		return this.capabilities && this.capabilities.action && this.capabilities.action.upload_image_prepare;
 	},
 	showConsole: function() {
 		var url = "/top/console?" + $.param({topology: this.editor.topology.getAttribute("name"), device: this.name, host: this.getAttribute("host"), port: this.getAttribute("vnc_port"), password: this.getAttribute("vnc_password")});
@@ -934,7 +935,8 @@ var Editor = Class.extend({
 		top.paintUpdate();
 		if (top.warnings.length>0 || top.errors.length>0) {
 			top.form.tabs.select("analysis");
-			top.form.show();
+			if (! top.poppedUp) top.form.show();
+			top.poppedUp = true;			
 		}
 	},
 	checkBrowser: function() {
@@ -1016,6 +1018,7 @@ var Editor = Class.extend({
 						followTask.closable = true;
 						followTask.dialog.dialog("close");
 				 		var fT = followTask;
+				 		followTask.t.reloadTopology();
 				 		delete followTask;
 				 		if (fT.onSuccess) fT.onSuccess();
 				 		break;
@@ -1069,6 +1072,8 @@ var Editor = Class.extend({
 		log("AJAX MOD SEND: " + transaction.mods.length);
 		var func = function(output) {
 			for (var i = 0; i < transaction.func.length; i++) transaction.func[i](output);
+			log("reloading");
+			editor.reloadTopology();
 		};
 		this._ajax("top/"+topid+"/modify", data, func);
 	},
@@ -1107,6 +1112,7 @@ var Editor = Class.extend({
 		var connectors = {};
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
+		editor.topology.setCapabilities(top.capabilities);
 		editor.topology.permissions = top.permissions;
 		var f = function(obj){
 			var attrs = obj.attrs;
@@ -1142,6 +1148,7 @@ var Editor = Class.extend({
 					break;
 			}
 			el.setAttributes(attrs);
+			el.setCapabilities(obj.capabilities);
 		};
 		for (var name in top.devices) f(top.devices[name]);
 		for (var name in top.connectors) f(top.connectors[name]);
@@ -1153,6 +1160,7 @@ var Editor = Class.extend({
 				var device_obj = devices[ifname.split(".")[0]];
 				var c_obj = con_obj.createConnection(device_obj);
 				c_obj.setAttributes(c.attrs);
+				c_obj.setCapabilities(c.capabilities);
 				connections[ifname] = c_obj;
 			}
 		}
@@ -1166,6 +1174,7 @@ var Editor = Class.extend({
 					var iface_obj = dev_obj.createInterface(con_obj);
 					con_obj.connect(iface_obj);
 					iface_obj.setAttributes(iface.attrs);
+					iface_obj.setCapabilities(iface.capabilities);
 					iface_obj.name = ifname;
 				} else dangling_interfaces_mods.push({type: "interface-delete", element: dev_obj.name, subelement: iface.attrs.name, properties: {}});
 			}
@@ -1184,29 +1193,35 @@ var Editor = Class.extend({
 	_reloadTopology: function(top, callback) {
 		this.isLoading = true;
 		this.topology.setAttributes(top.attrs);
+		this.topology.setCapabilities(top.capabilities);		
 		this.topology.permissions = top.permissions;
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
 			dev_obj.setAttributes(dev.attrs);
+			dev_obj.setCapabilities(dev.capabilities);
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
 				iface_obj.setAttributes(iface.attrs);
+				iface_obj.setCapabilities(iface.capabilities);
 			}
 		}
 		for (var name in top.connectors) {
 			var con_obj = this.getElement("connector", name);
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
+			con_obj.setCapabilities(dev.capabilities);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
 				c_obj.setAttributes(c.attrs);
+				c_obj.setCapabilities(c.capabilities);
 			}
 		}
 		this.analyze();
 		this.isLoading = false;
+		if (top.running_task) this.followTask(top.running_task);
 		if (callback) callback();
 	},
 	getPosition: function () { 
@@ -1582,13 +1597,15 @@ var Button = EditElement.extend({
 		this.func = func;
 		this.input = $('<div>'+content+'</div>');
 		this.input.css({"vertical-align": "middle"});
+		this.enabled = true;
 		var t = this;
 		this.input.button().click(function (){
-			t.func(t);
+			if (t.enabled) t.func(t);
 		});
 	},
 	setEditable: function(editable) {
 		this.input.button("option", "disabled", !editable);
+		this.enabled = editable;
 	},
 	setValue: function(value) {
 	},
@@ -1708,7 +1725,12 @@ var AttributeForm = Class.extend({
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
-			this.fields[name].setEditable(this.obj.editor.editable);
+			var editable = this.obj.editor.editable 
+			  && this.obj.capabilities
+			  && this.obj.capabilities.configure
+			  && this.obj.capabilities.configure[name];
+			if (name == "name") editable = this.obj.editor.topology && this.obj.editor.topology.capabilities && this.obj.editor.topology.capabilities.modify;
+			this.fields[name].setEditable(editable);
 		}
 	},
 	addField: function(field, desc) {
@@ -1767,10 +1789,11 @@ var ControlPanel = Class.extend({
 		this.div.append(prepareButton.getInputElement());
 		this.div.append(stopButton.getInputElement());
 		this.div.append(startButton.getInputElement());
-		destroyButton.setEditable(state == "prepared" || state == "created" || !state || this.obj.isTopology);
-		prepareButton.setEditable(state == "created" || !state || this.obj.isTopology);
-		stopButton.setEditable(state == "started" || state == "prepared" || this.obj.isTopology);
-		startButton.setEditable(state == "prepared" || this.obj.isTopology);
+		var action = (this.obj.capabilities && this.obj.capabilities.action) ? this.obj.capabilities.action : {};
+		destroyButton.setEditable(action.destroy);
+		prepareButton.setEditable(action.prepare);
+		stopButton.setEditable(action.stop);
+		startButton.setEditable(action.start);
 		if (! this.obj.isTopology) this.div.append('<p>State: ' + state + '</p>');
 	},
 	getDiv: function() {
@@ -1867,21 +1890,24 @@ var PermissionsPanel = Class.extend({
 		this.div.empty();
 		var t = this;
 		var permissions = this.obj.permissions;
+		var editable = this.obj.capabilities && this.obj.capabilities.permission_set;
 		var table = $('<table><tr><th>User</th><th>Role</th><th>Actions</th></tr></table>');
 		for (user in permissions) {
 			var role = permissions[user];
-			if (role == "owner") table.append(table_row([user, "<b>owner</b", ""]));
+			if (role == "owner" || ! editable) table.append(table_row([user, "<b>owner</b", ""]));
 			else table.append(table_row([user, new SelectField(user, ["manager", "user"], role, function(role, select){
 				t.obj.setPermission(select.name, role);
 			}).getInputElement(), new Button(user, '<img src="'+basepath+'/images/user_delete.png"/>', function(btn){
 				t.obj.setPermission(btn.name, null);
 			}).getInputElement()]));
 		}
-		var user_input = new TextField("user", "");
-		var role_input = new SelectField("role", ["manager", "user"], "user");
-		table.append(table_row([user_input.getInputElement(), role_input.getInputElement(), new Button("add", '<img src="'+basepath+'/images/user_add.png"/>', function() {
-			t.obj.setPermission(user_input.getValue(), role_input.getValue());
-		}).getInputElement()]));
+		if (editable) {
+			var user_input = new TextField("user", "");
+			var role_input = new SelectField("role", ["manager", "user"], "user");
+			table.append(table_row([user_input.getInputElement(), role_input.getInputElement(), new Button("add", '<img src="'+basepath+'/images/user_add.png"/>', function() {
+				t.obj.setPermission(user_input.getValue(), role_input.getValue());
+			}).getInputElement()]));
+		}
 		this.div.append(table);
 	},
 	getDiv: function() {

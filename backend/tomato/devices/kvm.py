@@ -20,6 +20,7 @@ from tomato import fault, config
 from tomato.hosts import templates
 from tomato.generic import State
 from tomato.lib import qm, hostserver, tasks, ifaceutil, db
+from tomato.topology import Permission
 
 import hashlib, re
 from django.db import models
@@ -70,21 +71,36 @@ class KVMDevice(Device):
 			return State.CREATED
 		return qm.getState(self.host, self.getVmid()) 
 
-	def downloadSupported(self):
-		return self.state == State.PREPARED
+	def getCapabilities(self, user):
+		capabilities = Device.getCapabilities(self, user)
+		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
+		isManager = self.topology.checkAccess(Permission.ROLE_MANAGER, user)
+		capabilities["configure"].update({
+			"template": self.state == State.CREATED,
+		})
+		capabilities["action"].update({
+			"send_keys": isUser and self.state == State.STARTED,
+		})
+		capabilities.update(other={
+			"console": isUser and self.getVncPort() and self.state == State.STARTED
+		})
+		return capabilities
+
+	def _runAction(self, action, attrs, direct):
+		if action == "send_keys":
+			return self.sendKeys(attrs["keycodes"])
+		else:
+			return Device._runAction(self, action, attrs, direct)
 
 	def downloadImageUri(self):
-		assert self.downloadSupported(), "Download not supported"
+		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.qcow2" % (self.topology.name, self.name)
 		file = hostserver.randomFilename(self.host)
 		qm.copyImage(self.host, self.getVmid(), file)
 		return hostserver.downloadGrant(self.host, file, filename)
 
-	def uploadSupported(self):
-		return self.state == State.PREPARED
-
 	def useUploadedImageRun(self, path):
-		assert self.uploadSupported(), "Upload not supported"
+		assert self.state == State.PREPARED, "Upload not supported"
 		qm.useImage(self.host, self.getVmid(), path, move=True)
 		self.setTemplate("***custom***")
 

@@ -17,7 +17,9 @@
 
 from tomato.connectors import Connection
 from tomato.generic import State
+from tomato.topology import Permission
 from tomato.lib import ipfw, tcpdump, tasks
+from tomato import fault
 
 DEFAULT_LOSSRATIO = 0.0
 DEFAULT_DELAY = 0
@@ -71,6 +73,20 @@ class EmulatedConnection(Connection):
 	
 	def setCapturing(self, value):
 		self.setAttribute("capture", bool(value))
+
+	def getCapabilities(self, user):
+		capabilities = Connection.getCapabilities(self, user)
+		isUser = self.connector.topology.checkAccess(Permission.ROLE_USER, user)
+		capabilities["configure"].update({
+			"capture": True,
+			"delay": True,
+			"bandwidth": True,
+			"lossratio": True,
+		})
+		capabilities["action"].update({
+			"download_capture": isUser and not self.connector.state == State.CREATED and self.getCapturing()
+		})
+		return capabilities
 
 	def configure(self, properties):
 		oldCapturing = self.getCapturing()
@@ -151,10 +167,8 @@ class EmulatedConnection(Connection):
 		taskset.add(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
-	def downloadSupported(self):
-		return not self.connector.state == State.CREATED and self.getCapturing()
-
 	def downloadCaptureUri(self):
+		fault.check(not self.connector.state == State.CREATED and self.getCapturing(), "Captures not ready")
 		host = self.getHost()
 		return tcpdump.downloadCaptureUri(host, self._captureName())
 	

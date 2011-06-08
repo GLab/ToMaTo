@@ -18,7 +18,7 @@
 from django.db import models
 
 from tomato import attributes, hosts
-from tomato.topology import Topology
+from tomato.topology import Topology, Permission
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import db, hostserver
 
@@ -63,6 +63,51 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def isKvm(self):
 		return self.type == Device.TYPE_KVM
 	
+	def getCapabilities(self, user):
+		isManager = self.topology.checkAccess(Permission.ROLE_MANAGER, user)
+		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
+		isBusy = self.topology.isBusy()
+		return {
+			"action": {
+				"start": isUser and not isBusy and self.state == State.PREPARED, 
+				"stop": isUser and not isBusy and self.state == State.STARTED,
+				"prepare": isUser and not isBusy and self.state == State.CREATED,
+				"destroy": isUser and not isBusy and self.state == State.PREPARED,
+				"migrate": isManager and not isBusy,
+				"upload_image_prepare": isManager and not isBusy and self.state == State.PREPARED,
+				"upload_image_use": isManager and not isBusy and self.state == State.PREPARED,
+				"download_image": isUser and not isBusy and self.state == State.PREPARED,
+			},
+			"configure": {
+				"pos": True,
+				"hostgroup": True,
+			}
+		}
+		
+	def action(self, user, action, attrs, direct):
+		capabilities = self.getCapabilities(user)
+		fault.check(action in capabilities["action"], "Unknown action: %s", action)
+		fault.check(capabilities["action"][action], "Action %s not available", action)
+		return self._runAction(action, attrs, direct)
+	
+	def _runAction(self, action, attrs, direct):
+		if action == "start":
+			return self.start(direct)
+		elif action == "stop":
+			return self.stop(direct)
+		elif action == "prepare":
+			return self.prepare(direct)
+		elif action == "destroy":
+			return self.destroy(direct)
+		elif action == "migrate":
+			return self.migrate(direct)
+		elif action == "upload_image_prepare":
+			return self.uploadImageGrant(attrs.get("redirect", "-"))
+		elif action == "upload_image_use":
+			return self.useUploadedImage(attrs["filename"], direct)		
+		elif action == "download_image":
+			return self.downloadImageUri()		
+	
 	def hostPreferences(self):
 		prefs = ObjectPreferences(True)
 		for h in hosts.getAll(self.hostgroup):
@@ -78,12 +123,6 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				options = options.combine(iface.connection.connector.upcast().hostPreferences())
 		return options
 
-	def downloadSupported(self):
-		return False
-		
-	def uploadSupported(self):
-		return False
-		
 	def bridgeName(self, interface):
 		"""
 		Returns the name of the bridge for the connection of the given interface
@@ -102,21 +141,21 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		fault.check(self.state == State.PREPARED, "Device must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("start", self.upcast().getStartTasks())
+		proc.add(self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		fault.check(self.state != State.CREATED, "Device must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("stop", self.upcast().getStopTasks())
+		proc.add(self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
 		fault.check(self.state == State.CREATED, "Device must be created to be prepared but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("prepare")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("prepare", self.upcast().getPrepareTasks())
+		proc.add(self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
@@ -127,7 +166,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				fault.check(con.state == State.CREATED, "Connector %s must be destroyed before device %s", (con.name, self.name))
 		proc = tasks.Process("destroy")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("destroy", self.upcast().getDestroyTasks())
+		proc.add(self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
@@ -177,22 +216,14 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				ids[key] = ids.get(key, set()) | value
 		return ids
 		
-	def toDict(self, auth):
-		"""
-		Prepares a device for serialization.
-		
-		@type auth: boolean
-		@param auth: Whether to include confidential information
-		@return: a dict containing information about the device
-		@rtype: dict
-		"""
+	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
 					"pos": self.getAttribute("pos"),
 					"name": self.name, "type": self.type, "state": self.state,
-					"download_supported": self.downloadSupported(), "upload_supported": self.uploadSupported() 
 					},
 			"resources" : self.getAttribute("resources"),
-			"interfaces": dict([[i.name, i.upcast().toDict(auth)] for i in self.interfaceSetAll()]),
+			"interfaces": dict([[i.name, i.upcast().toDict(user)] for i in self.interfaceSetAll()]),
+			"capabilities": self.getCapabilities(user)
 		}
 		return res
 	
@@ -252,16 +283,14 @@ class Interface(attributes.Mixin, models.Model):
 	def __unicode__(self):
 		return str(self.device.name)+"."+str(self.name)
 		
-	def toDict(self, auth):
-		"""
-		Prepares an interface for serialization.
+	def getCapabilities(self, user):
+		return {
+			"action": {},
+			"configure": {}
+		}		
 		
-		@type auth: boolean
-		@param auth: Whether to include confidential information
-		@return: a dict containing information about the interface
-		@rtype: dict
-		"""
-		res = {"attrs": {"name": self.name}}
+	def toDict(self, user):
+		res = {"attrs": {"name": self.name}, "capabilities": self.getCapabilities(user)}
 		return res
 
 	def getStartTasks(self):

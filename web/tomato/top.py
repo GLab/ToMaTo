@@ -65,24 +65,6 @@ def import_form(request):
 	return render_to_response("top/import.html")
 
 @wrap_rpc
-def download_capture(api, request, top_id, connector_id, device_id, interface_id):
-	top=api.top_info(int(top_id))
-	download_id=api.download_capture(top_id, connector_id, device_id, interface_id)
-	temp = tempfile.TemporaryFile()
-	while True:
-		data = api.download_chunk(download_id).data
-		if len(data) == 0:
-			break
-		temp.write(data)
-	size = temp.tell()
-	temp.seek(0)
-	wrapper = FileWrapper(temp)
-	response = HttpResponse(wrapper, content_type='application/force-download')
-	response['Content-Length'] = size
-	response['Content-Disposition'] = 'attachment; filename=capture_%s_%s_%s_%s.tar.gz' % ( top["name"], connector_id, device_id, interface_id )
-	return response
-
-@wrap_rpc
 def renew(api, request, top_id):
 	api.top_action(int(top_id), "topology", None, "renew")
 	return _display_top(api, top_id)

@@ -20,7 +20,7 @@ from django.db import models
 from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import tasks, db
-from tomato.topology import Topology
+from tomato.topology import Topology, Permission
 
 class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
@@ -74,18 +74,49 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def affectedHosts(self):
 		return hosts.Host.objects.filter(device__interface__connection__connector=self).distinct() # pylint: disable-msg=E1101
 
+	def getCapabilities(self, user):
+		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
+		isBusy = self.topology.isBusy()
+		return {
+			"action": {
+				"start": isUser and not isBusy and self.state == State.PREPARED, 
+				"stop": isUser and not isBusy and self.state == State.STARTED,
+				"prepare": isUser and not isBusy and self.state == State.CREATED,
+				"destroy": isUser and not isBusy and self.state == State.PREPARED,
+			},
+			"configure": {
+				"pos": True
+			}
+		}
+		
+	def action(self, user, action, attrs, direct):
+		capabilities = self.getCapabilities(user)
+		fault.check(action in capabilities["action"], "Unknown action: %s", action)
+		fault.check(capabilities["action"][action], "Action %s not available", action)
+		return self._runAction(action, attrs, direct)
+	
+	def _runAction(self, action, attrs, direct):
+		if action == "start":
+			return self.start(direct)
+		elif action == "stop":
+			return self.stop(direct)
+		elif action == "prepare":
+			return self.prepare(direct)
+		elif action == "destroy":
+			return self.destroy(direct)
+
 	def start(self, direct):
 		fault.check(self.state == State.PREPARED, "Connector must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("start", self.upcast().getStartTasks())
+		proc.add(self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
 		fault.check(self.state != State.CREATED, "Connector must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("stop", self.upcast().getStopTasks())
+		proc.add(self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
@@ -95,14 +126,14 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 			fault.check(dev.state != State.CREATED, "Device %s must be prepared before connector %s", (dev.name, self.name))
 		proc = tasks.Process("prepare")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("prepare", self.upcast().getPrepareTasks())
+		proc.add(self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
 		fault.check(self.state != State.STARTED, "Connector must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("destroy")
 		proc.add(tasks.Task("renew", self.topology.renew))
-		proc.add("destroy", self.upcast().getDestroyTasks())
+		proc.add(self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
@@ -152,20 +183,13 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 				ids[key] = ids.get(key, set()) | value
 		return ids
 
-	def toDict(self, auth):
-		"""
-		Prepares a connector for serialization.
-		
-		@type auth: boolean
-		@param auth: Whether to include confidential information
-		@return: a dict containing information about the connector
-		@rtype: dict
-		"""
+	def toDict(self, user):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
 					"pos": self.getAttribute("pos"),
 				},
 			"resources": self.getAttribute("resources"),
-			"connections": dict([[str(c.interface), c.upcast().toDict(auth)] for c in self.connectionSetAll()]),
+			"connections": dict([[str(c.interface), c.upcast().toDict(user)] for c in self.connectionSetAll()]),
+			"capabilities": self.getCapabilities(user)
 			}
 		return res
 
@@ -238,14 +262,12 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 	def configure(self, properties):
 		pass
 
-	def toDict(self, auth):
-		"""
-		Prepares a connection for serialization.
-		
-		@type auth: boolean
-		@param auth: Whether to include confidential information
-		@return: a dict containing information about the connection
-		@rtype: dict
-		"""
-		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}}
+	def getCapabilities(self, user):
+		return {
+			"action": {},
+			"configure": {}
+		}
+
+	def toDict(self, user):
+		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}, "capabilities": self.getCapabilities(user)}
 		return res

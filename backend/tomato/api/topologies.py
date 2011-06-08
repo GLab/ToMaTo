@@ -29,7 +29,7 @@ def top_info(top_id, user=None):
 		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
-	return top.toDict(top.checkAccess("user", user), True)
+	return top.toDict(user, True)
 
 def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
 	"""
@@ -53,7 +53,7 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:
 		if (not access_filter) or t.checkAccess(access_filter, user):
-			tops.append(t.toDict(t.checkAccess("user", user), False))
+			tops.append(t.toDict(user, False))
 	return tops
 	
 def top_create(user=None):
@@ -83,6 +83,7 @@ def top_modify(top_id, mods, direct=False, user=None):
 
 	Returns: the id of the modification task (not direct) or None (direct) 
 	""" 
+	#FIXME: describe all possible modifications
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
@@ -107,6 +108,7 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 
 	Returns: the id of the action task (not direct) or None (direct) 
 	""" 
+	#FIXME: describe all possible actions
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	if element_type == "topology":
@@ -117,42 +119,8 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 		element = top.connectorSetGet(element_name)
 	else:
 		fault.check(False, "Unknown element type: %s", element_type)
-	if action == "prepare":
-		_top_access(top, "manager", user)
-		task_id = element.prepare(direct)
-	elif action == "destroy":
-		_top_access(top, "manager", user)
-		task_id = element.destroy(direct)
-	elif action == "start":
-		_top_access(top, "user", user)
-		task_id = element.start(direct)
-	elif action == "stop":
-		_top_access(top, "user", user)
-		task_id = element.stop(direct)
-	elif action == "migrate" and element_type =="device":
-		_top_access(top, "manager", user)
-		task_id = element.migrate(direct)
-	elif action == "execute" and element_type =="device":
-		_top_access(top, "user", user)
-		fault.check(element.isOpenvz(), "Execute is only supported for openvz devices")
-		return element.upcast().execute(attrs["cmd"])
-	elif action == "send_keys" and element_type =="device":
-		_top_access(top, "user", user)
-		fault.check(element.isKvm(), "Send_keys is only supported for KVM devices")
-		element.upcast().sendKeys(attrs["keycodes"])
-		return
-	if element_type == "topology":
-		if action == "remove":
-			_top_access(top, "owner", user)
-			task_id = top.remove(direct)
-		elif action == "renew":
-			_top_access(top, "owner", user)
-			top.renew()
-			return
 	top.logger().log("%s %s %s" % (action, element_type, element_name), user=user.name)
-	if not direct:
-		top.logger().log("started task %s" % task_id, user=user.name)
-		return task_id
+	return element.action(user, action, attrs, direct)
 	
 def permission_set(top_id, user_name, role, user=None):
 	"""

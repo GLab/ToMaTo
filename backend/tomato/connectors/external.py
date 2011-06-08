@@ -21,6 +21,7 @@ from tomato import fault, hosts
 from tomato.connectors import Connector, Connection
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import ifaceutil, tasks
+from tomato.topology import Permission
 
 class ExternalNetworkConnector(Connector):
 	used_network = models.ForeignKey(hosts.ExternalNetwork, null=True) 
@@ -129,6 +130,14 @@ class ExternalNetworkConnector(Connector):
 		taskset = Connector.getDestroyTasks(self)
 		taskset.add(tasks.Task("unselect-network", self._unselectUsedNetwork))
 		return taskset
+
+	def getCapabilities(self, user):
+		capabilities = Connector.getCapabilities(self, user)
+		capabilities["configure"].update({
+			"network_type": self.state == State.CREATED,
+			"network_group": self.state == State.CREATED,
+		})
+		return capabilities
 
 	def configure(self, properties):
 		if self.state != State.CREATED:

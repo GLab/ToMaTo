@@ -8,6 +8,8 @@ def simpleTop_checkStateTransitions(topId):
 	task = top_action(topId, "destroy")
 	waitForTask(task, assertSuccess=True)
 
+	#FIXME: also test device/connector calls
+
 	print "\tstarting topology..."
 	task = top_action(topId, "start")
 	waitForTask(task, assertSuccess=True)

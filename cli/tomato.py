@@ -47,6 +47,9 @@ def runSource(locals, source):
 def runFile(locals, file):
 	import sys, os
 	sys.path.insert(0, os.path.dirname(file))
+	def shell():
+		runInteractive(locals)
+	locals["shell"] = shell
 	__builtins__.__dict__.update(locals)
 	locals["__name__"]="__main__"
 	locals["__file__"]=file

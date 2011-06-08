@@ -18,26 +18,26 @@ def simpleTop_checkImages(topId):
 	waitForTask(task, assertSuccess=True)
 	#download images
 	print "\tdownloading images..."
-	downurl1 = download_image_uri(topId, "openvz1")
+	downurl1 = top_action(topId, "download_image", "device", "openvz1")
 	download(downurl1,"openvz1.tar.gz")
 	assert os.path.getsize("openvz1.tar.gz") > 10000000
-	downurl2 = download_image_uri(topId, "openvz2")
+	downurl2 = top_action(topId, "download_image", "device", "openvz2")
 	download(downurl2,"openvz2.tar.gz")
 	assert os.path.getsize("openvz2.tar.gz") > 10000000
-	downurl3 = download_image_uri(topId, "kvm1")
+	downurl3 = top_action(topId, "download_image", "device", "kvm1")
 	download(downurl3,"kvm1.qcow2")
 	assert os.path.getsize("kvm1.qcow2") > 100000000
 	#switch images 
 	print "\tuploading images..."
-	upurl1 = upload_image_uri(topId, "openvz1")
+	upurl1 = top_action(topId, "upload_image_prepare", "device", "openvz1")
 	upload(upurl1["upload_url"], "openvz2.tar.gz")
-	use_uploaded_image(topId, "openvz1", upurl1["filename"], direct=True)
-	upurl2 = upload_image_uri(topId, "openvz2")
+	top_action(topId, "upload_image_use", "device", "openvz1", attrs={"filename": upurl1["filename"]})
+	upurl2 = top_action(topId, "upload_image_prepare", "device", "openvz2")
 	upload(upurl2["upload_url"], "openvz1.tar.gz")
-	use_uploaded_image(topId, "openvz2", upurl2["filename"], direct=True)
-	upurl3 = upload_image_uri(topId, "kvm1")
+	top_action(topId, "upload_image_use", "device", "openvz2", attrs={"filename": upurl2["filename"]})
+	upurl3 = top_action(topId, "upload_image_prepare", "device", "kvm1")
 	upload(upurl3["upload_url"], "kvm1.qcow2")
-	use_uploaded_image(topId, "kvm1", upurl3["filename"], direct=True)
+	top_action(topId, "upload_image_use", "device", "kvm1", attrs={"filename": upurl3["filename"]})
 	#start topology
 	print "\tstarting topology..."
 	task = top_action(topId, "start")

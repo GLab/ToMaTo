@@ -47,33 +47,6 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return tasks.processes[task_id].dict()
 	
-def upload_image_uri(top_id, device_id, redirect="%(filename)s", user=None):
-	top=topology.get(top_id)
-	_top_access(top, "manager", user)
-	dev=top.deviceSetGet(device_id)
-	fault.check(dev.uploadSupported(), "Upload not supported for device %s", dev)
-	top.logger().log("upload image grant %s" % device_id, user=user.name)
-	return dev.uploadImageGrant(redirect)
-
-def use_uploaded_image(top_id, device_id, filename, direct=False, user=None):
-	top=topology.get(top_id)
-	_top_access(top, "manager", user)
-	dev=top.deviceSetGet(device_id)
-	fault.check(dev.uploadSupported(), "Upload not supported for device %s", dev)
-	top.logger().log("use uploaded image %s %s" % (device_id, filename), user=user.name)
-	return dev.useUploadedImage(filename, direct)	
-
-def download_image_uri(top_id, device_id, user=None):
-	top=topology.get(top_id)
-	_top_access(top, "manager", user)
-	top.logger().log("download image grant %s" % device_id, user=user.name)
-	return top.downloadImageUri(device_id)
-
-def download_capture_uri(top_id, connector_id, ifname, user=None):
-	top=topology.get(top_id)
-	_top_access(top, "user", user)
-	return top.downloadCaptureUri(connector_id, ifname)
-
 def errors_all(user=None):
 	"""
 	Returns a list of all errors in the backend. This method requires admin 
