@@ -33,7 +33,7 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 			copy(src_host, src_path, src)
 	chmod(src_host, src, 644)
 	url = hostserver.downloadGrant(src_host, src, "file")
-	res = fetch(url, dst)
+	res = fetch(dst_host, url, dst)
 	assert existsFile(dst_host, dst), "Failure to transfer file: %s" % res
 	if compressed:
 		uncompress(dst_host, dst, dst_path)

@@ -306,15 +306,15 @@ class KVMDevice(Device):
 	def migrateRun(self, host=None):
 		#FIXME: both vmids must be reserved the whole time
 		if self.state == State.CREATED:
-			self._unassignHost()
 			self._unassignVmid()
+			self._unassignHost()
 			return
 		#save src data
 		src_host = self.host
 		src_vmid = self.getVmid()
 		#assign new host and vmid
-		self._unassignHost()
-		self._unassignVmid()
+		self.host = None
+		self.setVmid(None)
 		if host:
 			self.host = host
 		else:
@@ -334,18 +334,20 @@ class KVMDevice(Device):
 					continue
 				constates[con.name] = con.state
 				if con.state == State.STARTED:
-					con.stop(True)
+					con.stop(True, noProcess=True)
 				if con.state == State.PREPARED:
-					con.destroy(True)
+					con.destroy(True, noProcess=True)
 		#actually migrate the vm
 		if self.state == State.STARTED:
 			self._stopVnc()
 		qm.migrate(src_host, src_vmid, dst_host, dst_vmid)
-		if self.state == State.STARTED:
-			self._startVnc()
 		#switch host and vmid
 		self.host = dst_host
 		self.setVmid(dst_vmid)
+		src_host.giveId("vmid", src_vmid)
+		self.save()
+		if self.state == State.STARTED:
+			self._startVnc()
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
@@ -355,9 +357,9 @@ class KVMDevice(Device):
 				state = constates[con.name]
 				del constates[con.name]
 				if state == State.PREPARED or state == State.STARTED:
-					con.prepare(True)
+					con.prepare(True, noProcess=True)
 				if state == State.STARTED:
-					con.start(True)
+					con.start(True, noProcess=True)
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)

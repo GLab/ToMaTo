@@ -515,8 +515,8 @@ def estimateDiskUsage(numNodes):
 	# - 1 block for own host file
 	# for each connection (nodes * (CLUSTER_SIZE +1)):
 	# - 1 block for host file
-	return len(numNodes) * ( CLUSTER_SIZE + 6 ) * 4096
+	return numNodes * ( CLUSTER_SIZE + 6 ) * 4096
 
 def estimateMemoryUsage(numNodes):
 	# each instanse on tinc estimated to 1.5 MB
-	return len(numNodes) * 1500
+	return numNodes * 1500

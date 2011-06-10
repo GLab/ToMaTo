@@ -96,7 +96,7 @@ def setHostname(host, vmid, hostname):
 
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", "--netif_del %s --save" % iface.name)
+	_vzctl(host, vmid, "set", "--netif_del %s --save" % iface)
 
 def useImage(host, vmid, image, forceGzip=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
@@ -137,7 +137,7 @@ def addInterface(host, vmid, iface):
 	if state == generic.State.STARTED:
 		assert ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface))
 
-def migrate(src_host, src_vmid, dst_host, dst_vmid):
+def migrate(src_host, src_vmid, dst_host, dst_vmid, template, ifaces):
 	assert getState(dst_host, dst_vmid) == generic.State.CREATED, "Destination VM already exists"
 	state = getState(src_host, src_vmid)
 	if state == generic.State.CREATED:
@@ -149,30 +149,46 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid):
 	fileutil.mkdir(src_host, src_tmp)
 	fileutil.mkdir(dst_host, dst_tmp)
 	#create destination vm 
-	create(dst_host, dst_vmid)
-	#transfer vm disk image
-	copyImage(src_host, src_vmid, "%s/disk.tar" % src_tmp)
-	fileutil.fileTransfer(src_host, "%s/disk.tar" % src_tmp, dst_host, "%s/disk.tar" % dst_tmp, compressed=True)
-	if state == generic.State.STARTED:
-		#prepare rdiff before snapshot to save time
-		src_host.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": src_tmp})
-		#create a memory snapshot on old host
-		res = _vzctl(src_host, src_vmid, "chkpnt", "--dumpfile %s/openvz.dump" % src_tmp)
-		assert fileutil.existsFile(src_host, "%s/openvz.dump" % src_tmp), "Failed to create snapshot: %s" % res
-		fileutil.fileTransfer(src_host, "%s/openvz.dump" % src_tmp, dst_host, "%s/openvz.dump" % dst_tmp, compressed=True)
-		#create and transfer a disk image rdiff
-		copyImage(src_host, src_vmid, "%s/disk2.tar" % src_tmp)
-		src_host.execute("rdiff -- delta %(tmp)s/rdiff.sigs %(disk)s - | gzip > %(tmp)s/disk.rdiff.gz" % {"tmp": src_tmp, "disk": "%s/disk2.tar" % src_tmp})
-		fileutil.fileTransfer(src_host, "%s/disk.rdiff.gz" % src_tmp, dst_host, "%s/disk.rdiff.gz" % dst_tmp, direct=True)
-		#patch disk image with the rdiff
-		dst_host.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": dst_tmp})
-		fileutil.move(dst_host,"%s/disk-patched.tar" % dst_tmp, "%s/disk.tar" % dst_tmp)			
-	#use disk image on new host
-	useImage(dst_host, dst_vmid, "%s/disk.tar" % dst_tmp)
-	if state == generic.State.STARTED:
-		#restore snapshot
-		_vzctl(dst_host, dst_vmid, "restore", "--dumpfile %s/openvz.dump" % dst_tmp)
-		assert getState(dst_host, dst_vmid) == generic.State.STARTED
+	create(dst_host, dst_vmid, template)
+	try:
+		#transfer vm disk image
+		copyImage(src_host, src_vmid, "%s/disk.tar" % src_tmp)
+		fileutil.fileTransfer(src_host, "%s/disk.tar" % src_tmp, dst_host, "%s/disk.tar" % dst_tmp, compressed=True)
+		if state == generic.State.STARTED:
+			#prepare rdiff before snapshot to save time
+			src_host.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": src_tmp})
+			#create a memory snapshot on old host
+			res = _vzctl(src_host, src_vmid, "chkpnt", "--dumpfile %s/openvz.dump" % src_tmp)
+			assert fileutil.existsFile(src_host, "%s/openvz.dump" % src_tmp), "Failed to create snapshot: %s" % res
+			try:
+				fileutil.fileTransfer(src_host, "%s/openvz.dump" % src_tmp, dst_host, "%s/openvz.dump" % dst_tmp, compressed=True)
+				#create and transfer a disk image rdiff
+				copyImage(src_host, src_vmid, "%s/disk2.tar" % src_tmp)
+				src_host.execute("rdiff -- delta %(tmp)s/rdiff.sigs %(disk)s - | gzip > %(tmp)s/disk.rdiff.gz" % {"tmp": src_tmp, "disk": "%s/disk2.tar" % src_tmp})
+				fileutil.fileTransfer(src_host, "%s/disk.rdiff.gz" % src_tmp, dst_host, "%s/disk.rdiff.gz" % dst_tmp, direct=True)
+				#patch disk image with the rdiff
+				dst_host.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": dst_tmp})
+				fileutil.move(dst_host,"%s/disk-patched.tar" % dst_tmp, "%s/disk.tar" % dst_tmp)
+			except:
+				_vzctl(src_host, src_vmid, "restore", "--dumpfile %s/openvz.dump" % src_tmp)
+				raise
+		#use disk image on new host
+		useImage(dst_host, dst_vmid, "%s/disk.tar" % dst_tmp)
+		for iface in ifaces:
+			addInterface(dst_host, dst_vmid, iface)
+		if state == generic.State.STARTED:
+			try:
+				#restore snapshot
+				_vzctl(dst_host, dst_vmid, "restore", "--dumpfile %s/openvz.dump" % dst_tmp)
+				assert getState(dst_host, dst_vmid) == generic.State.STARTED
+			except:
+				_vzctl(src_host, src_vmid, "restore", "--dumpfile %s/openvz.dump" % src_tmp)
+				raise
+	except:
+		destroy(dst_host, dst_vmid)
+		fileutil.delete(src_host, src_tmp, recursive=True)
+		fileutil.delete(dst_host, dst_tmp, recursive=True)
+		raise
 	#destroy vm on old host
 	destroy(src_host, src_vmid)
 	#remove tmp directories

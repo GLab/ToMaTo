@@ -291,7 +291,7 @@ class Process():
 					self.finished = time.time()
 					self._runOnFinished()
 					if isinstance(task.result, Exception):
-						raise fault.new("Task failed", code=fault.USER_ERROR)
+						raise fault.new("Task failed: %s" % task.result, code=fault.USER_ERROR)
 					else:
 						return
 			else:

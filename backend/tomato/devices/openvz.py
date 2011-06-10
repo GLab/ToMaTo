@@ -166,6 +166,7 @@ class OpenVZDevice(Device):
 	def _stopVnc(self):
 		assert self.host and self.getVmid() and self.getVncPort()
 		vzctl.stopVnc(self.host, self.getVmid(), self.getVncPort())
+		self.host.giveId("port", self.getVncPort())
 		self.setVncPort(None)
 	
 	def _stopVm(self):
@@ -329,12 +330,13 @@ class OpenVZDevice(Device):
 			self._unassignHost()
 			self._unassignVmid()
 			return
+		task = tasks.get_current_task()
 		#save src data
 		src_host = self.host
 		src_vmid = self.getVmid()
 		#assign new host and vmid
-		self._unassignHost()
-		self._unassignVmid()
+		self.host = None
+		self.setVmid(None)
 		if host:
 			self.host = host
 		else:
@@ -349,35 +351,47 @@ class OpenVZDevice(Device):
 		constates={}
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
-				con = iface.connection.connector
+				con = iface.connection.connector.upcast()
 				if con.name in constates:
 					continue
 				constates[con.name] = con.state
 				if con.state == State.STARTED:
-					con.stop(True)
+					con.stop(True, noProcess=True)
 				if con.state == State.PREPARED:
-					con.destroy(True)
+					con.destroy(True, noProcess=True)
+		tasks.set_current_task(task)
 		#actually migrate the vm
 		if self.state == State.STARTED:
 			self._stopVnc()
-		vzctl.migrate(src_host, src_vmid, dst_host, dst_vmid)
-		if self.state == State.STARTED:
-			self._startVnc()
+		ifaces = map(lambda x: x.name, self.interfaceSetAll())
+		try:
+			vzctl.migrate(src_host, src_vmid, dst_host, dst_vmid, self.getTemplate(), ifaces)
+		except:
+			# reverted to SRC host
+			if self.state == State.STARTED:
+				self._assignVncPort()
+				self._startVnc()
+			raise
 		#switch host and vmid
 		self.host = dst_host
 		self.setVmid(dst_vmid)
+		src_host.giveId("vmid", src_vmid)
+		self.save()
+		if self.state == State.STARTED:
+			self._assignVncPort()
+			self._startVnc()
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
-				con = iface.connection.connector
+				con = iface.connection.connector.upcast()
 				if not con.name in constates:
 					continue
 				state = constates[con.name]
 				del constates[con.name]
 				if state == State.PREPARED or state == State.STARTED:
-					con.prepare(True)
+					con.prepare(True, noProcess=True)
 				if state == State.STARTED:
-					con.start(True)
+					con.start(True, noProcess=True)
 		
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"

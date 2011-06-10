@@ -105,21 +105,25 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		elif action == "destroy":
 			return self.destroy(direct)
 
-	def start(self, direct):
+	def start(self, direct, noProcess=False):
 		fault.check(self.state == State.PREPARED, "Connector must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
 		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStartTasks())
+		if noProcess:
+			return proc.start(direct)
 		return self.topology.startProcess(proc, direct)
 		
-	def stop(self, direct):
+	def stop(self, direct, noProcess=False):
 		fault.check(self.state != State.CREATED, "Connector must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
 		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStopTasks())
+		if noProcess:
+			return proc.start(direct)
 		return self.topology.startProcess(proc, direct)
 
-	def prepare(self, direct):
+	def prepare(self, direct, noProcess=False):
 		fault.check(self.state == State.CREATED, "Connector must be created to be prepared but is %s: %s", (self.state, self.name))
 		for con in self.connectionSetAll():
 			dev = con.interface.device
@@ -127,13 +131,17 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc = tasks.Process("prepare")
 		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getPrepareTasks())
+		if noProcess:
+			return proc.start(direct)
 		return self.topology.startProcess(proc, direct)
 
-	def destroy(self, direct):
+	def destroy(self, direct, noProcess=False):
 		fault.check(self.state != State.STARTED, "Connector must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("destroy")
 		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getDestroyTasks())
+		if noProcess:
+			return proc.start(direct)
 		return self.topology.startProcess(proc, direct)
 
 	def _changeState(self, state):
