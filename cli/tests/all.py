@@ -18,6 +18,9 @@ if __name__ == "__main__":
 		print "testing images..."
 		images.simpleTop_checkImages(topId)
 
+		print "testing migration..."
+		images.simpleTop_checkMigrate(topId)
+
 		print "testing link emulation..."
 		linkEmulation.simpleTop_checkLinkEmulation(topId)
 
