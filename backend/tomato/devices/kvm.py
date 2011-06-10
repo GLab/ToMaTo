@@ -116,6 +116,12 @@ class KVMDevice(Device):
 		ifaceutil.ifup(self.host, bridge)
 
 	def _startVm(self):
+		for iface in self.interfaceSetAll():
+			iface_id = int(re.match("eth(\d+)", iface).group(1))
+			# qm automatically connects ethN to vmbrN
+			# if this bridge does not exist, kvm start fails
+			if not ifaceutil.interfaceExists(self.host, "vmbr%d" % iface_id):
+				ifaceutil.bridgeCreate(self.host, "vmbr%d" % iface_id)
 		qm.start(self.host, self.getVmid())
 
 	def getStartTasks(self):
