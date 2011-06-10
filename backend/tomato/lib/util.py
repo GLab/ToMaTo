@@ -172,6 +172,10 @@ def waitFor(conditionFn, maxWait=5, waitStep=0.1):
 		waited += waitStep
 	return waited < maxWait
 
+def removeControlChars(s):
+	#allow TAB=9, LF=10, CR=13
+	controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
+	return s.translate(None, controlChars)
 
 class Localhost:
 	def execute(self, cmd):

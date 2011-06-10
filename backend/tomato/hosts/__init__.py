@@ -230,6 +230,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			fd = sys.stdout
 		fd.write(log_str)
 		res = self._exec(cmd)
+		res = util.removeControlChars(res) #might contain funny characters
 		fd.write(res)
 		return res
 	

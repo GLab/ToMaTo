@@ -336,7 +336,7 @@ class KVMDevice(Device):
 		constates={}
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
-				con = iface.connection.connector
+				con = iface.connection.connector.upcast()
 				if con.name in constates:
 					continue
 				constates[con.name] = con.state
@@ -360,7 +360,7 @@ class KVMDevice(Device):
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
-				con = iface.connection.connector
+				con = iface.connection.connector.upcast()
 				if not con.name in constates:
 					continue
 				state = constates[con.name]

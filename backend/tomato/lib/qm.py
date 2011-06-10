@@ -18,6 +18,7 @@
 import re, uuid
 
 from tomato import config, generic
+from tomato.lib import util
 
 import fileutil, process, ifaceutil
 
@@ -26,7 +27,7 @@ def _qm(host, vmid, cmd, params=""):
 
 def _monitor(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon" % {"cmd": cmd, "vmid": vmid})
+	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
