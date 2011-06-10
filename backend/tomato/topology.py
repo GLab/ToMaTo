@@ -359,7 +359,7 @@ class Topology(attributes.Mixin, models.Model):
 				"connectors": dict([[v.name, v.upcast().toDict(user)] for v in self.connectorSetAll()])
 				})
 			res.update(permissions=dict([[str(p.user), p.role] for p in self.permissionsAll()]))
-			res["permissions"][str(self.owner)]="owner";
+			res["permissions"][str(self.owner)]="owner"
 			res["capabilities"] = self.getCapabilities(user)
 		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
