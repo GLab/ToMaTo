@@ -117,7 +117,7 @@ class KVMDevice(Device):
 
 	def _startVm(self):
 		for iface in self.interfaceSetAll():
-			iface_id = int(re.match("eth(\d+)", iface).group(1))
+			iface_id = int(re.match("eth(\d+)", iface.name).group(1))
 			# qm automatically connects ethN to vmbrN
 			# if this bridge does not exist, kvm start fails
 			if not ifaceutil.interfaceExists(self.host, "vmbr%d" % iface_id):
@@ -315,6 +315,7 @@ class KVMDevice(Device):
 			self._unassignVmid()
 			self._unassignHost()
 			return
+		task = tasks.get_current_task()
 		#save src data
 		src_host = self.host
 		src_vmid = self.getVmid()
@@ -343,10 +344,12 @@ class KVMDevice(Device):
 					con.stop(True, noProcess=True)
 				if con.state == State.PREPARED:
 					con.destroy(True, noProcess=True)
+		tasks.set_current_task(task)
 		#actually migrate the vm
 		if self.state == State.STARTED:
 			self._stopVnc()
-		qm.migrate(src_host, src_vmid, dst_host, dst_vmid)
+		ifaces = map(lambda x: x.name, self.interfaceSetAll())
+		qm.migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces)
 		#switch host and vmid
 		self.host = dst_host
 		self.setVmid(dst_vmid)

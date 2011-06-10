@@ -26,7 +26,7 @@ def _qm(host, vmid, cmd, params=""):
 
 def _monitor(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid})
+	return host.execute("socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon" % {"cmd": cmd, "vmid": vmid})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
@@ -176,7 +176,7 @@ def destroy(host, vmid):
 	res = _qm(host, vmid, "destroy")
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
-def migrate(src_host, src_vmid, dst_host, dst_vmid):
+def migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces):
 	assert getState(dst_host, dst_vmid) == generic.State.CREATED, "Destination VM already exists"
 	state = getState(src_host, src_vmid)
 	if state == generic.State.CREATED:
@@ -208,6 +208,8 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid):
 		fileutil.move(dst_host,"%s/disk-patched.qcow2" % dst_tmp, "%s/disk.qcow2" % dst_tmp)			
 	#use disk image on new host
 	useImage(dst_host, dst_vmid, "%s/disk.qcow2" % dst_tmp)
+	for iface in ifaces:
+		addInterface(dst_host, dst_vmid, iface)
 	if state == generic.State.STARTED:
 		start(dst_host, dst_vmid)
 		#restore snapshot
