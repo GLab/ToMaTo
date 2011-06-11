@@ -1,0 +1,12 @@
+ToMaTo - Topology Management Tool
+=================================
+ The Topology Management Tool (ToMaTo) is a networking testbed, giving 
+researchers the possibility to design and use virtual networking 
+topologies consisting of devices and connectors. ToMaTo utilizes Proxmox 
+virtualization technology (OpenVZ and KVM), Tinc VPN and Dummynet link 
+emulation to organize virtual machines in virtual topologies.
+
+Homepage: http://dswd.github.com/ToMaTo
+
+Copyright (c) 2010-2011 by the University of Kaiserslautern
+License: GNU Affero GPL 3 (see agpl-3.0.txt)
