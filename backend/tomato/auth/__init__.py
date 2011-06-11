@@ -15,46 +15,94 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import tomato.config as config
-import tomato.util as util
-import time, atexit
+from tomato import config, fault
+from tomato.lib import util
+import time, atexit, datetime, crypt, string, random, sys
 
-class User():
-	def __init__ (self, name, is_user, is_admin):
-		self.name = name
-		self.is_user = is_user
-		self.is_admin = is_admin
+from django.db import models
+
+class User(models.Model):
+	name = models.CharField(max_length=250)
+	origin = models.CharField(max_length=250, null=True)
+	is_user = models.BooleanField(default=True)
+	is_admin = models.BooleanField(default=False)
+	password = models.CharField(max_length=250, null=True)
+	password_time = models.DateTimeField(null=True)
+	
+	class Meta:
+		db_table = "tomato_user"
+		app_label = 'tomato'
+		unique_together = (("name", "origin"),)
+
+	def checkPassword(self, password):
+		return self.password == crypt.crypt(password, self.password)
+
+	def storePassword(self, password):
+		saltchars = string.ascii_letters + string.digits + './'
+		salt = "$1$"
+		salt += ''.join([ random.choice(saltchars) for x in range(8) ])
+		self.password = crypt.crypt(password, salt)
+		self.password_time = datetime.datetime.now()
+		self.save()
+
+	def toDict(self):
+		return {"name": self.name, "origin": self.origin, "is_user": self.is_user, "is_admin": self.is_admin}
+
+	def __str__(self):
+		return self.__unicode__()
+
+	def __unicode__(self):
+		return "%s@%s" % ( self.name, self.origin ) if self.origin else self.name
 		
-class CachedUser():
-	def __init__(self, user, password):
-		self.user = user
-		self.password = password
-		self.cachetime = time.time()
-
-users={}
+timeout = datetime.timedelta(hours=config.LOGIN_TIMEOUT)
 
 def cleanup():
-	for user in users.values():
-		if time.time() - user.cachetime > 3600:
-			del users[user.user.name]
+	#FIXME: delete users that have timed out and are unreferenced
+	for user in User.objects.filter(password_time__lte = datetime.datetime.now() - timeout):
+		user.password = None
+		user.password_time = None
 	
-cleanup_task = util.RepeatedTimer(3, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
-
-def provider_login(user, password):
-	raise Exception("No auth provider used")
-
-exec("from %s_provider import login as provider_login" % config.auth_provider) #pylint: disable-msg=W0122
+def provider_login(username, password):
+	for prov in providers:
+		user = prov.login(username, password)
+		if user:
+			user.origin = prov.name
+			print "Successfull login: %s" % user.toDict()
+			return user
+	print "Failed login: %s" % username
+	return None
 
 def login(username, password):
-	if users.has_key(username):
-		cached = users[username] 
-		if cached.password == password:
-			return cached.user 
+	for user in User.objects.filter(name = username):
+		if user.password and user.checkPassword(password):
+			return user
 	user = provider_login(username, password)
 	if not user:
 		return None
-	cached = CachedUser(user, password)
-	users[username] = cached
-	return cached.user
+	try:
+		stored = User.objects.get(models.Q(name=user.name) & (models.Q(origin=user.origin) | models.Q(origin=None)))
+		stored.origin = user.origin
+		stored.is_user = user.is_user
+		stored.is_admin = user.is_admin
+		stored.save()
+	except User.DoesNotExist:
+		user.save()
+		stored = user
+	stored.storePassword(password)
+	return stored
+
+cleanup_task = util.RepeatedTimer(5*60, cleanup)
+cleanup_task.start()
+atexit.register(cleanup_task.stop)
+
+providers = []
+print >>sys.stderr, "Loading auth modules..."
+for conf in config.AUTH:
+	provider = None #make eclipse shut up
+	exec("import %s_provider as provider" % conf["PROVIDER"]) #pylint: disable-msg=W0122
+	prov = provider.init(**(conf["OPTIONS"]))
+	prov.name = conf["NAME"]
+	providers.append(prov)
+	print >>sys.stderr, " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
+if not providers:
+	print >>sys.stderr, "Warning: No authentication modules configured."

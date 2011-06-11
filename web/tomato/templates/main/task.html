@@ -19,7 +19,8 @@ Duration: {{task.duration}}<br/>
 
 {% for t in task.tasks %}
 <h2>Subtask: {{t.name}} {%if t.active%}({{t.status}}){%endif%}</h2>
-{% if t.depends %}Dependencies: {{t.depends|join:", "}}<br/>{% endif %}
+{% if t.after %}After: {{t.after|join:", "}}<br/>{% endif %}
+{% if t.before %}Before: {{t.before|join:", "}}<br/>{% endif %}
 Status: {{t.status}}<br/>
 Started: {{t.started}}<br/>
 Finished: {{t.finished}}<br/>

@@ -1,0 +1,52 @@
+external_networks = (
+	{
+	"type": "internet", 
+	"group": "ukl",
+	"avoid_duplicates": False,
+	"max_devices": 0
+	},
+)
+
+templates = {
+	"kvm": (
+		{
+		"name": "debian-5.0_glab_x86",
+		"url": "http://fileserver.german-lab.de/files/glabnetman/templates/kvm/debian-5.0_glab_x86.qcow2",
+		},
+		{
+		"name": "debian-6.0_glab_x86",
+		"url": "http://fileserver.german-lab.de/files/glabnetman/templates/kvm/debian-6.0_glab_x86.qcow2",
+		},
+	),
+	"openvz": (
+		{
+		"name": "debian-5.0_glab_x86",
+		"url": "http://fileserver.german-lab.de/files/glabnetman/templates/openvz/debian-5.0_glab_x86.tar.gz",
+		},
+		{
+		"name": "debian-6.0_glab_x86",
+		"url": "http://fileserver.german-lab.de/files/glabnetman/templates/openvz/debian-6.0_glab_x86.tar.gz",
+		},
+	),
+}
+
+default_templates = {
+	"kvm": "debian-5.0_glab_x86",
+	"openvz": "debian-5.0_glab_x86",
+}
+
+hosts = (
+	{
+	"name": "131.246.112.42",
+	"group": "ukl",
+	"enabled": True,
+	"attrs": {},
+	"external_networks": (
+		{
+		"type": "internet",
+		"group": "ukl",
+		"bridge": "vmbr0",
+		},
+	),
+	},
+)

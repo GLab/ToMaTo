@@ -33,13 +33,13 @@ def getauth(request):
 	return (username, password)
 
 class ServerProxy(object):
-    def __init__(self, url, **kwargs):
-        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
-    def __getattr__(self, name):
-        call_proxy = getattr(self._xmlrpc_server_proxy, name)
-        def _call(*args, **kwargs):
-            return call_proxy(args, kwargs)
-        return _call
+	def __init__(self, url, **kwargs):
+		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+	def __getattr__(self, name):
+		call_proxy = getattr(self._xmlrpc_server_proxy, name)
+		def _call(*args, **kwargs):
+			return call_proxy(args, kwargs)
+		return _call
 
 def getapi(request):
 	auth=getauth(request)

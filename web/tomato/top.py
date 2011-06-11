@@ -26,6 +26,7 @@ from lib import *
 import xmlrpclib, tempfile
 
 def _display_top(api, top_id, task_id=None, action=None):
+	#FIXME: check for existence
 	return render_to_response("top/edit_jsui.html", {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
 
 @wrap_rpc
@@ -64,30 +65,13 @@ def import_form(request):
 	return render_to_response("top/import.html")
 
 @wrap_rpc
-def download_capture(api, request, top_id, connector_id, device_id, interface_id):
-	top=api.top_info(int(top_id))
-	download_id=api.download_capture(top_id, connector_id, device_id, interface_id)
-	temp = tempfile.TemporaryFile()
-	while True:
-		data = api.download_chunk(download_id).data
-		if len(data) == 0:
-			break
-		temp.write(data)
-	size = temp.tell()
-	temp.seek(0)
-	wrapper = FileWrapper(temp)
-	response = HttpResponse(wrapper, content_type='application/force-download')
-	response['Content-Length'] = size
-	response['Content-Disposition'] = 'attachment; filename=capture_%s_%s_%s_%s.tar.gz' % ( top["name"], connector_id, device_id, interface_id )
-	return response
-
-@wrap_rpc
 def renew(api, request, top_id):
 	api.top_action(int(top_id), "topology", None, "renew")
 	return _display_top(api, top_id)
 
 @wrap_rpc
 def edit(api, request, top_id):
+	#FIXME: check for existence
 	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
 	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
 	enlist = api.external_networks()
@@ -118,67 +102,67 @@ def show(api, request, top_id):
 
 @wrap_rpc
 def remove(api, request, top_id):
-	api.top_action(int(top_id), "topology", None, "remove")
+	api.top_action(int(top_id), "remove", "topology", None)
 	return index(request)
 
 @wrap_rpc
 def prepare(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "topology", None)
 	return _display_top(api, top_id, task_id, "Prepare topology")
 
 @wrap_rpc
 def destroy(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "topology", None)
 	return _display_top(api, top_id, task_id, "Destroy topology")
 
 @wrap_rpc
 def start(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "start")
+	task_id=api.top_action(int(top_id), "start", "topology", None)
 	return _display_top(api, top_id, task_id, "Start topology")
 
 @wrap_rpc
 def stop(api, request, top_id):
-	task_id=api.top_action(int(top_id), "topology", None, "stop")
+	task_id=api.top_action(int(top_id), "stop", "topology", None, "stop")
 	return _display_top(api, top_id, task_id, "Stop topology")
 
 @wrap_rpc
 def dev_prepare(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "device", device_id)
 	return _display_top(api, top_id, task_id, "Prepare device")
 
 @wrap_rpc
 def dev_destroy(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "device", device_id)
 	return _display_top(api, top_id, task_id, "Destroy device")
 
 @wrap_rpc
 def dev_start(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "start")
+	task_id=api.top_action(int(top_id), "start", "device", device_id)
 	return _display_top(api, top_id, task_id, "Start device")
 
 @wrap_rpc
 def dev_stop(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "device", device_id, "stop")
+	task_id=api.top_action(int(top_id), "stop", "device", device_id)
 	return _display_top(api, top_id, task_id, "Stop device")
 
 @wrap_rpc
 def con_prepare(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "prepare")
+	task_id=api.top_action(int(top_id), "prepare", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Prepare connector")
 
 @wrap_rpc
 def con_destroy(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "destroy")
+	task_id=api.top_action(int(top_id), "destroy", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Destroy connector")
 
 @wrap_rpc
 def con_start(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "start")
+	task_id=api.top_action(int(top_id), "start", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Start connector")
 
 @wrap_rpc
 def con_stop(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "connector", connector_id, "stop")
+	task_id=api.top_action(int(top_id), "stop", "connector", connector_id)
 	return _display_top(api, top_id, task_id, "Stop connector")
 
 @wrap_rpc

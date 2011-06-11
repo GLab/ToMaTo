@@ -16,14 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import xmlrpclib
+import xmlrpclib, traceback
 
 class Error(models.Model):
 	date = models.DateTimeField(auto_now_add=True)
 	title = models.CharField(max_length=255)
 	message = models.TextField(blank=True)
 	
-	def to_dict(self):
+	def toDict(self):
 		return {"id": self.id, "date": self.date, "title": self.title, "message": self.message} # pylint: disable-msg=E1101
 
 def errors_all():
@@ -42,46 +42,32 @@ class Fault(xmlrpclib.Fault):
 	def __str__ (self):
 		return "Error %s: %s" % (self.faultCode, self.faultString)
 
-def new(code, text):
+UNKNOWN_ERROR = -1
+AUTHENTICATION_ERROR = 300
+USER_ERROR = 400
+INTERNAL_ERROR = 500
+
+def _must_log(exc):
+	if isinstance(exc, Fault):
+		return exc.faultCode != USER_ERROR
+	return True 
+
+def log(exc):
+	if _must_log(exc):
+		traceback.print_exc(exc)
+		errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc(exc))
+
+def wrap(exc):
+	if isinstance(exc, Fault):
+		return exc
+	return new('%s:%s' % (exc.__class__.__name__, exc))
+
+def new(text, code=UNKNOWN_ERROR):
 	return Fault(code, text)
 
-UNKNOWN = -1
+def check(condition, errorStr, formatOpt = None, code=USER_ERROR):
+	if not condition:
+		if formatOpt:
+			errorStr = errorStr % formatOpt
+		raise new(errorStr, code)
 
-# Topology related
-NO_SUCH_TOPOLOGY = 100
-ACCESS_TO_TOPOLOGY_DENIED = 101
-NOT_A_REGULAR_USER = 102
-INVALID_TOPOLOGY_STATE_TRANSITION = 103
-IMPOSSIBLE_TOPOLOGY_CHANGE = 104
-TOPOLOGY_HAS_PROBLEMS = 105
-MALFORMED_XML = 106
-MALFORMED_TOPOLOGY_DESCRIPTION = 107
-INVALID_TOPOLOGY_STATE = 108
-TOPOLOGY_BUSY = 109
-
-# Device related
-NO_SUCH_DEVICE = 200
-UNKNOWN_DEVICE_TYPE = 204
-UPLOAD_NOT_SUPPORTED = 201
-DOWNLOAD_NOT_SUPPORTED = 202
-DUPLICATE_DEVICE_ID = 203
-INVALID_INTERFACE_NAME = 205
-DUPLICATE_INTERFACE_NAME = 206
-DUPLICATE_INTERFACE_CONNECTION = 207
-NO_SUCH_TEMPLATE = 208
-
-# Connector related
-DUPLICATE_CONNECTOR_ID = 300
-UNKNOWN_CONNECTOR_TYPE = 301
-UNKNOWN_INTERFACE = 302
-
-# Host related
-NO_SUCH_HOST = 400
-NO_SUCH_HOST_GROUP = 401
-HOST_EXISTS = 403
-NO_HOSTS_AVAILABLE = 404
-NO_RESOURCES = 405
-
-# Admin stuff
-ADMIN_ACCESS_DENIED = 500
-EXTERNAL_NETWORK_HAS_BRIDGES = 501

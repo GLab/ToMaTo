@@ -45,7 +45,7 @@ def action(api, request, top_id):
 	if not request.REQUEST.has_key("action"):
 		raise Exception("action not found") 
 	action = json.loads(request.REQUEST["action"])
-	res = api.top_action(top_id, action["element_type"], action["element_name"], action["action"], action["attrs"]);
+	res = api.top_action(top_id, action["action"], action["element_type"], action["element_name"], action["attrs"]);
 	return res
 	
 @wrap_json
@@ -61,21 +61,20 @@ def permission(api, request, top_id):
 
 @wrap_json
 def download_image_uri(api, request, top_id, device):
-	return api.download_image_uri(top_id, device)
+	return api.top_action(top_id, "download_image", "device", device)
 
 @wrap_json
 def download_capture_uri(api, request, top_id, connector, ifname):
-	print ifname
-	return api.download_capture_uri(top_id, connector, ifname)
+	return api.top_action(top_id, "download_capture", "connector", connector, attrs={"iface": ifname})
 
 @wrap_json
 def upload_image_uri(api, request, top_id, device):
-	redirect = request.build_absolute_uri(reverse('tomato.ajax.use_uploaded_image', kwargs={"top_id": top_id, "device": device})) + "?filename=%s" 
-	return api.upload_image_uri(top_id, device, redirect)
+	redirect = request.build_absolute_uri(reverse('tomato.ajax.use_uploaded_image', kwargs={"top_id": top_id, "device": device})) + "?filename=%(filename)s" 
+	return api.top_action(top_id, "upload_image_prepare", "device", device, attrs={"redirect": redirect})
 
 @wrap_json
 def use_uploaded_image(api, request, top_id, device):
 	if not request.REQUEST.has_key("filename"):
 		raise Exception("filename not found")
 	filename = request.REQUEST["filename"]; 
-	return api.use_uploaded_image(top_id, device, filename)
+	return api.top_action(top_id, "upload_image_use", "device", device, attrs={"filename": filename})

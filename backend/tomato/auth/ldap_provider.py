@@ -16,175 +16,121 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.auth import User
-import tomato.util as util
-import tomato.config as config
 
-import ldap, time, atexit
+import ldap
 
-def log(msg):
-	#syslog.openlog('glweb', 0, settings.GLBIMGMT_LOG_FACILITY)
-	#syslog.syslog(msg.encode('ascii', 'backslashreplace'))
-	#syslog.closelog()
-	print msg
+class Provider:
+	"""
+	LDAP auth provider
+	
+	This auth provider uses LDAP as an authentication backend.
+	The LDAP server can be configured with the server_uri option. If the server
+	uses SSL, the server_cert option can be used to configure the public server
+	certificate.
+	In the first authentication step a connection is established to the server
+	using bind_dn and bind_pw to check that the user exists below the given 
+	identity_base path and read the user properties.
+	If the user exists, a direct connection is established to the server using
+	the determined user DN and the login password to check the password.
+	If the password is correct, two more queries are made the server to get the
+	members of the given admin and user groups and check if the user DN is
+	if listed as a member of these groups.
+	
+	The auth provider takes the following options:
+		server_uri: The URI of the server. This normally starts with ldap:// or
+		            ldaps://, which determines the usage of SSL.
+		server_cert: The location of the server certificate to use for SSL
+		bind_dn: The DN of a bind user to check the username
+		bind_pw: The password of the bind user
+		identity_base: The base path for all identities
+		admin_group: The group of members that admin user DNs must be part of
+		user_group: The group of members that normal user DNs must be part of
+	"""
+	def __init__(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, admin_group, user_group):
+		self.server_uri = server_uri
+		self.server_cert = server_cert
+		self.bind_dn = bind_dn
+		self.bind_pw = bind_pw
+		self.identity_base = identity_base
+		self.admin_group = admin_group
+		self.user_group = user_group
 
-def ldap_conn():
-	ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-	ldap.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION3)
-	ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, config.auth_ldap_server_cert)
-	try:
-		conn = ldap.initialize(uri=config.auth_ldap_server_uri)
-		conn.simple_bind(who=config.auth_ldap_binddn,
-						 cred=config.auth_ldap_bindpw)
-	except ldap.LDAPError, error_message:
-		raise Exception('Error binding to %s as %s: %s' % \
-						(config.auth_ldap_server_uri,
-						 config.auth_ldap_binddn, str(error_message)))
-	return conn
+	def _ldap_conn(self):
+		ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+		ldap.set_option(ldap.OPT_PROTOCOL_VERSION, ldap.VERSION3)
+		ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, self.server_cert)
+		try:
+			conn = ldap.initialize(uri=self.server_uri)
+			conn.simple_bind(who=self.bind_dn, cred=self.bind_pw)
+		except ldap.LDAPError, error_message:
+			raise Exception('Error binding to %s as %s: %s' % (self.server_uri, self.bind_dn, str(error_message)))
+		return conn
 
-class LdapUser(object):
-	def __init__(self, username):
-		self.username = username
-		self.userdn = ''
-		self.email = None
-
-	def verify(self):
+	def login(self, username, password):
+		data = self._get_user(username)
+		if not data:
+			return False
+		userdn = data[0][0]
+		email = data[0][1]['mail'][0]
+		if not self._check_credentials(username, userdn, password):
+			return False
+		isUser = self._is_user(username, userdn)
+		isAdmin = self._is_admin(username, userdn)
+		return User(name = username, is_user = isUser, is_admin = isAdmin)
+		
+	def _get_user(self, user):
 		"""
 		Verify if user exists. This method does NOT check a supplied password.
 		"""
+		conn = self._ldap_conn()
 		try:
-			conn = ldap_conn()
+			user = conn.search_s(self.identity_base, ldap.SCOPE_SUBTREE, 'uid=%s' % user)
+			if len(user) > 0:
+				return user
+			else:
+				return None	
 		except Exception, e: #pylint: disable-msg=W0703
-			log(str(e))
-			return False
-		
-		try:
-			user = conn.search_s(config.auth_ldap_identity_base,
-								 ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
-		except Exception, e: #pylint: disable-msg=W0703
-			log('LDAP search for user %s failed: %s' % (self.username, e))
-			return False
-
-		if len(user) > 0:
-			self.userdn = user[0][0]
-			ret = True
-		else:
-			ret = False
-
-		try:
+			print 'LDAP search for user %s failed: %s' % (user, e)
+			return None
+		finally:
 			conn.unbind_s()
-		except Exception, e: #pylint: disable-msg=W0703
-			log('Error closing connection to LDAP server: %s' % e)
 
-		return ret
-
-	def authenticate(self, password):
+	def _check_credentials(self, user, userdn, password):
 		"""
 		Check if a supplied password matches the user.
 		"""
-		if self.verify():
-			try:
-				conn = ldap_conn()
-			except Exception, e: #pylint: disable-msg=W0703
-				log(str(e))
-				return False
-
-			try:
-				conn = ldap.initialize(uri=config.auth_ldap_server_uri)
-				conn.simple_bind_s(who=self.userdn, cred=password)
-			except ldap.LDAPError, error_message:
-				log('Authenticating user %s failed: %s' % (self.username,
-														   str(error_message)))
-				ret = False
-			else:
-				log('Authenticating user %s succeeded.' % self.username)
-				ret = True
-
-			try:
-				conn.unbind_s()
-			except Exception, e: #pylint: disable-msg=W0703
-				log('Error closing connection to LDAP server: %s' % e)
-		else:
-			log('User %s not found.' % self.username)
-			ret = False
-
-		return ret
-
-	def get_email_addr(self):
+		conn = self._ldap_conn()
 		try:
-			conn = ldap_conn()
-		except Exception, e: #pylint: disable-msg=W0703
-			log(str(e))
+			conn = ldap.initialize(uri=self.server_uri)
+			conn.simple_bind_s(who=userdn, cred=password)
+			return True
+		except ldap.LDAPError, error_message:
+			print 'Authenticating user %s failed: %s' % (user, str(error_message))
 			return False
-
-		try:
-			user = conn.search_s(config.auth_ldap_identity_base,
-								 ldap.SCOPE_SUBTREE, 'uid=%s' % self.username)
-		except Exception, e: #pylint: disable-msg=W0703
-			log('LDAP search for user %s failed: %s' % (self.username, e))
-			return False
-
-		if len(user) > 0:
-			ret = self.email = user[0][1]['mail'][0]
-		else:
-			ret = None
-
-		try:
+		finally:
 			conn.unbind_s()
-		except Exception, e: #pylint: disable-msg=W0703
-			log('Error closing connection to LDAP server: %s' % e)
-
-		return ret
-
-	def is_in_group(self, group):
-		if group == 'admins':
-			dn = config.auth_ldap_admin_group
-		elif group == 'users':
-			dn = config.auth_ldap_user_group
-		else:
-			return False
-
+		
+	def _is_in_group(self, user, userdn, group, groupdn):
+		conn = self._ldap_conn()
 		try:
-			conn = ldap_conn()
-		except Exception, e: #pylint: disable-msg=W0703
-			log(str(e))
-			return False
-
-		try:
-			members = conn.search_s(dn, ldap.SCOPE_SUBTREE, attrlist=['member'])
-		except Exception, e: #pylint: disable-msg=W0703
-			log('LDAP search for group %s failed: %s' % (group, e))
-			ret = False
-		else:
+			members = conn.search_s(groupdn, ldap.SCOPE_SUBTREE, attrlist=['member'])
 			if members[0][1].has_key('member'):
-				if self.userdn in members[0][1]['member']:
-					ret = True
-				else:
-					ret = False
+				return userdn in members[0][1]['member']
 			else:
-				log('Group %s has no members.' % group)
-				ret = False
-
-		try:
+				print 'Group %s has no members.' % group
+				return False
+		except ldap.LDAPError, error_message:
+			print 'Authenticating user %s failed: %s' % (user, str(error_message))
+			return False
+		finally:
 			conn.unbind_s()
-		except Exception, e: #pylint: disable-msg=W0703
-			log('Error closing connection to LDAP server: %s' % e)
 
-		return ret
+	def _is_admin(self, user, userdn):
+		return self._is_in_group(user, userdn, 'admins', self.admin_group)
 
-	def is_admin(self):
-		"""
-		Shortcut for use in templates.
-		"""
-		return self.is_in_group('admins')
+	def _is_user(self, user, userdn):
+		return self._is_in_group(user, userdn, 'users', self.user_group)
 
-	def is_user(self):
-		"""
-		Shortcut for use in templates.
-		"""
-		return self.is_in_group('users')
 
-def login(username, password):
-	ldap_user = LdapUser(username)
-	if not ldap_user.authenticate(password):
-		return False
-	return User(username, ldap_user.is_user(), ldap_user.is_admin())
+def init(**kwargs):
+	return Provider(**kwargs)
