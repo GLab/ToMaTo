@@ -87,9 +87,19 @@ help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"
 ticket_url="http://fileserver.german-lab.de/trac/glabnetman/report/1%s"
 map="generic"
 
-#Must be after last config entries
 try:
-    from localsettings import *
-except ImportError:
-    print 'localsettings could not be imported'
-    pass
+	import imp, tempfile, sys
+	for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
+		file = open(path, "r")
+		with file:
+			tmp = tempfile.mktemp()
+			try:
+				imp.load_source("web_config", tmp, file)
+				from web_config import *
+				print >>sys.stderr, "Loaded config from %s" % path
+			finally:
+				if os.path.exists(tmp+"c"):
+					os.remove(tmp+"c")
+except:
+	import traceback
+	traceback.print_exc()
