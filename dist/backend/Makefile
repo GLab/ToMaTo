@@ -15,11 +15,15 @@ $(PACKAGE)_*.deb:
 	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
 
 .PHONY: sync
-sync: $(PACKAGE)/tomato $(PACKAGE)/server.py
+sync: $(PACKAGE)/tomato $(PACKAGE)/server.py $(PACKAGE)/manage.py $(PACKAGE)/backend.conf.example
 $(PACKAGE)/tomato:
 	rsync -av ../../backend/tomato $(PACKAGE)/ --exclude=.* --exclude=*.pyc
 $(PACKAGE)/server.py:
-	rsync -av ../../backend/server.py $(PACKAGE)/ --exclude=.* --exclude=*.pyc
+	cp -a ../../backend/server.py $(PACKAGE)/
+$(PACKAGE)/manage.py:
+	cp -a ../../backend/manage.py $(PACKAGE)/
+$(PACKAGE)/backend.conf.example:
+	cp -a ../../backend/backend.conf.example $(PACKAGE)/
 
 .PHONY: clean
 clean:
@@ -27,3 +31,5 @@ clean:
 	rm -rf $(PACKAGE)_*
 	rm -rf $(PACKAGE)/tomato
 	rm -rf $(PACKAGE)/server.py
+	rm -rf $(PACKAGE)/manage.py
+	rm -rf $(PACKAGE)/backend.conf.example
