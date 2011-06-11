@@ -47,8 +47,6 @@ DATABASES = {
     }
 }
 
-DISABLE_TRANSACTION_MANAGEMENT = True
-
 LOCAL_TMP_DIR = "/tmp/tomato"
 LOG_DIR = "logs"
 

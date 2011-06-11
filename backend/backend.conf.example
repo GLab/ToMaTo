@@ -1,0 +1,202 @@
+# ToMaTo backend config file 
+
+# Authentication plugins
+#  A list of authentication plugins that should be tried to login users.
+
+# .htpasswd auth provider
+#  This auth provider uses a .htpasswd file as an authentication backend.
+#  It reads the user credentials from the given file and compares the them to
+#  the given login credentials. If the credentials match to a user in the
+#  file, the username is compared to the given admin username (if that is not
+#  None or False). If the username is the same as the admin username the login
+#  is granted admin status.
+#
+#  Note: .htpasswd files can be created and manipulated using the htpasswd command
+#
+#  The auth provider takes the following options:
+#    file: The path of the .htpasswd file
+#    admin_user: The username of the admin user, defaults to None
+#
+AUTH.append({
+    "NAME": "default",
+    "PROVIDER": "htpasswd",
+    "OPTIONS": {
+        "file": "/etc/tomato/users",
+        "admin_user": "admin"
+    }
+})
+
+# LDAP auth provider
+#  This auth provider uses LDAP as an authentication backend.
+#  The LDAP server can be configured with the server_uri option. If the server
+#  uses SSL, the server_cert option can be used to configure the public server
+#  certificate.
+#  In the first authentication step a connection is established to the server
+#  using bind_dn and bind_pw to check that the user exists below the given 
+#  identity_base path and read the user properties.
+#  If the user exists, a direct connection is established to the server using
+#  the determined user DN and the login password to check the password.
+#  If the password is correct, two more queries are made the server to get the
+#  members of the given admin and user groups and check if the user DN is
+#  if listed as a member of these groups.
+#
+#  The auth provider takes the following options:
+#    server_uri: The URI of the server. This normally starts with ldap:// or
+#                ldaps://, which determines the usage of SSL.
+#    server_cert: The location of the server certificate to use for SSL
+#    bind_dn: The DN of a bind user to check the username
+#    bind_pw: The password of the bind user
+#    identity_base: The base path for all identities
+#    admin_group: The group of members that admin user DNs must be part of
+#    user_group: The group of members that normal user DNs must be part of
+#
+#AUTH.append({
+#    "NAME": "glab_ldap",
+#    "PROVIDER": "ldap",
+#    "OPTIONS": {
+#        "bind_dn": "cn=ukl.netman,ou=system,dc=german-lab,dc=de", 
+#        "bind_pw": "---",
+#        "server_uri": "ldaps://glab-ldap.german-lab.de:636",
+#        "server_cert": "/etc/ldap/certs/cacert.pem",
+#        "identity_base": "ou=identities,dc=german-lab,dc=de",
+#        "user_group": "cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de",
+#        "admin_group": "cn=tomato,ou=management,ou=groups,dc=german-lab,dc=de"
+#    }
+#})
+
+# SQL auth provider
+#  This auth provider uses SQL as an authentication backend. It executes an
+#  SQL query to check the user credentials and accepts the login if the query
+#  result contains at least one row. If the admin query succeeds the user 
+#  query will not be checked.
+#  In the queries, the keywords :username and :password will be substituted by
+#  the login credentials.
+#  Before checking the credentials the password is first converted using a 
+#  given hash function. If the hash option is set to None or False, the raw
+#  password will be checked against the database.
+#
+#  Note: To use an additional database for this provider the database can be
+#    configured via DATABASES. Only the entry named default will be used
+#    by ToMaTo itself, the other databases can be used for authentication
+#    or other modules.
+#
+#  The auth provider takes the following options:
+#    user_query: An SQL query to use to check for a user in the database.
+#    admin_query: An SQL query to use to check for an admin in the database.
+#    database: The database backend to use, as configured in the config
+#              in DATABASES, defaults to "default"
+#    hash: The hash method use for passwords, defaults to "sha1"
+#
+#AUTH.append({
+#    "NAME": "sql",
+#    "PROVIDER": "sql",
+#    "OPTIONS": {
+#        "database": "users",
+#        "user_query": "SELECT * FROM users WHERE username = :username and password = :password and is_admin=0", 
+#        "admin_query": "SELECT * FROM users WHERE username = :username and password = :password and is_admin=1",
+#        "hash": "sha1"
+#    }
+#})
+
+# Planetlab auth provider
+#  This auth provider uses a Planetlab server as an authentication backend.
+#  It uses the login credentials to login to the given server and to read the
+#  user data if he exists.
+#  If the site_filter is given only users of these sites will be allowed.
+#  If accept_admin is True planetlab users with the admin role will be granted
+#  admin privileges. 
+#	
+#  The auth provider takes the following options:
+#    api_uri: The PLCAPI URI, i.e.: https://host:port/PLCAPI/
+#    site_filter: A site abbreviation or list of site abbreviations to allow
+#                 access.
+#    accept_admin: If this is set to True, admin roles will be preserved.
+#
+#AUTH.append({
+#    "NAME": "planetlab",
+#    "PROVIDER": "planetlab",
+#    "OPTIONS": {
+#        "api_uri": "https://www.planet-lab.org/PLCAPI/", 
+#        "site_filter": None,
+#        "accept_admin": False
+#    }
+#})
+
+# Ticket auth provider
+#  This auth provider uses a ticket mechanism for authentication.
+#  With this auth provider arbitrary users will be accepted as long as their
+#  password consists of a valid user ticket or admin ticket.
+#  Tickets are calculated as a hash value of the username together with a 
+#  secret key.		TICKET = hash(USERNAME + SECRET)
+#  Two seperate secret keys exist for admin login and user login. If either
+#  of these keys is None or False the respective login is disabled.
+#  Note: If both keys are the same all valid logins will get admin status.
+#  The hash algorithm that should be used can be configured.
+#
+#  Security note: Anyone that has access to either secret key can create
+#                 valid login tickets arbitrarily.
+#
+#  The auth provider takes the following options:
+#    admin_secret: The secret key to use for admin login, defaults to None
+#    user_secret: The secret key to use for user login, default to None
+#    hash: The hash method use for passwords, defaults to "sha1"
+#
+#AUTH.append({
+#    "NAME": "ticket",
+#    "PROVIDER": "ticket",
+#    "OPTIONS": {
+#        "admin_secret": "adminsecret",
+#        "user_secret": "usersecret"
+#    }
+#})
+
+# File where the private ssh key is stored, public key is expected to have the same
+# name with .pub appended
+SSH_KEY = "/etc/tomato/ssh_key"
+
+# Password salt for all pseudo-random passwords (should be random and secret)
+PASSWORD_SALT = "HACKME_UNCONFIGURED"
+
+# Configuration of topology timeouts
+# All timeouts are calculated from the time of last usage.
+# STOP: When will topologies be stopped (in weeks)
+# DESTROY: When will topologies be destroyed (in weeks)
+# REMOVE: When will topologies be entirely deleted (in weeks)
+#
+#TIMEOUTS = {
+#	"STOP": 4,
+#	"DESTROY": 12,
+#	"REMOVE": 24
+#}
+
+LOGIN_TIMEOUT = 1
+
+# Configuration for the XML-RPC server
+# PORT: Which TCP port to use
+# SSL: Whether to use SSL
+# SSL_OPTS: Private and CA key file if SSL is being used
+SERVER = {
+	"PORT": 8000,
+	"SSL": False,
+	"SSL_OPTS": {
+		"private_key" : "",
+		"ca_key": ""
+	}
+}
+
+# See the django database manual for help
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': '/var/lib/tomato/tomato.sqlite'
+    }
+}
+
+# Path to store temporary files in
+LOCAL_TMP_DIR = "/tmp/tomato"
+
+# Directory for logfiles
+LOG_DIR = "/var/log/tomato"
+
+# Path to store topology-specific configuration files in
+REMOTE_DIR = "/root/tomato"
