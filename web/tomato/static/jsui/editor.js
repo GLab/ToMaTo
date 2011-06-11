@@ -936,8 +936,8 @@ var Editor = Class.extend({
 		if (top.warnings.length>0 || top.errors.length>0) {
 			top.form.tabs.select("analysis");
 			if (! top.poppedUp) top.form.show();
-			top.poppedUp = true;			
 		}
+		top.poppedUp = true;			
 	},
 	checkBrowser: function() {
 		if (! $.support.ajax) this.errorMessage("Browser incompatibility", "Your browser does not support ajax, so you will not be able to use this editor.");
@@ -1781,10 +1781,10 @@ var ControlPanel = Class.extend({
 			t.obj.stateAction(btn.name);
 			t.load();
 		};
-		var destroyButton = new Button("destroy", '<img src="/static/icons/destroy.png">', actionFunc);
-		var prepareButton = new Button("prepare", '<img src="/static/icons/prepare.png">', actionFunc);
-		var stopButton = new Button("stop", '<img src="/static/icons/stop.png">', actionFunc);
-		var startButton = new Button("start", '<img src="/static/icons/start.png">', actionFunc);
+		var destroyButton = new Button("destroy", '<img src="/static/icons/destroy.png" title="destroy">', actionFunc);
+		var prepareButton = new Button("prepare", '<img src="/static/icons/prepare.png" title="prepare">', actionFunc);
+		var stopButton = new Button("stop", '<img src="/static/icons/stop.png" title="stop">', actionFunc);
+		var startButton = new Button("start", '<img src="/static/icons/start.png" title="start">', actionFunc);
 		this.div.append(destroyButton.getInputElement());
 		this.div.append(prepareButton.getInputElement());
 		this.div.append(stopButton.getInputElement());
