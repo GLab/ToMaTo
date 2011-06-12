@@ -15,9 +15,11 @@ $(PACKAGE)_*.deb:
 	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
 
 .PHONY: sync
-sync: $(PACKAGE)/tomato
+sync: $(PACKAGE)/tomato $(PACKAGE)/web.conf.example
 $(PACKAGE)/tomato:
 	rsync -av ../../web/ $(PACKAGE)/ --exclude=.* --exclude=*.pyc
+$(PACKAGE)/web.conf.example:
+	cp -a ../../web/web.conf.example $(PACKAGE)/
 
 .PHONY: clean
 clean:
