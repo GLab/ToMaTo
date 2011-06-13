@@ -209,10 +209,10 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def __unicode__(self):
 		return self.name
 		
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		ids = {}
 		for iface in self.interfaceSetAll():
-			for (key, value) in iface.upcast().getIdUsage().iteritems():
+			for (key, value) in iface.upcast().getIdUsage(host).iteritems():
 				ids[key] = ids.get(key, set()) | value
 		return ids
 		

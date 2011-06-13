@@ -184,10 +184,10 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 			self.setAttribute("pos", properties["pos"])
 		self.save()
 
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		ids = {}
 		for con in self.connectionSetAll():
-			for (key, value) in con.upcast().getIdUsage().iteritems():
+			for (key, value) in con.upcast().getIdUsage(host).iteritems():
 				ids[key] = ids.get(key, set()) | value
 		return ids
 
@@ -219,9 +219,9 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			self.interface.device.reload()
 		return self.interface.device.host
 
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		ids = {}
-		if self.bridge_id:
+		if self.bridge_id and self.interface.device.host == host:
 			ids.update(bridge=set((self.bridge_id,)))
 		return ids
 

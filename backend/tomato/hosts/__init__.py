@@ -125,7 +125,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			ids[t] = range(self.getAttribute("%s_start" % t),self.getAttribute("%s_start" % t)+self.getAttribute("%s_count" % t))
 		from tomato import topology
 		for top in topology.all():
-			usage = top.getIdUsage()
+			usage = top.getIdUsage(self)
 			for (t, used) in usage.iteritems():
 				assert t in types, "Unknown id type: %s" % t
 				assert set(ids[t]) >= used, "Topology %s uses %s ids that are not available: %s" % (top, t, used-set(ids[t]))

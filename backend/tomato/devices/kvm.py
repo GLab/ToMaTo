@@ -298,11 +298,11 @@ class KVMDevice(Device):
 			memory = qm.getMemoryUsage(self.host, self.getVmid())
 		return {"disk": disk, "memory": memory, "ports": ports}		
 	
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		ids = Device.getIdUsage(self)
-		if self.vnc_port:
+		if self.vnc_port and self.host == host:
 			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
-		if self.vmid:
+		if self.vmid and self.host == host:
 			ids["vmid"] = ids.get("vmid", set()) | set((self.vmid,))
 		return ids
 	

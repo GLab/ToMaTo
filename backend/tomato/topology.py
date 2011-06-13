@@ -318,13 +318,13 @@ class Topology(attributes.Mixin, models.Model):
 	def resources(self):
 		return self.getAttribute("resources")
 
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		ids = {}
 		for dev in self.deviceSetAll():
-			for (key, value) in dev.upcast().getIdUsage().iteritems():
+			for (key, value) in dev.upcast().getIdUsage(host).iteritems():
 				ids[key] = ids.get(key, set()) | value
 		for con in self.connectorSetAll():
-			for (key, value) in con.upcast().getIdUsage().iteritems():
+			for (key, value) in con.upcast().getIdUsage(host).iteritems():
 				ids[key] = ids.get(key, set()) | value
 		return ids
 
