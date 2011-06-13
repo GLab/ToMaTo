@@ -304,13 +304,16 @@ class KVMDevice(Device):
 			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
 		if self.vmid and self.host == host:
 			ids["vmid"] = ids.get("vmid", set()) | set((self.vmid,))
+		if self.hasAttribute("migration"):
+			migration = self.getAttribute("migration")
+			if host.name in migration:
+				ids["vmid"] |= set((migration[host.name],))
 		return ids
 	
 	def _interfaceDevice(self, iface):
 		return qm.interfaceDevice(self.host, self.getVmid(), iface.name)
 
 	def migrateRun(self, host=None):
-		#FIXME: both vmids must be reserved the whole time
 		if self.state == State.CREATED:
 			self._unassignVmid()
 			self._unassignHost()
@@ -319,6 +322,7 @@ class KVMDevice(Device):
 		#save src data
 		src_host = self.host
 		src_vmid = self.getVmid()
+		self.setAttribute("migration", {src_host.name: src_vmid})
 		#assign new host and vmid
 		self.host = None
 		self.setVmid(None)
@@ -329,6 +333,7 @@ class KVMDevice(Device):
 		self._assignVmid()
 		dst_host = self.host
 		dst_vmid = self.getVmid()
+		self.setAttribute("migration", {src_host.name: src_vmid, dst_host: dst_vmid})
 		#reassign host and vmid
 		self.host = src_host
 		self.setVmid(src_vmid)
@@ -355,6 +360,7 @@ class KVMDevice(Device):
 		self.setVmid(dst_vmid)
 		src_host.giveId("vmid", src_vmid)
 		self.save()
+		self.deleteAttribute("migration")
 		if self.state == State.STARTED:
 			self._startVnc()
 		#redeploy all connectors
