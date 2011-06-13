@@ -22,7 +22,9 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db, process
+from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl
+
+from tomato.generic import State
 
 class ClusterState:
 	MASTER = "M"
@@ -74,11 +76,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		hostserver_cleanup = tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, after=hostserver)
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
-		proc.add([login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists])
+		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
+		proc.add([login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids])
 		return proc.start()
 
 	def disable(self):
 		print "Disabling host %s because of error during check" % self
+		fault.errors_add("Host disabled", "Disabling host %s because of error during check" % self)
 		self.enabled = False
 		self.save()
 
@@ -186,7 +190,44 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			ids[key] = self._unpackList(value)
 		return ids
 
-	#FIXME: implement a task that checks for used ids
+	def _checkIds(self):
+		unused = self._calcFreeIds()
+		unclaimed = self._getFreeIds()
+		types = ["vmid", "port", "bridge"]
+		for t in types:
+			for id in set(unused[t]) - set(unclaimed[t]):
+				# id is claimed but unused
+				realUsage = self._realIdState(t, id)
+				if realUsage:
+					self._freeId(t, id)
+				fault.errors_add("Free id mismatch", "%s %d on host %s is claimed but not used by any topology. Its real usage was %s." % (t, id, self.name, realUsage))
+			for id in set(unclaimed[t]) - set(unused[t]):
+				# id is used but not claimed
+				fault.errors_add("Free id mismatch", "%s %d on host %s is used by a topology but not claimed." % (t, id, self.name))
+			self._setFreeIds(unused)
+				
+	def _realIdState(self, type, id):
+		if type == "vmid":
+			return qm.getState(self, id) != State.CREATED or vzctl.getState(self, id) != State.CREATED
+		elif type == "port":
+			return not process.portFree(self, id)
+		elif type == "bridge":
+			return ifaceutil.bridgeExists(self, "gbr_%d" % id) 
+
+	def _freeId(self, type, id):
+		if type == "vmid":
+			if qm.getState(self, id) == State.STARTED:
+				qm.stop(self, id)
+			if qm.getState(self, id) == State.PREPARED:
+				qm.destroy(self, id)
+			if vzctl.getState(self, id) == State.STARTED:
+				vzctl.stop(self, id)
+			if vzctl.getState(self, id) == State.PREPARED:
+				vzctl.destroy(self, id)
+		elif type == "port":
+			process.killPortUser(self, id)
+		elif type == "bridge":
+			ifaceutil.bridgeRemove(self, "gbr_%d" % id, True, True)
 
 	def takeId(self, type, callback):
 		try:
