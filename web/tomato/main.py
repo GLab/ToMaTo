@@ -106,3 +106,6 @@ def help(request, page=""):
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)
+
+def project(request, page=""):
+	return HttpResponseRedirect(settings.project_url % page)

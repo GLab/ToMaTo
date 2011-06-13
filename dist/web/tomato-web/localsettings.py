@@ -15,11 +15,5 @@ server_port = "8000"
 # The Realm to use for HTTP authentification
 server_httprealm="G-Lab ToMaTo"
 
-# The base URL for halp pages
-help_url="http://fileserver.german-lab.de/trac/glabnetman/wiki/%s"
-
-# The base URL for ticket management
-ticket_url="http://fileserver.german-lab.de/trac/glabnetman/report/1%s"
-
 # Template for displaying physical links
 map="generic"
