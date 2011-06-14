@@ -25,9 +25,9 @@ import fileutil, process, ifaceutil
 def _qm(host, vmid, cmd, params=""):
 	return host.execute("qm %s %d %s" % (cmd, vmid, params))
 
-def _monitor(host, vmid, cmd):
+def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid})
+	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid, "timeout": timeout})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
@@ -198,7 +198,7 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces):
 		src_host.execute("rdiff signature %(tmp)s/disk.qcow2 %(tmp)s/rdiff.sigs" % {"tmp": src_tmp})
 		#create a memory snapshot on old host
 		_monitor(src_host, src_vmid, "stop")
-		_monitor(src_host, src_vmid, "savevm migrate")
+		_monitor(src_host, src_vmid, "savevm migrate", timeout=900)
 		#stop vm
 		stop(src_host, src_vmid)
 		#create and transfer a disk image rdiff
@@ -215,9 +215,9 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces):
 		start(dst_host, dst_vmid)
 		#restore snapshot
 		_monitor(dst_host, dst_vmid, "stop")
-		_monitor(dst_host, dst_vmid, "loadvm migrate")
+		_monitor(dst_host, dst_vmid, "loadvm migrate", timeout=900)
 		_monitor(dst_host, dst_vmid, "cont")
-		_monitor(dst_host, dst_vmid, "delvm migrate")
+		_monitor(dst_host, dst_vmid, "delvm migrate", timeout=900)
 	#destroy vm on old host
 	destroy(src_host, src_vmid)
 	#remove tmp directories
