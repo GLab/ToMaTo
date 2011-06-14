@@ -154,7 +154,7 @@ def interfaceDevice(host, vmid, iface):
 	iface_id = re.match("eth(\d+)", iface).group(1)
 	assert getState(host, vmid) == generic.State.STARTED, "Cannot determine KVM host device names when not running"
 	names = host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": vmid, "iface_id": iface_id }).strip().split()
-	assert len(names) == 1, "Failed to determine kvm interface name"
+	assert len(names) == 1, "Failed to determine kvm interface name, got %d names: %s" % (len(names), names)
 	return names[0]
 
 def create(host, vmid):
