@@ -333,7 +333,7 @@ class KVMDevice(Device):
 		self._assignVmid()
 		dst_host = self.host
 		dst_vmid = self.getVmid()
-		self.setAttribute("migration", {src_host.name: src_vmid, dst_host: dst_vmid})
+		self.setAttribute("migration", {src_host.name: src_vmid, dst_host.name: dst_vmid})
 		#reassign host and vmid
 		self.host = src_host
 		self.setVmid(src_vmid)
