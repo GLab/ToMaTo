@@ -77,15 +77,15 @@ def resource_usage_by_user(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if not top.owner in usage:
-			usage[top.owner] = top.resources()
+		if not top.owner.name in usage:
+			usage[top.owner.name] = top.resources()
 		else:
 			d = top.resources()
 			for key in d:
-				if usage[top.owner].has_key(key):
-					usage[top.owner][key] = float(usage[top.owner][key]) + float(d[key]) 
+				if usage[top.owner.name].has_key(key):
+					usage[top.owner.name][key] = float(usage[top.owner.name][key]) + float(d[key]) 
 				else:
-					usage[top.owner][key] = float(d[key]) 
+					usage[top.owner.name][key] = float(d[key]) 
 	return usage
 		
 def resource_usage_by_topology(user=None):
@@ -99,8 +99,9 @@ def resource_usage_by_topology(user=None):
 	usage={}
 	for top in topology.all():
 		d = top.resources()
-		d.update(top_id=top.id)
-		usage[top.name]=d
+		if d:
+			d.update(top_id=top.id)
+			usage[top.name]=d
 	return usage
 
 def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylint: disable-msg=W0613

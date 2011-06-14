@@ -111,7 +111,7 @@ class KVMDevice(Device):
 	def _startIface(self, iface):
 		bridge = self.bridgeName(iface)
 		ifaceutil.bridgeCreate(self.host, bridge)
-		ifaceutil.bridgeConnect(self.host, bridge, self._interfaceDevice(iface))
+		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
 	def _startVm(self):
@@ -309,7 +309,7 @@ class KVMDevice(Device):
 				ids["vmid"] |= set((migration[host.name],))
 		return ids
 	
-	def _interfaceDevice(self, iface):
+	def interfaceDevice(self, iface):
 		return qm.interfaceDevice(self.host, self.getVmid(), iface.name)
 
 	def migrateRun(self, host=None):

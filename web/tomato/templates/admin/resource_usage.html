@@ -19,8 +19,8 @@
 		<td enhancetable_customkey="{{res.disk}}">{{res.disk|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.memory}}">{{res.memory|filesizeformat}}</td>
 		<td enhancetable_customkey="{{res.traffic}}">{{res.traffic|filesizeformat}}</td>
-		<td>{{res.ports}}</td>
-		<td>{{res.special}}</td>
+		<td>{{res.ports|floatformat}}</td>
+		<td>{{res.special|floatformat}}</td>
 	</tr>
 {% endfor %}
 </table>
