@@ -102,7 +102,6 @@ class KVMDevice(Device):
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
 		qm.useImage(self.host, self.getVmid(), path, move=True)
-		self.setTemplate("***custom***")
 
 	def _startVnc(self):
 		if not self.getVncPort():

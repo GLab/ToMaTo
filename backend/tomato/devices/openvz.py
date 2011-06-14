@@ -398,7 +398,6 @@ class OpenVZDevice(Device):
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
 		vzctl.useImage(self.host, self.getVmid(), path, forceGzip=True)
-		self.setTemplate("***custom***")
 
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
