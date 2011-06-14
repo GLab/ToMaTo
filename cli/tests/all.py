@@ -3,6 +3,7 @@ from lib.misc import *
 import stateTransitions
 import linkEmulation
 import images
+import migrate
 
 if __name__ == "__main__":
 	from tests.top.simple import top
@@ -19,7 +20,7 @@ if __name__ == "__main__":
 		images.simpleTop_checkImages(topId)
 
 		print "testing migration..."
-		images.simpleTop_checkMigrate(topId)
+		migrate.simpleTop_checkMigrate(topId)
 
 		print "testing link emulation..."
 		linkEmulation.simpleTop_checkLinkEmulation(topId)
