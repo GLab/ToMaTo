@@ -4,11 +4,11 @@
 def parseArgs():
 	import argparse, getpass
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client")
-	parser.add_argument("--hostname" , "-H", required=True, help="the host of the server")
-	parser.add_argument("--port", "-P", default=8000, help="the port of the server")
+	parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
+	parser.add_argument("--port", "-p", default=8000, help="the port of the server")
 	parser.add_argument("--ssl", "-s", action="store_true", default=False, help="whether to use ssl")
-	parser.add_argument("--username", "-u", help="the username to use for login")
-	parser.add_argument("--password", "-p", help="the password to use for login")
+	parser.add_argument("--username", "-U", help="the username to use for login")
+	parser.add_argument("--password", "-P", help="the password to use for login")
 	parser.add_argument("--file", "-f", help="a file to execute")
 	parser.add_argument("arguments", nargs="*", help="python code to execute directly")
 	options = parser.parse_args()
