@@ -70,8 +70,8 @@ def physical_links(api, request):
 	for l in links:
 		delay_sum += l["delay_avg"]
 		loss_sum += l["loss"]
-	delay_avg = delay_sum / len(links)
-	loss_avg = loss_sum / len(links)
+	delay_avg = delay_sum / (len(links) if links else 1.0)
+	loss_avg = loss_sum / (len(links) if links else 1.0)
 	delay_stddev = 0.0
 	loss_stddev = 0.0
 	for l in links:
