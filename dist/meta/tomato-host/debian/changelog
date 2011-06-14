@@ -1,3 +1,9 @@
+tomato-host (0.7) stable; urgency=low
+
+  * Added an extensive set of all dependencies of ToMaTo
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 14 Jun 2011 11:07:49 +0200
+
 tomato-host (0.6) stable; urgency=low
 
   * Added rdiff and socat dependency
