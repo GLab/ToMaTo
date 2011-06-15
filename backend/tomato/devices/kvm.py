@@ -360,6 +360,7 @@ class KVMDevice(Device):
 		src_host.giveId("vmid", src_vmid)
 		self.save()
 		self.deleteAttribute("migration")
+		self._configureVm()
 		if self.state == State.STARTED:
 			self._startVnc()
 		#redeploy all connectors
