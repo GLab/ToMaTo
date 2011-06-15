@@ -100,7 +100,7 @@ def useTemplate(host, vmid, template):
 	return useImage(host, vmid, _templatePath(template))
 
 def setName(host, vmid, name):
-	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stoppped to change the name"
+	assert getState(host, vmid) != generic.State.CREATED, "VM must exist to change the name"
 	_qm(host, vmid, "set", "--name \"%s\"" % name)
 
 def addInterface(host, vmid, iface):
