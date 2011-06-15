@@ -3,7 +3,8 @@
 
 def parseArgs():
 	import argparse, getpass
-	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client")
+	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
+	parser.add_argument('--help', action='help')
 	parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
 	parser.add_argument("--port", "-p", default=8000, help="the port of the server")
 	parser.add_argument("--ssl", "-s", action="store_true", default=False, help="whether to use ssl")
