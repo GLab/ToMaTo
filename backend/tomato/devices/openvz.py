@@ -395,6 +395,8 @@ class OpenVZDevice(Device):
 					con.prepare(True, noProcess=True)
 				if state == State.STARTED:
 					con.start(True, noProcess=True)
+				if self.state == State.STARTED:
+					iface.upcast()._connectToBridge()
 		
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
