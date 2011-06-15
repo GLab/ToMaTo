@@ -124,7 +124,9 @@ class TincConnector(Connector):
 
 	def _deleteBridges(self):
 		for con in self.connectionSetAll():
-			ifaceutil.bridgeRemove(con.interface.device.host, con.bridgeName(), disconnectAll=True)
+			host = con.interface.device.host
+			if not ifaceutil.bridgeInterfaces(host, con.bridgeName()):
+				ifaceutil.bridgeRemove(host, con.bridgeName())
 
 	def _unassignResources(self):
 		for con in self.connectionSetAll():
