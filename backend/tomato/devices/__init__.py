@@ -255,7 +255,7 @@ class Interface(attributes.Mixin, models.Model):
 	def init(self):
 		self.attrs = {}
 		
-	def getIdUsage(self):
+	def getIdUsage(self, host):
 		return {}
 		
 	def isConfigured(self):

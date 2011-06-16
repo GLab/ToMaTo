@@ -419,7 +419,7 @@ class OpenVZDevice(Device):
 		return {"disk": disk, "memory": memory, "ports": ports}		
 
 	def getIdUsage(self, host):
-		ids = Device.getIdUsage(self)
+		ids = Device.getIdUsage(self, host)
 		if self.vnc_port and self.host == host:
 			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
 		if self.vmid and self.host == host:

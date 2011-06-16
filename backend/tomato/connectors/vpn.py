@@ -188,7 +188,7 @@ class TincConnection(dummynet.EmulatedConnection):
 		return self
 	
 	def getIdUsage(self, host):
-		ids = dummynet.EmulatedConnection.getIdUsage(self)
+		ids = dummynet.EmulatedConnection.getIdUsage(self, host)
 		if self.tinc_port and self.interface.device.host == host:
 			ids["port"] = ids.get("port", set()) | set((self.tinc_port,))
 		return ids
