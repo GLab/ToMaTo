@@ -195,6 +195,9 @@ class TincConnection(dummynet.EmulatedConnection):
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
 		dummynet.EmulatedConnection.configure(self, properties)
 		if self.connector.type == "router":
+			for key in ["gateway4", "gateway6"]:
+				if key in properties:
+					self.setAttribute(key, properties[key])
 			if not self.hasAttribute("gateway4"):
 				self.setAttribute("gateway4", "10.0.0.254/24") 
 			if not self.hasAttribute("gateway6"):
