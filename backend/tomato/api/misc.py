@@ -46,6 +46,19 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	Returns: task details
 	"""
 	return tasks.processes[task_id].dict()
+
+def task_run(task_name, user=None): #@UnusedVariable, pylint: disable-msg=W0613
+	"""
+	Runs a named periodic task and returns the task_id.
+	
+	Parameters:
+		string task_name: name of periodic task
+
+	Returns: task id
+	"""
+	_admin_access(user)
+	process = tasks.periodic_processes[task_name]
+	return process.start()
 	
 def errors_all(user=None):
 	"""

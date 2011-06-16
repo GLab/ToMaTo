@@ -18,6 +18,7 @@
 
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib, settings
@@ -47,6 +48,11 @@ def task_status(api, request, task_id):
 	if request.REQUEST.has_key("backurl"):
 		backurl=request.REQUEST["backurl"]
 	return render_to_response("main/task.html", {'task': task, 'backurl': backurl})
+
+@wrap_rpc
+def task_run(api, request, task):
+	task_id = api.task_run(task)
+	return HttpResponseRedirect(reverse('tomato.main.task_status', kwargs={"task_id": task_id}))
 
 @wrap_rpc
 def physical_links(api, request):

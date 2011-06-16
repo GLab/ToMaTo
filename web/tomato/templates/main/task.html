@@ -12,6 +12,7 @@
 <body>
 
 <h1>Process: {{task.name}} ({{task.status}})</h1>
+{% if task.periodic %}<a href="{%url main.task_run task=task.name%}">[execute now]</a><br/>{% endif %}
 Status: {{task.status}} {% if task.active %}{{task.tasks_done}}/{{task.tasks_total}}{% endif %}<br/>
 Started: {{task.started}}<br/>
 Finished: {{task.finished}}<br/>

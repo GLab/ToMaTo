@@ -14,7 +14,7 @@
   </tr>
 {% for task in tasks %}
   <tr>
-    <td><a href="{%url main.task_status task.id%}">{{task.name}}</a></td>
+    <td><a href="{%url main.task_status task.id%}">{% if task.periodic %}<b>{{task.name}}</b>{% else %}{{task.name}}{% endif %}</a></td>
     <td>{{task.started}}</td>
     <td>{{task.status}}</td>
     <td>{{task.tasks_done}}/{{task.tasks_total}}</td>
