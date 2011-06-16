@@ -25,7 +25,7 @@ if __name__ == "__main__":
 		print "creating topology..."
 		top_modify(topId, jsonToMods(top), True)
 
-		print "testing link emulation..."
+		print "testing state transitions..."
 		simpleTop_checkStateTransitions(topId)
 
 		print "destroying topology..."

@@ -1,7 +1,7 @@
 from lib.misc import *
 import time, os
 
-def simpleTop_checkMigrate(topId):
+def simpleTop_checkMigrate(topId, quick=False):
 	print "\tbringing topology to prepared state..."
 	task = top_action(topId, "prepare")
 	waitForTask(task, assertSuccess=True)
@@ -16,6 +16,7 @@ def simpleTop_checkMigrate(topId):
 	print "\tstarting topology..."
 	task = top_action(topId, "start")
 	waitForTask(task, assertSuccess=True)
+	assert link_check(topId, "openvz1", "10.0.0.2")
 	#start task on device
 	print "\tonline migration of openvz1..."
 	top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "screen -d -m"})
@@ -25,9 +26,11 @@ def simpleTop_checkMigrate(topId):
 	waitForTask(task, assertSuccess=True)
 	res = top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "pidof SCREEN >/dev/null; echo $?"})	
 	assert res == "0\n", "Result was %s" % res
-	print "\tonline migration of kvm1..."
-	task = top_action(topId, "migrate", "device", "kvm1")
-	waitForTask(task, assertSuccess=True)	
+	assert link_check(topId, "openvz1", "10.0.0.2")
+	if not quick:
+		print "\tonline migration of kvm1..."
+		task = top_action(topId, "migrate", "device", "kvm1")
+		waitForTask(task, assertSuccess=True)	
 	
 if __name__ == "__main__":
 	from tests.top.simple import top

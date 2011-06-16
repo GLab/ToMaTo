@@ -52,6 +52,13 @@ def link_info(top, dev, ip, samples=10, maxWait=5):
 		stddev = stddev * 1000.0
 	return {"lossratio": loss, "delay": avg, "delay_stddev": stddev}
 	
+def link_check(top, dev, ip, tries=5, waitBetween=5):
+	import time
+	while tries>0 and not link_info(top, dev, ip):
+		tries -= 1
+		time.sleep(waitBetween)
+	return tries > 0
+	
 def link_config(top, con, c, attrs):
 	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)
 	
