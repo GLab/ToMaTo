@@ -216,7 +216,7 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def _unassignBridgeId(self):
 		if self.bridge_id:
-			if self.connector.state == State.PREPARED and self.interface.device.state != State.STARTED:
+			if self.connector.state != State.STARTED and self.interface.device.state != State.STARTED:
 				host = self.getHost()
 				bridge = self.getBridge(assign=False, create=False)
 				if ifaceutil.bridgeExists(host, bridge):

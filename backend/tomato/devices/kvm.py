@@ -355,6 +355,11 @@ class KVMDevice(Device):
 		#actually migrate the vm
 		if self.state == State.STARTED:
 			self._stopVnc()
+			try:
+				self.state = State.PREPARED
+				self._triggerConnections()
+			finally:
+				self.state = State.STARTED			
 		ifaces = map(lambda x: x.name, self.interfaceSetAll())
 		qm.migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces)
 		#switch host and vmid
