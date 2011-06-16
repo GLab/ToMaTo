@@ -40,12 +40,15 @@ def bridgeInterfaces(host, bridge):
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge 
 	return host.execute("ls /sys/class/net/%s/brif" % bridge).split()
 		
-def bridgeDisconnect(host, bridge, iface):
+def bridgeDisconnect(host, bridge, iface, deleteBridgeIfLast=False):
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge
 	if not iface in bridgeInterfaces(host, bridge):
 		return
 	host.execute("brctl delif %s %s" % (bridge, iface))
 	assert not iface in bridgeInterfaces(host, bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
+	if deleteBridgeIfLast and not bridgeInterfaces(host, bridge):
+		bridgeRemove(host, bridge)
+		
 		
 def bridgeConnect(host, bridge, iface):
 	if iface in bridgeInterfaces(host, bridge):

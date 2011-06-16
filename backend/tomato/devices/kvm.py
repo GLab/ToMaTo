@@ -108,12 +108,15 @@ class KVMDevice(Device):
 			self.setVncPort(self.host.nextFreePort())
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
-	def _startIface(self, iface):
-		bridge = self.bridgeName(iface)
+	def connectToBridge(self, iface, bridge):
 		ifaceutil.bridgeCreate(self.host, bridge)
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
+	def _startIface(self, iface):
+		bridge = self.getBridge(iface)
+		self.connectToBridge(iface, bridge)
+		
 	def _startVm(self):
 		for iface in self.interfaceSetAll():
 			iface_id = int(re.match("eth(\d+)", iface.name).group(1))

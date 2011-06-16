@@ -19,7 +19,7 @@ from django.db import models
 
 from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import tasks, db
+from tomato.lib import tasks, db, ifaceutil
 from tomato.topology import Topology, Permission
 
 class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
@@ -148,24 +148,36 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.state = state
 		self.save()
 
+	def _triggerInterfaces(self):
+		for con in self.connectionSetAll():
+			con.interface.upcast().onConnectionStateChange() 
+
 	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset)
+		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
+		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
+		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset)
+		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def __unicode__(self):
@@ -175,9 +187,14 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = self.upcast().getResourceUsage()
 		self.setAttribute("resources",res)
 	
-	def bridgeName(self, interface):
-		assert interface.connection.bridge_id
-		return "gbr_%d" % interface.connection.bridge_id
+	def getBridge(self, connection, assign=True, create=True):
+		bridge_id = connection.getBridgeId(assign)
+		assert bridge_id
+		name = "gbr_%d" % bridge_id
+		if create:
+			host = connection.getHost()
+			ifaceutil.bridgeCreate(host, name)
+		return name
 
 	def configure(self, properties):
 		if "pos" in properties:
@@ -190,6 +207,9 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 			for (key, value) in con.upcast().getIdUsage(host).iteritems():
 				ids[key] = ids.get(key, set()) | value
 		return ids
+
+	def onInterfaceStateChange(self, connection):
+		pass
 
 	def toDict(self, user):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
@@ -219,11 +239,22 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			self.interface.device.reload()
 		return self.interface.device.host
 
+	def getBridgeId(self, assign=True):
+		if not self.bridge_id:
+			self.reload()
+		if not self.bridge_id and assign:
+			self._assignBridgeId()
+			assert self.bridge_id
+		return self.bridge_id
+
 	def getIdUsage(self, host):
 		ids = {}
 		if self.bridge_id and self.interface.device.host == host:
 			ids.update(bridge=set((self.bridge_id,)))
 		return ids
+
+	def onInterfaceStateChange(self):
+		self.connector.upcast().onInterfaceStateChange(self)
 
 	def _setBridgeId(self, id):
 		self.bridge_id = id
@@ -244,13 +275,14 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			return self.emulatedconnection.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def bridgeId(self):
+	def _assignBridgeId(self):
 		if not self.bridge_id:
-			self.reload()
-		return self.bridge_id
+			host = self.getHost()
+			assert host
+			host.takeId("bridge", self._setBridgeId)		
 
-	def bridgeName(self):
-		return self.connector.upcast().bridgeName(self.interface)
+	def getBridge(self, assign=True, create=True):
+		return self.connector.upcast().getBridge(self, assign=assign, create=create)
 
 	def getStartTasks(self):
 		return tasks.TaskSet()

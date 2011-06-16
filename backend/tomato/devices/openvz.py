@@ -126,7 +126,7 @@ class OpenVZDevice(Device):
 	def _createBridges(self):
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
-				bridge = self.bridgeName(iface)
+				bridge = self.getBridge(iface)
 				assert bridge, "Interface has no bridge %s" % iface
 				ifaceutil.bridgeCreate(self.host, bridge)
 				ifaceutil.ifup(self.host, bridge)
@@ -396,8 +396,8 @@ class OpenVZDevice(Device):
 				if state == State.STARTED:
 					con.start(True, noProcess=True)
 				if self.state == State.STARTED:
-					iface.upcast()._connectToBridge()
-		
+					iface.upcast().connectToBridge()
+				
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
 		vzctl.useImage(self.host, self.getVmid(), path, forceGzip=True)
@@ -483,10 +483,12 @@ class ConfiguredInterface(Interface):
 				self._configureNetwork()
 			self.save()
 
-	def _connectToBridge(self):
+	def connectToBridge(self):
 		dev = self.device.upcast()
-		bridge = dev.bridgeName(self)
+		bridge = dev.getBridge(self)
 		if self.isConnected():
+			if not ifaceutil.bridgeExists(dev.host, bridge):
+				ifaceutil.bridgeCreate(dev.host, bridge)
 			ifaceutil.bridgeConnect(dev.host, bridge, self.interfaceName())
 			ifaceutil.ifup(dev.host, self.interfaceName())
 			
@@ -504,7 +506,7 @@ class ConfiguredInterface(Interface):
 			
 	def getStartTasks(self):
 		taskset = Interface.getStartTasks(self)
-		connect_to_bridge = tasks.Task("connect-to-bridge", self._connectToBridge)
+		connect_to_bridge = tasks.Task("connect-to-bridge", self.connectToBridge)
 		taskset.add(connect_to_bridge)
 		taskset.add(tasks.Task("configure-network", self._configureNetwork, after=connect_to_bridge))
 		return taskset

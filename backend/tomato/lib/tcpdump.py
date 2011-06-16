@@ -26,6 +26,7 @@ def _remoteDir(name):
 	return "%s/%s" % (config.REMOTE_DIR, name)
 	
 def _checkSyntax(host, iface, filter):
+	ifaceutil.ifup(host, iface)
 	return _tcpdump(host, "-i %s -d %s >/dev/null 2>&1; echo $?" % (iface, filter)).strip() == "0"
 	
 def startCapture(host, name, iface, filter=""):
@@ -34,6 +35,7 @@ def startCapture(host, name, iface, filter=""):
 	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
+	ifaceutil.ifup(host, iface)
 	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -W 5 -s0 %(filter)s >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
 
 def captureRunning(host, name):

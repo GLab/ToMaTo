@@ -181,12 +181,14 @@ class ExternalNetworkConnector(Connector):
 					traffic = -1
 		return {"external": external, "traffic": traffic}		
 
-	def bridgeName(self, interface):
-		assert interface.device.host, "Interface is not prepared: %s" % interface
+	def getBridge(self, connection, assign=True, create=True):
+		assert connection.getHost(), "Interface is not prepared: %s" % connection.interface
 		for enb in self.used_network.externalnetworkbridge_set.all():
-			if enb.host == interface.device.host:
+			if enb.host == connection.getHost():
+				if create:
+					ifaceutil.bridgeCreate(enb.host, enb.bridge)
 				return enb.bridge
-		assert False, "No external network bridge %s(%s) on host %s" % (self.getNetworkType(), self.getNetworkGroup(), interface.device.host)
+		assert False, "No external network bridge %s(%s) on host %s" % (self.getNetworkType(), self.getNetworkGroup(), connection.interface.device.host)
 	
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)

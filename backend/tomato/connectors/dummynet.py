@@ -106,13 +106,8 @@ class EmulatedConnection(Connection):
 			if self.getCapturing() and not oldCapturing:
 				self._startCapture()
 			
-	def getHost(self):
-		host = self.interface.device.host
-		assert host
-		return host
-			
 	def _configLink(self):
-		pipe_id = int(self.bridgeId())
+		pipe_id = int(self.getBridgeId())
 		host = self.getHost()
 		ipfw.configurePipe(host, pipe_id, delay=self.getDelay(), bandwidth=self.getBandwidth(), lossratio=self.getLossRatio())
 		
@@ -122,13 +117,13 @@ class EmulatedConnection(Connection):
 	def _startCapture(self):
 		if self.getCapturing():
 			host = self.interface.device.host
-			tcpdump.startCapture(host, self._captureName(), self.bridgeName())
+			tcpdump.startCapture(host, self._captureName(), self.getBridge())
 
 	def _createPipe(self):
-		pipe_id = int(self.bridgeId())
+		pipe_id = int(self.getBridgeId())
 		host = self.getHost()
 		ipfw.loadModule(host)
-		ipfw.createPipe(host, pipe_id, self.bridgeName(), dir="out")
+		ipfw.createPipe(host, pipe_id, self.getBridge(), dir="out")
 
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
@@ -145,7 +140,7 @@ class EmulatedConnection(Connection):
 
 	def _deletePipes(self):
 		if self.bridge_id:
-			ipfw.deletePipe(self.getHost(), int(self.bridgeId()))
+			ipfw.deletePipe(self.getHost(), int(self.bridge_id))
 
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)

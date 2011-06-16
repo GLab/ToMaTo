@@ -41,7 +41,7 @@ class ConnectionEndpoint(tinc.Endpoint):
 		assert port
 		return port
 	def getBridge(self):
-		bridge = self.con.upcast().bridgeName()
+		bridge = self.con.upcast().getBridge()
 		assert bridge
 		return bridge
 	def getSubnets(self):
@@ -106,39 +106,27 @@ class TincConnector(Connector):
 	def _assignResources(self):
 		for con in self.connectionSetAll():
 			con.upcast()._assignTincPort()
-			con.upcast()._assignBridgeId()
-		
-	def _createBridges(self):
-		for con in self.connectionSetAll():
-			assert con.bridgeName()
-			ifaceutil.bridgeCreate(con.interface.device.host, con.bridgeName())
 		
 	def getPrepareTasks(self):
 		taskset = Connector.getPrepareTasks(self)
 		assign_resources = tasks.Task("assign-resources", self._assignResources)
-		create_bridges = tasks.Task("create-bridges", self._createBridges, after=assign_resources)
 		tinc_tasks = tinc.getPrepareNetworkTasks(self._endpoints(), self.type)
 		tinc_tasks.after(assign_resources)
-		taskset.add([assign_resources, create_bridges, tinc_tasks])
+		taskset.add([assign_resources, tinc_tasks])
 		return taskset
-
-	def _deleteBridges(self):
-		for con in self.connectionSetAll():
-			host = con.interface.device.host
-			if not ifaceutil.bridgeInterfaces(host, con.bridgeName()):
-				ifaceutil.bridgeRemove(host, con.bridgeName())
 
 	def _unassignResources(self):
 		for con in self.connectionSetAll():
 			con.upcast()._unassignTincPort()
-			con.upcast()._unassignBridgeId()
+			host = con.interface.device.host
+			if con.bridge_id and not ifaceutil.bridgeInterfaces(host, con.getBridge()):
+				con.upcast()._unassignBridgeId()
 
 	def getDestroyTasks(self):
 		taskset = Connector.getDestroyTasks(self)
 		tinc_tasks = tinc.getDestroyNetworkTasks(self._endpoints(), self.type)
-		delete_bridges = tasks.Task("delete-bridges", self._deleteBridges, after=tinc_tasks)
-		unassign_resources = tasks.Task("unassign-resources", self._unassignResources, after=delete_bridges)
-		taskset.add([tinc_tasks, delete_bridges, unassign_resources])
+		unassign_resources = tasks.Task("unassign-resources", self._unassignResources, after=tinc_tasks)
+		taskset.add([tinc_tasks, unassign_resources])
 		return taskset
 
 	def configure(self, properties):
@@ -215,13 +203,7 @@ class TincConnection(dummynet.EmulatedConnection):
 				self.setAttribute("gateway4", self.getAttribute("gateway4") + "/24")
 			if not len(self.getAttribute("gateway6").split("/")) == 2:
 				self.setAttribute("gateway6", self.getAttribute("gateway6") + "/80")
-		
-	def _assignBridgeId(self):
-		if not self.bridge_id:
-			host = self.getHost()
-			assert host
-			host.takeId("bridge", self._setBridgeId)		
-
+	
 	def _setTincPort(self, port):
 		self.tinc_port = port
 		self.save()
@@ -234,11 +216,15 @@ class TincConnection(dummynet.EmulatedConnection):
 
 	def _unassignBridgeId(self):
 		if self.bridge_id:
-			host = self.getHost()
-			assert host
-			host.giveId("bridge", self.bridge_id)
-		self.bridge_id = None
-		self.save()
+			if self.connector.state == State.PREPARED and self.interface.device.state != State.STARTED:
+				host = self.getHost()
+				bridge = self.getBridge(assign=False, create=False)
+				if ifaceutil.bridgeExists(host, bridge):
+					assert not ifaceutil.bridgeInterfaces(host, bridge)
+					ifaceutil.bridgeRemove(host, bridge)			
+				host.giveId("bridge", self.bridge_id)
+				self.bridge_id = None
+				self.save()
 
 	def _unassignTincPort(self):
 		if self.tinc_port:
@@ -247,6 +233,10 @@ class TincConnection(dummynet.EmulatedConnection):
 			host.giveId("port", self.tinc_port)
 		self.tinc_port = None
 		self.save()
+
+	def onInterfaceStateChange(self):
+		dummynet.EmulatedConnection.onInterfaceStateChange(self)
+		self._unassignBridgeId()
 
 	def toDict(self, auth):
 		res = dummynet.EmulatedConnection.toDict(self, auth)

@@ -123,13 +123,13 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				options = options.combine(iface.connection.connector.upcast().hostPreferences())
 		return options
 
-	def bridgeName(self, interface):
+	def getBridge(self, interface, assign=True, create=True):
 		"""
 		Returns the name of the bridge for the connection of the given interface
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
-		return interface.connection.bridgeName()
+		return interface.connection.upcast().getBridge(assign=assign, create=create)
 	
 	def migrate(self, direct):
 		proc = tasks.Process("migrate")
@@ -173,24 +173,37 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.state = state
 		self.save()
 
+	def _triggerConnections(self):
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
+				iface.connection.upcast().onInterfaceStateChange() 
+
 	def getStartTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset)
+		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getStopTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
+		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getPrepareTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
+		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def getDestroyTasks(self):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset))
+		stateChange = tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset)
+		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
+		taskset.add([stateChange, trigger])
 		return taskset
 	
 	def configure(self, properties):
@@ -242,6 +255,8 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc.add(tasks.Task("main", self.upcast().useUploadedImageRun, args=(path,)))
 		return proc.start(direct)
 			
+	def onConnectionStateChange(self, iface):
+		pass
 			
 class Interface(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
@@ -293,6 +308,11 @@ class Interface(attributes.Mixin, models.Model):
 		res = {"attrs": {"name": self.name}, "capabilities": self.getCapabilities(user)}
 		return res
 
+	def connectToBridge(self):
+		if self.isConnected():
+			bridge = self.connection.upcast().getBridge()
+			self.device.upcast().connectToBridge(self, bridge)
+
 	def getStartTasks(self):
 		return tasks.TaskSet()
 	
@@ -304,6 +324,10 @@ class Interface(attributes.Mixin, models.Model):
 	
 	def getDestroyTasks(self):
 		return tasks.TaskSet()
+
+	def onConnectionStateChange(self):
+		self.device.upcast().onConnectionStateChange(self)
+
 
 # keep internal imports at the bottom to avoid dependency problems
 from tomato import fault

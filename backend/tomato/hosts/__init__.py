@@ -235,8 +235,10 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			#print "enter"
 			ids = self._getFreeIds()
 			fault.check(len(ids[type]), "No more free %ss on host %s", (type, self.name))
-			#print self._packList(ids[type])
+			#print "Free %s ids: %s" % (type, self._packList(ids[type]))
+			#print "Callback: %s" % callback
 			id = sorted(ids[type])[0]
+			#print "Taken %s: %s" % (type, id)
 			ids[type].remove(id)
 			self._setFreeIds(ids)
 			callback(id)
