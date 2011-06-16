@@ -16,10 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import os, datetime, atexit
-import config, fault, generic, attributes, auth
-
-from lib import log, tasks, util, db
+import os, datetime
+import attributes, auth, config
+from lib import db
 
 class Topology(attributes.Mixin, models.Model):
 	"""
@@ -398,18 +397,13 @@ def create(owner):
 	top.init(owner)
 	return top
 
-def cleanup():
+def checkTimeout():
 	for top in all():
 		top.checkTimeout()
 
 def updateResourceUsage():
 	for top in all():
 		top.updateResourceUsage()
-
-if not config.MAINTENANCE:
-	cleanup_task = util.RepeatedTimer(300, cleanup)
-	cleanup_task.start()
-	atexit.register(cleanup_task.stop)
-	update_resource_usage_task = util.RepeatedTimer(10000, updateResourceUsage)
-	update_resource_usage_task.start()
-	atexit.register(update_resource_usage_task.stop)
+		
+import fault, generic
+from lib import log, tasks

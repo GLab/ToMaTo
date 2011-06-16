@@ -91,10 +91,6 @@ def login(username, password):
 	stored.storePassword(password)
 	return stored
 
-cleanup_task = util.RepeatedTimer(5*60, cleanup)
-cleanup_task.start()
-atexit.register(cleanup_task.stop)
-
 providers = []
 print >>sys.stderr, "Loading auth modules..."
 for conf in config.AUTH:

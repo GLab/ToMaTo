@@ -72,8 +72,3 @@ def measureRun():
 					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
 				except fault.Fault:
 					pass
-
-if not config.MAINTENANCE:				
-	measurement_task = util.RepeatedTimer(3600, measureRun)
-	measurement_task.start()
-	atexit.register(measurement_task.stop)

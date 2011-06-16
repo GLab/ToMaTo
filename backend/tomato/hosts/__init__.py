@@ -421,8 +421,3 @@ import templates
 from external_networks import ExternalNetwork, ExternalNetworkBridge
 from tomato import fault
 from tomato.lib import util, tasks
-
-if not config.MAINTENANCE:				
-	host_check_task = util.RepeatedTimer(3600*6, checkAll)
-	host_check_task.start()
-	atexit.register(host_check_task.stop)

@@ -41,16 +41,19 @@ class Task():
 		self.reverseKwargs = reverseKwargs
 		self.onFinished = onFinished
 		self.status = Status.WAITING
-		self.output = StringIO()
-		self.result = None
-		self.process = None
 		self.afterSet = set()
 		self.beforeSet = set()
 		self.after(after)
 		self.before(before)
 		self.callWithTask = callWithTask
+		self._prepare()
+	def _prepare(self):
+		self.output = StringIO()
+		self.result = None
+		self.process = None
 		self.started = None
-		self.finished = None
+		self.finished = None		
+		self.status = Status.WAITING
 	def getStatus(self):
 		return self.status
 	def isActive(self, status=None):
@@ -198,22 +201,24 @@ class TaskSet():
 		return self.tasks.__iter__()
 		
 class Process():
-	def __init__(self, name=None, tasks=[], onFinished=None):
+	def __init__(self, name=None, tasks=None, onFinished=None):
 		self.name = name
 		self.tasks = set()
-		for t in tasks:
-			self.add(t)
+		if tasks:
+			self.add(tasks)
 		self.onFinished = onFinished
 		self.id = str(uuid.uuid1())
 		processes[self.id]=self
+		self.lock = threading.Lock()
 		self.started = None
 		self.finished = None
-		self.trace = None
-		self.lock = threading.Lock()
+	def _prepare(self):
+		self.started = None
+		self.finished = None
 		self.dependencies = {}
 		self.readyTasks = set()
-	def _prepare(self):
 		for task in self.tasks:
+			task._prepare()
 			for t in task.getAfter():
 				t.before(task)
 			for t in task.getBefore():
@@ -285,6 +290,9 @@ class Process():
 		finally:
 			self.lock.release()
 	def run(self):
+		self._prepare()
+		self._run()
+	def _run(self):
 		self.started = time.time()
 		while True:
 			task = self._getReadyTask()
@@ -334,7 +342,7 @@ class Process():
 		try:
 			self._prepare()
 			if direct:
-				self.run()
+				self._run()
 				return self.dict()
 			else:
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
@@ -350,7 +358,7 @@ class Process():
 		global workerthreads
 		workerthreads += 1
 		try:
-			self.run()
+			self._run()
 		except Exception, exc:
 			fault.log(exc)
 		finally:
@@ -365,10 +373,29 @@ class Process():
 			logger.close()
 			del processes[self.id]
 
+class RepeatedProcess(Process):
+	def __init__(self, timeout, name=None, tasks=[], onFinished=None, schedule=True, cancelAtExit=True):
+		Process.__init__(self, name, tasks, onFinished)
+		self.timer = util.RepeatedTimer(timeout, self.run)
+		if schedule:
+			self.schedule()
+		if cancelAtExit:
+			atexit.register(self.cancel)
+		periodic_processes[self.name]=self
+	def schedule(self):
+		self.timer.start()
+	def cancel(self):
+		self.timer.stop()
+	def dict(self):
+		res = Process.dict(self)
+		res.update(periodic=True)
+		return res
+
 MAX_WORKERS = 100
 MAX_WORKERS_PROCESS = 5
 workerthreads = 0
 processes={}
+periodic_processes = {}
 					
 def cleanup():
 	for p in processes.values():
@@ -400,7 +427,4 @@ def get_current_task():
 		return None
 		
 if not config.MAINTENANCE:	
-	cleanup_task = util.RepeatedTimer(3, cleanup)
-	cleanup_task.start()
-	atexit.register(cleanup_task.stop)
 	atexit.register(keep_running)
