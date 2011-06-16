@@ -64,7 +64,7 @@ class KVMDevice(Device):
 
 	def sendKeys(self, keycodes):
 		#not asserting state==Started because this is called during startup
-		return qm.sendKeys(self.host, self.getVmid(), keycodes)
+		qm.sendKeys(self.host, self.getVmid(), keycodes)
 
 	def getState(self):
 		if not self.getVmid() or not self.host:
