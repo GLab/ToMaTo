@@ -80,18 +80,23 @@ class Topology(attributes.Mixin, models.Model):
 	def checkTimeout(self):
 		now = datetime.datetime.now()
 		date = self.date_usage
+		out = tasks.get_current_task().output
 		if not date:
 			return
 		if now > date + self.REMOVE_TIMEOUT:
 			self.logger().log("timeout: removing topology")
+			out.write("Removing topology %s [%d]..." % (self.name, self.id))
+			tasks.get_current_task()
 			self.remove(True)
 		elif now > date + self.DESTROY_TIMEOUT:
 			self.logger().log("timeout: destroying topology")
+			out.write("Destroying topology %s [%d]..." % (self.name, self.id))
 			max_state = self.maxState()
 			if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
 				self.destroy(False)
 		elif now > date + self.STOP_TIMEOUT:
 			self.logger().log("timeout: stopping topology")
+			out.write("Stopping topology %s [%d]..." % (self.name, self.id))
 			if self.maxState() == generic.State.STARTED:
 				self.stop(False)
 		

@@ -15,10 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config, fault, hosts
-from tomato.lib import util, ifaceutil, db
-
-import atexit
+from tomato import fault, hosts
+from tomato.lib import ifaceutil, db
 
 from django.db import models
 
