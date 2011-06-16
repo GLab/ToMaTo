@@ -40,6 +40,8 @@ SERVER = {
 	}
 }
 
+DISABLE_TRANSACTION_MANAGEMENT = True
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
