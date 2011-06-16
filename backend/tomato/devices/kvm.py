@@ -134,7 +134,7 @@ class KVMDevice(Device):
 		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
 		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
 		taskset.add([start_vm, assign_vnc_port, start_vnc])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def _stopVnc(self):
 		qm.stopVnc(self.host, self.getVmid(), self.getVncPort())
@@ -160,7 +160,7 @@ class KVMDevice(Device):
 		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
 		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
 		taskset.add([stop_vm, stop_vnc, unassign_vnc_port])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
@@ -213,7 +213,7 @@ class KVMDevice(Device):
 		for iface in self.interfaceSetAll():
 			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=create_vm))
 		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def _unassignHost(self):
 		self.host = None
@@ -239,7 +239,7 @@ class KVMDevice(Device):
 		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, reverseFn=self._fallbackDestroy, after=destroy_vm)
 		unassign_host = tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, after=unassign_vmid)
 		taskset.add([destroy_vm, unassign_host, unassign_vmid])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):
 		if "template" in properties:

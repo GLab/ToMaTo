@@ -161,7 +161,7 @@ class OpenVZDevice(Device):
 		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
 		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
 		taskset.add([create_bridges, start_vm, check_interfaces_exist, configure_routes, assign_vnc_port, start_vnc])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def _stopVnc(self):
 		assert self.host and self.getVmid() and self.getVncPort()
@@ -178,7 +178,7 @@ class OpenVZDevice(Device):
 		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
 		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
 		taskset.add([stop_vnc, stop_vm, unassign_vnc_port])
-		return taskset	
+		return self._adaptTaskset(taskset)
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
@@ -233,7 +233,7 @@ class OpenVZDevice(Device):
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
 		create_interfaces = tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
 		taskset.add([assign_template, assign_host, assign_vmid, create_vm, configure_vm, create_interfaces])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def _unassignVmid(self):
 		if self.vmid:
@@ -255,7 +255,7 @@ class OpenVZDevice(Device):
 		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, after=destroy_vm, reverseFn=self._fallbackDestroy)
 		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=unassign_vmid, reverseFn=self._fallbackDestroy)
 		taskset.add([destroy_vm, unassign_host, unassign_vmid])
-		return taskset
+		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):
 		if "template" in properties:

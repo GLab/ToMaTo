@@ -172,39 +172,35 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def _changeState(self, state):
 		self.state = state
 		self.save()
+		self._triggerConnections()
 
 	def _triggerConnections(self):
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
 				iface.connection.upcast().onInterfaceStateChange() 
 
-	def getStartTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset)
-		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
-		taskset.add([stateChange, trigger])
+	def _adaptTaskset(self, taskset):
+		taskset.after(taskset.find("reload"))
+		taskset.before(taskset.find("change-state"))
 		return taskset
+
+	def _initialTasks(self, state):
+		taskset = tasks.TaskSet()
+		taskset.add(tasks.Task("reload", self.reload))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(state,)))
+		return taskset
+
+	def getStartTasks(self):
+		return self._initialTasks(State.STARTED)
 	
 	def getStopTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
-		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.PREPARED)
 	
 	def getPrepareTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
-		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.PREPARED)
 	
 	def getDestroyTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset)
-		trigger = tasks.Task("trigger-connections", self._triggerConnections, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.CREATED)
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:

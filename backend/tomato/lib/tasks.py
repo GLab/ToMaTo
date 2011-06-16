@@ -72,6 +72,8 @@ class Task():
 	def getAfter(self):
 		return self.afterSet
 	def after(self, task):
+		if task == self:
+			return
 		if not isinstance(task, Task):
 			for t in task:
 				self.after(t)
@@ -79,6 +81,8 @@ class Task():
 			self.afterSet.add(task)
 		return self
 	def before(self, task):
+		if task == self:
+			return
 		if not isinstance(task, Task):
 			for t in task:
 				self.before(t)
@@ -158,6 +162,10 @@ class TaskSet():
 	def __init__(self, tasks=[]):
 		self.tasks = set()
 		self.add(tasks)
+	def find(self, name):
+		for t in self:
+			if t.name == name:
+				return t
 	def add(self, task):
 		if not isinstance(task, Task):
 			for t in task:

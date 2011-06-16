@@ -147,38 +147,34 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def _changeState(self, state):
 		self.state = state
 		self.save()
+		self._triggerInterfaces()
 
 	def _triggerInterfaces(self):
 		for con in self.connectionSetAll():
 			con.interface.upcast().onConnectionStateChange() 
 
-	def getStartTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.STARTED,), after=taskset)
-		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
-		taskset.add([stateChange, trigger])
+	def _adaptTaskset(self, taskset):
+		taskset.after(taskset.find("reload"))
+		taskset.before(taskset.find("change-state"))
 		return taskset
+
+	def _initialTasks(self, state):
+		taskset = tasks.TaskSet()
+		taskset.add(tasks.Task("reload", self.reload))
+		taskset.add(tasks.Task("change-state", self._changeState, args=(state,)))
+		return taskset
+
+	def getStartTasks(self):
+		return self._initialTasks(State.STARTED)
 	
 	def getStopTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
-		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.PREPARED)
 	
 	def getPrepareTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.PREPARED,), after=taskset)
-		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.PREPARED)
 	
 	def getDestroyTasks(self):
-		taskset = tasks.TaskSet()
-		stateChange = tasks.Task("change-state", self._changeState, args=(State.CREATED,), after=taskset)
-		trigger = tasks.Task("trigger-interfaces", self._triggerInterfaces, after=stateChange)
-		taskset.add([stateChange, trigger])
-		return taskset
+		return self._initialTasks(State.CREATED)
 	
 	def __unicode__(self):
 		return self.name
