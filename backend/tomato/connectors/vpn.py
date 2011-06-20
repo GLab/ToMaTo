@@ -50,6 +50,12 @@ class ConnectionEndpoint(tinc.Endpoint):
 			subnets.append(util.calculate_subnet4(self.con.getAttribute("gateway4")))
 			subnets.append(util.calculate_subnet6(self.con.getAttribute("gateway6")))
 		return subnets
+	def getGateways(self):
+		gws = []
+		if self.con.connector.type == tinc.Mode.ROUTER:
+			gws.append(self.con.getAttribute("gateway4"))
+			gws.append(self.con.getAttribute("gateway6"))
+		return gws
 	def __repr__(self):
 		return str(self.con)
 

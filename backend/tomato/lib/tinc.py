@@ -40,6 +40,8 @@ class Endpoint:
 		pass
 	def getSubnets(self):
 		pass
+	def getGateways(self):
+		pass
 
 def _getHostName(node):
 	return node.getHost()
@@ -286,21 +288,12 @@ def _setupRouting(endpoint):
 	#enable ip forwarding
 	host.execute ("sysctl -q -w net.ipv6.conf.all.forwarding=1");
 	host.execute ("sysctl -q -w net.ipv4.conf.all.forwarding=1");
-	#calculate unique table ids
-	table_in = 1000 + 2 * id
-	table_out = 1000 + 2 * id + 1
-	#create tables in rt_tables if they don't exist 
-	host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_in, table_in, table_in ))
-	host.execute ( "grep '^%s ' /etc/iproute2/rt_tables || echo \"%s %s\" >> /etc/iproute2/rt_tables" % ( table_out, table_out, table_out ))
-	#mark all packages based on incoming interfaces
-	host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-	host.execute ( "iptables -t mangle -A PREROUTING -i %s -j MARK --set-mark %s" % ( bridge, table_out ))
-	#create rules to use routing tables according to the marks of the packages
-	host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_in), table_in ))
-	host.execute ( "ip rule add fwmark %s table %s" % ( hex(table_out), table_out ))
-	#create routing table with only a default device
-	host.execute ( "ip route add table %s default dev %s" % ( table_in, bridge ))
-	host.execute ( "ip route add table %s default dev %s" % ( table_out, tincname ))
+	#add gateway addresses
+	for gw in endpoint.getGateways():
+		ifaceutil.addAddress(host, bridge, gw)
+	#set bridge up
+	ifaceutil.ifup(host, bridge)
+	ifaceutil.connectInterfaces(host, bridge, tincname, id, endpoint.getGateways())
 
 def _teardownRouting(endpoint, mode):
 	if mode != Mode.ROUTER:
@@ -313,15 +306,7 @@ def _teardownRouting(endpoint, mode):
 	assert bridge
 	assert getState(endpoint) != generic.State.CREATED
 	tincname = _tincName(endpoint)
-	#not disabling ip forwarding
-	table_in = 1000 + 2 * id
-	table_out = 1000 + 2 * id + 1
-	host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( tincname, table_in ))
-	host.execute ( "iptables -t mangle -D PREROUTING -i %s -j MARK --set-mark %s" % ( bridge, table_out ))
-	host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_in), table_in ))
-	host.execute ( "ip rule del fwmark %s table %s" % ( hex(table_out), table_out ))
-	host.execute ( "ip route del table %s default dev %s" % ( table_in, bridge ))
-	host.execute ( "ip route del table %s default dev %s" % ( table_out, tincname ))
+	ifaceutil.disconnectInterfaces(host, bridge, tincname, id)
 		
 def _connectEndpoint(endpoint, mode):
 	host = endpoint.getHost()

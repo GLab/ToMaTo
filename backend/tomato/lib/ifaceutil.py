@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util
+import util, random
 
 def bridgeExists(host, bridge):
 	return util.lines(host.execute("[ -d /sys/class/net/%s/brif ]; echo $?" % bridge))[0] == "0"
@@ -48,8 +48,7 @@ def bridgeDisconnect(host, bridge, iface, deleteBridgeIfLast=False):
 	assert not iface in bridgeInterfaces(host, bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
 	if deleteBridgeIfLast and not bridgeInterfaces(host, bridge):
 		bridgeRemove(host, bridge)
-		
-		
+				
 def bridgeConnect(host, bridge, iface):
 	if iface in bridgeInterfaces(host, bridge):
 		return
@@ -81,6 +80,57 @@ def setDefaultRoute(host, via):
 	
 def addAddress(host, iface, address):
 	host.execute("ip addr add %s dev %s" % (address, iface))
+
+def randomIp4():
+	return "%d.%d.%d.%d"%(10, random.randint(10, 250), random.randint(10, 250), random.randint(10, 250))	
+
+def connectInterfaces(host, if1, if2, id, allowIps):
+	assert interfaceExists(host, if1)
+	assert interfaceExists(host, if2)
+	iptablesRemoveRules(host, if1)
+	iptablesRemoveRules(host, if2)
+	for ip in allowIps:
+		#FIXME: detect ip address family, currently one will fail
+		host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( if1, ip ))
+		host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( if1, ip ))
+		host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( if2, ip ))
+		host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( if2, ip ))
+	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % if1)
+	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % if2)
+	#FIXME: find out how net-unreachable is named for ipv6
+	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % if1)
+	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % if2)
+	#calculate table ids
+	table1 = 1000 + id * 2
+	table2 = 1000 + id * 2 + 1
+	#create rules to select routing table according to incoming device
+	host.execute ( "ip rule add iif %s table %s" % ( if1, table1 ))
+	host.execute ( "ip rule add iif %s table %s" % ( if2, table2 ))
+	#create routing table with only a default device
+	host.execute ( "ip route add table %s default dev %s" % ( table1, if2 ))
+	host.execute ( "ip route add table %s default dev %s" % ( table2, if1 ))
+	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if2))
+	assert if1 in res, res
+	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if1))
+	assert if2 in res, res
+
+def iptablesRemoveRules(host, device):
+	host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % device )
+	host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % device )
+
+def disconnectInterfaces(host, if1, if2, id):
+	#calculate table ids
+	table1 = 1000 + id * 2
+	table2 = 1000 + id * 2 + 1
+	#remove rules
+	host.execute ( "ip rule del iif %s table %s" % ( if1, table1 ))
+	host.execute ( "ip rule del iif %s table %s" % ( if2, table2 ))
+	#remove routes
+	host.execute ( "ip route del table %s default dev %s" % ( table1, if2 ))
+	host.execute ( "ip route del table %s default dev %s" % ( table2, if1 ))
+	#remove iptables rules
+	iptablesRemoveRules(host, if1)
+	iptablesRemoveRules(host, if2)
 	
 def startDhcp(host, iface):
 	host.execute("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % iface)

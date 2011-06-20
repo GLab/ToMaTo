@@ -123,7 +123,9 @@ class EmulatedConnection(Connection):
 		pipe_id = int(self.getBridgeId())
 		host = self.getHost()
 		ipfw.loadModule(host)
-		ipfw.createPipe(host, pipe_id, self.getBridge(), dir="out")
+		# in router mode ipfw is only triggered once, but for other modes twice		
+		dir="" if self.connector.type == "router" else "out"
+		ipfw.createPipe(host, pipe_id, self.getBridge(), dir=dir)
 
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
