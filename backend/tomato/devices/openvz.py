@@ -258,6 +258,7 @@ class OpenVZDevice(Device):
 		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):
+		#FIXME: default route does not work
 		if "template" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
@@ -271,7 +272,7 @@ class OpenVZDevice(Device):
 				#Note: usage of self as host is intentional
 				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway4"))
 		if "gateway6" in properties:
-			self.setAttribute("gateway4", properties["gateway4"])
+			self.setAttribute("gateway6", properties["gateway6"])
 			if self.getAttribute("gateway6") and self.state == State.STARTED:
 				#Note: usage of self as host is intentional
 				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway6"))
