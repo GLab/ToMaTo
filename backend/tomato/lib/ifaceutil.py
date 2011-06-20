@@ -133,8 +133,8 @@ def disconnectInterfaces(host, if1, if2, id):
 	iptablesRemoveRules(host, if2)
 	
 def startDhcp(host, iface):
-	host.execute("\"[ -e /sbin/dhclient ] && /sbin/dhclient %s\"" % iface)
-	host.execute("\"[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s\"" % iface)
+	host.execute("[ -e /sbin/dhclient ] && /sbin/dhclient %s" % iface)
+	host.execute("[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s" % iface)
 	
 def getRxBytes(host, iface):
 	assert interfaceExists(host, iface)
