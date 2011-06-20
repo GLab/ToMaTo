@@ -2,6 +2,7 @@ from lib.misc import *
 
 import stateTransitions
 import linkEmulation
+import tincConnectors
 import images
 import migrate
 
@@ -20,7 +21,10 @@ if __name__ == "__main__":
 		images.simpleTop_checkImages(topId)
 
 		print "testing migration..."
-		migrate.simpleTop_checkMigrate(topId)
+		migrate.simpleTop_checkMigrate(topId, quick=True)
+
+		print "testing tinc connectors..."
+		tincConnectors.simpleTop_checkTincConnectors(topId)
 
 		print "testing link emulation..."
 		linkEmulation.simpleTop_checkLinkEmulation(topId)
