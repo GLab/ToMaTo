@@ -77,11 +77,24 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def getCapabilities(self, user):
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
 		isBusy = self.topology.isBusy()
+		minDevState = State.STARTED
+		maxDevState = State.CREATED
+		for con in self.connectionSetAll():
+			dev = con.interface.device
+			if dev.state == State.STARTED:
+				maxDevState = State.STARTED
+			elif dev.state == State.CREATED:
+				minDevState = State.CREATED
+			else: #prepared
+				if minDevState == State.STARTED:
+					minDevState = State.PREPARED
+				if maxDevState == State.CREATED:
+					maxDevState = State.PREPARED
 		return {
 			"action": {
 				"start": isUser and not isBusy and self.state == State.PREPARED, 
 				"stop": isUser and not isBusy and self.state == State.STARTED,
-				"prepare": isUser and not isBusy and self.state == State.CREATED,
+				"prepare": isUser and not isBusy and self.state == State.CREATED and minDevState != State.CREATED,
 				"destroy": isUser and not isBusy and self.state == State.PREPARED,
 			},
 			"configure": {

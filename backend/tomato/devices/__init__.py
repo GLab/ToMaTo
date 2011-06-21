@@ -67,12 +67,26 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		isManager = self.topology.checkAccess(Permission.ROLE_MANAGER, user)
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
 		isBusy = self.topology.isBusy()
+		minConState = State.STARTED
+		maxConState = State.CREATED
+		for iface in self.interfaceSetAll():
+			if iface.isConnected():
+				con = iface.connection.connector
+				if con.state == State.STARTED:
+					maxConState = State.STARTED
+				elif con.state == State.CREATED:
+					minConState = State.CREATED
+				else: #prepared
+					if minConState == State.STARTED:
+						minConState = State.PREPARED
+					if maxConState == State.CREATED:
+						maxConState = State.PREPARED
 		return {
 			"action": {
-				"start": isUser and not isBusy and self.state == State.PREPARED, 
+				"start": isUser and not isBusy and self.state == State.PREPARED and minConState != State.CREATED, 
 				"stop": isUser and not isBusy and self.state == State.STARTED,
 				"prepare": isUser and not isBusy and self.state == State.CREATED,
-				"destroy": isUser and not isBusy and self.state == State.PREPARED,
+				"destroy": isUser and not isBusy and self.state == State.PREPARED and maxConState == State.CREATED,
 				"migrate": isManager and not isBusy,
 				"upload_image_prepare": isManager and not isBusy and self.state == State.PREPARED,
 				"upload_image_use": isManager and not isBusy and self.state == State.PREPARED,
