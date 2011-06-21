@@ -24,7 +24,9 @@ from tomato import fault
 DEFAULT_LOSSRATIO = 0.0
 DEFAULT_DELAY = 0
 DEFAULT_BANDWIDTH = 10000
-DEFAULT_CAPTURING = False
+DEFAULT_CAPTURE_FILTER = ""
+DEFAULT_CAPTURE_TO_FILE = False
+DEFAULT_CAPTURE_VIA_NET = False
 
 class EmulatedConnection(Connection):
 	
@@ -68,30 +70,51 @@ class EmulatedConnection(Connection):
 	def setBandwidth(self, value):
 		self.setAttribute("bandwidth", int(value))
 
-	def getCapturing(self):
-		return self.getAttribute("capture", DEFAULT_CAPTURING)
+	def getCaptureFilter(self):
+		return self.getAttribute("capture_filter", DEFAULT_CAPTURE_FILTER)
 	
-	def setCapturing(self, value):
-		self.setAttribute("capture", bool(value))
+	def setCaptureFilter(self, value):
+		self.setAttribute("capture_filter", str(value))
+
+	def getCaptureToFile(self):
+		return self.getAttribute("capture_to_file", DEFAULT_CAPTURE_TO_FILE)
+	
+	def setCaptureToFile(self, value):
+		self.setAttribute("capture_to_file", bool(value))
+
+	def getCaptureViaNet(self):
+		return self.getAttribute("capture_via_net", DEFAULT_CAPTURE_VIA_NET)
+	
+	def setCaptureViaNet(self, value):
+		self.setAttribute("capture_via_net", bool(value))
 
 	def getCapabilities(self, user):
 		capabilities = Connection.getCapabilities(self, user)
 		isUser = self.connector.topology.checkAccess(Permission.ROLE_USER, user)
 		capabilities["configure"].update({
-			"capture": True,
+			"capture_filter": True,
+			"capture_to_file": True,
+			"capture_via_net": True,
 			"delay": True,
 			"bandwidth": True,
 			"lossratio": True,
 		})
 		capabilities["action"].update({
-			"download_capture": isUser and not self.connector.state == State.CREATED and self.getCapturing()
+			"download_capture": isUser and not self.connector.state == State.CREATED and self.getCaptureToFile()
 		})
 		return capabilities
 
 	def configure(self, properties):
-		oldCapturing = self.getCapturing()
-		if "capture" in properties:
-			self.setCapturing(properties["capture"])
+		oldCaptureToFile = self.getCaptureToFile()
+		oldCaptureViaNet = self.getCaptureViaNet()
+		oldCaptureFilter = self.getCaptureFilter()
+		#FIXME: validate filter
+		if "capture_to_file" in properties:
+			self.setCaptureToFile(properties["capture_to_file"])
+		if "capture_filter" in properties:
+			self.setCaptureFilter(properties["capture_filter"])
+		if "capture_via_net" in properties:
+			self.setCaptureViaNet(properties["capture_via_net"])
 		if "delay" in properties:
 			self.setDelay(properties["delay"])
 		if "bandwidth" in properties:
@@ -101,10 +124,14 @@ class EmulatedConnection(Connection):
 		Connection.configure(self, properties)
 		if self.connector.state == State.STARTED:
 			self._configLink()
-			if oldCapturing and not self.getCapturing():
-				self._stopCapture()
-			if self.getCapturing() and not oldCapturing:
-				self._startCapture()
+			if oldCaptureToFile and (not self.getCaptureToFile() or self.getCaptureFilter() != oldCaptureFilter):
+				self._stopCaptureToFile()
+			if oldCaptureViaNet and (not self.getCaptureViaNet() or self.getCaptureFilter() != oldCaptureFilter):
+				self._stopCaptureViaNet()
+			if self.getCaptureToFile() and (not oldCaptureToFile or self.getCaptureFilter() != oldCaptureFilter):
+				self._startCaptureToFile()
+			if self.getCaptureViaNet() and (not oldCaptureViaNet or self.getCaptureFilter() != oldCaptureFilter):
+				self._startCaptureViaNet()
 			
 	def _configLink(self):
 		pipe_id = int(self.getBridgeId())
@@ -115,9 +142,25 @@ class EmulatedConnection(Connection):
 		return "%s-%s-%s" % (self.connector.topology.name, self.connector.name, self)
 		
 	def _startCapture(self):
-		if self.getCapturing():
-			host = self.interface.device.host
-			tcpdump.startCapture(host, self._captureName(), self.getBridge())
+		if self.getCaptureToFile():
+			self._startCaptureToFile()
+		if self.getCaptureViaNet():
+			self._startCaptureViaNet()
+
+	def _startCaptureToFile(self):
+		host = self.interface.device.host
+		tcpdump.startCaptureToFile(host, self._captureName(), self.getBridge(), self.getCaptureFilter())
+
+	def _setCapturePort(self, port):
+		self.setAttribute("capture_port", port)
+
+	def _startCaptureViaNet(self):
+		host = self.interface.device.host
+		port = self.getAttribute("capture_port", None)
+		if not port:
+			host.takeId("port", self._setCapturePort)
+		port = self.getAttribute("capture_port")
+		tcpdump.startCaptureViaNet(host, self._captureName(), port, self.getBridge(), self.getCaptureFilter())
 
 	def _createPipe(self):
 		pipe_id = int(self.getBridgeId())
@@ -136,9 +179,20 @@ class EmulatedConnection(Connection):
 		return taskset
 	
 	def _stopCapture(self):
-		if self.getCapturing():
-			host = self.getHost()
-			tcpdump.stopCapture(host, self._captureName())
+		if self.getCaptureToFile():
+			self._stopCaptureToFile()
+		if self.getCaptureViaNet():
+			self._stopCaptureViaNet()
+			
+	def _stopCaptureToFile(self):
+		host = self.getHost()
+		tcpdump.stopCaptureToFile(host, self._captureName())
+
+	def _stopCaptureViaNet(self):
+		host = self.getHost()
+		port = self.getAttribute("capture_port")
+		tcpdump.stopCaptureViaNet(host, self._captureName(), port)
+		host.giveId("port", port)
 
 	def _deletePipes(self):
 		if self.bridge_id:
@@ -165,7 +219,7 @@ class EmulatedConnection(Connection):
 		return taskset
 
 	def downloadCaptureUri(self):
-		fault.check(not self.connector.state == State.CREATED and self.getCapturing(), "Captures not ready")
+		fault.check(not self.connector.state == State.CREATED and self.getCaptureToFile(), "Captures not ready")
 		host = self.getHost()
 		return tcpdump.downloadCaptureUri(host, self._captureName())
 	

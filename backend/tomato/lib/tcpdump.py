@@ -27,28 +27,48 @@ def _remoteDir(name):
 	
 def _checkSyntax(host, iface, filter):
 	ifaceutil.ifup(host, iface)
-	return _tcpdump(host, "-i %s -d %s >/dev/null 2>&1; echo $?" % (iface, filter)).strip() == "0"
+	return _tcpdump(host, "-i %s -d '%s' >/dev/null 2>&1; echo $?" % (iface, filter)).strip() == "0"
 	
-def startCapture(host, name, iface, filter=""):
+def startCaptureToFile(host, name, iface, filter=""):
 	assert name, "Name not given"
 	assert ifaceutil.interfaceExists(host, iface), "Interface does not exist"
 	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
-	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -W 5 -s0 %(filter)s >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
+	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -W 5 -s0 '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
 
-def captureRunning(host, name):
-	return process.processRunning(host, "%s.pid" % _remoteDir("_dummy"), "tcpdump")
+def captureToFileRunning(host, name="_dummy"):
+	return process.processRunning(host, "%s.file.pid" % _remoteDir(name), "tcpdump")
 
-def stopCapture(host, name):
+def stopCaptureToFile(host, name):
 	rdir = _remoteDir(name)
-	process.killPidfile(host, "%s.pid" % rdir)
+	process.killPidfile(host, "%s.file.pid" % rdir)
+
+def startCaptureViaNet(host, name, port, iface, filter=""):
+	assert name, "Name not given"
+	assert port, "Port not given"
+	assert ifaceutil.interfaceExists(host, iface), "Interface does not exist"
+	assert process.portFree(host, port), "Port already in use"
+	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
+	rdir = _remoteDir(name) 
+	fileutil.mkdir(host, rdir)
+	ifaceutil.ifup(host, iface)
+	host.execute("tcpserver -qHRl 0 0 %(port)s tcpdump -i %(iface)s -nUw - '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.net.pid" % {"iface": iface, "rdir": rdir, "filter": filter, "port": port })
+	assert not process.portFree(host, port)
+
+def captureViaNetRunning(host, name="_dummy"):
+	return process.processRunning(host, "%s.net.pid" % _remoteDir(name), "tcpserver")
+
+def stopCaptureViaNet(host, name, port):
+	rdir = _remoteDir(name)
+	process.killPidfile(host, "%s.net.pid" % rdir)
+	assert process.portFree(host, port)
 
 def removeCapture(host, name):
 	rdir = _remoteDir(name)
 	fileutil.delete(host, rdir, recursive=True)
-	fileutil.delete(host, "%s.pid" % rdir)
+	fileutil.delete(host, "%s.*.pid" % rdir)
 			
 def downloadCaptureUri(host, name):
 	filename = "%s.tar.gz" % name

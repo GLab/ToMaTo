@@ -1459,7 +1459,7 @@ var EditElement = Class.extend({
 	},
 	onChanged: function(value) {
 		if (this.changeListener) this.changeListener(value, this);
-		if (this.form) this.form.onChanged(this.name, value);
+		if (this.form && this.name) this.form.onChanged(this.name, value);
 	},
 	setValue: function(value) {
 	},
@@ -2086,12 +2086,19 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, ""), "bandwidth&nbsp;(in&nbsp;kb/s)");
 		this.attrs.addField(new MagicTextField("delay", pattern.int, ""), "latency&nbsp;(in&nbsp;ms)");
 		this.attrs.addField(new MagicTextField("lossratio", pattern.float, ""), "packet&nbsp;loss");
-		this.attrs.addField(new CheckField("capture", false), "capture&nbsp;packets");
+		t = this;
+		this.attrs.addField(new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
+			t.obj.setAttribute("capture_to_file", value == "to file");
+			t.obj.setAttribute("capture_via_net", value == "via network");
+			t.attrs["capture_filter"].setEnabled(value!="disabled");
+		}), "capture&nbsp;packets");
+		this.attrs.addField(new TextField("capture_filter", ""), "capture&nbsp;filter");
 		this.add(this.attrs.getDiv());
 	},
 	show: function() {
 		this.attrs.removeField("download");
 		this.attrs.load();
+		//FIXME: load dropdown value
 		var t = this;
 		if (this.obj.downloadSupported()) {
 			this.attrs.addMultipleFields([new Button("download", "download capture", function(btn){
