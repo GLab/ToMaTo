@@ -144,7 +144,7 @@ def admin_public_key(user=None):
 	Returns: public key
 	"""
 	_admin_access(user)
-	with open("%s.pub" % config.remote_ssh_key, 'r') as f:
+	with open("%s.pub" % config.SSH_KEY, 'r') as f:
 		key = f.read()
 	return key
 
