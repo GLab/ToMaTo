@@ -19,3 +19,4 @@ upload kernel lenny
 upload meta lenny
 upload backend squeeze
 upload web squeeze
+upload cli squeeze
