@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+# dbc_dbtypes="pgsql"
+. /usr/share/dbconfig-common/dpkg/config.pgsql
+dbc_go tomato $@
+
+#DEBHELPER#

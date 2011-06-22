@@ -71,6 +71,8 @@ try:
 				imp.load_source("backend_config", tmp, file)
 				from backend_config import *
 				print >>sys.stderr, "Loaded config from %s" % path
+			except Exception, exc:
+				print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
 			finally:
 				if os.path.exists(tmp+"c"):
 					os.remove(tmp+"c")

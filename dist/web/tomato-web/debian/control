@@ -7,7 +7,7 @@ Standards-Version: 3.8.3
 
 Package: tomato-web
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-django (>=1.2), 
+Depends: ${python:Depends}, ${misc:Depends}, python-django (>=1.2), 
   python-simplejson, apache2, libapache2-mod-python
 Description: ToMaTo webfrontend
  This web-based frontend allows users to access the ToMaTo testbed software. 

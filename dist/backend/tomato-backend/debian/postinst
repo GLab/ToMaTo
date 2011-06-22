@@ -28,6 +28,7 @@ case "$1" in
         [ -f /etc/tomato/ssh_key ] || ssh-keygen -q -f /etc/tomato/ssh_key -P ""
 
         chown -R root:tomato /etc/tomato
+        chown -R tomato:tomato /usr/share/tomato/backend
         chmod 640 /etc/tomato/backend.conf /etc/tomato/ssh_key
         chown tomato:tomato /var/lib/tomato /var/log/tomato
     ;;
@@ -43,7 +44,7 @@ esac
 
 . /usr/share/debconf/confmodule
 # dbc_dbtypes="pgsql"
-. /usr/share/dbconfig-common/dpkg/config.pgsql
+. /usr/share/dbconfig-common/dpkg/postinst.pgsql
 dbc_go tomato $@
 
 # dh_installdeb will replace this with shell code automatically

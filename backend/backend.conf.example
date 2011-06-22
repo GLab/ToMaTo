@@ -17,6 +17,8 @@
 #    file: The path of the .htpasswd file
 #    admin_user: The username of the admin user, defaults to None
 #
+AUTH = []
+
 AUTH.append({
     "NAME": "default",
     "PROVIDER": "htpasswd",
