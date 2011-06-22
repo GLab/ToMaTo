@@ -71,7 +71,8 @@ def removeCapture(host, name):
 	fileutil.delete(host, "%s.*.pid" % rdir)
 			
 def downloadCaptureUri(host, name):
-	filename = "%s.tar.gz" % name
+	filename = "%s.pcap" % name
 	path = hostserver.randomFilename(host)
-	fileutil.packdir(host, path, _remoteDir(name))
+	host.execute("tcpslice -w %s %s/*" % (path, _remoteDir(name)))
+	assert fileutil.existsFile(host, path)
 	return hostserver.downloadGrant(host, path, filename)
