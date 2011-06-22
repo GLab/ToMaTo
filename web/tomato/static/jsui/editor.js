@@ -431,6 +431,12 @@ var EmulatedConnection = Connection.extend({
 				window.location.href=msg;				
 			});
 		});
+	},
+	viewCapture: function(btn) {
+		var t = this;
+		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {}, function(msg) {
+			window.open("http://www.cloudshark.org/view?url="+escape(unescape(msg)), "_newtab")
+		});
 	}
 });
 
@@ -2098,17 +2104,19 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 	},
 	show: function() {
 		this.attrs.removeField("download");
+		this.attrs.removeField("cloudshark");
 		this.attrs.load();
 		this.captureField.setEditable(true);
 		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
 			this.captureField.setValue("to file")
 		if (Boolean.parse(this.obj.getAttribute("capture_via_net", "false")))
 			this.captureField.setValue("via network")
-		//FIXME: load dropdown value
 		var t = this;
 		if (this.obj.downloadSupported()) {
 			this.attrs.addMultipleFields([new Button("download", "download capture", function(btn){
 				t.obj.downloadCapture(btn);
+			}), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
+				t.obj.viewCapture(btn);
 			})]);
 		}
 		this._super();
