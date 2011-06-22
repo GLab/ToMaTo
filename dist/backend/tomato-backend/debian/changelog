@@ -1,3 +1,9 @@
+tomato-backend (1.4.1-r1) stable; urgency=low
+
+  * Added postgresql and rsync dependencies
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 22 Jun 2011 20:41:10 +0200
+
 tomato-backend (1.4.1) stable; urgency=low
 
   * Version bump to 1.4.1

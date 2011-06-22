@@ -60,6 +60,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
+	daemon --name=$NAME --user=$USER.$GROUP --running || return 1
 	daemon --name=$NAME --user=$USER.$GROUP --stop && return 0 || return 3
 }
 

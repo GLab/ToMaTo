@@ -186,10 +186,14 @@ SERVER = {
 
 # See the django database manual for help
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/var/lib/tomato/tomato.sqlite'
-    }
+	'default': {
+		'ENGINE': 'django.db.backends.postgresql_psycopg2',
+		'NAME': 'tomato'
+	}
+#    	'default': {
+#    		'ENGINE': 'django.db.backends.sqlite3',
+#    		'NAME': '/var/lib/tomato/tomato.sqlite'
+#    	}
 }
 
 # Path to store temporary files in

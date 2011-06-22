@@ -1,3 +1,5 @@
+- logs
+- .*
 + */
 + backend.conf.example
 + *.py
