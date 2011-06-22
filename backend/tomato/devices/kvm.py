@@ -248,6 +248,7 @@ class KVMDevice(Device):
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
 		if "template" in properties:
+			self.setTemplate(properties["template"])
 			self._assignTemplate()
 		self.save()
 			
