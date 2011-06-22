@@ -139,7 +139,7 @@ class EmulatedConnection(Connection):
 		ipfw.configurePipe(host, pipe_id, delay=self.getDelay(), bandwidth=self.getBandwidth(), lossratio=self.getLossRatio())
 		
 	def _captureName(self):
-		return "%s-%s-%s" % (self.connector.topology.name, self.connector.name, self)
+		return "capture-%s-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
 	def _startCapture(self):
 		if self.getCaptureToFile():

@@ -27,8 +27,8 @@ def _startDummyCapture(host):
 	if not ifaceutil.bridgeExists(host, "dummy"):
 		ifaceutil.bridgeCreate(host, "dummy")
 	ifaceutil.ifup(host, "dummy")
-	if not tcpdump.captureRunning(host, "_dummy"):
-		tcpdump.startCapture(host, "_dummy", "dummy")
+	if not tcpdump.captureToFileRunning(host, "_dummy"):
+		tcpdump.startCaptureToFile(host, "_dummy", "dummy")
 
 def configurePipe(host, pipe, delay=0, bandwidth=None, lossratio=0.0):
 	assert pipeExists(host, pipe), "Pipe does not exist %s on host %s" % (pipe, host)

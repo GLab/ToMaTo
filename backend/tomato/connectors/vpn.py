@@ -87,7 +87,7 @@ class TincConnector(Connector):
 			interface = self.topology.interfacesGet(attrs["iface"])
 			fault.check(interface, "No such interface: %s", attrs["iface"])
 			con = interface.connection.upcast()
-			assert con.connector == self
+			assert con.connector.id == self.id
 			return con.downloadCaptureUri()
 		else:
 			return Connector._runAction(self, action, attrs, direct)			

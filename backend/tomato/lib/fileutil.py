@@ -81,7 +81,7 @@ def packdir(host, archive, dir, args=""):
 		args = args + " -z"
 	if archive.endswith(".bz2") and not "-j" in args:
 		args = args + " -j"
-	res = host.execute("tar -cf %s -C %s %s ." % (archive, dir, args))
+	res = host.execute("tar -cf '%s' -C '%s' %s ." % (archive, dir, args))
 	assert existsFile(host, archive), "Failed to pack directory: %s" % res
 	return res
 
@@ -91,7 +91,7 @@ def unpackdir(host, archive, dir, args=""):
 		args = args + " -z"
 	if archive.endswith(".bz2") and not "-j" in args:
 		args = args + " -j"
-	return host.execute("tar -xf %s -C %s %s" % (archive, dir, args))
+	return host.execute("tar -xf '%s' -C '%s' %s" % (archive, dir, args))
 
 def compress(host, src, dst):
 	assert existsFile(host, src)

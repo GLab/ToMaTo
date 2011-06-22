@@ -84,8 +84,8 @@ var NetElement = Class.extend({
 		attr[name]=value;
 		this.editor.ajaxModify([this.modification("configure", attr)]);
 	},
-	getAttribute: function(name) {
-		return this.attributes[name];
+	getAttribute: function(name, deflt) {
+		return this.attributes[name] ? this.attributes[name] : deflt;
 	},
 	setAttributes: function(attrs) {
 		this.attributes = {};
@@ -2087,17 +2087,23 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.attrs.addField(new MagicTextField("delay", pattern.int, ""), "latency&nbsp;(in&nbsp;ms)");
 		this.attrs.addField(new MagicTextField("lossratio", pattern.float, ""), "packet&nbsp;loss");
 		t = this;
-		this.attrs.addField(new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
+		this.captureField = new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
 			t.obj.setAttribute("capture_to_file", value == "to file");
 			t.obj.setAttribute("capture_via_net", value == "via network");
-			t.attrs["capture_filter"].setEnabled(value!="disabled");
-		}), "capture&nbsp;packets");
+			t.attrs.fields["capture_filter"].setEditable(value!="disabled");
+		});
+		this.attrs.addField(this.captureField, "capture&nbsp;packets");
 		this.attrs.addField(new TextField("capture_filter", ""), "capture&nbsp;filter");
 		this.add(this.attrs.getDiv());
 	},
 	show: function() {
 		this.attrs.removeField("download");
 		this.attrs.load();
+		this.captureField.setEditable(true);
+		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
+			this.captureField.setValue("to file")
+		if (Boolean.parse(this.obj.getAttribute("capture_via_net", "false")))
+			this.captureField.setValue("via network")
 		//FIXME: load dropdown value
 		var t = this;
 		if (this.obj.downloadSupported()) {
