@@ -102,6 +102,9 @@ class EmulatedConnection(Connection):
 		capabilities["action"].update({
 			"download_capture": isUser and not self.connector.state == State.CREATED and self.getCaptureToFile()
 		})
+		capabilities["other"] = {
+			"live_capture": isUser and self.connector.state == State.STARTED and self.getCaptureViaNet()
+		}
 		return capabilities
 
 	def configure(self, properties):
@@ -225,6 +228,8 @@ class EmulatedConnection(Connection):
 	
 	def toDict(self, auth):
 		res = Connection.toDict(self, auth)
-		res["attrs"].update(self.getAttributes())		
+		res["attrs"].update(self.getAttributes())
+		if self.connector.state == State.STARTED and self.getCaptureViaNet():
+			res["attrs"].update(capture_host=self.getHost().name)
 		return res
 	

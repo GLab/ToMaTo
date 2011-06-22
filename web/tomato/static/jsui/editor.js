@@ -415,7 +415,16 @@ var EmulatedConnection = Connection.extend({
 			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/64"};
 	},
 	downloadSupported: function() {
-		return this.capabilities && this.capabilities.action && this.capabilities.action.download_capture;
+		return this.capabilities && this.capabilities.action && this.capabilities.action.download_capture && Boolean.parse(this.capabilities.action.download_capture);
+	},
+	liveCaptureSupported: function() {
+		return this.capabilities && this.capabilities.other && this.capabilities.other.live_capture && Boolean.parse(this.capabilities.other.live_capture);
+	},
+	showLiveCaptureInfo: function() {
+		var host = this.getAttribute("capture_host");
+		var port = this.getAttribute("capture_port");
+		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
+		this.editor.infoMessage("Live capture Information", '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>");
 	},
 	downloadCapture: function(btn) {
 		btn.setEditable(false);
@@ -2105,6 +2114,7 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 	show: function() {
 		this.attrs.removeField("download");
 		this.attrs.removeField("cloudshark");
+		this.attrs.removeField("livecapture");
 		this.attrs.load();
 		this.captureField.setEditable(true);
 		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
@@ -2117,6 +2127,11 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 				t.obj.downloadCapture(btn);
 			}), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
 				t.obj.viewCapture(btn);
+			})]);
+		}
+		if (this.obj.liveCaptureSupported()) {
+			this.attrs.addMultipleFields([new Button("livecapture", "live capture info", function(btn){
+				t.obj.showLiveCaptureInfo();
 			})]);
 		}
 		this._super();
