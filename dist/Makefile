@@ -1,4 +1,4 @@
-MODULES = kernel dummynet hostserver meta web backend
+MODULES = kernel dummynet hostserver meta web backend cli
 
 default: build
 

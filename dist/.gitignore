@@ -15,3 +15,7 @@ web/tomato-web/debian/files
 web/tomato-web/tomato
 meta/tomato-host/debian/tomato-host
 meta/tomato-host/debian/files
+cli/tomato-cli/debian/tomato-cli
+cli/tomato-cli/debian/files
+cli/tomato-cli/tomato.py
+cli/tomato-cli/scripts

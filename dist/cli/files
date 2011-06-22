@@ -1,0 +1,8 @@
+- .*
+- /tests
+- /lib
++ */
+- *~
+- *.pyc
+- tests
+- lib
