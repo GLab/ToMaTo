@@ -1,3 +1,9 @@
+tomato-host (0.8-r1) stable; urgency=low
+
+  * Fixed package
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 22 Jun 2011 21:49:22 +0200
+
 tomato-host (0.8) stable; urgency=low
 
   * Added tcpslice as dependency

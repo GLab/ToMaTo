@@ -17,4 +17,4 @@ $(PACKAGE)_*.deb:
 .PHONY: clean
 clean:
 	(cd $(PACKAGE); debuild clean; cd ..)
-	rm -rf $(PACKAGE)_*.{deb,build,changes}
+	rm -rf $(PACKAGE)_*
