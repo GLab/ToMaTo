@@ -125,6 +125,8 @@ class KVMDevice(Device):
 			if not ifaceutil.interfaceExists(self.host, "vmbr%d" % iface_id):
 				ifaceutil.bridgeCreate(self.host, "vmbr%d" % iface_id)
 		qm.start(self.host, self.getVmid())
+		for iface in self.interfaceSetAll():
+			qm.waitForInterface(self.host, self.getVmid(), iface.name)
 
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)

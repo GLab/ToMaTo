@@ -134,7 +134,10 @@ def getMemoryUsage(host, vmid):
 	else:
 		return 0
 	
-def interfaceDevice(host, vmid, iface):
+def waitForInterface(host, vmid, iface):
+	util.waitFor(lambda :interfaceDevice(host, vmid, iface, failSilent=True))
+	
+def interfaceDevice(host, vmid, iface, failSilent=False):
 	"""
 	Returns the name of the host device for the given interface
 	
@@ -154,8 +157,8 @@ def interfaceDevice(host, vmid, iface):
 	iface_id = re.match("eth(\d+)", iface).group(1)
 	assert getState(host, vmid) == generic.State.STARTED, "Cannot determine KVM host device names when not running"
 	names = host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": vmid, "iface_id": iface_id }).strip().split()
-	assert len(names) == 1, "Failed to determine kvm interface name, got %d names: %s" % (len(names), names)
-	return names[0]
+	assert failSilent or len(names) == 1, "Failed to determine kvm interface name, got %d names: %s" % (len(names), names)
+	return names[0] if len(names) == 1 else None
 
 def create(host, vmid):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"
