@@ -9,7 +9,7 @@ Package: tomato-backend
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, python, python-twisted, 
  python-django (>=1.2), python-django-south (>=0.7), python-ldap, python-twisted-web,
- openssh-client, adduser, daemon
+ openssh-client, adduser, daemon, rsync, python-psycopg2, postgresql
 Recommends: tomato-web
 Description: ToMaTo backend
  This is the major ToMaTo component. ToMaTo is a networking testbed, giving

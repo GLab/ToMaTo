@@ -1,0 +1,5 @@
+- .*
++ */
++ web.conf.example
+- *~
+- *.pyc

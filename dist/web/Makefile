@@ -15,14 +15,12 @@ $(PACKAGE)_*.deb:
 	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
 
 .PHONY: sync
-sync: $(PACKAGE)/tomato $(PACKAGE)/web.conf.example
-$(PACKAGE)/tomato:
-	rsync -av ../../web/ $(PACKAGE)/ --exclude=.* --exclude=*.pyc
-$(PACKAGE)/web.conf.example:
-	cp -a ../../web/web.conf.example $(PACKAGE)/
+sync:
+	rsync -av ../../web/ $(PACKAGE)/ --filter 'merge files'
 
 .PHONY: clean
 clean:
 	(cd $(PACKAGE); debuild clean; cd ..)
 	rm -rf $(PACKAGE)_*
 	rm -rf $(PACKAGE)/tomato
+	rm $(PACKAGE)/web.conf.example

@@ -15,15 +15,8 @@ $(PACKAGE)_*.deb:
 	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
 
 .PHONY: sync
-sync: $(PACKAGE)/tomato $(PACKAGE)/server.py $(PACKAGE)/manage.py $(PACKAGE)/backend.conf.example
-$(PACKAGE)/tomato:
-	rsync -av ../../backend/tomato $(PACKAGE)/ --exclude=.* --exclude=*.pyc
-$(PACKAGE)/server.py:
-	cp -a ../../backend/server.py $(PACKAGE)/
-$(PACKAGE)/manage.py:
-	cp -a ../../backend/manage.py $(PACKAGE)/
-$(PACKAGE)/backend.conf.example:
-	cp -a ../../backend/backend.conf.example $(PACKAGE)/
+sync:
+	rsync -av ../../backend/ $(PACKAGE)/ --filter 'merge files'
 
 .PHONY: clean
 clean:
