@@ -110,9 +110,9 @@ def connectInterfaces(host, if1, if2, id, allowIps):
 	host.execute ( "ip route add table %s default dev %s" % ( table1, if2 ))
 	host.execute ( "ip route add table %s default dev %s" % ( table2, if1 ))
 	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if2))
-	assert if1 in res, res
+	assert if1 in res, "route should be %s but was %s" % (if1, res)
 	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if1))
-	assert if2 in res, res
+	assert if2 in res, "route should be %s but was %s" % (if2, res)
 
 def iptablesRemoveRules(host, device):
 	host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % device )
