@@ -36,13 +36,14 @@ The parameters of this file are PORT BASE_DIRECTORY SECRET_KEY
 
 To download a file a request of the following syntax must be issued:
 GET /download?file=FILE&grant=GRANT
-	FILE is the filename in the given directory to download.
+	FILE is the base64 encoded filename in the given directory to download.
 	GRANT is the grant hash as hexadecimal involving all parameters and the
 	secret key.
 
 To upload a file a request of the following syntax must be issued:
 POST /upload?file=FILE&redirect=REDIRECT&grant=GRANT
-	FILE is the filename in the given directory to store the file in
+	FILE is the base64 encoded filename in the given directory to store the
+	 file in.
 	REDIRECT is the base64 encoded URL that should be loaded when the upload
 	succeeded.
 	GRANT is the grant hash as hexadecimal involving all parameters and the
@@ -81,7 +82,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.error(403, "Invalid grant")
 				return
 			try:
-				file = open(os.path.join(basedir,params["file"]), "wb")
+				filename = base64.b64decode(params["file"])
+				file = open(os.path.join(basedir,filename), "wb")
 				upload = form["upload"].file
 				shutil.copyfileobj(upload, file)
 				file.close()
@@ -93,20 +95,27 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.error(500, "Failed to write file")
 		else:
 			self.error(404, "Not Found")
+	def do_HEAD(self):
+		return self._download(True)
 	def do_GET(self):
+		return self._download(False)
+	def _download(self, headOnly=False):
 		path, params = self.process_request()
 		if path == "/download":
 			if not check_grant(params):
 				self.error(403, "Invalid grant")
 				return
 			try:
-				file = open(os.path.join(basedir,params["file"]), "rb")
+				filename = base64.b64decode(params["file"])
+				file = open(os.path.join(basedir,filename), "rb")
 				self.send_response(200)
 				if params.has_key("name"):
                                         self.send_header('Content-Disposition', "attachment; filename=%s" % params["name"])
+				self.send_header('Content-Type', 'application/octet-stream')
 				self.end_headers()
-				shutil.copyfileobj(file, self.wfile)
-				file.close()
+				if not headOnly:
+					shutil.copyfileobj(file, self.wfile)
+					file.close()
 				self.finish()
 			except:
 				self.error(404, "File not found")

@@ -26,13 +26,13 @@ def randomFilename(host):
 	return "%s/%s" % (host.getAttribute("hostserver_basedir"), uuid.uuid1())
 
 def uploadGrant(host, filename, redirect):
-	params={"file": filename, "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
+	params={"file": base64.b64encode(filename), "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
 	params.update(grant=_calcGrant(host, params))
 	qstr = urllib.urlencode(params)
 	return "http://%s:%s/upload?%s" % (host.name, host.getAttribute("hostserver_port"), qstr)
 	
 def downloadGrant(host, file, name):
-	params={"file": file, "valid_until": str(time.time()+3600), "name": name}
+	params={"file": base64.b64encode(file), "valid_until": str(time.time()+3600), "name": name}
 	params.update(grant=_calcGrant(host, params))
 	qstr = urllib.urlencode(params)
 	return "http://%s:%s/download?%s" % (host.name, host.getAttribute("hostserver_port"), qstr)
