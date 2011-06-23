@@ -1,6 +1,40 @@
-diff -ur pve-kernel-2.6.32_2010-12-23/config-2.6.32.org pve-kernel-2.6.32_2010-12-23-1000hz/config-2.6.32.org
---- pve-kernel-2.6.32_2010-12-23/config-2.6.32.org	2011-02-01 07:22:33.000000000 +0100
-+++ pve-kernel-2.6.32_2010-12-23-1000hz/config-2.6.32.org	2011-02-01 07:23:39.000000000 +0100
+--- Makefile.orig	2011-06-23 14:08:38.000000000 +0200
++++ Makefile	2011-06-23 14:34:26.000000000 +0200
+@@ -15,6 +15,12 @@
+ ARCH=amd64
+ TOP=$(shell pwd)
+ 
++PACKAGE:=${PACKAGE}
++HDRPACKAGE:=${HDRPACKAGE}
++OKVNAME:=${KVNAME}
++EXTRAVERSION:=${EXTRAVERSION}-1000hz
++PKGREL:=${PKGREL}-1000hz
++
+ KERNEL_SRC=linux-2.6-${KERNEL_VER}
+ KERNEL_SRC_TAR=linux-2.6_${KERNEL_VER}.orig.tar.gz
+ KERNEL_DEB_DIFF=linux-2.6_${KERNEL_VER}-${KERNEL_DEB_REL}.diff.gz
+@@ -58,7 +64,7 @@
+ 	mkdir -p proxmox-ve/data/DEBIAN
+ 	mkdir -p proxmox-ve/data/usr/share/doc/${PVEPKG}/
+ 	install -m 0644 proxmox-ve/proxmox-release\@proxmox.com.pubkey proxmox-ve/data/usr/share/doc/${PVEPKG}
+-	sed -e 's/@KVNAME@/${KVNAME}/' -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@RELEASE@/${RELEASE}/' -e 's/@PKGREL@/${PKGREL}/' <proxmox-ve/control >proxmox-ve/data/DEBIAN/control
++	sed -e 's/@KVNAME@/${OKVNAME}/' -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@RELEASE@/${RELEASE}/' -e 's/@PKGREL@/${PKGREL}/' <proxmox-ve/control >proxmox-ve/data/DEBIAN/control
+ 	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' <proxmox-ve/postinst >proxmox-ve/data/DEBIAN/postinst
+ 	chmod 0755 proxmox-ve/data/DEBIAN/postinst
+ 	install -m 0644 proxmox-ve/copyright proxmox-ve/data/usr/share/doc/${PVEPKG}
+@@ -71,8 +77,8 @@
+ 
+ ${DST_DEB}: data control.in postinst.in
+ 	mkdir -p data/DEBIAN
+-	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${KVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <control.in >data/DEBIAN/control
+-	sed -e 's/@@KVNAME@@/${KVNAME}/g'  <postinst.in >data/DEBIAN/postinst
++	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${OKVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <control.in >data/DEBIAN/control
++	sed -e 's/@@KVNAME@@/${OKVNAME}/g'  <postinst.in >data/DEBIAN/postinst
+ 	chmod 0755 data/DEBIAN/postinst
+ 	install -D -m 644 copyright data/usr/share/doc/${PACKAGE}/copyright
+ 	install -D -m 644 changelog.Debian data/usr/share/doc/${PACKAGE}/changelog.Debian
+--- config-2.6.32.org.orig	2011-06-23 14:08:33.000000000 +0200
++++ config-2.6.32.org	2011-06-23 14:28:21.000000000 +0200
 @@ -375,10 +375,10 @@
  CONFIG_SECCOMP=y
  CONFIG_CC_STACKPROTECTOR=y
@@ -11,19 +45,18 @@ diff -ur pve-kernel-2.6.32_2010-12-23/config-2.6.32.org pve-kernel-2.6.32_2010-1
 -# CONFIG_HZ_1000 is not set
 -CONFIG_HZ=250
 +CONFIG_HZ_1000=y
-+CONFIG_HZ=1000
++CONFIG_HZ_1000
  CONFIG_SCHED_HRTICK=y
  CONFIG_KEXEC=y
  # CONFIG_CRASH_DUMP is not set
-diff -ur pve-kernel-2.6.32_2010-12-23/Makefile pve-kernel-2.6.32_2010-12-23-1000hz/Makefile
---- pve-kernel-2.6.32_2010-12-23/Makefile	2011-02-01 07:22:33.000000000 +0100
-+++ pve-kernel-2.6.32_2010-12-23-1000hz/Makefile	2011-02-01 07:22:51.000000000 +0100
-@@ -1,7 +1,7 @@
- RELEASE=1.7
+--- find-firmware.pl.orig	2011-06-23 14:55:22.000000000 +0200
++++ find-firmware.pl	2011-06-23 14:56:18.000000000 +0200
+@@ -8,7 +8,7 @@
  
- KERNEL_VER=2.6.32
--PKGREL=30
-+PKGREL=30-glab1
- KREL=4
+ die "no such directory" if ! -d $dir;
  
- KERNEL_DEB_REL=29
+-die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(/+)?$|;
++die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(-1000hz)?(/+)?$|;
+ 
+ my $apiver = $2;
+ 

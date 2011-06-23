@@ -1,9 +1,9 @@
 PACKAGE=pve-kernel
-DEPENDENCIES=build-essential rsync debhelper libssl-dev fakeroot quilt lintian git-core
-VERSION=2.6.32_2010-12-23
+DEPENDENCIES=build-essential rsync debhelper libssl-dev fakeroot quilt lintian git-core unzip
+VERSION=2.6.32_2011-06-17
 FILE=$(PACKAGE)-$(VERSION).tar.gz
 URL=ftp://download.proxmox.com/sources/$(FILE)
-MD5=956b962fe7edba00a7a3df6e2ab894b9
+MD5=466f6b20083e221ede8fef14a2e379b0
 
 .PHONY: default
 default: build
@@ -20,7 +20,7 @@ $(FILE):
 build: check-build-deps $(PACKAGE)-*.deb
 $(PACKAGE)-*.deb: $(FILE)
 	tar xzf $(FILE)
-	(cd $(PACKAGE)-$(VERSION); patch -p1 < ../pve-1000hz.patch; make; cd ..)
+	(cd $(PACKAGE)-$(VERSION); patch -p0 < ../pve-1000hz.patch; make; cd ..)
 	mv $(PACKAGE)-$(VERSION)/*.deb .
 
 .PHONY: clean
