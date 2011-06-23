@@ -1,5 +1,5 @@
 PACKAGE=ipfw3
-DEPENDENCIES=pve-headers-2.6.32-4-pve build-essential cdbs devscripts
+DEPENDENCIES=pve-headers-2.6.32-5-pve build-essential cdbs devscripts
 VERSION=20100319
 FILE=$(VERSION)-$(PACKAGE).tgz
 URL=http://info.iet.unipi.it/~luigi/dummynet/$(FILE)
