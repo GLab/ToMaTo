@@ -1,25 +1,11 @@
 PACKAGE=tomato-cli
-DEPENDENCIES=debhelper devscripts
+_VERSION=1.4.1
+_SUBVERSION=
 
-.PHONY: default
-default: build
+include common.mk
 
-include ../common.mk
-
-.PHONY: download
-download: ;
-
-.PHONY: build
-build: check-build-deps sync $(PACKAGE)_*.deb
-$(PACKAGE)_*.deb:
-	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
-
-.PHONY: sync
-sync:
-	rsync -av ../../cli/ $(PACKAGE)/ --filter 'merge files'
-
-.PHONY: clean
-clean:
-	(cd $(PACKAGE); debuild clean; cd ..)
-	rm -rf $(PACKAGE)_*
-	rm -rf $(PACKAGE)/tomato.py
+$(ORIG):
+	mkdir -p tmp/$(DIR)
+	rsync -a ../../cli/ tmp/$(DIR) --filter 'merge files'
+	(cd tmp; tar -czf ../$(ORIG) $(DIR); cd ..)
+	rm -rf tmp
