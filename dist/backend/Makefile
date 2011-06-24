@@ -2,7 +2,7 @@ PACKAGE=tomato-backend
 _VERSION=1.4.1
 _SUBVERSION=-r1
 
-include common.mk
+include ../common.mk
 
 $(ORIG):
 	mkdir -p tmp/$(DIR)

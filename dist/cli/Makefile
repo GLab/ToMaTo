@@ -2,7 +2,7 @@ PACKAGE=tomato-cli
 _VERSION=1.4.1
 _SUBVERSION=
 
-include common.mk
+include ../common.mk
 
 $(ORIG):
 	mkdir -p tmp/$(DIR)
