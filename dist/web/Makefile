@@ -1,26 +1,10 @@
 PACKAGE=tomato-web
-DEPENDENCIES=debhelper devscripts
+_VERSION=1.4.1
 
-.PHONY: default
-default: build
+include common.mk
 
-include ../common.mk
-
-.PHONY: download
-download: ;
-
-.PHONY: build
-build: check-build-deps sync $(PACKAGE)_*.deb
-$(PACKAGE)_*.deb:
-	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
-
-.PHONY: sync
-sync:
-	rsync -av ../../web/ $(PACKAGE)/ --filter 'merge files'
-
-.PHONY: clean
-clean:
-	(cd $(PACKAGE); debuild clean; cd ..)
-	rm -rf $(PACKAGE)_*
-	rm -rf $(PACKAGE)/tomato
-	rm $(PACKAGE)/web.conf.example
+$(ORIG):
+	mkdir -p tmp/$(DIR)
+	rsync -a ../../web/ tmp/$(DIR) --filter 'merge files'
+	(cd tmp; tar -czf ../$(ORIG) $(DIR); cd ..)
+	rm -rf tmp

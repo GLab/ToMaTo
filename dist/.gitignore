@@ -3,6 +3,7 @@
 *.deb
 *.build
 *.changes
+*.orig.*
 backend/tomato-backend/backend.conf.example
 backend/tomato-backend/debian/tomato-backend
 backend/tomato-backend/debian/files
