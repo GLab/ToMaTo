@@ -3,6 +3,7 @@ from lib.misc import *
 import stateTransitions
 import linkEmulation
 import tincConnectors
+import packetCapturing
 import images
 import migrate
 
@@ -28,6 +29,9 @@ if __name__ == "__main__":
 
 		print "testing link emulation..."
 		linkEmulation.simpleTop_checkLinkEmulation(topId)
+
+		print "testing packet capturing..."
+		packetCapturing.simpleTop_checkPacketCapturing(topId)
 
 		print "destroying topology..."
 		top_action(topId, "destroy", direct=True)

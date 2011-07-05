@@ -17,7 +17,7 @@
 
 from tomato import config
 
-import ifaceutil, fileutil, process, hostserver
+import ifaceutil, fileutil, process, hostserver, util
 
 def _tcpdump(host, cmd):
 	return host.execute("tcpdump %s" % cmd)
@@ -36,7 +36,7 @@ def startCaptureToFile(host, name, iface, filter=""):
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
-	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -W 5 -s0 '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
+	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -U -W 5 -s0 '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
 
 def captureToFileRunning(host, name="_dummy"):
 	return process.processRunning(host, "%s.file.pid" % _remoteDir(name), "tcpdump")
@@ -63,6 +63,7 @@ def captureViaNetRunning(host, name="_dummy"):
 def stopCaptureViaNet(host, name, port):
 	rdir = _remoteDir(name)
 	process.killPidfile(host, "%s.net.pid" % rdir)
+	process.killPortUser(host, port)
 	assert process.portFree(host, port)
 
 def removeCapture(host, name):
@@ -74,5 +75,5 @@ def downloadCaptureUri(host, name):
 	filename = "%s.pcap" % name
 	path = hostserver.randomFilename(host)
 	host.execute("tcpslice -w %s %s/*" % (path, _remoteDir(name)))
-	assert fileutil.existsFile(host, path)
+	assert fileutil.existsFile(host, path), "No packages captured yet"
 	return hostserver.downloadGrant(host, path, filename)

@@ -39,6 +39,9 @@ class EmulatedConnection(Connection):
 		self.setBandwidth(DEFAULT_BANDWIDTH)
 		self.setDelay(DEFAULT_DELAY)
 		self.setLossRatio(DEFAULT_LOSSRATIO)
+		self.setCaptureFilter("")
+		self.setCaptureToFile(False)
+		self.setCaptureViaNet(False)
 	
 	def upcast(self):
 		if self.isTinc():
