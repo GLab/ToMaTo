@@ -194,8 +194,10 @@ class EmulatedConnection(Connection):
 	def _stopCaptureViaNet(self):
 		host = self.getHost()
 		port = self.getAttribute("capture_port")
-		tcpdump.stopCaptureViaNet(host, self._captureName(), port)
-		host.giveId("port", port)
+		if host and port:
+			tcpdump.stopCaptureViaNet(host, self._captureName(), port)
+			self.deleteAttribute("capture_port")
+			host.giveId("port", port)
 
 	def _deletePipes(self):
 		if self.bridge_id:
@@ -233,3 +235,9 @@ class EmulatedConnection(Connection):
 			res["attrs"].update(capture_host=self.getHost().name)
 		return res
 	
+	def getIdUsage(self, host):
+		ids = Connection.getIdUsage(self, host)
+		capture_port = self.getAttribute("capture_port", None)
+		if capture_port:
+			ids.update(port=set((capture_port,)))
+		return ids
