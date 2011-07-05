@@ -1226,7 +1226,7 @@ var Editor = Class.extend({
 			var con_obj = this.getElement("connector", name);
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
-			con_obj.setCapabilities(dev.capabilities);
+			con_obj.setCapabilities(con.capabilities);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
