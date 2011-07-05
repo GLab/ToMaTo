@@ -94,6 +94,7 @@ var NetElement = Class.extend({
 	},
 	setCapabilities: function(capabilities) {
 		this.capabilities = capabilities;
+		if (this.form && this.form.reload) this.form.reload();
 	},
 	getElementType: function() {
 		return "";
