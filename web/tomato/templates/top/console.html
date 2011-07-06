@@ -14,16 +14,21 @@ function getUrlVars() {
 }    
         
 function wresize() {
-	var ps = document.vncapp.getPreferredSize();
-	document.vncapp.width = ps.width;
-	document.vncapp.height = ps.height;
-	var applet = $(document.vncapp);
-	var height = applet.outerHeight();
-	var width = applet.outerWidth();
-	height += window.outerHeight - window.innerHeight;
-	width += window.outerWidth - window.innerWidth;
-	window.resizeTo(width, height);
-	setTimeout ("wresize()", 1000);
+	try {
+		var ps = document.vncapp.getPreferredSize();
+		if (ps.width > 100 && ps.height > 100) {
+			document.vncapp.width = ps.width;
+			document.vncapp.height = ps.height;
+			var applet = $(document.vncapp);
+			var height = applet.outerHeight();
+			var width = applet.outerWidth();
+			height += window.outerHeight - window.innerHeight;
+			width += window.outerWidth - window.innerWidth;
+			window.resizeTo(width, height);
+		}
+	} finally {
+		setTimeout ("wresize()", 1000);
+	}
 }
 
 function showConsole() {
