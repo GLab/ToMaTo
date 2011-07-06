@@ -1,0 +1,20 @@
+Ether = scapy.Ether
+
+include send.lib
+
+SAT={}
+
+def handle(dev, p):
+    src=p[Ether].src
+    dst=p[Ether].dst
+    SAT[src]=dev
+    send(SAT.get(dst, None), p)
+
+if callfunc == 'initialize':
+    while True:
+        try:
+            (dev, packet) = tuntap_read_any(timeout=None)
+            if packet:
+                handle(dev, Ether(packet))
+        except Exception, e:
+            print_exc(e)

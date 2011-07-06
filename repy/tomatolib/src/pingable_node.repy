@@ -1,0 +1,15 @@
+include ip_node.lib
+include random_mac.lib
+include parse_args.lib
+
+if callfunc == 'initialize':
+    defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+    options = parse_args(defaults)
+    node = IP_Node(**options)
+    while True:
+        try:
+            (dev, packet) = tuntap_read_any(timeout=None)
+            if packet:
+                node.handle(dev, Ether(packet))
+        except Exception, e:
+            print_exc(e)

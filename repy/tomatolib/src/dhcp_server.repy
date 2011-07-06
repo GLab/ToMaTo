@@ -1,0 +1,17 @@
+include dhcp_server_node.lib
+include random_mac.lib
+include parse_args.lib
+
+if callfunc == 'initialize':
+    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.2-250",
+                "netmask":"255.255.255.0", "broadcast":"10.0.0.255", "domain":"example.com"}
+    options = parse_args(defaults)
+    options["pool"] = Net(options["pool"])
+    node = DHCP_Server(**options)
+    while True:
+        try:
+            (dev, packet) = tuntap_read_any(timeout=None)
+            if packet:
+                node.handle(dev, Ether(packet))
+        except Exception, e:
+            print_exc(e)

@@ -1,0 +1,6 @@
+def send(dev, p):
+    if dev:
+        tuntap_send(dev, str(p))
+    else:
+        for dev in tuntap_list():
+            send(dev, p)

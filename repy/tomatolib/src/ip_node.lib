@@ -1,0 +1,17 @@
+include send.lib
+
+Ether = scapy.Ether
+IP = scapy.IP
+ICMP = scapy.ICMP
+Raw = scapy.Raw
+ARP = scapy.ARP
+
+class IP_Node:
+    def __init__(self, mac=None, ip=None, **kwargs):
+        self.mac = mac
+        self.ip = ip
+    def handle(self, dev, p):
+        if ARP in p and p[ARP].pdst == self.ip:
+            send(dev, Ether(src=self.mac, dst=p[Ether].src)/ARP(op="is-at", hwtype=p[ARP].hwtype, ptype=p[ARP].ptype, hwsrc=self.mac, psrc=self.ip, hwdst=p[ARP].hwsrc, pdst=p[ARP].psrc))
+        if ICMP in p and p[IP].dst == self.ip and p[ICMP].type == 8:
+            send(dev, Ether(src=self.mac, dst=p[Ether].src)/IP(src=self.ip, dst=p[IP].src)/ICMP(type="echo-reply", seq=p[ICMP].seq, id=p[ICMP].id)/p[Raw])
