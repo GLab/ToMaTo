@@ -258,7 +258,7 @@ class KVMDevice(Device):
 		iface = Interface()
 		try:
 			if self.interfaceSetGet(name):
-				raise fault.new("Duplicate interface name: %s" % name)
+				raise fault.new("Duplicate interface name: %s" % name, fault.USER_ERROR)
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = name
@@ -267,18 +267,43 @@ class KVMDevice(Device):
 		if self.state == State.PREPARED:
 			qm.addInterface(self.host, self.getVmid(), iface.name)
 		iface.save()
-		Device.interfaceSetAdd(self, iface)
+		self.interfaceSetAdd(iface)
+		self.save()
 
 	def interfacesConfigure(self, name, properties):
 		pass
 	
 	def interfacesRename(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
-		#FIXME: implement by delete-add
-		fault.check(False, "KVM does not support renaming interfaces: %s" % name)
+		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
+		iface = self.interfaceSetGet(name)
+		newName = properties["name"]
+		fault.check(re.match("eth(\d+)", newName), "Invalid interface name: %s" % name)
+		try:
+			if self.interfaceSetGet(newName):
+				raise fault.new("Duplicate interface name: %s" % newName, fault.USER_ERROR)
+		except Interface.DoesNotExist: #pylint: disable-msg=W0702
+			pass
+		if self.state == State.PREPARED:
+			connector = None
+			connectionAttributes = None
+			if iface.isConnected():
+				connector = iface.connection.connector
+				connectionAttributes = iface.connection.upcast().toDict(None)["attrs"]
+				connector.upcast().connectionsDelete(unicode(iface))
+			qm.deleteInterface(self.host, self.getVmid(), iface.name)
+		iface.name = newName
+		iface.save()
+		if self.state == State.PREPARED:
+			qm.addInterface(self.host, self.getVmid(), iface.name)
+			if connector:
+				connector.upcast().connectionsAdd(unicode(iface), connectionAttributes)
+		self.save()
 	
 	def interfacesDelete(self, name): #@UnusedVariable, pylint: disable-msg=W0613
 		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
 		iface = self.interfaceSetGet(name)
+		if iface.isConnected():
+			iface.connection.connector.upcast().connectionsDelete(unicode(iface))
 		if self.state == State.PREPARED:
 			qm.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()

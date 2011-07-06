@@ -344,7 +344,7 @@ class Process():
 			self._prepare()
 			if direct:
 				self._run()
-				return self.dict()
+				return self.dict(True)
 			else:
 				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:

@@ -261,7 +261,6 @@ class OpenVZDevice(Device):
 		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):
-		#FIXME: default route does not work
 		if "template" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
 		Device.configure(self, properties)
@@ -314,14 +313,15 @@ class OpenVZDevice(Device):
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]
-		if self.state == State.PREPARED or self.state == State.STARTED:
-			iface.prepare_run()
 		if self.state == State.STARTED:
-			iface.start_run()	
+			iface.connectToBridge()
+			iface._configureNetwork()
 		iface.save()
 
 	def interfacesDelete(self, name):
 		iface = self.interfaceSetGet(name).upcast()
+		if iface.isConnected():
+			iface.connection.connector.upcast().connectionsDelete(unicode(iface))
 		if self.state == State.PREPARED or self.state == State.STARTED:
 			vzctl.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()

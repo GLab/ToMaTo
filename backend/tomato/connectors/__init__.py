@@ -318,5 +318,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		}
 
 	def toDict(self, user):
-		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}, "capabilities": self.getCapabilities(user)}
+		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}}
+		if user:
+			res["capabilities"] = self.getCapabilities(user)
 		return res
