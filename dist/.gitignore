@@ -9,3 +9,5 @@ web/tomato-web-*
 meta/tomato-host/debian/tomato-host
 meta/tomato-host/debian/files
 cli/tomato-cli-*
+repy/tomato-repy-*
+repy/repy-svn
