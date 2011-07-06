@@ -90,15 +90,15 @@ def resource_usage_by_user(user=None):
 	_admin_access(user)
 	usage={}
 	for top in topology.all():
-		if not top.owner.name in usage:
-			usage[top.owner.name] = top.resources()
+		if not str(top.owner) in usage:
+			usage[str(top.owner)] = top.resources()
 		else:
 			d = top.resources()
 			for key in d:
-				if usage[top.owner.name].has_key(key):
-					usage[top.owner.name][key] = float(usage[top.owner.name][key]) + float(d[key]) 
+				if usage[str(top.owner)].has_key(key):
+					usage[str(top.owner)][key] = float(usage[str(top.owner)][key]) + float(d[key]) 
 				else:
-					usage[top.owner.name][key] = float(d[key]) 
+					usage[str(top.owner)][key] = float(d[key]) 
 	return usage
 		
 def resource_usage_by_topology(user=None):

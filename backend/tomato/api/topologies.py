@@ -48,7 +48,10 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 	tops=[]
 	all_tops = topology.all()
 	if owner_filter:
-		all_tops = all_tops.filter(owner=owner_filter)
+		from tomato import auth
+		owner = auth.getUser(owner_filter)
+		fault.check(owner, "Unknown user: %s", owner_filter)
+		all_tops = all_tops.filter(owner=owner)
 	if host_filter:
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:

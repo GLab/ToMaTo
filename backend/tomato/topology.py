@@ -291,7 +291,9 @@ class Topology(attributes.Mixin, models.Model):
 		
 	def permissionsAdd(self, user_name, role):
 		self.renew()
-		self.permission_set.add(Permission(user=user_name, role=role)) # pylint: disable-msg=E1101
+		user = auth.getUser(user_name)
+		fault.check(user, "Unknown user: %s", user_name)
+		self.permission_set.add(Permission(user=user, role=role)) # pylint: disable-msg=E1101
 		self.save()
 	
 	def permissionsAll(self):
@@ -299,7 +301,9 @@ class Topology(attributes.Mixin, models.Model):
 	
 	def permissionsRemove(self, user_name):
 		self.renew()
-		self.permission_set.filter(user__name=user_name).delete() # pylint: disable-msg=E1101
+		user = auth.getUser(user_name)
+		fault.check(user, "Unknown user: %s", user_name)
+		self.permission_set.filter(user=user).delete() # pylint: disable-msg=E1101
 		self.save()
 		
 	def permissionsGet(self, user):
@@ -365,6 +369,7 @@ class Topology(attributes.Mixin, models.Model):
 			res.update(permissions=dict([[str(p.user), p.role] for p in self.permissionsAll()]))
 			res["permissions"][str(self.owner)]="owner"
 			res["capabilities"] = self.getCapabilities(user)
+			res["resources"] = self.getAttribute("resources")
 		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
 			if task:
@@ -372,9 +377,7 @@ class Topology(attributes.Mixin, models.Model):
 					res.update(running_task=task.id)
 				else:
 					res.update(finished_task=task.id)
-
 		return res
-
 						
 class Permission(models.Model):
 	ROLE_USER="user"

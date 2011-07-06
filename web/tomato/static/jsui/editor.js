@@ -1134,6 +1134,7 @@ var Editor = Class.extend({
 		var connections = {};
 		editor.topology.setAttributes(top.attrs);
 		editor.topology.setCapabilities(top.capabilities);
+		editor.topology.setResources(top.resources);
 		editor.topology.permissions = top.permissions;
 		editor.topology.finished_task = top.finished_task;
 		var f = function(obj){
@@ -1217,6 +1218,7 @@ var Editor = Class.extend({
 		this.isLoading = true;
 		this.topology.setAttributes(top.attrs);
 		this.topology.setCapabilities(top.capabilities);		
+		this.topology.setResources(top.resources);
 		this.topology.permissions = top.permissions;
 		this.topology.finished_task = top.finished_task;
 		for (var name in top.devices) {
