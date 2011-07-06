@@ -11,29 +11,37 @@
 </head>
 <body>
 
-<h1>Process: {{task.name}} ({{task.status}})</h1>
+<h1 class="task_{{task.status}}">Process: {{task.name}} ({{task.status}})</h1>
+<div class="task_{{task.status}}">
+{% if details %}<a href="{%url main.task_status task.id%}">[less details]</a><br/>
+{% else %}<a href="{%url main.task_status task.id%}?details">[more details]</a><br/>{% endif %}
 {% if task.periodic %}<a href="{%url main.task_run task=task.name%}">[execute now]</a><br/>{% endif %}
+<br/>
 Status: {{task.status}} {% if task.active %}{{task.tasks_done}}/{{task.tasks_total}}{% endif %}<br/>
 Started: {{task.started}}<br/>
 Finished: {{task.finished}}<br/>
 Duration: {{task.duration}}<br/>
+</div>
 
 {% for t in task.tasks %}
-<h2>Subtask: {{t.name}} {%if t.active%}({{t.status}}){%endif%}</h2>
-{% if t.after %}After: {{t.after|join:", "}}<br/>{% endif %}
-{% if t.before %}Before: {{t.before|join:", "}}<br/>{% endif %}
+<h2 class="task_{{t.status}}">Subtask: {{t.name}} {%if t.active%}({{t.status}}){%endif%}</h2>
+<div class="task_{{t.status}}">
+{% if details %}
+{% if t.after %}After: {{t.after|join:", "}} tasks<br/>{% endif %}
+{% if t.before %}Before: {{t.before|join:", "}} tasks<br/>{% endif %}
+{% endif %}
 Status: {{t.status}}<br/>
 Started: {{t.started}}<br/>
 Finished: {{t.finished}}<br/>
 Duration: {{t.duration}}<br/>
+{% if details %}
 {% if t.result %}Result: <tt>{{t.result}}</tt><br/>{% endif %}
-
 Output:
 <pre>
 {{t.output}}
 </pre>
-
-
+{% endif %}
+</div>
 {% endfor %}
  
 {% if task.status == "succeeded" %}

@@ -318,7 +318,7 @@ class Process():
 					return
 				else:
 					time.sleep(1)
-	def dict(self):
+	def dict(self, details):
 		status = self.getStatus()
 		res = {"id": self.id, "status": status, "active": self.isActive(status), 
 			"done": self.isDone(status), "name": self.name,
@@ -330,7 +330,8 @@ class Process():
 		done = 0
 		for task in self.tasks:
 			d = task.dict()
-			res["tasks"].append(d)
+			if details:
+				res["tasks"].append(d)
 			if d["active"]:
 				active += 1
 			if d["done"]:
@@ -386,8 +387,8 @@ class RepeatedProcess(Process):
 		self.timer.start()
 	def cancel(self):
 		self.timer.stop()
-	def dict(self):
-		res = Process.dict(self)
+	def dict(self, details):
+		res = Process.dict(self, details)
 		res.update(periodic=True)
 		return res
 

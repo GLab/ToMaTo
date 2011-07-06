@@ -1027,6 +1027,7 @@ var Editor = Class.extend({
 				followTask.details.append("Started: " + output.started + "<br/>" );
 				followTask.details.append("Duration: " + output.duration + "<br/>" );
 				if (output.finished) followTask.details.append("Finished: " + output.finished + "<br/>" );
+				followTask.details.append($("<a href=/task/"+output.id+" target=_task>View details</a><br/>").button());
 				followTask.dialog.dialog("option", "position", {my: "center center", at: "center center", of: followTask.t.div});
 				switch (output.status) {
 					case "waiting":
@@ -1134,6 +1135,7 @@ var Editor = Class.extend({
 		editor.topology.setAttributes(top.attrs);
 		editor.topology.setCapabilities(top.capabilities);
 		editor.topology.permissions = top.permissions;
+		editor.topology.finished_task = top.finished_task;
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
@@ -1216,6 +1218,7 @@ var Editor = Class.extend({
 		this.topology.setAttributes(top.attrs);
 		this.topology.setCapabilities(top.capabilities);		
 		this.topology.permissions = top.permissions;
+		this.topology.finished_task = top.finished_task;
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
@@ -1831,6 +1834,7 @@ var TopologyControlPanel = ControlPanel.extend({
 		var attrs = this.obj.attributes;
 		this.div.append('<p>Owner: '+attrs.owner+'</p>');
 		this.div.append('<p>Created: '+attrs.date_created+'<br/>Modified: '+attrs.date_modified+'<br/>Last used: '+attrs.date_usage+'</p>');
+		if (this.obj.finished_task) this.div.append($("<a href=/task/"+this.obj.finished_task+" target=_task>Show last task</a><br/>").button());
 	}	
 });
 

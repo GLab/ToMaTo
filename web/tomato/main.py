@@ -47,7 +47,22 @@ def task_status(api, request, task_id):
 	backurl=""
 	if request.REQUEST.has_key("backurl"):
 		backurl=request.REQUEST["backurl"]
-	return render_to_response("main/task.html", {'task': task, 'backurl': backurl})
+	details=False
+	if request.REQUEST.has_key("details"):
+		details=True
+	statusMap = {"waiting": 0, "succeeded": 1, "aborted": 2, "running": 3, "reversing": 4, "failed": 5}
+	def task_cmp(t1, t2):
+		s1 = statusMap.get(t1["status"], 10)
+		s2 = statusMap.get(t2["status"], 10)
+		if s1 != s2:
+			return s2 - s1
+		if t1.get("finished", 0) != t2.get("finished", 0):
+			return cmp(t2.get("finished", 0), t1.get("finished", 0))
+		if t1.get("started", 0) != t2.get("started", 0):
+			return cmp(t2.get("started", 0), t1.get("started", 0))
+		return cmp(t1["name"], t2["name"])
+	task["tasks"].sort(task_cmp)
+	return render_to_response("main/task.html", {'task': task, 'backurl': backurl, 'details': details})
 
 @wrap_rpc
 def task_run(api, request, task):

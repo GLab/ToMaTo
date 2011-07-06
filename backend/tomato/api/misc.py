@@ -33,7 +33,7 @@ def task_list(user=None):
 	Returns: a list of all tasks
 	"""
 	_admin_access(user)
-	return [t.dict() for t in tasks.processes.values()]
+	return [t.dict(False) for t in tasks.processes.values()]
 
 def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -45,7 +45,7 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 
 	Returns: task details
 	"""
-	return tasks.processes[task_id].dict()
+	return tasks.processes[task_id].dict(True)
 
 def task_run(task_name, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
