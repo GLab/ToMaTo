@@ -5,6 +5,7 @@ import linkEmulation
 import tincConnectors
 import packetCapturing
 import images
+import topInformation
 import migrate
 
 if __name__ == "__main__":
@@ -14,6 +15,9 @@ if __name__ == "__main__":
 	try:
 		print "creating topology..."
 		top_modify(topId, jsonToMods(top), True)
+
+		print "testing topology information..."
+		topInformation.simpleTop_checkTopInformation(topId)
 
 		print "testing state transitions..."
 		stateTransitions.simpleTop_checkStateTransitions(topId)

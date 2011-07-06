@@ -192,5 +192,5 @@ class ExternalNetworkConnector(Connector):
 	
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)
-		res["attrs"].update(used_network=self.used_network, network_type=self.network_type, network_group=self.network_group)
+		res["attrs"].update(used_network=self.used_network.toDict(), network_type=self.network_type, network_group=self.network_group)
 		return res

@@ -69,6 +69,29 @@ def errors_print():
 def download(url, file):
 	import urllib
 	urllib.urlretrieve(url, file)
+
+def is_superset(obj1, obj2, path=""):
+	#checks whether obj1 is a superset of obj2
+	if obj2 is None:
+		return (True, None)
+	if isinstance(obj1, dict):
+		if not isinstance(obj2, dict):
+			return (False, "Type mismatch: %s" % path)
+		for key in obj2:
+			if not key in obj1:
+				return (False, "Key %s missing: %s" % (key, path))
+			(res, msg) = is_superset(obj1[key], obj2[key], path+"."+key)
+			if not res:
+				return (False, msg)
+	elif isinstance(obj1, list):
+		if not isinstance(obj2, list):
+			return (False, "Type mismatch: %s" % path)
+		for el in obj2:
+			if not el in obj1:
+				return (False, "Element %s missing: %s" % (el, path))
+	else:
+		return (obj1 == obj2, "Value mismatch: %s" % path)
+	return (True, None)
 	
 def upload(url, file, name="upload"):
 	import httplib, urlparse, os
