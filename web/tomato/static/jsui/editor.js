@@ -473,15 +473,25 @@ var EmulatedRouterConnection = EmulatedConnection.extend({
 });
 
 var Interface = NetElement.extend({
-	init: function(editor, dev, con){
+	init: function(editor, dev, con, fixedName){
 		this._super(editor);
 		this.dev = dev;
 		this.con = con;
 		this.paint();
 		this.isInterface = true;
-		this.name = "eth" + dev.interfaces.length;
+		if (fixedName) this.name = fixedName;
+		else this.name = this.proposedName();
 		this.form = new InterfaceWindow(this);
 		this.editor.ajaxModify([this.modification("create", {name: this.name})], function(res) {});
+	},
+	proposedName: function() {
+		existingNames = [];
+		for (var i=0; i < this.dev.interfaces.length; i++) existingNames.push(this.dev.interfaces[i].name);
+		var base = "eth";
+		var num = 0;
+		while (existingNames.indexOf(base+num)>=0) num++;
+		log("name: " + base+num)
+		return base+num;
 	},
 	getElementType: function () {
 		return "interface";
@@ -542,8 +552,8 @@ var Interface = NetElement.extend({
 });
 
 var ConfiguredInterface = Interface.extend({
-	init: function(editor, dev, con){
-		this._super(editor, dev, con);
+	init: function(editor, dev, con, fixedName){
+		this._super(editor, dev, con, fixedName);
 		this.form = new ConfiguredInterfaceWindow(this);
 		var ipHint = con.getIPHint();
 		this.setAttribute("use_dhcp", ipHint == "dhcp");
@@ -755,8 +765,8 @@ var Device = IconElement.extend({
 		for (var i = 0; i < this.interfaces.length; i++) if (this.interfaces[i].con.con == con) return true;
 		return false;
 	},
-	createInterface: function(con) {
-		var iface = new Interface(this.editor, this, con);
+	createInterface: function(con, fixedName) {
+		var iface = new Interface(this.editor, this, con, fixedName);
 		this.interfaces.push(iface);
 		return iface;
 	},
@@ -840,8 +850,8 @@ var OpenVZDevice = Device.extend({
 	createAnother: function(pos) {
 		return new OpenVZDevice(this.editor, this.nextName(), pos);
 	},
-	createInterface: function(con) {
-		var iface = new ConfiguredInterface(this.editor, this, con);
+	createInterface: function(con, fixedName) {
+		var iface = new ConfiguredInterface(this.editor, this, con, fixedName);
 		this.interfaces.push(iface);
 		return iface;
 	}
@@ -1195,7 +1205,7 @@ var Editor = Class.extend({
 				var iface = dev.interfaces[ifname];
 				var con_obj = connections[name+"."+ifname];
 				if (con_obj) {
-					var iface_obj = dev_obj.createInterface(con_obj);
+					var iface_obj = dev_obj.createInterface(con_obj, ifname);
 					con_obj.connect(iface_obj);
 					iface_obj.setAttributes(iface.attrs);
 					iface_obj.setCapabilities(iface.capabilities);
