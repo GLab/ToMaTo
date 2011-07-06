@@ -295,7 +295,7 @@ class OpenVZDevice(Device):
 		iface.device = self
 		iface.init()
 		if self.state == State.PREPARED or self.state == State.STARTED:
-			iface.prepare_run()
+			vzctl.addInterface(self.host, self.getVmid(), iface.name)
 		iface.configure(properties)
 		iface.save()
 		Device.interfaceSetAdd(self, iface)
@@ -313,6 +313,8 @@ class OpenVZDevice(Device):
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface.name = properties["name"]
+		if self.state == State.PREPARED or self.state == State.STARTED:
+			vzctl.addInterface(self.host, self.getVmid(), iface.name)
 		if self.state == State.STARTED:
 			iface.connectToBridge()
 			iface._configureNetwork()
