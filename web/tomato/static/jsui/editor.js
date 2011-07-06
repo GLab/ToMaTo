@@ -96,6 +96,10 @@ var NetElement = Class.extend({
 		this.capabilities = capabilities;
 		if (this.form && this.form.reload) this.form.reload();
 	},
+	setResources: function(resources) {
+		this.resources = resources;
+		if (this.form && this.form.reload) this.form.reload();
+	},
 	getElementType: function() {
 		return "";
 	},
@@ -1165,6 +1169,7 @@ var Editor = Class.extend({
 			}
 			el.setAttributes(attrs);
 			el.setCapabilities(obj.capabilities);
+			el.setResources(obj.resources)
 		};
 		for (var name in top.devices) f(top.devices[name]);
 		for (var name in top.connectors) f(top.connectors[name]);
@@ -1216,6 +1221,7 @@ var Editor = Class.extend({
 			var dev = top.devices[name];
 			dev_obj.setAttributes(dev.attrs);
 			dev_obj.setCapabilities(dev.capabilities);
+			dev_obj.setResources(dev.resources)
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
@@ -1228,6 +1234,7 @@ var Editor = Class.extend({
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
 			con_obj.setCapabilities(con.capabilities);
+			con_obj.setResources(con.resources)
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
@@ -1860,14 +1867,16 @@ var ResourcesPanel = Class.extend({
 	},
 	load: function() {
 		this.div.empty();
-		var attrs = this.obj.attributes;
+		var res = this.obj.resources;
 		var t = this;
 		var table = $('<table/>');
-		if (attrs.resources_disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(attrs.resources_disk)+'</td></tr>'));
-		if (attrs.resources_memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(attrs.resources_memory)+'</td></tr>'));
-		if (attrs.resources_traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(attrs.resources_traffic)+'</td></tr>'));
-		if (attrs.resources_external) table.append($('<tr><td>External slots:</td><td>'+attrs.resources_external+'</td></tr>'));
-		if (attrs.resources_ports) table.append($('<tr><td>Ports:</td><td>'+attrs.resources_ports+'</td></tr>'));
+		if (res) {
+			if (res.disk) table.append($('<tr><td>Disk space:</td><td>'+formatSize(res.disk)+'</td></tr>'));
+			if (res.memory) table.append($('<tr><td>Memory:</td><td>'+formatSize(res.memory)+'</td></tr>'));
+			if (res.traffic) table.append($('<tr><td>Traffic:</td><td>'+formatSize(res.traffic)+'</td></tr>'));
+			if (res.external) table.append($('<tr><td>External slots:</td><td>'+res.external+'</td></tr>'));
+			if (res.ports) table.append($('<tr><td>Ports:</td><td>'+res.ports+'</td></tr>'));
+		}
 		this.div.append(table);
 	},
 	getDiv: function() {
