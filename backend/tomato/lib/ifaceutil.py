@@ -75,7 +75,10 @@ def ifdown(host, iface):
 	assert interfaceExists(host, iface)
 	host.execute("ip link set down %s" % iface)
 	
-def setDefaultRoute(host, via):
+def deleteDefaultRoute(host):
+	host.execute("ip route del default")
+
+def addDefaultRoute(host, via):
 	host.execute("ip route add default via %s" % via)
 	
 def addAddress(host, iface, address):

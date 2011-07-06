@@ -133,10 +133,11 @@ class OpenVZDevice(Device):
 
 	def _configureRoutes(self):
 		#Note: usage of self as host is intentional
+		ifaceutil.deleteDefaultRoute(self)
 		if self.hasAttribute("gateway4"):
-			ifaceutil.setDefaultRoute(self, self.getAttribute("gateway4")) 
+			ifaceutil.addDefaultRoute(self, self.getAttribute("gateway4"))
 		if self.hasAttribute("gateway6"):
-			ifaceutil.setDefaultRoute(self, self.getAttribute("gateway6")) 
+			ifaceutil.addDefaultRoute(self, self.getAttribute("gateway6"))
 
 	def _fallbackStop(self):
 		self.state = self.getState()
@@ -153,11 +154,13 @@ class OpenVZDevice(Device):
 		create_bridges = tasks.Task("create-bridges", self._createBridges, reverseFn=self._fallbackStop)
 		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop, after=create_bridges)
 		check_interfaces_exist = tasks.Task("check-interfaces-exist", self._checkInterfacesExist, reverseFn=self._fallbackStop, after=start_vm)
+		interfaces_configured = []
 		for iface in self.interfaceSetAll():
 			ts = iface.upcast().getStartTasks()
 			ts.prefix(iface).after(check_interfaces_exist)
+			interfaces_configured.append(ts)
 			taskset.add(ts)
-		configure_routes = tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, after=start_vm)
+		configure_routes = tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, after=interfaces_configured)
 		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
 		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
 		taskset.add([create_bridges, start_vm, check_interfaces_exist, configure_routes, assign_vnc_port, start_vnc])
@@ -268,14 +271,12 @@ class OpenVZDevice(Device):
 				vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		if "gateway4" in properties:
 			self.setAttribute("gateway4", properties["gateway4"])
-			if self.getAttribute("gateway4") and self.state == State.STARTED:
-				#Note: usage of self as host is intentional
-				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway4"))
+			if self.state == State.STARTED:
+				self._configureRoutes()
 		if "gateway6" in properties:
 			self.setAttribute("gateway6", properties["gateway6"])
-			if self.getAttribute("gateway6") and self.state == State.STARTED:
-				#Note: usage of self as host is intentional
-				ifaceutil.setDefaultRoute(self, self.getAttribute("gateway6"))
+			if self.state == State.STARTED:
+				self._configureRoutes()
 		if "template" in properties:
 			self.setTemplate(properties["template"])
 			self._assignTemplate()
