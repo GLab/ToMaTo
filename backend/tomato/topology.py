@@ -395,7 +395,7 @@ def get(top_id):
 	try:
 		return Topology.objects.get(id=top_id) # pylint: disable-msg=E1101
 	except Topology.DoesNotExist: # pylint: disable-msg=E1101
-		raise fault.new("No such topology: %s" % top_id)
+		raise fault.new("No such topology: %s" % top_id, fault.USER_ERROR)
 
 def all(): #pylint: disable-msg=W0622
 	return Topology.objects.all() # pylint: disable-msg=E1101
