@@ -81,12 +81,98 @@ def top_modify(top_id, mods, direct=False, user=None):
 	
 	Parameters:
 		int top_id: the id of the topology
-		list of dict mods: the modifications list
+		list mods: list of modification entries
 		boolean direct: whether to execute the modification directly
+
+	Modification syntax:
+		Modifications are given as a dict describing the modification.
+		string type: the type of the modification
+		string element: the name of the element that is targeted by the 
+			modification (must be either a device name or a connector name or
+			None)
+		string subelement: the name of the second-level element that is
+		    targeted by the modification (must be either a connection name or
+		    an interface name or None)
+		dict properties: the properties to give to the element for the 
+			modification
+			
+	Modification types:
+		"topology-rename": Renames the topology. The new name must be contained
+			in the properties dict as "name". Element and subelement parameters
+			are ignored.
+		"device-create": Creates a new device with a given type and name. The 
+			name of the device must be contained in the properties dict as 
+			"name" (not in the element attribute!). The type of the device must
+			be contained in the properties dict as "type". Additional 
+			properties for the device can be given in the properties dict but 
+			name and type are mandatory. Element and subelement parameters are 
+			ignored. 
+		"device-rename": Renames a device. The element attribute must contain
+			the old name of the device. The new name must be contained in the
+			properties dict as "name". The subelement parameter is ignored.
+		"device-configure": Configures a device. The element attribute must 
+			contain	the name of the device. The entries of the properties dict
+			will be sent to the device for configuration. The subelement 
+			parameter is ignored.
+		"device-delete": Deletes a device. The element attribute must contain
+			the name of the device. The subelement parameter and the properties
+			dict are ignored.
+		"interface-create": Creates a new interface on the given device. The 
+			name of the parent device must be given in the element parameter. 
+			The name of the interface must be contained in the properties dict
+			as "name" (not in the subelement attribute!). Additional properties
+			for the interface can be given in the properties dict but the name
+			is mandatory. The subelement parameters is ignored. 
+		"interface-rename": Renames an interface. The name of the parent device
+			must be given in the element parameter. The subelement attribute 
+			must contain the old name of the interface. The new name must be 
+			contained in the properties dict as "name".
+		"interface-configure": Configures an interface. The name of the parent
+			device must be given in the element parameter. The subelement 
+			attribute must contain the name of the interface. The entries of
+			the properties dict will be sent to the interface for
+			configuration.
+		"interface-delete": Deletes an interface. The name of the parent device
+			must be given in the element parameter. The subelement attribute 
+			must contain the name of the interface. The properties dict is 
+			ignored.
+		"connector-create": Creates a new connector with a given type and name.
+			The	name of the connector must be contained in the properties dict
+			as "name" (not in the element attribute!). The type of the
+			connector must be contained in the properties dict as "type".
+			Additional properties for the connector can be given in the
+			properties dict but	name and type are mandatory. Element and 
+			subelement parameters are ignored. 
+		"connector-rename": Renames a connector. The element attribute must 
+			contain the old name of the connector. The new name must be 
+			contained in the properties dict as "name". The subelement 
+			parameter is ignored.
+		"connector-configure": Configures a connector. The element attribute 
+			must contain	the name of the connector. The entries of the 
+			properties dict will be sent to the connector for configuration.
+			The subelement parameter is ignored.
+		"connector-delete": Deletes a connector. The element attribute must 
+			contain the name of the connector. The subelement parameter and
+			the properties dict are ignored.
+		"connection-create": Creates a new connection on the given connector.
+			The name of the parent connector must be given in the element 
+			parameter. The interface to connect must be given in the format
+			DEVICE_NAME.INTERFACE_NAME in the properties dict as "interface"
+			(not in the subelement attribute!). The subelement parameter is
+			ignored. 
+		There is no modification called "connection-rename" !
+		"connection-configure": Configures a connection. The name of the parent
+			connector must be given in the element parameter. The subelement 
+			attribute must contain the connected interface in the format 
+			DEVICE_NAME.INTERFACE_NAME. The entries of the properties dict will
+			be sent to the connection for configuration.
+		"connection-delete": Deletes a connection. The name of the parent 
+			connector must be given in the element parameter. The subelement
+			attribute must contain the  connected interface in the format
+			DEVICE_NAME.INTERFACE_NAME. The properties dict is ignored.
 
 	Returns: the id of the modification task (not direct) or None (direct) 
 	""" 
-	#FIXME: describe all possible modifications
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
 	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
@@ -104,14 +190,81 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 	Parameters:
 		int top_id: the id of the topology
 		string action: the action to perform
-		string element_type: the type of the element (topology, device or connector)
-		string element_name: the name of the element
+		string element_type: the type of the element ("topology", "device" or
+			 "connector")
+		string element_name: the name of the element (None for topology)
 		dict attrs: attributes for the action
 		boolean direct: whether to execute the action directly (non-detached)
 
+	Available actions:
+		"start": Starts the element. Devices and connectors must be in the 
+			prepared state before this action. For topologies this means that
+			all elements will be first prepared (if needed) and then started
+			(if needed). (Supported on topology, device and connector) 
+		"stop": Stops the element. Devices and connectors must be in the 
+			started state before this action. For topologies this means that
+			all elements will be stopped (if needed). (Supported on topology,
+			device and connector) 
+		"prepare": Prepares the element. Devices and connectors must be in the 
+			created state before this action. For topologies this means that
+			all elements will be prepared (if needed). (Supported on topology,
+			device and connector) 
+		"destroy": Destroys the element. Devices and connectors must be in the 
+			prepared state before this action. For topologies this means that
+			all elements will be first stopped (if needed) and then destroyed
+			(if needed). (Supported on topology, device and connector) 
+
+		"remove": Removes a topology. The topology will be stopped and 
+			destroyed if needed and finally be removed. (Supported only on 
+			topology) 
+		"renew": Renews the topology. The timeout timers for the topology will
+			be reset to the longest possible values. (Supported only on 
+			topology)
+			 
+		"migrate": Migrates a device onto another host. The host will be select
+			by the load balancing algorithm. Migration will be careful to not
+			destroy any state. I.e. for started devices a live-migration will
+			executed. (Supported only on device) 
+		"upload_image_prepare": Prepares a URL for image upload. The image 
+			file must then be uploaded to the given URL and then the action
+			"upload_image_use" must be called. The result will be a dict
+			containing the upload URL as "upload_url" and a filename reference
+			for internal use as "filename". If the optional attribute 
+			"redirect" is given, a HTML redirect to the given redirect URL
+			will be sent after a successful upload. If the redirect URL 
+			contains the string "%(filename)s" this string will be replaced by
+			the filename. The resulting URL will be returned as "redirect_url"
+			(Supported only on device) 
+		"upload_image_use": Uses a previously uploaded image for a device. 
+			The device must be in state prepared for this action. The mandatory
+			attribute "filename" must be internal file reference returned by
+			"upload_image_prepare" (Supported only on device) 
+		"download_image": Prepares a URL for image download. The returned URL
+			can be used to download the image. (Supported only on device) 
+
+		"send_keys": Send keycodes to a KVM device. The keycodes are given as
+			an array named "keycodes" in the attributes. Note that the keycodes
+			do not directly map to characters. The mapping depends on the 
+			keyboard layout that is configured on the device. Key combinations
+			can be created by joining them with dashes. (e.g. "ctrl-c" or 
+			"ctrl-alt-del"). (Only supported on KVM devices)
+		"execute": Execute a command on an OpenVZ device. The command is 
+			executed in a shell and the result is returned as a result. Note 
+			that interactive commands or commands that do not exit will block
+			the call until a timeout occurs. (Only supported on OpenVZ devices)
+			
+		"download_capture": Prepares a URL to download the captured packets
+			of a connection. The connector of the connection must be referenced
+			with the element_type and element_name fields. The connection must 
+			be given as an attribute named "iface" in the format 
+			DEVICE_NAME.INTERFACE_NAME using the device and interface it is
+			connected to. (Only supported on some connectors)
+			
+	Note: the capabilities returned by top_info contain all possible actions 
+		of the element and whether they are currently available. 			 
+			 
 	Returns: the id of the action task (not direct) or None (direct) 
 	""" 
-	#FIXME: describe all possible actions
 	top = topology.get(top_id)
 	_top_access(top, "user", user)
 	if element_type == "topology":
