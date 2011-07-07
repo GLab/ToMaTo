@@ -1,8 +1,8 @@
-tomato-host (0.8-r1) stable; urgency=low
+tomato-host (0.9) stable; urgency=low
 
-  * Fixed package
+  * Depending on new hostserver >= 0.4
 
- -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 22 Jun 2011 21:49:22 +0200
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 07 Jul 2011 11:27:49 +0200
 
 tomato-host (0.8) stable; urgency=low
 
