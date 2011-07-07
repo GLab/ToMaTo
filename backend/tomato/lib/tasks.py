@@ -370,7 +370,7 @@ class Process():
 			if not os.path.exists(config.LOG_DIR + "/tasks"):
 				os.makedirs(config.LOG_DIR + "/tasks")
 			logger = log.getLogger(config.LOG_DIR + "/tasks/%s"%self.id)
-			logger.lograw(str(self.dict()))
+			logger.lograw(str(self.dict(True)))
 			logger.close()
 			del processes[self.id]
 
