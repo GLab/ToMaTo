@@ -58,6 +58,7 @@ def create(api, request):
 		for conname, con in top["connectors"].iteritems():
 			mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
 			for c in con["connections"].values():
+				c["attrs"]["interface"] = c["interface"]
 				mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
 		api.top_modify(top_id, mods, True)
 		return HttpResponseRedirect(reverse('tomato.top.show', kwargs={"top_id": top_id}))
