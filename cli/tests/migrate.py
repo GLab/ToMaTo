@@ -16,6 +16,9 @@ def simpleTop_checkMigrate(topId, quick=False):
 	print "\tstarting topology..."
 	task = top_action(topId, "start")
 	waitForTask(task, assertSuccess=True)
+	for i in range(10):
+		link_info(topId, "openvz1", "10.0.0.2", 5)
+		link_info(topId, "openvz2", "10.0.0.1", 5)
 	assert link_check(topId, "openvz1", "10.0.0.2")
 	#start task on device
 	print "\tonline migration of openvz1..."
@@ -26,6 +29,9 @@ def simpleTop_checkMigrate(topId, quick=False):
 	waitForTask(task, assertSuccess=True)
 	res = top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "pidof SCREEN >/dev/null; echo $?"})	
 	assert res == "0\n", "Result was %s" % res
+	for i in range(10):
+		link_info(topId, "openvz1", "10.0.0.2", 5)
+		link_info(topId, "openvz2", "10.0.0.1", 5)
 	assert link_check(topId, "openvz1", "10.0.0.2")
 	if not quick:
 		print "\tonline migration of kvm1..."
