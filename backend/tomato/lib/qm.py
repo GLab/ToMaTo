@@ -65,6 +65,8 @@ def getState(host, vmid):
 
 def useImage(host, vmid, image, move=False):
 	assert fileutil.existsFile(host, image), "Image file does not exist"
+	res = host.execute("qemu-img check -f qcow2 '%s'; echo $?" % image)
+	assert res.splitlines()[1], "Invalid image format: %s" % res 
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to change image"
 	_qm(host, vmid, "set", "--ide0 undef")
 	imagePath = _imagePath(vmid)

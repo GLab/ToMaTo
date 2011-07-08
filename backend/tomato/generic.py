@@ -27,7 +27,6 @@ class State(): #pylint: disable-msg=W0232
 	PREPARED="prepared"
 	STARTED="started"
 
-
 class ObjectPreferences:
 	def __init__(self, exclusive=False):
 		self.exclusive = exclusive
