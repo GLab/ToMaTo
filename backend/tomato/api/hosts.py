@@ -60,6 +60,14 @@ def host_add(host_name, group_name, enabled, attrs, user=None):
 		boolean enabled: whether the host should be enabled
 		dict attrs: dictionary with host attributes
 
+	Host attributes in "attrs":
+		int vmid_start: begin of the VM id range for ToMaTo
+		int vmid_count: number of the VM ids for ToMaTo
+		int port_start: begin of the port range for ToMaTo
+		int port_count: number of the ports for ToMaTo
+		int bridge_start: begin of the bridge id range for ToMaTo
+		int bridge_count: number of the bridge ids for ToMaTo
+
 	Returns: task id of the task
 	
 	Errors:
@@ -78,6 +86,14 @@ def host_change(host_name, group_name, enabled, attrs, user=None):
 		string group_name: the name of the host group
 		boolean enabled: whether the host should be enabled
 		dict attrs: dictionary with host attributes
+
+	Host attributes in "attrs":
+		int vmid_start: begin of the VM id range for ToMaTo
+		int vmid_count: number of the VM ids for ToMaTo
+		int port_start: begin of the port range for ToMaTo
+		int port_count: number of the ports for ToMaTo
+		int bridge_start: begin of the bridge id range for ToMaTo
+		int bridge_count: number of the bridge ids for ToMaTo
 
 	Errors:
 		fault.Error: if the user does not have enough privileges  

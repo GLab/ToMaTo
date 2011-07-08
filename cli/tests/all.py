@@ -25,9 +25,6 @@ if __name__ == "__main__":
 		print "testing images..."
 		images.simpleTop_checkImages(topId)
 
-		print "testing migration..."
-		migrate.simpleTop_checkMigrate(topId, quick=True)
-
 		print "testing tinc connectors..."
 		tincConnectors.simpleTop_checkTincConnectors(topId)
 

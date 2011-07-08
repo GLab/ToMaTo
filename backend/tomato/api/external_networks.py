@@ -24,6 +24,11 @@ def external_network_add(type, group, params, user=None):
 		string group: group of the external network
 		dict params: dict of all additional parameters
 
+	Additional parameters in "params":
+		int max_devices: maximal allowed connections to this external network
+		bool avoid_duplicates: whether to make sure that connections to the 
+			same external network in a topology will be using different bridges
+
 	Errors:
 		fault.Error: if the user does not have enough privileges  
 	"""
@@ -42,6 +47,11 @@ def external_network_change(type, group, params, user=None):
 		string type: type of the external network
 		string group: name of the external network
 		dict params: dict of all additional parameters
+
+	Additional parameters in "params":
+		int max_devices: maximal allowed connections to this external network
+		bool avoid_duplicates: whether to make sure that connections to the 
+			same external network in a topology will be using different bridges
 
 	Errors:
 		fault.Error: if the user does not have enough privileges  
