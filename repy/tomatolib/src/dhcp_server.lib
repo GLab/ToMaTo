@@ -1,0 +1,73 @@
+include udp_server.lib
+include dhcp_proto.lib
+include ip_util.lib
+include mac_util.lib
+
+UDP_PORT_BOOTP_SERVER = 67
+UDP_PORT_BOOTP_CLIENT = 68
+
+class DHCPServer(UDPServer):
+    def __init__(self, pool=None, gateway=None, netmask=None, nameserver=None, broadcast=None, domain=None, renewal_time=60, lease_time=1800, **kwargs):
+        UDPServer.__init__(self, UDP_PORT_BOOTP_SERVER, **kwargs)
+        self.leases = {}
+        self.pool = []
+        self._add_to_pool(pool)
+        self.gateway = gateway
+        self.netmask = netmask
+        self.nameserver = nameserver
+        self.broadcast = broadcast
+        self.domain = domain
+        self.renewal_time = renewal_time
+        self.lease_time = lease_time
+    def _add_to_pool(self, ip):
+        if not ip:
+            return
+        if isinstance(ip, str):
+            if not ip in self.pool:
+                self.pool.append(ip)
+        else:
+            for i in ip:
+                self._add_to_pool(i)
+    def _get_ip(self, mac, reserve):
+        if not mac in self.leases:
+            if not self.pool:
+                return
+            ip = self.pool[0]
+            if reserve:
+                self.pool = self.pool[1:]
+                self.leases[mac] = ip
+            else:
+                return self.pool[0]
+        return self.leases[mac]
+    def _get_options(self):
+        options = {DHCP_OPTION_DHCP_SERVER: self.ip, DHCP_OPTION_LEASE_TIME: struct.pack("!I", self.lease_time)}
+        if self.netmask:
+            options[DHCP_OPTION_NETMASK] = self.netmask
+        if self.gateway:
+            options[DHCP_OPTION_GATEWAY] = self.gateway
+        if self.nameserver:
+            options[DHCP_OPTION_NAMESERVER] = self.nameserver
+        if self.domain:
+            options[DHCP_OPTION_DOMAIN] = self.domain
+        return options
+    def handle_udp(self, udp, ip, ethernet, dev):
+        dhcp = dhcp_decode(udp.payload)
+        if dhcp.magic_cookie != DHCP_MAGIC_COOKIE:
+            return
+        if dhcp.op != DHCP_OP_REQUEST:
+            return
+        if dhcp.options[DHCP_OPTION_MSG_TYPE] in [DHCP_OPTION_VALUE_DISCOVER, DHCP_OPTION_VALUE_REQUEST]:
+            is_request = dhcp.options[DHCP_OPTION_MSG_TYPE] == DHCP_OPTION_VALUE_REQUEST
+            ip = self._get_ip(dhcp.chaddr, is_request)
+            if ip:
+                options = self._get_options()
+                if is_request:
+                    options[DHCP_OPTION_MSG_TYPE] = DHCP_OPTION_VALUE_ACK
+                else:
+                    options[DHCP_OPTION_MSG_TYPE] = DHCP_OPTION_VALUE_OFFER
+                self.send(dhcp.chaddr, DHCP_OP_REPLY, dhcp.xid, dhcp.chaddr, options, yiaddr=ip, siaddr=self.ip)
+                if is_request:
+                    echo("assigned IP %s to %s" % (ip_to_str(ip), mac_to_str(dhcp.chaddr)))
+    def send(self, mac, op, xid, chaddr, options, ciaddr="\x00\x00\x00\x00", yiaddr="\x00\x00\x00\x00", siaddr="\x00\x00\x00\x00", giaddr="\x00\x00\x00\x00"):
+        reply = dhcp_encode(op, xid, ciaddr, yiaddr, siaddr, giaddr, chaddr, options)
+        UDPServer.send(self, "\xff\xff\xff\xff", UDP_PORT_BOOTP_CLIENT, reply, ether_dst=mac)

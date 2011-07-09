@@ -1,0 +1,18 @@
+include udp_proto.lib
+include icmp_node.lib
+
+class UDPServer(ICMPNode):
+    def __init__(self, port, **kwargs):
+        ICMPNode.__init__(self, **kwargs)
+        self.port = port
+    def handle_ip(self, ip, ethernet, dev):
+        ICMPNode.handle_ip(self, ip, ethernet, dev)
+        if ip.protocol == IP_PROTOCOL_UDP:
+            udp = udp_decode(ip.payload)
+            if udp.dst == self.port:
+                self.handle_udp(udp, ip, ethernet, dev)
+    def handle_udp(self, udp, ip, ethernet, dev):
+        pass
+    def send(self, dstip, dstport, payload, **kwargs):
+        udp_msg = udp_encode(self.port, dstport, payload)
+        IPNode.send(self, dstip, IP_PROTOCOL_UDP, udp_msg, **kwargs)

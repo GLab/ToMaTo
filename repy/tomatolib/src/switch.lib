@@ -1,0 +1,11 @@
+include ethernet_proto.lib
+include send.lib
+
+class Switch:
+    def __init__(self):
+        self.mac_table = {}
+    def handle(self, dev, p):
+        ether = ethernet_decode(p)
+        self.mac_table[ether.src] = dev
+        dev = self.mac_table.get(ether.dst)
+        send(dev, ethernet_encode(ether.dst, ether.src, ether.type, ether.payload))

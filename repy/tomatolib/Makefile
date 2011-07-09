@@ -1,6 +1,6 @@
 REPYPP = python ../repypp.py
 
-build/%: src/%
+build/%: src/% src/*.lib
 	(cd src; $(REPYPP) ../$< ../$@; cd ..)
 
 DEFAULT: create_dir build

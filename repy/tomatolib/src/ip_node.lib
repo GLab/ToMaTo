@@ -1,17 +1,43 @@
-include send.lib
+include ethernet_node.lib
+include arp_proto.lib
+include ip_proto.lib
 
-Ether = scapy.Ether
-IP = scapy.IP
-ICMP = scapy.ICMP
-Raw = scapy.Raw
-ARP = scapy.ARP
-
-class IP_Node:
-    def __init__(self, mac=None, ip=None, **kwargs):
-        self.mac = mac
+class IPNode(EthernetNode):
+    def __init__(self, ip, answer_arp=True, **kwargs):
+        EthernetNode.__init__(self, **kwargs)
         self.ip = ip
-    def handle(self, dev, p):
-        if ARP in p and p[ARP].pdst == self.ip:
-            send(dev, Ether(src=self.mac, dst=p[Ether].src)/ARP(op="is-at", hwtype=p[ARP].hwtype, ptype=p[ARP].ptype, hwsrc=self.mac, psrc=self.ip, hwdst=p[ARP].hwsrc, pdst=p[ARP].psrc))
-        if ICMP in p and p[IP].dst == self.ip and p[ICMP].type == 8:
-            send(dev, Ether(src=self.mac, dst=p[Ether].src)/IP(src=self.ip, dst=p[IP].src)/ICMP(type="echo-reply", seq=p[ICMP].seq, id=p[ICMP].id)/p[Raw])
+        self.answer_arp = answer_arp
+        self.arp_table = {}
+    def handle_ethernet(self, ethernet, dev):
+        if ethernet.type == ETHERNET_TYPE_ARP:
+            arp = arp_decode(ethernet.payload)
+            self.handle_arp(arp, ethernet, dev)
+        if ethernet.type == ETHERNET_TYPE_IP:
+            ip = ip_decode(ethernet.payload)
+            if not ip.checksum_correct:
+                echo("Invalid IP chechsum")
+                return
+            #FIXME: reassable fragmented packets
+            self.arp_table[ip.src] = ethernet.src
+            if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
+                self.handle_ip(ip, ethernet, dev)
+            else:
+                echo(repr(ip.dst))
+    def handle_arp(self, arp, ethernet, dev):
+        if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
+            return
+        if self.answer_arp and arp.oper == ARP_OPER_REQUEST and arp.tpa == self.ip:
+            arp_reply = arp_encode(arp.htype, arp.ptype, arp.hlen, arp.plen, ARP_OPER_REPLY, self.mac, self.ip, arp.sha, arp.spa)
+            EthernetNode.send(self, ethernet.src, ETHERNET_TYPE_ARP, arp_reply)
+        if arp.oper == ARP_OPER_REPLY:
+            self.arp_table[arp.sda]=arp.sha
+            #FIXME: send cached packets
+    def handle_ip(self, ip, ethernet, dev):
+        pass
+    def send(self, dst, protocol, payload, ether_dst=None, dev=None, **kwargs):
+        if not ether_dst:
+            ether_dst = self.arp_table.get(dst)
+        #FIXME: fragment
+        #FIXME: send arp request and cache packet if ether_dst still None
+        packet = ip_encode(self.ip, dst, protocol, payload, **kwargs)
+        EthernetNode.send(self, ether_dst, ETHERNET_TYPE_IP, packet, dev=dev)

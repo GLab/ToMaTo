@@ -1,15 +1,9 @@
-include ip_node.lib
-include random_mac.lib
+include icmp_node.lib
 include parse_args.lib
+include run_forever.lib
 
 if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+    defaults = {"ip":"\x0a\x00\x00\x01", "mac":randombytes()[:6]}
     options = parse_args(defaults)
-    node = IP_Node(**options)
-    while True:
-        try:
-            (dev, packet) = tuntap_read_any(timeout=None)
-            if packet:
-                node.handle(dev, Ether(packet))
-        except Exception, e:
-            print_exc(e)
+    node = ICMPNode(**options)
+    run_forever(node.handle)
