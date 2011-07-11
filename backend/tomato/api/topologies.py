@@ -280,13 +280,14 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 	
 def permission_set(top_id, user_name, role, user=None):
 	"""
-	Adds a permission entry to a topology. Acceptable roles are "user" and
-	"manager". This method requires owner access to the topology.
+	Adds a permission entry to a topology. Acceptable roles are "user",
+	"manager" and "". This method requires owner access to the topology.
+	If the role is empty, existing permissions for the user will be revoked.
 
 	Parameters:
 		int top_id: id of the topology
 		string user_name: user name
-		string role: role of the permission (either "user" or "manager")
+		string role: role of the permission (either "user", "manager" or "")
 	"""
 	top = topology.get(top_id)
 	_top_access(top, "owner", user)
