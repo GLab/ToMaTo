@@ -134,7 +134,7 @@ def getDiskUsage(host, vmid):
 	
 def getMemoryUsage(host, vmid):
 	if getState(host, vmid) == generic.State.STARTED:
-		return int(host.execute("( [ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`cat /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat ) 2>/dev/null | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": vmid}))
+		return int(host.execute("( [ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`head -n1 /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat ) 2>/dev/null | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": vmid}))		
 	else:
 		return 0
 	
