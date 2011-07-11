@@ -19,6 +19,7 @@ import json
 import datetime
 from django.db import models
 from django.core import validators
+from tomato import config
 
 """
 A :class:`TextField` that stores serialized data in the form of JSON.  You can
@@ -50,6 +51,8 @@ class JSONField(models.TextField):
 		return JSONDateEncoder().encode(data)
 
 	def _loads(self, str):
+		if config.MAINTENANCE:
+			return str
 		return json.loads(str, encoding="UTF-8")
 
 	def db_type(self):
