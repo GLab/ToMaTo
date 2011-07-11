@@ -151,6 +151,17 @@ def calculate_subnet6(ip_with_prefix):
 		ip_num = ip_num // (1<<16)
 	return ":".join(ip)+"/"+prefix
 
+def xml_rpc_sanitize(s):
+	if s == None:
+		return s
+	if isinstance(s, list):
+		return [xml_rpc_sanitize(e) for e in s]
+	if isinstance(s, dict):
+		return dict([(str(k), xml_rpc_sanitize(v)) for k, v in s.iteritems()])
+	if isinstance(s, int) and s >= (2<<31):
+		return str(s)
+	return s
+
 def nothing():
 	pass
 

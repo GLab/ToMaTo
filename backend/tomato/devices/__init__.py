@@ -20,7 +20,7 @@ from django.db import models
 from tomato import attributes, hosts
 from tomato.topology import Topology, Permission
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import db, hostserver
+from tomato.lib import db, hostserver, util
 
 class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
@@ -244,7 +244,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 					"pos": self.getAttribute("pos"),
 					"name": self.name, "type": self.type, "state": self.state,
 					},
-			"resources" : self.getAttribute("resources"),
+			"resources" : util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"interfaces": dict([[i.name, i.upcast().toDict(user)] for i in self.interfaceSetAll()]),
 			"capabilities": self.getCapabilities(user)
 		}
