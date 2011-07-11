@@ -112,7 +112,9 @@ def addInterface(host, vmid, iface):
 	# if this bridge does not exist, kvm start fails
 	if not ifaceutil.interfaceExists(host, "vmbr%d" % iface_id):
 		ifaceutil.bridgeCreate(host, "vmbr%d" % iface_id)
-	_qm(host, vmid, "set", "--vlan%d e1000" % iface_id)			
+	res = _qm(host, vmid, "set", "--vlan%d e1000; echo $?" % iface_id)
+	assert res.splitlines()[-1] == "0", "Failed to add interface to KVM: %s" % res
+					
 	
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to remove interfaces"
