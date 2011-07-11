@@ -213,7 +213,7 @@ class KVMDevice(Device):
 		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
 		for iface in self.interfaceSetAll():
-			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=create_vm))
+			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=configure_vm))
 		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm])
 		return self._adaptTaskset(taskset)
 
