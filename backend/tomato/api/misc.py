@@ -94,11 +94,12 @@ def resource_usage_by_user(user=None):
 			usage[str(top.owner)] = top.resources()
 		else:
 			d = top.resources()
-			for key in d:
-				if usage[str(top.owner)].has_key(key):
-					usage[str(top.owner)][key] = float(usage[str(top.owner)][key]) + float(d[key]) 
-				else:
-					usage[str(top.owner)][key] = float(d[key]) 
+			if d:
+				for key in d:
+					if usage[str(top.owner)].has_key(key):
+						usage[str(top.owner)][key] = float(usage[str(top.owner)][key]) + float(d[key]) 
+					else:
+						usage[str(top.owner)][key] = float(d[key]) 
 	return usage
 		
 def resource_usage_by_topology(user=None):
