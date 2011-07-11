@@ -18,7 +18,7 @@
 from django.db import models
 import os, datetime
 import attributes, auth, config
-from lib import db
+from lib import db, util
 
 class Topology(attributes.Mixin, models.Model):
 	"""
@@ -360,7 +360,7 @@ class Topology(attributes.Mixin, models.Model):
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
 					"stop_timeout": str(self.date_usage + self.STOP_TIMEOUT), "destroy_timeout": str(self.date_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(self.date_usage + self.REMOVE_TIMEOUT) 
 					},
-			"resources": self.resources(),
+			"resources": util.xml_rpc_sanitize(self.resources()),
 			}
 		if detail:
 			res.update({"devices": dict([[v.name, v.upcast().toDict(user)] for v in self.deviceSetAll()]),
@@ -369,7 +369,7 @@ class Topology(attributes.Mixin, models.Model):
 			res.update(permissions=dict([[str(p.user), p.role] for p in self.permissionsAll()]))
 			res["permissions"][str(self.owner)]="owner"
 			res["capabilities"] = self.getCapabilities(user)
-			res["resources"] = self.getAttribute("resources")
+			res["resources"] = util.xml_rpc_sanitize(self.resources())
 		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
 			if task:

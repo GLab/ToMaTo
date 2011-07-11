@@ -19,7 +19,7 @@ from django.db import models
 
 from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import tasks, db, ifaceutil
+from tomato.lib import tasks, db, ifaceutil, util
 from tomato.topology import Topology, Permission
 
 class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
@@ -224,7 +224,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
 					"pos": self.getAttribute("pos"),
 				},
-			"resources": self.getAttribute("resources"),
+			"resources": util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"connections": dict([[str(c.interface), c.upcast().toDict(user)] for c in self.connectionSetAll()]),
 			"capabilities": self.getCapabilities(user)
 			}
