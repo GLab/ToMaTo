@@ -1,0 +1,16 @@
+Source: tomato-repy
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7.0.50~)
+Standards-Version: 3.9.1
+Section: libs
+Homepage: http://dswd.github.com/ToMaTo
+
+Package: tomato-repy
+Section: libs
+Architecture: all
+Depends: ${misc:Depends}, python
+Description: Python-based virtual machine for networking devices
+ Repy allows execution of modified python code in a sandbox.
+ ToMaTo-Repy is a modified version of Repy that allows this code
+ to access prepared tun/tap devices.
