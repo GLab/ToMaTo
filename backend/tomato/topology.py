@@ -348,7 +348,7 @@ class Topology(attributes.Mixin, models.Model):
 				res[key] += r[key]
 		for con in self.connectorSetAll():
 			con.updateResourceUsage()
-			r = dev.getAttribute("resources")
+			r = con.getAttribute("resources")
 			for key in r:
 				if not key in res:
 					res[key] = 0
