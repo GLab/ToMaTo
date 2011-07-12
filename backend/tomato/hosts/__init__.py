@@ -64,8 +64,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			fileutil.mkdir(self, config.REMOTE_DIR)
 		assert fileutil.existsDir(self, config.REMOTE_DIR)
 
-	def check(self):
-		proc = tasks.Process("check")
+	def checkTasks(self):
 		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable)
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
 		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, after=login)
@@ -77,7 +76,11 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
-		proc.add([login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids])
+		return [login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
+		
+	def check(self):
+		proc = tasks.Process("check")
+		proc.add(self.checkTasks())
 		return proc.start()
 
 	def disable(self):
@@ -409,9 +412,11 @@ def remove(host_name):
 	fault.check(len(host.device_set.all()) == 0, "Cannot remove hosts that are used")
 	host.delete()
 						
-def checkAll():
+def checkAllTasks():
+	t = [] 
 	for host in getAll():
-		host.check()
+		t.append(tasks.TaskSet(host.checkTasks()).prefix(host.name))
+	return t
 
 def check(host):
 	return host.check()
