@@ -158,7 +158,7 @@ def xml_rpc_sanitize(s):
 		return s
 	if isinstance(s, str) or isinstance(s, float) or isinstance(s, unicode) or isinstance(s, bool):
 		return s
-	if isinstance(s, int) and abs(s) < (2<<31):
+	if isinstance(s, int) and abs(s) < (1<<31):
 		return s
 	if isinstance(s, list):
 		return [xml_rpc_sanitize(e) for e in s]
@@ -171,7 +171,7 @@ def xml_rpc_safe(s):
 		return True
 	if isinstance(s, str) or isinstance(s, float) or isinstance(s, unicode) or isinstance(s, bool):
 		return True
-	if isinstance(s, int) and abs(s) < (2<<31):
+	if isinstance(s, int) and abs(s) < (1<<31):
 		return True
 	if isinstance(s, list):
 		for e in s:

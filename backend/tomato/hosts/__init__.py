@@ -413,11 +413,10 @@ def remove(host_name):
 	fault.check(len(host.device_set.all()) == 0, "Cannot remove hosts that are used")
 	host.delete()
 						
-def checkAllTasks():
-	t = [] 
+def checkAll():
 	for host in getAll():
-		t.append(tasks.TaskSet(host.checkTasks()).prefix(host.name))
-	return t
+		proc = tasks.Process("check-%s" % host.name, host.checkTasks())
+		proc.run()
 
 def check(host):
 	return host.check()
