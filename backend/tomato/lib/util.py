@@ -60,7 +60,7 @@ def lines(str):
 	return str.strip().split("\n")
 
 def run_shell(cmd, shell=False):
-	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell)
+	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell, close_fds=True)
 	res=proc.communicate()
 	return (proc.returncode,)+res
 
