@@ -21,6 +21,7 @@ from tomato import fault, hosts, attributes, devices
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import tasks, db, ifaceutil, util
 from tomato.topology import Topology, Permission
+from tomato.lib.decorators import *
 
 class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
@@ -220,6 +221,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def onInterfaceStateChange(self, connection):
 		pass
 
+	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
 					"pos": self.getAttribute("pos"),

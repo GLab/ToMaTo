@@ -25,6 +25,7 @@ from tomato import config, attributes
 from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl
 
 from tomato.generic import State
+from tomato.lib.decorators import *
 
 class ClusterState:
 	MASTER = "M"
