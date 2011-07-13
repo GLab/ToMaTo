@@ -19,7 +19,7 @@ import random, math, shutil
 
 from tomato import generic, config
 
-import process, fileutil, ifaceutil, util, tasks
+import process, fileutil, ifaceutil, util, tasks, exceptions
 
 class Mode:
 	ROUTER = "router"
@@ -270,7 +270,11 @@ def _stopEndpoint(endpoint):
 	assert getState(endpoint) != generic.State.CREATED
 	host = endpoint.getHost()
 	assert host
-	host.execute("tincd --net=%s -k" % _tincName(endpoint))
+	try:
+		host.execute("tincd --net=%s -k" % _tincName(endpoint))
+	except exceptions.CommandError, exc:
+		if exc.errorCode != 1: #tincd was not running
+			raise
 	util.waitFor(lambda :getState(endpoint) == generic.State.PREPARED, 5.0)
 	assert getState(endpoint) == generic.State.PREPARED
 
@@ -364,8 +368,8 @@ def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
 		id = ep.getId()
 		assert id
 		teardown_ep = tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,mode,), reverseFn=reverse)
-		stop_ep = tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse)
-		taskset.add([teardown_ep, stop_ep])
+		stop_ep = tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse, after=teardown_ep)
+		taskset.add([stop_ep, teardown_ep])
 	return taskset
 
 def prepareNetwork(endpoints, mode=Mode.SWITCH):

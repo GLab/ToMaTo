@@ -24,7 +24,7 @@ def jsonToMods(json):
 	return mods
 
 def link_info(top, dev, ip, samples=10, maxWait=5):
-	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s" % (samples, maxWait, ip)})
+	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
 	if not res:
 		return
 	import re

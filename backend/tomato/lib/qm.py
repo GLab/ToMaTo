@@ -20,14 +20,14 @@ import re, uuid
 from tomato import config, generic
 from tomato.lib import util
 
-import fileutil, process, ifaceutil
+import fileutil, process, ifaceutil, exceptions
 
 def _qm(host, vmid, cmd, params=""):
 	return host.execute("qm %s %d %s" % (cmd, vmid, params))
 
 def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null" % {"cmd": cmd, "vmid": vmid, "timeout": timeout})
+	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd, "vmid": vmid, "timeout": timeout})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
@@ -65,8 +65,12 @@ def getState(host, vmid):
 
 def useImage(host, vmid, image, move=False):
 	assert fileutil.existsFile(host, image), "Image file does not exist"
-	res = host.execute("qemu-img check -f qcow2 '%s'; echo $?" % image)
-	assert res.splitlines()[1], "Invalid image format: %s" % res 
+	try:
+		host.execute("qemu-img check -f qcow2 '%s'; echo $?" % image)
+	except exceptions.CommandError, exc:
+		#Error 1: Leaked clusters, "This means waste of disk space, but no harm to data."
+		if not exc.errorCode in [1]:
+			raise  
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to change image"
 	_qm(host, vmid, "set", "--ide0 undef")
 	imagePath = _imagePath(vmid)
@@ -160,9 +164,12 @@ def interfaceDevice(host, vmid, iface, failSilent=False):
 	"""
 	iface_id = re.match("eth(\d+)", iface).group(1)
 	assert getState(host, vmid) == generic.State.STARTED, "Cannot determine KVM host device names when not running"
-	names = host.execute("(cd /sys/class/net; ls -d vmtab%(vmid)si%(iface_id)s vmtab%(vmid)si%(iface_id)sd0 tap%(vmid)si%(iface_id)s tap%(vmid)si%(iface_id)sd0 2>/dev/null)" % { "vmid": vmid, "iface_id": iface_id }).strip().split()
-	assert failSilent or len(names) == 1, "Failed to determine kvm interface name, got %d names: %s" % (len(names), names)
-	return names[0] if len(names) == 1 else None
+	for name in ["vmtab%(vmid)si%(iface_id)s", "vmtab%(vmid)si%(iface_id)sd0", "tap%(vmid)si%(iface_id)s", "tap%(vmid)si%(iface_id)sd0"]:
+		name = name % { "vmid": vmid, "iface_id": iface_id }
+		if fileutil.existsDir(host, "/sys/class/net/%s" % name):
+			return name
+	assert failSilent, "Failed to determine kvm interface name for %s.%s" % (vmid, iface)
+	return None
 
 def create(host, vmid):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"

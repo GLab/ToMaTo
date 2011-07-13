@@ -227,12 +227,13 @@ class TincConnection(dummynet.EmulatedConnection):
 		if self.bridge_id:
 			if self.connector.state != State.STARTED and self.interface.device.state != State.STARTED:
 				host = self.getHost()
-				bridge = self.getBridge(assign=False, create=False)
-				if ifaceutil.bridgeExists(host, bridge):
-					attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
-					assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
-					ifaceutil.bridgeRemove(host, bridge)			
-				host.giveId("bridge", self.bridge_id)
+				if host:
+					bridge = self.getBridge(assign=False, create=False)
+					if ifaceutil.bridgeExists(host, bridge):
+						attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
+						assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
+						ifaceutil.bridgeRemove(host, bridge)			
+					host.giveId("bridge", self.bridge_id)
 				self.bridge_id = None
 				self.save()
 

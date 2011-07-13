@@ -139,6 +139,8 @@ class KVMDevice(Device):
 		return self._adaptTaskset(taskset)
 
 	def _stopVnc(self):
+		if not self.host or not self.getVmid() or not self.getVncPort():
+			return
 		qm.stopVnc(self.host, self.getVmid(), self.getVncPort())
 	
 	def _stopVm(self):

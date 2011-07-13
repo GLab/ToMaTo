@@ -22,7 +22,7 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl
+from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions
 
 from tomato.generic import State
 from tomato.lib.decorators import *
@@ -266,18 +266,28 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	
 	def _exec(self, cmd):
 		res = util.run_shell(cmd)
+		if res[0] != 0:
+			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
 	
 	def execute(self, command):
-		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
+		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command+"; echo $? >&2"]
 		log_str = self.name + ": " + command + "\n"
 		if tasks.get_current_task():
 			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
-		res = self._exec(cmd)
+		try:
+			res = self._exec(cmd)
+		except exceptions.CommandError, exc:
+			raise exceptions.ConnectError(exc.hostname, exc.errorCode, exc.errorMessage)
 		res = util.removeControlChars(res) #might contain funny characters
+		res = res.splitlines()
+		retCode = int(res[-1].strip())
+		res = "\n".join(res[:-1])
+		if retCode != 0:
+			raise exceptions.CommandError(self.name, command, retCode, res)
 		fd.write(res)
 		return res
 	

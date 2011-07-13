@@ -9,9 +9,9 @@ def simpleTop_checkImages(topId):
 	#mark hosts uniquely
 	print "\tmarking hosts..."
 	top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "echo openvz1 > /etc/deviceid"})
-	assert top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "cat /etc/deviceid"}) == "openvz1\n"
+	assert top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "cat /etc/deviceid"}) == "openvz1"
 	top_action(topId, "execute", "device", "openvz2", attrs={"cmd": "echo openvz2 > /etc/deviceid"})
-	assert top_action(topId, "execute", "device", "openvz2", attrs={"cmd": "cat /etc/deviceid"}) == "openvz2\n"
+	assert top_action(topId, "execute", "device", "openvz2", attrs={"cmd": "cat /etc/deviceid"}) == "openvz2"
 	#stop topology
 	print "\tstopping topology..."
 	task = top_action(topId, "stop")
@@ -44,8 +44,8 @@ def simpleTop_checkImages(topId):
 	waitForTask(task, assertSuccess=True)
 	#check that images have been switched
 	print "\tchecking images..."
-	assert top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "cat /etc/deviceid"}) == "openvz2\n"
-	assert top_action(topId, "execute", "device", "openvz2", attrs={"cmd": "cat /etc/deviceid"}) == "openvz1\n"
+	assert top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "cat /etc/deviceid"}) == "openvz2"
+	assert top_action(topId, "execute", "device", "openvz2", attrs={"cmd": "cat /etc/deviceid"}) == "openvz1"
 	#remove files
 	os.remove("openvz1.tar.gz")
 	os.remove("openvz2.tar.gz")

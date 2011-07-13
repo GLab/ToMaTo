@@ -17,6 +17,7 @@
 
 import subprocess, threading, thread, traceback, time
 from decorators import *
+import exceptions
 
 class RepeatedTimer(threading.Thread):
 	def __init__(self, timeout, func, *args, **kwargs):
@@ -212,8 +213,14 @@ def removeControlChars(s):
 	controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
 	return s.translate(None, controlChars)
 
+def escape(s):
+	return repr(str(s))
+
 class Localhost:
 	def execute(self, cmd):
-		return run_shell(cmd, shell=True)
+		res = run_shell(cmd, shell=True)
+		if res[0] != 0:
+			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
+		return res[1]
 localhost = Localhost()
 	

@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util
+import util, exceptions
 
 def killPidfile(host, pidfile):
-	host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"" % {"pidfile": pidfile})
+	host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r kill; true) && rm \"%(pidfile)s\"; true" % {"pidfile": pidfile})
 
 def killPortUser(host, port):
 	assert port
@@ -26,10 +26,14 @@ def killPortUser(host, port):
 	host.execute("lsof -i:%d -t | xargs -r kill" % port)
 
 def portFree(host, port):
-	return len(host.execute("lsof -i:%d -t" % port).strip()) == 0
+	try:
+		res = host.execute("lsof -i:%d -t" % port)
+		return len(res.splitlines()) == 0 
+	except exceptions.CommandError:
+		return True
 
 def processRunning(host, pidfile, name=""):
-	cmdline = util.lines(host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r ps --no-headers --format cmd --pid)" % {"pidfile": pidfile}))
+	cmdline = util.lines(host.execute("[ -f \"%(pidfile)s\" ] && (cat \"%(pidfile)s\" | xargs -r ps --no-headers --format cmd --pid); true" % {"pidfile": pidfile}))
 	if not len(cmdline):
 		return False
 	if name:
