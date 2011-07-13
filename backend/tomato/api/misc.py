@@ -100,7 +100,7 @@ def resource_usage_by_user(user=None):
 						usage[str(top.owner)][key] = float(usage[str(top.owner)][key]) + float(d[key]) 
 					else:
 						usage[str(top.owner)][key] = float(d[key]) 
-	return usage
+	return util.xml_rpc_sanitize(usage)
 		
 def resource_usage_by_topology(user=None):
 	"""
@@ -116,7 +116,7 @@ def resource_usage_by_topology(user=None):
 		if d:
 			d.update(top_id=top.id)
 			usage[top.name]=d
-	return usage
+	return util.xml_rpc_sanitize(usage)
 
 def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
@@ -152,4 +152,4 @@ def admin_public_key(user=None):
 # keep internal imports at the bottom to avoid dependency problems
 from tomato.api import _admin_access, _top_access
 from tomato import hosts, fault, config, topology
-from tomato.lib import tasks
+from tomato.lib import tasks, util

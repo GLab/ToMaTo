@@ -21,6 +21,7 @@ from tomato import attributes, hosts
 from tomato.topology import Topology, Permission
 from tomato.generic import State, ObjectPreferences
 from tomato.lib import db, hostserver, util
+from tomato.lib.decorators import *
 
 class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
@@ -239,6 +240,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				ids[key] = ids.get(key, set()) | value
 		return ids
 		
+	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
 					"pos": self.getAttribute("pos"),

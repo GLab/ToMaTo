@@ -19,6 +19,7 @@ from django.db import models
 import os, datetime
 import attributes, auth, config
 from lib import db, util
+from lib.decorators import *
 
 class Topology(attributes.Mixin, models.Model):
 	"""
@@ -347,13 +348,14 @@ class Topology(attributes.Mixin, models.Model):
 				res[key] += r[key]
 		for con in self.connectorSetAll():
 			con.updateResourceUsage()
-			r = dev.getAttribute("resources")
+			r = con.getAttribute("resources")
 			for key in r:
 				if not key in res:
 					res[key] = 0
 				res[key] += r[key]
 		self.setAttribute("resources", res)
 		
+	@xmlRpcSafe
 	def toDict(self, user, detail):
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.maxState(), "owner": str(self.owner),

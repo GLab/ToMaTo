@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import util
+
 """
 Synchronization decorator
   This decorator can be used to synchronize method calls. Synchronization is relative to 
@@ -139,3 +141,21 @@ def handleErrors(handle):
 		call.__dict__.update(fn.__dict__)
 		return call
 	return wrap
+
+def xmlRpcSafe(fn):
+	def call(*args, **kwargs):
+		res = fn(*args, **kwargs)
+		assert util.xml_rpc_safe(res), "Output is not XML-RPC safe: %s" % res
+		return res
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
+
+def xmlRpcSanitize(fn):
+	def call(*args, **kwargs):
+		return util.xml_rpc_sanitize(fn(*args, **kwargs))
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
