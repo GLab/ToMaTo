@@ -56,7 +56,7 @@ def remove_bridge(api, request, type, group, hostname):
 		return index(request)
 	else:
 		import host
-		return host.detail(request, hostn)
+		return host.detail(request, hostname)
 	
 @wrap_rpc
 def add(api, request):
