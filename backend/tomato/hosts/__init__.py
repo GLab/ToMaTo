@@ -91,8 +91,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.save()
 
 	def _checkCmd(self, cmd, errormsg):
-		res = self.execute("%s; echo $?" % cmd)
-		assert res.split("\n")[-2] == "0", errormsg
+		self.execute(cmd)
 
 	def _checkTomatoHostVersion(self):
 		res = self.execute("dpkg-query -s tomato-host | fgrep Version | awk '{ print $2 }'")
