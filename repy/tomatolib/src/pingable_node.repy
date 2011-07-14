@@ -7,7 +7,7 @@ include mac_util.lib
 if callfunc == 'initialize':
     defaults = {"ip":"10.0.0.1", "mac":random_mac()}
     options = parse_args(defaults)
-    options["ip"] = str_to_ip(options["ip"])
     echo("Options: %s" % options)
+    options["ip"] = str_to_ip(options["ip"])
     node = ICMPNode(**options)
     run_forever(node.handle)
