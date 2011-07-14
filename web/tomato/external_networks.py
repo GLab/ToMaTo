@@ -33,21 +33,30 @@ class ExternalNetworkForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/external_networks_index.html", {'list': api.external_networks()})
+	return render_to_response("admin/external_networks_index.html", {'list': api.external_networks(), 'hosts': api.host_list()})
 
 @wrap_rpc
-def add_bridge(api, request, hostname):
+def add_bridge(api, request):
 	(type, group) = request.REQUEST["typegroup"].split(":")
 	bridge = request.REQUEST["bridge"]
-	api.external_network_bridge_add(hostname, type, group, bridge)
-	import host
-	return host.detail(request, hostname)
+	hostn = request.REQUEST["host"]
+	api.external_network_bridge_add(hostn, type, group, bridge)
+	origin = request.REQUEST.get("origin")
+	if origin == "en":
+		return index(request)
+	else:
+		import host
+		return host.detail(request, hostn)
 	
 @wrap_rpc
 def remove_bridge(api, request, type, group, hostname):
 	api.external_network_bridge_remove(hostname, type, group)
-	import host
-	return host.detail(request, hostname)
+	origin = request.REQUEST.get("origin")
+	if origin == "en":
+		return index(request)
+	else:
+		import host
+		return host.detail(request, hostn)
 	
 @wrap_rpc
 def add(api, request):

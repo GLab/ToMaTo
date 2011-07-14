@@ -375,7 +375,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		"""
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"externalNetworks": [enb.toDict() for enb in self.externalNetworks()]}
+			"external_networks": [enb.toDict() for enb in self.externalNetworks()]}
 		res.update(self.getAttributes().items())
 		return res
 	

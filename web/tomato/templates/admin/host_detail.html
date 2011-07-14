@@ -34,7 +34,7 @@
     <td><a href="{%url external_networks.remove_bridge type=en.type group=en.group hostname=host.name%}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
   </tr>
 {% endfor %}
-<form action="{%url external_networks.add_bridge hostname=host.name%}">
+<form action="{%url external_networks.add_bridge%}">
   <tr>
     <td colspan="2"><select name="typegroup">
 {% for en in external_networks %}
@@ -42,7 +42,7 @@
 {% endfor %}    
     </select></td>
     <td><input name="bridge"/></td>
-    <td><input type="submit" value="Add"/></td>
+    <td><input type="hidden" name="origin" value="h"/><input type="hidden" name="host" value="{{host.name}}"/><input type="submit" value="Add"/></td>
   </tr>
 </form>
 </table>
