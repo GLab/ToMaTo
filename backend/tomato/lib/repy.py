@@ -81,7 +81,10 @@ def stop(host, vmid):
 
 def destroy(host, vmid):
 	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
-	fileutil.delete(host, _path(vmid, "*"))
+	fileutil.delete(host, _imagePath(vmid))
+	fileutil.delete(host, _logFile(vmid))
+	fileutil.delete(host, _pidFile(vmid))
+	fileutil.delete(host, _vncPidFile(vmid))
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM"
 
 def useImage(host, vmid, image):
