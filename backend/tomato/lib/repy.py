@@ -17,7 +17,7 @@
 
 from tomato import generic, config
 
-import process, fileutil, util
+import process, fileutil, util, ifaceutil
 
 def _path(vmid, ext):
 	return  "%s/repy/%s.%s" % (config.REMOTE_DIR, vmid, ext)	
@@ -68,10 +68,12 @@ def start(host, vmid, ifaces, args=[]):
 		args = [args]
 	alist = [util.escape(a) for a in args] 
 	host.execute("tomato-repy -p %s -v %s %s > %s 2>&1 & echo $! > %s" % (_imagePath(vmid), " ".join(ilist), " ".join(alist), _logFile(vmid), _pidFile(vmid) ))
-	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start"
+	assert getState(host, vmid) == generic.State.STARTED, "Repy device failed to start"
+	for i in ifaces:
+		waitForInterface(host, vmid, i)
 
 def waitForInterface(host, vmid, iface):
-	util.waitFor(lambda :interfaceDevice(vmid, iface))
+	util.waitFor(lambda :ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface)))
 
 def stop(host, vmid):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
