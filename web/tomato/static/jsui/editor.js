@@ -1845,7 +1845,6 @@ var TopologyControlPanel = ControlPanel.extend({
 		var t = this;
 		var attrs = this.obj.attributes;
 		this.div.append('<p>Owner: '+attrs.owner+'</p>');
-		this.div.append('<p>Created: '+attrs.date_created+'<br/>Modified: '+attrs.date_modified+'<br/>Last used: '+attrs.date_usage+'</p>');
 		if (this.obj.finished_task) this.div.append($("<a href=/task/"+this.obj.finished_task+" target=_task>Show last task</a><br/>").button());
 	}	
 });
