@@ -1,2 +1,5 @@
 def mac_to_str(s):
     return ":".join([hex(ord(b))[2:] for b in s])
+
+def random_mac():
+    return "\x02" + randombytes()[:5]

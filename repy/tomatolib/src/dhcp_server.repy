@@ -2,9 +2,10 @@ include dhcp_server.lib
 include parse_args.lib
 include run_forever.lib
 include ip_util.lib
+include mac_util.lib
 
 if callfunc == 'initialize':
-    defaults = {"ip":"\x0a\x00\x00\x01", "mac":randombytes()[:6], "gateway":"\x0a\x00\x00\xfe", "pool":range_to_ips("10.0.0.3-250"),
+    defaults = {"ip":"\x0a\x00\x00\x01", "mac":random_mac(), "gateway":"\x0a\x00\x00\xfe", "pool":range_to_ips("10.0.0.3-250"),
                 "netmask":"\xff\xff\xff\x00", "domain":"example.com"}
     options = parse_args(defaults)
     #options["pool"] = Net(options["pool"])
