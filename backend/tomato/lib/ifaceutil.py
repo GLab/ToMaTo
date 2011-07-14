@@ -137,8 +137,12 @@ def connectInterfaces(host, if1, if2, id, allowIps):
 	host.execute ( "ip rule add iif %s table %s" % ( if1, table1 ))
 	host.execute ( "ip rule add iif %s table %s" % ( if2, table2 ))
 	#create routing table with only a default device
-	host.execute ( "ip route add table %s default dev %s" % ( table1, if2 ))
-	host.execute ( "ip route add table %s default dev %s" % ( table2, if1 ))
+	try:
+		host.execute ( "ip route add table %s default dev %s" % ( table1, if2 ))
+		host.execute ( "ip route add table %s default dev %s" % ( table2, if1 ))
+	except exceptions.CommandError, exc:
+		if exc.errorCode != 2: #Rule does not exist
+			raise
 	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if2))
 	assert if1 in res, "route should be %s but was %s" % (if1, res)
 	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if1))
