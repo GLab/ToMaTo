@@ -265,7 +265,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		path = "%s/%s" % (self.host.hostServerBasedir(), filename)
 		proc = tasks.Process("use-uploaded-image")
 		proc.add(tasks.Task("main", self.upcast().useUploadedImageRun, args=(path,)))
-		return proc.start(direct)
+		return self.topology.startProcess(proc, direct)
 			
 	def onConnectionStateChange(self, iface):
 		pass

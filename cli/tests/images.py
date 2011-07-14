@@ -31,13 +31,16 @@ def simpleTop_checkImages(topId):
 	print "\tuploading images..."
 	upurl1 = top_action(topId, "upload_image_prepare", "device", "openvz1")
 	upload(upurl1["upload_url"], "openvz2.tar.gz")
-	top_action(topId, "upload_image_use", "device", "openvz1", attrs={"filename": upurl1["filename"]})
+	task = top_action(topId, "upload_image_use", "device", "openvz1", attrs={"filename": upurl1["filename"]})
+	waitForTask(task, assertSuccess=True)
 	upurl2 = top_action(topId, "upload_image_prepare", "device", "openvz2")
 	upload(upurl2["upload_url"], "openvz1.tar.gz")
-	top_action(topId, "upload_image_use", "device", "openvz2", attrs={"filename": upurl2["filename"]})
+	task = top_action(topId, "upload_image_use", "device", "openvz2", attrs={"filename": upurl2["filename"]})
+	waitForTask(task, assertSuccess=True)
 	upurl3 = top_action(topId, "upload_image_prepare", "device", "kvm1")
 	upload(upurl3["upload_url"], "kvm1.qcow2")
-	top_action(topId, "upload_image_use", "device", "kvm1", attrs={"filename": upurl3["filename"]})
+	task = top_action(topId, "upload_image_use", "device", "kvm1", attrs={"filename": upurl3["filename"]})
+	waitForTask(task, assertSuccess=True)
 	#start topology
 	print "\tstarting topology..."
 	task = top_action(topId, "start")
