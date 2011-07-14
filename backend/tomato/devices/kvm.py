@@ -343,7 +343,12 @@ class KVMDevice(Device):
 		return ids
 	
 	def interfaceDevice(self, iface):
-		return qm.interfaceDevice(self.host, self.getVmid(), iface.name)
+		try:
+			return qm.interfaceDevice(self.host, self.getVmid(), iface.name)
+		except:
+			self.state = qm.getState(self.host, self.getVmid())
+			self.save()
+			raise
 
 	def migrateRun(self, host=None):
 		if self.state == State.CREATED:
