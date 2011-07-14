@@ -1,3 +1,9 @@
+tomato-host (0.10) stable; urgency=low
+
+  * Depending on tomato-repy
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 14 Jul 2011 11:10:53 +0200
+
 tomato-host (0.9) stable; urgency=low
 
   * Depending on new hostserver >= 0.4

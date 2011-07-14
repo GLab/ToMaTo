@@ -26,7 +26,8 @@ from tomato.lib.decorators import *
 class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
-	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM') )
+	TYPE_PROG="prog"
+	TYPES = ( (TYPE_OPENVZ, 'OpenVZ'), (TYPE_KVM, 'KVM'), (TYPE_PROG, 'PROG') )
 	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=TYPES)
@@ -56,6 +57,8 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 			return self.kvmdevice.upcast() # pylint: disable-msg=E1101
 		if self.isOpenvz():
 			return self.openvzdevice.upcast() # pylint: disable-msg=E1101
+		if self.isProg():
+			return self.progdevice.upcast() # pylint: disable-msg=E1101
 		return self
 
 	def isOpenvz(self):
@@ -64,6 +67,9 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def isKvm(self):
 		return self.type == Device.TYPE_KVM
 	
+	def isProg(self):
+		return self.type == Device.TYPE_PROG
+
 	def getCapabilities(self, user):
 		isManager = self.topology.checkAccess(Permission.ROLE_MANAGER, user)
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)

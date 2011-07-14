@@ -1,9 +1,12 @@
 include icmp_node.lib
 include parse_args.lib
 include run_forever.lib
+include ip_util.lib
 
 if callfunc == 'initialize':
-    defaults = {"ip":"\x0a\x00\x00\x01", "mac":randombytes()[:6]}
+    defaults = {"ip":"10.0.0.1", "mac":randombytes()[:6]}
     options = parse_args(defaults)
+    options["ip"] = str_to_ip(options["ip"])
+    echo("Options: %s" % options)
     node = ICMPNode(**options)
     run_forever(node.handle)

@@ -18,7 +18,9 @@
 from django.db import models
 from django.core import validators
 
-from tomato.lib import db
+import os
+
+from tomato.lib import db, fileutil
 
 class Template(models.Model):
 	name = models.CharField(max_length=100, validators=[db.templateValidator])
@@ -34,7 +36,7 @@ class Template(models.Model):
 	def init(self, name, ttype, download_url):
 		import re
 		fault.check(re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name), "Name must be in the format NAME-VERSION")
-		fault.check(not name.endswith(".tar.gz") and not name.endswith(".qcow2"), "Name must not contain file extensions")
+		fault.check(not name.endswith(".repy") and not name.endswith(".tar.gz") and not name.endswith(".qcow2"), "Name must not contain file extensions")
 		self.name = name
 		self.type = ttype
 		self.download_url = download_url
@@ -50,12 +52,15 @@ class Template(models.Model):
 			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
 		if self.type == "openvz":
 			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+		if self.type == "prog":
+			return "/var/lib/vz/template/repy/%s.repy" % self.name
 	
 	def uploadToHost(self, host):
 		if host.clusterState() == ClusterState.NODE:
 			return
 		dst = self.getFilename()
 		if self.download_url:
+			fileutil.mkdir(host, os.path.dirname(self.getFilename()))
 			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
 
 	def __unicode__(self):

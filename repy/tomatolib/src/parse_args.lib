@@ -3,6 +3,7 @@ def parse_args(defaults):
     if defaults:
         options = defaults
     for arg in callargs:
-        (key, value) = arg.split("=")
-        options[key]=value
+        for a in arg.split(","):
+            (key, value) = a.split("=")
+            options[key]=value
     return options

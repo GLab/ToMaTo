@@ -26,7 +26,7 @@ import xmlrpclib
 
 class TemplateForm(forms.Form):
 	name = forms.CharField(max_length=255)
-	type = forms.ChoiceField(choices=[("openvz", "OpenVZ"), ("kvm", "KVM")])
+	type = forms.ChoiceField(choices=[("openvz", "OpenVZ"), ("kvm", "KVM"), ("prog", "Prog")])
 	url = forms.URLField(label="Download URL", verify_exists=True)
 
 @wrap_rpc

@@ -17,7 +17,7 @@
 
 import fault, topology, generic
 
-from devices import kvm, openvz
+from devices import kvm, openvz, prog
 from connectors import external, vpn
 from lib import util
 
@@ -42,6 +42,8 @@ class Modification():
 				dev = kvm.KVMDevice()
 			elif dtype == "openvz":
 				dev = openvz.OpenVZDevice()
+			elif dtype == "prog":
+				dev = prog.ProgDevice()
 			else:
 				raise fault.new("Unknown device type: %s" % type )
 			dev.topology = top
