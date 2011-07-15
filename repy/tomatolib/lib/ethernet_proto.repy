@@ -1,5 +1,6 @@
-ETHERNET_TYPE_ARP = 0x0806
-ETHERNET_TYPE_IP = 0x0800
+
+#ifndef ethernet_proto_loaded
+#define ethernet_proto_loaded
 
 def ethernet_decode(p):
     h = Header()
@@ -11,3 +12,5 @@ def ethernet_decode(p):
 
 def ethernet_encode(dst, src, type, payload):
     return dst + src + struct.pack("!H", type) + payload
+
+#endif

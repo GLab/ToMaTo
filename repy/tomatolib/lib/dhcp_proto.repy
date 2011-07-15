@@ -1,3 +1,10 @@
+
+#ifndef dhcp_proto_loaded
+#define dhcp_proto_loaded
+
+UDP_PORT_BOOTP_SERVER = 67
+UDP_PORT_BOOTP_CLIENT = 68
+
 DHCP_OP_REQUEST = 1
 DHCP_OP_REPLY = 2
 DHCP_OPTION_VALUE_DISCOVER = "\x01"
@@ -47,3 +54,5 @@ def dhcp_encode(op, xid, ciaddr, yiaddr, siaddr, giaddr, chaddr, options, htype=
     options_raw.append(struct.pack("!BB", DHCP_OPTION_END, 0))
     p += "".join(options_raw)
     return p
+
+#endif

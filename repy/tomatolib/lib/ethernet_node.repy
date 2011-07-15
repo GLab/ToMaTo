@@ -1,4 +1,7 @@
 
+#ifndef ethernet_node_loaded
+#define ethernet_node_loaded
+
 #include <send.repy>
 #include <ethernet_proto.repy>
 
@@ -9,7 +12,10 @@ class EthernetNode:
     def __init__(self, mac, **kwargs):
         self.mac = mac
         self.mac_table = {}
-        self.ethernet_handlers = {}
+        try:
+            self.ethernet_handlers
+        except:
+            self.ethernet_handlers = {}
     def bind(self, type, handler):
         self.ethernet_handlers[type] = handler
     def handle(self, dev, p):
@@ -25,3 +31,5 @@ class EthernetNode:
         if not dev:
             dev = self.mac_table.get(dst)
         send(dev, ethernet_encode(dst, self.mac, type, payload))
+
+#endif

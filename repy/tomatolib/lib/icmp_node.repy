@@ -1,4 +1,7 @@
 
+#ifndef icmp_node_loaded
+#define icmp_node_loaded
+
 #include <icmp_proto.repy>
 #include <ip_node.repy>
 
@@ -19,3 +22,5 @@ class ICMPNode(IPNode):
     def send(self, dst, type, code, rest_of_header, payload, **kwargs):
         icmp_reply = icmp_encode(type, code, rest_of_header, payload)
         IPNode.send(self, dst, IP_PROTOCOL_ICMP, icmp_reply, **kwargs)
+
+#endif

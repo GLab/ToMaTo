@@ -1,11 +1,11 @@
 
+#ifndef dhcp_server_loaded
+#define dhcp_server_loaded
+
 #include <udp_server.repy>
 #include <dhcp_proto.repy>
 #include <ip_util.repy>
 #include <mac_util.repy>
-
-UDP_PORT_BOOTP_SERVER = 67
-UDP_PORT_BOOTP_CLIENT = 68
 
 class DHCPServer(UDPServer):
     def __init__(self, pool=None, gateway=None, netmask=None, nameserver=None, broadcast=None, domain=None, renewal_time=60, lease_time=1800, **kwargs):
@@ -73,3 +73,5 @@ class DHCPServer(UDPServer):
     def send(self, mac, op, xid, chaddr, options, ciaddr="\x00\x00\x00\x00", yiaddr="\x00\x00\x00\x00", siaddr="\x00\x00\x00\x00", giaddr="\x00\x00\x00\x00"):
         reply = dhcp_encode(op, xid, ciaddr, yiaddr, siaddr, giaddr, chaddr, options)
         UDPServer.send(self, UDP_PORT_BOOTP_SERVER, "\xff\xff\xff\xff", UDP_PORT_BOOTP_CLIENT, reply, ether_dst=mac)
+
+#endif

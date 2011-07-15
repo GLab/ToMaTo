@@ -9,7 +9,7 @@ DEFAULT: create_dir build
 create_dir:
 	mkdir -p build
 
-build: build/dhcp_server.repy build/pingable_node.repy build/switch.repy
+build: build/dhcp_server.repy build/pingable_node.repy build/switch.repy build/dns_server.repy
 
 clean:
 	rm build/*

@@ -1,0 +1,69 @@
+
+#ifndef dns_proto_loaded
+#define dns_proto_loaded
+
+UDP_PORT_DNS = 53
+
+DNS_QR_REQUEST = 0
+DNS_QR_REPLY = 1
+
+def dns_decode(p):
+    h = Header()
+    (h.id, flags1, flags2, h.qdcount, h.ancount, h.nscount, h.arcount) = struct.unpack("!HBBHHHH", p[0:12])
+    h.qr = (flags1 >> 7) & 0x1
+    h.opcode = (flags1 >> 3) & 0xf
+    h.aa = (flags1 >> 2) & 0x1
+    h.tc = (flags1 >> 1) & 0x1
+    h.rd = flags1 & 0x1
+    h.ra = (flags2 >> 7) & 0x1
+    h.z = (flags2 >> 4) & 0x7
+    h.rcode = flags2 & 0xf
+    pos = 12
+    h.question = []
+    for i in range(0, h.qdcount):
+        q = Header()
+        q.qname = ""
+        while True:
+            l = ord(p[pos])
+            pos += 1
+            if not l:
+                break
+            q.qname += p[pos:pos+l]
+            q.qname += "."
+            pos += l
+        (q.qtype, q.qclass) = struct.unpack("!HH", p[pos:pos+4])
+        pos += 4
+        h.question.append(q)
+    other = []
+    for i in range(0, h.ancount+h.nscount+h.arcount):
+        o = Header()
+        o.name = ""
+        while True:
+            l = ord(p[pos])
+            pos += 1
+            if not l:
+                break
+            o.name += p[pos:pos+l]
+            o.name += "."
+            pos += l
+        (o.type_, o.class_, o.ttl, rdlen) = struct.unpack("!HHIH", p[pos:pos+10])
+        pos += 10
+        o.rdata = p[pos:pos+rdlen]
+        pos += rdlen
+        other.append(o)
+    h.answer = other[0:h.ancount]
+    h.authority = other[h.ancount:h.ancount+h.nscount]
+    h.additional = other[h.ancount+h.nscount:h.ancount+h.nscount+h.arcount]
+    return h
+
+def dns_encode(id, qr, question=[], answer=[], authority=[], additional=[], rcode=0, opcode=0, aa=0, tc=0, rd=1, ra=0, z=0):
+    flags1 = ((qr & 0x1) << 7) | ((opcode & 0xf) << 3) | ((aa & 0x1) << 2) | ((tc & 0x1) << 1) | (rd & 0x1)
+    flags2 = ((ra & 0x1) << 7) | ((z & 0x7) << 4) | (rcode & 0xf)
+    header = struct.pack("!HBBHHHH", id, flags1, flags2, len(question), len(answer), len(authority), len(additional))
+    q_bytes = "".join([("".join([(chr(len(p)) + p) for p in q.qname.split(".")]) + struct.pack("!HH", q.qtype, q.qclass) ) for q in question])
+    an_bytes = "".join([("".join([(chr(len(p)) + p) for p in o.name.split(".")]) + struct.pack("!HHIH", o.type_, o.class_, o.ttl, len(o.rdata) ) + o.rdata) for o in answer])
+    ns_bytes = "".join([("".join([(chr(len(p)) + p) for p in o.name.split(".")]) + struct.pack("!HHIH", o.type_, o.class_, o.ttl, len(o.rdata) ) + o.rdata) for o in authority])
+    ar_bytes = "".join([("".join([(chr(len(p)) + p) for p in o.name.split(".")]) + struct.pack("!HHIH", o.type_, o.class_, o.ttl, len(o.rdata) ) + o.rdata) for o in additional])
+    return header + q_bytes + an_bytes + ns_bytes + ar_bytes
+    
+#endif

@@ -1,4 +1,7 @@
 
+#ifndef ip_node_loaded
+#define ip_node_loaded
+
 #include <ethernet_node.repy>
 #include <arp_proto.repy>
 #include <ip_proto.repy>
@@ -18,7 +21,10 @@ class IPNode(EthernetNode):
         self.ip = ip
         self.answer_arp = answer_arp
         self.arp_table = {}
-        self.ip_handlers = {}
+        try:
+            self.ip_handlers
+        except:
+            self.ip_handlers = {}
         EthernetNode.bind(self, ETHERNET_TYPE_ARP, self._arp)
         EthernetNode.bind(self, ETHERNET_TYPE_IP, self._ip)
     def bind(self, protocol, handler):
@@ -57,3 +63,5 @@ class IPNode(EthernetNode):
         #FIXME: send arp request and cache packet if ether_dst still None
         packet = ip_encode(self.ip, dst, protocol, payload, **kwargs)
         EthernetNode.send(self, ether_dst, ETHERNET_TYPE_IP, packet, dev=dev)
+
+#endif

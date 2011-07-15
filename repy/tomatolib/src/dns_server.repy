@@ -1,0 +1,25 @@
+
+#include <dns_server.repy>
+#include <icmp_node.repy>
+#include <parse_args.repy>
+#include <run_forever.repy>
+#include <ip_util.repy>
+#include <mac_util.repy>
+
+class Server(DNSServer,ICMPNode):
+    def __init__(self, **kwargs):
+        DNSServer.__init__(self, **kwargs)
+        ICMPNode.__init__(self, **kwargs)
+
+if callfunc == 'initialize':
+    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "qname":None, "qtype":None, "qclass":None, "answer": "10.0.0.1", "ttl":1000}
+    options = parse_args(defaults)
+    echo("Options: %s" % options)
+    options["ip"] = str_to_ip(options["ip"])
+    data = {(options["qname"], options["qtype"], options["qclass"]): str_to_ip(options["answer"])}
+    del options["qname"]
+    del options["qtype"]
+    del options["qclass"]
+    del options["answer"]
+    node = Server(data=data, **options)
+    run_forever(node.handle)

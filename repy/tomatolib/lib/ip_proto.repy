@@ -1,3 +1,9 @@
+
+#ifndef ip_proto_loaded
+#define ip_proto_loaded
+
+ETHERNET_TYPE_IP = 0x0800
+
 def ip_checksum(data):
     words = struct.unpack("!%dH" % (len(data)/2), data)
     sum = 0
@@ -19,9 +25,6 @@ def ip_checksum_fast(data, rev=False):
     if not rev: #yes!
         sum ^= 0xffff
     return chr(sum>>8) + chr(sum&0xff)
-
-IP_PROTOCOL_ICMP = 1
-IP_PROTOCOL_UDP = 17
 
 def ip_decode(p):
     h = Header()
@@ -51,3 +54,5 @@ def ip_encode(src, dst, protocol, payload, options=[], version=4, dscp=0, ecn=0,
     p = struct.pack("!BBHHHBBH", version_ihl, tos, length, id, flags_frag_off, ttl, protocol, 0) + src + dst + "".join(options)
     p = p[0:10] + struct.pack("!H", ip_checksum(p)^0xffff) + p[12:] + payload
     return p
+
+#endif

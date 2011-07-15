@@ -1,3 +1,7 @@
+
+#ifndef parse_args_loaded
+#define parse_args_loaded
+
 def parse_args(defaults):
     options = {}
     if defaults:
@@ -7,3 +11,5 @@ def parse_args(defaults):
             (key, value) = a.split("=")
             options[key]=value
     return options
+
+#endif
