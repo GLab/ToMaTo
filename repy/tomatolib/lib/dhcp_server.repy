@@ -1,3 +1,4 @@
+
 #include <udp_server.repy>
 #include <dhcp_proto.repy>
 #include <ip_util.repy>
@@ -8,7 +9,7 @@ UDP_PORT_BOOTP_CLIENT = 68
 
 class DHCPServer(UDPServer):
     def __init__(self, pool=None, gateway=None, netmask=None, nameserver=None, broadcast=None, domain=None, renewal_time=60, lease_time=1800, **kwargs):
-        UDPServer.__init__(self, UDP_PORT_BOOTP_SERVER, **kwargs)
+        UDPServer.__init__(self, **kwargs)
         self.leases = {}
         self.pool = []
         self._add_to_pool(pool)
@@ -19,6 +20,7 @@ class DHCPServer(UDPServer):
         self.domain = domain
         self.renewal_time = renewal_time
         self.lease_time = lease_time
+        UDPServer.bind(self, UDP_PORT_BOOTP_SERVER, self._dhcp)
     def _add_to_pool(self, ip):
         if not ip:
             return
@@ -50,7 +52,7 @@ class DHCPServer(UDPServer):
         if self.domain:
             options[DHCP_OPTION_DOMAIN] = self.domain
         return options
-    def handle_udp(self, udp, ip, ethernet, dev):
+    def _dhcp(self, udp, ip, ethernet, dev):
         dhcp = dhcp_decode(udp.payload)
         if dhcp.magic_cookie != DHCP_MAGIC_COOKIE:
             return
@@ -70,4 +72,4 @@ class DHCPServer(UDPServer):
                     echo("assigned IP %s to %s" % (ip_to_str(ip), mac_to_str(dhcp.chaddr)))
     def send(self, mac, op, xid, chaddr, options, ciaddr="\x00\x00\x00\x00", yiaddr="\x00\x00\x00\x00", siaddr="\x00\x00\x00\x00", giaddr="\x00\x00\x00\x00"):
         reply = dhcp_encode(op, xid, ciaddr, yiaddr, siaddr, giaddr, chaddr, options)
-        UDPServer.send(self, "\xff\xff\xff\xff", UDP_PORT_BOOTP_CLIENT, reply, ether_dst=mac)
+        UDPServer.send(self, UDP_PORT_BOOTP_SERVER, "\xff\xff\xff\xff", UDP_PORT_BOOTP_CLIENT, reply, ether_dst=mac)

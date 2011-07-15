@@ -1,3 +1,4 @@
+
 #include <send.repy>
 #include <ethernet_proto.repy>
 
@@ -8,13 +9,18 @@ class EthernetNode:
     def __init__(self, mac):
         self.mac = mac
         self.mac_table = {}
+        self.ethernet_handlers = {}
+    def bind(self, type, handler):
+        self.ethernet_handlers[type] = handler
     def handle(self, dev, p):
         ether = ethernet_decode(p)
         self.mac_table[ether.src] = dev
         if ether.dst == self.mac or ether.dst == "\xff\xff\xff\xff\xff\xff":
             self.handle_ethernet(ether, dev)
     def handle_ethernet(self, ethernet, dev):
-        pass
+        handler = self.ethernet_handlers.get(ethernet.type)
+        if handler:
+            handler(ethernet, dev)  
     def send(self, dst, type, payload, dev=None):
         if not dev:
             dev = self.mac_table.get(dst)

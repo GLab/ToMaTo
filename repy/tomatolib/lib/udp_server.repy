@@ -1,18 +1,21 @@
-#include <udp_proto.repy>
-#include <icmp_node.repy>
 
-class UDPServer(ICMPNode):
-    def __init__(self, port, **kwargs):
-        ICMPNode.__init__(self, **kwargs)
-        self.port = port
-    def handle_ip(self, ip, ethernet, dev):
-        ICMPNode.handle_ip(self, ip, ethernet, dev)
-        if ip.protocol == IP_PROTOCOL_UDP:
-            udp = udp_decode(ip.payload)
-            if udp.dst == self.port:
-                self.handle_udp(udp, ip, ethernet, dev)
+#include <udp_proto.repy>
+#include <ip_node.repy>
+
+class UDPServer(IPNode):
+    def __init__(self, **kwargs):
+        IPNode.__init__(self, **kwargs)
+        self.udp_handlers = {}
+        IPNode.bind(self, IP_PROTOCOL_UDP, self._udp)
+    def bind(self, port, handler):
+        self.udp_handlers[port] = handler
+    def _udp(self, ip, ethernet, dev):
+        udp = udp_decode(ip.payload)
+        self.handle_udp(udp, ip, ethernet, dev)
     def handle_udp(self, udp, ip, ethernet, dev):
-        pass
-    def send(self, dstip, dstport, payload, **kwargs):
-        udp_msg = udp_encode(self.port, dstport, payload)
+        handler = self.udp_handlers.get(udp.dst)
+        if handler:
+            handler(udp, ip, ethernet, dev)
+    def send(self, srcport, dstip, dstport, payload, **kwargs):
+        udp_msg = udp_encode(srcport, dstport, payload)
         IPNode.send(self, dstip, IP_PROTOCOL_UDP, udp_msg, **kwargs)

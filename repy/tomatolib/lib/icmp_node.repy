@@ -1,3 +1,4 @@
+
 #include <icmp_proto.repy>
 #include <ip_node.repy>
 
@@ -5,13 +6,13 @@ class ICMPNode(IPNode):
     def __init__(self, answer_ping=True, **kwargs):
         IPNode.__init__(self, **kwargs)
         self.answer_ping = answer_ping
-    def handle_ip(self, ip, ethernet, dev):
-        if ip.protocol == IP_PROTOCOL_ICMP:
-            icmp = icmp_decode(ip.payload)
-            if not icmp.checksum_correct:
-                echo("Invalid ICMP chechsum")
-                return
-            self.handle_icmp(icmp, ip, ethernet, dev)
+        IPNode.bind(self, IP_PROTOCOL_ICMP, self._icmp)
+    def _icmp(self, ip, ethernet, dev):
+        icmp = icmp_decode(ip.payload)
+        if not icmp.checksum_correct:
+            echo("Invalid ICMP chechsum")
+            return
+        self.handle_icmp(icmp, ip, ethernet, dev)
     def handle_icmp(self, icmp, ip, ethernet, dev):
         if icmp.type == ICMP_TYPE_ECHO_REQUEST and icmp.code == ICMP_CODE_ECHO_REQUEST:
             ICMPNode.send(self, ip.src, ICMP_TYPE_ECHO_REPLY, ICMP_CODE_ECHO_REPLY, icmp.rest_of_header, icmp.payload)

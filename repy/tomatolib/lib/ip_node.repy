@@ -1,3 +1,4 @@
+
 #include <ethernet_node.repy>
 #include <arp_proto.repy>
 #include <ip_proto.repy>
@@ -17,21 +18,25 @@ class IPNode(EthernetNode):
         self.ip = ip
         self.answer_arp = answer_arp
         self.arp_table = {}
-    def handle_ethernet(self, ethernet, dev):
-        if ethernet.type == ETHERNET_TYPE_ARP:
-            arp = arp_decode(ethernet.payload)
-            self.handle_arp(arp, ethernet, dev)
-        if ethernet.type == ETHERNET_TYPE_IP:
-            ip = ip_decode(ethernet.payload)
-            if not ip.checksum_correct:
-                echo("Invalid IP chechsum")
-                return
-            #FIXME: reassable fragmented packets
-            self.arp_table[ip.src] = ethernet.src
-            if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
-                self.handle_ip(ip, ethernet, dev)
-            else:
-                echo(repr(ip.dst))
+        self.ip_handlers = {}
+        EthernetNode.bind(self, ETHERNET_TYPE_ARP, self._arp)
+        EthernetNode.bind(self, ETHERNET_TYPE_IP, self._ip)
+    def bind(self, protocol, handler):
+        self.ip_handlers[protocol] = handler
+    def _arp(self, ethernet, dev):
+        arp = arp_decode(ethernet.payload)
+        self.handle_arp(arp, ethernet, dev)
+    def _ip(self, ethernet, dev):
+        ip = ip_decode(ethernet.payload)
+        if not ip.checksum_correct:
+            echo("Invalid IP chechsum")
+            return
+        #FIXME: reassable fragmented packets
+        self.arp_table[ip.src] = ethernet.src
+        if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
+            self.handle_ip(ip, ethernet, dev)
+        else:
+            echo(repr(ip.dst))
     def handle_arp(self, arp, ethernet, dev):
         if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
             return
@@ -42,7 +47,9 @@ class IPNode(EthernetNode):
             self.arp_table[arp.sda]=arp.sha
             #FIXME: send cached packets
     def handle_ip(self, ip, ethernet, dev):
-        pass
+        handler = self.ip_handlers.get(ip.protocol)
+        if handler:
+            handler(ip, ethernet, dev)
     def send(self, dst, protocol, payload, ether_dst=None, dev=None, **kwargs):
         if not ether_dst:
             ether_dst = self.arp_table.get(dst)
