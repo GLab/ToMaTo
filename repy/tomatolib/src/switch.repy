@@ -1,5 +1,5 @@
-include switch.lib
-include run_forever.lib
+#include <switch.repy>
+#include <run_forever.repy>
 
 if callfunc == 'initialize':
     node = SWitch()

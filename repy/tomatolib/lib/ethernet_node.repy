@@ -1,5 +1,5 @@
-include send.lib
-include ethernet_proto.lib
+#include <send.repy>
+#include <ethernet_proto.repy>
 
 class Header:
     pass

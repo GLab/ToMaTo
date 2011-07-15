@@ -1,5 +1,5 @@
-include udp_proto.lib
-include icmp_node.lib
+#include <udp_proto.repy>
+#include <icmp_node.repy>
 
 class UDPServer(ICMPNode):
     def __init__(self, port, **kwargs):

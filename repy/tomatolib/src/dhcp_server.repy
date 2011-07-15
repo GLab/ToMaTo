@@ -1,8 +1,8 @@
-include dhcp_server.lib
-include parse_args.lib
-include run_forever.lib
-include ip_util.lib
-include mac_util.lib
+#include <dhcp_server.repy>
+#include <parse_args.repy>
+#include <run_forever.repy>
+#include <ip_util.repy>
+#include <mac_util.repy>
 
 if callfunc == 'initialize':
     defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com"}

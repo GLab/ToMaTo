@@ -1,12 +1,11 @@
-include ethernet_node.lib
-include arp_proto.lib
-include ip_proto.lib
+#include <ethernet_node.repy>
+#include <arp_proto.repy>
+#include <ip_proto.repy>
 
 class FastPing:
     def handle(self, dev, p):
         if p[0:6] == self.mac and p[12:16] == "\x08\x00\x45\x00" and p[23] == "\x01" and p[30:34] == self.ip and p[34:36] == "\x08\x00":
             r = p[6:12] + self.mac + p[12:24] + "\00\00" + self.ip + p[26:30] + "\x00\x00\x00\x00" + p[38:]
-            #r = r[0:24] + struct.pack("!H", ip_checksum(r[14:34])^0xffff) + r[26:34] + r[34:36] + struct.pack("!H", ip_checksum(r[34:])^0xffff) + r[38:]
             r = r[0:24] + ip_checksum_fast(r[14:34], rev=True) + r[26:34] + r[34:36] + ip_checksum_fast(r[34:], rev=True) + r[38:]
             send(dev, r)
         else:

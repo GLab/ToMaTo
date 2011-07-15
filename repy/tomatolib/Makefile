@@ -1,7 +1,8 @@
-REPYPP = python ../repypp.py
+CPP = cpp
+ARGS = -nostdinc -P -traditional-cpp -Ilib
 
-build/%: src/% src/*.lib
-	(cd src; $(REPYPP) ../$< ../$@; cd ..)
+build/%: src/% lib/*
+	$(CPP) $(ARGS) $< $@
 
 DEFAULT: create_dir build
 

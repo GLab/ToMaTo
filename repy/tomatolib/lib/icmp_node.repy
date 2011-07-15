@@ -1,5 +1,5 @@
-include icmp_proto.lib
-include ip_node.lib
+#include <icmp_proto.repy>
+#include <ip_node.repy>
 
 class ICMPNode(IPNode):
     def __init__(self, answer_ping=True, **kwargs):
