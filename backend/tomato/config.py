@@ -26,8 +26,10 @@ PASSWORD_SALT = "tomato"
 TIMEOUTS = {
 	"STOP": 4,
 	"DESTROY": 12,
-	"REMOVE": 24
+	"REMOVE": 24,
 }
+
+TIMEOUT_WARNING = 7 #days
 
 LOGIN_TIMEOUT = 1
 
@@ -60,6 +62,16 @@ LANGUAGE_CODE = 'de-de'
 INSTALLED_APPS = ('tomato', 'south')
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
+
+MAIL = {
+	'SUBJECT_PREFIX': "[ToMaTo] ",
+	'SUBJECT_SUFFIX': "",
+	'BODY_PREFIX': "Dear %s,\n\n",
+	'BODY_SUFFIX': "\n\nSincerely,\n   your ToMaTo backend\n\n[This mail has been created automatically, please do not reply]",
+	'SENDER_NAME': "ToMaTo Backend",
+	'SENDER_MAIL': "support@german-lab.de",
+	'SERVER': "localhost",
+}
 
 try:
 	import imp, tempfile, sys

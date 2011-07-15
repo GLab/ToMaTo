@@ -61,6 +61,7 @@ class Topology(attributes.Mixin, models.Model):
 
 	def renew(self):
 		self.date_usage = datetime.datetime.now()
+		self.setAttribute("timeout_warning", None)
 		self.save()
 
 	def maxState(self):
@@ -81,25 +82,50 @@ class Topology(attributes.Mixin, models.Model):
 	def checkTimeout(self):
 		now = datetime.datetime.now()
 		date = self.date_usage
-		out = tasks.get_current_task().output
+		max_state = self.maxState()
 		if not date:
 			return
+		if max_state == generic.State.STARTED:
+			self._timeoutActionWarning("stop", date + self.STOP_TIMEOUT)
+		if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
+			self._timeoutActionWarning("destroy", date + self.DESTROY_TIMEOUT)
+		self._timeoutActionWarning("remove", date + self.REMOVE_TIMEOUT)
 		if now > date + self.REMOVE_TIMEOUT:
-			self.logger().log("timeout: removing topology")
-			out.write("Removing topology %s [%d]..." % (self.name, self.id))
-			tasks.get_current_task()
+			self._logTimeoutAction("remove")
 			self.remove(True)
 		elif now > date + self.DESTROY_TIMEOUT:
-			self.logger().log("timeout: destroying topology")
-			out.write("Destroying topology %s [%d]..." % (self.name, self.id))
-			max_state = self.maxState()
 			if max_state == generic.State.PREPARED or max_state == generic.State.STARTED:
+				self._logTimeoutAction("destroy")
 				self.destroy(False)
 		elif now > date + self.STOP_TIMEOUT:
-			self.logger().log("timeout: stopping topology")
-			out.write("Stopping topology %s [%d]..." % (self.name, self.id))
-			if self.maxState() == generic.State.STARTED:
+			if max_state == generic.State.STARTED:
+				self._logTimeoutAction("stop")
 				self.stop(False)
+
+	def _logTimeoutAction(self, action):
+		now = datetime.datetime.now()
+		self.logger().log("timeout: %s" % action)
+		out = tasks.get_current_task().output
+		out.write("TIMEOUT %s topology %s [%d]" % (action, self.name, self.id))
+		data = {"name": self.name, "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
+		self._sendToUsers("Topology timeout notification", "the topology \"%(name)s\" (ID %(id)d) has been %(action)s at %(date)s due to a timeout." % data)
+
+	def _timeoutActionWarning(self, action, when):
+		now = datetime.datetime.now()
+		if when < now or when > now + datetime.timedelta(days=config.TIMEOUT_WARNING):
+			#not within next week
+			return
+		if self.getAttribute("timeout_warning", None) == action:
+			#already warned 
+			return
+		data = {"name": self.name, "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": when}
+		self._sendToUsers("Topology timeout warning", "the topology \"%(name)s\" (ID %(id)d) will be %(action)s at %(date)s due to a timeout.\nPlease log in to ToMaTo to renew the topology and prevent the timeout." % data)
+		self.setAttribute("timeout_warning", action)
+		
+	def _sendToUsers(self, subject, body):
+		self.owner.sendMessage(subject, body)
+		for perm in self.permissionsAll():
+			perm.user.sendMessage(subject, body)
 		
 	def getTask(self):
 		if not self.task:

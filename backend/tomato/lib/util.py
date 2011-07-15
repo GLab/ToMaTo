@@ -216,6 +216,18 @@ def removeControlChars(s):
 def escape(s):
 	return repr(str(s))
 
+def sendMail(to, subject, body):
+	import smtplib
+	from email.mime.text import MIMEText
+	from tomato import config
+	msg = MIMEText(body)
+	msg["Subject"] = subject
+	msg["From"] = "%s <%s>" % (config.MAIL["SENDER_NAME"], config.MAIL["SENDER_MAIL"])
+	msg["To"] = to
+	s = smtplib.SMTP(config.MAIL["SERVER"])
+	s.sendmail(config.MAIL["SENDER_MAIL"], [to], msg.as_string())
+	s.quit()
+	
 class Localhost:
 	def execute(self, cmd):
 		res = run_shell(cmd, shell=True)

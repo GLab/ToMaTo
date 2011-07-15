@@ -90,6 +90,7 @@ def destroy(host, vmid):
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM"
 
 def useImage(host, vmid, image):
+	#FIXME check script sanity
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
 	assert fileutil.existsFile(host, image), "Image does not exist"
 	fileutil.copy(host, image, _imagePath(vmid))	

@@ -76,7 +76,7 @@ class Provider:
 			return False
 		isUser = self._is_user(username, userdn)
 		isAdmin = self._is_admin(username, userdn)
-		return User(name = username, is_user = isUser, is_admin = isAdmin)
+		return User(name = username, is_user = isUser, is_admin = isAdmin, email=email)
 		
 	def _get_user(self, user):
 		"""
