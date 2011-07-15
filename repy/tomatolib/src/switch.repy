@@ -2,5 +2,5 @@
 #include <run_forever.repy>
 
 if callfunc == 'initialize':
-    node = SWitch()
+    node = Switch()
     run_forever(node.handle)

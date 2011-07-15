@@ -6,7 +6,7 @@ class Header:
     pass
 
 class EthernetNode:
-    def __init__(self, mac):
+    def __init__(self, mac, **kwargs):
         self.mac = mac
         self.mac_table = {}
         self.ethernet_handlers = {}

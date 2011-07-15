@@ -1,8 +1,15 @@
+
 #include <dhcp_server.repy>
+#include <icmp_node.repy>
 #include <parse_args.repy>
 #include <run_forever.repy>
 #include <ip_util.repy>
 #include <mac_util.repy>
+
+class Server(DHCPServer,ICMPNode):
+    def __init__(self, **kwargs):
+        DHCPServer.__init__(self, **kwargs)
+        ICMPNode.__init__(self, **kwargs)
 
 if callfunc == 'initialize':
     defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com"}
@@ -12,5 +19,5 @@ if callfunc == 'initialize':
     options["gateway"] = str_to_ip(options["gateway"])
     options["netmask"] = str_to_ip(options["netmask"])
     options["pool"] = range_to_ips(options["pool"])
-    node = DHCPServer(**options)
+    node = Server(**options)
     run_forever(node.handle)
