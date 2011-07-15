@@ -132,6 +132,22 @@ def host_debug(host_name, user=None):
 	host = hosts.get(host_name)
 	return host.debugInfo()
 
+def host_update(host_name, user=None):
+	"""
+	Updates the host.
+	
+	Parameters:
+		string host_name: the host name
+
+	Returns: task id
+
+	Errors:
+		fault.Error: if the user does not have enough privileges  
+	"""
+	_admin_access(user)
+	host = hosts.get(host_name)
+	return host.apt_update()
+
 def host_check(host_name, user=None):
 	"""
 	Performs a sanity check on the host. This method will return a task id that

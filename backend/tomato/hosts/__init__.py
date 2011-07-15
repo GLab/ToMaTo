@@ -84,6 +84,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc.add(self.checkTasks())
 		return proc.start()
 
+	def apt_update(self):
+		proc = tasks.Process("update")
+		apt_get_update = tasks.Task("apt-get update", util.curry(self.execute, ["apt-get update"]))
+		apt_get_dist_upgrade = tasks.Task("apt-get -y dist-upgrade", util.curry(self.execute, ["apt-get -y dist-upgrade"]), after=apt_get_update)		
+		proc.add([apt_get_update, apt_get_dist_upgrade])
+		return proc.start()
+
 	def disable(self):
 		print "Disabling host %s because of error during check" % self
 		fault.errors_add("Host disabled", "Disabling host %s because of error during check" % self)
