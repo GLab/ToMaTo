@@ -14,7 +14,7 @@ class ICMPNode(IPNode):
             self.handle_icmp(icmp, ip, ethernet, dev)
     def handle_icmp(self, icmp, ip, ethernet, dev):
         if icmp.type == ICMP_TYPE_ECHO_REQUEST and icmp.code == ICMP_CODE_ECHO_REQUEST:
-            self.send(ip.src, ICMP_TYPE_ECHO_REPLY, ICMP_CODE_ECHO_REPLY, icmp.rest_of_header, icmp.payload)
+            ICMPNode.send(self, ip.src, ICMP_TYPE_ECHO_REPLY, ICMP_CODE_ECHO_REPLY, icmp.rest_of_header, icmp.payload)
     def send(self, dst, type, code, rest_of_header, payload, **kwargs):
         icmp_reply = icmp_encode(type, code, rest_of_header, payload)
         IPNode.send(self, dst, IP_PROTOCOL_ICMP, icmp_reply, **kwargs)

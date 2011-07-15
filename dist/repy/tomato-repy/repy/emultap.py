@@ -88,7 +88,6 @@ class TunTapDevice:
         info["packet_information"] = self.mode & IFF_NO_PI == 0
         info["open"] = self._fd != None
         info["mtu"] = self.mtu
-        info["buffered"] = len(self._buffer)
         return info
     def read(self):
         self._check_open()

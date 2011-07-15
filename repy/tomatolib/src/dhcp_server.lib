@@ -65,7 +65,7 @@ class DHCPServer(UDPServer):
                     options[DHCP_OPTION_MSG_TYPE] = DHCP_OPTION_VALUE_ACK
                 else:
                     options[DHCP_OPTION_MSG_TYPE] = DHCP_OPTION_VALUE_OFFER
-                self.send(dhcp.chaddr, DHCP_OP_REPLY, dhcp.xid, dhcp.chaddr, options, yiaddr=ip, siaddr=self.ip)
+                DHCPServer.send(self, dhcp.chaddr, DHCP_OP_REPLY, dhcp.xid, dhcp.chaddr, options, yiaddr=ip, siaddr=self.ip)
                 if is_request:
                     echo("assigned IP %s to %s" % (ip_to_str(ip), mac_to_str(dhcp.chaddr)))
     def send(self, mac, op, xid, chaddr, options, ciaddr="\x00\x00\x00\x00", yiaddr="\x00\x00\x00\x00", siaddr="\x00\x00\x00\x00", giaddr="\x00\x00\x00\x00"):
