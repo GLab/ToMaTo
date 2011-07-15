@@ -811,12 +811,12 @@ var Device = IconElement.extend({
 				var html = $(frames["upload_target"].document).find("html").find("body").html();
 				var msg = $.parseJSON(html);
 				if (! msg) return;
-				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
-					window.location.reload();
-				});
 				iframe.remove();
 				info.remove();
-				t.editor.followTask(msg.output);
+				if (! Boolean.parse(msg.success)) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+					window.location.reload();
+				});
+				else t.editor.followTask(msg.output);
 			});
 			var info = t.editor.infoMessage("Upload image", div);
 		});		

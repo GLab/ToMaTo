@@ -427,5 +427,12 @@ def get_current_task():
 	else:
 		return None
 		
+def getStatus(task_id):
+	try:
+		return processes[task_id].dict(True)
+	except KeyError:
+		raise fault.new("No such task %s" % task_id, fault.USER_ERROR)
+		
+		
 if not config.MAINTENANCE:	
 	atexit.register(keep_running)

@@ -259,6 +259,11 @@ class ProgDevice(Device):
 		assert self.state == State.PREPARED, "Upload not supported"
 		repy.useImage(self.host, self.id, path)
 
+	def checkUploadedImage(self, path):
+		error = repy.check(self.host, path)
+		if error:
+			raise fault.new("Invalid/Unsafe code: %s, %s" % error, fault.USER_ERROR)
+
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.repy" % (self.topology.name, self.name)

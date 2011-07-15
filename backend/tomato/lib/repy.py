@@ -89,6 +89,13 @@ def destroy(host, vmid):
 	fileutil.delete(host, _vncPidFile(vmid))
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM"
 
+def check(host, file):
+	res = host.execute("repy-check %s" % util.escape(file)).strip()
+	if res != "None":
+		import re
+		res = re.match("<(type|class) '([^']*)'> (.*)", res)
+		return (res.group(2), res.group(3))
+
 def useImage(host, vmid, image):
 	#FIXME check script sanity
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
