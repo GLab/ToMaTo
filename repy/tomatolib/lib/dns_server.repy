@@ -33,7 +33,7 @@ class DNSServer(UDPServer):
             if a.rdata:
                 echo("LOOKUP %s -> %s" % (q.qname, repr(a.rdata)))
                 answers.append(a)
-        self.send(ip.src, udp.src, id=dns.id, qr=DNS_QR_REPLY, aa=1, ra=1, question=dns.question, answer=answers)
+        DNSServer.send(self, ip.src, udp.src, id=dns.id, qr=DNS_QR_REPLY, aa=1, ra=1, question=dns.question, answer=answers)
     def send(self, dst, dstport, **kwargs):
         UDPServer.send(self, UDP_PORT_DNS, dst, dstport, dns_encode(**kwargs))
         

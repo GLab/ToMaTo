@@ -2,6 +2,8 @@
 #ifndef arp_proto_loaded
 #define arp_proto_loaded
 
+#include <ip_proto.repy>
+
 ETHERNET_TYPE_ARP = 0x0806
 
 ARP_HTYPE_ETHERNET = 1
