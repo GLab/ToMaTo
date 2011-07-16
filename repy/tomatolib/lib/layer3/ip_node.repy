@@ -21,6 +21,7 @@ class IPNode(EthernetNode):
         self.ip = ip
         self.answer_arp = answer_arp
         self.arp_table = {}
+        self.fragments = {}
         try:
             self.ip_handlers
         except:
@@ -32,12 +33,31 @@ class IPNode(EthernetNode):
     def _arp(self, ethernet, dev):
         arp = arp_decode(ethernet.payload)
         self.handle_arp(arp, ethernet, dev)
+    def _handle_fragment(self, ip, ethernet, dev):
+        if not ip.id in self.fragments:
+            self.fragments[ip.id] = {}
+        frags = self.fragments[ip.id]
+        frags[ip.fragment_offset] = ip.payload
+        if not ip.more_fragments:
+            frags[ip.fragment_offset+len(ip.payload)/8] = True
+        pos = 0
+        data = ""
+        while pos in frags:
+           if frags[pos] is True:
+               del self.fragments[ip.id]
+               ip.payload = data
+               ip.fragment_offset = 0
+               ip.more_fragments = 0
+               self.handle_ip(ip, ethernet, dev)
+               return
+           else:
+               data += frags[pos]
+               pos += len(frags[pos])/8
     def _ip(self, ethernet, dev):
         ip = ip_decode(ethernet.payload)
         if not ip.checksum_correct:
             echo("Invalid IP chechsum")
             return
-        #FIXME: reassable fragmented packets
         self.arp_table[ip.src] = ethernet.src
         if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
             self.handle_ip(ip, ethernet, dev)
@@ -53,6 +73,9 @@ class IPNode(EthernetNode):
             self.arp_table[arp.sda]=arp.sha
             #FIXME: send cached packets
     def handle_ip(self, ip, ethernet, dev):
+        if ip.more_fragments or ip.fragment_offset > 0:
+            self._handle_fragment(ip, ethernet, dev)
+            return
         handler = self.ip_handlers.get(ip.protocol)
         if handler:
             handler(ip, ethernet, dev)
