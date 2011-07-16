@@ -2,7 +2,7 @@
 #ifndef arp_proto_loaded
 #define arp_proto_loaded
 
-#include <ip_proto.repy>
+#include <layer3/ip_proto.repy>
 
 ETHERNET_TYPE_ARP = 0x0806
 

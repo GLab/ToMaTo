@@ -2,8 +2,8 @@
 #ifndef ethernet_node_loaded
 #define ethernet_node_loaded
 
-#include <send.repy>
-#include <ethernet_proto.repy>
+#include <util/send.repy>
+#include <layer2/ethernet_proto.repy>
 
 class Header:
     pass

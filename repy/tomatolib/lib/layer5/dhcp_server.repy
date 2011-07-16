@@ -2,10 +2,10 @@
 #ifndef dhcp_server_loaded
 #define dhcp_server_loaded
 
-#include <udp_server.repy>
-#include <dhcp_proto.repy>
-#include <ip_util.repy>
-#include <mac_util.repy>
+#include <layer4/udp_server.repy>
+#include <layer5/dhcp_proto.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
 
 class DHCPServer(UDPServer):
     def __init__(self, pool=None, gateway=None, netmask=None, nameserver=None, broadcast=None, domain=None, renewal_time=60, lease_time=1800, **kwargs):

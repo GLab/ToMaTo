@@ -2,8 +2,8 @@
 #ifndef udp_server_loaded
 #define udp_server_loaded
 
-#include <udp_proto.repy>
-#include <ip_node.repy>
+#include <layer4/udp_proto.repy>
+#include <layer3/ip_node.repy>
 
 class UDPServer(IPNode):
     def __init__(self, **kwargs):

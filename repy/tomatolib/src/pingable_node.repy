@@ -1,8 +1,9 @@
-#include <icmp_node.repy>
-#include <parse_args.repy>
-#include <run_forever.repy>
-#include <ip_util.repy>
-#include <mac_util.repy>
+
+#include <layer3/icmp_node.repy>
+#include <util/parse_args.repy>
+#include <util/run_forever.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
 
 if callfunc == 'initialize':
     defaults = {"ip":"10.0.0.1", "mac":random_mac()}

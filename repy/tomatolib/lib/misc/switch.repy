@@ -1,5 +1,6 @@
-#include <ethernet_proto.repy>
-#include <send.repy>
+
+#include <layer2/ethernet_proto.repy>
+#include <util/send.repy>
 
 class Switch:
     def __init__(self):

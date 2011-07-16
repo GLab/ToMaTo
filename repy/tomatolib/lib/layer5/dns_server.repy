@@ -2,8 +2,8 @@
 #ifndef dns_server_loaded
 #define dns_server_loaded
 
-#include <udp_server.repy>
-#include <dns_proto.repy>
+#include <layer4/udp_server.repy>
+#include <layer5/dns_proto.repy>
 
 class DNSServer(UDPServer):
     def __init__(self, data, ttl, **kwargs):

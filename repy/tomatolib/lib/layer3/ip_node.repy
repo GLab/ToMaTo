@@ -2,9 +2,9 @@
 #ifndef ip_node_loaded
 #define ip_node_loaded
 
-#include <ethernet_node.repy>
-#include <arp_proto.repy>
-#include <ip_proto.repy>
+#include <layer2/ethernet_node.repy>
+#include <layer2/arp_proto.repy>
+#include <layer3/ip_proto.repy>
 
 class FastPing:
     def handle(self, dev, p):

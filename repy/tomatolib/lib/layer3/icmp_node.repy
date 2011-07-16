@@ -2,8 +2,8 @@
 #ifndef icmp_node_loaded
 #define icmp_node_loaded
 
-#include <icmp_proto.repy>
-#include <ip_node.repy>
+#include <layer3/icmp_proto.repy>
+#include <layer3/ip_node.repy>
 
 class ICMPNode(IPNode):
     def __init__(self, answer_ping=True, **kwargs):
