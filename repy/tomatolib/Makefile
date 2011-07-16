@@ -1,15 +1,12 @@
-CPP = cpp
-ARGS = -nostdinc -P -traditional-cpp -Ilib
+CPP = cpp -undef -Wundef -nostdinc -P -traditional-cpp -Ilib
 
 build/%: src/% lib/*
-	$(CPP) $(ARGS) $< $@
+	@mkdir -p `dirname $@`
+	$(CPP) $< $@
 
-DEFAULT: create_dir build
+DEFAULT: build
 
-create_dir:
-	mkdir -p build
-
-build: build/dhcp_server.repy build/pingable_node.repy build/switch.repy build/dns_server.repy
+build: $(shell ls src/* | sed 's/src\//build\//g')
 
 clean:
-	rm build/*
+	rm -rf build
