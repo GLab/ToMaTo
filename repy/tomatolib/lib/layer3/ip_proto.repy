@@ -5,26 +5,16 @@
 ETHERNET_TYPE_IP = 0x0800
 
 def ip_checksum(data):
+    if len(data) & 1:
+        data = data + "\x00"
     words = struct.unpack("!%dH" % (len(data)/2), data)
     sum = 0
     for w in words:
         sum += w^0xffff
-    sum = ((sum>>16) + (sum&0xffff)) & 0xffff
+    while sum >> 16:
+        sum = (sum>>16) + (sum&0xffff)
     sum ^= 0xffff
     return sum
-
-def ip_checksum_fast(data, rev=False):
-    i = 0
-    l = len(data)
-    sum = 0
-    while i < l:
-        w = (ord(data[i])<<8) + ord(data[i+1])
-        sum += w^0xffff
-        i+=2
-    sum = (sum>>16) + (sum&0xffff) & 0xffff
-    if not rev: #yes!
-        sum ^= 0xffff
-    return chr(sum>>8) + chr(sum&0xff)
 
 def ip_decode(p):
     h = Header()

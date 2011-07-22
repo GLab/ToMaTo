@@ -21,11 +21,7 @@ def tcp_decode(p, ip_src, ip_dst):
     h.options = p[20:4*offset]
     h.payload = p[4*offset:]
     pseudo_header = ip_src + ip_dst + struct.pack("!HH", 6, len(p))
-    padding = ""
-    if len(p) & 1:
-        padding = "\x00"
-    checksum = ip_checksum_fast(pseudo_header + p + padding, False)
-    h.checksum_correct = checksum == "\x00\x00"
+    h.checksum_correct = ip_checksum(pseudo_header + p) == 0
     return h
 
 def tcp_encode(ip_src, ip_dst, src, dst, seq_num, ack_num, window, payload, fin_flag=0, syn_flag=0, rst_flag=0, psh_flag=0, ack_flag=1, urg_flag=0, options="", urg_ptr=0):
@@ -34,10 +30,7 @@ def tcp_encode(ip_src, ip_dst, src, dst, seq_num, ack_num, window, payload, fin_
     offs_flags = (offset << 12) | flags
     p = struct.pack("!HHIIHHHH", src, dst, seq_num, ack_num, offs_flags, window, 0, urg_ptr) + options + payload
     pseudo_header = ip_src + ip_dst + struct.pack("!HH", 6, len(p))
-    padding = ""
-    if len(p) & 1:
-        padding = "\x00"
-    checksum = ip_checksum_fast(pseudo_header + p + padding, True)
+    checksum = struct.pack("!H", ip_checksum(pseudo_header + p))
     p = p[:16] + checksum + p[18:]
     return p
 
