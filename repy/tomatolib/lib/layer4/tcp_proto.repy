@@ -30,7 +30,7 @@ def tcp_encode(ip_src, ip_dst, src, dst, seq_num, ack_num, window, payload, fin_
     offs_flags = (offset << 12) | flags
     p = struct.pack("!HHIIHHHH", src, dst, seq_num, ack_num, offs_flags, window, 0, urg_ptr) + options + payload
     pseudo_header = ip_src + ip_dst + struct.pack("!HH", 6, len(p))
-    checksum = struct.pack("!H", ip_checksum(pseudo_header + p))
+    checksum = struct.pack("!H", ip_checksum(pseudo_header + p)^0xffff)
     p = p[:16] + checksum + p[18:]
     return p
 
