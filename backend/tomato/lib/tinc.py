@@ -182,9 +182,10 @@ def _isConnected(nodes, connections):
 		n = random.choice(nTodo)
 		nTodo.remove(n)
 		nIn.add(n)
-		for n in map[n]:
-			if not n in nIn and not n in nTodo:
-				nTodo.append(n)
+		if n in map:
+			for n2 in map[n]:
+				if not n2 in nIn and not n2 in nTodo:
+					nTodo.append(n2)
 	return len(nIn) == len(nodes)
 
 def _shortestPaths(nodes, connections):
