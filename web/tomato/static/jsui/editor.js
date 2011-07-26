@@ -2157,7 +2157,7 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, ""), "bandwidth&nbsp;(in&nbsp;kb/s)");
 		this.attrs.addField(new MagicTextField("delay", pattern.int, ""), "latency&nbsp;(in&nbsp;ms)");
 		this.attrs.addField(new MagicTextField("lossratio", pattern.float, ""), "packet&nbsp;loss");
-		t = this;
+		var t = this;
 		this.captureField = new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
 			t.obj.setAttribute("capture_to_file", value == "to file");
 			t.obj.setAttribute("capture_via_net", value == "via network");
