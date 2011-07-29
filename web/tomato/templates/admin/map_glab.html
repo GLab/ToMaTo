@@ -27,7 +27,7 @@ map.addConnection("{{l.src}}", "{{l.dst}}", {
 	delay_avg: "{{l.delay_avg|floatformat:2}}",
 	delay_stddev: "{{l.delay_stddev|floatformat:2}}",
 	delay_avg_factor: "{{l.delay_avg_factor}}",
-	loss_percent: "{{l.loss|floatformat:3}}",
+	loss_percent: "{{l.loss_percent|floatformat:3}}",
 	loss_factor: "{{l.loss_factor}}"
 });
 {% endfor %}
