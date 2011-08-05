@@ -123,7 +123,7 @@ def addInterface(host, vmid, iface):
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to remove interfaces"
 	iface_id = int(re.match("eth(\d+)", iface).group(1))
-	_qm(host, vmid, "set", "--vlan%d undef\n" % iface_id)			
+	_qm(host, vmid, "set", "--vlan%d undef" % iface_id)			
 		
 def copyImage(host, vmid, file):
 	assert getState(host, vmid) != generic.State.CREATED, "VM must be prepared"

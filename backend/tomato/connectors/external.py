@@ -144,6 +144,12 @@ class ExternalNetworkConnector(Connector):
 			fault.check(not "network_type" in properties, "Cannot change type of external network with prepared connections: %s", self.name)
 			fault.check(not "network_group" in properties, "Cannot change group of external network with prepared connections: %s", self.name)
 		Connector.configure(self, properties)
+		if "network_type" in properties:
+			self.setNetworkType(properties["network_type"])
+		if "network_group" in properties:
+			self.setNetworkGroup(properties["network_group"])
+		if self.getNetworkType() == "auto":
+			self.setNetworkType(None)
 		if self.getNetworkGroup() == "auto":
 			self.setNetworkGroup(None)
 		self.save()		

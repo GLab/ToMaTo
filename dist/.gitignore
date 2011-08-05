@@ -6,8 +6,11 @@
 *.orig.*
 backend/tomato-backend-*
 web/tomato-web-*
-meta/tomato-host/debian/tomato-host
 meta/tomato-host/debian/files
+meta/tomato-host/debian/tomato-host
 cli/tomato-cli-*
 repy/tomato-repy-*
+repy/tomato-repy/debian/tomato-repy
 repy/repy-svn
+hostserver/tomato-hostserver/debian/files
+hostserver/tomato-hostserver/debian/tomato-hostserver

@@ -12,11 +12,12 @@ class Server(DHCPServer,ICMPNode):
         ICMPNode.__init__(self, **kwargs)
 
 if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com"}
+    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
     options = parse_args(defaults)
     echo("Options: %s" % options)
     options["ip"] = str_to_ip(options["ip"])
     options["gateway"] = str_to_ip(options["gateway"])
+    options["nameserver"] = str_to_ip(options["nameserver"])
     options["netmask"] = str_to_ip(options["netmask"])
     options["pool"] = range_to_ips(options["pool"])
     node = Server(**options)

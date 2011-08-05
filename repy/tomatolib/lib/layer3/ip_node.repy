@@ -61,8 +61,6 @@ class IPNode(EthernetNode):
         self.arp_table[ip.src] = ethernet.src
         if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
             self.handle_ip(ip, ethernet, dev)
-        else:
-            echo(repr(ip.dst))
     def handle_arp(self, arp, ethernet, dev):
         if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
             return
