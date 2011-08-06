@@ -40,6 +40,9 @@ class PhysicalLink(models.Model):
 		self.delay_stddev = ( 1.0 - self.sliding_factor ) * self.delay_stddev + self.sliding_factor * delay_stddev
 		self.save()
 	
+	def adaptFail(self):
+		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor
+	
 	def toDict(self):
 		"""
 		Prepares a physical link object for serialization.
@@ -55,18 +58,23 @@ def get(srcg_name, dstg_name):
 		
 def getAll():
 	return PhysicalLink.objects.all() # pylint: disable-msg=E1101		
-	
+
 def measureRun():
 	for srcg in hosts.getGroups():
 		for dstg in hosts.getGroups():
 			if not srcg == dstg:
+				src = hosts.getBest(srcg)
+				dst = hosts.getBest(dstg)
 				try:
-					src = hosts.getBest(srcg)
-					dst = hosts.getBest(dstg)
 					(loss, delay_avg, delay_stddev) = ifaceutil.ping(src, dst.name, 500, 300)
-					link = get(srcg, dstg)
-					link.adapt(loss, delay_avg, delay_stddev) 
-				except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
-					PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
-				except fault.Fault:
-					pass
+					try:
+						link = get(srcg, dstg)
+						link.adapt(loss, delay_avg, delay_stddev)
+					except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
+						PhysicalLink.objects.create(src_group=srcg, dst_group=dstg, loss=loss, delay_avg=delay_avg, delay_stddev=delay_stddev) # pylint: disable-msg=E1101
+				except:
+					try:
+						link = get(srcg, dstg)
+						link.adaptFail()
+					except PhysicalLink.DoesNotExist: # pylint: disable-msg=E1101
+						pass #not creating a record if first contact is a fail
