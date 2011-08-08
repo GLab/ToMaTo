@@ -1,4 +1,4 @@
-#Thu Jul 14 11:50:45 CEST 2011
+#Mon Aug 08 13:42:20 CEST 2011
 eclipse.preferences.version=1
 encoding//tomato/__init__.py=utf-8
 encoding//tomato/api/__init__.py=utf-8
@@ -33,6 +33,7 @@ encoding//tomato/hosts/physical_links.py=utf-8
 encoding//tomato/hosts/templates.py=utf-8
 encoding//tomato/lib/db.py=utf-8
 encoding//tomato/lib/decorators.py=utf-8
+encoding//tomato/lib/exceptions.py=utf-8
 encoding//tomato/lib/fileutil.py=utf-8
 encoding//tomato/lib/hostserver.py=utf-8
 encoding//tomato/lib/ifaceutil.py=utf-8
