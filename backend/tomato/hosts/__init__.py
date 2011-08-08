@@ -22,7 +22,7 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions
+from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions, hostserver
 
 from tomato.generic import State
 from tomato.lib.decorators import *
@@ -52,6 +52,10 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.setAttribute("vmid_count", 200)
 		self.setAttribute("bridge_start", 1000)
 		self.setAttribute("bridge_count", 1000)
+
+	def getHostServer(self):
+		return hostserver.HostServer(self.name, self.getAttribute("hostserver_port"), 
+		  self.getAttribute("hostserver_basedir"), self.getAttribute("hostserver_secret_key"))
 
 	def __unicode__(self):
 		return self.name
@@ -106,7 +110,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			version = float(res.strip())
 		except:
 			assert False, "tomato-host not found"
-		assert version >= 0.9, "tomato-host version error, is %s" % version
+		assert version >= 0.12, "tomato-host version error, is %s" % version
 
 	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
