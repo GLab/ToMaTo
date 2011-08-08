@@ -101,6 +101,7 @@ class OpenVZDevice(Device):
 
 	def _runAction(self, action, attrs, direct):
 		if action == "execute":
+			fault.check("cmd" in attrs, "Command not given")
 			try:
 				return self.execute(attrs["cmd"])
 			except exceptions.CommandError, exc:
