@@ -189,11 +189,11 @@ def startDhcp(host, iface):
 
 def getRxBytes(host, iface):
 	assert interfaceExists(host, iface)
-	return int(host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0"))
+	return int(host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface)))
 
 def getTxBytes(host, iface):
 	assert interfaceExists(host, iface)
-	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0"))
+	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface)))
 
 def ping(host, ip, samples=10, maxWait=5):
 	res = host.execute("ping -A -c %d -n -q -w %d %s" % (samples, maxWait, ip))

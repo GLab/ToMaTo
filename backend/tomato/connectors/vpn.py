@@ -166,8 +166,17 @@ class TincConnector(Connector):
 	def getResourceUsage(self):
 		disk = tinc.estimateDiskUsage(len(self.connectionSetAll())) if self.state != State.CREATED else 0
 		memory = tinc.estimateMemoryUsage(len(self.connectionSetAll())) if self.state == State.STARTED else 0
-		ports = len(self.connectionSetAll()) if self.state == State.STARTED else 0		
-		return {"disk": disk, "memory": memory, "ports": ports}		
+		ports = len(self.connectionSetAll()) if self.state == State.STARTED else 0
+		traffic = 0
+		for con in self.connectionSetAll():
+			dev = con.interface.device
+			if dev.host and dev.state == State.STARTED:
+				iface = dev.upcast().interfaceDevice(con.interface)
+				try:
+					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface)
+				except:
+					pass
+		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 
 
 class TincConnection(dummynet.EmulatedConnection):

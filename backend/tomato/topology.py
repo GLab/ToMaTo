@@ -366,19 +366,26 @@ class Topology(attributes.Mixin, models.Model):
 	def updateResourceUsage(self):
 		res = {}
 		for dev in self.deviceSetAll():
-			dev.updateResourceUsage()
-			r = dev.getAttribute("resources")
+			try:
+				dev.updateResourceUsage()
+			except Exception, exc:
+				fault.log(exc)
+			r = dev.getAttribute("resources", {})
 			for key in r:
 				if not key in res:
 					res[key] = 0
 				res[key] += r[key]
 		for con in self.connectorSetAll():
-			con.updateResourceUsage()
-			r = con.getAttribute("resources")
+			try:
+				con.updateResourceUsage()
+			except Exception, exc:
+				fault.log(exc)
+			r = con.getAttribute("resources", {})
 			for key in r:
 				if not key in res:
 					res[key] = 0
 				res[key] += r[key]
+		res["traffic"] = res.get("traffic", 0)/2 #traffic is counted on devices and connectors
 		self.setAttribute("resources", res)
 		
 	@xmlRpcSafe

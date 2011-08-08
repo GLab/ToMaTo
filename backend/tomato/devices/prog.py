@@ -278,7 +278,13 @@ class ProgDevice(Device):
 		if self.host:
 			disk = repy.getDiskUsage(self.host, self.id)
 			memory = repy.getMemoryUsage(self.host, self.id)
-		return {"disk": disk, "memory": memory, "ports": ports}		
+		traffic = 0
+		if self.state == State.STARTED:
+			for iface in self.interfaceSetAll():
+				dev = self.interfaceDevice(iface)
+				traffic += ifaceutil.getRxBytes(self.host, dev)
+				traffic += ifaceutil.getTxBytes(self.host, dev)
+		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 
 	def getIdUsage(self, host):
 		ids = Device.getIdUsage(self, host)

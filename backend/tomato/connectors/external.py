@@ -182,9 +182,9 @@ class ExternalNetworkConnector(Connector):
 			if dev.host and dev.state == State.STARTED:
 				iface = dev.upcast().interfaceDevice(con.interface)
 				try:
-					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface) 
+					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface)
 				except:
-					traffic = -1
+					pass
 		return {"external": external, "traffic": traffic}		
 
 	def getBridge(self, connection, assign=True, create=True):
