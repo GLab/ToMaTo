@@ -918,8 +918,10 @@ var Editor = Class.extend({
 		var destroy = new Date(top.getAttribute("destroy_timeout"));
 		var remove = new Date(top.getAttribute("remove_timeout"));
 		var day = 1000 * 60 * 60 * 24;
-		if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
-		if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if (stop < now) top.warnings.push("Topology has been stopped at " + top.getAttribute("stop_timeout") + " due to timeout"); 
+		else if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if (destroy < now) top.warnings.push("Topology has been destroyed at " + top.getAttribute("destroy_timeout") + " due to timeout"); 
+		else if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
 		if ((remove-now) < 7 * day) top.warnings.push("Topology will be removed at " + top.getAttribute("stop_timeout") + " due to timeout");
 		this.elements.forEach(function(el){
 			if (el.paletteItem) return;
