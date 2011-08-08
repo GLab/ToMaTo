@@ -17,7 +17,7 @@
 
 import json
 import datetime
-from django.db import models
+from django.db import models, transaction
 from django.core import validators
 from tomato import config
 
@@ -89,7 +89,7 @@ class ReloadMixin:
 				setattr(self, field, getattr(from_db, field)) #update this instances info from returned Model
 			except:
 				continue
-			
+						
 nameValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_-]{2,}$")
 templateValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$")
 ifaceValidator = validators.RegexValidator(regex="^eth\d+$")

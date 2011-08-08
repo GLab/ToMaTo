@@ -78,10 +78,11 @@ def edit(api, request, top_id):
 	try:
 		api.top_info(top_id)
 	except:
-		return HttpResponseRedirect(reverse('tomato.top.index')) 
-	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
-	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
-	tpl_prog=",".join([t["name"] for t in api.template_list("prog")])
+		return HttpResponseRedirect(reverse('tomato.top.index'))
+	tpls = api.template_map()
+	tpl_openvz=",".join([t["name"] for t in tpls.get("openvz", [])])
+	tpl_kvm=",".join([t["name"] for t in tpls.get("kvm", [])])
+	tpl_prog=",".join([t["name"] for t in tpls.get("prog", [])])
 	enlist = api.external_networks()
 	map = {}
 	for en in enlist:

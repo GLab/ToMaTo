@@ -267,9 +267,9 @@ class ProgDevice(Device):
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.repy" % (self.topology.name, self.name)
-		file = hostserver.randomFilename(self.host)
+		file = self.host.getHostServer().randomFilename()
 		repy.copyImage(self.host, self.id, file)
-		return hostserver.downloadGrant(self.host, file, filename)
+		return self.host.getHostServer().downloadGrant(file, filename)
 
 	def getResourceUsage(self):
 		disk = 0

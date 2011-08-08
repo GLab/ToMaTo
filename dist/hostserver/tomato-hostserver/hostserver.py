@@ -109,7 +109,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write("<html>")
     if redirect:
-      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>")
+      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>" % redirect)
     self.wfile.write("<body>")
     self.wfile.write(html)
     self.wfile.write("</body></html>")
@@ -198,7 +198,6 @@ if __name__ == '__main__':
   config = configobj.ConfigObj('/etc/tomato-hostserver.conf')
   port = int(config.get('port', "8080"))
   basedir = config.get('basedir', "/tmp")
-  config["secret_key"] = "abc"
   secret_key = config['secret_key'] 
   httpd = ThreadedHTTPServer(('', port), RequestHandler)
   try:

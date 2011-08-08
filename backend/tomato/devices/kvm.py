@@ -95,9 +95,9 @@ class KVMDevice(Device):
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.qcow2" % (self.topology.name, self.name)
-		file = hostserver.randomFilename(self.host)
+		file = self.host.getHostServer().randomFilename()
 		qm.copyImage(self.host, self.getVmid(), file)
-		return hostserver.downloadGrant(self.host, file, filename)
+		return self.host.getHostServer().downloadGrant(file, filename)
 
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"

@@ -263,7 +263,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		if self.host:
 			filename = str(uuid.uuid1())
 			redirect = redirect % {"filename": filename}
-			return {"upload_url": hostserver.uploadGrant(self.host, filename, redirect), "redirect_url": redirect, "filename": filename}
+			return {"upload_url": self.host.getHostServer().uploadGrant(filename, redirect=redirect), "redirect_url": redirect, "filename": filename}
 		else:
 			return None
 				

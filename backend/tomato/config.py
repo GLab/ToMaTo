@@ -42,14 +42,14 @@ SERVER = {
 	}
 }
 
-DISABLE_TRANSACTION_MANAGEMENT = True
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'db.sqlite'
     }
 }
+
+TEMPLATE_HOSTSERVER = None
 
 LOCAL_TMP_DIR = "/tmp/tomato"
 LOG_DIR = "logs"

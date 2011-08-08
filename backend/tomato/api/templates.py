@@ -15,59 +15,80 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 	
-def template_list(template_type="", user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def template_info(type, name, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Lists all available templates. The list can be filtered by template type.
-	If template_type is set to "" all templates will be listed, otherwise only 
-	templates matching the given type will be listed.
+	Returns information about a template
 
 	Parameters:
-		string template_type: template type filter
 
-	Returns: list of templates
+	Returns: dict of string -> list of templates
 	"""
-	if not template_type:
-		template_type = None
-	return [t.toDict() for t in hosts.templates.getAll(template_type)]
+	tpl = hosts.templates.get(type, name)
+	if not tpl:
+		return None
+	return tpl.toDict(user.is_admin)
 
-def template_add(name, template_type, url, user=None):
+def template_map(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
-	Adds a template to the template repository. The template will be fetched 
-	from the given url by all hosts. This method requires admin access.
+	Lists all available templates grouped by type.
 
 	Parameters:
+
+	Returns: dict of string -> list of templates
+	"""
+	return hosts.templates.getMap(user.is_admin)
+
+def template_add(type, name, properties=[], user=None):
+	"""
+	Adds a template to the template repository. This method requires admin
+	access.
+
+	Parameters:
+		string type: template type
 		string name: template name
-		string template_type: template type
-		atring url: template download url
+		dict propertries: template properties
 
 	Returns: task id
 	"""
 	_admin_access(user)
-	return hosts.templates.add(name, template_type, url)
+	return hosts.templates.add(type, name, properties)
 
-def template_remove(template_type, name, user=None):
+def template_change(type, name, properties, user=None):
+	"""
+	Changes a template in the template repository. This method requires admin
+	access.
+
+	Parameters:
+		string type: template type
+		string name: template name
+		string url: template download url
+	"""
+	_admin_access(user)
+	return hosts.templates.change(type, name, properties)
+
+def template_remove(type, name, user=None):
 	"""
 	Removes a template from the template repository. This method requires admin
 	access.
 
 	Parameters:
-		string template_type: template type
+		string type: template type
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.templates.remove(template_type, name)
+	hosts.templates.remove(type, name)
 
-def template_set_default(template_type, name, user=None):
+def template_set_default(type, name, user=None):
 	"""
 	Selects a template to be the default template for the given type. This
 	method requires admin access.
 
 	Parameters:
-		string template_type: template type
+		string type: template type
 		string name: template name
 	"""
 	_admin_access(user)
-	hosts.templates.get(template_type, name).setDefault()
+	hosts.templates.get(type, name).setDefault()
 	
 # keep internal imports at the bottom to avoid dependency problems
 from tomato.api import _admin_access

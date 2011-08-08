@@ -34,7 +34,7 @@ class HostServer:
 		if timeout:
 			params["valid_until"] = str(time.time()+timeout)
 		return self._calcGrant(path, params)
-	def randomFilename(self, host):
+	def randomFilename(self):
 		return "%s/%s" % (self.basedir, uuid.uuid1())
 	def uploadGrant(self, path, redirect=None, timeout=DEFAULT_TIMEOUT):
 		params={"path": base64.b64encode(path), "path_encoding": "base64"}
@@ -45,9 +45,9 @@ class HostServer:
 	def downloadGrant(self, path, filename=None, mimetype=None, timeout=DEFAULT_TIMEOUT):
 		params={"path": base64.b64encode(path), "path_encoding": "base64"}
 		if filename:
-			params["_name"] = base64.b64encode(filename)
+			params["_name"] = filename
 		if mimetype:
-			params["_mimetype"] = base64.b64encode(mimetype)			
+			params["_mimetype"] = mimetype	
 		params.update(grant=self._grant("/download", params, timeout))
 		return self._baseurl + "/download?" + urllib.urlencode(params)	
 	def deleteGrant(self, path, redirect=None, timeout=DEFAULT_TIMEOUT):

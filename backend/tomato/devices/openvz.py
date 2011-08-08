@@ -421,9 +421,9 @@ class OpenVZDevice(Device):
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
-		file = hostserver.randomFilename(self.host)
+		file = self.host.getHostServer().randomFilename()
 		vzctl.copyImage(self.host, self.getVmid(), file, forceGzip=True)
-		return hostserver.downloadGrant(self.host, file, filename)
+		return self.host.getHostServer().downloadGrant(file, filename)
 
 	def getResourceUsage(self):
 		disk = 0

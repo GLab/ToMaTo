@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>Details of {{tpl.name}} ({{tpl.type}} template)</h1>
+
+<h2>Actions</h2>
+<a href="{%url template.remove tpl.type tpl.name%}" onclick="javascript:return confirm('Are you sure?')"><img src="/static/icons/delete.png" alt="remove" title="remove"/> remove</a><br/>
+{% if tpl.download_url %}
+<a href="{{tpl.download_url}}"><img src="/static/icons/download-image.png" alt="download" title="download"/> download</a><br/>
+{% endif %}
+{% if tpl.upload_url %}
+<a href='javascript:document.getElementById("upload").removeAttribute("style");'><img src="/static/icons/upload-image.png" alt="upload" title="upload"/> upload</a><br/>
+<div id="upload">
+<h2>Upload</h2>
+<iframe style="border:0" src="{{tpl.upload_url}}&_form=1"></iframe>
+</div>
+<script language="javascript"><!--
+  document.getElementById("upload").setAttribute("style", "display: none");
+--></script>
+{% endif %}
+
+<h2>Settings <a href='javascript:document.getElementById("settings_view").setAttribute("style", "display: none");document.getElementById("settings_edit").removeAttribute("style");'><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
+<div id="settings_view">
+<table>
+  <tr><td>Name:</td><td>{{tpl.name}}</td></tr>
+  <tr><td>Type:</td><td>{{tpl.type}}</td></tr>
+  <tr><td>On hostserver:</td><td>{{tpl.on_hostserver}}</td></tr>
+{% if tpl.external_url %}
+  <tr><td>External URL:</td><td><a href="{{tpl.external_url}}">{{tpl.external_url}}</a></td></tr>
+{% endif %}
+</table>
+
+<h2>Template notes</h2>
+<pre>{{tpl.notes}}</pre>
+</div>
+
+<form id="settings_edit" action="{%url template.edit tpl.type tpl.name%}" method="POST">
+<table>
+  <tr><td>Name:</td><td>{{tpl.name}}</td></tr>
+  <tr><td>Type:</td><td>{{tpl.type}}</td></tr>
+  {{form.as_table}}
+</table>
+<input type="submit"/>
+</form>
+<script language="javascript"><!--
+  document.getElementById("settings_{% if show_form %}view{% else %}edit{% endif %}").setAttribute("style", "display: none");
+--></script>
+
+{% endblock %}
