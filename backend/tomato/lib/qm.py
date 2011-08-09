@@ -15,15 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import re, uuid
+import re, uuid, time
 
 from tomato import config, generic
 from tomato.lib import util
 
 import fileutil, process, ifaceutil, exceptions
 
-def _qm(host, vmid, cmd, params=""):
-	return host.execute("qm %s %d %s" % (cmd, vmid, params))
+def _qm(host, vmid, cmd, params="", maxWait=30, unlock=True):
+	waitStep = 1
+	while True:
+		try:
+			return host.execute("qm %s %d %s" % (cmd, vmid, params))
+		except exceptions.CommandError, exc:
+			if not (exc.errorCode == 4 and "lock" in exc.errorMessage and "timeout" in exc.errorMessage):
+				raise
+			if maxWait > 0:
+				time.sleep(waitStep)
+				#print "wait %s" % waitStep
+				waitStep *= 2
+				maxWait -= waitStep
+			else:
+				if not unlock:
+					raise
+				unlock = False
+				#print "unlock"
+				fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
 def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
