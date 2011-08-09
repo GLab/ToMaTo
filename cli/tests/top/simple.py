@@ -83,6 +83,22 @@ top="""
         "template": "", 
         "type": "openvz"
       }
+    },
+    "prog1": {
+      "interfaces": {
+        "eth0": {
+          "attrs": {
+            "name": "eth0"
+          }
+        }
+      }, 
+      "attrs": {
+        "args": "ip=10.0.0.3", 
+        "name": "prog1", 
+        "pos": "330,460", 
+        "template": "pingable_node-0.1", 
+        "type": "prog"
+      }
     }
   }, 
   "connectors": {
@@ -103,7 +119,15 @@ top="""
             "bandwidth": "10000",
             "lossratio": "0.0"
           }
-        }
+        },
+		"prog1.eth0": {
+		  "attrs": {
+			"interface": "prog1.eth0", 
+			"latency": "0",
+			"bandwidth": "10000",
+			"lossratio": "0.0"
+		  }
+		}
       }, 
       "attrs": {
         "type": "switch", 

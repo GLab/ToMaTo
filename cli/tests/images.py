@@ -27,6 +27,9 @@ def simpleTop_checkImages(topId):
 	downurl3 = top_action(topId, "download_image", "device", "kvm1")
 	download(downurl3,"kvm1.qcow2")
 	assert os.path.getsize("kvm1.qcow2") > 100000000
+	downurl4 = top_action(topId, "download_image", "device", "prog1")
+	download(downurl4,"prog1.repy")
+	assert 10000 > os.path.getsize("prog1.repy") > 1000
 	#switch images 
 	print "\tuploading images..."
 	upurl1 = top_action(topId, "upload_image_prepare", "device", "openvz1")
@@ -40,6 +43,10 @@ def simpleTop_checkImages(topId):
 	upurl3 = top_action(topId, "upload_image_prepare", "device", "kvm1")
 	upload(upurl3["upload_url"], "kvm1.qcow2")
 	task = top_action(topId, "upload_image_use", "device", "kvm1", attrs={"filename": upurl3["filename"]})
+	waitForTask(task, assertSuccess=True)
+	upurl4 = top_action(topId, "upload_image_prepare", "device", "prog1")
+	upload(upurl4["upload_url"], "prog1.repy")
+	task = top_action(topId, "upload_image_use", "device", "prog1", attrs={"filename": upurl4["filename"]})
 	waitForTask(task, assertSuccess=True)
 	#start topology
 	print "\tstarting topology..."

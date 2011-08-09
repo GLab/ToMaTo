@@ -23,6 +23,39 @@ def simpleTop_checkTopInformation(topId):
 		'connectors': {
 			'switch1': {
 				'connections': {
+					'prog1.eth0': {
+						'interface': 'prog1.eth0',
+						'attrs': {
+							'gateway6': None,
+							'lossratio': 0.0,
+							'bridge_id': None,
+							'capture_to_file': False,
+							'gateway4': None,
+							'delay': 0,
+							'bandwidth': 10000,
+							'tinc_port': None,
+							'capture_filter': '',
+							'capture_via_net': False
+						},
+						'capabilities': {
+							'action': {
+								'download_capture': False
+							},
+							'other': {
+								'live_capture': False
+							},
+							'configure': {
+								'gateway6': False,
+								'lossratio': True,
+								'capture_to_file': True,
+								'gateway4': False,
+								'delay': True,
+								'bandwidth': True,
+								'capture_filter': True,
+								'capture_via_net': True
+							}
+						}
+					},
 					'openvz1.eth0': {
 						'interface': 'openvz1.eth0',
 						'attrs': {
@@ -332,6 +365,51 @@ def simpleTop_checkTopInformation(topId):
 			}
 		}, 
 		'devices': {
+			'prog1': {
+				'interfaces': {
+					'eth0': {
+						'attrs': {
+							'name': 'eth0'
+						},
+						'capabilities': {
+							'action': {},
+							'configure': {}
+						}
+					}
+				},
+			 	'resources': None,
+			 	'attrs': {
+					'name': 'prog1',
+					'vnc_port': None, 
+					'state': 'started', 
+					'pos': None, 
+					'host': None, 
+					'template': None, 
+					'type': 'prog', 
+					'vnc_password': None,
+					'args': None
+				}, 
+				'capabilities': {
+					'action': {
+						'prepare': False,
+						'upload_image_use': False,
+						'download_image': False,
+						'stop': True,
+						'start': False,
+						'upload_image_prepare': False,
+						'destroy': False
+					},
+					'other': {
+						'console': True
+					},
+					'configure': {
+						'pos': True,
+						'hostgroup': True,
+						'template': False,
+						'args': False
+					}
+				}
+			},
 			'kvm1': {
 				'interfaces': {
 					'eth2': {
@@ -553,7 +631,7 @@ def simpleTop_checkTopInformation(topId):
 			'connector_count': 4,
 			'state': 'started',
 			'stop_timeout': None, 
-			'device_count': 3, 
+			'device_count': 4, 
 			'remove_timeout': None, 
 			'owner': None
 		}, 
