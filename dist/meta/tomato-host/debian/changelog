@@ -1,3 +1,9 @@
+tomato-host (0.13) stable; urgency=low
+
+  * Depending on newest version of dummynet
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 09 Aug 2011 12:24:30 +0200
+
 tomato-host (0.12) stable; urgency=low
 
   * Depending on hostserver >= 0.5 
