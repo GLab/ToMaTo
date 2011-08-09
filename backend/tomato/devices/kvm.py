@@ -198,6 +198,10 @@ class KVMDevice(Device):
 	def _createVm(self):
 		qm.create(self.host, self.getVmid())
 
+	def _prepareIfaces(self):
+		for iface in self.interfaceSetAll():
+			self._createIface(iface)
+
 	def _fallbackDestroy(self):
 		self._fallbackStop()
 		if self.host and self.getVmid():
@@ -214,9 +218,8 @@ class KVMDevice(Device):
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
 		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
-		for iface in self.interfaceSetAll():
-			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=configure_vm))
-		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm])
+		prepare_ifaces = tasks.Task("prepare-interfaces", self._prepareIfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
+		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm, prepare_ifaces])
 		return self._adaptTaskset(taskset)
 
 	def _unassignHost(self):
