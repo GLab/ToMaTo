@@ -28,6 +28,7 @@ import xmlrpclib
 class TemplateForm(forms.Form):
 	name = forms.CharField(max_length=255)
 	type = forms.ChoiceField(choices=[("openvz", "OpenVZ"), ("kvm", "KVM"), ("prog", "Prog")])
+	enabled = forms.BooleanField(required=False)
 	on_hostserver = forms.BooleanField(required=False)
 	external_url = forms.URLField(required=False, label="External URL", verify_exists=True)
 	notes = forms.CharField(widget=forms.Textarea, required=False)
@@ -37,14 +38,14 @@ def index(api, request):
 	return render_to_response("admin/template_index.html", {'templates': api.template_map()})
 
 @wrap_rpc
-def detail(api, request, type, name):
+def detail(api, request, type, name, task=None):
 	tpl = api.template_info(type, name)
 	form = TemplateForm()
-	for f in ["name", "type", "on_hostserver", "external_url", "notes"]:
-		form.fields[f].initial = tpl[f]
+	for f in ["name", "type", "enabled", "on_hostserver", "external_url", "notes"]:
+		form.fields[f].initial = tpl.get(f)
 	form.fields["name"].widget = forms.widgets.HiddenInput()
 	form.fields["type"].widget = forms.widgets.HiddenInput()
-	return render_to_response("admin/template_detail.html", {'tpl': tpl, 'form': form})
+	return render_to_response("admin/template_detail.html", {'tpl': tpl, 'form': form, 'task': task})
 
 @wrap_rpc
 def edit(api, request, type, name):
@@ -52,7 +53,8 @@ def edit(api, request, type, name):
 		form = TemplateForm(request.POST)
 		if form.is_valid(): 
 			d = form.cleaned_data
-			api.template_change(type, name, d)
+			task = api.template_change(type, name, d)
+			return detail(request, type, name, task=task) 
 		else:
 			tpl = api.template_info(type, name)
 			return render_to_response("admin/template_detail.html", {'tpl': tpl, 'form': form, 'show_form': True})
@@ -65,7 +67,7 @@ def add(api, request):
 		if form.is_valid(): 
 			d = form.cleaned_data
 			task = api.template_add(d["type"], d["name"], d)
-			return render_to_response("admin/template_index.html", {'templates': api.template_map(), "task": task})
+			return detail(request, d["type"], d["name"], task)
 	else:
 		form = TemplateForm()
 		form.fields["name"].initial = "type-version"

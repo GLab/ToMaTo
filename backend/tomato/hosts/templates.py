@@ -44,6 +44,9 @@ class Template(attributes.Mixin, models.Model):
 
 	def setExternalUrl(self, url):
 		self.setAttribute("external_url", url)			
+		
+	def isEnabled(self):
+		return self.getAttribute("enabled", False)
 			
 	class Meta:
 		db_table = "tomato_template"
@@ -75,7 +78,15 @@ class Template(attributes.Mixin, models.Model):
 		dir = {"kvm": "qemu", "openvz": "cache", "prog": "repy"}.get(self.type)
 		return "/var/lib/vz/template/%s/%s" % (dir, self.getFilename())
 	
+	def uploadTask(self):
+		proc = tasks.Process("upload-template")
+		for host in getAllHosts():
+			proc.add(tasks.Task(host.name, fn=self.uploadToHost, args=(host,)))
+		return proc.start()
+	
 	def uploadToHost(self, host):
+		if not self.isEnabled():
+			return
 		if host.clusterState() == ClusterState.NODE:
 			return
 		dst = self.getPath()
@@ -89,8 +100,12 @@ class Template(attributes.Mixin, models.Model):
 			self.setExternalUrl(attributes["external_url"])
 		if "on_hostserver" in attributes:
 			self.setAttribute("on_hostserver", attributes["on_hostserver"])
+		if "enabled" in attributes:
+			self.setAttribute("enabled", attributes["enabled"])
 		if "notes" in attributes:
 			self.setAttribute("notes", attributes["notes"])
+		if self.isEnabled():
+			return self.uploadTask()
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
@@ -105,6 +120,7 @@ class Template(attributes.Mixin, models.Model):
 		res = {"name": self.name, "type": self.type, "default": self.default,
 			"external_url": self.getAttribute("external_url"),
 			"on_hostserver": self.getAttribute("on_hostserver", False),
+			"enabled": self.isEnabled(),
 			"notes": self.getAttribute("notes", "")}
 		if auth:
 			res["download_url"] = self.getDownloadUrl()
@@ -136,15 +152,11 @@ def get(ttype, name):
 
 def add(type, name, attributes):
 	tpl = Template.objects.create(name=name, type=type) # pylint: disable-msg=E1101
-	tpl.configure(attributes)
-	proc = tasks.Process("upload-template")
-	for host in getAllHosts():
-		proc.add(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
-	return proc.start()
+	return tpl.configure(attributes)
 
 def change(type, name, attributes):
 	tpl = get(type, name)
-	tpl.configure(attributes)
+	return tpl.configure(attributes)
 	
 def remove(type, name):
 	#FIXME: actually delete hostserver file
