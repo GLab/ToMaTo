@@ -4,6 +4,7 @@
 <h1>Details of {{tpl.name}} ({{tpl.type}} template)</h1>
 
 <h2>Actions</h2>
+<a href="{%url template.set_default tpl.type tpl.name%}"><img src="/static/icons/star.png" alt="set default" title="set default"/> set default</a><br/>
 <a href="{%url template.remove tpl.type tpl.name%}" onclick="javascript:return confirm('Are you sure?')"><img src="/static/icons/delete.png" alt="remove" title="remove"/> remove</a><br/>
 {% if tpl.download_url %}
 <a href="{{tpl.download_url}}"><img src="/static/icons/download-image.png" alt="download" title="download"/> download</a><br/>
