@@ -1,0 +1,19 @@
+Source: dummynet
+Section: admin
+Priority: extra
+Maintainer: Andreas Teuchert <ant+devel@unix-ag.uni-kl.de>
+Build-Depends: debhelper (>= 5), pve-headers-2.6.32-5-pve, cdbs
+Standards-Version: 3.8.4
+
+Package: dummynet
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ipfw-mod
+Suggests: ${alternatelibs:Suggests}
+Conflicts: ipfw3-2.6.18-2-pve, ipfw3-2.6.32-4-pve, ipfw3-2.6.32-5-pve
+Description: network simulation tool
+ dummynet is a tool originally designed for testing networking protocols, and
+ since then used for a variety of applications including bandwidth management.
+ It simulates/enforces queue and bandwidth limitations, delays, packet losses,
+ and multipath effects. It also implements a variant of Weighted Fair Queueing
+ called WF2Q+. It can be used on user's workstations, or on machines acting as
+ routers or bridges.

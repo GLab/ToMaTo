@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/makefile.mk
+
+KERNEL = 2.6.32-5-pve-1000hz
+DEB_MAKE_INVOKE = $(MAKE) KERNELPATH=/lib/modules/$(KERNEL)/build KERNEL=$(KERNEL)
+DEB_MAKE_INSTALL_TARGET = install DESTDIR=$(DEB_DESTDIR)

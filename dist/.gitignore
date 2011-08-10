@@ -14,3 +14,5 @@ repy/tomato-repy/debian/tomato-repy
 repy/repy-svn
 hostserver/tomato-hostserver/debian/files
 hostserver/tomato-hostserver/debian/tomato-hostserver
+kernel/pve-kernel-*
+dummynet/ipfw3

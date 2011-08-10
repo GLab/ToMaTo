@@ -1,5 +1,32 @@
---- Makefile.orig	2011-06-23 14:08:38.000000000 +0200
-+++ Makefile	2011-06-23 14:34:26.000000000 +0200
+--- pve-kernel-2.6.32_2011-06-17.orig/config-2.6.32.org	2011-06-17 17:19:25.000000000 +0200
++++ pve-kernel-2.6.32_2011-06-17/config-2.6.32.org	2011-08-10 12:52:48.000000000 +0200
+@@ -375,10 +375,10 @@
+ CONFIG_SECCOMP=y
+ CONFIG_CC_STACKPROTECTOR=y
+ # CONFIG_HZ_100 is not set
+-CONFIG_HZ_250=y
++# CONFIG_HZ_250 is not set
+ # CONFIG_HZ_300 is not set
+-# CONFIG_HZ_1000 is not set
+-CONFIG_HZ=250
++CONFIG_HZ_1000=y
++CONFIG_HZ_1000
+ CONFIG_SCHED_HRTICK=y
+ CONFIG_KEXEC=y
+ # CONFIG_CRASH_DUMP is not set
+--- pve-kernel-2.6.32_2011-06-17.orig/find-firmware.pl	2011-06-17 17:19:25.000000000 +0200
++++ pve-kernel-2.6.32_2011-06-17/find-firmware.pl	2011-08-10 12:52:48.000000000 +0200
+@@ -8,7 +8,7 @@
+ 
+ die "no such directory" if ! -d $dir;
+ 
+-die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(/+)?$|;
++die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(-1000hz)?(/+)?$|;
+ 
+ my $apiver = $2;
+ 
+--- pve-kernel-2.6.32_2011-06-17.orig/Makefile	2011-06-17 17:19:25.000000000 +0200
++++ pve-kernel-2.6.32_2011-06-17/Makefile	2011-08-10 12:53:35.000000000 +0200
 @@ -15,6 +15,12 @@
  ARCH=amd64
  TOP=$(shell pwd)
@@ -22,40 +49,21 @@
  	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' <proxmox-ve/postinst >proxmox-ve/data/DEBIAN/postinst
  	chmod 0755 proxmox-ve/data/DEBIAN/postinst
  	install -m 0644 proxmox-ve/copyright proxmox-ve/data/usr/share/doc/${PVEPKG}
-@@ -71,8 +77,8 @@
+@@ -71,7 +77,7 @@
  
  ${DST_DEB}: data control.in postinst.in
  	mkdir -p data/DEBIAN
 -	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${KVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <control.in >data/DEBIAN/control
 +	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${OKVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <control.in >data/DEBIAN/control
-	sed -e 's/@@KVNAME@@/${KVNAME}/g'  <postinst.in >data/DEBIAN/postinst
+ 	sed -e 's/@@KVNAME@@/${KVNAME}/g'  <postinst.in >data/DEBIAN/postinst
  	chmod 0755 data/DEBIAN/postinst
  	install -D -m 644 copyright data/usr/share/doc/${PACKAGE}/copyright
- 	install -D -m 644 changelog.Debian data/usr/share/doc/${PACKAGE}/changelog.Debian
---- config-2.6.32.org.orig	2011-06-23 14:08:33.000000000 +0200
-+++ config-2.6.32.org	2011-06-23 14:28:21.000000000 +0200
-@@ -375,10 +375,10 @@
- CONFIG_SECCOMP=y
- CONFIG_CC_STACKPROTECTOR=y
- # CONFIG_HZ_100 is not set
--CONFIG_HZ_250=y
-+# CONFIG_HZ_250 is not set
- # CONFIG_HZ_300 is not set
--# CONFIG_HZ_1000 is not set
--CONFIG_HZ=250
-+CONFIG_HZ_1000=y
-+CONFIG_HZ_1000
- CONFIG_SCHED_HRTICK=y
- CONFIG_KEXEC=y
- # CONFIG_CRASH_DUMP is not set
---- find-firmware.pl.orig	2011-06-23 14:55:22.000000000 +0200
-+++ find-firmware.pl	2011-06-23 14:56:18.000000000 +0200
-@@ -8,7 +8,7 @@
- 
- die "no such directory" if ! -d $dir;
- 
--die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(/+)?$|;
-+die "strange directory name" if $dir !~ m|^(.*/)?(2.6.\d+\-\d+\-pve)(-1000hz)?(/+)?$|;
- 
- my $apiver = $2;
- 
+@@ -233,7 +239,7 @@
+ ${HDR_DEB} hdr: .compile_mark headers-control.in headers-postinst.in
+ 	rm -rf $(headers_tmp)
+ 	install -d $(headers_tmp)/DEBIAN $(headers_dir)/include/
+-	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${KVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <headers-control.in >$(headers_tmp)/DEBIAN/control
++	sed -e 's/@KERNEL_VER@/${KERNEL_VER}/' -e 's/@KVNAME@/${OKVNAME}/' -e 's/@PKGREL@/${PKGREL}/' <headers-control.in >$(headers_tmp)/DEBIAN/control
+ 	sed -e 's/@@KVNAME@@/${KVNAME}/g'  <headers-postinst.in >$(headers_tmp)/DEBIAN/postinst
+ 	chmod 0755 $(headers_tmp)/DEBIAN/postinst
+ 	install -D -m 644 copyright $(headers_tmp)/usr/share/doc/${HDRPACKAGE}/copyright

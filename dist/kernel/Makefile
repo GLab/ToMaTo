@@ -17,7 +17,7 @@ $(FILE):
 
 $(DIR): $(FILE)
 	tar xzf $(FILE)
-	(cd $(DIR); patch -p0 < ../pve-1000hz.patch; cd ..)
+	(cd $(DIR); patch -p1 < ../pve-1000hz.patch; cd ..)
 
 .PHONY: build
 build: $(PACKAGE)-*.deb
@@ -32,14 +32,14 @@ clean:
 	rm -rf $(DIR)
 
 check-build-deps-check-deps:
-        @touch no-missing-deps
-        @$(foreach DEP, $(DEPENDENCIES), \
-          dpkg-query -s $(DEP) 2>/dev/null | fgrep 'install ok installed' >/dev/null \
-            || (echo "Please install the following packages and re-run make: $(DEP)"; \
-                [ -f no-missing-deps ] && rm no-missing-deps); \
-        )
+	@touch no-missing-deps
+	@$(foreach DEP, $(DEPENDENCIES), \
+	  dpkg-query -s $(DEP) 2>/dev/null | fgrep 'install ok installed' >/dev/null \
+	    || (echo "Please install the following packages and re-run make: $(DEP)"; \
+	        [ -f no-missing-deps ] && rm no-missing-deps); \
+	)
 
 check-build-deps-cleanup:
-        @rm no-missing-deps
+	@rm no-missing-deps
 
 check-build-deps: check-build-deps-check-deps no-missing-deps check-build-deps-cleanup
