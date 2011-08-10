@@ -64,7 +64,7 @@ def add(api, request):
 		form = TemplateForm(request.POST)
 		if form.is_valid(): 
 			d = form.cleaned_data
-			task = api.template_add(d["name"], d["type"], d["url"])
+			task = api.template_add(d["type"], d["name"], d)
 			return render_to_response("admin/template_index.html", {'templates': api.template_map(), "task": task})
 	else:
 		form = TemplateForm()
