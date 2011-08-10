@@ -8,8 +8,8 @@ Standards-Version: 3.8.3
 Package: tomato-host
 Architecture: all
 Depends: ${misc:Depends}, pve-qemu-kvm, vzctl, bridge-utils, iproute,
- lsof, vzdump, tinc, ipfw3-2.6.32-5-pve, timeout, curl, tomato-hostserver (>=0.5), ucspi-tcp,
- rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.2)
+ lsof, vzdump, tinc, timeout, curl, tomato-hostserver (>=0.5), ucspi-tcp,
+ rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.2), dummynet
 Description: Meta package to install packages needed for tomato
  The following dependencies are pulled in:
   * Tinc: tinc
