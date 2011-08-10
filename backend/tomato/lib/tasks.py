@@ -391,6 +391,8 @@ class RepeatedProcess(Process):
 		res = Process.dict(self, details)
 		res.update(periodic=True)
 		return res
+	def check_delete(self):
+		pass #periodic tasks are never removed
 
 MAX_WORKERS = 100
 MAX_WORKERS_PROCESS = 5
