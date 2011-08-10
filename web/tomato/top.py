@@ -80,9 +80,9 @@ def edit(api, request, top_id):
 	except:
 		return HttpResponseRedirect(reverse('tomato.top.index'))
 	tpls = api.template_map()
-	tpl_openvz=",".join([t["name"] for t in tpls.get("openvz", [])])
-	tpl_kvm=",".join([t["name"] for t in tpls.get("kvm", [])])
-	tpl_prog=",".join([t["name"] for t in tpls.get("prog", [])])
+	tpl_openvz=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("openvz", []))])
+	tpl_kvm=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("kvm", []))])
+	tpl_prog=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("prog", []))])
 	enlist = api.external_networks()
 	map = {}
 	for en in enlist:

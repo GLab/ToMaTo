@@ -22,6 +22,7 @@ import tomato.lib.log
 import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, reactor, ssl
+from django.db import transaction
 
 from tomato import fault
 
@@ -72,6 +73,7 @@ class APIServer(xmlrpc.XMLRPC):
 			fault.log(exc)
 			raise
 		except Exception, exc:
+			transaction.commit() #commit anyhow
 			fault.log(exc)
 			self.logger.log("Exception: %s" % exc, user=user.name)
 			raise fault.wrap(exc)

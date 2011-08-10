@@ -3,7 +3,12 @@
 {% block content %}
 <h1>Details of {{tpl.name}} ({{tpl.type}} template)</h1>
 
+{% if task %}
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task%}?backurl={%url template.detail tpl.type tpl.name%}"></iframe>
+{% endif %}
+
 <h2>Actions</h2>
+<a href="{%url template.set_default tpl.type tpl.name%}"><img src="/static/icons/star.png" alt="set default" title="set default"/> set default</a><br/>
 <a href="{%url template.remove tpl.type tpl.name%}" onclick="javascript:return confirm('Are you sure?')"><img src="/static/icons/delete.png" alt="remove" title="remove"/> remove</a><br/>
 {% if tpl.download_url %}
 <a href="{{tpl.download_url}}"><img src="/static/icons/download-image.png" alt="download" title="download"/> download</a><br/>
@@ -24,6 +29,7 @@
 <table>
   <tr><td>Name:</td><td>{{tpl.name}}</td></tr>
   <tr><td>Type:</td><td>{{tpl.type}}</td></tr>
+  <tr><td>Enabled:</td><td>{{tpl.enabled}}</td></tr>
   <tr><td>On hostserver:</td><td>{{tpl.on_hostserver}}</td></tr>
 {% if tpl.external_url %}
   <tr><td>External URL:</td><td><a href="{{tpl.external_url}}">{{tpl.external_url}}</a></td></tr>
