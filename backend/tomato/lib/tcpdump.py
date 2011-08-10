@@ -73,7 +73,7 @@ def removeCapture(host, name):
 			
 def downloadCaptureUri(host, name):
 	filename = "%s.pcap" % name
-	path = hostserver.randomFilename(host)
+	path = host.getHostServer().randomFilename()
 	host.execute("tcpslice -w %s %s/*" % (path, _remoteDir(name)))
 	assert fileutil.existsFile(host, path), "No packages captured yet"
-	return hostserver.downloadGrant(host, path, filename)
+	return host.getHostServer().downloadGrant(path, filename=filename)

@@ -1,8 +1,0 @@
-def parse_args(defaults):
-    options = {}
-    if defaults:
-        options = defaults
-    for arg in callargs:
-        (key, value) = arg.split("=")
-        options[key]=value
-    return options

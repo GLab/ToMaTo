@@ -391,6 +391,8 @@ class RepeatedProcess(Process):
 		res = Process.dict(self, details)
 		res.update(periodic=True)
 		return res
+	def check_delete(self):
+		pass #periodic tasks are never removed
 
 MAX_WORKERS = 100
 MAX_WORKERS_PROCESS = 5
@@ -426,6 +428,13 @@ def get_current_task():
 		return _current_task.task
 	else:
 		return None
+		
+def getStatus(task_id):
+	try:
+		return processes[task_id].dict(True)
+	except KeyError:
+		raise fault.new("No such task %s" % task_id, fault.USER_ERROR)
+		
 		
 if not config.MAINTENANCE:	
 	atexit.register(keep_running)

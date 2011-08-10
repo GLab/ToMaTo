@@ -78,9 +78,11 @@ def edit(api, request, top_id):
 	try:
 		api.top_info(top_id)
 	except:
-		return HttpResponseRedirect(reverse('tomato.top.index')) 
-	tpl_openvz=",".join([t["name"] for t in api.template_list("openvz")])
-	tpl_kvm=",".join([t["name"] for t in api.template_list("kvm")])
+		return HttpResponseRedirect(reverse('tomato.top.index'))
+	tpls = api.template_map()
+	tpl_openvz=",".join([t["name"] for t in tpls.get("openvz", [])])
+	tpl_kvm=",".join([t["name"] for t in tpls.get("kvm", [])])
+	tpl_prog=",".join([t["name"] for t in tpls.get("prog", [])])
 	enlist = api.external_networks()
 	map = {}
 	for en in enlist:
@@ -94,7 +96,7 @@ def edit(api, request, top_id):
 		editor = "jsui"
 	else:
 		editor = request.REQUEST["editor"]
-	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'host_groups': host_groups, "external_networks": external_networks, 'edit':True} )
+	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':True} )
 
 @wrap_rpc
 def show(api, request, top_id):

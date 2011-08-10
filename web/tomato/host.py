@@ -77,6 +77,11 @@ def check(api, request, hostname):
 	return render_to_response("admin/host_index.html", {'host_list': api.host_list(), 'task': task, 'taskname': "Checking host %s" % hostname})
 
 @wrap_rpc
+def update(api, request, hostname):
+	task = api.host_update(hostname)
+	return render_to_response("admin/host_index.html", {'host_list': api.host_list(), 'task': task, 'taskname': "Updating host %s" % hostname})
+
+@wrap_rpc
 def debug(api, request, hostname):
 	debug_info = api.host_debug(hostname)
 	debug = [(k, debug_info[k]) for k in debug_info]

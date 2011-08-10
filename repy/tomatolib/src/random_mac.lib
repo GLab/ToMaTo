@@ -1,6 +1,0 @@
-def random_mac():
-    bytes = randombytes()[:6]
-    s = ""
-    for b in bytes:
-        s += '%02x:' % ord(b)
-    return s[:-1]

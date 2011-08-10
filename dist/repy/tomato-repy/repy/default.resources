@@ -1,0 +1,6 @@
+resource cpu 0.1
+resource memory 33554432
+resource diskused 33554432
+resource lograte 100000
+resource events 100000
+resource random 100000

@@ -95,9 +95,9 @@ class KVMDevice(Device):
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.qcow2" % (self.topology.name, self.name)
-		file = hostserver.randomFilename(self.host)
+		file = self.host.getHostServer().randomFilename()
 		qm.copyImage(self.host, self.getVmid(), file)
-		return hostserver.downloadGrant(self.host, file, filename)
+		return self.host.getHostServer().downloadGrant(file, filename)
 
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
@@ -139,6 +139,8 @@ class KVMDevice(Device):
 		return self._adaptTaskset(taskset)
 
 	def _stopVnc(self):
+		if not self.host or not self.getVmid() or not self.getVncPort():
+			return
 		qm.stopVnc(self.host, self.getVmid(), self.getVncPort())
 	
 	def _stopVm(self):
@@ -196,6 +198,10 @@ class KVMDevice(Device):
 	def _createVm(self):
 		qm.create(self.host, self.getVmid())
 
+	def _prepareIfaces(self):
+		for iface in self.interfaceSetAll():
+			self._createIface(iface)
+
 	def _fallbackDestroy(self):
 		self._fallbackStop()
 		if self.host and self.getVmid():
@@ -212,9 +218,8 @@ class KVMDevice(Device):
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
 		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
-		for iface in self.interfaceSetAll():
-			taskset.add(tasks.Task("create-interface-%s" % iface.name, self._createIface, args=(iface,), reverseFn=self._fallbackDestroy, after=configure_vm))
-		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm])
+		prepare_ifaces = tasks.Task("prepare-interfaces", self._prepareIfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
+		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm, prepare_ifaces])
 		return self._adaptTaskset(taskset)
 
 	def _unassignHost(self):
@@ -320,13 +325,19 @@ class KVMDevice(Device):
 		return m.hexdigest()
 
 	def getResourceUsage(self):
+		traffic = 0
 		disk = 0
 		memory = 0
 		ports = 1 if self.state == State.STARTED else 0		
 		if self.host and self.getVmid():
 			disk = qm.getDiskUsage(self.host, self.getVmid())
 			memory = qm.getMemoryUsage(self.host, self.getVmid())
-		return {"disk": disk, "memory": memory, "ports": ports}		
+		if self.state == State.STARTED:
+			for iface in self.interfaceSetAll():
+				dev = self.interfaceDevice(iface)
+				traffic += ifaceutil.getRxBytes(self.host, dev)
+				traffic += ifaceutil.getTxBytes(self.host, dev)
+		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 	
 	def getIdUsage(self, host):
 		ids = Device.getIdUsage(self, host)

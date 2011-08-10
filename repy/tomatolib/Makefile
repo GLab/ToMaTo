@@ -1,11 +1,12 @@
-REPYPP = python ../repypp.py
+CPP = cpp -undef -Wundef -nostdinc -P -traditional-cpp -Ilib
 
-build/%: src/%
-	(cd src; $(REPYPP) ../$< ../$@; cd ..)
+build/%: src/% lib/*
+	@mkdir -p `dirname $@`
+	$(CPP) $< $@
 
 DEFAULT: build
 
-build: build/dhcp_server.repy build/pingable_node.repy build/switch.repy
+build: $(shell ls src/* | sed 's/src\//build\//g')
 
 clean:
-	rm build/*
+	rm -rf build

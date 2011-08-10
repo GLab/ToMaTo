@@ -1,0 +1,35 @@
+
+#ifndef ethernet_node_loaded
+#define ethernet_node_loaded
+
+#include <util/send.repy>
+#include <layer2/ethernet_proto.repy>
+
+class Header:
+    pass
+
+class EthernetNode:
+    def __init__(self, mac, **kwargs):
+        self.mac = mac
+        self.mac_table = {}
+        try:
+            self.ethernet_handlers
+        except:
+            self.ethernet_handlers = {}
+    def bind(self, type, handler):
+        self.ethernet_handlers[type] = handler
+    def handle(self, dev, p):
+        ether = ethernet_decode(p)
+        self.mac_table[ether.src] = dev
+        if ether.dst == self.mac or ether.dst == "\xff\xff\xff\xff\xff\xff":
+            self.handle_ethernet(ether, dev)
+    def handle_ethernet(self, ethernet, dev):
+        handler = self.ethernet_handlers.get(ethernet.type)
+        if handler:
+            handler(ethernet, dev)  
+    def send(self, dst, type, payload, dev=None):
+        if not dev:
+            dev = self.mac_table.get(dst)
+        send(dev, ethernet_encode(dst, self.mac, type, payload))
+
+#endif

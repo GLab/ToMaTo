@@ -8,6 +8,7 @@
 <a href="{%url top.index host_filter=host.name%}"><img src="/static/icons/view_list.png" alt="all topologies" title="all topologies"/> all topologies</a><br/>
 <a href="{%url host.debug host.name%}"><img src="/static/icons/chart_bar.png" alt="debug info" title="debug info"/> debug info</a><br/>
 <a href="{%url host.check host.name%}"><img src="/static/icons/magnifier.png" alt="check host" title="check host"/> check host</a><br/>
+<a href="{%url host.update host.name%}"><img src="/static/icons/update.png" alt="check host" title="update host"/> update host</a><br/>
 
 <h2>Settings <a href="{%url host.edit hostname=host.name%}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
 <table>
@@ -34,7 +35,7 @@
     <td><a href="{%url external_networks.remove_bridge type=en.type group=en.group hostname=host.name%}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
   </tr>
 {% endfor %}
-<form action="{%url external_networks.add_bridge hostname=host.name%}">
+<form action="{%url external_networks.add_bridge%}">
   <tr>
     <td colspan="2"><select name="typegroup">
 {% for en in external_networks %}
@@ -42,7 +43,7 @@
 {% endfor %}    
     </select></td>
     <td><input name="bridge"/></td>
-    <td><input type="submit" value="Add"/></td>
+    <td><input type="hidden" name="origin" value="h"/><input type="hidden" name="host" value="{{host.name}}"/><input type="submit" value="Add"/></td>
   </tr>
 </form>
 </table>

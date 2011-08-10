@@ -1,6 +1,7 @@
-#Fri Mar 04 19:10:50 CET 2011
+#Thu Jul 14 10:19:14 CEST 2011
 eclipse.preferences.version=1
 encoding//tomato/ajax.py=utf-8
+encoding//tomato/external_networks.py=utf-8
 encoding//tomato/host.py=utf-8
 encoding//tomato/lib.py=utf-8
 encoding//tomato/main.py=utf-8

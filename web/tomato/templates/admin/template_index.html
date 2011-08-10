@@ -3,29 +3,29 @@
 {% block content %}
 <h1>List of templates</h1>
 
-<script src="/static/enhancetable.js"></script>
-
-<table class="sortable,filterable">
-	<tr>
-		<th>name</th>
-		<th>type</th>
-		<th>url</th>
-		<th>actions</th>
-	</tr>
-{% for tpl in templates %}
-	<tr>
-		<td>{% if tpl.default %}<b>{{tpl.name}} (default)</b>{% else %}{{tpl.name}}{% endif %}</td>
-		<td>{{tpl.type}}</td>
-		<td><a href="{{tpl.url}}">URL</a></td>
-		<td>
-			<a href="{%url template.remove name=tpl.name%}"><img src="/static/icons/destroy.png" alt="remove" title="remove"/></a>
-			{% if not tpl.default %}<a href="{%url template.set_default name=tpl.name type=tpl.type%}"><img src="/static/icons/star.png" alt="set default" title="set default"/></a>{% endif %}
-		</td>
-	</tr>
-{% endfor %}
-</table>
-
 {% if task %}
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task%}?backurl={%url template.index%}"></iframe>
 {% endif %}
+
+<h2>KVM templates</h2>
+<ul>
+{% for tpl in templates.kvm %}
+<li><a href="{%url template.detail tpl.type tpl.name %}">{{tpl.name}}</a> {% if tpl.default %}<b>(default)</b>{% endif %}</li>
+{% endfor %}
+</ul>
+
+<h2>OpenVZ templates</h2>
+<ul>
+{% for tpl in templates.openvz %}
+<li><a href="{%url template.detail tpl.type tpl.name %}">{{tpl.name}}</a> {% if tpl.default %}<b>(default)</b>{% endif %}</li>
+{% endfor %}
+</ul>
+
+<h2>Repy templates</h2>
+<ul>
+{% for tpl in templates.prog %}
+<li><a href="{%url template.detail tpl.type tpl.name %}">{{tpl.name}}</a> {% if tpl.default %}<b>(default)</b>{% endif %}</li>
+{% endfor %}
+</ul>
+
 {% endblock %}

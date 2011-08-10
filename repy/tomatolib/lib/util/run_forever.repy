@@ -1,0 +1,8 @@
+def run_forever(handle_fn):
+    while True:
+        try:
+            (dev, packet) = tuntap_read_any(timeout=None)
+            if packet:
+                handle_fn(dev, packet)
+        except Exception, e:
+            print_exc(e)

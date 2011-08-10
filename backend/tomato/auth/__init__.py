@@ -28,6 +28,7 @@ class User(models.Model):
 	is_admin = models.BooleanField(default=False)
 	password = models.CharField(max_length=250, null=True)
 	password_time = models.DateTimeField(null=True)
+	email = models.EmailField(null=True)
 	
 	class Meta:
 		db_table = "tomato_user"
@@ -47,6 +48,14 @@ class User(models.Model):
 
 	def toDict(self):
 		return {"name": self.name, "origin": self.origin, "is_user": self.is_user, "is_admin": self.is_admin}
+
+	def sendMessage(self, subject, body):
+		subject = config.MAIL["SUBJECT_PREFIX"] + subject + config.MAIL["SUBJECT_SUFFIX"]
+		body = (config.MAIL["BODY_PREFIX"] % self.name) + body + config.MAIL["BODY_SUFFIX"]
+		if self.email:
+			util.sendMail(self.email, subject, body)
+		else:
+			print "Cannot send message to %s, no email known" % str(self)
 
 	def __str__(self):
 		return self.__unicode__()
@@ -96,6 +105,8 @@ def login(username, password):
 		stored.origin = user.origin
 		stored.is_user = user.is_user
 		stored.is_admin = user.is_admin
+		if user.email:
+			stored.email = user.email
 		stored.save()
 	except User.DoesNotExist:
 		user.save()

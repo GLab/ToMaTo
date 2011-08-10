@@ -34,7 +34,7 @@ def simpleTop_checkTincConnectors(topId):
 	print "\tchecking switch..."
 	assert link_check(topId, "openvz1", "10.0.0.2")
 	assert link_check(topId, "openvz2", "10.0.0.1")
-	top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "route add default gw 10.1.1.254"})
+	top_action(topId, "execute", "device", "openvz1", attrs={"cmd": "route add default gw 10.1.1.254; true"})
 	print "\tchecking router, to remote device..."
 	assert link_check(topId, "openvz1", "10.1.2.1")
 	print "\tchecking router, no connection to host..."

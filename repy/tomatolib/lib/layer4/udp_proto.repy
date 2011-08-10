@@ -1,0 +1,17 @@
+
+#ifndef udp_proto_loaded
+#define udp_proto_loaded
+
+IP_PROTOCOL_UDP = 17
+
+def udp_decode(p):
+    h = Header()
+    (h.src, h.dst, h.length, h.checksum) = struct.unpack("!HHHH", p[0:8])
+    h.payload = p[8:]
+    #FIXME: check checksum
+    return h
+
+def udp_encode(src, dst, payload):
+    return struct.pack("!HHHH", src, dst, 8+len(payload), 0) + payload
+
+#endif

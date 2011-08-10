@@ -1,3 +1,27 @@
+tomato-host (0.13) stable; urgency=low
+
+  * Depending on newest version of dummynet
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 09 Aug 2011 12:24:30 +0200
+
+tomato-host (0.12) stable; urgency=low
+
+  * Depending on hostserver >= 0.5 
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 08 Aug 2011 12:15:18 +0200
+
+tomato-host (0.11) stable; urgency=low
+
+  * Depending on tomato-repy >= 0.2
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 15 Jul 2011 11:47:41 +0200
+
+tomato-host (0.10) stable; urgency=low
+
+  * Depending on tomato-repy
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 14 Jul 2011 11:10:53 +0200
+
 tomato-host (0.9) stable; urgency=low
 
   * Depending on new hostserver >= 0.4

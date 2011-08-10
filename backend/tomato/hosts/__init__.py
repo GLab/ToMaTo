@@ -22,7 +22,7 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl
+from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions, hostserver
 
 from tomato.generic import State
 from tomato.lib.decorators import *
@@ -52,6 +52,10 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.setAttribute("vmid_count", 200)
 		self.setAttribute("bridge_start", 1000)
 		self.setAttribute("bridge_count", 1000)
+
+	def getHostServer(self):
+		return hostserver.HostServer(self.name, self.getAttribute("hostserver_port"), 
+		  self.getAttribute("hostserver_basedir"), self.getAttribute("hostserver_secret_key"))
 
 	def __unicode__(self):
 		return self.name
@@ -84,6 +88,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc.add(self.checkTasks())
 		return proc.start()
 
+	def apt_update(self):
+		proc = tasks.Process("update")
+		apt_get_update = tasks.Task("apt-get update", util.curry(self.execute, ["apt-get update"]))
+		apt_get_dist_upgrade = tasks.Task("apt-get -y dist-upgrade", util.curry(self.execute, ["apt-get -y dist-upgrade"]), after=apt_get_update)		
+		proc.add([apt_get_update, apt_get_dist_upgrade])
+		return proc.start()
+
 	def disable(self):
 		print "Disabling host %s because of error during check" % self
 		fault.errors_add("Host disabled", "Disabling host %s because of error during check" % self)
@@ -91,8 +102,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.save()
 
 	def _checkCmd(self, cmd, errormsg):
-		res = self.execute("%s; echo $?" % cmd)
-		assert res.split("\n")[-2] == "0", errormsg
+		self.execute(cmd)
 
 	def _checkTomatoHostVersion(self):
 		res = self.execute("dpkg-query -s tomato-host | fgrep Version | awk '{ print $2 }'")
@@ -100,7 +110,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			version = float(res.strip())
 		except:
 			assert False, "tomato-host not found"
-		assert version >= 0.9, "tomato-host version error, is %s" % version
+		assert version >= 0.12, "tomato-host version error, is %s" % version
 
 	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
@@ -266,19 +276,29 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	
 	def _exec(self, cmd):
 		res = util.run_shell(cmd)
+		if res[0] != 0:
+			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
 	
 	def execute(self, command):
-		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command]
+		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command+"; echo $? >&2"]
 		log_str = self.name + ": " + command + "\n"
 		if tasks.get_current_task():
 			fd = tasks.get_current_task().output
 		else:
 			fd = sys.stdout
 		fd.write(log_str)
-		res = self._exec(cmd)
+		try:
+			res = self._exec(cmd)
+		except exceptions.CommandError, exc:
+			raise exceptions.ConnectError(exc.hostname, exc.errorCode, exc.errorMessage)
 		res = util.removeControlChars(res) #might contain funny characters
+		res = res.splitlines()
+		retCode = int(res[-1].strip())
+		res = "\n".join(res[:-1])
 		fd.write(res)
+		if retCode != 0:
+			raise exceptions.CommandError(self.name, command, retCode, res)
 		return res
 	
 	def filePut(self, local_file, remote_file):

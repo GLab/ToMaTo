@@ -166,8 +166,17 @@ class TincConnector(Connector):
 	def getResourceUsage(self):
 		disk = tinc.estimateDiskUsage(len(self.connectionSetAll())) if self.state != State.CREATED else 0
 		memory = tinc.estimateMemoryUsage(len(self.connectionSetAll())) if self.state == State.STARTED else 0
-		ports = len(self.connectionSetAll()) if self.state == State.STARTED else 0		
-		return {"disk": disk, "memory": memory, "ports": ports}		
+		ports = len(self.connectionSetAll()) if self.state == State.STARTED else 0
+		traffic = 0
+		for con in self.connectionSetAll():
+			dev = con.interface.device
+			if dev.host and dev.state == State.STARTED:
+				iface = dev.upcast().interfaceDevice(con.interface)
+				try:
+					traffic += ifaceutil.getRxBytes(dev.host, iface) + ifaceutil.getTxBytes(dev.host, iface)
+				except:
+					pass
+		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 
 
 class TincConnection(dummynet.EmulatedConnection):
@@ -227,12 +236,13 @@ class TincConnection(dummynet.EmulatedConnection):
 		if self.bridge_id:
 			if self.connector.state != State.STARTED and self.interface.device.state != State.STARTED:
 				host = self.getHost()
-				bridge = self.getBridge(assign=False, create=False)
-				if ifaceutil.bridgeExists(host, bridge):
-					attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
-					assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
-					ifaceutil.bridgeRemove(host, bridge)			
-				host.giveId("bridge", self.bridge_id)
+				if host:
+					bridge = self.getBridge(assign=False, create=False)
+					if ifaceutil.bridgeExists(host, bridge):
+						attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
+						assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
+						ifaceutil.bridgeRemove(host, bridge)			
+					host.giveId("bridge", self.bridge_id)
 				self.bridge_id = None
 				self.save()
 

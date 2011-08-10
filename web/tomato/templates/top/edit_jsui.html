@@ -34,6 +34,7 @@ editor = new Editor({x:800, y:600}, {% if edit %}true{% else %}false{% endif %})
 
 editor.setTemplatesOpenVZ({% if tpl_openvz %}"{{tpl_openvz}}".split(","){% else %}[]{% endif %});
 editor.setTemplatesKVM({% if tpl_kvm %}"{{tpl_kvm}}".split(","){% else %}[]{% endif %});
+editor.setTemplatesProg({% if tpl_prog %}"{{tpl_prog}}".split(","){% else %}[]{% endif %});
 editor.setHostGroups({% if host_groups %}"{{host_groups}}".split(","){% else %}[]{% endif %});
 
 var external_networks = {};

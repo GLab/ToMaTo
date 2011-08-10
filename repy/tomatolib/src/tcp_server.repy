@@ -1,0 +1,28 @@
+
+#include <layer4/tcp_server.repy>
+#include <layer3/icmp_node.repy>
+#include <util/parse_args.repy>
+#include <util/run_forever.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
+
+class Server(TCPServer,ICMPNode):
+    def __init__(self, **kwargs):
+        TCPServer.__init__(self, **kwargs)
+        ICMPNode.__init__(self, **kwargs)
+        self.bind(80, self.new_connection)
+    def new_connection(self, con):
+        echo("New connection")
+        con.set_callback(self.new_data)
+    def new_data(self, con, data):
+        if data.endswith("\n"):
+            echo(data[:-1])
+            con.send(data)
+
+if callfunc == 'initialize':
+    defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+    options = parse_args(defaults)
+    echo("Options: %s" % options)
+    options["ip"] = str_to_ip(options["ip"])
+    node = Server(**options)
+    run_forever(node.handle)

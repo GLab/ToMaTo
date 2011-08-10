@@ -17,22 +17,42 @@
 
 import hashlib, urllib, base64, time, uuid
 
-def _calcGrant(host, params):
-	list = [k+"="+v for k, v in params.iteritems() if not k == "grant"]
-	list.sort()
-	return hashlib.sha1("&".join(list)+"|"+host.getAttribute("hostserver_secret_key")).hexdigest()
+DEFAULT_TIMEOUT = 3600
 
-def randomFilename(host):
-	return "%s/%s" % (host.getAttribute("hostserver_basedir"), uuid.uuid1())
-
-def uploadGrant(host, filename, redirect):
-	params={"file": base64.b64encode(filename), "redirect": base64.b64encode(redirect), "valid_until": str(time.time()+3600)}
-	params.update(grant=_calcGrant(host, params))
-	qstr = urllib.urlencode(params)
-	return "http://%s:%s/upload?%s" % (host.name, host.getAttribute("hostserver_port"), qstr)
-	
-def downloadGrant(host, file, name):
-	params={"file": base64.b64encode(file), "valid_until": str(time.time()+3600), "name": name}
-	params.update(grant=_calcGrant(host, params))
-	qstr = urllib.urlencode(params)
-	return "http://%s:%s/download?%s" % (host.name, host.getAttribute("hostserver_port"), qstr)
+class HostServer:
+	def __init__(self, server, port, basedir, secret):
+		self.server = server
+		self.port = port
+		self.basedir = basedir
+		self.secret = secret
+		self._baseurl = "http://%s:%s" % (self.server, self.port)
+	def _calcGrant(self, path, params):
+		list = [k+"="+v for k, v in params.iteritems() if not k == "grant" and not k.startswith("_")]
+		list.sort()
+		return hashlib.sha1(path + "|" + ("&".join(list)) + "|" + self.secret).hexdigest()
+	def _grant(self, path, params, timeout=None):
+		if timeout:
+			params["valid_until"] = str(time.time()+timeout)
+		return self._calcGrant(path, params)
+	def randomFilename(self):
+		return "%s/%s" % (self.basedir, uuid.uuid1())
+	def uploadGrant(self, path, redirect=None, timeout=DEFAULT_TIMEOUT):
+		params={"path": base64.b64encode(path), "path_encoding": "base64"}
+		if redirect:
+			params["_redirect"] = base64.b64encode(redirect)
+		params.update(grant=self._grant("/upload", params, timeout))
+		return self._baseurl + "/upload?" + urllib.urlencode(params)	
+	def downloadGrant(self, path, filename=None, mimetype=None, timeout=DEFAULT_TIMEOUT):
+		params={"path": base64.b64encode(path), "path_encoding": "base64"}
+		if filename:
+			params["_name"] = filename
+		if mimetype:
+			params["_mimetype"] = mimetype	
+		params.update(grant=self._grant("/download", params, timeout))
+		return self._baseurl + "/download?" + urllib.urlencode(params)	
+	def deleteGrant(self, path, redirect=None, timeout=DEFAULT_TIMEOUT):
+		params={"path": base64.b64encode(path), "path_encoding": "base64"}
+		if redirect:
+			params["_redirect"] = base64.b64encode(redirect)
+		params.update(grant=self._grant("/delete", params, timeout))
+		return self._baseurl + "/delete?" + urllib.urlencode(params)	

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import tcpdump, ifaceutil
+import tcpdump, ifaceutil, exceptions
 
 def _ipfw(host, cmd):
 	return host.execute("ipfw %s" % cmd)
@@ -66,5 +66,9 @@ def createPipe(host, pipe, iface, dir="out"):
 	assert pipeExists(host, pipe), "failed to create pipe"
 
 def deletePipe(host, pipe):
-	_ipfw(host, "delete %d" % pipe)
-	_ipfw(host, "pipe delete %d" % pipe)
+	try:
+		_ipfw(host, "delete %d" % pipe)
+		_ipfw(host, "pipe delete %d" % pipe)
+	except exceptions.CommandError, exc:
+		if exc.errorCode != 69: #Pipe did not exist
+			raise

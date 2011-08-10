@@ -1,17 +1,24 @@
-include dhcp_server_node.lib
-include random_mac.lib
-include parse_args.lib
+
+#include <layer5/dhcp_server.repy>
+#include <layer3/icmp_node.repy>
+#include <util/parse_args.repy>
+#include <util/run_forever.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
+
+class Server(DHCPServer,ICMPNode):
+    def __init__(self, **kwargs):
+        DHCPServer.__init__(self, **kwargs)
+        ICMPNode.__init__(self, **kwargs)
 
 if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.2-250",
-                "netmask":"255.255.255.0", "broadcast":"10.0.0.255", "domain":"example.com"}
+    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
     options = parse_args(defaults)
-    options["pool"] = Net(options["pool"])
-    node = DHCP_Server(**options)
-    while True:
-        try:
-            (dev, packet) = tuntap_read_any(timeout=None)
-            if packet:
-                node.handle(dev, Ether(packet))
-        except Exception, e:
-            print_exc(e)
+    echo("Options: %s" % options)
+    options["ip"] = str_to_ip(options["ip"])
+    options["gateway"] = str_to_ip(options["gateway"])
+    options["nameserver"] = str_to_ip(options["nameserver"])
+    options["netmask"] = str_to_ip(options["netmask"])
+    options["pool"] = range_to_ips(options["pool"])
+    node = Server(**options)
+    run_forever(node.handle)

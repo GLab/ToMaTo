@@ -5,17 +5,39 @@
 <h1>List of external networks</h1>
 
 {% for en in list %}
-<h2>{{en.type}} ({{en.group}})</h2>
-<a href="{%url external_networks.change type=en.type group=en.group %}">[edit]</a> 
-<a href="{%url external_networks.remove type=en.type group=en.group %}">[remove]</a>
+<h2>{{en.type}} ({{en.group}}) 
+<a href="{%url external_networks.change type=en.type group=en.group%}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a>
+<a href="{%url external_networks.remove type=en.type group=en.group %}"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a>
+</h2>
 <br/>
 {% if en.max_devices %}Maximal devices: {{en.max_devices}}<br/>{% endif %}
 Avoid duplicates: {{en.avoid_duplicates}}<br/>
-Hosts:
-<ul>
+
+<h3>Hosts</h3>
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Bridge</th>
+    <th>Actions</th>
+  </tr>
 {% for enb in en.bridges %}
-	<li><a href="{%url host.detail hostname=enb.host %}">{{enb.host}}</a> (Bridge: {{enb.bridge}})</li>
+  <tr>
+    <td>{{enb.host}}</td>
+    <td>{{enb.bridge}}</td>
+    <td><a href="{%url external_networks.remove_bridge type=en.type group=en.group hostname=enb.host%}?origin=en"><img src="/static/icons/delete.png" alt="remove" title="remove"/></a></td>
+  </tr>
 {% endfor %}
-</ul>
+<form action="{%url external_networks.add_bridge%}">
+  <tr>
+    <td><select name="host">
+{% for h in hosts %}
+	<option value="{{h.name}}">{{h.name}}</option>
+{% endfor %}    
+    </select></td>
+    <td><input name="bridge"/></td>
+    <td><input type="hidden" name="origin" value="en"/><input type="hidden" name="typegroup" value="{{en.type}}:{{en.group}}"/><input type="submit" value="Add"/></td>
+  </tr>
+</form>
+</table>
 {% endfor %}
 {% endblock %}

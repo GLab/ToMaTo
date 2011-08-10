@@ -1,0 +1,143 @@
+class simplejson_String:
+  def __init__(self, s):
+    self._str = s
+    self._pos = 0
+  def startswith(self, s):
+    return self._str[self._pos:].startswith(s)
+  def skip(self, num=1):
+    self.read(num)
+  def peek(self, num=1):
+    return self._str[self._pos:self._pos+num]
+  def read(self, num=1):
+    s = self._str[self._pos:self._pos+num]
+    self._pos += num
+    return s
+  def readChars(self, chars):
+    start = self._pos
+    while self._str[self._pos] in chars:
+      self._pos += 1
+    return self._str[start:self._pos]
+  def skipChars(self, chars):
+    self.readChars(chars)
+  def __str__(self):
+    return "%s [%d]" % (self._str, self._pos)
+
+def simplejson_decode_number(s):
+  num = s.readChars("0123456789.+-eE")
+  try:
+    return int(num)
+  except:
+    pass
+  try:
+    return long(num)
+  except:
+    pass
+  try:
+    return float(num)
+  except:
+    pass
+  raise Exception("Number format error: %s" % num)
+
+def simplejson_decode_string(s):
+  if s.read() != '"':
+    raise Exception("Invalid string: %s" % s)
+  st = ""
+  while s.peek() != '"':
+    char = s.read()
+    if char == "\\":
+      char = s.read()
+    st += char
+  s.skip()
+  return st
+
+def simplejson_decode_dict(s):
+  if s.read() != '{':
+    raise Exception("Invalid dict: %s" % s)
+  dic = {}
+  while True:
+    simplejson_skip_whitespace(s)
+    if s.peek() == "}":
+      s.skip()
+      return dic
+    key = simplejson_decode_string(s)
+    simplejson_skip_whitespace(s)
+    if s.peek() != ":":
+      raise Exception("Invalid dictionary: %s" % s)
+    s.skip()
+    simplejson_skip_whitespace(s)
+    val = simplejson_decode_any(s)
+    dic[key] = val
+    if s.peek() == ",":
+      s.skip()
+      continue
+    if s.peek() == "}":
+      s.skip()
+      return dic
+    raise Exception("Dict not closed: %s" % s)
+
+def simplejson_decode_array(s):
+  if s.read() != '[':
+    raise Exception("Invalid array: %s" % s)
+  arr = []
+  while True:
+    simplejson_skip_whitespace(s)
+    if s.peek() == "]":
+      s.skip()
+      return arr
+    simplejson_skip_whitespace(s)
+    arr.append(simplejson_decode_any(s))
+    if s.peek() == ",":
+      s.skip()
+      continue
+    if s.peek() == "]":
+      s.skip()
+      return arr
+    raise Exception("Array not closed: %s" % s)
+
+def simplejson_decode_fixed(s, name, value=None):
+  s.skip(len(name))
+  return value
+
+def simplejson_skip_whitespace(s):
+  s.skipChars(" \t\n\r")
+
+def simplejson_decode_any(s):
+  simplejson_skip_whitespace(s)
+  if s.peek() == "{":
+    return simplejson_decode_dict(s)
+  if s.peek() == "[":
+    return simplejson_decode_array(s)
+  if s.peek() == '"':
+    return simplejson_decode_string(s)
+  if s.startswith("true"):
+    return simplejson_decode_fixed(s, "true", True)
+  if s.startswith("false"):
+    return simplejson_decode_fixed(s, "false", False)
+  if s.startswith("null"):
+    return simplejson_decode_fixed(s, "null", None)
+  if s.peek() in "0123456789.":
+    return simplejson_decode_number(s)
+  
+def simplejson_encode(obj):
+  if obj is None:
+    return "null"
+  if obj is True:
+    return "true"
+  if obj is False:
+    return "false"
+  if isinstance(obj, int) or isinstance(obj, long) or isinstance(obj, float):
+    return str(obj)
+  if isinstance(obj, basestring):
+    return '"' + repr(str(obj))[1:-1] + '"'
+  if isinstance(obj, list):
+    return "[" + (", ".join([simplejson_encode(el) for el in obj])) + "]"
+  if isinstance(obj, dict):
+    return "{" + (", ".join(["%s: %s" % (simplejson_encode(k), simplejson_encode(v)) for k, v in obj.iteritems()])) + "}"
+  raise Exception("Invalid type for json: %s" % type(obj))
+  
+class simplejson_Class:
+  def loads(self, s):
+    return simplejson_decode_any(simplejson_String(s))
+  def dumps(self, obj):
+    return simplejson_encode(obj)
+simplejson = simplejson_Class()

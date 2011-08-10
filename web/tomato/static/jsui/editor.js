@@ -811,12 +811,12 @@ var Device = IconElement.extend({
 				var html = $(frames["upload_target"].document).find("html").find("body").html();
 				var msg = $.parseJSON(html);
 				if (! msg) return;
-				if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
-					window.location.reload();
-				});
 				iframe.remove();
 				info.remove();
-				t.editor.followTask(msg.output);
+				if (! Boolean.parse(msg.success)) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+					window.location.reload();
+				});
+				else t.editor.followTask(msg.output);
 			});
 			var info = t.editor.infoMessage("Upload image", div);
 		});		
@@ -870,6 +870,19 @@ var KVMDevice = Device.extend({
 	}
 });
 
+var ProgDevice = Device.extend({
+	init: function(editor, name, pos) {
+		this._super(editor, name, "images/prog.png", {x: 32, y: 32}, pos);
+		this.form = new ProgDeviceWindow(this);
+	},
+	baseName: function() {
+		return "prog";
+	},
+	createAnother: function(pos) {
+		return new ProgDevice(this.editor, this.nextName(), pos);
+	}
+});
+
 var Editor = Class.extend({
 	init: function(size, editable) {
 		this.div = $("#editor");
@@ -885,6 +898,7 @@ var Editor = Class.extend({
 		this.hostGroups = [];
 		this.templatesOpenVZ = [];
 		this.templatesKVM = [];
+		this.templatesProg = [];
 		this.externalNetworks = {};
 		this.nextIPHintNumber = 0;
 		this.isLoading = false;
@@ -904,8 +918,10 @@ var Editor = Class.extend({
 		var destroy = new Date(top.getAttribute("destroy_timeout"));
 		var remove = new Date(top.getAttribute("remove_timeout"));
 		var day = 1000 * 60 * 60 * 24;
-		if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
-		if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if (stop < now) top.warnings.push("Topology has been stopped at " + top.getAttribute("stop_timeout") + " due to timeout"); 
+		else if ((stop-now) < 7 * day) top.warnings.push("Topology will be stopped at " + top.getAttribute("stop_timeout") + " due to timeout");
+		if (destroy < now) top.warnings.push("Topology has been destroyed at " + top.getAttribute("destroy_timeout") + " due to timeout"); 
+		else if ((destroy-now) < 7 * day) top.warnings.push("Topology will be destroyed at " + top.getAttribute("stop_timeout") + " due to timeout");
 		if ((remove-now) < 7 * day) top.warnings.push("Topology will be removed at " + top.getAttribute("stop_timeout") + " due to timeout");
 		this.elements.forEach(function(el){
 			if (el.paletteItem) return;
@@ -1126,6 +1142,9 @@ var Editor = Class.extend({
 	setTemplatesKVM: function(tpls) {
 		this.templatesKVM = tpls;
 	},
+	setTemplatesProg: function(tpls) {
+		this.templatesProg = tpls;
+	},
 	setExternalNetworks: function(enmap) {
 		this.externalNetworks = enmap;
 	},
@@ -1161,6 +1180,10 @@ var Editor = Class.extend({
 					break;
 				case "kvm": 
 					el = new KVMDevice(editor, name, pos);
+					devices[name] = el;
+					break;
+				case "prog": 
+					el = new ProgDevice(editor, name, pos);
 					devices[name] = el;
 					break;
 				case "hub": 
@@ -1279,12 +1302,14 @@ var Editor = Class.extend({
 		this.wizardRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.wizardRect.parent = this;
 		this.wizardRect.click(this._wizardClick);
-		y+=20;
+		y+=5;
 		this.openVZPrototype = new OpenVZDevice(this, "OpenVZ", {x: this.paletteWidth/2, y: y+=50});
 		this.openVZPrototype.paletteItem = true;
 		this.kvmPrototype = new KVMDevice(this, "KVM", {x: this.paletteWidth/2, y: y+=50});
 		this.kvmPrototype.paletteItem = true;
-		y+=30;
+		this.progPrototype = new ProgDevice(this, "Prog", {x: this.paletteWidth/2, y: y+=50});
+		this.progPrototype.paletteItem = true;
+		y+=20;
 		this.externalPrototype = new ExternalConnector(this, "External", {x: this.paletteWidth/2, y: y+=50});
 		this.externalPrototype.paletteItem = true;
 		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=50});
@@ -1293,11 +1318,11 @@ var Editor = Class.extend({
 		this.switchPrototype.paletteItem = true;
 		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: y+=40});
 		this.routerPrototype.paletteItem = true;
-		y+=30;
-		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-120, 32, 32);
-		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-83, "Layout");
+
+		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-100, 32, 32);
+		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-63, "Layout");
 		if (! isIE) this.layoutText.attr(this.defaultFont);
-		this.layoutRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-120, 32, 42).attr({fill:"#FFFFFF", opacity:0});
+		this.layoutRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-100, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.layoutRect.parent = this;
 		this.layoutRect.click(this._layoutClick);
 		this.eraser = this.g.image(basepath+"images/eraser.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
@@ -2035,6 +2060,14 @@ var KVMDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template");
+	}	
+});
+
+var ProgDeviceWindow = DeviceWindow.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesProg, "auto"), "template");
+		this.attrs.addField(new TextField("args", ""), "arguments");
 	}	
 });
 

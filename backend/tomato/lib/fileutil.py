@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import exceptions, util
 
 def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compressed=False):
 	import hostserver
@@ -48,10 +49,18 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 			chmod(src_host, src_path, mode)
 			
 def existsFile(host, file):
-	return "exists" in host.execute("[ -f \"%s\" ] && echo exists" % file)
+	try:
+		host.execute("[ -f %s ]" % util.escape(file))
+		return True
+	except exceptions.CommandError:
+		return False
 			
 def existsDir(host, file):
-	return "exists" in host.execute("[ -d \"%s\" ] && echo exists" % file)
+	try:
+		host.execute("[ -d %s ]" % util.escape(file))
+		return True
+	except exceptions.CommandError, exc:
+		return False
 
 def fetch(host, url, dst):
 	return host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (dst, url))

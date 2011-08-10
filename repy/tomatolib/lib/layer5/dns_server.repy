@@ -1,0 +1,40 @@
+
+#ifndef dns_server_loaded
+#define dns_server_loaded
+
+#include <layer4/udp_server.repy>
+#include <layer5/dns_proto.repy>
+
+class DNSServer(UDPServer):
+    def __init__(self, data, ttl, **kwargs):
+        UDPServer.__init__(self, **kwargs)
+        UDPServer.bind(self, UDP_PORT_DNS, self._dns)
+        self.data = data
+        self.ttl = ttl
+    def _find(self, qname, qtype, qclass):
+        for (k, v) in self.data.iteritems():
+            if k[0] and k[0] != qname:
+                continue
+            if k[1] and k[1] != qtype:
+                continue
+            if k[2] and k[2] != qclass:
+                continue
+            return v
+    def _dns(self, udp, ip, ethernet, dev):
+        dns = dns_decode(udp.payload)
+        answers = []
+        for q in dns.question:
+            a = Header()
+            a.name = q.qname
+            a.type_ = q.qtype
+            a.class_ = q.qclass
+            a.ttl = self.ttl
+            a.rdata = self._find(q.qname, q.qtype, q.qclass)
+            if a.rdata:
+                echo("LOOKUP %s -> %s" % (q.qname, repr(a.rdata)))
+                answers.append(a)
+        DNSServer.send(self, ip.src, udp.src, id=dns.id, qr=DNS_QR_REPLY, aa=1, ra=1, question=dns.question, answer=answers)
+    def send(self, dst, dstport, **kwargs):
+        UDPServer.send(self, UDP_PORT_DNS, dst, dstport, dns_encode(**kwargs))
+        
+#endif

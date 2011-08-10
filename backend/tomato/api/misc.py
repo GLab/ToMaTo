@@ -45,7 +45,7 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 
 	Returns: task details
 	"""
-	return tasks.processes[task_id].dict(True)
+	return tasks.getStatus(task_id)
 
 def task_run(task_name, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""

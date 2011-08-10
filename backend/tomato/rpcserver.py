@@ -77,6 +77,16 @@ class APIServer(xmlrpc.XMLRPC):
 			raise fault.wrap(exc)
 
 	def render(self, request):
+		try:
+			return self.handle(request)
+		except xmlrpc.Fault, exc:
+			fault.log(exc)
+			raise
+		except Exception, exc:
+			fault.log(exc)
+			raise fault.wrap(exc)
+		
+	def handle(self, request):
 		username=request.getUser()
 		passwd=request.getPassword()
 		user=self.login(username, passwd)

@@ -8,13 +8,14 @@ Standards-Version: 3.8.3
 Package: tomato-host
 Architecture: all
 Depends: ${misc:Depends}, pve-qemu-kvm, vzctl, bridge-utils, iproute,
- lsof, vzdump, tinc, ipfw3-2.6.32-4-pve, timeout, curl, tomato-hostserver (>=0.4), ucspi-tcp,
- rdiff, socat, tcpdump, vncterm, tcpslice
+ lsof, vzdump, tinc, ipfw3-2.6.32-5-pve, timeout, curl, tomato-hostserver (>=0.5), ucspi-tcp,
+ rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.2)
 Description: Meta package to install packages needed for tomato
  The following dependencies are pulled in:
   * Tinc: tinc
   * KVM: pve-qemu-kvm, ucspi-tcp, socat
   * OpenVZ: vzctl, vzdump, vncterm
+  * Repy: tomato-repy
   * Custom packages: tomato-hostserver, ipfw3-2.6.32-4-pve
   * Not part of Proxmox VE: timeout, curl, rdiff, tcpdump, tcpslice
   * Part of Proxmox VE: bridge-utils, iproute, lsof

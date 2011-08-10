@@ -23,6 +23,7 @@ from connectors.vpn import TincConnector, TincConnection #@UnusedImport
 from devices import Device, Interface #@UnusedImport
 from devices.kvm import KVMDevice #@UnusedImport
 from devices.openvz import OpenVZDevice, ConfiguredInterface #@UnusedImport
+from devices.prog import ProgDevice #@UnusedImport
 from topology import Topology, Permission #@UnusedImport
 from fault import Error #@UnusedImport
 from hosts import Host #@UnusedImport

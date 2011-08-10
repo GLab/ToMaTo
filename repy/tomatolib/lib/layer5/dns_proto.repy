@@ -1,0 +1,84 @@
+
+#ifndef dns_proto_loaded
+#define dns_proto_loaded
+
+UDP_PORT_DNS = 53
+
+DNS_QR_REQUEST = 0
+DNS_QR_REPLY = 1
+
+def dns_read_label(p, pos, allowPointer):
+    label = ""
+    while True:
+        l = ord(p[pos])
+        if l >= 192 and allowPointer: #offset into packet, short int offset value
+            offs = struct.unpack("!H", p[pos:pos+2]) & 0x3fff
+            pos += 2
+            return label + dns_read_label(p, offs, False)
+        # 1 byte length of domain part + data
+        pos += 1
+        if not l: #last part is empy
+            return (label, pos)
+        label += p[pos:pos+l] + "."
+        pos += l
+
+def dns_decode(p):
+    h = Header()
+    (h.id, flags1, flags2, qdcount, ancount, nscount, arcount) = struct.unpack("!HBBHHHH", p[0:12])
+    h.qr = (flags1 >> 7) & 0x1
+    h.opcode = (flags1 >> 3) & 0xf
+    h.aa = (flags1 >> 2) & 0x1
+    h.tc = (flags1 >> 1) & 0x1
+    h.rd = flags1 & 0x1
+    h.ra = (flags2 >> 7) & 0x1
+    h.z = (flags2 >> 4) & 0x7
+    h.rcode = flags2 & 0xf
+    pos = 12
+    h.question = []
+    for i in range(0, qdcount):
+        q = Header()
+        (q.qname, pos) = dns_read_label(p, pos, False)
+        (q.qtype, q.qclass) = struct.unpack("!HH", p[pos:pos+4])
+        pos += 4
+        h.question.append(q)
+    other = []
+    for i in range(0, ancount+nscount+arcount):
+        o = Header()
+        (o.name, pos) = dns_read_label(p, pos, True)
+        (o.type_, o.class_, o.ttl, rdlen) = struct.unpack("!HHIH", p[pos:pos+10])
+        pos += 10
+        o.rdata = p[pos:pos+rdlen]
+        pos += rdlen
+        other.append(o)
+    h.answer = other[0:ancount]
+    h.authority = other[ancount:ancount+nscount]
+    h.additional = other[ancount+nscount:ancount+nscount+arcount]
+    return h
+
+def dns_encode(id, qr, question=[], answer=[], authority=[], additional=[], rcode=0, opcode=0, aa=0, tc=0, rd=1, ra=0, z=0):
+    flags1 = ((qr & 0x1) << 7) | ((opcode & 0xf) << 3) | ((aa & 0x1) << 2) | ((tc & 0x1) << 1) | (rd & 0x1)
+    flags2 = ((ra & 0x1) << 7) | ((z & 0x7) << 4) | (rcode & 0xf)
+    p = struct.pack("!HBBHHHH", id, flags1, flags2, len(question), len(answer), len(authority), len(additional))
+    for q in question:
+        if not q.qname.endswith("."):
+            q.qname += "."
+        p += "".join([(chr(len(part)) + part) for part in q.qname.split(".")])
+        p += struct.pack("!HH", q.qtype, q.qclass)
+    for o in answer + authority + additional:
+        if not o.name.endswith("."):
+            o.name += "."
+        parts = o.name.split(".")
+        while parts:
+            name_bytes = "".join([(chr(len(part)) + part) for part in parts])
+            index = p.find(name_bytes)
+            if index >= 0:
+                p += struct.pack("!H", index | 0xc000)
+                break
+            else:
+                p += chr(len(parts[0])) + parts[0]
+                parts = parts[1:]
+        p += struct.pack("!HHIH", o.type_, o.class_, o.ttl, len(o.rdata) )
+        p += o.rdata
+    return p
+    
+#endif

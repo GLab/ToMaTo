@@ -1,0 +1,21 @@
+
+#ifndef ip_util_loaded
+#define ip_util_loaded
+
+def ip_to_str(s):
+    return ".".join([str(ord(b)) for b in s])
+
+def str_to_ip(s):
+    return "".join([chr(int(i)) for i in s.split(".")])
+
+def range_to_ips(s):
+    r = s.split(".")
+    i = 0
+    while(i < 4):
+       if "-" in r[i]:
+           (frm, to) = r[i].split("-")
+           return [range_to_ips(".".join(r[:i] + [str(ip)] + r[i+1:])) for ip in range(int(frm), int(to)+1)]
+       i+=1
+    return str_to_ip(s)
+
+#endif

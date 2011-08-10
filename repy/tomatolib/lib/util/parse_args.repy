@@ -1,0 +1,15 @@
+
+#ifndef parse_args_loaded
+#define parse_args_loaded
+
+def parse_args(defaults):
+    options = {}
+    if defaults:
+        options = defaults
+    for arg in callargs:
+        for a in arg.split(","):
+            (key, value) = a.split("=")
+            options[key]=value
+    return options
+
+#endif

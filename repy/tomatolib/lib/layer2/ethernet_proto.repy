@@ -1,0 +1,16 @@
+
+#ifndef ethernet_proto_loaded
+#define ethernet_proto_loaded
+
+def ethernet_decode(p):
+    h = Header()
+    h.dst = p[0:6]
+    h.src = p[6:12]
+    h.type = struct.unpack("!H", p[12:14])[0]
+    h.payload = p[14:]    
+    return h
+
+def ethernet_encode(dst, src, type, payload):
+    return dst + src + struct.pack("!H", type) + payload
+
+#endif

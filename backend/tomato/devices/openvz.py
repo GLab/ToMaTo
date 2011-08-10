@@ -24,7 +24,7 @@ from tomato.topology import Permission
 from django.db import models
 import hashlib
 
-from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db
+from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db, exceptions
 
 class OpenVZDevice(Device):
 
@@ -77,7 +77,10 @@ class OpenVZDevice(Device):
 
 	def execute(self, cmd):
 		#not asserting state==Started because this is called during startup
-		return vzctl.execute(self.host, self.getVmid(), cmd)
+		try:
+			return vzctl.execute(self.host, self.getVmid(), cmd)
+		except exceptions.CommandError, exc:
+			raise exceptions.CommandError(self.name, cmd, exc.errorCode, exc.errorMessage)
 
 	def getCapabilities(self, user):
 		capabilities = Device.getCapabilities(self, user)
@@ -98,7 +101,11 @@ class OpenVZDevice(Device):
 
 	def _runAction(self, action, attrs, direct):
 		if action == "execute":
-			return self.execute(attrs["cmd"])
+			fault.check("cmd" in attrs, "Command not given")
+			try:
+				return self.execute(attrs["cmd"])
+			except exceptions.CommandError, exc:
+				raise fault.new(str(exc), fault.USER_ERROR)
 		else:
 			return Device._runAction(self, action, attrs, direct)
 
@@ -167,7 +174,8 @@ class OpenVZDevice(Device):
 		return self._adaptTaskset(taskset)
 
 	def _stopVnc(self):
-		assert self.host and self.getVmid() and self.getVncPort()
+		if not self.host or not self.getVmid() or not self.getVncPort():
+			return
 		vzctl.stopVnc(self.host, self.getVmid(), self.getVncPort())
 		self.host.giveId("port", self.getVncPort())
 		self.setVncPort(None)
@@ -414,9 +422,9 @@ class OpenVZDevice(Device):
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
-		file = hostserver.randomFilename(self.host)
+		file = self.host.getHostServer().randomFilename()
 		vzctl.copyImage(self.host, self.getVmid(), file, forceGzip=True)
-		return hostserver.downloadGrant(self.host, file, filename)
+		return self.host.getHostServer().downloadGrant(file, filename)
 
 	def getResourceUsage(self):
 		disk = 0
@@ -425,7 +433,13 @@ class OpenVZDevice(Device):
 		if self.host and self.getVmid():
 			disk = vzctl.getDiskUsage(self.host, self.getVmid())
 			memory = vzctl.getMemoryUsage(self.host, self.getVmid())
-		return {"disk": disk, "memory": memory, "ports": ports}		
+		traffic = 0
+		if self.state == State.STARTED:
+			for iface in self.interfaceSetAll():
+				dev = self.interfaceDevice(iface)
+				traffic += ifaceutil.getRxBytes(self.host, dev)
+				traffic += ifaceutil.getTxBytes(self.host, dev)
+		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 
 	def getIdUsage(self, host):
 		ids = Device.getIdUsage(self, host)

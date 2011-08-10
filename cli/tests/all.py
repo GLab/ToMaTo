@@ -7,6 +7,8 @@ import packetCapturing
 import images
 import topInformation
 import migrate
+import periodicTasks
+import programmableDevices
 
 if __name__ == "__main__":
 	from tests.top.simple import top
@@ -33,6 +35,12 @@ if __name__ == "__main__":
 
 		print "testing packet capturing..."
 		packetCapturing.simpleTop_checkPacketCapturing(topId)
+
+		print "testing programmable devices..."
+		programmableDevices.simpleTop_checkProgrammableDevices(topId)
+
+		print "testing periodic tasks..."
+		periodicTasks.checkPeriodicTasks()
 
 		print "destroying topology..."
 		top_action(topId, "destroy", direct=True)

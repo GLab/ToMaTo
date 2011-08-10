@@ -18,26 +18,46 @@
 from django.db import models
 from django.core import validators
 
-from tomato.lib import db
+import os
 
-class Template(models.Model):
+from tomato import attributes, config
+from tomato.lib import db, fileutil, hostserver
+
+hostServer = None
+if config.TEMPLATE_HOSTSERVER:
+	conf = config.TEMPLATE_HOSTSERVER
+	hostServer = hostserver.HostServer(conf["HOST"], conf["PORT"], conf["BASEDIR"], conf["SECRET_KEY"])
+	
+class Template(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=100, validators=[db.templateValidator])
 	type = models.CharField(max_length=12, validators=[db.nameValidator])
 	default = models.BooleanField(default=False)
-	download_url = models.CharField(max_length=255, validators=[validators.URLValidator(verify_exists=True)])
-		
+	attrs = db.JSONField(default={})
+			
+	def getDownloadUrl(self):
+		if self.getAttribute("on_hostserver", False):
+			return hostServer.downloadGrant(self.getFilename(), filename=self.getFilename()) 
+		return self.getAttribute("external_url")
+			
+	def getUploadUrl(self):
+		return hostServer.uploadGrant(self.getFilename()) 
+
+	def setExternalUrl(self, url):
+		self.setAttribute("external_url", url)			
+			
 	class Meta:
 		db_table = "tomato_template"
 		app_label = 'tomato'
 		unique_together = (("name", "type"),)
 		
-	def init(self, name, ttype, download_url):
+	def init(self, name, ttype, external_url=None):
 		import re
 		fault.check(re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name), "Name must be in the format NAME-VERSION")
-		fault.check(not name.endswith(".tar.gz") and not name.endswith(".qcow2"), "Name must not contain file extensions")
+		fault.check(not name.endswith(".repy") and not name.endswith(".tar.gz") and not name.endswith(".qcow2"), "Name must not contain file extensions")
 		self.name = name
 		self.type = ttype
-		self.download_url = download_url
+		if external_url:
+			self.setExternalUrl(external_url)
 		self.save()
 
 	def setDefault(self):
@@ -45,30 +65,51 @@ class Template(models.Model):
 		self.default=True
 		self.save()
 		
+	def getFileExt(self):
+		return {"kvm": ".qcow2", "openvz": ".tar.gz", "prog": ".repy"}.get(self.type)
+		
 	def getFilename(self):
-		if self.type == "kvm":
-			return "/var/lib/vz/template/qemu/%s.qcow2" % self.name
-		if self.type == "openvz":
-			return "/var/lib/vz/template/cache/%s.tar.gz" % self.name
+		return self.name + self.getFileExt()
+	
+	def getPath(self):
+		dir = {"kvm": "qemu", "openvz": "cache", "prog": "repy"}.get(self.type)
+		return "/var/lib/vz/template/%s/%s" % (dir, self.getFilename())
 	
 	def uploadToHost(self, host):
 		if host.clusterState() == ClusterState.NODE:
 			return
-		dst = self.getFilename()
-		if self.download_url:
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": self.download_url, "filename": dst})
+		dst = self.getPath()
+		url = self.getDownloadUrl()
+		if url:
+			fileutil.mkdir(host, os.path.dirname(dst))
+			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": url, "filename": dst})
+
+	def configure(self, attributes):
+		if "external_url" in attributes:
+			self.setExternalUrl(attributes["external_url"])
+		if "on_hostserver" in attributes:
+			self.setAttribute("on_hostserver", attributes["on_hostserver"])
+		if "notes" in attributes:
+			self.setAttribute("notes", attributes["notes"])
 
 	def __unicode__(self):
 		return "Template(type=%s,name=%s,default=%s)" %(self.type, self.name, self.default)
 			
-	def toDict(self):
+	def toDict(self, auth=False):
 		"""
 		Prepares a template for serialization.
 			
 		@return: a dict containing information about the template
 		@rtype: dict
 		"""
-		return {"name": self.name, "type": self.type, "default": self.default, "url": self.download_url}
+		res = {"name": self.name, "type": self.type, "default": self.default,
+			"external_url": self.getAttribute("external_url"),
+			"on_hostserver": self.getAttribute("on_hostserver", False),
+			"notes": self.getAttribute("notes", "")}
+		if auth:
+			res["download_url"] = self.getDownloadUrl()
+			res["upload_url"] = self.getUploadUrl()
+		return res
 
 def getAll(ttype=None):
 	tpls = Template.objects.all() # pylint: disable-msg=E1101
@@ -82,18 +123,32 @@ def findName(ttype, name):
 	except: #pylint: disable-msg=W0702
 		return getDefault(ttype)
 
+def getMap(auth):
+	map = {}
+	for tpl in getAll():
+		if not tpl.type in map:
+			map[tpl.type] = []
+		map[tpl.type].append(tpl.toDict(auth)) 
+	return map
+
 def get(ttype, name):
 	return Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
 
-def add(name, template_type, url):
-	tpl = Template.objects.create(name=name, type=template_type, download_url=url) # pylint: disable-msg=E1101
+def add(type, name, attributes):
+	tpl = Template.objects.create(name=name, type=type) # pylint: disable-msg=E1101
+	tpl.configure(attributes)
 	proc = tasks.Process("upload-template")
 	for host in getAllHosts():
 		proc.add(tasks.Task(host.name, fn=tpl.uploadToHost, args=(host,)))
 	return proc.start()
+
+def change(type, name, attributes):
+	tpl = get(type, name)
+	tpl.configure(attributes)
 	
-def remove(template_type, name):
-	Template.objects.filter(type=template_type, name=name).delete() # pylint: disable-msg=E1101
+def remove(type, name):
+	#FIXME: actually delete hostserver file
+	Template.objects.filter(type=type, name=name).delete() # pylint: disable-msg=E1101
 	
 def getDefault(ttype):
 	tpls = Template.objects.filter(type=ttype, default=True) # pylint: disable-msg=E1101
@@ -101,7 +156,7 @@ def getDefault(ttype):
 		return tpls[0].name
 	else:
 		return None
-	
+
 # keep internal imports at the bottom to avoid dependency problems
 from tomato.hosts import getAll as getAllHosts
 from tomato import fault
