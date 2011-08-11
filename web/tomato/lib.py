@@ -18,7 +18,7 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
-import xmlrpclib, json
+import xmlrpclib, json, urllib
 from settings import *
 
 def getauth(request):
@@ -46,11 +46,14 @@ def getapi(request):
 	if not auth:
 		return None
 	(username, password) = auth
+	username = urllib.quote_plus(username)
+	password = urllib.quote_plus(password)
 	try:
 		api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
 		api.account()
 		return api
 	except Exception, exc:
+		print exc
 		import socket
 		if isinstance(exc, socket.error):
 			import os
