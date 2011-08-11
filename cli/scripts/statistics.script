@@ -1,22 +1,22 @@
-print "%s Topologies" % len(top_list("","",""))
+tops = top_list()
+print "%s Topologies" % len(tops)
 print "%s Hosts" % len(host_list())
 devs=0
 cons=0
 res={}
-for t in top_list("","",""):
+for t in tops:
 	attrs = t["attrs"]
 	devs += int(attrs["device_count"])
 	cons += int(attrs["connector_count"])
-	for a in attrs:
-		if a.startswith("resources_"):
-			name = a[10:]
-			val = float(attrs[a])
-			if name in res:
-				res[name] += val
+	if t.get("resources"):
+		for key, value in t["resources"].iteritems():
+			value = float(value)
+			if key in res:
+				res[key] += value
 			else:
-				res[name] = val
+				res[key] = value
 print "%s Devices" % devs
 print "%s Connectors" % cons
-print "%s GB Disk space" % (res["disk"]/(1<<30))
-print "%s GB Ram space" % (res["memory"]/(1<<30))
-print "%s GB Traffic" % (res["traffic"]/(1<<30))
+print "%.2f GB Disk space" % (res["disk"]/(1<<30))
+print "%.2f GB Ram space" % (res["memory"]/(1<<30))
+print "%.2f GB Traffic" % (res["traffic"]/(1<<30))
