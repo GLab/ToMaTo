@@ -18,10 +18,9 @@
 import exceptions, util
 
 def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compressed=False):
-	import hostserver
 	if compressed:
-		src = hostserver.randomFilename(src_host)
-		dst = hostserver.randomFilename(dst_host)
+		src = src_host.getHostServer().randomFilename()
+		dst = dst_host.getHostserver().randomFilename()
 		compress(src_host, src_path, src)
 	else:
 		if direct:
@@ -29,11 +28,11 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 			dst = dst_path
 			mode = src_host.execute("stat -c %%a %s" % src).strip()
 		else:
-			dst = hostserver.randomFilename(dst_host)
-			src = hostserver.randomFilename(src_host)
+			dst = dst_host.getHostServer().randomFilename()
+			src = src_host.getHostServer().randomFilename()
 			copy(src_host, src_path, src)
 	chmod(src_host, src, 644)
-	url = hostserver.downloadGrant(src_host, src, "file")
+	url = src_host.getHostServer().downloadGrant(src, "file")
 	res = fetch(dst_host, url, dst)
 	assert existsFile(dst_host, dst), "Failure to transfer file: %s" % res
 	if compressed:
@@ -63,7 +62,7 @@ def existsDir(host, file):
 		return False
 
 def fetch(host, url, dst):
-	return host.execute("curl -f -o \"%s\" \"%s\"; echo $?" % (dst, url))
+	return host.execute("curl -f -o \"%s\" '%s'; echo $?" % (dst, url))
 
 def move(host, src, dst):
 	return host.execute("mv \"%s\" \"%s\"" % (src, dst))
