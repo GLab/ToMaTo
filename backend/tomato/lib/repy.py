@@ -73,7 +73,8 @@ def start(host, vmid, ifaces, args=[]):
 		waitForInterface(host, vmid, i)
 
 def waitForInterface(host, vmid, iface):
-	util.waitFor(lambda :ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface)))
+	util.waitFor(lambda :ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface)), maxWait=2)
+	assert ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface)), "Interface does not exist"
 
 def stop(host, vmid):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
