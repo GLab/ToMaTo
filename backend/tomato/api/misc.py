@@ -115,7 +115,8 @@ def resource_usage_by_topology(user=None):
 		d = top.resources()
 		if d:
 			d.update(top_id=top.id)
-			usage[top.name]=d
+			name = "%s [%d]" % (top.name, top.id)
+			usage[name]=d
 	return util.xml_rpc_sanitize(usage)
 
 def physical_links_get(src_group, dst_group, user=None): #@UnusedVariable, pylint: disable-msg=W0613
