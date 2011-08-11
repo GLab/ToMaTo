@@ -291,7 +291,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		try:
 			res = self._exec(cmd)
 		except exceptions.CommandError, exc:
-			raise exceptions.ConnectError(exc.hostname, exc.errorCode, exc.errorMessage)
+			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage)
 		res = util.removeControlChars(res) #might contain funny characters
 		res = res.splitlines()
 		retCode = int(res[-1].strip())
