@@ -89,6 +89,18 @@ class ReloadMixin:
 				setattr(self, field, getattr(from_db, field)) #update this instances info from returned Model
 			except:
 				continue
+
+def commit_after(fn):
+	def call(*args, **kwargs):
+		try:
+			return fn(*args, **kwargs)
+		finally:
+			if transaction.is_dirty():
+				transaction.commit()
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
 						
 nameValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_-]{2,}$")
 templateValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$")

@@ -22,9 +22,9 @@ import tomato.lib.log
 import xmlrpclib, traceback
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, reactor, ssl
-from django.db import transaction
 
 from tomato import fault
+from tomato.lib import db
 
 class Introspection():
 	def __init__(self, papi):
@@ -65,6 +65,7 @@ class APIServer(xmlrpc.XMLRPC):
 		else:
 			self.logger.log(function.__name__, bigmessage=str(args)+"\n", user=user.name)
 
+	@db.commit_after
 	def execute(self, function, args, user):
 		try:
 			self.log(function, args, user)
@@ -73,7 +74,6 @@ class APIServer(xmlrpc.XMLRPC):
 			fault.log(exc)
 			raise
 		except Exception, exc:
-			transaction.commit() #commit anyhow
 			fault.log(exc)
 			self.logger.log("Exception: %s" % exc, user=user.name)
 			raise fault.wrap(exc)

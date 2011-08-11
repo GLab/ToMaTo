@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import uuid, os, threading
-import util, atexit, time, log
+import util, db, atexit, time, log
 
 from tomato import config, fault
 
@@ -132,6 +132,7 @@ class Task():
 		except Exception, exc:
 			import traceback
 			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+	@db.commit_after
 	def run(self):
 		set_current_task(self)
 		self.started = time.time()

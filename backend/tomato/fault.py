@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.db import models
+from django.db import models, transaction
 import xmlrpclib, traceback
 
 class Error(models.Model):
@@ -32,9 +32,9 @@ def errors_all():
 def errors_add(title, message):
 	try:
 		Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
-	except Exception, exc:
-		#log error to console but continue
-		traceback.print_exc(exc)
+	except: #just commit the old transaction and try again
+		transaction.commit()
+		Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
 		
 def errors_remove(error_id):
 	if not error_id:
