@@ -21,7 +21,7 @@ from django.core import validators
 import os
 
 from tomato import attributes, config
-from tomato.lib import db, fileutil, hostserver
+from tomato.lib import db, fileutil, hostserver, util
 
 hostServer = None
 if config.TEMPLATE_HOSTSERVER:
@@ -93,7 +93,7 @@ class Template(attributes.Mixin, models.Model):
 		url = self.getDownloadUrl()
 		if url:
 			fileutil.mkdir(host, os.path.dirname(dst))
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": url, "filename": dst})
+			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
 
 	def configure(self, attributes):
 		if "external_url" in attributes:
