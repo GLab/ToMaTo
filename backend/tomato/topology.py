@@ -145,9 +145,10 @@ class Topology(attributes.Mixin, models.Model):
 
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
+		proc = process.start(direct)
 		self.task = process.id
 		self.save()
-		return process.start(direct)
+		return proc
 
 	def deviceSetAll(self):
 		return self.device_set.all() # pylint: disable-msg=E1101

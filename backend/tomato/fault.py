@@ -30,8 +30,12 @@ def errors_all():
 	return Error.objects.all() # pylint: disable-msg=E1101
 
 def errors_add(title, message):
-	Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
-
+	try:
+		Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
+	except Exception, exc:
+		#log error to console but continue
+		traceback.print_exc(exc)
+		
 def errors_remove(error_id):
 	if not error_id:
 		Error.objects.all().delete()
