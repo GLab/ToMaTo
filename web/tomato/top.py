@@ -43,7 +43,7 @@ def index(api, request):
 	owner_filter = ""
 	if request.REQUEST.has_key("owner_filter"):
 		owner_filter=request.REQUEST["owner_filter"]
-	toplist=api.top_list(owner_filter, host_filter, "user")
+	toplist=api.top_list(owner_filter, host_filter)
 	return render_to_response("top/index.html", {'top_list': toplist})
 
 @wrap_rpc

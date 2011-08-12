@@ -29,19 +29,19 @@ def top_info(top_id, user=None):
 		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
+	_top_access(top, "user", user)
 	return top.toDict(user, True)
 
-def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
+def top_list(owner_filter=None, host_filter=None, user=None):
 	"""
 	Returns brief information about topologies. The set of topologies that will
-	be returned can be filtered by owner, by host (affected by the topology) 
-	and by access level of the current user. All filters apply subtractively.
-	If a filter has the value "" it is not applied.
+	be returned can be filtered by owner and by host (affected by the topology) 
+	All filters apply subtractively. If a filter has the value "" it is not 
+	applied.
 	
 	Parameters:
 		string owner_filter: name of the owner to filter by or ""
 		string host_filter: name of the host to filter by or ""
-		string access_filter: access level to filter by (either "user" or "manager") or ""
 
 	Returns: a list of brief information about topologies
 	""" 
@@ -55,7 +55,7 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 	if host_filter:
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:
-		if (not access_filter) or t.checkAccess(access_filter, user):
+		if t.checkAccess("user", user):
 			tops.append(t.toDict(user, False))
 	return tops
 	
