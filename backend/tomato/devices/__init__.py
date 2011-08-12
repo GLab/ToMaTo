@@ -230,6 +230,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				properties["hostgroup"] = ""
 		if "pos" in properties:
 			self.setAttribute("pos", properties["pos"])
+		self.setPrivateAttributes(properties)
 		self.save()
 
 	def updateResourceUsage(self):
@@ -256,6 +257,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 			"interfaces": dict([[i.name, i.upcast().toDict(user)] for i in self.interfaceSetAll()]),
 			"capabilities": self.getCapabilities(user)
 		}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 	
 	def uploadImageGrant(self, redirect):
@@ -310,7 +312,7 @@ class Interface(attributes.Mixin, models.Model):
 			return False	
 	
 	def configure(self, properties):
-		pass
+		self.setPrivateAttributes(properties)
 
 	def upcast(self):
 		if self.isConfigured():
@@ -328,6 +330,7 @@ class Interface(attributes.Mixin, models.Model):
 		
 	def toDict(self, user):
 		res = {"attrs": {"name": self.name}, "capabilities": self.getCapabilities(user)}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 
 	def connectToBridge(self):

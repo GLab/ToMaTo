@@ -210,6 +210,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		if "pos" in properties:
 			self.setAttribute("pos", properties["pos"])
 		self.save()
+		self.setPrivateAttributes(properties)
 
 	def getIdUsage(self, host):
 		ids = {}
@@ -230,6 +231,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 			"connections": dict([[str(c.interface), c.upcast().toDict(user)] for c in self.connectionSetAll()]),
 			"capabilities": self.getCapabilities(user)
 			}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 
 
@@ -311,7 +313,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		return str(self.connector) + "<->" + str(self.interface)
 
 	def configure(self, properties):
-		pass
+		self.setPrivateAttributes(properties)
 
 	def getCapabilities(self, user):
 		return {
@@ -323,4 +325,5 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}}
 		if user:
 			res["capabilities"] = self.getCapabilities(user)
+		res["attrs"].update(self.getPrivateAttributes())
 		return res

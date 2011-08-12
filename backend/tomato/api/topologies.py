@@ -100,6 +100,9 @@ def top_modify(top_id, mods, direct=False, user=None):
 		"topology-rename": Renames the topology. The new name must be contained
 			in the properties dict as "name". Element and subelement parameters
 			are ignored.
+		"topology-configure": Configures the topology. The entries of the 
+			properties dict will be used for configuration. The element and
+			subelement parameters are ignored.
 		"device-create": Creates a new device with a given type and name. The 
 			name of the device must be contained in the properties dict as 
 			"name" (not in the element attribute!). The type of the device must

@@ -36,6 +36,8 @@ class Modification():
 		if self.type == "topology-rename":
 			top.name = self.properties["name"]
 			top.save()
+		elif self.type == "topology-configure":
+			top.configure(self.properties)
 		elif self.type == "device-create":
 			dtype = self.properties["type"]
 			if dtype == "kvm":

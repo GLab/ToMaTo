@@ -389,6 +389,9 @@ class Topology(attributes.Mixin, models.Model):
 		res["traffic"] = res.get("traffic", 0)/2 #traffic is counted on devices and connectors
 		self.setAttribute("resources", res)
 		
+	def configure(self, properties):
+		self.setPrivateAttributes(properties)
+					
 	@xmlRpcSafe
 	def toDict(self, user, detail):
 		res = {"id": self.id, 
@@ -406,6 +409,7 @@ class Topology(attributes.Mixin, models.Model):
 			res["permissions"][str(self.owner)]="owner"
 			res["capabilities"] = self.getCapabilities(user)
 			res["resources"] = util.xml_rpc_sanitize(self.resources())
+			res["attrs"].update(self.getPrivateAttributes())
 		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
 			if task:
