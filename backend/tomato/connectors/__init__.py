@@ -207,9 +207,6 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		return name
 
 	def configure(self, properties):
-		if "pos" in properties:
-			self.setAttribute("pos", properties["pos"])
-		self.save()
 		self.setPrivateAttributes(properties)
 
 	def getIdUsage(self, host):
@@ -224,9 +221,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	@xmlRpcSafe
 	def toDict(self, user):
-		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
-					"pos": self.getAttribute("pos"),
-				},
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
 			"resources": util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"connections": dict([[str(c.interface), c.upcast().toDict(user)] for c in self.connectionSetAll()]),
 			"capabilities": self.getCapabilities(user)

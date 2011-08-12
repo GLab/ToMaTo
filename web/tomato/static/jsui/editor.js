@@ -163,11 +163,11 @@ var IconElement = NetElement.extend({
 			if (sel.length == 0 || sel.indexOf(p) < 0) {
 				p.move(p.correctPos(p.pos));
 				p.lastMoved = new Date();
-				p.setAttribute("pos", (p.pos.x-p.editor.paletteWidth)+","+p.pos.y);
+				p.setAttribute("_pos", (p.pos.x-p.editor.paletteWidth)+","+p.pos.y);
 			} else for (var i = 0; i < sel.length; i++) if(sel[i].isDevice || sel[i].isConnector) {
 				sel[i].move(sel[i].correctPos(sel[i].pos));
 				sel[i].lastMoved = new Date();
-				sel[i].setAttribute("pos", (sel[i].pos.x-sel[i].editor.paletteWidth)+","+sel[i].pos.y);
+				sel[i].setAttribute("_pos", (sel[i].pos.x-sel[i].editor.paletteWidth)+","+sel[i].pos.y);
 			}
 			if(tr) p.editor.ajaxModifyCommit();
 		}
@@ -572,7 +572,7 @@ var Connector = IconElement.extend({
 		this.isConnector = true;
 		this.IPHintNumber = this.editor.nextIPHintNumber++;
 		this.nextIPHintNumber = 1;
-		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), _pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
 	},
 	getElementType: function () {
 		return "connector";
@@ -718,7 +718,7 @@ var Device = IconElement.extend({
 		this.interfaces = [];
 		this.paint();
 		this.isDevice = true;
-		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
+		this.editor.ajaxModify([this.modification("create", {type: this.baseName(), _pos:(pos.x-editor.paletteWidth)+","+pos.y, name: name})], function(res) {});
 	},
 	getElementType: function () {
 		return "device";
@@ -1169,7 +1169,7 @@ var Editor = Class.extend({
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
-			var pos = attrs.pos ? attrs.pos.split(",") : [0,0];
+			var pos = attrs._pos ? attrs._pos.split(",") : [0,0];
 			var pos = {x: parseInt(pos[0])+editor.paletteWidth, y: parseInt(pos[1])};
 			var type = attrs.type;
 			var el;
@@ -1509,7 +1509,7 @@ var Editor = Class.extend({
 		var tr = this.ajaxModifyBegin();
 		for (var i=0; i<els.length;i++) {
 			delete els[i].velocity;
-			els[i].setAttribute("pos", (els[i].pos.x-this.paletteWidth)+","+els[i].pos.y);
+			els[i].setAttribute("_pos", (els[i].pos.x-this.paletteWidth)+","+els[i].pos.y);
 		}
 		if (tr) this.ajaxModifyCommit();
 	}
