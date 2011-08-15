@@ -613,6 +613,15 @@ var Connector = IconElement.extend({
 		for (var i = 0; i < this.connections.length; i++) if (this.connections[i].dev == dev) return true;
 		return false;
 	},
+	externalAccessSupported: function() {
+		return this.capabilities && this.capabilities.other && this.capabilities.other.external_access;
+	},
+	showExternalAccessInfo: function() {
+		var host = this.getAttribute("external_access_host");
+		var port = this.getAttribute("external_access_port");
+		var passwd = this.getAttribute("external_access_password");
+		this.editor.infoMessage("External access information for " + this.name, '<p>Config file vtund.conf: <br/><pre>client {\n  password '+passwd+';\n  type ether;\n  proto udp;\n  up {\n    ip "link set %% up";\n  }\n}</pre><p>Command: <pre>vtund -f vtund.conf -P '+port+' client '+host+'</pre></p>');
+	},
 	createConnection: function(dev) {
 		var con = new Connection(this.editor, this, dev);
 		this.connections.push(con);
@@ -1928,6 +1937,18 @@ var DeviceControlPanel = ControlPanel.extend({
 	}	
 });
 
+var ConnectorControlPanel = ControlPanel.extend({
+	load: function() {
+		this._super();
+		var t = this;
+		if (this.obj.externalAccessSupported()) {
+			this.div.append(new Button("external_access_info", 'External access info', function(){
+				t.obj.showExternalAccessInfo();
+			}).getInputElement());
+		}
+	}	
+});
+
 var ResourcesPanel = Class.extend({
 	init: function(obj) {
 		this.obj = obj;
@@ -2118,7 +2139,7 @@ var ConnectorWindow = ElementWindow.extend({
 			t.setTitle(name);
 		}), "name");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
-		this.control = new ControlPanel(obj);
+		this.control = new ConnectorControlPanel(obj);
 		this.tabs.addTab("control", "Control", this.control.getDiv());
 		this.resources = new ResourcesPanel(obj);
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
@@ -2159,11 +2180,16 @@ var ExternalConnectorWindow = ConnectorWindow.extend({
 	}
 });
 
-var HubConnectorWindow = ConnectorWindow.extend({});
+var HubConnectorWindow = ConnectorWindow.extend({
+	init: function(obj) {
+		this._super(obj);
+		this.attrs.addField(new CheckField("external_access"), "external&nbsp;access");
+	}
+});
 
-var SwitchConnectorWindow = ConnectorWindow.extend({});
+var SwitchConnectorWindow = HubConnectorWindow;
 
-var RouterConnectorWindow = ConnectorWindow.extend({});
+var RouterConnectorWindow = HubConnectorWindow;
 
 var InterfaceWindow = ElementWindow.extend({
 	init: function(obj) {

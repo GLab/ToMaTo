@@ -316,8 +316,11 @@ class Interface(attributes.Mixin, models.Model):
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def __unicode__(self):
+	def __str__(self):
 		return str(self.device.name)+"."+str(self.name)
+		
+	def __unicode__(self):
+		return str(self)
 		
 	def getCapabilities(self, user):
 		return {
