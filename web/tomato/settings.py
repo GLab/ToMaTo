@@ -89,18 +89,13 @@ ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
 map="generic"
 
 try:
-	import imp, tempfile, sys
+	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/web.conf", os.path.expanduser("~/.tomato/web.conf"), "web.conf"]):
-		file = open(path, "r")
-		with file:
-			tmp = tempfile.mktemp()
-			try:
-				imp.load_source("web_config", tmp, file)
-				from web_config import *
-				print >>sys.stderr, "Loaded config from %s" % path
-			finally:
-				if os.path.exists(tmp+"c"):
-					os.remove(tmp+"c")
+		try:
+			execfile(path)
+			print >>sys.stderr, "Loaded config from %s" % path
+		except Exception, exc:
+			print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
 except:
 	import traceback
 	traceback.print_exc()

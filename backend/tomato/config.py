@@ -74,20 +74,13 @@ MAIL = {
 }
 
 try:
-	import imp, tempfile, sys
+	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
-		file = open(path, "r")
-		with file:
-			tmp = tempfile.mktemp()
-			try:
-				imp.load_source("backend_config", tmp, file)
-				from backend_config import *
-				print >>sys.stderr, "Loaded config from %s" % path
-			except Exception, exc:
-				print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
-			finally:
-				if os.path.exists(tmp+"c"):
-					os.remove(tmp+"c")
+		try:
+			execfile(path)
+			print >>sys.stderr, "Loaded config from %s" % path
+		except Exception, exc:
+			print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
 except:
 	import traceback
 	traceback.print_exc()
