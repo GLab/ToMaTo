@@ -232,7 +232,14 @@ def export(api, request, top_id):
 	if compress:
 		top = compressData(top)
 	if "download" in request.REQUEST:
-		return HttpResponse(top, content_type="application/download")
+		response = HttpResponse(top, content_type="text/plain")
+		name = "topology_%s" % top_id
+		if compress:
+			name += ".gzip_b64.txt"
+		else:
+			name += ".json.txt"
+		response['Content-Disposition'] = 'attachment; filename=' + name
+		return response 
 	return render_to_response("top/export.html", {"top_id": top_id, "top": top, "form": form}) 
 
 def console(request):
