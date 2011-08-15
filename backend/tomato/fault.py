@@ -18,23 +18,35 @@
 from django.db import models, transaction
 import xmlrpclib, traceback
 
-class Error(models.Model):
-	date = models.DateTimeField(auto_now_add=True)
+class Error(models.Model):	
+	class Type:
+		Error = "error"
+		Info = "info"
+	date_first = models.DateTimeField(auto_now_add=True)
+	date_last = models.DateTimeField(auto_now=True)
+	occurrences = models.IntegerField(default=1)
+	type = models.CharField(max_length=20, default=Type.Error)
 	title = models.CharField(max_length=255)
 	message = models.TextField(blank=True)
 	
 	def toDict(self):
-		return {"id": self.id, "date": self.date, "title": self.title, "message": self.message} # pylint: disable-msg=E1101
+		return {"id": self.id, "type": self.type, "occurrences": self.occurrences, "date_first": self.date_first, "date_last": self.date_last, "title": self.title, "message": self.message} # pylint: disable-msg=E1101
 
 def errors_all():
 	return Error.objects.all() # pylint: disable-msg=E1101
 
-def errors_add(title, message):
+def errors_add(title, message, type=Error.Type.Error):
+	title = title[:250]
 	try:
-		Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
-	except: #just commit the old transaction and try again
-		transaction.commit()
-		Error.objects.create(title=title[:250], message=message) # pylint: disable-msg=E1101
+		error = Error.objects.get(type=type, title=title, message=message)
+		error.occurrences += 1
+		error.save()
+	except:		
+		try:
+			Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
+		except: #just commit the old transaction and try again
+			transaction.commit()
+			Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
 		
 def errors_remove(error_id):
 	if not error_id:
@@ -55,6 +67,9 @@ def _must_log(exc):
 	if isinstance(exc, Fault):
 		return exc.faultCode != USER_ERROR
 	return True 
+
+def log_info(title, message):
+	errors_add(title, message, type=Error.Type.Info)
 
 def log(exc):
 	if _must_log(exc):

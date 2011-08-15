@@ -97,7 +97,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def disable(self):
 		print "Disabling host %s because of error during check" % self
-		fault.errors_add("Host disabled", "Disabling host %s because of error during check" % self)
+		fault.log_info("Host disabled", "Disabling host %s because of error during check" % self)
 		self.enabled = False
 		self.save()
 

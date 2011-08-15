@@ -109,7 +109,8 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.logger().log("timeout: %s" % action)
 		out = tasks.get_current_task().output
 		out.write("TIMEOUT %s topology %s [%d]" % (action, self.name, self.id))
-		data = {"name": self.name, "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
+		data = {"name": self.name, "owner": str(self.owner), "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
+		fault.log_info("Topology %(name)s [%(id)d] of %(owner)s %(action)s due to timeout" % data, "")
 		self._sendToUsers("Topology timeout notification", "the topology \"%(name)s\" (ID %(id)d) has been %(action)s at %(date)s due to a timeout." % data)
 
 	def _timeoutActionWarning(self, action, when):
