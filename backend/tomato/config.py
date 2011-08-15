@@ -33,14 +33,16 @@ TIMEOUT_WARNING = 7 #days
 
 LOGIN_TIMEOUT = 1
 
-SERVER = {
-	"PORT": 8000,
-	"SSL": False,
-	"SSL_OPTS": {
-		"private_key" : "",
-		"ca_key": ""
+SERVER = [
+	{
+		"PORT": 8000,
+		"SSL": False,
+		"SSL_OPTS": {
+			"private_key" : "",
+			"ca_key": ""
+		}
 	}
-}
+]
 
 DATABASES = {
     'default': {
@@ -84,3 +86,6 @@ try:
 except:
 	import traceback
 	traceback.print_exc()
+
+if not isinstance(SERVER, list):
+	SERVER = [SERVER]
