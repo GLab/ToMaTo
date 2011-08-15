@@ -298,8 +298,11 @@ var Topology = IconElement.extend({
 		} else this.stateIcon.attr({opacity: 0.0});
 	},
 	setAttribute: function(name, value) {
-		if (name != "state") this.attributes[name]=value;
-		if (name == "name") this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+		if (name == "state") return;
+		if (name == "name") {
+			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
+			this.attributes[name]=value;
+		} else this._super(name, value);
 	},
 	_dragStart: function () {
 	},
@@ -1831,6 +1834,31 @@ var AttributeForm = Class.extend({
 	}
 });
 
+var NotesPanel = Class.extend({
+	init: function(obj) {
+		this.obj = obj;
+		this.div = $('<div/>');
+	},
+	load: function() {
+		this.div.empty();
+		var t = this;
+		var notes = this.obj.getAttribute("_notes", "");
+		var textarea = $('<textarea style="width:100%;" rows=20>' + notes + '</textarea>');
+		var changed = function(){
+			log(textarea[0].value);
+			t.obj.setAttribute("_notes", textarea[0].value);
+		}
+		textarea.change(changed);
+		this.div.append(textarea);
+		var center = $('<center/>');
+		center.append(new Button("save", 'Save', changed).getInputElement());
+		this.div.append(center);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
 var ControlPanel = Class.extend({
 	init: function(obj) {
 		this.obj = obj;
@@ -1999,6 +2027,8 @@ var TopologyWindow = ElementWindow.extend({
 		this.tabs.addTab("permissions", "Permissions", this.permissions.getDiv());
 		this.analysis = new AnalysisPanel(obj);
 		this.tabs.addTab("analysis", "Analysis", this.analysis.getDiv());
+		this.notes = new NotesPanel(obj);
+		this.tabs.addTab("notes", "Notes", this.notes.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
@@ -2007,6 +2037,7 @@ var TopologyWindow = ElementWindow.extend({
 		if (this.attrs) this.attrs.load();
 		if (this.permissions) this.permissions.load();
 		if (this.analysis) this.analysis.load();
+		if (this.notes) this.notes.load();
 	},
 	show: function() {
 		if (this.obj.errors.length>0) this.tabs.select("analysis");
@@ -2033,12 +2064,15 @@ var DeviceWindow = ElementWindow.extend({
 		this.tabs.addTab("control", "Control", this.control.getDiv());
 		this.resources = new ResourcesPanel(obj);
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.notes = new NotesPanel(obj);
+		this.tabs.addTab("notes", "Notes", this.notes.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
 		if (this.control) this.control.load();
 		if (this.resources) this.resources.load();
 		if (this.attrs) this.attrs.load();
+		if (this.notes) this.notes.load();
 	},
 	show: function() {
 		this.reload();
@@ -2088,12 +2122,15 @@ var ConnectorWindow = ElementWindow.extend({
 		this.tabs.addTab("control", "Control", this.control.getDiv());
 		this.resources = new ResourcesPanel(obj);
 		this.tabs.addTab("resources", "Resources", this.resources.getDiv());
+		this.notes = new NotesPanel(obj);
+		this.tabs.addTab("notes", "Notes", this.notes.getDiv());
 		this.tabs.select(this.obj.editor.editable ? "attributes" : "control");
 	},
 	reload: function() {
 		if (this.control) this.control.load();
 		if (this.resources) this.resources.load();
 		if (this.attrs) this.attrs.load();
+		if (this.notes) this.notes.load();
 	},
 	show: function() {
 		this.reload();

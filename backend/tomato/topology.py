@@ -21,7 +21,7 @@ import attributes, auth, config
 from lib import db, util
 from lib.decorators import *
 
-class Topology(attributes.Mixin, models.Model):
+class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 	"""
 	This class represents a whole topology and offers methods to work with it
 	"""
@@ -60,10 +60,11 @@ class Topology(attributes.Mixin, models.Model):
 		self.save()
 
 	def renew(self):
+		self.reload()
 		self.date_usage = datetime.datetime.now()
 		self.setAttribute("timeout_warning", None)
 		self.save()
-
+		
 	def maxState(self):
 		max_state = generic.State.CREATED
 		for con in self.connectorSetAll():
@@ -146,6 +147,7 @@ class Topology(attributes.Mixin, models.Model):
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
 		proc = process.start(direct)
+		self.reload()
 		self.task = process.id
 		self.save()
 		return proc
