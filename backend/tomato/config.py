@@ -65,6 +65,8 @@ INSTALLED_APPS = ('tomato', 'south')
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
+ERROR_NOTIFY = []
+
 MAIL = {
 	'SUBJECT_PREFIX': "[ToMaTo] ",
 	'SUBJECT_SUFFIX': "",

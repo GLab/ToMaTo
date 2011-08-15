@@ -54,6 +54,7 @@ class User(models.Model):
 		body = (config.MAIL["BODY_PREFIX"] % self.name) + body + config.MAIL["BODY_SUFFIX"]
 		if self.email:
 			util.sendMail(self.email, subject, body)
+			print "Mail to %s: %s" % (self.email, subject)
 		else:
 			print "Cannot send message to %s, no email known" % str(self)
 

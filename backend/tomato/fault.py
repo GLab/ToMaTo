@@ -41,13 +41,15 @@ def errors_add(title, message, type=Error.Type.Error):
 		error = Error.objects.get(type=type, title=title, message=message)
 		error.occurrences += 1
 		error.save()
-	except:		
+	except:
 		try:
-			Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
+			error = Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
+			_send_notifications(error)
 		except: #just commit the old transaction and try again
 			transaction.commit()
-			Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
-		
+			error = Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
+			_send_notifications(error)
+			
 def errors_remove(error_id):
 	if not error_id:
 		Error.objects.all().delete()
@@ -71,6 +73,16 @@ def _must_log(exc):
 def log_info(title, message):
 	errors_add(title, message, type=Error.Type.Info)
 
+def _send_notifications(error):
+	import config, auth #here to break import cycle
+	title = "new %s" % error.type
+	message = "A new %(type)s has occurred in ToMaTo:\n\nTitle: %(title)s\nType: %(type)s\nDate: %(date_first)s\n\n%(message)s" % error.toDict()
+	for name in config.ERROR_NOTIFY:
+		user = auth.getUser(name)
+		if not user:
+			continue
+		user.sendMessage(title, message)
+
 def log(exc):
 	if _must_log(exc):
 		traceback.print_exc(exc)
@@ -89,4 +101,3 @@ def check(condition, errorStr, formatOpt = None, code=USER_ERROR):
 		if formatOpt:
 			errorStr = errorStr % formatOpt
 		raise new(errorStr, code)
-

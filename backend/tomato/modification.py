@@ -114,7 +114,7 @@ class Modification():
 			if not con.isExternal(): 
 				fault.check(con.state == generic.State.CREATED, "Cannot delete a running or prepared connector")
 			con.delete()
-		
+			
 		elif self.type == "connection-create":
 			con = top.connectorSetGet(self.element).upcast()
 			interface = self.properties["interface"]
