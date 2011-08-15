@@ -60,7 +60,8 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.save()
 
 	def renew(self):
-		self.reload()
+		if self.id:
+			self.reload()
 		self.date_usage = datetime.datetime.now()
 		self.setAttribute("timeout_warning", None)
 		self.save()
