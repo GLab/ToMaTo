@@ -129,7 +129,7 @@ class Modification():
 			con.connectionsDelete(name)
 			
 		else:
-			raise fault.Fault("Unknown modification type: %s" % self.type)
+			raise fault.new("Unknown modification type: %s" % self.type)
 							
 def readFromList(mods):
 	modlist = []
