@@ -196,8 +196,17 @@ class EmulatedConnection(Connection):
 			self.deleteAttribute("capture_port")
 			host.giveId("port", port)
 
+	def _unconfigLink(self):
+		host = self.getHost()
+		iface = self.internalInterface()
+		bridge = self.getBridge()
+		tc.clearIncomingRedirect(host, iface)
+		tc.clearLinkEmulation(host, iface)
+		tc.clearLinkEmulation(host, bridge)
+	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
+		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
 		taskset.add([stop_capture])
 		return taskset

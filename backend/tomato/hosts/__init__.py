@@ -296,6 +296,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = res.splitlines()
 		retCode = int(res[-1].strip())
 		res = "\n".join(res[:-1])
+		if not res.endswith("\n"):
+			res += "\n"
 		fd.write(res)
 		if retCode != 0:
 			raise exceptions.CommandError(self.name, command, retCode, res)

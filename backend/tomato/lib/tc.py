@@ -20,7 +20,7 @@ import ifaceutil, exceptions, math
 def _tc(host, type, action, ref, params=""):
 	return host.execute("tc %s %s %s %s" % (type, action, ref, params))
 
-def _tc_mod(host, type, ref, params):
+def _tc_mod(host, type, ref, params=""):
 	try:
 		return _tc(host, type, "change", ref, params)
 	except exceptions.CommandError:
@@ -70,7 +70,7 @@ def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
 	netem_ref = "dev %s root handle 1:0" % repr(dev)
 	if not bandwidth is None:
 		netem_ref = "dev %s parent 1:1 handle 10:" % repr(dev)
-		_tc_mod(host, "qdisc", "dev %s root" % repr(dev), _buildTbf(bandwidth))
+		_tc_mod(host, "qdisc", "dev %s root handle 1:" % repr(dev), _buildTbf(bandwidth))
 	_tc_mod(host, "qdisc", netem_ref, _buildNetem(**kwargs))
 	
 def clearLinkEmulation(host, dev):
@@ -81,10 +81,10 @@ def setIncomingRedirect(host, srcDev, dstDev):
 	assert ifaceutil.interfaceExists(host, srcDev)
 	assert ifaceutil.interfaceExists(host, dstDev)
 	_tc_mod(host, "qdisc", "dev %s ingress" % repr(srcDev))
-	_tc_mod(host, "filter", "dev %s ingress parent ffff:" % repr(srcDev), \
-	 "protocol all u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % repr(dstDev))
+	_tc_mod(host, "filter", "dev %s parent ffff:" % repr(srcDev), \
+	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % repr(dstDev))
 		
 def clearIncomingRedirect(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
 	_tc(host, "qdisc", "del", "dev %s ingress" % repr(dev))
-	_tc(host, "filter", "del", "dev %s parent ffff:" % repr(dev))
+	_tc(host, "filter", "del", "dev %s parent ffff: prio 49152" % repr(dev))
