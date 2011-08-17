@@ -18,7 +18,7 @@
 from django.db import models
 import hashlib
 
-import dummynet
+import emulated
 
 from tomato import fault, hosts, config
 from tomato.generic import State
@@ -315,7 +315,7 @@ class TincConnector(Connector):
 		return res
 
 
-class TincConnection(dummynet.EmulatedConnection):
+class TincConnection(emulated.EmulatedConnection):
 
 	tinc_port = models.PositiveIntegerField(null=True)
 
@@ -327,13 +327,13 @@ class TincConnection(dummynet.EmulatedConnection):
 		return self
 	
 	def getIdUsage(self, host):
-		ids = dummynet.EmulatedConnection.getIdUsage(self, host)
+		ids = emulated.EmulatedConnection.getIdUsage(self, host)
 		if self.tinc_port and self.interface.device.host == host:
 			ids["port"] = ids.get("port", set()) | set((self.tinc_port,))
 		return ids
 
 	def getCapabilities(self, user):
-		capabilities = dummynet.EmulatedConnection.getCapabilities(self, user)
+		capabilities = emulated.EmulatedConnection.getCapabilities(self, user)
 		con = self.connector
 		capabilities["configure"].update({
 			"gateway4": con.state == State.CREATED and con.type == "router",
@@ -344,7 +344,7 @@ class TincConnection(dummynet.EmulatedConnection):
 	def configure(self, properties):
 		if "gateway4" in properties or "gateway6" in properties:
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
-		dummynet.EmulatedConnection.configure(self, properties)
+		emulated.EmulatedConnection.configure(self, properties)
 		if self.connector.type == "router":
 			for key in ["gateway4", "gateway6"]:
 				if key in properties:
@@ -391,11 +391,14 @@ class TincConnection(dummynet.EmulatedConnection):
 		self.save()
 
 	def onInterfaceStateChange(self):
-		dummynet.EmulatedConnection.onInterfaceStateChange(self)
+		emulated.EmulatedConnection.onInterfaceStateChange(self)
 		self._unassignBridgeId()
 
+	def internalInterface(self):
+		return tinc.interfaceName(ConnectionEndpoint(self))
+
 	def toDict(self, auth):
-		res = dummynet.EmulatedConnection.toDict(self, auth)
+		res = emulated.EmulatedConnection.toDict(self, auth)
 		res["attrs"].update(gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))	
 		if auth:
 			res["attrs"]["tinc_port"] = self.tinc_port	

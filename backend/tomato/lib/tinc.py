@@ -238,6 +238,9 @@ def _writeDotFile(file, clist):
 def _tincName(endpoint):
 	return "tinc_%d" % endpoint.getId()
 	
+def interfaceName(endpoint):
+	return _tincName(endpoint)
+	
 def _pidFile(endpoint):
 	return "/var/run/tinc.%s.pid" % _tincName(endpoint)
 

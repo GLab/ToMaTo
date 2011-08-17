@@ -18,7 +18,7 @@
 from tomato.connectors import Connection
 from tomato.generic import State
 from tomato.topology import Permission
-from tomato.lib import ipfw, tcpdump, tasks
+from tomato.lib import tc, tcpdump, tasks
 from tomato import fault
 
 DEFAULT_LOSSRATIO = 0.0
@@ -140,9 +140,12 @@ class EmulatedConnection(Connection):
 				self._startCaptureViaNet()
 			
 	def _configLink(self):
-		pipe_id = int(self.getBridgeId())
 		host = self.getHost()
-		ipfw.configurePipe(host, pipe_id, delay=self.getDelay(), bandwidth=self.getBandwidth(), lossratio=self.getLossRatio())
+		iface = self.internalInterface()
+		bridge = self.getBridge()
+		tc.setLinkEmulation(host, iface, self.getBandwidth(), loss=self.getLossRatio(), delay=self.getDelay())
+		tc.setLinkEmulation(host, bridge, self.getBandwidth(), loss=self.getLossRatio(), delay=self.getDelay())
+		tc.setIncomingRedirect(host, iface, bridge)
 		
 	def _captureName(self):
 		return "capture-%s-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
@@ -168,20 +171,11 @@ class EmulatedConnection(Connection):
 		port = self.getAttribute("capture_port")
 		tcpdump.startCaptureViaNet(host, self._captureName(), port, self.getBridge(), self.getCaptureFilter())
 
-	def _createPipe(self):
-		pipe_id = int(self.getBridgeId())
-		host = self.getHost()
-		ipfw.loadModule(host)
-		# in router mode ipfw is only triggered once, but for other modes twice		
-		dir="" if self.connector.type == "router" else "out"
-		ipfw.createPipe(host, pipe_id, self.getBridge(), dir=dir)
-
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
-		create_pipe = tasks.Task("create-pipe", self._createPipe)
-		configure_link = tasks.Task("configure-link", self._configLink, after=create_pipe)
+		configure_link = tasks.Task("configure-link", self._configLink)
 		start_capture = tasks.Task("start-capture", self._startCapture)
-		taskset.add([create_pipe, configure_link, start_capture])
+		taskset.add([configure_link, start_capture])
 		return taskset
 	
 	def _stopCapture(self):
@@ -202,15 +196,10 @@ class EmulatedConnection(Connection):
 			self.deleteAttribute("capture_port")
 			host.giveId("port", port)
 
-	def _deletePipes(self):
-		if self.bridge_id:
-			ipfw.deletePipe(self.getHost(), int(self.bridge_id))
-
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		delete_pipes = tasks.Task("delete-pipes", self._deletePipes)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([delete_pipes, stop_capture])
+		taskset.add([stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):

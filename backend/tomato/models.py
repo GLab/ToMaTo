@@ -17,7 +17,7 @@
 
 
 from connectors import Connector, Connection #@UnusedImport
-from connectors.dummynet import EmulatedConnection #@UnusedImport
+from connectors.emulated import EmulatedConnection #@UnusedImport
 from connectors.external import ExternalNetworkConnector #@UnusedImport
 from connectors.vpn import TincConnector, TincConnection #@UnusedImport
 from devices import Device, Interface #@UnusedImport
