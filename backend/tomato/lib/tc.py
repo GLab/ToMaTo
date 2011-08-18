@@ -37,8 +37,8 @@ def _buildNetem(delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None,
 		assert jitter >= 0.0
 		assert 100.0 >= delay_correlation >= 0.0
 		netem.append("delay %fms %fms %f%%" % (delay, jitter, delay_correlation))
-	if distribution:
-		assert distribution in ["normal", "pareto", "normalpareto"]
+	if delay and jitter and distribution:
+		assert distribution in ["uniform", "normal", "pareto", "paretonormal"]
 		netem.append("distribution %s" % distribution)
 	if loss or loss_correlation:
 		assert 100.0 >= loss >= 0.0
@@ -46,10 +46,10 @@ def _buildNetem(delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None,
 		netem.append("loss %f%% %f%%" % (loss, loss_correlation))
 	if duplicate:
 		assert 100.0 >= duplicate >= 0.0
-		netem.appen("duplicate %f%%" % duplicate)
+		netem.append("duplicate %f%%" % duplicate)
 	if corrupt:
 		assert 100.0 >= corrupt >= 0.0
-		netem.appen("duplicate %f%%" % corrupt)
+		netem.append("corrupt %f%%" % corrupt)
 	return " ".join(netem)
 
 def _buildTbf(bandwidth):
@@ -81,8 +81,12 @@ def setIncomingRedirect(host, srcDev, dstDev):
 	assert ifaceutil.interfaceExists(host, srcDev)
 	assert ifaceutil.interfaceExists(host, dstDev)
 	_tc_mod(host, "qdisc", "dev %s ingress" % repr(srcDev))
+	""" 
+	Protocol all would forward all traffic but that results
+	in ARP traffic being multiplied and causing lots of traffic
+	""" 
 	_tc_mod(host, "filter", "dev %s parent ffff:" % repr(srcDev), \
-	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % repr(dstDev))
+	 "protocol ip prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % repr(dstDev))
 		
 def clearIncomingRedirect(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)

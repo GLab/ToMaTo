@@ -21,12 +21,34 @@ from tomato.topology import Permission
 from tomato.lib import tc, tcpdump, tasks
 from tomato import fault
 
-DEFAULT_LOSSRATIO = 0.0
-DEFAULT_DELAY = 0
-DEFAULT_BANDWIDTH = 10000
 DEFAULT_CAPTURE_FILTER = ""
 DEFAULT_CAPTURE_TO_FILE = False
 DEFAULT_CAPTURE_VIA_NET = False
+
+netemProperties = ["bandwidth", "delay", "jitter", "delay_correlation", "distribution", "lossratio", "lossratio_correlation", "duplicate", "corrupt"]
+netemDefaults = {"bandwidth": 10000.0, "distribution": None}
+netemValueConvert = {
+	"bandwidth": lambda x: float(x if x else 0.0),
+	"delay": lambda x: float(x if x else 0.0),
+	"jitter": lambda x: float(x if x else 0.0),
+	"delay_correlation": lambda x: float(x if x else 0.0),
+	"distribution": lambda x: x if x in ["normal", "pareto", "paretonormal"] else None,
+	"lossratio": lambda x: float(x if x else 0.0),
+	"lossratio_correlation": lambda x: float(x if x else 0.0),
+	"duplicate": lambda x: float(x if x else 0.0),
+	"corrupt": lambda x: float(x if x else 0.0),	
+}
+netemValuesChecks = {
+	"bandwidth": lambda x: x > 0.0,
+	"delay": lambda x: x >= 0.0,
+	"jitter": lambda x: x >= 0.0,
+	"delay_correlation": lambda x: 0.0 <= x <= 100.0,
+	"distribution": lambda x: x is None or x in ["normal", "pareto", "paretonormal"],
+	"lossratio": lambda x: 0.0 <= x <= 100.0,
+	"lossratio_correlation": lambda x: 0.0 <= x <= 100.0,
+	"duplicate": lambda x: 0.0 <= x <= 100.0,
+	"corrupt": lambda x: 0.0 <= x <= 100.0,
+}
 
 class EmulatedConnection(Connection):
 	
@@ -36,9 +58,6 @@ class EmulatedConnection(Connection):
 
 	def init(self):
 		self.attrs = {}
-		self.setBandwidth(DEFAULT_BANDWIDTH)
-		self.setDelay(DEFAULT_DELAY)
-		self.setLossRatio(DEFAULT_LOSSRATIO)
 		self.setCaptureFilter("")
 		self.setCaptureToFile(False)
 		self.setCaptureViaNet(False)
@@ -55,24 +74,13 @@ class EmulatedConnection(Connection):
 		except: #pylint: disable-msg=W0702
 			return False
 				
-	def getLossRatio(self):
-		return self.getAttribute("lossratio", DEFAULT_LOSSRATIO)
-	
-	def setLossRatio(self, value):
-		self.setAttribute("lossratio", float(value))
-	
-	def getDelay(self):
-		return self.getAttribute("delay", DEFAULT_DELAY)
-		
-	def setDelay(self, value):
-		self.setAttribute("delay", int(value))
-
-	def getBandwidth(self):
-		return self.getAttribute("bandwidth", DEFAULT_BANDWIDTH)
+	def getNetemProp(self, prop, dir=None):
+		if dir == "to":
+			return self.getAttribute(prop+"_to", self.getNetemProp(prop))
+		if dir == "from":
+			return self.getAttribute(prop+"_from", self.getNetemProp(prop))
+		return self.getAttribute(prop, netemDefaults.get(prop, 0.0))
 				
-	def setBandwidth(self, value):
-		self.setAttribute("bandwidth", int(value))
-
 	def getCaptureFilter(self):
 		return self.getAttribute("capture_filter", DEFAULT_CAPTURE_FILTER)
 	
@@ -98,10 +106,11 @@ class EmulatedConnection(Connection):
 			"capture_filter": True,
 			"capture_to_file": True,
 			"capture_via_net": True,
-			"delay": True,
-			"bandwidth": True,
-			"lossratio": True,
 		})
+		for p in netemProperties:
+			capabilities["configure"][p] = True
+			capabilities["configure"][p+"_to"] = True
+			capabilities["configure"][p+"_from"] = True
 		capabilities["action"].update({
 			"download_capture": isUser and not self.connector.state == State.CREATED and self.getCaptureToFile()
 		})
@@ -121,12 +130,22 @@ class EmulatedConnection(Connection):
 			self.setCaptureFilter(properties["capture_filter"])
 		if "capture_via_net" in properties:
 			self.setCaptureViaNet(properties["capture_via_net"])
-		if "delay" in properties:
-			self.setDelay(properties["delay"])
-		if "bandwidth" in properties:
-			self.setBandwidth(properties["bandwidth"])
-		if "lossratio" in properties:
-			self.setLossRatio(properties["lossratio"])
+		for p in netemProperties:
+			if p in properties:
+				val = properties[p]
+				val = netemValueConvert[p](val)
+				fault.check(netemValuesChecks[p](val), "Invalid value for %s: %s", (p, val))
+				self.setAttribute(p, val)
+			if p + "_to" in properties:
+				val = properties[p+"_to"]
+				val = netemValueConvert[p](val)
+				fault.check(netemValuesChecks[p](val), "Invalid value for %s: %s", (p+"_to", val))
+				self.setAttribute(p+"_to", val)
+			if p + "_from" in properties:
+				val = properties[p+"_from"]
+				val = netemValueConvert[p](val)
+				fault.check(netemValuesChecks[p](val), "Invalid value for %s: %s", (p+"_from", val))
+				self.setAttribute(p+"_from", val)
 		Connection.configure(self, properties)
 		if self.connector.state == State.STARTED:
 			self._configLink()
@@ -143,8 +162,28 @@ class EmulatedConnection(Connection):
 		host = self.getHost()
 		iface = self.internalInterface()
 		bridge = self.getBridge()
-		tc.setLinkEmulation(host, iface, self.getBandwidth(), loss=self.getLossRatio(), delay=self.getDelay())
-		tc.setLinkEmulation(host, bridge, self.getBandwidth(), loss=self.getLossRatio(), delay=self.getDelay())
+		tc.setLinkEmulation(host, iface, 
+			bandwidth=self.getNetemProp("bandwidth", "to"),
+			delay=self.getNetemProp("delay", "to"),
+			jitter=self.getNetemProp("jitter", "to"),
+			delay_correlation=self.getNetemProp("delay_correlation", "to"),
+			distribution=self.getNetemProp("distribution", "to"),
+			loss=self.getNetemProp("lossratio", "to"),
+			loss_correlation=self.getNetemProp("lossratio_correlation", "to"),
+			duplicate=self.getNetemProp("duplicate", "to"),
+			corrupt=self.getNetemProp("corrupt", "to"),
+		)
+		tc.setLinkEmulation(host, bridge,
+			bandwidth=self.getNetemProp("bandwidth", "from"),
+			delay=self.getNetemProp("delay", "from"),
+			jitter=self.getNetemProp("jitter", "from"),
+			delay_correlation=self.getNetemProp("delay_correlation", "from"),
+			distribution=self.getNetemProp("distribution", "from"),
+			loss=self.getNetemProp("lossratio", "from"),
+			loss_correlation=self.getNetemProp("lossratio_correlation", "from"),
+			duplicate=self.getNetemProp("duplicate", "from"),
+			corrupt=self.getNetemProp("corrupt", "from"),
+		)
 		tc.setIncomingRedirect(host, iface, bridge)
 		
 	def _captureName(self):
@@ -200,15 +239,18 @@ class EmulatedConnection(Connection):
 		host = self.getHost()
 		iface = self.internalInterface()
 		bridge = self.getBridge()
-		tc.clearIncomingRedirect(host, iface)
-		tc.clearLinkEmulation(host, iface)
-		tc.clearLinkEmulation(host, bridge)
+		try:
+			tc.clearIncomingRedirect(host, iface)
+			tc.clearLinkEmulation(host, iface)
+			tc.clearLinkEmulation(host, bridge)
+		except:
+			pass
 	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
 		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([stop_capture])
+		taskset.add([unconfigure_link, stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):
