@@ -963,15 +963,15 @@ var Editor = Class.extend({
 					//check attributes
 					if (con.getAttribute("bandwidth")) {
 						var val = con.getAttribute("bandwidth");
-						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid bandwidth");
-						var val = parseInt(val);
+						if (! pattern.float.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid bandwidth");
+						var val = parseFloat(val);
 						if (val > 1000000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 1 Gbit/s bandwidth configured");
 						if (val < 10) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has less than 10 kbit/s bandwidth configured");
 					}
 					if (con.getAttribute("delay")) {
 						var val = con.getAttribute("delay");
-						if (! pattern.int.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid delay");
-						var val = parseInt(val);
+						if (! pattern.float.test(val)) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has an invalid delay");
+						var val = parseFloat(val);
 						if (val > 10000) top.warnings.push("Config warning: " + el.name + " <-> " + con.getSubElementName() + " has more than 10 seconds delay configured");
 						if (val < 0) top.errors.push("Config error: " + el.name + " <-> " + con.getSubElementName() + " has a negative delay configured");
 					}
@@ -1791,55 +1791,59 @@ var ElementWindow = Window.extend({
 });
 
 var AttributeForm = Class.extend({
-	init: function(obj) {
+	init: function(obj, div) {
 		this.obj = obj;
-		this.table = $('<table/>').addClass('ui-widget');
+		if (div) this.div = div;
+		else this.div = $('<div/>');
 		this.fields = {};
 	},
 	load: function() {
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
 			if (val) this.fields[name].setValue(val);
-			var editable = this.obj.editor.editable 
-			  && this.obj.capabilities
+			var editable = this.obj.capabilities
 			  && this.obj.capabilities.configure
 			  && this.obj.capabilities.configure[name];
 			if (name == "name") editable = this.obj.editor.topology && this.obj.editor.topology.capabilities && this.obj.editor.topology.capabilities.modify;
 			this.fields[name].setEditable(editable);
 		}
 	},
-	addField: function(field, desc) {
+	registerField: function(field) {
 		field.setForm(this);
-		var tr = $('<tr/>');
-		tr.append($('<td>'+desc+'</td>'));
-		tr.append($('<td/>').append(field.getInputElement()));
-		this.table.append(tr);
 		this.fields[field.name]=field;
 	},
-	addMultipleFields: function(fields) {
-		var tr = $('<tr/>');
-		var td = $('<td/>');
-		td.attr({colspan: "2", align: "center"});
-		for (var i = 0; i < fields.length; i++) {
-			var field = fields[i];
-			field.setForm(this);
-			this.fields[field.name]=field;
-			td.append(field.getInputElement());
-		}
-		tr.append(td);
-		this.table.append(tr);
+	unregisterField: function(name) {
+		if (this.getField(name)) delete this.fields[name];
 	},
-	removeField: function(name) {
-		if (this.fields[name]) {
-			this.fields[name].getInputElement().remove();
-			delete this.fields[name];
-		}
+	getField: function(name) {
+		return this.fields[name];
 	},
 	onChanged: function(name, value) {
 		this.obj.setAttribute(name, value);
 	},
 	getDiv: function() {
 		return this.table;
+	}
+});
+
+var TableAttributeForm = AttributeForm.extend({
+	init: function(obj) {
+		this._super(obj, $('<table/>').addClass('ui-widget'));
+		this.table = this.div;
+	}, 
+	addRow: function(desc, element) {
+		var tr = $('<tr/>');
+		tr.append($('<td>'+desc+'</td>'));
+		tr.append($('<td/>').append(element));
+		this.table.append(tr);
+	},
+	addField: function(field, desc) {
+		this.registerField(field);
+		this.addRow(desc, field.getInputElement());
+	},
+	removeField: function(name) {
+		if (this.getField(name)) this.getField(name).getInputElement().remove();
+		this.unregisterField(name);
 	}
 });
 
@@ -2037,7 +2041,7 @@ var TopologyWindow = ElementWindow.extend({
 			t.reload();
 		});
 		this.add(this.tabs.getDiv());
-		this.attrs = new AttributeForm(obj);
+		this.attrs = new TableAttributeForm(obj);
 		this.attrs.addField(new TextField("name", "Topology"), "name");
 		this.tabs.addTab("attributes", "Attributes", this.attrs.getDiv());
 		this.control = new TopologyControlPanel(obj);
@@ -2075,7 +2079,7 @@ var DeviceWindow = ElementWindow.extend({
 			t.reload();
 		});
 		this.add(this.tabs.getDiv());
-		this.attrs = new AttributeForm(obj);
+		this.attrs = new TableAttributeForm(obj);
 		this.attrs.addField(new NameField(obj, function(name){
 			t.setTitle(name);
 		}), "name");
@@ -2134,7 +2138,7 @@ var ConnectorWindow = ElementWindow.extend({
 			t.reload();
 		});
 		this.add(this.tabs.getDiv());
-		this.attrs = new AttributeForm(obj);
+		this.attrs = new TableAttributeForm(obj);
 		this.attrs.addField(new NameField(obj, function(name){
 			t.setTitle(name);
 		}), "name");
@@ -2194,7 +2198,7 @@ var RouterConnectorWindow = HubConnectorWindow;
 var InterfaceWindow = ElementWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs = new AttributeForm(obj);
+		this.attrs = new TableAttributeForm(obj);
 		this.attrs.addField(new NameField(obj), "name");
 		this.add(this.attrs.getDiv());
 	},
@@ -2218,42 +2222,77 @@ var ConnectionWindow = ElementWindow.extend({});
 var EmulatedConnectionWindow = ConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs = new AttributeForm(obj);
-		this.attrs.addField(new MagicTextField("bandwidth", pattern.int, ""), "bandwidth&nbsp;(in&nbsp;kb/s)");
-		this.attrs.addField(new MagicTextField("delay", pattern.int, ""), "latency&nbsp;(in&nbsp;ms)");
-		this.attrs.addField(new MagicTextField("lossratio", pattern.float, ""), "packet&nbsp;loss");
+		this.attrs = new TableAttributeForm(obj);
+		this.tabs = new Tabs();
+		var fields = {}
+		//link emulation
+		this.le = $("<table/>").addClass('ui-widget');
+		this.le.append(table_row(["", "<b>To connector</b>", "<b>From connector</b>", ""]))
+		fields.bandwidth_to = new MagicTextField("bandwidth_to", pattern.float, "")
+		fields.bandwidth_from = new MagicTextField("bandwidth_from", pattern.float, "")
+		this.le.append(table_row(["bandwidth", fields.bandwidth_to.getInputElement(), fields.bandwidth_from.getInputElement(), "kbit/s"]))
+		fields.delay_to = new MagicTextField("delay_to", pattern.float, "")
+		fields.delay_from = new MagicTextField("delay_from", pattern.float, "")
+		this.le.append(table_row(["delay", fields.delay_to.getInputElement(), fields.delay_from.getInputElement(), "ms"]))
+		fields.jitter_to = new MagicTextField("jitter_to", pattern.float, "")
+		fields.jitter_from = new MagicTextField("jitter_from", pattern.float, "")
+		this.le.append(table_row(["jitter", fields.jitter_to.getInputElement(), fields.jitter_from.getInputElement(), "ms"]))
+		fields.delay_correlation_to = new MagicTextField("delay_correlation_to", pattern.float, "")
+		fields.delay_correlation_from = new MagicTextField("delay_correlation_from", pattern.float, "")
+		this.le.append(table_row(["delay&nbsp;correlation", fields.delay_correlation_to.getInputElement(), fields.delay_correlation_from.getInputElement(), "%"]))
+		fields.distribution_to = new SelectField("distribution_to", ["uniform", "normal", "pareto", "normalpareto"], "uniform")
+		fields.distribution_from = new SelectField("distribution_from", ["uniform", "normal", "pareto", "normalpareto"], "uniform")
+		this.le.append(table_row(["delay&nbsp;distribution", fields.distribution_to.getInputElement(), fields.distribution_from.getInputElement(), ""]))
+		fields.lossratio_to = new MagicTextField("lossratio_to", pattern.float, "")
+		fields.lossratio_from = new MagicTextField("lossratio_from", pattern.float, "")
+		this.le.append(table_row(["packet&nbsp;loss", fields.lossratio_to.getInputElement(), fields.lossratio_from.getInputElement(), "%"]))
+		fields.lossratio_correlation_to = new MagicTextField("lossratio_correlation_to", pattern.float, "")
+		fields.lossratio_correlation_from = new MagicTextField("lossratio_correlation_from", pattern.float, "")
+		this.le.append(table_row(["loss&nbsp;correlation", fields.lossratio_correlation_to.getInputElement(), fields.lossratio_correlation_from.getInputElement(), "%"]))
+		fields.duplicate_to = new MagicTextField("duplicate_to", pattern.float, "")
+		fields.duplicate_from = new MagicTextField("duplicate_from", pattern.float, "")
+		this.le.append(table_row(["duplication", fields.duplicate_to.getInputElement(), fields.duplicate_from.getInputElement(), "%"]))
+		fields.corrupt_to = new MagicTextField("corrupt_to", pattern.float, "")
+		fields.corrupt_from = new MagicTextField("corrupt_from", pattern.float, "")
+		this.le.append(table_row(["corrupt&nbsp;packets", fields.corrupt_to.getInputElement(), fields.corrupt_from.getInputElement(), "%"]))
+		this.tabs.addTab("link_emulation", "Link emulation", this.le);
+		//packet capturing
+		this.pc = $("<table/>").addClass('ui-widget');
 		var t = this;
 		this.captureField = new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
 			t.obj.setAttribute("capture_to_file", value == "to file");
 			t.obj.setAttribute("capture_via_net", value == "via network");
 			t.attrs.fields["capture_filter"].setEditable(value!="disabled");
-		});
-		this.attrs.addField(this.captureField, "capture&nbsp;packets");
-		this.attrs.addField(new TextField("capture_filter", ""), "capture&nbsp;filter");
-		this.add(this.attrs.getDiv());
+		});		
+		this.attrs.registerField(this.captureField);
+		this.captureFilterField = new TextField("capture_filter", "");
+		this.attrs.registerField(this.captureFilterField);
+		this.tabs.addTab("packet_capturing", "Packet capturing", this.pc);
+		for (var f in fields) this.attrs.registerField(fields[f]);
+		this.add(this.tabs.getDiv());
 	},
 	show: function() {
-		this.attrs.removeField("download");
-		this.attrs.removeField("cloudshark");
-		this.attrs.removeField("livecapture");
 		this.attrs.load();
 		this.captureField.setEditable(true);
 		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
 			this.captureField.setValue("to file")
 		if (Boolean.parse(this.obj.getAttribute("capture_via_net", "false")))
 			this.captureField.setValue("via network")
+		this.pc.empty();
+		this.pc.append(table_row(["capture&nbsp;packets", this.captureField.getInputElement()]))
+		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement()]))
 		var t = this;
 		if (this.obj.downloadSupported()) {
-			this.attrs.addMultipleFields([new Button("download", "download capture", function(btn){
+			this.pc.append(table_row([new Button("download", "download capture", function(btn){
 				t.obj.downloadCapture(btn);
-			}), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
+			}).getInputElement(), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
 				t.obj.viewCapture(btn);
-			})]);
+			}).getInputElement()]));
 		}
 		if (this.obj.liveCaptureSupported()) {
-			this.attrs.addMultipleFields([new Button("livecapture", "live capture info", function(btn){
+			this.pc.append(table_row(["", new Button("livecapture", "live capture info", function(btn){
 				t.obj.showLiveCaptureInfo();
-			})]);
+			}).getInputElement()]));
 		}
 		this._super();
 	}
@@ -2262,8 +2301,16 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4net, ""), "gateway&nbsp;(ip4/prefix)");
-		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6net, ""), "gateway&nbsp;(ip6/prefix)");
+		//routing
+		this.routing = $("<table/>").addClass('ui-widget');
+		var fields = {}
+		fields.gateway4 = new MagicTextField("gateway4", pattern.ip4net, "")
+		this.attrs.registerField(fields.gateway4);
+		this.routing.append(table_row(["gateway&nbsp;(ip4/prefix)", fields.gateway4.getInputElement()]));
+		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "")
+		this.attrs.registerField(fields.gateway6);
+		this.routing.append(table_row(["gateway&nbsp;(ip6/prefix)", fields.gateway6.getInputElement()]));
+		this.tabs.addTab("routing", "Routing", this.routing);
 	}
 });
 
