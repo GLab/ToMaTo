@@ -74,14 +74,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
 		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, after=login)
 		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
-		ipfw = tasks.Task("ipfw", util.curry(self._checkCmd, ["modprobe ipfw_mod && ipfw list", "Ipfw error"]), reverseFn=self.disable, after=login)
 		hostserver = tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, after=login)
 		hostserver_config = tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, after=hostserver)
 		hostserver_cleanup = tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, after=hostserver)
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
-		return [login, tomato_host, openvz, kvm, ipfw, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
+		return [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
 		
 	def check(self):
 		proc = tasks.Process("check")
