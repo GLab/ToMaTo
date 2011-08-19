@@ -25,10 +25,10 @@ DEFAULT_CAPTURE_FILTER = ""
 DEFAULT_CAPTURE_TO_FILE = False
 DEFAULT_CAPTURE_VIA_NET = False
 
-netemProperties = ["bandwidth", "delay", "jitter", "delay_correlation", "distribution", "lossratio", "lossratio_correlation", "duplicate", "corrupt"]
+netemProperties = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "lossratio_correlation", "duplicate", "corrupt"]
 netemDefaults = {"bandwidth": 10000.0, "distribution": None}
 netemValueConvert = {
-	"bandwidth": lambda x: float(x if x else 0.0),
+	"bandwidth": lambda x: float(x if x else netemDefaults["bandwidth"]),
 	"delay": lambda x: float(x if x else 0.0),
 	"jitter": lambda x: float(x if x else 0.0),
 	"delay_correlation": lambda x: float(x if x else 0.0),

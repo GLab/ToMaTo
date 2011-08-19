@@ -2237,9 +2237,10 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		fields.jitter_to = new MagicTextField("jitter_to", pattern.float, "")
 		fields.jitter_from = new MagicTextField("jitter_from", pattern.float, "")
 		this.le.append(table_row(["jitter", fields.jitter_to.getInputElement(), fields.jitter_from.getInputElement(), "ms"]))
-		fields.delay_correlation_to = new MagicTextField("delay_correlation_to", pattern.float, "")
-		fields.delay_correlation_from = new MagicTextField("delay_correlation_from", pattern.float, "")
-		this.le.append(table_row(["delay&nbsp;correlation", fields.delay_correlation_to.getInputElement(), fields.delay_correlation_from.getInputElement(), "%"]))
+		//disabled because delay correlation is broken in netem
+		//fields.delay_correlation_to = new MagicTextField("delay_correlation_to", pattern.float, "")
+		//fields.delay_correlation_from = new MagicTextField("delay_correlation_from", pattern.float, "")
+		//this.le.append(table_row(["delay&nbsp;correlation", fields.delay_correlation_to.getInputElement(), fields.delay_correlation_from.getInputElement(), "%"]))
 		fields.distribution_to = new SelectField("distribution_to", ["uniform", "normal", "pareto", "paretonormal"], "uniform")
 		fields.distribution_from = new SelectField("distribution_from", ["uniform", "normal", "pareto", "paretonormal"], "uniform")
 		this.le.append(table_row(["delay&nbsp;distribution", fields.distribution_to.getInputElement(), fields.distribution_from.getInputElement(), ""]))

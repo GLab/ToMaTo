@@ -63,6 +63,8 @@ LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('tomato', 'south')
 
+DISABLE_TRANSACTION_MANAGEMENT = True
+
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 ERROR_NOTIFY = []

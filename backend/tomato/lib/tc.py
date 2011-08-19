@@ -27,11 +27,36 @@ def _tc_mod(host, type, ref, params=""):
 		try:
 			return _tc(host, type, "replace", ref, params)
 		except exceptions.CommandError:
-			_tc(host, type, "del", ref)
+			try:
+				_tc(host, type, "del", ref)
+			except exceptions.CommandError:
+				pass
 			return _tc(host, type, "add", ref, params)
 	
-def _buildNetem(delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, loss=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
+def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, loss=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
 	netem = ["netem"]
+	if bandwidth:
+		"""
+		Need to set a packet limit for netem. Otherwise netem will buffer all
+		packets until they can be consumed by the rate limit, thereby 
+		preventing them from being dropped and increasing the delay infinitely.
+		"""
+		limit = 1
+		if delay or jitter:
+			"""
+			The average packet consumption rate of the rate limiter is:
+			 pcrate = bandwidth * 1024 / 8 / pktsize
+			Example: bandwidth=4kbit/s, pktsize=512b, pcrate=1/s
+			The netem qdisc must be able to process at least that rate of
+			packages without causing loss.
+			The average delay of a packet can be calculated as:
+			 avgdelay = max(delay, jitter/2) / 1000
+			Thus, on average pcrate * avgdelay packets must be buffered.
+			We are taking the double to be sure.
+			Assumption: pktsize=512b 
+			""" 
+			limit = math.ceil(max(delay, jitter/2.0) * bandwidth / 2000.0)
+		netem.append("limit %d" % limit)
 	if delay or jitter or delay_correlation:
 		assert delay >= 0.0
 		assert jitter >= 0.0
@@ -57,12 +82,14 @@ def _buildTbf(bandwidth):
 	tbf = ["tbf"]
 	tbf.append("rate %fKbit" % bandwidth)
 	maxDuration = 25.0
-	mtu = 1600.0
+	mtu = 1540.0
 	tbf.append("latency %fms" % maxDuration)
 	bufferBytes = max(math.ceil(bandwidth / 8.0 * maxDuration), mtu)
 	tbf.append("buffer %d" % int(bufferBytes))
-	if bandwidth < 1000.0:
-		tbf.append("peakrate %fKbit" % bandwidth)
+	#if mtu / 8.0 < bandwidth < 1000.0:
+		#no idea what mtu / 8.0 should mean but that is the boundy of tc
+	#	tbf.append("peakrate %fKbit" % bandwidth)
+	#	tbf.append("mtu %d" % int(mtu))
 	return " ".join(tbf)
 
 def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
@@ -71,7 +98,7 @@ def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
 	if not bandwidth is None:
 		netem_ref = "dev %s parent 1:1 handle 10:" % repr(dev)
 		_tc_mod(host, "qdisc", "dev %s root handle 1:" % repr(dev), _buildTbf(bandwidth))
-	_tc_mod(host, "qdisc", netem_ref, _buildNetem(**kwargs))
+	_tc_mod(host, "qdisc", netem_ref, _buildNetem(bandwidth=bandwidth, **kwargs))
 	
 def clearLinkEmulation(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
