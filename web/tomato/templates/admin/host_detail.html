@@ -13,7 +13,10 @@
 <h2>Settings <a href="{%url host.edit hostname=host.name%}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
 <table>
   <tr><td>Group:</td><td>{{host.group}}</td></tr>
-  <tr><td>Enabled:</td><td>{{host.enabled}}</td></tr>
+  <tr><td>Enabled:</td><td>{{host.enabled}} {% if host.manually_disabled %}(manually disabled){% endif %}</td></tr>
+{% if host.host_check_error %}
+  <tr><td class="error">Error:</td><td class="error">{{host.host_check_error}}</td></tr>
+{% endif %}
   <tr><td>Port range:</td><td>{{host.port_start}} - {{host.port_start|add:host.port_count}}</td></tr>
   <tr><td>VMID range:</td><td>{{host.vmid_start}} - {{host.vmid_start|add:host.vmid_count}}</td></tr>
   <tr><td>Bridge range:</td><td>{{host.bridge_start}} - {{host.bridge_start|add:host.bridge_count}}</td></tr>

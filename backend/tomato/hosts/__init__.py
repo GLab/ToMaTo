@@ -80,7 +80,15 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
-		return [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
+		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
+		enable = tasks.Task("enable", self._enable, after=other)
+		return other + [enable]
+		
+	def _enable(self):
+		self.deleteAttribute("host_check_error")
+		if not self.getAttribute("manually_disabled", False):
+			self.enabled = True
+			self.save()
 		
 	def check(self):
 		proc = tasks.Process("check")
@@ -99,6 +107,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		fault.log_info("Host disabled", "Disabling host %s because of error during check" % self)
 		self.enabled = False
 		self.save()
+		task = tasks.get_current_task()
+		self.setAttribute("host_check_error", "%s, %s" % (task.name, task.result) )
 
 	def _checkCmd(self, cmd, errormsg):
 		self.execute(cmd)
@@ -370,7 +380,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		if "enabled" in properties:
-			self.enabled = util.parse_bool(properties["enabled"])
+			self.setAttribute("manually_disabled", not self.enabled)
+			self.check()
 		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count"]:
 			if var in properties:
 				self.setAttribute(var, int(properties[var]))
@@ -387,7 +398,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		"""
 		res = {"name": self.name, "group": self.group, "enabled": self.enabled, 
 			"device_count": self.device_set.count(), # pylint: disable-msg=E1101
-			"external_networks": [enb.toDict() for enb in self.externalNetworks()]}
+			"external_networks": [enb.toDict() for enb in self.externalNetworks()],
+			"manually_disabled": self.getAttribute("manually_disabled", False),
+			"host_check_errror": self.getAttribute("host_check_error", None)}
 		res.update(self.getAttributes().items())
 		return res
 	
