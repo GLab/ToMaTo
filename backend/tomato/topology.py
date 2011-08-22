@@ -152,14 +152,14 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
-		proc = process.start(direct)
-		try:
-			self.reload()
-		except Topology.DoesNotExist:
-			return proc
-		if self.id:
-			self.task = process.id
-			self.save()
+		self.task = process.id
+		self.save()
+		try:	
+			proc = process.start(direct)
+		except:
+			if not process.isDone():
+				self.task = None
+				self.save()
 		return proc
 
 	def deviceSetAll(self):
