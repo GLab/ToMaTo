@@ -49,9 +49,9 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 			os.makedirs(config.LOG_DIR + "/top")
 		return log.getLogger(config.LOG_DIR + "/top/%s"%self.id)
 
-	def log(self, s):
+	def log(self, *args, **kwargs):
 		with self._logger() as logger:
-			logger.log(s)
+			logger.log(*args, **kwargs)
 
 	def init (self, owner):
 		"""
@@ -59,14 +59,16 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
-		self.renew()
+		self.date_usage = datetime.datetime.now()
 		self.name = "Topology_%s" % self.id
 		self.save()
+		self.renew()
 
 	def renew(self):
 		if self.id:
 			self.reload()
-		self.date_usage = datetime.datetime.now()
+		if self.date_usage:
+			self.date_usage = datetime.datetime.now()
 		self.setAttribute("timeout_warning", None)
 		self.save()
 		
@@ -306,7 +308,8 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 				"prepare": isManager and not isBusy,
 				"destroy": isManager and not isBusy,
 				"remove": isOwner and not isBusy,
-				"renew": isUser
+				"renew": isUser,
+				"disable_timeout": user.is_admin	
 			},
 			"modify": isManager and not isBusy,
 			"permission_set": isOwner
@@ -328,6 +331,9 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 			return self.remove(direct)
 		elif action == "renew":
 			return self.renew()
+		elif action == "disable_timeout":
+			self.date_usage = None
+			self.save()
 		
 	def permissionsAdd(self, user_name, role):
 		self.renew()
@@ -402,17 +408,20 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.setAttribute("resources", res)
 		
 	def configure(self, properties):
-		self.setPrivateAttributes(properties)
+		self.setPrivateAttributes(properties)			
 					
 	@xmlRpcSafe
 	def toDict(self, user, detail):
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.maxState(), "owner": str(self.owner),
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
-					"stop_timeout": str(self.date_usage + self.STOP_TIMEOUT), "destroy_timeout": str(self.date_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(self.date_usage + self.REMOVE_TIMEOUT) 
 					},
 			"resources": util.xml_rpc_sanitize(self.resources()),
 			}
+		if self.date_usage:
+			res["attrs"].update(stop_timeout=str(self.date_usage + self.STOP_TIMEOUT), destroy_timeout=str(self.date_usage + self.DESTROY_TIMEOUT), remove_timeout=str(self.date_usage + self.REMOVE_TIMEOUT)) 
+		else:
+			res["attrs"].update(timeouts_disabled=True)
 		if detail:
 			res.update({"devices": dict([[v.name, v.upcast().toDict(user)] for v in self.deviceSetAll()]),
 				"connectors": dict([[v.name, v.upcast().toDict(user)] for v in self.connectorSetAll()])
