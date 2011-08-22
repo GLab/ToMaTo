@@ -44,10 +44,14 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["DESTROY"])
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["REMOVE"])
 
-	def logger(self):
+	def _logger(self):
 		if not os.path.exists(config.LOG_DIR + "/top"):
 			os.makedirs(config.LOG_DIR + "/top")
 		return log.getLogger(config.LOG_DIR + "/top/%s"%self.id)
+
+	def log(self, s):
+		with self._logger() as logger:
+			logger.log(s)
 
 	def init (self, owner):
 		"""
@@ -106,7 +110,7 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def _logTimeoutAction(self, action):
 		now = datetime.datetime.now()
-		self.logger().log("timeout: %s" % action)
+		self.log("timeout: %s" % action)
 		out = tasks.get_current_task().output
 		out.write("TIMEOUT %s topology %s [%d]" % (action, self.name, self.id))
 		data = {"name": self.name, "owner": str(self.owner), "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
@@ -287,8 +291,8 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		return self._stateBackward(True, True, direct, False)
 			
 	def _log(self, task, output):
-		logger = log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id)
-		logger.log(task, bigmessage=output)
+		with log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id) as logger:
+			logger.log(task, bigmessage=output)
 		
 	def getCapabilities(self, user):
 		isOwner = self.checkAccess(Permission.ROLE_OWNER, user)

@@ -69,7 +69,7 @@ def top_create(user=None):
 	fault.check(user.is_user, "only regular users can create topologies")
 	top=topology.create(user)
 	top.save()
-	top.logger().log("created", user=user.name)
+	top.log("created", user=user.name)
 	return top.id
 
 def top_modify(top_id, mods, direct=False, user=None):
@@ -178,11 +178,11 @@ def top_modify(top_id, mods, direct=False, user=None):
 	""" 
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
-	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
+	top.log("modifying topology", user=user.name, bigmessage=str(mods))
 	from tomato import modification
 	res = modification.modifyList(top, mods, direct)
 	if not direct:
-		top.logger().log("started task %s" % res, user=user.name)
+		top.log("started task %s" % res, user=user.name)
 	return res
 
 def top_action(top_id, action, element_type="topology", element_name=None, attrs={}, direct=False, user=None):
@@ -278,7 +278,7 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 		element = top.connectorSetGet(element_name)
 	else:
 		fault.check(False, "Unknown element type: %s", element_type)
-	top.logger().log("%s %s %s" % (action, element_type, element_name), user=user.name)
+	top.log("%s %s %s" % (action, element_type, element_name), user=user.name)
 	return element.action(user, action, attrs, direct)
 	
 def permission_set(top_id, user_name, role, user=None):
@@ -298,7 +298,7 @@ def permission_set(top_id, user_name, role, user=None):
 		top.permissionsRemove(user_name)
 	if role:
 		top.permissionsAdd(user_name, role)
-	top.logger().log("set permission: %s=%s" % (user_name, role))
+	top.log("set permission: %s=%s" % (user_name, role))
 	
 # keep internal imports at the bottom to avoid dependency problems
 from tomato.api import _top_access
