@@ -21,16 +21,16 @@ from tomato import generic, config
 
 import process, fileutil, ifaceutil, util
 
-def _vzctl(host, vmid, cmd, params=""):
+def _vzctl(host, vmid, cmd, params=[]):
 	#FIXME: make synchronized because vzctl creates a lock
-	return host.execute("vzctl %s %s %s" % (cmd, vmid, params) )
+	return host.execute("vzctl %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))) )
 
 def execute(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to execute commands on it"
-	return _vzctl(host, vmid, "exec", repr(str(cmd)))
+	return _vzctl(host, vmid, "exec", [util.escape(cmd)])
 
 def _imagePath(vmid):
-	return "/var/lib/vz/private/%s" % vmid
+	return "/var/lib/vz/private/%d" % vmid
 
 def getState(host, vmid):
 	if not vmid:
@@ -45,12 +45,12 @@ def getState(host, vmid):
 	assert False, "Unable to determine openvz state"
 
 def _vncPidfile(vmid):
-	return "%s/vnc-%s.pid" % (config.REMOTE_DIR, vmid)
+	return "%s/vnc-%d.pid" % (config.REMOTE_DIR, vmid)
 
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, password, vmid, _vncPidfile(vmid) ))
+	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), vmid, _vncPidfile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
@@ -63,13 +63,13 @@ def _templatePath(name):
 
 def create(host, vmid, template):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"
-	res = _vzctl(host, vmid, "create", "--ostemplate %s" % template)
+	res = _vzctl(host, vmid, "create", ["--ostemplate", template])
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to create VM: %s" % res
-	_vzctl(host, vmid, "set", "--devices c:10:200:rw --capability net_admin:on --save")
+	_vzctl(host, vmid, "set", ["--devices", "c:10:200:rw", "--capability",  "net_admin:on", "--save"])
 	
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
-	res = _vzctl(host, vmid, "start")
+	res = _vzctl(host, vmid, ["start"])
 	util.waitFor (lambda :getState(host, vmid) == generic.State.STARTED)
 	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start: %s" % res
 
@@ -78,25 +78,25 @@ def start(host, vmid):
 
 def stop(host, vmid):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
-	res = _vzctl(host, vmid, "stop")
+	res = _vzctl(host, vmid, ["stop"])
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to stop VM: %s" % res
 
 def destroy(host, vmid):
 	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
-	res = _vzctl(host, vmid, "destroy")
+	res = _vzctl(host, vmid, ["destroy"])
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def setUserPassword(host, vmid, password, username="root"):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", "--userpasswd %s:%s --save" % (username, password))
+	_vzctl(host, vmid, "set", ["--userpasswd", "%s:%s"  % (util.escape(username), util.escape(password)),  "--save"])
 
 def setHostname(host, vmid, hostname):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", "--hostname %s --save" % hostname)
+	_vzctl(host, vmid, "set", ["--hostname", "%s" % util.identifier(hostname), "--save"])
 
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", "--netif_del %s --save" % iface)
+	_vzctl(host, vmid, "set", ["--netif_del", util.escape(iface), "--save"])
 
 def useImage(host, vmid, image, forceGzip=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
@@ -132,8 +132,8 @@ def interfaceDevice(vmid, iface):
 def addInterface(host, vmid, iface):
 	state = getState(host, vmid)
 	assert state != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", "--netif_add %s --save" % iface)
-	_vzctl(host, vmid, "set", "--ifname %s --host_ifname %s --save" % ( iface, interfaceDevice(vmid, iface)))
+	_vzctl(host, vmid, "set", ["--netif_add", util.escape(iface), "--save"])
+	_vzctl(host, vmid, "set", ["--ifname", util.escape(iface), "--host_ifname", util.escape(interfaceDevice(vmid, iface)), "--save"])
 	if state == generic.State.STARTED:
 		assert ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface))
 
@@ -170,7 +170,7 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, template, ifaces):
 				dst_host.execute("gunzip < %(tmp)s/disk.rdiff.gz | rdiff -- patch %(tmp)s/disk.tar - %(tmp)s/disk-patched.tar" % {"tmp": dst_tmp})
 				fileutil.move(dst_host,"%s/disk-patched.tar" % dst_tmp, "%s/disk.tar" % dst_tmp)
 			except:
-				_vzctl(src_host, src_vmid, "restore", "--dumpfile %s/openvz.dump" % src_tmp)
+				_vzctl(src_host, src_vmid, "restore", ["--dumpfile", "%s/openvz.dump" % src_tmp])
 				raise
 		#use disk image on new host
 		useImage(dst_host, dst_vmid, "%s/disk.tar" % dst_tmp)
@@ -179,10 +179,10 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, template, ifaces):
 		if state == generic.State.STARTED:
 			try:
 				#restore snapshot
-				_vzctl(dst_host, dst_vmid, "restore", "--dumpfile %s/openvz.dump" % dst_tmp)
+				_vzctl(dst_host, dst_vmid, "restore", ["--dumpfile", "%s/openvz.dump" % dst_tmp])
 				assert getState(dst_host, dst_vmid) == generic.State.STARTED
 			except:
-				_vzctl(src_host, src_vmid, "restore", "--dumpfile %s/openvz.dump" % src_tmp)
+				_vzctl(src_host, src_vmid, "restore", ["--dumpfile", "%s/openvz.dump" % src_tmp])
 				raise
 	except:
 		destroy(dst_host, dst_vmid)

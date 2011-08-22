@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import ifaceutil, exceptions, math
+import ifaceutil, exceptions, math, util
 
 def _tc(host, type, action, ref, params=""):
 	return host.execute("tc %s %s %s %s" % (type, action, ref, params))
@@ -94,28 +94,28 @@ def _buildTbf(bandwidth):
 
 def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
 	assert ifaceutil.interfaceExists(host, dev)
-	netem_ref = "dev %s root handle 1:0" % repr(dev)
+	netem_ref = "dev %s root handle 1:0" % util.escape(dev)
 	if not bandwidth is None:
-		netem_ref = "dev %s parent 1:1 handle 10:" % repr(dev)
-		_tc_mod(host, "qdisc", "dev %s root handle 1:" % repr(dev), _buildTbf(bandwidth))
+		netem_ref = "dev %s parent 1:1 handle 10:" % util.escape(dev)
+		_tc_mod(host, "qdisc", "dev %s root handle 1:" % util.escape(dev), _buildTbf(bandwidth))
 	_tc_mod(host, "qdisc", netem_ref, _buildNetem(bandwidth=bandwidth, **kwargs))
 	
 def clearLinkEmulation(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
-	_tc(host, "qdisc", "del", "root dev %s" % repr(dev))
+	_tc(host, "qdisc", "del", "root dev %s" % util.escape(dev))
 
 def setIncomingRedirect(host, srcDev, dstDev):
 	assert ifaceutil.interfaceExists(host, srcDev)
 	assert ifaceutil.interfaceExists(host, dstDev)
-	_tc_mod(host, "qdisc", "dev %s ingress" % repr(srcDev))
+	_tc_mod(host, "qdisc", "dev %s ingress" % util.escape(srcDev))
 	""" 
 	Protocol all would forward all traffic but that results
 	in ARP traffic being multiplied and causing lots of traffic
 	""" 
-	_tc_mod(host, "filter", "dev %s parent ffff:" % repr(srcDev), \
-	 "protocol ip prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % repr(dstDev))
+	_tc_mod(host, "filter", "dev %s parent ffff:" % util.escape(srcDev), \
+	 "protocol ip prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev))
 		
 def clearIncomingRedirect(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
-	_tc(host, "qdisc", "del", "dev %s ingress" % repr(dev))
-	_tc(host, "filter", "del", "dev %s parent ffff: prio 49152" % repr(dev))
+	_tc(host, "qdisc", "del", "dev %s ingress" % util.escape(dev))
+	_tc(host, "filter", "del", "dev %s parent ffff: prio 49152" % util.escape(dev))

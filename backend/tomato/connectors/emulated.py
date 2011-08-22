@@ -187,7 +187,7 @@ class EmulatedConnection(Connection):
 		tc.setIncomingRedirect(host, iface, bridge)
 		
 	def _captureName(self):
-		return "capture-%s-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
+		return "capture-%d-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
 	def _startCapture(self):
 		if self.getCaptureToFile():
