@@ -231,7 +231,7 @@ def sendMail(to, subject, body):
 def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwABCDEFGHIJKLMNOPQRSTUVWXYZ-_.", subst="_"):
 	ret=""
 	for ch in s:
-		if s in allowed:
+		if ch in allowed:
 			ret += ch
 		elif subst:
 			ret += subst

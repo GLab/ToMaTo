@@ -157,12 +157,12 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.task = process.id
 		self.save()
 		try:	
-			proc = process.start(direct)
+			return process.start(direct)
 		except:
 			if not process.isDone():
 				self.task = None
 				self.save()
-		return proc
+		return process.dict(True)
 
 	def deviceSetAll(self):
 		return self.device_set.all() # pylint: disable-msg=E1101
