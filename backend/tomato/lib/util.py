@@ -228,7 +228,7 @@ def sendMail(to, subject, body):
 	s.sendmail(config.MAIL["SENDER_MAIL"], [to], msg.as_string())
 	s.quit()
 	
-def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwABCDEFGHIJKLMNOPQRSTUVWXYZ-_.", subst="_"):
+def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.", subst="_"):
 	ret=""
 	for ch in s:
 		if ch in allowed:
