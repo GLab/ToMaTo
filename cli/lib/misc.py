@@ -8,9 +8,13 @@ def waitForTask(task, assertSuccess=False):
 	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts["name"]
 	return ts
 
-def jsonToMods(json):
-	import simplejson
-	top = simplejson.loads(json)
+def jsonToMods(data):
+	import simplejson as json, zlib, base64
+	try:
+		top = json.loads(data)
+	except:
+		data = zlib.decompress(base64.b64decode(data))
+		top = json.loads(data)
 	mods = []
 	mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
 	for devname, dev in top["devices"].iteritems():

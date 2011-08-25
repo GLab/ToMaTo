@@ -27,12 +27,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'prog1.eth0',
 						'attrs': {
 							'gateway6': None,
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'delay': 0,
-							'bandwidth': 10000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -60,12 +63,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'openvz1.eth0',
 						'attrs': {
 							'gateway6': None,
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 20,
+							'delay_from': 20,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'delay': 20,
-							'bandwidth': 10000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -93,12 +99,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'openvz2.eth0',
 						'attrs': {
 							'gateway6': None,
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'delay': 0,
-							'bandwidth': 10000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -128,7 +137,7 @@ def simpleTop_checkTopInformation(topId):
 					'state': 'started',
 					'type': 'switch',
 					'name': 'switch1', 
-					'pos': None
+					'_pos': None
 				},
 				'capabilities': {
 					'action': {
@@ -139,7 +148,6 @@ def simpleTop_checkTopInformation(topId):
 						'destroy': False
 					},
 					'configure': {
-						'pos': True
 					}
 				}
 			}, 
@@ -149,12 +157,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'kvm1.eth0',
 						'attrs': {
 							'gateway6': 'fd01:ab1a:b1ab:1:2:FFFF:FFFF:FFFF/80',
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': '10.1.2.254/24',
-							'delay': 0,
-							'bandwidth': 10000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -182,12 +193,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'openvz1.eth1',
 						'attrs': {
 							'gateway6': 'fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF/80',
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 1000,
+							'bandwidth_from': 1000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': '10.1.1.254/24',
-							'delay': 0,
-							'bandwidth': 1000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -217,7 +231,7 @@ def simpleTop_checkTopInformation(topId):
 					'state': 'started', 
 					'type': 'router', 
 					'name': 'router1', 
-					'pos': None
+					'_pos': None
 				},
 				'capabilities': {
 					'action': {
@@ -228,7 +242,6 @@ def simpleTop_checkTopInformation(topId):
 						'destroy': False
 					},
 					'configure': {
-						'pos': True
 					}
 				}
 			},
@@ -238,12 +251,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'kvm1.eth2',
 						'attrs': {
 							'gateway6': None,
-							'lossratio': 0.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'delay': 0,
-							'bandwidth': 10000,
 							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
@@ -271,12 +287,15 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'openvz2.eth1',
 						'attrs': {
 							'gateway6': None,
-						 	'lossratio': 0.5, 
+							'lossratio_to': 50.0,							
+							'lossratio_from': 50.0,
+							'delay_to': 0,
+							'delay_from': 0,
+							'bandwidth_to': 10000,
+							'bandwidth_from': 10000,
 						 	'bridge_id': None, 
 						 	'capture_to_file': False, 
 						 	'gateway4': None, 
-						 	'delay': 0, 
-						 	'bandwidth': 10000, 
 						 	'tinc_port': None, 
 						 	'capture_filter': '', 
 						 	'capture_via_net': False
@@ -306,7 +325,7 @@ def simpleTop_checkTopInformation(topId):
 					'state': 'started',
 					'type': 'hub',
 					'name': 'hub1',
-					'pos': None
+					'_pos': None
 				},
 				'capabilities': {
 					'action': {
@@ -317,7 +336,6 @@ def simpleTop_checkTopInformation(topId):
 						'destroy': False
 					}, 
 					'configure': {
-						'pos': True
 					}
 				}
 			},
@@ -338,14 +356,8 @@ def simpleTop_checkTopInformation(topId):
 				'attrs': {
 					'name': 'internet',
 					'network_group': None,
-					'pos': None,
+					'_pos': None,
 					'state': 'started',
-					'used_network': {
-						'max_devices': 0,
-						'avoid_duplicates': False,
-						'group': None,
-						'type': 'internet',
-					},
 					'type': 'external',
 					'network_type': 'internet'
 				},
@@ -358,7 +370,6 @@ def simpleTop_checkTopInformation(topId):
 					}, 
 					'configure': {
 						'network_group': False, 
-						'pos': True, 
 						'network_type': False
 					}
 				}
@@ -382,7 +393,7 @@ def simpleTop_checkTopInformation(topId):
 					'name': 'prog1',
 					'vnc_port': None, 
 					'state': 'started', 
-					'pos': None, 
+					'_pos': None, 
 					'host': None, 
 					'template': None, 
 					'type': 'prog', 
@@ -403,7 +414,6 @@ def simpleTop_checkTopInformation(topId):
 						'console': True
 					},
 					'configure': {
-						'pos': True,
 						'hostgroup': True,
 						'template': False,
 						'args': False
@@ -446,7 +456,7 @@ def simpleTop_checkTopInformation(topId):
 					'vnc_port': None, 
 					'vmid': None, 
 					'state': 'started', 
-					'pos': None, 
+					'_pos': None, 
 					'host': None, 
 					'template': None, 
 					'type': 'kvm', 
@@ -468,7 +478,6 @@ def simpleTop_checkTopInformation(topId):
 						'console': True
 					},
 					'configure': {
-						'pos': True,
 						'hostgroup': True,
 						'template': False
 					}
@@ -514,7 +523,7 @@ def simpleTop_checkTopInformation(topId):
 					'name': 'openvz1', 
 					'vnc_port': None, 
 					'vmid': None, 
-					'pos': None, 
+					'_pos': None, 
 					'gateway6': 'fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF', 
 					'gateway4': '10.1.1.254', 
 					'state': 'started', 
@@ -540,7 +549,6 @@ def simpleTop_checkTopInformation(topId):
 						'console': True
 					},
 					'configure': {
-						'pos': True, 
 						'hostgroup': True, 
 						'gateway6': True, 
 						'gateway4': True, 
@@ -589,7 +597,7 @@ def simpleTop_checkTopInformation(topId):
 					'name': 'openvz2', 
 					'vnc_port': None, 
 					'vmid': None, 
-					'pos': None, 
+					'_pos': None, 
 					'gateway6': None, 
 					'gateway4': None, 
 					'state': 'started', 
@@ -615,7 +623,6 @@ def simpleTop_checkTopInformation(topId):
 						'console': True
 					},
 					'configure': {
-						'pos': True, 
 						'hostgroup': True, 
 						'gateway6': True, 
 						'gateway4': True, 

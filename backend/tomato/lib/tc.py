@@ -113,7 +113,7 @@ def setIncomingRedirect(host, srcDev, dstDev):
 	in ARP traffic being multiplied and causing lots of traffic
 	""" 
 	_tc_mod(host, "filter", "dev %s parent ffff:" % util.escape(srcDev), \
-	 "protocol ip prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev))
+	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev))
 		
 def clearIncomingRedirect(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)

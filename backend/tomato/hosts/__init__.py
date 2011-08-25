@@ -52,6 +52,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.setAttribute("vmid_count", 200)
 		self.setAttribute("bridge_start", 1000)
 		self.setAttribute("bridge_count", 1000)
+		self.setAttribute("ifb_start", 0)
+		self.setAttribute("ifb_count", 500)
 
 	def getHostServer(self):
 		return hostserver.HostServer(self.name, self.getAttribute("hostserver_port"), 
@@ -80,9 +82,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
-		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids]
+		create_ifbs = tasks.Task("ifb-interfaces", self._createIfbs, after=login)
+		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids, create_ifbs]
 		enable = tasks.Task("enable", self._enable, after=other)
 		return other + [enable]
+
+	def _createIfbs(self):
+		ifaceutil.createIfbs(self, self.getAttribute("ifb_start") + self.getAttribute("ifb_count"))
 		
 	def _enable(self):
 		self.deleteAttribute("host_check_error")
@@ -142,7 +148,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		return self.getAttribute("hostserver_basedir") 
 
 	def _calcFreeIds(self):
-		types = ["vmid", "port", "bridge"]
+		types = ["vmid", "port", "bridge", "ifb"]
 		ids = {}
 		for t in types:
 			ids[t] = range(self.getAttribute("%s_start" % t),self.getAttribute("%s_start" % t)+self.getAttribute("%s_count" % t))
@@ -155,9 +161,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 				ids[t] = list(set(ids[t]) - used)
 		return ids			
 				
-	def _getFreeIds(self):
+	def _getFreeIds(self, recalc=False):
 		self.reload()
-		if self.getAttribute("free_ids"):
+		if self.getAttribute("free_ids") and not recalc:
 			return self._unpackIds(self.getAttribute("free_ids"))
 		ids = self._calcFreeIds()
 		self._setFreeIds(ids)
@@ -216,7 +222,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	def _checkIds(self):
 		unused = self._calcFreeIds()
 		unclaimed = self._getFreeIds()
-		types = ["vmid", "port", "bridge"]
+		types = ["vmid", "port", "bridge", "ifb"]
 		for t in types:
 			for id in set(unused[t]) - set(unclaimed[t]):
 				# id is claimed but unused
@@ -257,6 +263,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			Host.lock.acquire()
 			#print "enter"
 			ids = self._getFreeIds()
+			if not type in ids:
+				ids = self._getFreeIds(True)
 			fault.check(len(ids[type]), "No more free %ss on host %s", (type, self.name))
 			#print "Free %s ids: %s" % (type, self._packList(ids[type]))
 			#print "Callback: %s" % callback
@@ -382,7 +390,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		if "enabled" in properties:
 			self.setAttribute("manually_disabled", not self.enabled)
 			self.check()
-		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count"]:
+		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count", "ifb_start", "ifb_count"]:
 			if var in properties:
 				self.setAttribute(var, int(properties[var]))
 		if "group" in properties:

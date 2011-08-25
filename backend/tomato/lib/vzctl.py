@@ -27,7 +27,7 @@ def _vzctl(host, vmid, cmd, params=[]):
 
 def execute(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to execute commands on it"
-	return _vzctl(host, vmid, "exec", [util.escape(cmd)])
+	return _vzctl(host, vmid, "exec", [cmd])
 
 def _imagePath(vmid):
 	return "/var/lib/vz/private/%d" % vmid
@@ -69,7 +69,7 @@ def create(host, vmid, template):
 	
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
-	res = _vzctl(host, vmid, ["start"])
+	res = _vzctl(host, vmid, "start")
 	util.waitFor (lambda :getState(host, vmid) == generic.State.STARTED)
 	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start: %s" % res
 
@@ -78,17 +78,17 @@ def start(host, vmid):
 
 def stop(host, vmid):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
-	res = _vzctl(host, vmid, ["stop"])
+	res = _vzctl(host, vmid, "stop")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to stop VM: %s" % res
 
 def destroy(host, vmid):
 	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
-	res = _vzctl(host, vmid, ["destroy"])
+	res = _vzctl(host, vmid, "destroy")
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def setUserPassword(host, vmid, password, username="root"):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", ["--userpasswd", "%s:%s"  % (util.escape(username), util.escape(password)),  "--save"])
+	_vzctl(host, vmid, "set", ["--userpasswd", "%s:%s"  % (username, password),  "--save"])
 
 def setHostname(host, vmid, hostname):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
@@ -96,7 +96,7 @@ def setHostname(host, vmid, hostname):
 
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", ["--netif_del", util.escape(iface), "--save"])
+	_vzctl(host, vmid, "set", ["--netif_del", iface, "--save"])
 
 def useImage(host, vmid, image, forceGzip=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
@@ -132,8 +132,8 @@ def interfaceDevice(vmid, iface):
 def addInterface(host, vmid, iface):
 	state = getState(host, vmid)
 	assert state != generic.State.CREATED, "VM not prepared"
-	_vzctl(host, vmid, "set", ["--netif_add", util.escape(iface), "--save"])
-	_vzctl(host, vmid, "set", ["--ifname", util.escape(iface), "--host_ifname", util.escape(interfaceDevice(vmid, iface)), "--save"])
+	_vzctl(host, vmid, "set", ["--netif_add", iface, "--save"])
+	_vzctl(host, vmid, "set", ["--ifname", iface, "--host_ifname", interfaceDevice(vmid, iface), "--save"])
 	if state == generic.State.STARTED:
 		assert ifaceutil.interfaceExists(host, interfaceDevice(vmid, iface))
 
@@ -158,7 +158,7 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, template, ifaces):
 			#prepare rdiff before snapshot to save time
 			src_host.execute("rdiff signature %(tmp)s/disk.tar %(tmp)s/rdiff.sigs" % {"tmp": src_tmp})
 			#create a memory snapshot on old host
-			res = _vzctl(src_host, src_vmid, "chkpnt", "--dumpfile %s/openvz.dump" % src_tmp)
+			res = _vzctl(src_host, src_vmid, "chkpnt", ["--dumpfile",  "%s/openvz.dump" % src_tmp])
 			assert fileutil.existsFile(src_host, "%s/openvz.dump" % src_tmp), "Failed to create snapshot: %s" % res
 			try:
 				fileutil.fileTransfer(src_host, "%s/openvz.dump" % src_tmp, dst_host, "%s/openvz.dump" % dst_tmp, compressed=True)

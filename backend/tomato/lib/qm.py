@@ -26,7 +26,7 @@ def _qm(host, vmid, cmd, params=[], maxWait=30, unlock=True):
 	waitStep = 1
 	while True:
 		try:
-			return host.execute("qm %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape(params)))))
+			return host.execute("qm %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))))
 		except exceptions.CommandError, exc:
 			if not (exc.errorCode == 4 and "lock" in exc.errorMessage and "timeout" in exc.errorMessage):
 				raise
@@ -68,7 +68,7 @@ def sendKeys(host, vmid, keycodes):
 def getState(host, vmid):
 	if not vmid:
 		return generic.State.CREATED
-	res = _qm(host, vmid, ["status"])
+	res = _qm(host, vmid, "status")
 	if "running" in res:
 		return generic.State.STARTED
 	if "stopped" in res:
@@ -174,7 +174,7 @@ def interfaceDevice(host, vmid, iface, failSilent=False):
 	@return: name of host device
 	@rtype: string
 	"""
-	iface_id = re.match("eth(\d+)", iface).group(1)
+	iface_id = int(re.match("eth(\d+)", iface).group(1))
 	assert getState(host, vmid) == generic.State.STARTED, "Cannot determine KVM host device names when not running"
 	for name in ["vmtab%(vmid)di%(iface_id)d", "vmtab%(vmid)di%(iface_id)dd0", "tap%(vmid)di%(iface_id)d", "tap%(vmid)di%(iface_id)dd0"]:
 		name = name % { "vmid": vmid, "iface_id": iface_id }
@@ -185,22 +185,22 @@ def interfaceDevice(host, vmid, iface, failSilent=False):
 
 def create(host, vmid):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"
-	res = _qm(host, vmid, ["create"])
+	res = _qm(host, vmid, "create")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to create VM: %s" % res
 	
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
-	res = _qm(host, vmid, ["start"])
+	res = _qm(host, vmid, "start")
 	assert getState(host, vmid) == generic.State.STARTED, "Failed to start VM: %s" % res
 
 def stop(host, vmid):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not running"
-	res = _qm(host, vmid, ["stop"])
+	res = _qm(host, vmid, "stop")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to stop VM: %s" % res
 
 def destroy(host, vmid):
 	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
-	res = _qm(host, vmid, ["destroy"])
+	res = _qm(host, vmid, "destroy")
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces):

@@ -18,7 +18,7 @@
 from tomato.connectors import Connection
 from tomato.generic import State
 from tomato.topology import Permission
-from tomato.lib import tc, tcpdump, tasks
+from tomato.lib import tc, tcpdump, tasks, ifaceutil
 from tomato import fault
 
 DEFAULT_CAPTURE_FILTER = ""
@@ -161,7 +161,9 @@ class EmulatedConnection(Connection):
 	def _configLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
-		bridge = self.getBridge()
+		assert not self.getAttribute("ifb_id", None) is None
+		ifb = "ifb%d" % self.getAttribute("ifb_id", None)
+		ifaceutil.ifup(host, ifb)
 		tc.setLinkEmulation(host, iface, 
 			bandwidth=self.getNetemProp("bandwidth", "to"),
 			delay=self.getNetemProp("delay", "to"),
@@ -173,7 +175,7 @@ class EmulatedConnection(Connection):
 			duplicate=self.getNetemProp("duplicate", "to"),
 			corrupt=self.getNetemProp("corrupt", "to"),
 		)
-		tc.setLinkEmulation(host, bridge,
+		tc.setLinkEmulation(host, ifb,
 			bandwidth=self.getNetemProp("bandwidth", "from"),
 			delay=self.getNetemProp("delay", "from"),
 			jitter=self.getNetemProp("jitter", "from"),
@@ -184,11 +186,25 @@ class EmulatedConnection(Connection):
 			duplicate=self.getNetemProp("duplicate", "from"),
 			corrupt=self.getNetemProp("corrupt", "from"),
 		)
-		tc.setIncomingRedirect(host, iface, bridge)
+		tc.setIncomingRedirect(host, iface, ifb)
 		
 	def _captureName(self):
 		return "capture-%d-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
+	def _assignIfb(self, ifb_id=None):
+		if not ifb_id is None:
+			self.setAttribute("ifb_id", ifb_id)
+		if self.getAttribute("ifb_id") is None:
+			host = self.getHost()
+			host.takeId("ifb", self._assignIfb)
+	
+	def _unassignIfb(self):
+		if not self.getAttribute("ifb_id") is None:
+			host = self.getHost()
+			ifb_id = self.getAttribute("ifb_id")
+			self.deleteAttribute("ifb_id")
+			host.giveId("ifb", ifb_id)
+	
 	def _startCapture(self):
 		if self.getCaptureToFile():
 			self._startCaptureToFile()
@@ -212,9 +228,10 @@ class EmulatedConnection(Connection):
 
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
-		configure_link = tasks.Task("configure-link", self._configLink)
+		assign_ifb = tasks.Task("assign-ifb", self._assignIfb)
+		configure_link = tasks.Task("configure-link", self._configLink, after=assign_ifb)
 		start_capture = tasks.Task("start-capture", self._startCapture)
-		taskset.add([configure_link, start_capture])
+		taskset.add([assign_ifb, configure_link, start_capture])
 		return taskset
 	
 	def _stopCapture(self):
@@ -248,9 +265,10 @@ class EmulatedConnection(Connection):
 	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
+		unassign_ifb = tasks.Task("unassign-ifb", self._unassignIfb)
+		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink, after=unassign_ifb)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([unconfigure_link, stop_capture])
+		taskset.add([unassign_ifb, unconfigure_link, stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):
@@ -283,4 +301,7 @@ class EmulatedConnection(Connection):
 		capture_port = self.getAttribute("capture_port", None)
 		if capture_port:
 			ids.update(port=set((capture_port,)))
+		ifb_id = self.getAttribute("ifb_id", None)
+		if not ifb_id is None:
+			ids.update(ifb=set((ifb_id,)))
 		return ids

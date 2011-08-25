@@ -223,3 +223,9 @@ def ping(host, ip, samples=10, maxWait=5):
 		avg = avg * 1000.0
 		stddev = stddev * 1000.0
 	return (loss, avg, stddev)
+
+def createIfbs(host, num=100):
+	if interfaceExists(host, "ifb%d" % (num-1)):
+		return
+	host.execute("modprobe ifb numifbs=%d" % num)
+	assert interfaceExists(host, "ifb%d" % (num-1))

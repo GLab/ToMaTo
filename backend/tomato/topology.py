@@ -60,6 +60,7 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		"""
 		self.owner=owner
 		self.date_usage = datetime.datetime.now()
+		self.save()
 		self.name = "Topology_%s" % self.id
 		self.save()
 		self.renew()
