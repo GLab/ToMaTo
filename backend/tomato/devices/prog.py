@@ -188,8 +188,9 @@ class ProgDevice(Device):
 		taskset = Device.getPrepareTasks(self)
 		assign_template = tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy)
 		assign_host = tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy)
+		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_host)
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_host)
-		taskset.add([assign_template, assign_host, create_vm])
+		taskset.add([assign_template, assign_host, assign_bridges, create_vm])
 		return self._adaptTaskset(taskset)
 
 	def _unassignVncPort(self):
@@ -204,8 +205,9 @@ class ProgDevice(Device):
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
 		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=destroy_vm, reverseFn=self._fallbackDestroy)
-		taskset.add([destroy_vm, unassign_host])
+		unassign_bridges = tasks.Task("unassign-bridges", self._unassignBridges)
+		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=[destroy_vm, unassign_bridges], reverseFn=self._fallbackDestroy)
+		taskset.add([destroy_vm, unassign_host, unassign_bridges])
 		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):

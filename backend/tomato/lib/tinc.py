@@ -310,8 +310,10 @@ def _teardownRouting(endpoint, mode):
 	assert host
 	id = endpoint.getId()
 	assert id
-	bridge = endpoint.getBridge()
-	assert bridge
+	try:
+		bridge = endpoint.getBridge()
+	except:
+		return
 	assert getState(endpoint) != generic.State.CREATED
 	tincname = _tincName(endpoint)
 	ifaceutil.disconnectInterfaces(host, bridge, tincname, id)

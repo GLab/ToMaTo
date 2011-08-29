@@ -197,8 +197,8 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = self.upcast().getResourceUsage()
 		self.setAttribute("resources",res)
 	
-	def getBridge(self, connection, assign=True, create=True):
-		bridge_id = connection.getBridgeId(assign)
+	def getBridge(self, connection, create=True):
+		bridge_id = connection.getBridgeId()
 		assert bridge_id
 		name = "gbr_%d" % bridge_id
 		if create:
@@ -247,12 +247,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			self.interface.device.reload()
 		return self.interface.device.host
 
-	def getBridgeId(self, assign=True):
-		if not self.bridge_id:
-			self.reload()
-		if not self.bridge_id and assign:
-			self._assignBridgeId()
-			assert self.bridge_id
+	def getBridgeId(self):
 		return self.bridge_id
 
 	def getIdUsage(self, host):
@@ -289,8 +284,22 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			assert host
 			host.takeId("bridge", self._setBridgeId)		
 
-	def getBridge(self, assign=True, create=True):
-		return self.connector.upcast().getBridge(self, assign=assign, create=create)
+	def _unassignBridgeId(self):
+		if self.bridge_id:
+			host = self.getHost()
+			if host:
+				if not self.connector.isExternal():
+					bridge = self.getBridge(create=False)
+					if ifaceutil.bridgeExists(host, bridge):
+						attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
+						assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
+						ifaceutil.bridgeRemove(host, bridge)			
+				host.giveId("bridge", self.bridge_id)
+			self.bridge_id = None
+			self.save()
+
+	def getBridge(self, create=True):
+		return self.connector.upcast().getBridge(self, create=create)
 
 	def getStartTasks(self):
 		return tasks.TaskSet()

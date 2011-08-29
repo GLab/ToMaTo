@@ -255,12 +255,14 @@ class EmulatedConnection(Connection):
 	def _unconfigLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
-		assert not self.getAttribute("ifb_id", None) is None
-		ifb = "ifb%d" % self.getAttribute("ifb_id", None)
+		ifb = None
+		if not self.getAttribute("ifb_id", None) is None:
+			ifb = "ifb%d" % self.getAttribute("ifb_id", None)
 		try:
 			tc.clearIncomingRedirect(host, iface)
 			tc.clearLinkEmulation(host, iface)
-			tc.clearLinkEmulation(host, ifb)
+			if ifb:
+				tc.clearLinkEmulation(host, ifb)
 		except:
 			pass
 	

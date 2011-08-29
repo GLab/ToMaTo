@@ -113,36 +113,55 @@ def isIpv4(s):
 	import re
 	return re.match("(\d+).(\d+).(\d+).(\d.)", s)
 
+def iptables(host, args=[], ipv6=False):
+	try:
+		host.execute(" ".join(["ip6tables" if ipv6 else "iptables"]+args))
+	except exceptions.CommandError, exc:
+		if "Resource temporarily unavailable" in exc.errorMessage:
+			import time
+			time.sleep(0.1)
+			iptables(host, args, ipv6)
+		else:
+			raise
+
 def connectInterfaces(host, if1, if2, id, allowIps):
 	assert interfaceExists(host, if1)
 	assert interfaceExists(host, if2)
 	iptablesRemoveRules(host, if1)
 	iptablesRemoveRules(host, if2)
 	for ip in allowIps:
-		if isIpv4(ip):
-			host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( util.escape(if1), util.escape(ip) ))
-			host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( util.escape(if2), util.escape(ip) ))
-		else: #assume IPv6
-			host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( util.escape(if1), util.escape(ip) ))
-			host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( util.escape(if2), util.escape(ip) ))
-	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % util.escape(if1))
-	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % util.escape(if2))
+		iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-d", util.escape(ip), "-j", "ACCEPT"], not isIpv4(ip))
+		iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-d", util.escape(ip), "-j", "ACCEPT"], not isIpv4(ip))
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
 	#FIXME: find out how net-unreachable is named for ipv6
-	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % util.escape(if1))
-	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % util.escape(if2))
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT"], True)
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT"], True)
 	#calculate table ids
 	table1 = 1000 + id * 2
 	table2 = 1000 + id * 2 + 1
 	#create rules to select routing table according to incoming device
+	try:
+		host.execute ( "ip rule del iif %s" % util.escape(if1) )
+	except:
+		pass
+	try:
+		host.execute ( "ip rule del iif %s" % util.escape(if2) )
+	except:
+		pass
 	host.execute ( "ip rule add iif %s table %s" % ( util.escape(if1), util.escape(table1) ))
 	host.execute ( "ip rule add iif %s table %s" % ( util.escape(if2), util.escape(table2) ))
 	#create routing table with only a default device
 	try:
-		host.execute ( "ip route add table %s default dev %s" % ( util.escape(table1), util.escape(if2) ))
-		host.execute ( "ip route add table %s default dev %s" % ( util.escape(table2), util.escape(if1) ))
-	except exceptions.CommandError, exc:
-		if exc.errorCode != 2: #Rule does not exist
-			raise
+		host.execute ( "ip route del table %s default" % util.escape(table1) )
+	except:
+		pass
+	try:
+		host.execute ( "ip route del table %s default" % util.escape(table2) )
+	except:
+		pass
+	host.execute ( "ip route add table %s default dev %s" % ( util.escape(table1), util.escape(if2) ))
+	host.execute ( "ip route add table %s default dev %s" % ( util.escape(table2), util.escape(if1) ))
 	res = host.execute("ip route get %s from %s iif %s" % (util.escape(randomIp4()), util.escape(randomIp4()), util.escape(if2)))
 	assert if1 in res, "route should be %s but was %s" % (if1, res)
 	res = host.execute("ip route get %s from %s iif %s" % (util.escape(randomIp4()), util.escape(randomIp4()), util.escape(if1)))
@@ -153,7 +172,7 @@ def iptablesRemoveRules(host, device):
 		host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % util.identifier(device) )
 		host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % util.identifier(device) )
 	except exceptions.CommandError, exc:
-		if exc.errorCode == 4: # iptables: Resource temporarily unavailable
+		if "Resource temporarily unavailable" in exc.errorMessage:
 			import time
 			time.sleep(0.1)
 			iptablesRemoveRules(host, device)
@@ -166,11 +185,11 @@ def disconnectInterfaces(host, if1, if2, id):
 	table2 = 1000 + id * 2 + 1
 	try:
 		#remove rules
-		host.execute ( "ip rule del iif %s table %s" % ( util.escape(if1), util.escape(table1) ))
-		host.execute ( "ip rule del iif %s table %s" % ( util.escape(if2), util.escape(table2) ))
+		host.execute ( "ip rule del iif %s" % util.escape(if1) )
+		host.execute ( "ip rule del iif %s" % util.escape(if2) )
 		#remove routes
-		host.execute ( "ip route del table %s default dev %s" % ( util.escape(table1), util.escape(if2) ))
-		host.execute ( "ip route del table %s default dev %s" % ( util.escape(table2), util.escape(if1) ))
+		host.execute ( "ip route del table %s default" % util.escape(table1) )
+		host.execute ( "ip route del table %s default" % util.escape(table2) )
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 2: #Rule does not exist
 			raise

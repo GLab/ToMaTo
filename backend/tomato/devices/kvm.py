@@ -214,12 +214,13 @@ class KVMDevice(Device):
 		taskset = Device.getPrepareTasks(self)
 		assign_template = tasks.Task("assign-template", self._assignTemplate)
 		assign_host = tasks.Task("assign-host", self._assignHost)
+		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_host)
 		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, after=assign_host)
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
 		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
 		prepare_ifaces = tasks.Task("prepare-interfaces", self._prepareIfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
-		taskset.add([assign_template, assign_host, assign_vmid, create_vm, use_template, configure_vm, prepare_ifaces])
+		taskset.add([assign_template, assign_host, assign_bridges, assign_vmid, create_vm, use_template, configure_vm, prepare_ifaces])
 		return self._adaptTaskset(taskset)
 
 	def _unassignHost(self):
@@ -244,8 +245,9 @@ class KVMDevice(Device):
 		taskset = Device.getDestroyTasks(self)
 		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
 		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, reverseFn=self._fallbackDestroy, after=destroy_vm)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, after=unassign_vmid)
-		taskset.add([destroy_vm, unassign_host, unassign_vmid])
+		unassign_bridges = tasks.Task("unassign-bridges", self._unassignBridges)
+		unassign_host = tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, after=[unassign_vmid, unassign_bridges])
+		taskset.add([destroy_vm, unassign_host, unassign_vmid, unassign_bridges])
 		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):

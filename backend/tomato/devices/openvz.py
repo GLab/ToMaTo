@@ -240,10 +240,11 @@ class OpenVZDevice(Device):
 		assign_template = tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy)
 		assign_host = tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy)
 		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, reverseFn=self._fallbackDestroy, after=assign_host)
+		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_host)
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
 		create_interfaces = tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
-		taskset.add([assign_template, assign_host, assign_vmid, create_vm, configure_vm, create_interfaces])
+		taskset.add([assign_template, assign_host, assign_bridges, assign_vmid, create_vm, configure_vm, create_interfaces])
 		return self._adaptTaskset(taskset)
 
 	def _unassignVmid(self):
@@ -264,8 +265,9 @@ class OpenVZDevice(Device):
 		taskset = Device.getDestroyTasks(self)
 		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
 		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, after=destroy_vm, reverseFn=self._fallbackDestroy)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=unassign_vmid, reverseFn=self._fallbackDestroy)
-		taskset.add([destroy_vm, unassign_host, unassign_vmid])
+		unassign_bridges = tasks.Task("unassign-bridges", self._unassignBridges)
+		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=[unassign_vmid, unassign_bridges], reverseFn=self._fallbackDestroy)
+		taskset.add([destroy_vm, unassign_host, unassign_vmid, unassign_bridges])
 		return self._adaptTaskset(taskset)
 
 	def configure(self, properties):

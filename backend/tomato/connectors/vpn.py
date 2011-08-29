@@ -370,17 +370,16 @@ class TincConnection(emulated.EmulatedConnection):
 
 	def _unassignBridgeId(self):
 		if self.bridge_id:
-			if self.connector.state != State.STARTED and self.interface.device.state != State.STARTED:
-				host = self.getHost()
-				if host:
-					bridge = self.getBridge(assign=False, create=False)
-					if ifaceutil.bridgeExists(host, bridge):
-						attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
-						assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
-						ifaceutil.bridgeRemove(host, bridge)			
-					host.giveId("bridge", self.bridge_id)
-				self.bridge_id = None
-				self.save()
+			host = self.getHost()
+			if host:
+				bridge = self.getBridge(create=False)
+				if ifaceutil.bridgeExists(host, bridge):
+					attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
+					assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
+					ifaceutil.bridgeRemove(host, bridge)			
+				host.giveId("bridge", self.bridge_id)
+			self.bridge_id = None
+			self.save()
 
 	def _unassignTincPort(self):
 		if self.tinc_port:
@@ -392,7 +391,6 @@ class TincConnection(emulated.EmulatedConnection):
 
 	def onInterfaceStateChange(self):
 		emulated.EmulatedConnection.onInterfaceStateChange(self)
-		self._unassignBridgeId()
 
 	def internalInterface(self):
 		return tinc.interfaceName(ConnectionEndpoint(self))

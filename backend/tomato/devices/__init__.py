@@ -144,13 +144,21 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				options = options.combine(iface.connection.connector.upcast().hostPreferences())
 		return options
 
-	def getBridge(self, interface, assign=True, create=True):
+	def getBridge(self, interface, create=True):
 		"""
 		Returns the name of the bridge for the connection of the given interface
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
-		return interface.connection.upcast().getBridge(assign=assign, create=create)
+		return interface.connection.upcast().getBridge(create=create)
+	
+	def _assignBridges(self):
+		for iface in self.interfaceSetAll():
+			iface.connection.upcast()._assignBridgeId()
+			
+	def _unassignBridges(self):
+		for iface in self.interfaceSetAll():
+			iface.connection.upcast()._unassignBridgeId()				
 	
 	def migrate(self, direct):
 		proc = tasks.Process("migrate")
