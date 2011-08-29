@@ -255,20 +255,21 @@ class EmulatedConnection(Connection):
 	def _unconfigLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
-		bridge = self.getBridge()
+		assert not self.getAttribute("ifb_id", None) is None
+		ifb = "ifb%d" % self.getAttribute("ifb_id", None)
 		try:
 			tc.clearIncomingRedirect(host, iface)
 			tc.clearLinkEmulation(host, iface)
-			tc.clearLinkEmulation(host, bridge)
+			tc.clearLinkEmulation(host, ifb)
 		except:
 			pass
 	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		unassign_ifb = tasks.Task("unassign-ifb", self._unassignIfb)
-		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink, after=unassign_ifb)
+		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
+		unassign_ifb = tasks.Task("unassign-ifb", self._unassignIfb, after=unconfigure_link)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([unassign_ifb, unconfigure_link, stop_capture])
+		taskset.add([unconfigure_link, unassign_ifb, stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):
