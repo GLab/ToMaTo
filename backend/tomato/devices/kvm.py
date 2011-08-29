@@ -212,10 +212,10 @@ class KVMDevice(Device):
 
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		assign_template = tasks.Task("assign-template", self._assignTemplate)
 		assign_host = tasks.Task("assign-host", self._assignHost)
-		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_host)
-		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, after=assign_host)
+		assign_template = tasks.Task("assign-template", self._assignTemplate, after=assign_host)
+		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_template)
+		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, after=assign_bridges)
 		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
 		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
 		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)

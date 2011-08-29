@@ -95,7 +95,7 @@ class Template(attributes.Mixin, models.Model):
 		url = self.getDownloadUrl()
 		if url:
 			fileutil.mkdir(host, os.path.dirname(dst))
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
+			host.execute("curl -o %(filename)s -sfSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
 
 	def configure(self, attributes):
 		if "external_url" in attributes:
