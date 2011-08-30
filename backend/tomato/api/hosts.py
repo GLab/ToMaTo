@@ -76,7 +76,7 @@ def host_add(host_name, group_name, enabled, attrs, user=None):
 	_admin_access(user)
 	return hosts.create(host_name, group_name, enabled, attrs)
 
-def host_change(host_name, group_name, enabled, attrs, user=None):
+def host_change(host_name, group_name, attrs, user=None):
 	"""
 	Changes a host. The new values will only apply to new topologies or on state change.
 	This operation needs admin access.
@@ -84,7 +84,6 @@ def host_change(host_name, group_name, enabled, attrs, user=None):
 	Parameters:
 		string host_name: the host name
 		string group_name: the name of the host group
-		boolean enabled: whether the host should be enabled
 		dict attrs: dictionary with host attributes
 
 	Host attributes in "attrs":
@@ -99,7 +98,7 @@ def host_change(host_name, group_name, enabled, attrs, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	hosts.change(host_name, group_name, enabled, attrs)
+	hosts.change(host_name, group_name, attrs)
 
 def host_remove(host_name, user=None):
 	"""

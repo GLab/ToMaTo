@@ -81,13 +81,17 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		hostserver_cleanup = tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, after=hostserver)
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
-		free_ids = tasks.Task("id-usage", self._checkIds, after=login)
 		create_ifbs = tasks.Task("ifb-interfaces", self._createIfbs, after=login)
+		free_ids = tasks.Task("id-usage", self._checkIds, after=create_ifbs)
 		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids, create_ifbs]
 		enable = tasks.Task("enable", self._enable, after=other)
 		return other + [enable]
 
 	def _createIfbs(self):
+		if not self.getAttribute("ifb_start"):
+			self.setAttribute("ifb_start", 0)
+		if not self.getAttribute("ifb_count"):
+			self.setAttribute("ifb_count", 250)
 		ifaceutil.createIfbs(self, self.getAttribute("ifb_start") + self.getAttribute("ifb_count"))
 		
 	def _enable(self):
@@ -224,7 +228,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		unclaimed = self._getFreeIds()
 		types = ["vmid", "port", "bridge", "ifb"]
 		for t in types:
-			for id in set(unused[t]) - set(unclaimed[t]):
+			for id in set(unused.get(t, [])) - set(unclaimed.get(t, [])):
 				# id is claimed but unused
 				realUsage = self._realIdState(t, id)
 				if realUsage:
@@ -436,16 +440,15 @@ def getBest(group):
 	fault.check(hosts, "No hosts available")
 	return hosts[0]
 	
-def create(host_name, group_name, enabled, attrs):
-	host = Host(name=host_name, enabled=enabled, group=group_name)
+def create(host_name, group_name, attrs):
+	host = Host(name=host_name, enabled=False, group=group_name)
 	host.save()
 	host.init()
 	host.configure(attrs)
 	return host.check()
 
-def change(host_name, group_name, enabled, attrs):
+def change(host_name, group_name, attrs):
 	host = get(host_name)
-	host.enabled=enabled
 	host.group=group_name
 	host.configure(attrs)
 	host.save()
