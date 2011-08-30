@@ -54,3 +54,16 @@ class Mixin:
 	def clearAttributes(self):
 		self.attrs = None
 		self.save()
+	def setPrivateAttributes(self, attrs):
+		assert isinstance(self.attrs, dict)
+		for k, v in attrs.iteritems():
+			if k.startswith("_"):
+				self.attrs[k] = v
+		self.save()
+	def getPrivateAttributes(self):
+		assert isinstance(self.attrs, dict)
+		data = {}
+		for k, v in self.attrs.iteritems():
+			if k.startswith("_"):		
+				data[k] = v
+		return data

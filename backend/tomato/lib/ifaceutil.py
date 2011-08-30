@@ -19,11 +19,11 @@ import util, random, exceptions
 
 def bridgeExists(host, bridge):
 	import fileutil
-	return fileutil.existsDir(host, "/sys/class/net/%s/brif" % bridge)
+	return fileutil.existsDir(host, "/sys/class/net/%s/brif" % util.identifier(bridge))
 
 def bridgeCreate(host, bridge):
 	try:
-		host.execute("brctl addbr %s" % bridge)
+		host.execute("brctl addbr %s" % util.escape(bridge))
 	except exceptions.CommandError:
 		if not bridgeExists(host, bridge):
 			raise
@@ -38,18 +38,18 @@ def bridgeRemove(host, bridge, disconnectAll=False, setIfdown=True):
 	assert not bridgeInterfaces(host, bridge)
 	if setIfdown:
 		ifdown(host, bridge)
-	host.execute("brctl delbr %s" % bridge)
+	host.execute("brctl delbr %s" % util.escape(bridge))
 	assert not bridgeExists(host, bridge), "Bridge cannot be removed: %s" % bridge
 		
 def bridgeInterfaces(host, bridge):
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge 
-	return host.execute("ls /sys/class/net/%s/brif" % bridge).split()
+	return host.execute("ls /sys/class/net/%s/brif" % util.identifier(bridge)).split()
 		
 def bridgeDisconnect(host, bridge, iface, deleteBridgeIfLast=False):
 	assert bridgeExists(host, bridge), "Bridge does not exist: %s" % bridge
 	if not iface in bridgeInterfaces(host, bridge):
 		return
-	host.execute("brctl delif %s %s" % (bridge, iface))
+	host.execute("brctl delif %s %s" % (util.escape(bridge), util.escape(iface)))
 	assert not iface in bridgeInterfaces(host, bridge), "Interface %s could not be removed from bridge %s" % (iface, bridge)
 	if deleteBridgeIfLast and not bridgeInterfaces(host, bridge):
 		bridgeRemove(host, bridge)
@@ -63,26 +63,26 @@ def bridgeConnect(host, bridge, iface):
 	oldbridge = interfaceBridge(host, iface)
 	if oldbridge:
 		bridgeDisconnect(host, oldbridge, iface)
-	host.execute("brctl addif %s %s" % (bridge, iface))
+	host.execute("brctl addif %s %s" % (util.escape(bridge), util.escape(iface)))
 	assert iface in bridgeInterfaces(host, bridge), "Interface %s could not be connected to bridge %s" % (iface, bridge)
 		
 def interfaceBridge(host, iface):
 	try:
-		return util.lines(host.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (iface, iface)))[0]
+		return util.lines(host.execute("[ -d /sys/class/net/%s/brport/bridge ] && basename $(readlink /sys/class/net/%s/brport/bridge)" % (util.identifier(iface), util.identifier(iface))))[0]
 	except exceptions.CommandError:
 		return False
 			
 def interfaceExists(host, iface):
 	import fileutil
-	return fileutil.existsDir(host, "/sys/class/net/%s" % iface)
+	return fileutil.existsDir(host, "/sys/class/net/%s" % util.identifier(iface))
 
 def ifup(host, iface):
 	assert interfaceExists(host, iface)
-	host.execute("ip link set up %s" % iface)
+	host.execute("ip link set up %s" % util.escape(iface))
 
 def ifdown(host, iface):
 	assert interfaceExists(host, iface)
-	host.execute("ip link set down %s" % iface)
+	host.execute("ip link set down %s" % util.escape(iface))
 	
 def deleteDefaultRoute(host):
 	try:
@@ -93,14 +93,14 @@ def deleteDefaultRoute(host):
 
 def addDefaultRoute(host, via):
 	try:
-		host.execute("ip route add default via %s" % via)
+		host.execute("ip route add default via %s" % util.escape(via))
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 8: #RTNETLINK answers: File exists
 			raise
 	
 def addAddress(host, iface, address):
 	try:
-		host.execute("ip addr add %s dev %s" % (address, iface))
+		host.execute("ip addr add %s dev %s" % (util.escape(address), util.escape(iface)))
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 2: #RTNETLINK answers: File exists
 			raise
@@ -113,47 +113,66 @@ def isIpv4(s):
 	import re
 	return re.match("(\d+).(\d+).(\d+).(\d.)", s)
 
+def iptables(host, args=[], ipv6=False):
+	try:
+		host.execute(" ".join(["ip6tables" if ipv6 else "iptables"]+args))
+	except exceptions.CommandError, exc:
+		if "Resource temporarily unavailable" in exc.errorMessage:
+			import time
+			time.sleep(0.1)
+			iptables(host, args, ipv6)
+		else:
+			raise
+
 def connectInterfaces(host, if1, if2, id, allowIps):
 	assert interfaceExists(host, if1)
 	assert interfaceExists(host, if2)
 	iptablesRemoveRules(host, if1)
 	iptablesRemoveRules(host, if2)
 	for ip in allowIps:
-		if isIpv4(ip):
-			host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( if1, ip ))
-			host.execute ("iptables -A INPUT -i %s -d %s -j ACCEPT" % ( if2, ip ))
-		else: #assume IPv6
-			host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( if1, ip ))
-			host.execute ("ip6tables -A INPUT -i %s -d %s -j ACCEPT" % ( if2, ip ))
-	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % if1)
-	host.execute ("iptables -A INPUT -i %s -j REJECT --reject-with icmp-net-unreachable" % if2)
+		iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-d", util.escape(ip), "-j", "ACCEPT"], not isIpv4(ip))
+		iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-d", util.escape(ip), "-j", "ACCEPT"], not isIpv4(ip))
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
 	#FIXME: find out how net-unreachable is named for ipv6
-	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % if1)
-	host.execute ("ip6tables -A INPUT -i %s -j REJECT" % if2)
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT"], True)
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT"], True)
 	#calculate table ids
 	table1 = 1000 + id * 2
 	table2 = 1000 + id * 2 + 1
 	#create rules to select routing table according to incoming device
-	host.execute ( "ip rule add iif %s table %s" % ( if1, table1 ))
-	host.execute ( "ip rule add iif %s table %s" % ( if2, table2 ))
+	try:
+		host.execute ( "ip rule del iif %s" % util.escape(if1) )
+	except:
+		pass
+	try:
+		host.execute ( "ip rule del iif %s" % util.escape(if2) )
+	except:
+		pass
+	host.execute ( "ip rule add iif %s table %s" % ( util.escape(if1), util.escape(table1) ))
+	host.execute ( "ip rule add iif %s table %s" % ( util.escape(if2), util.escape(table2) ))
 	#create routing table with only a default device
 	try:
-		host.execute ( "ip route add table %s default dev %s" % ( table1, if2 ))
-		host.execute ( "ip route add table %s default dev %s" % ( table2, if1 ))
-	except exceptions.CommandError, exc:
-		if exc.errorCode != 2: #Rule does not exist
-			raise
-	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if2))
+		host.execute ( "ip route del table %s default" % util.escape(table1) )
+	except:
+		pass
+	try:
+		host.execute ( "ip route del table %s default" % util.escape(table2) )
+	except:
+		pass
+	host.execute ( "ip route add table %s default dev %s" % ( util.escape(table1), util.escape(if2) ))
+	host.execute ( "ip route add table %s default dev %s" % ( util.escape(table2), util.escape(if1) ))
+	res = host.execute("ip route get %s from %s iif %s" % (util.escape(randomIp4()), util.escape(randomIp4()), util.escape(if2)))
 	assert if1 in res, "route should be %s but was %s" % (if1, res)
-	res = host.execute("ip route get %s from %s iif %s" % (randomIp4(), randomIp4(), if1))
+	res = host.execute("ip route get %s from %s iif %s" % (util.escape(randomIp4()), util.escape(randomIp4()), util.escape(if1)))
 	assert if2 in res, "route should be %s but was %s" % (if2, res)
 
 def iptablesRemoveRules(host, device):
 	try:
-		host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % device )
-		host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % device )
+		host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % util.identifier(device) )
+		host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % util.identifier(device) )
 	except exceptions.CommandError, exc:
-		if exc.errorCode == 4: # iptables: Resource temporarily unavailable
+		if "Resource temporarily unavailable" in exc.errorMessage:
 			import time
 			time.sleep(0.1)
 			iptablesRemoveRules(host, device)
@@ -166,11 +185,11 @@ def disconnectInterfaces(host, if1, if2, id):
 	table2 = 1000 + id * 2 + 1
 	try:
 		#remove rules
-		host.execute ( "ip rule del iif %s table %s" % ( if1, table1 ))
-		host.execute ( "ip rule del iif %s table %s" % ( if2, table2 ))
+		host.execute ( "ip rule del iif %s" % util.escape(if1) )
+		host.execute ( "ip rule del iif %s" % util.escape(if2) )
 		#remove routes
-		host.execute ( "ip route del table %s default dev %s" % ( table1, if2 ))
-		host.execute ( "ip route del table %s default dev %s" % ( table2, if1 ))
+		host.execute ( "ip route del table %s default" % util.escape(table1) )
+		host.execute ( "ip route del table %s default" % util.escape(table2) )
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 2: #Rule does not exist
 			raise
@@ -181,7 +200,7 @@ def disconnectInterfaces(host, if1, if2, id):
 def startDhcp(host, iface):
 	for cmd in ["/sbin/dhclient", "/sbin/dhcpcd"]:
 		try:
-			return host.execute("[ -e %s ] && %s %s" % (cmd, cmd, iface))
+			return host.execute("[ -e %s ] && %s %s" % (cmd, cmd, util.escape(iface)))
 		except exceptions.CommandError, err:
 			if err.errorCode != 8:
 				raise			
@@ -189,14 +208,14 @@ def startDhcp(host, iface):
 
 def getRxBytes(host, iface):
 	assert interfaceExists(host, iface)
-	return int(host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (iface, iface)))
+	return int(host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (util.identifier(iface), util.identifier(iface))))
 
 def getTxBytes(host, iface):
 	assert interfaceExists(host, iface)
-	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (iface, iface)))
+	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (util.identifier(iface), util.identifier(iface))))
 
 def ping(host, ip, samples=10, maxWait=5):
-	res = host.execute("ping -A -c %d -n -q -w %d %s" % (samples, maxWait, ip))
+	res = host.execute("ping -A -c %d -n -q -w %d %s" % (samples, maxWait, util.escape(ip)))
 	if not res:
 		return
 	import re
@@ -223,3 +242,9 @@ def ping(host, ip, samples=10, maxWait=5):
 		avg = avg * 1000.0
 		stddev = stddev * 1000.0
 	return (loss, avg, stddev)
+
+def createIfbs(host, num=100):
+	if interfaceExists(host, "ifb%d" % (num-1)):
+		return
+	host.execute("modprobe ifb numifbs=%d" % num)
+	assert interfaceExists(host, "ifb%d" % (num-1))

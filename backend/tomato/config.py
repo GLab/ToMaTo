@@ -33,14 +33,16 @@ TIMEOUT_WARNING = 7 #days
 
 LOGIN_TIMEOUT = 1
 
-SERVER = {
-	"PORT": 8000,
-	"SSL": False,
-	"SSL_OPTS": {
-		"private_key" : "",
-		"ca_key": ""
+SERVER = [
+	{
+		"PORT": 8000,
+		"SSL": False,
+		"SSL_OPTS": {
+			"private_key" : "",
+			"ca_key": ""
+		}
 	}
-}
+]
 
 DATABASES = {
     'default': {
@@ -61,7 +63,11 @@ LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('tomato', 'south')
 
+DISABLE_TRANSACTION_MANAGEMENT = True
+
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
+
+ERROR_NOTIFY = []
 
 MAIL = {
 	'SUBJECT_PREFIX': "[ToMaTo] ",
@@ -74,20 +80,16 @@ MAIL = {
 }
 
 try:
-	import imp, tempfile, sys
+	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
-		file = open(path, "r")
-		with file:
-			tmp = tempfile.mktemp()
-			try:
-				imp.load_source("backend_config", tmp, file)
-				from backend_config import *
-				print >>sys.stderr, "Loaded config from %s" % path
-			except Exception, exc:
-				print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
-			finally:
-				if os.path.exists(tmp+"c"):
-					os.remove(tmp+"c")
+		try:
+			execfile(path)
+			print >>sys.stderr, "Loaded config from %s" % path
+		except Exception, exc:
+			print >>sys.stderr, "Failed to load config from %s: %s" % (path, exc)
 except:
 	import traceback
 	traceback.print_exc()
+
+if not isinstance(SERVER, list):
+	SERVER = [SERVER]

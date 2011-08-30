@@ -26,7 +26,7 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 		if direct:
 			src = src_path
 			dst = dst_path
-			mode = src_host.execute("stat -c %%a %s" % src).strip()
+			mode = src_host.execute("stat -c %%a %s" % util.escape(src)).strip()
 		else:
 			dst = dst_host.getHostServer().randomFilename()
 			src = src_host.getHostServer().randomFilename()
@@ -62,26 +62,26 @@ def existsDir(host, file):
 		return False
 
 def fetch(host, url, dst):
-	return host.execute("curl -f -o \"%s\" '%s'; echo $?" % (dst, url))
+	return host.execute("curl -f -o %s %s; echo $?" % (util.escape(dst), util.escape(url)))
 
 def move(host, src, dst):
-	return host.execute("mv \"%s\" \"%s\"" % (src, dst))
+	return host.execute("mv %s %s" % (util.escape(src), util.escape(dst)))
 	
 def copy(host, src, dst):
-	return host.execute("cp -a \"%s\" \"%s\"" % (src, dst))
+	return host.execute("cp -a %s %s" % (util.escape(src), util.escape(dst)))
 
 def chown(host, file, owner, recursive=False):
-	return host.execute("chown %s \"%s\" \"%s\"" % ("-r" if recursive else "", owner, file))
+	return host.execute("chown %s %s %s" % ("-r" if recursive else "", util.escape(owner), util.escape(file)))
 
 def chmod(host, file, mode, recursive=False):
-	return host.execute("chmod %s \"%s\" \"%s\"" % ("-r" if recursive else "", mode, file))
+	return host.execute("chmod %s %s %s" % ("-r" if recursive else "", util.escape(mode), util.escape(file)))
 
 def mkdir(host, dir):
-	return host.execute("mkdir -p \"%s\"" % dir)
+	return host.execute("mkdir -p %s" % util.escape(dir))
 
 def delete(host, path, recursive=False):
 	assert path, "No file to delete"
-	return host.execute("rm %s -f \"%s\"" % ("-r" if recursive else "", path))
+	return host.execute("rm %s -f %s" % ("-r" if recursive else "", util.escape(path)))
 
 def packdir(host, archive, dir, args=""):
 	assert existsDir(host, dir), "Directory does not exist"
@@ -89,7 +89,7 @@ def packdir(host, archive, dir, args=""):
 		args = args + " -z"
 	if archive.endswith(".bz2") and not "-j" in args:
 		args = args + " -j"
-	res = host.execute("tar -cf '%s' -C '%s' %s ." % (archive, dir, args))
+	res = host.execute("tar -cf %s -C %s %s ." % (util.escape(archive), util.escape(dir), args))
 	assert existsFile(host, archive), "Failed to pack directory: %s" % res
 	return res
 
@@ -99,14 +99,14 @@ def unpackdir(host, archive, dir, args=""):
 		args = args + " -z"
 	if archive.endswith(".bz2") and not "-j" in args:
 		args = args + " -j"
-	return host.execute("tar -xf '%s' -C '%s' %s" % (archive, dir, args))
+	return host.execute("tar -xf %s -C %s %s" % (util.escape(archive), util.escape(dir), args))
 
 def compress(host, src, dst):
 	assert existsFile(host, src)
-	host.execute("gzip < '%s' > '%s'" % (src, dst))
+	host.execute("gzip < %s > %s" % (util.escape(src), util.escape(dst)))
 	assert existsFile(host, dst)
 	
 def uncompress(host, src, dst):
 	assert existsFile(host, src)
-	host.execute("gunzip < '%s' > '%s'" % (src, dst))
+	host.execute("gunzip < %s > %s" % (util.escape(src), util.escape(dst)))
 	assert existsFile(host, dst)

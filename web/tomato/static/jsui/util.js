@@ -219,7 +219,7 @@ table_row = function(elements) {
 
 pattern = {
 	int: /^\d+$/,
-	float: /^\d+\.\d+$/,
+	float: /^\d+(\.\d+)?$/,
 	ip4: /^\d+\.\d+\.\d+\.\d+$/,		
 	ip6: /^([0-9A-Fa-f]{1,4}:){0,7}([0-9A-Fa-f]{1,4})?(:[0-9A-Fa-f]{1,4}){0,7}$/,		
 	ip4net: /^\d+\.\d+\.\d+\.\d+\/\d+$/,

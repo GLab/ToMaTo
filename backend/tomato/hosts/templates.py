@@ -35,11 +35,13 @@ class Template(attributes.Mixin, models.Model):
 	attrs = db.JSONField(default={})
 			
 	def getDownloadUrl(self):
-		if self.getAttribute("on_hostserver", False):
+		if hostServer and self.getAttribute("on_hostserver", False):
 			return hostServer.downloadGrant(self.getFilename(), filename=self.getFilename()) 
 		return self.getAttribute("external_url")
 			
 	def getUploadUrl(self):
+		if not hostServer:
+			return None
 		return hostServer.uploadGrant(self.getFilename()) 
 
 	def setExternalUrl(self, url):
@@ -93,7 +95,7 @@ class Template(attributes.Mixin, models.Model):
 		url = self.getDownloadUrl()
 		if url:
 			fileutil.mkdir(host, os.path.dirname(dst))
-			host.execute("curl -o %(filename)s -sSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
+			host.execute("curl -o %(filename)s -sfSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
 
 	def configure(self, attributes):
 		if "external_url" in attributes:

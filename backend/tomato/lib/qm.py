@@ -22,11 +22,11 @@ from tomato.lib import util
 
 import fileutil, process, ifaceutil, exceptions
 
-def _qm(host, vmid, cmd, params="", maxWait=30, unlock=True):
+def _qm(host, vmid, cmd, params=[], maxWait=30, unlock=True):
 	waitStep = 1
 	while True:
 		try:
-			return host.execute("qm %s %d %s" % (cmd, vmid, params))
+			return host.execute("qm %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))))
 		except exceptions.CommandError, exc:
 			if not (exc.errorCode == 4 and "lock" in exc.errorMessage and "timeout" in exc.errorMessage):
 				raise
@@ -44,7 +44,7 @@ def _qm(host, vmid, cmd, params="", maxWait=30, unlock=True):
 
 def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("echo -e \"%(cmd)s\\n\" | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd, "vmid": vmid, "timeout": timeout})
+	return host.execute("echo -e %(cmd)s'\n' | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": util.escape(cmd), "vmid": vmid, "timeout": timeout})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
@@ -60,13 +60,10 @@ def _translateKeycode(keycode):
 			return keycode
 		if keycode.isupper():
 			return "shift-%s" % keycode.lower()
-	for (key, value) in trans.iteritems():
-		if keycode == key:
-			return value
-	return keycode
+	return trans.get(keycode, keycode)
 
 def sendKeys(host, vmid, keycodes):
-	return _monitor(host, vmid, "\n".join(map(lambda k: "sendkey %s 10" % _translateKeycode(k), keycodes)))
+	return _monitor(host, vmid, "\n".join(map(lambda k: "sendkey %s 10" % util.identifier(_translateKeycode(k)), keycodes)))
 
 def getState(host, vmid):
 	if not vmid:
@@ -83,13 +80,13 @@ def getState(host, vmid):
 def useImage(host, vmid, image, move=False):
 	assert fileutil.existsFile(host, image), "Image file does not exist"
 	try:
-		host.execute("qemu-img check -f qcow2 '%s'; echo $?" % image)
+		host.execute("qemu-img check -f qcow2 %s; echo $?" % util.escape(image))
 	except exceptions.CommandError, exc:
 		#Error 1: Leaked clusters, "This means waste of disk space, but no harm to data."
 		if not exc.errorCode in [1]:
 			raise  
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to change image"
-	_qm(host, vmid, "set", "--ide0 undef")
+	_qm(host, vmid, "set", ["--ide0", "undef"])
 	imagePath = _imagePath(vmid)
 	fileutil.mkdir(host, _imagePathDir(vmid))
 	if move:
@@ -97,11 +94,11 @@ def useImage(host, vmid, image, move=False):
 	else:
 		fileutil.copy(host, image, imagePath)
 	fileutil.chown(host, imagePath, "root:root")
-	_qm(host, vmid, "set", "--ide0=local:%s/disk.qcow2" % vmid)
+	_qm(host, vmid, "set", ["--ide0", "local:%d/disk.qcow2" % vmid])
 	assert fileutil.existsFile(host, imagePath)
 
 def _vncPidfile(vmid):
-	return "%s/vnc-%s.pid" % (config.REMOTE_DIR, vmid)
+	return "%s/vnc-%d.pid" % (config.REMOTE_DIR, vmid)
 
 def vncRunning(host, vmid, port):
 	return process.processRunning(host, _vncPidfile(vmid), "tcpserver")
@@ -109,7 +106,7 @@ def vncRunning(host, vmid, port):
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	host.execute("tcpserver -qHRl 0 0 %s qm vncproxy %s %s & echo $! > %s" % ( port, vmid, password, _vncPidfile(vmid) ))
+	host.execute("tcpserver -qHRl 0 0 %d qm vncproxy %d %s & echo $! > %s" % ( port, vmid, util.escape(password), _vncPidfile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
@@ -124,7 +121,7 @@ def useTemplate(host, vmid, template):
 
 def setName(host, vmid, name):
 	assert getState(host, vmid) != generic.State.CREATED, "VM must exist to change the name"
-	_qm(host, vmid, "set", "--name \"%s\"" % name)
+	_qm(host, vmid, "set", ["--name", name])
 
 def addInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to add interfaces"
@@ -133,14 +130,12 @@ def addInterface(host, vmid, iface):
 	# if this bridge does not exist, kvm start fails
 	if not ifaceutil.interfaceExists(host, "vmbr%d" % iface_id):
 		ifaceutil.bridgeCreate(host, "vmbr%d" % iface_id)
-	res = _qm(host, vmid, "set", "--vlan%d e1000; echo $?" % iface_id)
-	assert res.splitlines()[-1] == "0", "Failed to add interface to KVM: %s" % res
-					
+	_qm(host, vmid, "set", ["--vlan%d" % iface_id, "e1000"])					
 	
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to remove interfaces"
 	iface_id = int(re.match("eth(\d+)", iface).group(1))
-	_qm(host, vmid, "set", "--vlan%d undef" % iface_id)			
+	_qm(host, vmid, "set", ["--vlan%d" % iface_id, "undef"])			
 		
 def copyImage(host, vmid, file):
 	assert getState(host, vmid) != generic.State.CREATED, "VM must be prepared"
@@ -155,7 +150,7 @@ def getDiskUsage(host, vmid):
 	
 def getMemoryUsage(host, vmid):
 	if getState(host, vmid) == generic.State.STARTED:
-		return int(host.execute("( [ -s /var/run/qemu-server/%(vmid)s.pid ] && PROC=`head -n1 /var/run/qemu-server/%(vmid)s.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat ) 2>/dev/null | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": vmid}))		
+		return int(host.execute("( [ -s /var/run/qemu-server/%(vmid)d.pid ] && PROC=`head -n1 /var/run/qemu-server/%(vmid)d.pid` && [ -e /proc/$PROC/stat ] && cat /proc/$PROC/stat ) 2>/dev/null | awk '{print ($24 * 4096)}' || echo 0" % {"vmid": vmid}))		
 	else:
 		return 0
 	
@@ -179,9 +174,9 @@ def interfaceDevice(host, vmid, iface, failSilent=False):
 	@return: name of host device
 	@rtype: string
 	"""
-	iface_id = re.match("eth(\d+)", iface).group(1)
+	iface_id = int(re.match("eth(\d+)", iface).group(1))
 	assert getState(host, vmid) == generic.State.STARTED, "Cannot determine KVM host device names when not running"
-	for name in ["vmtab%(vmid)si%(iface_id)s", "vmtab%(vmid)si%(iface_id)sd0", "tap%(vmid)si%(iface_id)s", "tap%(vmid)si%(iface_id)sd0"]:
+	for name in ["vmtab%(vmid)di%(iface_id)d", "vmtab%(vmid)di%(iface_id)dd0", "tap%(vmid)di%(iface_id)d", "tap%(vmid)di%(iface_id)dd0"]:
 		name = name % { "vmid": vmid, "iface_id": iface_id }
 		if fileutil.existsDir(host, "/sys/class/net/%s" % name):
 			return name

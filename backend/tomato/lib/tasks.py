@@ -119,6 +119,10 @@ class Task():
 			self.output.write('%s:%s' % (exc.__class__.__name__, exc))
 	def _run(self):
 		#print "Running %s" % self.name
+		try:
+			self.fn.__self__.reload()
+		except:
+			pass
 		self.status = Status.RUNNING
 		if self.callWithTask:
 			self.result = self.fn(self, *(self.args), **(self.kwargs))

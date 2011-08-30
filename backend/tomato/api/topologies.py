@@ -29,19 +29,19 @@ def top_info(top_id, user=None):
 		fault.Error: if the topology is not found	  
 	""" 
 	top = topology.get(top_id)
+	_top_access(top, "user", user)
 	return top.toDict(user, True)
 
-def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None):
+def top_list(owner_filter=None, host_filter=None, user=None):
 	"""
 	Returns brief information about topologies. The set of topologies that will
-	be returned can be filtered by owner, by host (affected by the topology) 
-	and by access level of the current user. All filters apply subtractively.
-	If a filter has the value "" it is not applied.
+	be returned can be filtered by owner and by host (affected by the topology) 
+	All filters apply subtractively. If a filter has the value "" it is not 
+	applied.
 	
 	Parameters:
 		string owner_filter: name of the owner to filter by or ""
 		string host_filter: name of the host to filter by or ""
-		string access_filter: access level to filter by (either "user" or "manager") or ""
 
 	Returns: a list of brief information about topologies
 	""" 
@@ -55,7 +55,7 @@ def top_list(owner_filter=None, host_filter=None, access_filter=None, user=None)
 	if host_filter:
 		all_tops = all_tops.filter(device__host__name=host_filter).distinct()
 	for t in all_tops:
-		if (not access_filter) or t.checkAccess(access_filter, user):
+		if t.checkAccess("user", user):
 			tops.append(t.toDict(user, False))
 	return tops
 	
@@ -69,7 +69,7 @@ def top_create(user=None):
 	fault.check(user.is_user, "only regular users can create topologies")
 	top=topology.create(user)
 	top.save()
-	top.logger().log("created", user=user.name)
+	top.log("created", user=user.name)
 	return top.id
 
 def top_modify(top_id, mods, direct=False, user=None):
@@ -100,6 +100,9 @@ def top_modify(top_id, mods, direct=False, user=None):
 		"topology-rename": Renames the topology. The new name must be contained
 			in the properties dict as "name". Element and subelement parameters
 			are ignored.
+		"topology-configure": Configures the topology. The entries of the 
+			properties dict will be used for configuration. The element and
+			subelement parameters are ignored.
 		"device-create": Creates a new device with a given type and name. The 
 			name of the device must be contained in the properties dict as 
 			"name" (not in the element attribute!). The type of the device must
@@ -175,11 +178,11 @@ def top_modify(top_id, mods, direct=False, user=None):
 	""" 
 	top = topology.get(top_id)
 	_top_access(top, "manager", user)
-	top.logger().log("modifying topology", user=user.name, bigmessage=str(mods))
+	top.log("modifying topology", user=user.name, bigmessage=str(mods))
 	from tomato import modification
 	res = modification.modifyList(top, mods, direct)
 	if not direct:
-		top.logger().log("started task %s" % res, user=user.name)
+		top.log("started task %s" % res, user=user.name)
 	return res
 
 def top_action(top_id, action, element_type="topology", element_name=None, attrs={}, direct=False, user=None):
@@ -275,7 +278,7 @@ def top_action(top_id, action, element_type="topology", element_name=None, attrs
 		element = top.connectorSetGet(element_name)
 	else:
 		fault.check(False, "Unknown element type: %s", element_type)
-	top.logger().log("%s %s %s" % (action, element_type, element_name), user=user.name)
+	top.log("%s %s %s" % (action, element_type, element_name), user=user.name)
 	return element.action(user, action, attrs, direct)
 	
 def permission_set(top_id, user_name, role, user=None):
@@ -295,7 +298,7 @@ def permission_set(top_id, user_name, role, user=None):
 		top.permissionsRemove(user_name)
 	if role:
 		top.permissionsAdd(user_name, role)
-	top.logger().log("set permission: %s=%s" % (user_name, role))
+	top.log("set permission: %s=%s" % (user_name, role))
 	
 # keep internal imports at the bottom to avoid dependency problems
 from tomato.api import _top_access

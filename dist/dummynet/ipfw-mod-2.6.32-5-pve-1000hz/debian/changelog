@@ -1,5 +1,0 @@
-ipfw-mod (20100319-1) stable; urgency=low
-
-  * Building for 2.6.23-5-pve-1000hz
-
- -- root <root@KERNEL_BUILD.e4.ukl.german-lab.de>  Thu, 23 Jun 2011 16:22:37 +0200

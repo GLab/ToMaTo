@@ -37,6 +37,12 @@ class Logger():
 	def lograw (self, message):
 		self.fd.write(message)
 		
+	def __exit__(self, *args):
+		self.close()
+		
+	def __enter__(self, *args):
+		return self
+		
 	def close(self):
 		try:
 			self.fd.close()

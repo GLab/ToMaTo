@@ -21,7 +21,7 @@ import attributes, auth, config
 from lib import db, util
 from lib.decorators import *
 
-class Topology(attributes.Mixin, models.Model):
+class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 	"""
 	This class represents a whole topology and offers methods to work with it
 	"""
@@ -44,10 +44,14 @@ class Topology(attributes.Mixin, models.Model):
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["DESTROY"])
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["REMOVE"])
 
-	def logger(self):
+	def _logger(self):
 		if not os.path.exists(config.LOG_DIR + "/top"):
 			os.makedirs(config.LOG_DIR + "/top")
 		return log.getLogger(config.LOG_DIR + "/top/%s"%self.id)
+
+	def log(self, *args, **kwargs):
+		with self._logger() as logger:
+			logger.log(*args, **kwargs)
 
 	def init (self, owner):
 		"""
@@ -55,15 +59,20 @@ class Topology(attributes.Mixin, models.Model):
 		@param owner the owner of the topology
 		"""
 		self.owner=owner
-		self.renew()
+		self.date_usage = datetime.datetime.now()
+		self.save()
 		self.name = "Topology_%s" % self.id
 		self.save()
+		self.renew()
 
 	def renew(self):
-		self.date_usage = datetime.datetime.now()
+		if self.id:
+			self.reload()
+		if self.date_usage:
+			self.date_usage = datetime.datetime.now()
 		self.setAttribute("timeout_warning", None)
 		self.save()
-
+		
 	def maxState(self):
 		max_state = generic.State.CREATED
 		for con in self.connectorSetAll():
@@ -104,10 +113,11 @@ class Topology(attributes.Mixin, models.Model):
 
 	def _logTimeoutAction(self, action):
 		now = datetime.datetime.now()
-		self.logger().log("timeout: %s" % action)
+		self.log("timeout: %s" % action)
 		out = tasks.get_current_task().output
 		out.write("TIMEOUT %s topology %s [%d]" % (action, self.name, self.id))
-		data = {"name": self.name, "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
+		data = {"name": self.name, "owner": str(self.owner), "id": self.id, "action": {"stop": "STOPPED", "destroy": "DESTROYED", "remove": "REMOVED"}.get(action), "date": now}
+		fault.log_info("Topology %(name)s [%(id)d] of %(owner)s %(action)s due to timeout" % data, "")
 		self._sendToUsers("Topology timeout notification", "the topology \"%(name)s\" (ID %(id)d) has been %(action)s at %(date)s due to a timeout." % data)
 
 	def _timeoutActionWarning(self, action, when):
@@ -145,10 +155,15 @@ class Topology(attributes.Mixin, models.Model):
 
 	def startProcess(self, process, direct=False):
 		self.checkBusy()
-		proc = process.start(direct)
 		self.task = process.id
 		self.save()
-		return proc
+		try:	
+			return process.start(direct)
+		except:
+			if not process.isDone():
+				self.task = None
+				self.save()
+		return process.dict(True)
 
 	def deviceSetAll(self):
 		return self.device_set.all() # pylint: disable-msg=E1101
@@ -279,8 +294,8 @@ class Topology(attributes.Mixin, models.Model):
 		return self._stateBackward(True, True, direct, False)
 			
 	def _log(self, task, output):
-		logger = log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id)
-		logger.log(task, bigmessage=output)
+		with log.getLogger(config.LOG_DIR+"/top_%s.log" % self.id) as logger:
+			logger.log(task, bigmessage=output)
 		
 	def getCapabilities(self, user):
 		isOwner = self.checkAccess(Permission.ROLE_OWNER, user)
@@ -294,7 +309,8 @@ class Topology(attributes.Mixin, models.Model):
 				"prepare": isManager and not isBusy,
 				"destroy": isManager and not isBusy,
 				"remove": isOwner and not isBusy,
-				"renew": isUser
+				"renew": isUser,
+				"disable_timeout": user.is_admin	
 			},
 			"modify": isManager and not isBusy,
 			"permission_set": isOwner
@@ -316,6 +332,9 @@ class Topology(attributes.Mixin, models.Model):
 			return self.remove(direct)
 		elif action == "renew":
 			return self.renew()
+		elif action == "disable_timeout":
+			self.date_usage = None
+			self.save()
 		
 	def permissionsAdd(self, user_name, role):
 		self.renew()
@@ -389,15 +408,21 @@ class Topology(attributes.Mixin, models.Model):
 		res["traffic"] = res.get("traffic", 0)/2 #traffic is counted on devices and connectors
 		self.setAttribute("resources", res)
 		
+	def configure(self, properties):
+		self.setPrivateAttributes(properties)			
+					
 	@xmlRpcSafe
 	def toDict(self, user, detail):
 		res = {"id": self.id, 
 			"attrs": {"name": self.name, "state": self.maxState(), "owner": str(self.owner),
 					"device_count": len(self.deviceSetAll()), "connector_count": len(self.connectorSetAll()),
-					"stop_timeout": str(self.date_usage + self.STOP_TIMEOUT), "destroy_timeout": str(self.date_usage + self.DESTROY_TIMEOUT), "remove_timeout": str(self.date_usage + self.REMOVE_TIMEOUT) 
 					},
 			"resources": util.xml_rpc_sanitize(self.resources()),
 			}
+		if self.date_usage:
+			res["attrs"].update(stop_timeout=str(self.date_usage + self.STOP_TIMEOUT), destroy_timeout=str(self.date_usage + self.DESTROY_TIMEOUT), remove_timeout=str(self.date_usage + self.REMOVE_TIMEOUT)) 
+		else:
+			res["attrs"].update(timeouts_disabled=True)
 		if detail:
 			res.update({"devices": dict([[v.name, v.upcast().toDict(user)] for v in self.deviceSetAll()]),
 				"connectors": dict([[v.name, v.upcast().toDict(user)] for v in self.connectorSetAll()])
@@ -406,6 +431,7 @@ class Topology(attributes.Mixin, models.Model):
 			res["permissions"][str(self.owner)]="owner"
 			res["capabilities"] = self.getCapabilities(user)
 			res["resources"] = util.xml_rpc_sanitize(self.resources())
+			res["attrs"].update(self.getPrivateAttributes())
 		if self.checkAccess(Permission.ROLE_USER, user):
 			task = self.getTask()
 			if task:

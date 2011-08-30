@@ -13,9 +13,7 @@ function upload () {
   done
 }
 
-upload dummynet lenny
 upload hostserver lenny
-upload kernel lenny
 upload meta lenny
 upload repy lenny
 upload backend squeeze

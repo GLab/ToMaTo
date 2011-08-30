@@ -36,6 +36,8 @@ class Modification():
 		if self.type == "topology-rename":
 			top.name = self.properties["name"]
 			top.save()
+		elif self.type == "topology-configure":
+			top.configure(self.properties)
 		elif self.type == "device-create":
 			dtype = self.properties["type"]
 			if dtype == "kvm":
@@ -112,7 +114,7 @@ class Modification():
 			if not con.isExternal(): 
 				fault.check(con.state == generic.State.CREATED, "Cannot delete a running or prepared connector")
 			con.delete()
-		
+			
 		elif self.type == "connection-create":
 			con = top.connectorSetGet(self.element).upcast()
 			interface = self.properties["interface"]
@@ -127,7 +129,7 @@ class Modification():
 			con.connectionsDelete(name)
 			
 		else:
-			raise fault.Fault("Unknown modification type: %s" % self.type)
+			raise fault.new("Unknown modification type: %s" % self.type)
 							
 def readFromList(mods):
 	modlist = []
@@ -143,8 +145,9 @@ def modifyTaskRun(top_id, mods):
 def modify(top, mods, direct):
 	from lib import tasks
 	proc = tasks.Process("modify-topology")
-	proc.add(tasks.Task("renew", top.renew))
-	proc.add(tasks.Task("modify", util.curry(modifyTaskRun, [top.id, mods])))
+	renew = tasks.Task("renew", top.renew)
+	proc.add(renew)
+	proc.add(tasks.Task("modify", util.curry(modifyTaskRun, [top.id, mods]), after=renew))
 	return top.startProcess(proc, direct)
 
 def modifyList(top, mods, direct):

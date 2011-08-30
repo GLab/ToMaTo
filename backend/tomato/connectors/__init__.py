@@ -197,8 +197,8 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = self.upcast().getResourceUsage()
 		self.setAttribute("resources",res)
 	
-	def getBridge(self, connection, assign=True, create=True):
-		bridge_id = connection.getBridgeId(assign)
+	def getBridge(self, connection, create=True):
+		bridge_id = connection.getBridgeId()
 		assert bridge_id
 		name = "gbr_%d" % bridge_id
 		if create:
@@ -207,9 +207,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		return name
 
 	def configure(self, properties):
-		if "pos" in properties:
-			self.setAttribute("pos", properties["pos"])
-		self.save()
+		self.setPrivateAttributes(properties)
 
 	def getIdUsage(self, host):
 		ids = {}
@@ -223,13 +221,12 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	@xmlRpcSafe
 	def toDict(self, user):
-		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state,
-					"pos": self.getAttribute("pos"),
-				},
+		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},
 			"resources": util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"connections": dict([[str(c.interface), c.upcast().toDict(user)] for c in self.connectionSetAll()]),
 			"capabilities": self.getCapabilities(user)
 			}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 
 
@@ -250,12 +247,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			self.interface.device.reload()
 		return self.interface.device.host
 
-	def getBridgeId(self, assign=True):
-		if not self.bridge_id:
-			self.reload()
-		if not self.bridge_id and assign:
-			self._assignBridgeId()
-			assert self.bridge_id
+	def getBridgeId(self):
 		return self.bridge_id
 
 	def getIdUsage(self, host):
@@ -263,9 +255,6 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		if self.bridge_id and self.interface.device.host == host:
 			ids.update(bridge=set((self.bridge_id,)))
 		return ids
-
-	def onInterfaceStateChange(self):
-		self.connector.upcast().onInterfaceStateChange(self)
 
 	def _setBridgeId(self, id):
 		self.bridge_id = id
@@ -292,8 +281,22 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			assert host
 			host.takeId("bridge", self._setBridgeId)		
 
-	def getBridge(self, assign=True, create=True):
-		return self.connector.upcast().getBridge(self, assign=assign, create=create)
+	def _unassignBridgeId(self):
+		if self.bridge_id:
+			host = self.getHost()
+			if host:
+				if not self.connector.isExternal():
+					bridge = self.getBridge(create=False)
+					if ifaceutil.bridgeExists(host, bridge):
+						attachedInterfaces = ifaceutil.bridgeInterfaces(host, bridge)
+						assert not attachedInterfaces, "Bridge %s still has interfaces connected: %s" % (bridge, attachedInterfaces) 
+						ifaceutil.bridgeRemove(host, bridge)			
+				host.giveId("bridge", self.bridge_id)
+			self.bridge_id = None
+			self.save()
+
+	def getBridge(self, create=True):
+		return self.connector.upcast().getBridge(self, create=create)
 
 	def getStartTasks(self):
 		return tasks.TaskSet()
@@ -311,7 +314,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		return str(self.connector) + "<->" + str(self.interface)
 
 	def configure(self, properties):
-		pass
+		self.setPrivateAttributes(properties)
 
 	def getCapabilities(self, user):
 		return {
@@ -323,4 +326,5 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = {"interface": str(self.interface), "attrs":{"bridge_id": self.bridge_id}}
 		if user:
 			res["capabilities"] = self.getCapabilities(user)
+		res["attrs"].update(self.getPrivateAttributes())
 		return res

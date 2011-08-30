@@ -1,0 +1,36 @@
+dtypes = ["kvm", "openvz", "prog"]
+statenames= ["created", "prepared", "started"]
+resources={}
+states={}
+for dtype in dtypes:
+	resources[dtype] = {}
+	states[dtype] = {}
+	for sname in statenames:
+		resources[dtype][sname] = {}
+		states[dtype][sname] = 0
+
+for t in top_list():
+	top = top_info(t["id"])
+	for dev in top["devices"].values():
+		res = dev.get("resources")
+		type = dev["attrs"].get("type")
+		state = dev["attrs"].get("state")
+		if not res or not type or not state:
+			continue
+		states[type][state] += 1
+		for key, value in res.iteritems():
+			value = float(value)
+			if key in resources[type][state]:
+				resources[type][state][key] += value
+			else:
+				resources[type][state][key] = value
+
+
+for dtype in dtypes:
+	for sname in statenames:
+		print "Resources usage of %s %s" % (sname, dtype)
+		for key, value in resources[dtype][sname].iteritems():
+			if states[dtype][sname]:
+				value /= states[dtype][sname]
+			if value:
+				print "\t%s: %.2f" % (key, value)

@@ -238,6 +238,9 @@ def _writeDotFile(file, clist):
 def _tincName(endpoint):
 	return "tinc_%d" % endpoint.getId()
 	
+def interfaceName(endpoint):
+	return _tincName(endpoint)
+	
 def _pidFile(endpoint):
 	return "/var/run/tinc.%s.pid" % _tincName(endpoint)
 
@@ -257,10 +260,14 @@ def getState(endpoint):
 	return generic.State.STARTED
 	
 def _startEndpoint(endpoint):
-	assert getState(endpoint) == generic.State.PREPARED
+	state = getState(endpoint)
+	assert state != generic.State.CREATED
+	if state == generic.State.STARTED:
+		_stopEndpoint(endpoint)
 	host = endpoint.getHost()
 	assert host
-	assert process.portFree(host, endpoint.getPort())
+	if not process.portFree(host, endpoint.getPort()):
+		process.killPortUser(host, endpoint.getPort())
 	iface = _tincName(endpoint)
 	host.execute("tincd --net=%s" % iface )
 	util.waitFor(lambda :ifaceutil.interfaceExists(host, iface))
@@ -268,7 +275,9 @@ def _startEndpoint(endpoint):
 	ifaceutil.ifup(host, iface)
 
 def _stopEndpoint(endpoint):
-	assert getState(endpoint) != generic.State.CREATED
+	state = getState(endpoint)
+	if state != generic.State.STARTED:
+		return
 	host = endpoint.getHost()
 	assert host
 	try:
@@ -276,8 +285,8 @@ def _stopEndpoint(endpoint):
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 1: #tincd was not running
 			raise
-	util.waitFor(lambda :getState(endpoint) == generic.State.PREPARED, 5.0)
-	assert getState(endpoint) == generic.State.PREPARED
+	util.waitFor(lambda :getState(endpoint) != generic.State.STARTED, 5.0)
+	assert getState(endpoint) != generic.State.STARTED
 
 def _setupRouting(endpoint):
 	host = endpoint.getHost()
@@ -307,8 +316,10 @@ def _teardownRouting(endpoint, mode):
 	assert host
 	id = endpoint.getId()
 	assert id
-	bridge = endpoint.getBridge()
-	assert bridge
+	try:
+		bridge = endpoint.getBridge()
+	except:
+		return
 	assert getState(endpoint) != generic.State.CREATED
 	tincname = _tincName(endpoint)
 	ifaceutil.disconnectInterfaces(host, bridge, tincname, id)
@@ -332,16 +343,18 @@ def startNetwork(endpoints, mode=Mode.SWITCH):
 		_startEndpoint(ep)
 		_connectEndpoint(ep, mode)
 
+def _startEndpointTask(endpoint, mode=Mode.SWITCH):
+	_startEndpoint(endpoint)
+	_connectEndpoint(endpoint, mode)
+
 def getStartNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
-	reverse = util.curry(_tryStopNetwork, [endpoints, mode])
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		start_ep = tasks.Task("start-endpoint-%s" % id, _startEndpoint, args=(ep,), reverseFn=reverse)
-		connect_ep = tasks.Task("connect-endpoint-%s" % id, _connectEndpoint, args=(ep,mode), reverseFn=reverse, after=start_ep)
-		taskset.add([start_ep, connect_ep])
+		start_ep = tasks.Task("start-endpoint-%s" % id, _startEndpointTask, args=(ep,mode))
+		taskset.add(start_ep)
 	return taskset
 		
 def stopNetwork(endpoints, mode=Mode.SWITCH):
@@ -350,37 +363,23 @@ def stopNetwork(endpoints, mode=Mode.SWITCH):
 		_teardownRouting(ep, mode)
 		_stopEndpoint(ep)
 
-def _tryStopNetwork(endpoints, mode=Mode.SWITCH, *args):
-	for ep in endpoints:
-		try:
-			_teardownRouting(ep, mode)
-		except:
-			pass
-		try:
-			_stopEndpoint(ep)
-		except:
-			pass
+def _stopEndpointTask(endpoint, mode=Mode.SWITCH):
+	_teardownRouting(endpoint, mode)
+	_stopEndpoint(endpoint)
 
 def getStopNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	taskset = tasks.TaskSet()
-	reverse = util.curry(_tryStopNetwork, [endpoints, mode])
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		teardown_ep = tasks.Task("teardown-routing-%s" % id, _teardownRouting, args=(ep,mode,), reverseFn=reverse)
-		stop_ep = tasks.Task("stop-endpoint-%s" % id, _stopEndpoint, args=(ep,), reverseFn=reverse, after=teardown_ep)
-		taskset.add([stop_ep, teardown_ep])
+		stop_ep = tasks.Task("stop-endpoint-%s" % id, _stopEndpointTask, args=(ep,mode,))
+		taskset.add(stop_ep)
 	return taskset
 
 def prepareNetwork(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
-	connections = _determineConnections(endpoints)
-	for ep in endpoints:
-		_createHostFile(ep)
-		_createConfigFile(ep, mode, connections)
-	for ep in endpoints:
-		_collectHostFiles(ep, connections)
+	_prepareFiles(endpoints, mode)
 	for ep in endpoints:
 		_uploadFiles(ep)
 		_removeTemporaryFiles(ep)
@@ -394,30 +393,31 @@ def _collectConfigTask(task, ep):
 	connections = task.getDependency("determine-connections").getResult()
 	_collectHostFiles(ep, connections)
 
-def _useConfigTask(ep):
+def _prepareEndpointTask(ep):
+	state = getState(ep)
+	if state == generic.State.STARTED:
+		_stopEndpoint(ep)
 	_uploadFiles(ep)
 	_removeTemporaryFiles(ep)
 
+def _prepareFiles(endpoints, mode=Mode.SWITCH):
+	assert _areEndpoints(endpoints)
+	connections = _determineConnections(endpoints)
+	for ep in endpoints:
+		_createHostFile(ep)
+		_createConfigFile(ep, mode, connections)
+	for ep in endpoints:
+		_collectHostFiles(ep, connections)
+
 def getPrepareNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
-	reverse = util.curry(_tryDestroyNetwork, [endpoints, mode])
 	taskset = tasks.TaskSet()
-	determine_connections = tasks.Task("determine-connections", _determineConnections, args=(endpoints,))
-	create_config_all = []
-	for ep in endpoints:
-		id = ep.getId()
-		assert id
-		create_config_all.append(tasks.Task("create-config-%s" % id, _createConfigTask, args=(ep, mode,), callWithTask=True, reverseFn=reverse, after=determine_connections))
-	collect_config_all = []
+	prepare_files = tasks.Task("prepare-files", _prepareFiles, args=(endpoints,mode,))
+	taskset.add(prepare_files)
 	for ep in endpoints:		
 		id = ep.getId()
 		assert id
-		collect_config_all.append(tasks.Task("collect-config-%s" % id, _collectConfigTask, args=(ep,), callWithTask=True, reverseFn=reverse, after=[create_config_all, determine_connections]))
-	for ep in endpoints:		
-		id = ep.getId()
-		assert id
-		taskset.add(tasks.Task("use-config-%s" % id, _useConfigTask, args=(ep,), reverseFn=reverse, after=collect_config_all))
-	taskset.add([determine_connections, create_config_all, collect_config_all])
+		taskset.add(tasks.Task("prepare-endpoint-%s" % id, _prepareEndpointTask, args=(ep,), after=prepare_files))
 	return taskset
 
 def destroyNetwork(endpoints, mode=Mode.SWITCH):
@@ -425,22 +425,13 @@ def destroyNetwork(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		_deleteFiles(ep)
 
-def _tryDestroyNetwork(endpoints, mode=Mode.SWITCH, *args):
-	_tryStopNetwork(endpoints, mode)
-	for ep in endpoints:
-		try:
-			_deleteFiles(ep)
-		except:
-			pass
-
 def getDestroyNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
-	reverse = util.curry(_tryDestroyNetwork, [endpoints, mode])
 	taskset = tasks.TaskSet()
 	for ep in endpoints:
 		id = ep.getId()
 		assert id
-		taskset.add(tasks.Task("delete-files-%s" % id, _deleteFiles, reverseFn=reverse, args=(ep,)))
+		taskset.add(tasks.Task("delete-files-%s" % id, _deleteFiles, args=(ep,)))
 	return taskset
 	
 def _tmpPath(endpoint):
@@ -493,7 +484,8 @@ def _uploadFiles(endpoint):
 	endpoint.getHost().filePut(_tmpPath(endpoint)+"/", _configDir(endpoint))
 
 def _deleteFiles(endpoint):
-	assert getState(endpoint) != generic.State.STARTED
+	if getState(endpoint) == generic.State.STARTED:
+		_stopEndpoint(endpoint)
 	fileutil.delete(endpoint.getHost(), _configDir(endpoint), recursive=True)
 	
 def estimateDiskUsage(numNodes):

@@ -144,92 +144,78 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				options = options.combine(iface.connection.connector.upcast().hostPreferences())
 		return options
 
-	def getBridge(self, interface, assign=True, create=True):
+	def getBridge(self, interface, create=True):
 		"""
 		Returns the name of the bridge for the connection of the given interface
 		Note: This must be 16 characters or less for brctl to work
 		@param interface the interface
 		"""
-		return interface.connection.upcast().getBridge(assign=assign, create=create)
+		return interface.connection.upcast().getBridge(create=create)
+	
+	def _assignBridges(self):
+		for iface in self.interfaceSetAll():
+			iface.connection.upcast()._assignBridgeId()
+			
+	def _unassignBridges(self):
+		for iface in self.interfaceSetAll():
+			iface.connection.upcast()._unassignBridgeId()				
 	
 	def migrate(self, direct):
+		self.topology.renew()
 		proc = tasks.Process("migrate")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(tasks.Task("migrate", self.upcast().migrateRun))
 		return self.topology.startProcess(proc, direct)
 
 	def start(self, direct):
+		self.topology.renew()
 		fault.check(self.state == State.PREPARED, "Device must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
+		self.topology.renew()
 		fault.check(self.state != State.CREATED, "Device must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
+		self.topology.renew()
 		fault.check(self.state == State.CREATED, "Device must be created to be prepared but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("prepare")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
+		self.topology.renew()
 		fault.check(self.state != State.STARTED, "Device must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
 				con = iface.connection.connector
 				fault.check(con.state == State.CREATED, "Connector %s must be destroyed before device %s", (con.name, self.name))
 		proc = tasks.Process("destroy")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
-	def _changeState(self, state):
-		self.state = state
-		self.save()
-		self._triggerConnections()
-
-	def _triggerConnections(self):
-		for iface in self.interfaceSetAll():
-			if iface.isConnected():
-				iface.connection.upcast().onInterfaceStateChange() 
-
-	def _adaptTaskset(self, taskset):
-		taskset.after(taskset.find("reload"))
-		taskset.before(taskset.find("change-state"))
-		return taskset
-
-	def _initialTasks(self, state):
-		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("reload", self.reload))
-		taskset.add(tasks.Task("change-state", self._changeState, args=(state,)))
-		return taskset
-
 	def getStartTasks(self):
-		return self._initialTasks(State.STARTED)
+		return tasks.TaskSet()
 	
 	def getStopTasks(self):
-		return self._initialTasks(State.PREPARED)
+		return tasks.TaskSet()
 	
 	def getPrepareTasks(self):
-		return self._initialTasks(State.PREPARED)
+		return tasks.TaskSet()
 	
 	def getDestroyTasks(self):
-		return self._initialTasks(State.CREATED)
+		return tasks.TaskSet()
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name)
 			if properties["hostgroup"] == "auto":
 				properties["hostgroup"] = ""
-		if "pos" in properties:
-			self.setAttribute("pos", properties["pos"])
+		self.setPrivateAttributes(properties)
 		self.save()
 
 	def updateResourceUsage(self):
@@ -249,13 +235,13 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
-					"pos": self.getAttribute("pos"),
 					"name": self.name, "type": self.type, "state": self.state,
 					},
 			"resources" : util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"interfaces": dict([[i.name, i.upcast().toDict(user)] for i in self.interfaceSetAll()]),
 			"capabilities": self.getCapabilities(user)
 		}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 	
 	def uploadImageGrant(self, redirect):
@@ -310,15 +296,18 @@ class Interface(attributes.Mixin, models.Model):
 			return False	
 	
 	def configure(self, properties):
-		pass
+		self.setPrivateAttributes(properties)
 
 	def upcast(self):
 		if self.isConfigured():
 			return self.configuredinterface.upcast() # pylint: disable-msg=E1101
 		return self
 
-	def __unicode__(self):
+	def __str__(self):
 		return str(self.device.name)+"."+str(self.name)
+		
+	def __unicode__(self):
+		return str(self)
 		
 	def getCapabilities(self, user):
 		return {
@@ -328,6 +317,7 @@ class Interface(attributes.Mixin, models.Model):
 		
 	def toDict(self, user):
 		res = {"attrs": {"name": self.name}, "capabilities": self.getCapabilities(user)}
+		res["attrs"].update(self.getPrivateAttributes())
 		return res
 
 	def connectToBridge(self):

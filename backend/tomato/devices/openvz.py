@@ -123,21 +123,6 @@ class OpenVZDevice(Device):
 	def _startVnc(self):
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
-	def _startVm(self):
-		vzctl.start(self.host, self.getVmid())
-
-	def _checkInterfacesExist(self):
-		for i in self.interfaceSetAll():
-			assert ifaceutil.interfaceExists(self.host, self.interfaceDevice(i))
-
-	def _createBridges(self):
-		for iface in self.interfaceSetAll():
-			if iface.isConnected():
-				bridge = self.getBridge(iface)
-				assert bridge, "Interface has no bridge %s" % iface
-				ifaceutil.bridgeCreate(self.host, bridge)
-				ifaceutil.ifup(self.host, bridge)
-
 	def _configureRoutes(self):
 		#Note: usage of self as host is intentional
 		ifaceutil.deleteDefaultRoute(self)
@@ -146,32 +131,46 @@ class OpenVZDevice(Device):
 		if self.hasAttribute("gateway6"):
 			ifaceutil.addDefaultRoute(self, self.getAttribute("gateway6"))
 
-	def _fallbackStop(self):
-		self.state = self.getState()
-		self.save()
-		if self.state == State.STARTED:
-			self._stopVm()
-		if self.getVncPort():
-			self._stopVnc()
-		self.state = self.getState()
-		self.save()
+	def connectToBridge(self, iface, bridge):
+		ifaceutil.bridgeCreate(self.host, bridge)
+		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
+		ifaceutil.ifup(self.host, bridge)
+
+	def _startDev(self):
+		host = self.host
+		vmid = self.vmid
+		state = vzctl.getState(host, vmid)
+		if not self.getVncPort():
+			self.host.takeId("port", self.setVncPort)
+		if state == State.CREATED:
+			self._prepareDev()
+			state = vzctl.getState(host, vmid)
+		for iface in self.interfaceSetAll():
+			bridge = self.getBridge(iface)
+			assert bridge, "Interface has no bridge %s" % iface
+			ifaceutil.bridgeCreate(self.host, bridge)
+			ifaceutil.ifup(self.host, bridge)
+		try: 
+			if state == State.PREPARED:
+				vzctl.start(host, vmid)
+			for iface in self.interfaceSetAll():
+				assert ifaceutil.interfaceExists(host, self.interfaceDevice(iface))
+				self.connectToBridge(iface, self.getBridge(iface))
+				iface.upcast()._configureNetwork()
+			self._startVnc()
+			self.state = State.STARTED
+			self.save()
+		except:
+			try:
+				vzctl.stop(host, vmid)
+			except:
+				pass
+			raise
 		
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
-		create_bridges = tasks.Task("create-bridges", self._createBridges, reverseFn=self._fallbackStop)
-		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop, after=create_bridges)
-		check_interfaces_exist = tasks.Task("check-interfaces-exist", self._checkInterfacesExist, reverseFn=self._fallbackStop, after=start_vm)
-		interfaces_configured = []
-		for iface in self.interfaceSetAll():
-			ts = iface.upcast().getStartTasks()
-			ts.prefix(iface).after(check_interfaces_exist)
-			interfaces_configured.append(ts)
-			taskset.add(ts)
-		configure_routes = tasks.Task("configure-routes", self._configureRoutes, reverseFn=self._fallbackStop, after=interfaces_configured)
-		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
-		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
-		taskset.add([create_bridges, start_vm, check_interfaces_exist, configure_routes, assign_vnc_port, start_vnc])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("start", self._startDev))
+		return taskset
 
 	def _stopVnc(self):
 		if not self.host or not self.getVmid() or not self.getVncPort():
@@ -183,13 +182,23 @@ class OpenVZDevice(Device):
 	def _stopVm(self):
 		vzctl.stop(self.host, self.getVmid())
 
+	def _stopDev(self):
+		host = self.host
+		vmid = self.getVmid()
+		state = vzctl.getState(host, vmid)
+		if state == State.STARTED:
+			vzctl.stop(host, vmid)
+			state = vzctl.getState(host, vmid)
+		self.state = State.PREPARED
+		self.save()
+		if self.getVncPort():
+			vzctl.stopVnc(host, vmid, self.getVncPort())
+			self._unassignVncPort()
+
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
-		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
-		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
-		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
-		taskset.add([stop_vnc, stop_vm, unassign_vnc_port])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("stop", self._stopDev))
+		return taskset
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
@@ -220,31 +229,49 @@ class OpenVZDevice(Device):
 			vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		vzctl.setHostname(self.host, self.getVmid(), "%s-%s" % (self.topology.name.replace("_","-"), self.name ))
 
-	def _createInterfaces(self):
-		for iface in self.interfaceSetAll():
-			vzctl.addInterface(self.host, self.getVmid(), iface.name)
-
-	def _createVm(self):
-		vzctl.create(self.host, self.getVmid(), self.getTemplate())
-
-	def _fallbackDestroy(self):
-		self._fallbackStop()
-		if self.host and self.getVmid():
-			if self.state == State.PREPARED:
-				self._destroyVm()
-		self.state = self.getState()
-		self.save()
-
+	def _prepareDev(self):
+		#assign host
+		self._assignHost()
+		host = self.host
+		
+		self._assignTemplate()
+		
+		self._assignBridges()
+		
+		if not self.getVmid():
+			self.host.takeId("vmid", self.setVmid)
+			fault.check(self.getVmid(), "No free vmid")
+		vmid = self.getVmid()
+		
+		state = vzctl.getState(host, vmid)
+		if state == State.STARTED:
+			vzctl.stop(host, vmid)
+			state = vzctl.getState(host, vmid)
+		if state == State.PREPARED:
+			vzctl.destroy(host, vmid)
+			state = vzctl.getState(host, vmid)
+		assert state == State.CREATED
+		
+		#nothing happened until here
+		
+		vzctl.create(host, vmid, self.getTemplate())
+		try:
+			self._configureVm()
+			for iface in self.interfaceSetAll():
+				vzctl.addInterface(host, vmid, iface.name)
+			self.state = State.PREPARED
+			self.save()
+		except:
+			try:
+				vzctl.destroy(host, vmid)
+			except:
+				pass
+			raise
+	
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		assign_template = tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy)
-		assign_host = tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy)
-		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, reverseFn=self._fallbackDestroy, after=assign_host)
-		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
-		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
-		create_interfaces = tasks.Task("create-interfaces", self._createInterfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
-		taskset.add([assign_template, assign_host, assign_vmid, create_vm, configure_vm, create_interfaces])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("prepare", self._prepareDev))
+		return taskset
 
 	def _unassignVmid(self):
 		if self.vmid:
@@ -260,13 +287,30 @@ class OpenVZDevice(Device):
 		if self.host:
 			vzctl.destroy(self.host, self.getVmid())
 
+	def _destroyDev(self):
+		host = self.host
+		vmid = self.getVmid()
+		if not host:
+			return
+		if vmid:
+			state = vzctl.getState(host, vmid)
+			if state == State.STARTED:
+				vzctl.stop(host, vmid)
+				state = vzctl.getState(host, vmid)
+			if state == State.PREPARED:
+				vzctl.destroy(host, vmid)
+				state = vzctl.getState(host, vmid)
+			assert state == State.CREATED
+			self.state = State.CREATED
+			self.save()
+			self._unassignVmid()
+		self._unassignBridges()
+		self._unassignHost()
+
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
-		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
-		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, after=destroy_vm, reverseFn=self._fallbackDestroy)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=unassign_vmid, reverseFn=self._fallbackDestroy)
-		taskset.add([destroy_vm, unassign_host, unassign_vmid])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("destroy", self._destroyDev))
+		return taskset
 
 	def configure(self, properties):
 		if "template" in properties:
@@ -324,7 +368,7 @@ class OpenVZDevice(Device):
 		if self.state == State.PREPARED or self.state == State.STARTED:
 			vzctl.addInterface(self.host, self.getVmid(), iface.name)
 		if self.state == State.STARTED:
-			iface.connectToBridge()
+			self.connectToBridge(iface, self.getBridge(iface))
 			iface._configureNetwork()
 		iface.save()
 
@@ -413,7 +457,7 @@ class OpenVZDevice(Device):
 				if state == State.STARTED:
 					con.start(True, noProcess=True)
 				if self.state == State.STARTED:
-					iface.upcast().connectToBridge()
+					self.connectToBridge(iface, self.getBridge(iface))
 				
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
@@ -505,15 +549,6 @@ class ConfiguredInterface(Interface):
 			if self.device.state == State.STARTED:
 				self._configureNetwork()
 			self.save()
-
-	def connectToBridge(self):
-		dev = self.device.upcast()
-		bridge = dev.getBridge(self)
-		if self.isConnected():
-			if not ifaceutil.bridgeExists(dev.host, bridge):
-				ifaceutil.bridgeCreate(dev.host, bridge)
-			ifaceutil.bridgeConnect(dev.host, bridge, self.interfaceName())
-			ifaceutil.ifup(dev.host, self.interfaceName())
 			
 	def _configureNetwork(self):
 		dev = self.device.upcast()
@@ -527,16 +562,6 @@ class ConfiguredInterface(Interface):
 		if self.hasAttribute("use_dhcp") and util.parse_bool(self.getAttribute("use_dhcp")):
 			ifaceutil.startDhcp(dev, self.name)
 			
-	def getStartTasks(self):
-		taskset = Interface.getStartTasks(self)
-		connect_to_bridge = tasks.Task("connect-to-bridge", self.connectToBridge)
-		taskset.add(connect_to_bridge)
-		taskset.add(tasks.Task("configure-network", self._configureNetwork, after=connect_to_bridge))
-		return taskset
-
-	def getPrepareTasks(self):
-		return Interface.getPrepareTasks(self)
-
 	def toDict(self, auth):
 		res = Interface.toDict(self, auth)
 		res["attrs"].update(ip4address=self.getAttribute("ip4address"), ip6address=self.getAttribute("ip6address"),

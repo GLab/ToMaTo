@@ -8,9 +8,13 @@ def waitForTask(task, assertSuccess=False):
 	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts["name"]
 	return ts
 
-def jsonToMods(json):
-	import simplejson
-	top = simplejson.loads(json)
+def jsonToMods(data):
+	import simplejson as json, zlib, base64
+	try:
+		top = json.loads(data)
+	except:
+		data = zlib.decompress(base64.b64decode(data))
+		top = json.loads(data)
 	mods = []
 	mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
 	for devname, dev in top["devices"].iteritems():
@@ -23,7 +27,7 @@ def jsonToMods(json):
 			mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
 	return mods
 
-def link_info(top, dev, ip, samples=10, maxWait=5):
+def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
 	if not res:
 		return
@@ -39,14 +43,15 @@ def link_info(top, dev, ip, samples=10, maxWait=5):
 			summary = True
 		if dpattern.match(line):
 			(rttmin, rttavg, rttmax, rttstddev, rttunit, dummy, ipg, ewma, ipg_ewma_unit) = dpattern.match(line).groups()
-			(rttmin, rttavg, rttmax, rttstddev, ipg, ewma) = (float(rttmin), float(rttavg), float(rttmax), float(rttstddev), float(ipg), float(ewma))
+			(rttmin, avg, rttmax, stddev, ipg, ewma) = (float(rttmin), float(rttavg), float(rttmax), float(rttstddev), float(ipg), float(ewma))
 			details = True
 	if not summary or not details or errors:
 		return
-	import math
-	loss = 1.0 - math.sqrt(1.0 - loss)
-	avg = rttavg / 2.0
-	stddev = rttstddev / 2.0
+	if oneWayAdapt:
+		import math
+		loss = 1.0 - math.sqrt(1.0 - loss)
+		avg = avg / 2.0
+		stddev = stddev / 2.0
 	if rttunit == "s":
 		avg = avg * 1000.0
 		stddev = stddev * 1000.0

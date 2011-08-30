@@ -1,5 +1,0 @@
-dummynet (20100319-1) stable; urgency=low
-
-  * Basic ipfw binary
-
- -- root <root@KERNEL_BUILD.e4.ukl.german-lab.de>  Thu, 23 Jun 2011 16:22:37 +0200

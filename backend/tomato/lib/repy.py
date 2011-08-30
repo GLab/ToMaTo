@@ -20,7 +20,7 @@ from tomato import generic, config
 import process, fileutil, util, ifaceutil
 
 def _path(vmid, ext):
-	return  "%s/repy/%s.%s" % (config.REMOTE_DIR, vmid, ext)	
+	return  "%s/repy/%d.%s" % (config.REMOTE_DIR, vmid, ext)	
 
 def _imagePath(vmid):
 	return _path(vmid, "repy")
@@ -44,7 +44,7 @@ def getState(host, vmid):
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c tail -f %s ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, password, _logFile(vmid), _vncPidFile(vmid) ))
+	host.execute("( while true; do vncterm -rfbport %d -passwd %s -c tail -f %s ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), _logFile(vmid), _vncPidFile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
@@ -63,7 +63,7 @@ def create(host, vmid, template):
 	
 def start(host, vmid, ifaces, args=[]):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
-	ilist = ["-i repy%s.%s,alias=%s" % (vmid, i, i) for i in ifaces]
+	ilist = ["-i repy%d.%s,alias=%s" % (vmid, util.identifier(i), util.identifier(i)) for i in ifaces]
 	if isinstance(args, basestring):
 		args = [args]
 	alist = [util.escape(a) for a in args] 

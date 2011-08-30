@@ -21,9 +21,12 @@ from django.shortcuts import render_to_response
 from django.http import Http404
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import reverse
+from django import forms
 
 from lib import *
 import xmlrpclib, tempfile
+import simplejson as json
+import zlib, base64
 
 def _display_top(api, top_id, task_id=None, action=None):
 	try:
@@ -40,15 +43,19 @@ def index(api, request):
 	owner_filter = ""
 	if request.REQUEST.has_key("owner_filter"):
 		owner_filter=request.REQUEST["owner_filter"]
-	toplist=api.top_list(owner_filter, host_filter, "user")
+	toplist=api.top_list(owner_filter, host_filter)
 	return render_to_response("top/index.html", {'top_list': toplist})
 
 @wrap_rpc
 def create(api, request):
 	top_id=api.top_create()
 	if request.REQUEST.has_key("json"):
-		import simplejson as json
-		top = json.loads(request.REQUEST["json"])
+		data = request.REQUEST["json"]
+		try:
+			top = json.loads(data)
+		except:
+			data = zlib.decompress(base64.b64decode(data))
+			top = json.loads(data)
 		mods = []
 		mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
 		for devname, dev in top["devices"].iteritems():
@@ -189,6 +196,51 @@ def permission_set(api, request, top_id):
 	role=request.REQUEST["role"]
 	api.permission_set(top_id, user, role)
 	return permission_list(request, top_id)
+
+class ExportForm(forms.Form):
+	compress = forms.BooleanField(required=False)
+	reduce = forms.BooleanField(required=False, initial=True)
+
+@wrap_rpc
+def export(api, request, top_id):
+	def compressData(s):
+		data = base64.b64encode(zlib.compress(s))
+		return "\n".join([data[i:i+80] for i in range(0, len(data), 80)])
+	blacklist=set(['capabilities', 'id', 'resources', 'vnc_port', 'vmid', 'host', 'vnc_password', 
+ 		'destroy_timeout', 'stop_timeout', 'remove_timeout', 'device_count', 'connector_count', 
+  		'tinc_port', 'bridge_id', 'properties', 'used_network', 'finished_task', 'running_task'])
+	def reduceData(data, blacklist):
+		if isinstance(data, list):
+			return [reduceData(el, blacklist) for el in data]
+		if isinstance(data, dict):
+			return dict(filter(lambda (k, v): k not in blacklist, [(k, reduceData(v, blacklist)) for k, v in data.iteritems()]))
+		return data
+	compress = False
+	reduce = True
+	if request.method == 'POST':
+		form = ExportForm(request.POST)
+		if form.is_valid():
+			d = form.cleaned_data
+			compress = d["compress"]
+			reduce = d["reduce"]
+	else:
+		form = ExportForm()
+	top=api.top_info(int(top_id))
+	if reduce:
+		top = reduceData(top, blacklist)
+	top = json.dumps(top, indent=None if compress else "  ")
+	if compress:
+		top = compressData(top)
+	if "download" in request.REQUEST:
+		response = HttpResponse(top, content_type="text/plain")
+		name = "topology_%s" % top_id
+		if compress:
+			name += ".gzip_b64.txt"
+		else:
+			name += ".json.txt"
+		response['Content-Disposition'] = 'attachment; filename=' + name
+		return response 
+	return render_to_response("top/export.html", {"top_id": top_id, "top": top, "form": form}) 
 
 def console(request):
 	return render_to_response("top/console.html")

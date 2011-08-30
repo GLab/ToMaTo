@@ -228,6 +228,15 @@ def sendMail(to, subject, body):
 	s.sendmail(config.MAIL["SENDER_MAIL"], [to], msg.as_string())
 	s.quit()
 	
+def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.", subst="_"):
+	ret=""
+	for ch in s:
+		if ch in allowed:
+			ret += ch
+		elif subst:
+			ret += subst
+	return ret
+	
 class Localhost:
 	def execute(self, cmd):
 		res = run_shell(cmd, shell=True)

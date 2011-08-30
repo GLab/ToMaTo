@@ -23,11 +23,11 @@ def _tcpdump(host, cmd):
 	return host.execute("tcpdump %s" % cmd)
 	
 def _remoteDir(name):
-	return "%s/%s" % (config.REMOTE_DIR, name)
+	return "%s/%s" % (config.REMOTE_DIR, util.identifier(name))
 	
 def _checkSyntax(host, iface, filter):
 	ifaceutil.ifup(host, iface)
-	return _tcpdump(host, "-i %s -d '%s' >/dev/null 2>&1; echo $?" % (iface, filter)).strip() == "0"
+	return _tcpdump(host, "-i %s -d %s >/dev/null 2>&1; echo $?" % (util.escape(iface), util.escape(filter))).strip() == "0"
 	
 def startCaptureToFile(host, name, iface, filter=""):
 	assert name, "Name not given"
@@ -36,7 +36,7 @@ def startCaptureToFile(host, name, iface, filter=""):
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
-	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -U -W 5 -s0 '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": iface, "rdir": rdir, "filter": filter })		
+	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -U -W 5 -s0 %(filter)s >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": util.escape(iface), "rdir": rdir, "filter": util.escape(filter) })		
 
 def captureToFileRunning(host, name="_dummy"):
 	return process.processRunning(host, "%s.file.pid" % _remoteDir(name), "tcpdump")
@@ -54,7 +54,7 @@ def startCaptureViaNet(host, name, port, iface, filter=""):
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
-	host.execute("tcpserver -qHRl 0 0 %(port)s tcpdump -i %(iface)s -nUw - '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.net.pid" % {"iface": iface, "rdir": rdir, "filter": filter, "port": port })
+	host.execute("tcpserver -qHRl 0 0 %(port)d tcpdump -i %(iface)s -nUw - '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.net.pid" % {"iface": util.escape(iface), "rdir": rdir, "filter": util.escape(filter), "port": port })
 	assert not process.portFree(host, port)
 
 def captureViaNetRunning(host, name="_dummy"):

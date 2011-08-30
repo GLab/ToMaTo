@@ -92,20 +92,10 @@ class ProgDevice(Device):
 	def _startVnc(self):
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
 
-	def _startVm(self):
-		repy.start(self.host, self.id, [iface.name for iface in self.interfaceSetAll()], self.getArgs())
-		for iface in self.interfaceSetAll():
-			repy.waitForInterface(self.host, self.id, iface.name)
-
 	def connectToBridge(self, iface, bridge):
 		ifaceutil.bridgeCreate(self.host, bridge)
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
-
-	def _startIface(self, iface):
-		ifaceutil.ifup(self.host, self.interfaceDevice(iface))
-		bridge = self.getBridge(iface)
-		self.connectToBridge(iface, bridge)
 
 	def _createBridges(self):
 		for iface in self.interfaceSetAll():
@@ -115,44 +105,61 @@ class ProgDevice(Device):
 				ifaceutil.bridgeCreate(self.host, bridge)
 				ifaceutil.ifup(self.host, bridge)
 
-	def _fallbackStop(self):
-		self.state = self.getState()
-		self.save()
-		if self.state == State.STARTED:
-			self._stopVm()
-		if self.getVncPort():
-			self._stopVnc()
-		self.state = self.getState()
-		self.save()
-		
+	def _startDev(self):
+		host = self.host
+		vmid = self.id
+		state = repy.getState(host, vmid)
+		if not self.getVncPort():
+			self.host.takeId("port", self.setVncPort)
+		if state == State.CREATED:
+			self._prepareDev()
+			state = repy.getState(host, vmid)
+		for iface in self.interfaceSetAll():
+			bridge = self.getBridge(iface)
+			assert bridge, "Interface has no bridge %s" % iface
+			ifaceutil.bridgeCreate(self.host, bridge)
+			ifaceutil.ifup(self.host, bridge)
+		try: 
+			if state == State.PREPARED:
+				ifaces = [iface.name for iface in self.interfaceSetAll()]
+				repy.start(host, vmid, ifaces, self.getArgs())
+			for iface in self.interfaceSetAll():
+				repy.waitForInterface(self.host, self.id, iface.name)
+				ifaceutil.ifup(self.host, self.interfaceDevice(iface))
+				self.connectToBridge(iface, self.getBridge(iface))
+			self._startVnc()
+			self.state = State.STARTED
+			self.save()
+		except:
+			try:
+				repy.stop(host, vmid)
+			except:
+				pass
+			raise
+	
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
-		create_bridges = tasks.Task("create-bridges", self._createBridges, reverseFn=self._fallbackStop)
-		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop, after=create_bridges)
-		for iface in self.interfaceSetAll():
-			taskset.add(tasks.Task("start-interface-%s" % iface, self._startIface, args=(iface,), reverseFn=self._fallbackStop, after=start_vm))
-		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
-		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
-		taskset.add([create_bridges, start_vm, assign_vnc_port, start_vnc])
-		return self._adaptTaskset(taskset)
-
-	def _stopVnc(self):
-		if not self.host or not self.getVncPort():
-			return
-		repy.stopVnc(self.host, self.id, self.getVncPort())
-		self.host.giveId("port", self.getVncPort())
-		self.setVncPort(None)
+		taskset.add(tasks.Task("start", self._startDev))
+		return taskset
 	
-	def _stopVm(self):
-		repy.stop(self.host, self.id)
+	def _stopDev(self):
+		host = self.host
+		vmid = self.id
+		state = repy.getState(host, vmid)
+		if state == State.STARTED:
+			repy.stop(host, vmid)
+			state = repy.getState(host, vmid)
+		self.state = State.PREPARED
+		self.save()
+		if self.getVncPort():
+			repy.stopVnc(host, vmid, self.getVncPort())
+			self._unassignVncPort()
+
 
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
-		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
-		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
-		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
-		taskset.add([stop_vnc, stop_vm, unassign_vnc_port])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("stop", self._stopDev))
+		return taskset
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
@@ -168,45 +175,72 @@ class ProgDevice(Device):
 			fault.check(self.host, "No matching host found")
 			self.save()
 
-	def _assignVncPort(self):
-		assert self.host
-		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
-
-	def _createVm(self):
-		repy.create(self.host, self.id, self.getTemplate())
-
-	def _fallbackDestroy(self):
-		self._fallbackStop()
-		if self.host:
-			if self.state == State.PREPARED:
-				self._destroyVm()
-		self.state = self.getState()
-		self.save()
+	def _prepareDev(self):
+		#assign host
+		self._assignHost()
+		host = self.host
+		
+		self._assignTemplate()
+		
+		self._assignBridges()
+		
+		vmid = self.id
+		
+		state = repy.getState(host, vmid)
+		if state == State.STARTED:
+			repy.stop(host, vmid)
+			state = repy.getState(host, vmid)
+		if state == State.PREPARED:
+			repy.destroy(host, vmid)
+			state = repy.getState(host, vmid)
+		assert state == State.CREATED
+		
+		#nothing happened until here
+		
+		repy.create(host, vmid, self.getTemplate())
+		try:
+			self.state = State.PREPARED
+			self.save()
+		except:
+			try:
+				repy.destroy(host, vmid)
+			except:
+				pass
+			raise
 
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		assign_template = tasks.Task("assign-template", self._assignTemplate, reverseFn=self._fallbackDestroy)
-		assign_host = tasks.Task("assign-host", self._assignHost, reverseFn=self._fallbackDestroy)
-		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_host)
-		taskset.add([assign_template, assign_host, create_vm])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("prepare", self._prepareDev))
+		return taskset
 
 	def _unassignVncPort(self):
 		if self.vnc_port and self.host:
 			self.host.giveId("port", self.vnc_port)
 		self.setVncPort(None)
 
-	def _destroyVm(self):
-		if self.host:
-			repy.destroy(self.host, self.id)
+	def _destroyDev(self):
+		host = self.host
+		vmid = self.id
+		if not host:
+			return
+		if vmid:
+			state = repy.getState(host, vmid)
+			if state == State.STARTED:
+				repy.stop(host, vmid)
+				state = repy.getState(host, vmid)
+			if state == State.PREPARED:
+				repy.destroy(host, vmid)
+				state = repy.getState(host, vmid)
+			assert state == State.CREATED
+			self.state = State.CREATED
+			self.save()
+		self._unassignBridges()
+		self._unassignHost()
 
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
-		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, after=destroy_vm, reverseFn=self._fallbackDestroy)
-		taskset.add([destroy_vm, unassign_host])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("destroy", self._destroyDev))
+		return taskset
 
 	def configure(self, properties):
 		if "template" in properties:
