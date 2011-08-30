@@ -436,16 +436,15 @@ def getBest(group):
 	fault.check(hosts, "No hosts available")
 	return hosts[0]
 	
-def create(host_name, group_name, enabled, attrs):
-	host = Host(name=host_name, enabled=enabled, group=group_name)
+def create(host_name, group_name, attrs):
+	host = Host(name=host_name, enabled=False, group=group_name)
 	host.save()
 	host.init()
 	host.configure(attrs)
 	return host.check()
 
-def change(host_name, group_name, enabled, attrs):
+def change(host_name, group_name, attrs):
 	host = get(host_name)
-	host.enabled=enabled
 	host.group=group_name
 	host.configure(attrs)
 	host.save()
