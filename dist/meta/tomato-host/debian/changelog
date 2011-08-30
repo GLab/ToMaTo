@@ -1,3 +1,9 @@
+tomato-host (0.16) stable; urgency=low
+
+  * Added vtun dependency needed for backend 2.2
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 30 Aug 2011 13:48:43 +0200
+
 tomato-host (0.15) stable; urgency=low
 
   * Removed ipfw dependency since tc is used
