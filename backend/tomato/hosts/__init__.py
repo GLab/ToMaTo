@@ -125,7 +125,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			version = float(res.strip())
 		except:
 			assert False, "tomato-host not found"
-		assert version >= 0.12, "tomato-host version error, is %s" % version
+		assert version >= 0.16, "tomato-host version error, is %s" % version
 
 	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()
