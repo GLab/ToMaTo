@@ -256,9 +256,6 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 			ids.update(bridge=set((self.bridge_id,)))
 		return ids
 
-	def onInterfaceStateChange(self):
-		self.connector.upcast().onInterfaceStateChange(self)
-
 	def _setBridgeId(self, id):
 		self.bridge_id = id
 		self.save()

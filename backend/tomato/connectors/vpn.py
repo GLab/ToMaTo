@@ -389,9 +389,6 @@ class TincConnection(emulated.EmulatedConnection):
 		self.tinc_port = None
 		self.save()
 
-	def onInterfaceStateChange(self):
-		emulated.EmulatedConnection.onInterfaceStateChange(self)
-
 	def internalInterface(self):
 		return tinc.interfaceName(ConnectionEndpoint(self))
 

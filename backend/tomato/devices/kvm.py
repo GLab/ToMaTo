@@ -105,7 +105,7 @@ class KVMDevice(Device):
 
 	def _startVnc(self):
 		if not self.getVncPort():
-			self.setVncPort(self.host.nextFreePort())
+			self.host.takeId("port", self.setVncPort)
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def connectToBridge(self, iface, bridge):
@@ -113,115 +113,118 @@ class KVMDevice(Device):
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
-	def _startIface(self, iface):
-		bridge = self.getBridge(iface)
-		self.connectToBridge(iface, bridge)
-		
-	def _startVm(self):
+	def _startDev(self):
+		host = self.host
+		vmid = self.vmid
+		state = qm.getState(host, vmid)
+		if not self.getVncPort():
+			self.host.takeId("port", self.setVncPort)
+		if state == State.CREATED:
+			self._prepareDev()
+			state = qm.getState(host, vmid)
 		for iface in self.interfaceSetAll():
 			iface_id = int(re.match("eth(\d+)", iface.name).group(1))
 			# qm automatically connects ethN to vmbrN
 			# if this bridge does not exist, kvm start fails
-			if not ifaceutil.interfaceExists(self.host, "vmbr%d" % iface_id):
-				ifaceutil.bridgeCreate(self.host, "vmbr%d" % iface_id)
-		qm.start(self.host, self.getVmid())
-		for iface in self.interfaceSetAll():
-			qm.waitForInterface(self.host, self.getVmid(), iface.name)
+			ifaceutil.bridgeCreate(host, "vmbr%d" % iface_id)
+		try: 
+			if state == State.PREPARED:
+				qm.start(host, vmid)
+			for iface in self.interfaceSetAll():
+				qm.waitForInterface(host, vmid, iface.name)
+				self.connectToBridge(iface, self.getBridge(iface))
+			self._startVnc()
+			self.state = State.STARTED
+			self.save()
+		except:
+			try:
+				qm.stop(host, vmid)
+			except:
+				pass
+			raise
 
 	def getStartTasks(self):
 		taskset = Device.getStartTasks(self)
-		start_vm = tasks.Task("start-vm", self._startVm, reverseFn=self._fallbackStop)
-		for iface in self.interfaceSetAll():
-			taskset.add(tasks.Task("start-interface-%s" % iface, self._startIface, args=(iface,), reverseFn=self._fallbackStop, after=start_vm))
-		assign_vnc_port = tasks.Task("assign-vnc-port", self._assignVncPort, reverseFn=self._fallbackStop)
-		start_vnc = tasks.Task("start-vnc", self._startVnc, reverseFn=self._fallbackStop, after=[start_vm, assign_vnc_port])
-		taskset.add([start_vm, assign_vnc_port, start_vnc])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("start", self._startDev))
+		return taskset
 
 	def _stopVnc(self):
 		if not self.host or not self.getVmid() or not self.getVncPort():
 			return
 		qm.stopVnc(self.host, self.getVmid(), self.getVncPort())
 	
-	def _stopVm(self):
-		qm.stop(self.host, self.getVmid())
-
-	def _fallbackStop(self):
-		self.state = self.getState()
+	def _stopDev(self):
+		host = self.host
+		vmid = self.getVmid()
+		state = self.getState()
+		if state == State.STARTED:
+			qm.stop(host, vmid)
+			state = self.getState()
+		self.state = State.PREPARED
 		self.save()
-		if self.state == State.STARTED:
-			self._stopVm()
 		if self.getVncPort():
-			if qm.vncRunning(self.host, self.getVmid(), self.getVncPort()):
-				self._stopVnc()
+			qm.stopVnc(host, vmid, self.getVncPort())
 			self._unassignVncPort()
-		self.state = self.getState()
-		self.save()
 	
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
-		stop_vm = tasks.Task("stop-vm", self._stopVm, reverseFn=self._fallbackStop)
-		stop_vnc = tasks.Task("stop-vnc", self._stopVnc, reverseFn=self._fallbackStop)
-		unassign_vnc_port = tasks.Task("unassign-vnc-port", self._unassignVncPort, reverseFn=self._fallbackStop, after=stop_vnc)
-		taskset.add([stop_vm, stop_vnc, unassign_vnc_port])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("stop", self._stopDev))
+		return taskset
 
 	def _assignTemplate(self):
 		self.setTemplate(templates.findName(self.type, self.getTemplate()))
 		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
 
-	def _assignHost(self):
+	def _configureVm(self):
+		qm.setName(self.host, self.getVmid(), "%s_%s" % (self.topology.name, self.name))
+	
+	def _prepareDev(self):
+		#assign host
 		if not self.host:
 			self.host = self.hostOptions().best()
 			fault.check(self.host, "No matching host found")
-			self.save()
-
-	def _assignVmid(self):
-		assert self.host
+			self.save()		
+		host = self.host
+		
+		self._assignTemplate()
+		
+		self._assignBridges()
+		
 		if not self.getVmid():
 			self.host.takeId("vmid", self.setVmid)
-
-	def _assignVncPort(self):
-		assert self.host
-		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
-
-	def _useTemplate(self):
-		qm.useTemplate(self.host, self.getVmid(), self.getTemplate())
-
-	def _configureVm(self):
-		qm.setName(self.host, self.getVmid(), "%s_%s" % (self.topology.name, self.name))
-
-	def _createIface(self, iface):
-		qm.addInterface(self.host, self.getVmid(), iface.name)
-	
-	def _createVm(self):
-		qm.create(self.host, self.getVmid())
-
-	def _prepareIfaces(self):
-		for iface in self.interfaceSetAll():
-			self._createIface(iface)
-
-	def _fallbackDestroy(self):
-		self._fallbackStop()
-		if self.host and self.getVmid():
-			if self.getState() == State.PREPARED:
-				self._destroyVm()
-		self.state = self.getState()
-		self.save()
-
+			fault.check(self.getVmid(), "No free vmid")
+		vmid = self.getVmid()
+		
+		state = qm.getState(host, vmid)
+		if state == State.STARTED:
+			qm.stop(host, vmid)
+			state = qm.getState(host, vmid)
+		if state == State.PREPARED:
+			qm.destroy(host, vmid)
+			state = qm.getState(host, vmid)
+		assert state == State.CREATED
+		
+		#nothing happened until here
+		
+		qm.create(host, vmid)
+		try:
+			qm.useTemplate(host, vmid, self.getTemplate())
+			self._configureVm()
+			for iface in self.interfaceSetAll():
+				qm.addInterface(host, vmid, iface.name)
+			self.state = State.PREPARED
+			self.save()
+		except:
+			try:
+				qm.destroy(host, vmid)
+			except:
+				pass
+			raise
+		
 	def getPrepareTasks(self):
 		taskset = Device.getPrepareTasks(self)
-		assign_host = tasks.Task("assign-host", self._assignHost)
-		assign_template = tasks.Task("assign-template", self._assignTemplate, after=assign_host)
-		assign_bridges = tasks.Task("assign-bridges", self._assignBridges, after=assign_template)
-		assign_vmid = tasks.Task("assign-vmid", self._assignVmid, after=assign_bridges)
-		create_vm = tasks.Task("create-vm", self._createVm, reverseFn=self._fallbackDestroy, after=assign_vmid)
-		use_template = tasks.Task("use-template", self._useTemplate, reverseFn=self._fallbackDestroy, after=create_vm)
-		configure_vm = tasks.Task("configure-vm", self._configureVm, reverseFn=self._fallbackDestroy, after=create_vm)
-		prepare_ifaces = tasks.Task("prepare-interfaces", self._prepareIfaces, reverseFn=self._fallbackDestroy, after=configure_vm)
-		taskset.add([assign_template, assign_host, assign_bridges, assign_vmid, create_vm, use_template, configure_vm, prepare_ifaces])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("prepare", self._prepareDev))
+		return taskset
 
 	def _unassignHost(self):
 		self.host = None
@@ -237,18 +240,30 @@ class KVMDevice(Device):
 			self.host.giveId("port", self.vnc_port)
 		self.setVncPort(None)
 
-	def _destroyVm(self):
-		if self.host and self.getVmid():
-			qm.destroy(self.host, self.getVmid())
-
+	def _destroyDev(self):
+		host = self.host
+		vmid = self.getVmid()
+		if not host:
+			return
+		if vmid:
+			state = qm.getState(host, vmid)
+			if state == State.STARTED:
+				qm.stop(host, vmid)
+				state = qm.getState(host, vmid)
+			if state == State.PREPARED:
+				qm.destroy(host, vmid)
+				state = qm.getState(host, vmid)
+			assert state == State.CREATED
+			self.state = State.CREATED			
+			self.save()
+			self._unassignVmid()
+		self._unassignBridges()
+		self._unassignHost()
+		
 	def getDestroyTasks(self):
 		taskset = Device.getDestroyTasks(self)
-		destroy_vm = tasks.Task("destroy-vm", self._destroyVm, reverseFn=self._fallbackDestroy)
-		unassign_vmid = tasks.Task("unassign-vmid", self._unassignVmid, reverseFn=self._fallbackDestroy, after=destroy_vm)
-		unassign_bridges = tasks.Task("unassign-bridges", self._unassignBridges)
-		unassign_host = tasks.Task("unassign-host", self._unassignHost, reverseFn=self._fallbackDestroy, after=[unassign_vmid, unassign_bridges])
-		taskset.add([destroy_vm, unassign_host, unassign_vmid, unassign_bridges])
-		return self._adaptTaskset(taskset)
+		taskset.add(tasks.Task("destroy", self._destroyDev))
+		return taskset
 
 	def configure(self, properties):
 		if "template" in properties:

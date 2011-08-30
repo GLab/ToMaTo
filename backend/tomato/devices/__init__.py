@@ -161,75 +161,54 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 			iface.connection.upcast()._unassignBridgeId()				
 	
 	def migrate(self, direct):
+		self.topology.renew()
 		proc = tasks.Process("migrate")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(tasks.Task("migrate", self.upcast().migrateRun))
 		return self.topology.startProcess(proc, direct)
 
 	def start(self, direct):
+		self.topology.renew()
 		fault.check(self.state == State.PREPARED, "Device must be prepared to be started but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("start")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStartTasks())
 		return self.topology.startProcess(proc, direct)
 		
 	def stop(self, direct):
+		self.topology.renew()
 		fault.check(self.state != State.CREATED, "Device must be started or prepared to be stopped but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("stop")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getStopTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def prepare(self, direct):
+		self.topology.renew()
 		fault.check(self.state == State.CREATED, "Device must be created to be prepared but is %s: %s", (self.state, self.name))
 		proc = tasks.Process("prepare")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getPrepareTasks())
 		return self.topology.startProcess(proc, direct)
 
 	def destroy(self, direct):
+		self.topology.renew()
 		fault.check(self.state != State.STARTED, "Device must not be started to be destroyed but is %s: %s", (self.state, self.name))
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
 				con = iface.connection.connector
 				fault.check(con.state == State.CREATED, "Connector %s must be destroyed before device %s", (con.name, self.name))
 		proc = tasks.Process("destroy")
-		proc.add(tasks.Task("renew", self.topology.renew))
 		proc.add(self.upcast().getDestroyTasks())
 		return self.topology.startProcess(proc, direct)
 
-	def _changeState(self, state):
-		self.state = state
-		self.save()
-		self._triggerConnections()
-
-	def _triggerConnections(self):
-		for iface in self.interfaceSetAll():
-			if iface.isConnected():
-				iface.connection.upcast().onInterfaceStateChange() 
-
-	def _adaptTaskset(self, taskset):
-		taskset.after(taskset.find("reload"))
-		taskset.before(taskset.find("change-state"))
-		return taskset
-
-	def _initialTasks(self, state):
-		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("reload", self.reload))
-		taskset.add(tasks.Task("change-state", self._changeState, args=(state,)))
-		return taskset
-
 	def getStartTasks(self):
-		return self._initialTasks(State.STARTED)
+		return tasks.TaskSet()
 	
 	def getStopTasks(self):
-		return self._initialTasks(State.PREPARED)
+		return tasks.TaskSet()
 	
 	def getPrepareTasks(self):
-		return self._initialTasks(State.PREPARED)
+		return tasks.TaskSet()
 	
 	def getDestroyTasks(self):
-		return self._initialTasks(State.CREATED)
+		return tasks.TaskSet()
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
