@@ -1,3 +1,9 @@
+tomato-hostserver (0.6) stable; urgency=low
+
+  * Implemented If-Modified-Since header
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 30 Aug 2011 15:03:45 +0200
+
 tomato-hostserver (0.5) stable; urgency=low
 
   * Complete re-implementation

@@ -74,7 +74,8 @@ All calls must have an additional parameter "grant" being calculated as
 described above.
 """
 
-import sys, SocketServer, BaseHTTPServer, hashlib, cgi, urlparse, urllib, shutil, base64, time, os.path, configobj
+import sys, SocketServer, BaseHTTPServer, hashlib, cgi, urlparse, urllib, shutil, base64, time
+import os.path, configobj, datetime
 try:    #python >=2.6
   from urlparse import parse_qsl
 except: #python <2.6
@@ -109,7 +110,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write("<html>")
     if redirect:
-      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>" % redirect)
+      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>")
     self.wfile.write("<body>")
     self.wfile.write(html)
     self.wfile.write("</body></html>")
@@ -157,6 +158,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     filename = os.path.join(basedir,filename)
     if not os.path.exists(filename):
       return self.error(404, "File not found")
+    if "If-Modified-Since" in self.headers:
+      date = datetime.datetime.strptime(self.headers.get("If-Modified-Since"), "%a, %d %b %Y %H:%M:%S %Z")
+      fdate = datetime.datetime.fromtimestamp(os.path.getmtime(filename))
+      if fdate <= date:
+        return self.error(304, "Not modified")
     file = open(filename, "rb")
     self.send_response(200)
     if _name:

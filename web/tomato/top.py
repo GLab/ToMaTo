@@ -228,7 +228,7 @@ def export(api, request, top_id):
 	top=api.top_info(int(top_id))
 	if reduce:
 		top = reduceData(top, blacklist)
-	top = json.dumps(top, indent=None if compress else "  ")
+	top = json.dumps(top, indent=None if compress else 2)
 	if compress:
 		top = compressData(top)
 	if "download" in request.REQUEST:

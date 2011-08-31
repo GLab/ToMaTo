@@ -88,10 +88,10 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		return other + [enable]
 
 	def _createIfbs(self):
-		if not self.getAttribute("ifb_start"):
+		if self.getAttribute("ifb_start") is None:
 			self.setAttribute("ifb_start", 0)
-		if not self.getAttribute("ifb_count"):
-			self.setAttribute("ifb_count", 250)
+		if self.getAttribute("ifb_count") is None:
+			self.setAttribute("ifb_count", 500)
 		ifaceutil.createIfbs(self, self.getAttribute("ifb_start") + self.getAttribute("ifb_count"))
 		
 	def _enable(self):
@@ -228,7 +228,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		unclaimed = self._getFreeIds()
 		types = ["vmid", "port", "bridge", "ifb"]
 		for t in types:
-			for id in set(unused.get(t, [])) - set(unclaimed.get(t, [])):
+			if not t in unused or not t in unclaimed:
+				continue
+			for id in set(unused[t]) - set(unclaimed[t]):
 				# id is claimed but unused
 				realUsage = self._realIdState(t, id)
 				if realUsage:
@@ -237,7 +239,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			for id in set(unclaimed[t]) - set(unused[t]):
 				# id is used but not claimed
 				fault.errors_add("Free id mismatch", "%s %d on host %s is used by a topology but not claimed." % (t, id, self.name))
-			self._setFreeIds(unused)
+		self._setFreeIds(unused)
 				
 	def _realIdState(self, type, id):
 		if type == "vmid":

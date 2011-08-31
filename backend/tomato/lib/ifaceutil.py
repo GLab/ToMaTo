@@ -207,11 +207,13 @@ def startDhcp(host, iface):
 	return False
 
 def getRxBytes(host, iface):
-	assert interfaceExists(host, iface)
+	if not interfaceExists(host, iface):
+		return 0.0
 	return int(host.execute("[ -f /sys/class/net/%s/statistics/rx_bytes ] && cat /sys/class/net/%s/statistics/rx_bytes || echo 0" % (util.identifier(iface), util.identifier(iface))))
 
 def getTxBytes(host, iface):
-	assert interfaceExists(host, iface)
+	if not interfaceExists(host, iface):
+		return 0.0
 	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (util.identifier(iface), util.identifier(iface))))
 
 def ping(host, ip, samples=10, maxWait=5):
