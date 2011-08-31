@@ -229,25 +229,31 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc = tasks.Process("topology-%s" % "start" if start else "prepare")
 		proc.add(tasks.Task("renew", self.renew))
 		tmap = self._getTasks()
-		devs_prepare = tasks.TaskSet()
+		devs_prepared = tasks.Task("devices_prepared")
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.CREATED:
-				devs_prepare.add(tmap["prepare"][dev])
-		cons_prepare = tasks.TaskSet()
+				t = tmap["prepare"][dev]
+				proc.add(t)
+				devs_prepared.after(t)
+		cons_prepared = tasks.Task("connectors_prepared")
 		for con in self.connectorSetAll():
 			if con.state == generic.State.CREATED:
-				cons_prepare.add(tmap["prepare"][con].after(devs_prepare))
-		proc.add([devs_prepare, cons_prepare])
+				t = tmap["prepare"][con]
+				t.after(devs_prepared)
+				proc.add(t)
+				cons_prepared.after(t)
+		proc.add([devs_prepared, cons_prepared])		
 		if start:
-			devs_start = tasks.TaskSet()
 			for dev in self.deviceSetAll():
 				if dev.state != generic.State.STARTED:
-					devs_start.add(tmap["start"][dev].after([devs_prepare,cons_prepare]))
-			cons_start = tasks.TaskSet()
+					t = tmap["start"][dev]
+					t.after([devs_prepared,cons_prepared])
+					proc.add(t)
 			for con in self.connectorSetAll():
 				if con.state != generic.State.STARTED:
-					cons_start.add(tmap["start"][con].after([devs_prepare,cons_prepare]))
-			proc.add([devs_start, cons_start])		
+					t = tmap["start"][con]
+					t.after([devs_prepared,cons_prepared])
+					proc.add(t)
 		return self.startProcess(proc, direct)
 
 	def prepare(self, direct):
@@ -261,27 +267,37 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		if renew:
 			proc.add(tasks.Task("renew", self.renew))
 		tmap = self._getTasks()
-		devs_stop = tasks.TaskSet()
+		devs_stopped = tasks.Task("devices_stopped")
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.STARTED:
-				devs_stop.add(tmap["stop"][dev])
-		cons_stop = tasks.TaskSet()
+				t = tmap["stop"][dev]
+				proc.add(t)
+				devs_stopped.after(t)
+		cons_stopped = tasks.Task("connectors_stopped")
 		for con in self.connectorSetAll():
 			if con.state == generic.State.STARTED:
-				cons_stop.add(tmap["stop"][con])
-		proc.add([devs_stop, cons_stop])
+				t = tmap["stop"][con]
+				proc.add(t)
+				cons_stopped.after(t)
+		proc.add([devs_stopped, cons_stopped])		
 		if destroy:
-			cons_destroy = tasks.TaskSet()
+			cons_destroyed = tasks.Task("connectors_destroyed")
 			for con in self.connectorSetAll():
 				if con.state != generic.State.CREATED:
-					cons_destroy.add(tmap["destroy"][con].after([devs_stop,cons_stop]))
-			devs_destroy = tasks.TaskSet()
+					t = tmap["destroy"][con]
+					t.after([devs_stopped,cons_stopped])
+					proc.add(t)
+					cons_destroyed.after(t)
+			devs_destroyed = tasks.Task("devices_destroyed")
 			for dev in self.deviceSetAll():
 				if dev.state != generic.State.CREATED:
-					devs_destroy.add(tmap["destroy"][dev].after([devs_stop,cons_destroy]))
-			proc.add([devs_destroy, cons_destroy])		
+					t = tmap["destroy"][dev]
+					t.after([devs_stopped,cons_destroyed])
+					proc.add(t)
+					devs_destroyed.after(t)
+			proc.add([devs_destroyed, cons_destroyed])		
 			if remove:
-				proc.add(tasks.Task("remove", self.delete, after=[devs_destroy, cons_destroy]))
+				proc.add(tasks.Task("remove", self.delete, after=[devs_destroyed, cons_destroyed]))
 		return self.startProcess(proc, direct)
 
 	def stop(self, direct, renew=True):

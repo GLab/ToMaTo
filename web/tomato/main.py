@@ -43,7 +43,7 @@ def task_list(api, request):
 
 @wrap_rpc
 def task_status(api, request, task_id):
-	task = api.task_status(task_id)
+	task = api.task_status(task_id, True)
 	backurl=""
 	if request.REQUEST.has_key("backurl"):
 		backurl=request.REQUEST["backurl"]
@@ -62,7 +62,8 @@ def task_status(api, request, task_id):
 			return cmp(t2.get("started", 0), t1.get("started", 0))
 		return cmp(t1["name"], t2["name"])
 	task["tasks"].sort(task_cmp)
-	return render_to_response("main/task.html", {'task': task, 'backurl': backurl, 'details': details})
+	manual_refresh = len(str(task)) > 100000
+	return render_to_response("main/task.html", {'task': task, 'backurl': backurl, 'details': details, "manual_refresh": manual_refresh})
 
 @wrap_rpc
 def task_run(api, request, task):

@@ -149,10 +149,13 @@ class TincConnector(Connector):
 	def getStartTasks(self):
 		taskset = Connector.getStartTasks(self)
 		tinc_tasks = tinc.getStartNetworkTasks(self._endpoints(), self.type)
-		taskset.add(tinc_tasks)		
+		taskset.add(tinc_tasks)
+		tinc_tasks_dummy = tasks.Task("tinc_started")
+		tinc_tasks_dummy.after(tinc_tasks)
+		taskset.add(tinc_tasks_dummy)
 		for con in self.connectionSetAll():
 			ts = con.upcast().getStartTasks()
-			ts.prefix(con).after(tinc_tasks)
+			ts.prefix(con).after(tinc_tasks_dummy)
 			taskset.add(ts)
 		taskset.add(tasks.Task("start-external-access", self._startExternalAccess))
 		return self._adaptTaskset(taskset)

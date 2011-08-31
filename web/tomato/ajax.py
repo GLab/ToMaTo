@@ -50,7 +50,7 @@ def action(api, request, top_id):
 	
 @wrap_json
 def task_status(api, request, task_id):
-	return api.task_status(task_id);
+	return api.task_status(task_id, False);
 
 @wrap_json
 def permission(api, request, top_id):

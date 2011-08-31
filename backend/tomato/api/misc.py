@@ -35,7 +35,7 @@ def task_list(user=None):
 	_admin_access(user)
 	return [t.dict(False) for t in tasks.processes.values()]
 
-def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
+def task_status(task_id, details=False, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	Returns the details of a speficic task. The task is identified by a unique
 	(and random) id that is assumed to be secure.
@@ -45,7 +45,7 @@ def task_status(task_id, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 
 	Returns: task details
 	"""
-	return tasks.getStatus(task_id)
+	return tasks.getStatus(task_id, details)
 
 def task_run(task_name, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""

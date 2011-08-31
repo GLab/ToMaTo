@@ -204,7 +204,7 @@ class ExportForm(forms.Form):
 @wrap_rpc
 def export(api, request, top_id):
 	def compressData(s):
-		data = base64.b64encode(zlib.compress(s))
+		data = base64.b64encode(zlib.compress(s, 9))
 		return "\n".join([data[i:i+80] for i in range(0, len(data), 80)])
 	blacklist=set(['capabilities', 'id', 'resources', 'vnc_port', 'vmid', 'host', 'vnc_password', 
  		'destroy_timeout', 'stop_timeout', 'remove_timeout', 'device_count', 'connector_count', 
@@ -228,7 +228,7 @@ def export(api, request, top_id):
 	top=api.top_info(int(top_id))
 	if reduce:
 		top = reduceData(top, blacklist)
-	top = json.dumps(top, indent=None if compress else 2)
+	top = json.dumps(top, indent=None if compress else 2, separators=(',', ':') if compress else (', ', ': '))
 	if compress:
 		top = compressData(top)
 	if "download" in request.REQUEST:
