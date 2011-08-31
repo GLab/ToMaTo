@@ -46,7 +46,8 @@ def errors_add(title, message, type=Error.Type.Error):
 			error = Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
 			_send_notifications(error)
 		except: #just commit the old transaction and try again
-			transaction.commit()
+			if transaction.is_dirty():
+				transaction.commit()
 			error = Error.objects.create(type=type, title=title[:250], message=message) # pylint: disable-msg=E1101
 			_send_notifications(error)
 			
