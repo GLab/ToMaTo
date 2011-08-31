@@ -434,9 +434,9 @@ def get_current_task():
 	else:
 		return None
 		
-def getStatus(task_id):
+def getStatus(task_id, details=False):
 	try:
-		return processes[task_id].dict(True)
+		return processes[task_id].dict(details)
 	except KeyError:
 		raise fault.new("No such task %s" % task_id, fault.USER_ERROR)
 		

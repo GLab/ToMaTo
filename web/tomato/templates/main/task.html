@@ -5,7 +5,7 @@
  
 <link href="/static/style/style.css" rel="stylesheet" type="text/css" /> 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
-{% if task.active %}
+{% if task.active and not manual_refresh%}
 <meta http-equiv="Refresh" content="1;{%url main.task_status task_id=task.id%}?backurl={{backurl}}{% if details %}&details=true{% endif %}" /> 
 {% endif %}
 </head>
@@ -13,6 +13,9 @@
 
 <h1 class="task_{{task.status}}">Process: {{task.name}} ({{task.status}})</h1>
 <div class="task_{{task.status}}">
+{% if task.active and manual_refresh %}
+<a href="{%url main.task_status task_id=task.id%}?backurl={{backurl}}{% if details %}&details=true{% endif %}">[refresh]</a><br/> 
+{% endif %}
 {% if details %}<a href="{%url main.task_status task.id%}">[less details]</a><br/>
 {% else %}<a href="{%url main.task_status task.id%}?details">[more details]</a><br/>{% endif %}
 {% if task.periodic %}<a href="{%url main.task_run task=task.name%}">[execute now]</a><br/>{% endif %}
@@ -27,8 +30,8 @@ Duration: {{task.duration}}<br/>
 <h2 class="task_{{t.status}}">Subtask: {{t.name}} {%if t.active%}({{t.status}}){%endif%}</h2>
 <div class="task_{{t.status}}">
 {% if details %}
-{% if t.after %}After: {{t.after|join:", "}} tasks<br/>{% endif %}
-{% if t.before %}Before: {{t.before|join:", "}} tasks<br/>{% endif %}
+{% if t.after %}After: {{t.after|join:", "}}<br/>{% endif %}
+{% if t.before %}Before: {{t.before|join:", "}}<br/>{% endif %}
 {% endif %}
 Status: {{t.status}}<br/>
 Started: {{t.started}}<br/>
