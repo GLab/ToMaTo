@@ -47,7 +47,7 @@ def host_list(group_filter=None, user=None): #@UnusedVariable, pylint: disable-m
 		res.append(h.toDict())
 	return res
 
-def host_add(host_name, group_name, enabled, attrs, user=None):
+def host_add(host_name, group_name, attrs, user=None):
 	"""
 	Adds a host to the list of available hosts. First host will be checked,
 	then all templates will be uploaded and then finally the host will be 
@@ -57,7 +57,6 @@ def host_add(host_name, group_name, enabled, attrs, user=None):
 	Parameters:
 		string host_name: the host name
 		string group_name: the name of the host group
-		boolean enabled: whether the host should be enabled
 		dict attrs: dictionary with host attributes
 
 	Host attributes in "attrs":
@@ -74,7 +73,7 @@ def host_add(host_name, group_name, enabled, attrs, user=None):
 		fault.Error: if the user does not have enough privileges  
 	"""
 	_admin_access(user)
-	return hosts.create(host_name, group_name, enabled, attrs)
+	return hosts.create(host_name, group_name, attrs)
 
 def host_change(host_name, group_name, attrs, user=None):
 	"""

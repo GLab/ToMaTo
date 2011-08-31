@@ -50,11 +50,11 @@ def edit(api, request, hostname):
 		if form.is_valid(): 
 			if not hostname:
 				d = form.cleaned_data
-				task_id = api.host_add(d["name"], d["group"], d["enabled"], d)
+				task_id = api.host_add(d["name"], d["group"], d)
 				return render_to_response("admin/host_edit.html", {"task_id": task_id, "hostname": d["name"]})
 			else:
 				d = form.cleaned_data
-				api.host_change(hostname, d["group"], d["enabled"], d)
+				api.host_change(hostname, d["group"], d)
 				return detail(request, hostname)
 	else:
 		if hostname:
