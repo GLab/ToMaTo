@@ -69,7 +69,15 @@ Cluster a list of tinc endpoints called "nodes" and create a list of connections
 
 A network with N nodes and cluster_size k has the following properties:
 
-Number of connections is about: N * (k+1)
+Number of connections is bounded by: N*(k+3)
+Proof sketch:
+- A network of N nodes contains N/k clusters containing nodes and about N/(k*(k-1)) clusters consisting of clusters.
+- The node clusters have:
+  - k*(k-1) internal connections
+  - 2*(k-1) external connections to other node clusters
+- The cluster clusters have:
+  - 2*k*(k-1) internal connections
+  - 2*(k-1) external connections to other cluster clusters  
 
 Network diameter is bounded by: 4 * ( log_k(N) + 2 )
 Proof sketch:
@@ -86,7 +94,7 @@ Proof sketch:
   - In the worst case the site and host clustering split off only a minor part of the nodes but increase the depth by 2
 - At each each hierarchy level all clusters are interconnected by random nodes
   - In the worst case the same node is chosen over and over again as a random node
-  - Every cluster has an outgoing and an incoming connection to other silbling clusters
+  - Every cluster has an outgoing and an incoming connection to other sibling clusters
   
 Some nice properties:
 - The shortest path between nodes on different sites will not contain nodes on a third site
@@ -97,7 +105,7 @@ Some nice properties:
 => Traffic is stays local if possible
 """
 
-CLUSTER_SIZE=10
+CLUSTER_SIZE=5
 
 def _cluster(nodes):
 	if _isEndpoint(nodes):
@@ -160,7 +168,7 @@ def _connectClusters(cluster):
 def _determineConnections(allnodes):
 	connections = _connectClusters(_clusterBySite(allnodes))
 	assert _isConnected(allnodes, connections)
-	assert len(connections) <= (len(allnodes) * (CLUSTER_SIZE+1)) * 1.5
+	assert len(connections) <= len(allnodes) * (CLUSTER_SIZE+3)
 	assert _diameter(allnodes, connections) <= 4 * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 )
 	assert _maxDegree(allnodes, connections) <= 2 * (CLUSTER_SIZE-1) * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 )
 	return connections
