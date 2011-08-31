@@ -167,10 +167,14 @@ def _connectClusters(cluster):
 
 def _determineConnections(allnodes):
 	connections = _connectClusters(_clusterBySite(allnodes))
-	assert _isConnected(allnodes, connections)
-	assert len(connections) <= len(allnodes) * (CLUSTER_SIZE+3)
-	assert _diameter(allnodes, connections) <= 4 * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 )
-	assert _maxDegree(allnodes, connections) <= 2 * (CLUSTER_SIZE-1) * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 )
+	if not allnodes:
+		return connections
+	assert _isConnected(allnodes, connections), "Clustering resulted in unconnected graph"
+	assert len(connections) <= len(allnodes) * (CLUSTER_SIZE+3), "Clustering produced too many connections: %d devices but %d connections" % (len(allnodes), len(connections))
+	diameter = _diameter(allnodes, connections)
+	assert diameter <= 4 * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 ), "Clustering produced a network with too big diameter: %d devices, %f diameter" % (len(allnodes), diameter)
+	maxDegree = _maxDegree(allnodes, connections)
+	assert maxDegree <= 2 * (CLUSTER_SIZE-1) * ( math.log(len(allnodes), CLUSTER_SIZE) + 2 ), "Clustering produced a network with too big maximal degree: %d devices, %d maximal degree" % (len(allnodes), maxDegree)
 	return connections
 
 def _connectionMap(connections):
@@ -185,6 +189,8 @@ def _isConnected(nodes, connections):
 	map = _connectionMap(connections)
 	nIn = set()
 	nTodo = []
+	if not nodes:
+		return True
 	nTodo.append(_randomNode(list(nodes)))
 	while nTodo:
 		n = random.choice(nTodo)
