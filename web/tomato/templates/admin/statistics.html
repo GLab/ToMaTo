@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<script src="/static/enhancetable.js"></script>
+
+<h1>Total numbers</h1>
+Topologies: {{top_count}}<br/>
+Hosts: {{host_count}}<br/>
+
+<h1>Device types</h1>
+{% for type, count in devs.iteritems %}
+{{type}}: {{count}}<br/>
+{% endfor %}
+
+<h1>Connector types</h1>
+{% for type, count in cons.iteritems %}
+{{type}}: {{count}}<br/>
+{% endfor %}
+
+<h1>Total resource usage</h1>
+{% for name, usage in res.iteritems %}
+{{name}}: {%if name == "ports" %}{{usage}}{% else %}{{usage|filesizeformat}}{% endif %}<br/>
+{% endfor %}
+
+{% endblock %}

@@ -123,6 +123,34 @@ def resource_usage_by_user(api, request):
 	usage=[(user, usage_by_user[user]) for user in usage_by_user]
 	return render_to_response("admin/resource_usage.html", {"by_user": True, "usage": usage})
 
+@wrap_rpc
+def statistics(api, request):
+	tops = api.top_list()
+	hosts = api.host_list()
+	devs={"all": 0, "openvz": 0, "prog": 0, "kvm": 0}
+	cons={"all": 0, "hub": 0, "switch": 0, "router": 0, "external": 0}
+	res={}
+	for t in tops:
+		attrs = t["attrs"]
+		devs["all"] += int(attrs["device_count"])
+		cons["all"] += int(attrs["connector_count"])
+		details = api.top_info(t["id"])
+		for dev in details["devices"].values():
+			devs[dev["attrs"]["type"]] += 1
+		for con in details["connectors"].values():
+			cons[con["attrs"]["type"]] += 1
+		if t.get("resources"):
+			for key, value in t["resources"].iteritems():
+				value = float(value)
+				if key in res:
+					res[key] += value
+				else:
+					res[key] = value
+	return render_to_response("admin/statistics.html", {
+		'top_count': len(tops), 'host_count': len(hosts),
+		'devs': devs, 'cons': cons, 'res': res 
+	})
+
 def help(request, page=""):
 	return HttpResponseRedirect(settings.help_url % page)
 
