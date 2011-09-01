@@ -262,9 +262,8 @@ class TincConnector(Connector):
 
 	def getIdUsage(self, host):
 		ids = Connector.getIdUsage(self, host)
-		if self.getExternalAccess() and self.state != State.CREATED:
-			if self.getAttribute("external_access_host") == host.name:
-				ids["port"] = ids.get("port", set()) | set((self.getAttribute("external_access_port"),))
+		if self.getExternalAccessHost() == host:
+			ids["port"] = ids.get("port", set()) | set((self.getExternalAccessPort(),))
 		return ids
 
 	def getResourceUsage(self):

@@ -290,7 +290,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			Host.lock.acquire()
 			assert id in xrange(self.getAttribute("%s_start" % type),self.getAttribute("%s_start" % type)+self.getAttribute("%s_count" % type))
 			ids = self._getFreeIds()
-			assert not id in ids[type], "%s %s was not reserved" % (type, id)
+			if id in ids[type]:
+				#id was registered as free
+				return
 			ids[type].append(id)
 			self._setFreeIds(ids) 
 			#print "returned free %s: %d" % (type, id)
