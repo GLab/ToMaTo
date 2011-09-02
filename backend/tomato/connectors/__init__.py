@@ -63,12 +63,19 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def hostPreferences(self):
 		prefs = ObjectPreferences()
 		# keep it local
+		sites={}
 		for c in self.connectionSetAll():
 			dev = c.interface.device
 			if dev.host:
-				prefs.add(dev.host, -0.1)
-				for h in hosts.getAll(dev.host.group):
-					prefs.add(h, 0.01)
+				#discourage devices on the same host
+				prefs.add(dev.host, -0.05)
+				sites[dev.host.group] = sites.get(dev.host.group, 0.0) + 1.0
+		for site, num in sites.iteritems():
+			val = 0.05 * num/(num+10)
+			# value increases with hosts already at that site
+			# value is bounded by 0.01
+			for h in hosts.getAll(site):
+				prefs.add(h, val)
 		#print "Host preferences for %s: %s" % (self, prefs) 
 		return prefs
 
