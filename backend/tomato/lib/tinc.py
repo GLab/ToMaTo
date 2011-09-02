@@ -129,20 +129,22 @@ def _clusterByHost(nodes):
 		return nodes
 	clusters = {}
 	for n in nodes:
-		if not _getHostName(n) in clusters:
-			clusters[_getHostName(n)] = []
-		clusters[_getHostName(n)].append(n)
-	return [_cluster(c) for c in clusters.values()]
+		host = _getHostName(n)
+		if not host in clusters:
+			clusters[host] = []
+		clusters[host].append(n)
+	return _cluster([_cluster(c) for c in clusters.values()])
 
 def _clusterBySite(nodes):
 	if len(nodes) <= CLUSTER_SIZE:
 		return nodes
 	clusters = {}
 	for n in nodes:
-		if not _getSiteName(n) in clusters:
-			clusters[_getSiteName(n)] = []
-		clusters[_getSiteName(n)].append(n)
-	return [_clusterByHost(c) for c in clusters.values()]
+		site = _getSiteName(n)
+		if not site in clusters:
+			clusters[site] = []
+		clusters[site].append(n)
+	return _cluster([_clusterByHost(c) for c in clusters.values()])
 
 def _connectClusters(cluster):
 	cons = []
