@@ -51,11 +51,7 @@ def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	if not process.portFree(host, port):
 		process.killPortUser(host, port)
-	try:
-		execute(host, vmid, "which screen")
-		host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d --exec 'screen -xRR' ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), vmid, _vncPidfile(vmid) ))		
-	except:
-		host.execute("( while true; do vncterm -rfbport %d -passwd %s -c vzctl enter %d ; done ) >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), vmid, _vncPidfile(vmid) ))
+	host.execute("vncterm -timeout 0 -rfbport %d -passwd %s -c vzctl enter %d >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), vmid, _vncPidfile(vmid) ))		
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
