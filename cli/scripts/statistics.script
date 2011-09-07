@@ -23,11 +23,11 @@ for t in tops:
 print "%d Devices" % devs["all"]
 for type, count in devs.iteritems():
 	if type != "all":
-		print "\t%s: %d" % (type, count)
+		print "  %s: %d" % (type, count)
 print "%d Connectors" % cons["all"]
 for type, count in cons.iteritems():
 	if type != "all":
-		print "\t%s: %d" % (type, count)
+		print "  %s: %d" % (type, count)
 print "%.2f GB Disk space" % (res["disk"]/(1<<30))
 print "%.2f GB Ram space" % (res["memory"]/(1<<30))
 print "%.2f GB Traffic" % (res["traffic"]/(1<<30))

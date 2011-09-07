@@ -33,4 +33,4 @@ for dtype in dtypes:
 			if states[dtype][sname]:
 				value /= states[dtype][sname]
 			if value:
-				print "\t%s: %.2f" % (key, value)
+				print "  %s: %.2f" % (key, value)
