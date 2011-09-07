@@ -400,7 +400,7 @@ class RepeatedProcess(Process):
 		pass #periodic tasks are never removed
 
 MAX_WORKERS = 100
-MAX_WORKERS_PROCESS = 5
+MAX_WORKERS_PROCESS = 20
 workerthreads = 0
 processes={}
 periodic_processes = {}
