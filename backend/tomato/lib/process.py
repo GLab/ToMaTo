@@ -20,14 +20,30 @@ import util, exceptions
 def killPidfile(host, pidfile):
 	host.execute("[ -f %(pidfile)s ] && (cat %(pidfile)s | xargs -r kill; true) && rm %(pidfile)s; true" % {"pidfile": util.escape(pidfile)})
 
+def _parentPid(host, pid):
+	assert pid
+	return int(host.execute("cat /proc/%d/status | fgrep PPid | awk '{print $2}'" % pid))
+
 def killPortUser(host, port):
 	assert port
-	host.execute("for i in $(lsof -i:%d -t); do cat /proc/$i/status | fgrep PPid | cut -f2; done | xargs -r kill" % port)
-	host.execute("lsof -i:%d -t | xargs -r kill" % port)
+	try:
+		res = host.execute("netstat -4tulpn | fgrep :%d" % port)
+		for line in res.splitlines():
+			try:
+				pid = int(line.split()[-1].split("/")[0])
+				try:
+					host.execute("fgrep 'while true' < /proc/%(pid)d/cmdline >/dev/null && [ $(readlink /proc/%(pid)d/exe) == '/bin/bash' ] && kill %(pid)d" % {"pid": _parentPid(host, pid)})
+				except:
+					pass
+				host.execute("kill %d" % pid)
+			except:
+				pass
+	except exceptions.CommandError:
+		pass	
 
 def portFree(host, port):
 	try:
-		res = host.execute("lsof -i:%d -t" % port)
+		res = host.execute("netstat -4tuln | fgrep :%d" % port)
 		return len(res.splitlines()) == 0 
 	except exceptions.CommandError:
 		return True
