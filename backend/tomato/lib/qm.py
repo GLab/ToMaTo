@@ -44,7 +44,7 @@ def _qm(host, vmid, cmd, params=[], maxWait=30, unlock=True):
 
 def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
-	return host.execute("echo -e %(cmd)s'\n' | socat - unix-connect:/var/run/qemu-server/%(vmid)d.mon; timeout %(timeout)d socat -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": util.escape(cmd), "vmid": vmid, "timeout": timeout})
+	return host.execute("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:/var/run/qemu-server/%(vmid)d.mon; socat -T %(timeout)d -u unix-connect:/var/run/qemu-server/%(vmid)d.mon - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": util.escape(cmd), "vmid": vmid, "timeout": timeout})
 
 def _imagePathDir(vmid):
 	return "/var/lib/vz/images/%d" % vmid
