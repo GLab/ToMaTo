@@ -33,7 +33,7 @@ class ClusterState:
 	NONE = "-"
 
 class Host(db.ReloadMixin, attributes.Mixin, models.Model):
-	SSH_COMMAND = ["ssh", "-q", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oUserKnownHostsFile=/dev/null", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]
+	SSH_COMMAND = ["ssh", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
 	
 	group = models.CharField(max_length=10, validators=[db.nameValidator])
@@ -299,9 +299,11 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		finally:
 			Host.lock.release()			
 	
-	def _exec(self, cmd):
+	def _exec(self, cmd, retries=3):
 		res = util.run_shell(cmd)
 		if res[0] != 0:
+			if retries:
+				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
 	
@@ -319,6 +321,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage)
 		res = util.removeControlChars(res) #might contain funny characters
 		res = res.splitlines()
+		if "Warning" in res[0] and "known hosts" in res[0] and self.name in res[0]:
+			#remove Warning: Permanently added '...' (RSA) to the list of known hosts.
+			res = res[1:]
 		retCode = int(res[-1].strip())
 		res = "\n".join(res[:-1])
 		if not res.endswith("\n"):
