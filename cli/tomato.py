@@ -94,7 +94,7 @@ def run():
 	api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password)
 	locals = getLocals(api)
 	if options.arguments:
-		runSource(locals, options.arguments)
+		runSource(locals, "\n".join(options.arguments))
 	elif options.file:
 		runFile(locals, options.file)
 	else:
