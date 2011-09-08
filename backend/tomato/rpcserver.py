@@ -24,8 +24,48 @@ from OpenSSL import SSL
 
 from tomato import fault
 from tomato.lib import db, util
+
+class SecureRequestHandler:
+	def setup(self):
+		self.connection = self.request
+		if self.timeout is not None:
+			self.connection.settimeout(self.timeout)
+		if self.disable_nagle_algorithm:
+			self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+		if self.server.sslOpts:
+			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+		else:
+			self.rfile = self.connection.makefile('rb', self.rbufsize)
+			self.wfile = self.connection.makefile('wb', self.wbufsize)	
+
+SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate"])
+
+class SecureServer():
+	def __init__(self, sslOpts):
+		self.sslOpts = sslOpts
+		if sslOpts:
+			ctx = SSL.Context(SSL.SSLv23_METHOD)
+			ctx.use_privatekey_file(sslOpts.private_key)
+			ctx.use_certificate_file(sslOpts.certificate)
+			self.plainSocket = self.socket
+			self.socket = SSL.Connection(ctx, self.plainSocket)
+			self.server_bind()
+			self.server_activate()
+	def shutdown_request(self, request):
+		"""Called to shutdown and close an individual request."""
+		try:
+			#explicitly shutdown.  socket.close() merely releases
+			#the socket and waits for GC to perform the actual close.
+			if self.sslOpts:
+				request.shutdown()
+			else:
+				request.shutdown(socket.SHUT_WR)
+		except socket.error:
+			pass #some platforms may raise ENOTCONN here
+		self.close_request(request)
 				
-class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_POST(self):
 		(username, password) = self.getCredentials()
 		user = self.server.getAuth(username, password)
@@ -64,38 +104,16 @@ class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		auth = auth.strip().decode('base64')
 		username, password = auth.split(':',1)
 		return (username, password)
-	def setup(self):
-		self.connection = self.request
-		if isinstance(self.connection, SSL.Connection):
-			self.connection.settimeout(self.timeout)
-		if self.disable_nagle_algorithm:
-			self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-		if self.server.sslOpts:
-			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
-			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
-		else:
-			self.rfile = self.connection.makefile('rb', self.rbufsize)
-			self.wfile = self.connection.makefile('wb', self.wbufsize)
 
-SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate"])
-
-class XMLRPCServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 	def __init__(self, address, loginFunc, sslOpts=False, beforeExecute=None, afterExecute=None, onError=None):
 		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler, bind_and_activate=not bool(sslOpts))
+		SecureServer.__init__(self, sslOpts)
 		self.functions = {}
 		self.loginFunc = loginFunc
 		self.beforeExecute = beforeExecute
 		self.afterExecute = afterExecute
 		self.onError = onError
-		self.sslOpts = sslOpts
-		if sslOpts:
-			ctx = SSL.Context(SSL.SSLv23_METHOD)
-			ctx.use_privatekey_file(sslOpts.private_key)
-			ctx.use_certificate_file(sslOpts.certificate)
-			self.plainSocket = self.socket
-			self.socket = SSL.Connection(ctx, self.plainSocket)
-			self.server_bind()
-			self.server_activate()
 	def register(self, func, name=None):
 		if not callable(func):
 			for n in dir(func):
@@ -127,18 +145,6 @@ class XMLRPCServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 		if username:
 			user = self.loginFunc(username, password)
 		return user
-	def shutdown_request(self, request):
-		"""Called to shutdown and close an individual request."""
-		try:
-			#explicitly shutdown.  socket.close() merely releases
-			#the socket and waits for GC to perform the actual close.
-			if self.sslOpts:
-				request.shutdown()
-			else:
-				request.shutdown(socket.SHUT_WR)
-		except socket.error:
-			pass #some platforms may raise ENOTCONN here
-		self.close_request(request)
 
 class XMLRPCServerIntrospection(XMLRPCServer):
 	def __init__(self, *args, **kwargs):
@@ -208,13 +214,12 @@ def run():
 			sslOpts = SSLOpts(private_key=settings["SSL_OPTS"]["private_key"], certificate=settings["SSL_OPTS"]["ca_key"])
 		server = XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, onError=handleError)
 		server.register(tomato.api)
-		print >>sys.stderr, " - %s://%s:%d" % ("https" if sslOpts else "http", server_address[0], server_address[1])
+		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
 	try:
 		while True:
 			time.sleep(60)
 	except KeyboardInterrupt:
-		print >>sys.stderr, "Stopping RPC servers"
 		for server in servers:
 			server.shutdown()
 		
