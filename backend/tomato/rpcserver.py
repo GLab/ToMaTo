@@ -19,22 +19,101 @@
 
 import tomato.lib.log
 
-import xmlrpclib, traceback
-from twisted.web import xmlrpc, server, http
-from twisted.internet import defer, reactor, ssl
+import xmlrpclib, SocketServer, BaseHTTPServer
 
 from tomato import fault
 from tomato.lib import db
+				
+class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+	def do_POST(self):
+		(username, password) = self.getCredentials()
+		user = self.server.getAuth(username, password)
+		if not user:
+			self.send_error(401)
+			return self.finish()
+		(method, args, kwargs) = self.getRpcRequest()
+		func = self.server.findMethod(method)
+		try:
+			ret = self.server.execute(func, args, kwargs, user)
+			self.send((ret,), method)
+		except Exception, err:
+			if not isinstance(err, xmlrpclib.Fault):
+				err = xmlrpclib.Fault(-1, str(err))
+			self.send(err, method)
+	def send(self, response, methodName=None):
+		res = xmlrpclib.dumps(response, methodname=methodName, methodresponse=True, allow_none=True)
+		self.send_response(200)
+		self.send_header("Content-Type", "text/xml")
+		self.end_headers()
+		self.wfile.write(res)
+		self.finish()
+	def getRpcRequest(self):
+		length = int(self.headers.get("Content-Length", None))
+		(args, kwargs), method = xmlrpclib.loads(self.rfile.read(length))
+		return (method, args, kwargs)
+	def getCredentials(self):
+		authstr = self.headers.get("Authorization", None)
+		if not authstr:
+			return (None, None)
+		(authmeth, auth) = authstr.split(' ',1)
+		if 'basic' != authmeth.lower():
+			return (None, None)
+		auth = auth.strip().decode('base64')
+		username, password = auth.split(':',1)
+		return (username, password)
 
-class Introspection():
-	def __init__(self, papi):
-		self.api=papi
+class XMLRPCServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+	def __init__(self, address, loginFunc, beforeExecute=None, afterExecute=None, onError=None):
+		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler)
+		self.functions = {}
+		self.loginFunc = loginFunc
+		self.beforeExecute = beforeExecute
+		self.afterExecute = afterExecute
+		self.onError = onError
+	def register(self, func, name=None):
+		if not callable(func):
+			for n in dir(func):
+				fn = getattr(func, n)
+				if callable(fn):
+					self.register(fn)
+		else:
+			if not name:
+				name = func.__name__
+			self.functions[name] = func
+	def execute(self, func, args, kwargs, user):
+		try:
+			if callable(self.beforeExecute):
+				self.beforeExecute(func, args, kwargs, user)
+			res = func(*args, user=user, **kwargs)
+			if callable(self.afterExecute):
+				self.afterExecute(func, args, kwargs, user, res)
+			return res
+		except Exception, exc:
+			if callable(self.onError):
+				res = self.onError(exc, func, args, kwargs, user)
+				if res:
+					exc = res
+			raise exc
+	def findMethod(self, method):
+		return self.functions.get(method, None)
+	def getAuth(self, username, password):
+		user = None
+		if username:
+			user = self.loginFunc(username, password)
+		return user
+
+class XMLRPCServerIntrospection(XMLRPCServer):
+	def __init__(self, *args, **kwargs):
+		XMLRPCServer.__init__(self, *args, **kwargs)
+		self.register(self.listMethods, "_listMethods")
+		self.register(self.methodSignature, "_methodSignature")
+		self.register(self.methodHelp, "_methodHelp")
 
 	def listMethods(self, user=None): #@UnusedVariable, pylint: disable-msg=W0613
-		return [m for m in dir(self.api) if (callable(getattr(self.api, m)) and not m.startswith("_"))]
-
+		return filter(lambda name: not name.startswith("_"), self.functions.keys())
+	
 	def methodSignature(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
-		func = getattr(self.api, method)
+		func = self.findMethod(method)
 		if not func:
 			return "Unknown method: %s" % method
 		import inspect
@@ -43,84 +122,46 @@ class Introspection():
 		return method + argstr
 
 	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
-		func = getattr(self.api, method)
+		func = self.findMethod(method)
 		if not func:
 			return "Unknown method: %s" % method
 		doc = func.__doc__
 		if not doc:
 			return "No documentation for: %s" % method
 		return doc
-		
-class APIServer(xmlrpc.XMLRPC):
-	def __init__(self, papi, login):
-		self.api=papi
-		self.login=login
-		self.introspection=Introspection(self.api)
-		xmlrpc.XMLRPC.__init__(self, allowNone=True)
-		self.logger = tomato.lib.log.Logger(tomato.config.LOG_DIR + "/api.log")
 
-	def log(self, function, args, user):
-		if len(str(args)) < 50:
-			self.logger.log("%s%s" %(function.__name__, args), user=user.name)
-		else:
-			self.logger.log(function.__name__, bigmessage=str(args)+"\n", user=user.name)
+logger = tomato.lib.log.Logger(tomato.config.LOG_DIR + "/api.log")
 
-	@db.commit_after
-	def execute(self, function, args, user):
-		try:
-			self.log(function, args, user)
-			return function(*(args[0]), user=user, **(args[1])) #pylint: disable-msg=W0142
-		except xmlrpc.Fault, exc:
-			fault.log(exc)
-			raise
-		except Exception, exc:
-			fault.log(exc)
-			self.logger.log("Exception: %s" % exc, user=user.name)
-			raise fault.wrap(exc)
+def logCall(function, args, kwargs, user):
+	if len(str(args)) < 50:
+		logger.log("%s%s" %(function.__name__, args), user=user.name)
+	else:
+		logger.log(function.__name__, bigmessage=str(args)+"\n", user=user.name)
 
-	def render(self, request):
-		try:
-			return self.handle(request)
-		except xmlrpc.Fault, exc:
-			fault.log(exc)
-			raise
-		except Exception, exc:
-			fault.log(exc)
-			raise fault.wrap(exc)
-		
-	def handle(self, request):
-		username=request.getUser()
-		passwd=request.getPassword()
-		user=self.login(username, passwd)
-		if not user:
-			request.setResponseCode(http.UNAUTHORIZED)
-			if username=='' and passwd=='':
-				return 'Authorization required!'
-			else:
-				return 'Authorization Failed!'
-		request.content.seek(0, 0)
-		args, functionPath=xmlrpclib.loads(request.content.read())
-		function = None
-		if hasattr(self.api, functionPath):
-			function=getattr(self.api, functionPath)
-		if functionPath.startswith("_"):
-			functionPath = functionPath[1:]
-		if hasattr(self.introspection, functionPath):
-			function=getattr(self.introspection, functionPath)
-		if function:
-			request.setHeader("content-type", "text/xml")
-			defer.maybeDeferred(self.execute, function, args, user).addErrback(self._ebRender).addCallback(self._cbRender, request)
-			return server.NOT_DONE_YET
+@db.commit_after
+def handleError(error, function, args, kwargs, user):
+	if isinstance(error, xmlrpclib.Fault):
+		fault.log(error)
+	else:
+		fault.log(error)
+		logger.log("Exception: %s" % error, user=user.name)
+		return fault.wrap(error)
+
+@db.commit_after
+def afterCall(*args, **kwargs):
+	pass
 
 def run():
-	api_server=APIServer(tomato.api, tomato.login)
+	server_address = ('', 8000)
 	for settings in tomato.config.SERVER:
-		if settings["SSL"]:
-			sslContext = ssl.DefaultOpenSSLContextFactory(settings["SSL_OPTS"]["private_key"], settings["SSL_OPTS"]["ca_key"])
-			reactor.listenSSL(settings["PORT"], server.Site(api_server), contextFactory = sslContext) #@UndefinedVariable, pylint: disable-msg=E1101
-		else:
-			reactor.listenTCP(settings["PORT"], server.Site(api_server)) #@UndefinedVariable, pylint: disable-msg=E1101
-	reactor.run() #@UndefinedVariable, pylint: disable-msg=E1101
+		if not settings["SSL"]:
+			server_address = ('', settings["PORT"])
+	server = XMLRPCServerIntrospection(server_address, tomato.login, beforeExecute=logCall, onError=handleError)
+	server.register(tomato.api)
+	try:
+		server.serve_forever()
+	except KeyboardInterrupt:
+		pass
 	
 if __name__ == "__main__":
 	run()
