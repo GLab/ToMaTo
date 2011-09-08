@@ -48,9 +48,11 @@ def print_except_helper(func, args, kwargs):
 		return func(*args, **kwargs) #pylint: disable-msg=W0142
 	except Exception, exc: #pylint: disable-msg=W0703
 		from tomato import fault
-		import traceback #important because module might be unloaded if called inside atexit
-		traceback.print_exc()
-		fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+		try:
+			traceback.print_exc()
+			fault.errors_add('%s:%s' % (exc.__class__.__name__, exc), traceback.format_exc())
+		except:
+			pass
 		raise
 
 def print_except(func, *args, **kwargs):

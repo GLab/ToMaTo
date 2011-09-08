@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, atexit, threading
+import sys, atexit, threading, time
 
 from django.db import models
 from django.db.models import Q, Sum
@@ -306,6 +306,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		res = util.run_shell(cmd)
 		if res[0] != 0:
 			if retries:
+				print >>sys.stderr, "Retrying host %s, retry %d" % (self.name, 4-retries)
+				time.sleep(5)
 				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
