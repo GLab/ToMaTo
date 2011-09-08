@@ -214,7 +214,8 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		if "hostgroup" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name)
 			if properties["hostgroup"] == "auto":
-				properties["hostgroup"] = ""
+				properties["hostgroup"] = None
+			self.hostgroup = properties["hostgroup"]
 		self.setPrivateAttributes(properties)
 		self.save()
 
@@ -235,6 +236,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
+					"hostgroup": self.hostgroup,
 					"name": self.name, "type": self.type, "state": self.state,
 					},
 			"resources" : util.xml_rpc_sanitize(self.getAttribute("resources")),
