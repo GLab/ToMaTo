@@ -44,6 +44,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	
 	lock = threading.Lock()
 
+	class Meta:
+		ordering=["group", "name"]
+
 	def init(self):
 		self.attrs = {}
 		self.setAttribute("port_start", 7000)

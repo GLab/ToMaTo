@@ -39,6 +39,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	
 	class Meta:
 		unique_together = (("topology", "name"),)
+		ordering=["name"]
 
 	def init(self):
 		self.attrs = {}
@@ -276,6 +277,7 @@ class Interface(attributes.Mixin, models.Model):
 
 	class Meta:
 		unique_together = (("device", "name"),)
+		ordering=["name"]
 
 	def init(self):
 		self.attrs = {}

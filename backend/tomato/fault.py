@@ -28,7 +28,8 @@ class Error(models.Model):
 	type = models.CharField(max_length=20, default=Type.Error)
 	title = models.CharField(max_length=255)
 	message = models.TextField(blank=True)
-	
+	class Meta:
+		ordering=["-date_last"]	
 	def toDict(self):
 		return {"id": self.id, "type": self.type, "occurrences": self.occurrences, "date_first": self.date_first, "date_last": self.date_last, "title": self.title, "message": self.message} # pylint: disable-msg=E1101
 

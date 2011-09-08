@@ -54,7 +54,8 @@ class Template(attributes.Mixin, models.Model):
 		db_table = "tomato_template"
 		app_label = 'tomato'
 		unique_together = (("name", "type"),)
-		
+		ordering=["type", "name"]
+
 	def init(self, name, ttype, external_url=None):
 		import re
 		fault.check(re.match("^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$", name), "Name must be in the format NAME-VERSION")

@@ -31,6 +31,7 @@ class ExternalNetwork(models.Model):
 		db_table = "tomato_externalnetwork"
 		app_label = 'tomato'
 		unique_together = (("group", "type"),)
+		ordering=["type", "group"]
 
 	def hasFreeSlots(self):
 		return not (self.max_devices and self.usageCount() >= self.max_devices) 
@@ -62,6 +63,8 @@ class ExternalNetworkBridge(models.Model):
 	class Meta:
 		db_table = "tomato_externalnetworkbridge"
 		app_label = 'tomato'
+		unique_together=(("host", "bridge"),)
+		ordering=["host", "bridge"]
 
 	def toDict(self):
 		"""

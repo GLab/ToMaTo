@@ -44,6 +44,9 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 	DESTROY_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["DESTROY"])
 	REMOVE_TIMEOUT = datetime.timedelta(weeks=config.TIMEOUTS["REMOVE"])
 
+	class Meta:
+		ordering=["-id"]	
+
 	def _logger(self):
 		if not os.path.exists(config.LOG_DIR + "/top"):
 			os.makedirs(config.LOG_DIR + "/top")
@@ -467,7 +470,7 @@ class Permission(models.Model):
 
 	class Meta:
 		unique_together = (("topology", "user"),)
-
+		ordering=["role", "user"]
 
 def get(top_id):
 	try:

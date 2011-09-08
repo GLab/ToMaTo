@@ -33,6 +33,7 @@ class PhysicalLink(models.Model):
 		db_table = "tomato_physicallink"	
 		app_label = 'tomato'
 		unique_together = (("src_group", "dst_group"),)		
+		ordering=["src_group", "dst_group"]
 			
 	def adapt(self, loss, delay_avg, delay_stddev):
 		self.loss = ( 1.0 - self.sliding_factor ) * self.loss + self.sliding_factor * loss

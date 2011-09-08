@@ -34,6 +34,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	class Meta:
 		unique_together = (("topology", "name"),)
+		ordering=["name"]
 
 	def init(self):
 		self.attrs = {}
@@ -246,7 +247,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	class Meta:
 		unique_together = (("connector", "interface"),)
-
+		
 	def getHost(self):
 		if not self.interface:
 			return None

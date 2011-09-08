@@ -34,6 +34,7 @@ class User(models.Model):
 		db_table = "tomato_user"
 		app_label = 'tomato'
 		unique_together = (("name", "origin"),)
+		ordering=["name", "origin"]
 
 	def checkPassword(self, password):
 		return self.password == crypt.crypt(password, self.password)
