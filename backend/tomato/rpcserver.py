@@ -19,10 +19,11 @@
 
 import tomato.lib.log
 
-import xmlrpclib, SocketServer, BaseHTTPServer
+import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections, time, sys
+from OpenSSL import SSL
 
 from tomato import fault
-from tomato.lib import db
+from tomato.lib import db, util
 				
 class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_POST(self):
@@ -40,6 +41,8 @@ class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))
 			self.send(err, method)
+	def log_message(self, format, *args):
+		pass
 	def send(self, response, methodName=None):
 		res = xmlrpclib.dumps(response, methodname=methodName, methodresponse=True, allow_none=True)
 		self.send_response(200)
@@ -61,15 +64,38 @@ class XMLRPCHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		auth = auth.strip().decode('base64')
 		username, password = auth.split(':',1)
 		return (username, password)
+	def setup(self):
+		self.connection = self.request
+		if isinstance(self.connection, SSL.Connection):
+			self.connection.settimeout(self.timeout)
+		if self.disable_nagle_algorithm:
+			self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+		if self.server.sslOpts:
+			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+		else:
+			self.rfile = self.connection.makefile('rb', self.rbufsize)
+			self.wfile = self.connection.makefile('wb', self.wbufsize)
+
+SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate"])
 
 class XMLRPCServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-	def __init__(self, address, loginFunc, beforeExecute=None, afterExecute=None, onError=None):
-		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler)
+	def __init__(self, address, loginFunc, sslOpts=False, beforeExecute=None, afterExecute=None, onError=None):
+		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler, bind_and_activate=not bool(sslOpts))
 		self.functions = {}
 		self.loginFunc = loginFunc
 		self.beforeExecute = beforeExecute
 		self.afterExecute = afterExecute
 		self.onError = onError
+		self.sslOpts = sslOpts
+		if sslOpts:
+			ctx = SSL.Context(SSL.SSLv23_METHOD)
+			ctx.use_privatekey_file(sslOpts.private_key)
+			ctx.use_certificate_file(sslOpts.certificate)
+			self.plainSocket = self.socket
+			self.socket = SSL.Connection(ctx, self.plainSocket)
+			self.server_bind()
+			self.server_activate()
 	def register(self, func, name=None):
 		if not callable(func):
 			for n in dir(func):
@@ -101,6 +127,18 @@ class XMLRPCServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 		if username:
 			user = self.loginFunc(username, password)
 		return user
+	def shutdown_request(self, request):
+		"""Called to shutdown and close an individual request."""
+		try:
+			#explicitly shutdown.  socket.close() merely releases
+			#the socket and waits for GC to perform the actual close.
+			if self.sslOpts:
+				request.shutdown()
+			else:
+				request.shutdown(socket.SHUT_WR)
+		except socket.error:
+			pass #some platforms may raise ENOTCONN here
+		self.close_request(request)
 
 class XMLRPCServerIntrospection(XMLRPCServer):
 	def __init__(self, *args, **kwargs):
@@ -108,6 +146,9 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 		self.register(self.listMethods, "_listMethods")
 		self.register(self.methodSignature, "_methodSignature")
 		self.register(self.methodHelp, "_methodHelp")
+		self.register(self.listMethods, "system.listMethods")
+		self.register(self.methodSignature, "system.methodSignature")
+		self.register(self.methodHelp, "system.methodHelp")
 
 	def listMethods(self, user=None): #@UnusedVariable, pylint: disable-msg=W0613
 		return filter(lambda name: not name.startswith("_"), self.functions.keys())
@@ -151,17 +192,31 @@ def handleError(error, function, args, kwargs, user):
 def afterCall(*args, **kwargs):
 	pass
 
-def run():
-	server_address = ('', 8000)
-	for settings in tomato.config.SERVER:
-		if not settings["SSL"]:
-			server_address = ('', settings["PORT"])
-	server = XMLRPCServerIntrospection(server_address, tomato.login, beforeExecute=logCall, onError=handleError)
-	server.register(tomato.api)
+def runServer(server):
 	try:
 		server.serve_forever()
 	except KeyboardInterrupt:
 		pass
-	
+
+def run():
+	servers = []
+	print >>sys.stderr, "Starting RPC servers"
+	for settings in tomato.config.SERVER:
+		server_address = ('', settings["PORT"])
+		sslOpts = None
+		if settings["SSL"]:
+			sslOpts = SSLOpts(private_key=settings["SSL_OPTS"]["private_key"], certificate=settings["SSL_OPTS"]["ca_key"])
+		server = XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, onError=handleError)
+		server.register(tomato.api)
+		print >>sys.stderr, " - %s://%s:%d" % ("https" if sslOpts else "http", server_address[0], server_address[1])
+		util.start_thread(server.serve_forever)
+	try:
+		while True:
+			time.sleep(60)
+	except KeyboardInterrupt:
+		print >>sys.stderr, "Stopping RPC servers"
+		for server in servers:
+			server.shutdown()
+		
 if __name__ == "__main__":
 	run()
