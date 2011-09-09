@@ -111,6 +111,8 @@ def startVnc(host, vmid, port, password):
 
 def stopVnc(host, vmid, port):
 	process.killPidfile(host, _vncPidfile(vmid))
+	if not process.portFree(host, port):
+		process.killPortUser(host, port)
 	assert process.portFree(host, port)
 	
 def _templatePath(name):
