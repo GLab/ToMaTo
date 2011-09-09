@@ -69,7 +69,7 @@ INTERNAL_ERROR = 500
 
 def _must_log(exc):
 	if isinstance(exc, Fault):
-		return exc.faultCode != USER_ERROR
+		return exc.faultCode in [UNKNOWN_ERROR, INTERNAL_ERROR]
 	return True 
 
 def log_info(title, message):
