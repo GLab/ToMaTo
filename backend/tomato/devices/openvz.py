@@ -458,6 +458,11 @@ class OpenVZDevice(Device):
 					con.start(True, noProcess=True)
 				if self.state == State.STARTED:
 					self.connectToBridge(iface, self.getBridge(iface))
+
+	def checkUploadedImage(self, path):
+		error = vzctl.checkImage(self.host, path)
+		if error:
+			raise fault.new("Invalid OpenVZ image: %s" % error, fault.USER_ERROR)
 				
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"

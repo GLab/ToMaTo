@@ -119,6 +119,14 @@ def _templatePath(name):
 def useTemplate(host, vmid, template):
 	return useImage(host, vmid, _templatePath(template))
 
+def checkImage(host, path):
+	assert host
+	assert fileutil.existsFile(host, path)
+	try:
+		res = host.execute("qemu-img info -f qcow2 %s" % util.escape(path))
+	except exceptions.CommandError, err:
+		return err.errorMessage
+	
 def setName(host, vmid, name):
 	assert getState(host, vmid) != generic.State.CREATED, "VM must exist to change the name"
 	_qm(host, vmid, "set", ["--name", name])

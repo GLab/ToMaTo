@@ -99,6 +99,11 @@ class KVMDevice(Device):
 		qm.copyImage(self.host, self.getVmid(), file)
 		return self.host.getHostServer().downloadGrant(file, filename)
 
+	def checkUploadedImage(self, path):
+		error = qm.checkImage(self.host, path)
+		if error:
+			raise fault.new("Invalid KVM image: %s" % error, fault.USER_ERROR)
+
 	def useUploadedImageRun(self, path):
 		assert self.state == State.PREPARED, "Upload not supported"
 		qm.useImage(self.host, self.getVmid(), path, move=True)

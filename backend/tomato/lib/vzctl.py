@@ -17,9 +17,9 @@
 
 import uuid
 
-from tomato import generic, config
+from tomato import generic, config, fault
 
-import process, fileutil, ifaceutil, util
+import process, fileutil, ifaceutil, util, exceptions
 
 def _vzctl(host, vmid, cmd, params=[]):
 	#FIXME: make synchronized because vzctl creates a lock
@@ -98,6 +98,15 @@ def setHostname(host, vmid, hostname):
 def deleteInterface(host, vmid, iface):
 	assert getState(host, vmid) != generic.State.CREATED, "VM not prepared"
 	_vzctl(host, vmid, "set", ["--netif_del", iface, "--save"])
+
+def checkImage(host, path):
+	assert host
+	assert fileutil.existsFile(host, path)
+	try:
+		res = host.execute("tar -tzvf %s ./sbin/init" % util.escape(path))
+		fault.check("0/0" in res, "Image contents not owned by root")
+	except exceptions.CommandError, err:
+		return err.errorMessage
 
 def useImage(host, vmid, image, forceGzip=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"
