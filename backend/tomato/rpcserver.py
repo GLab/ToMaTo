@@ -190,8 +190,10 @@ def handleError(error, function, args, kwargs, user):
 	if isinstance(error, xmlrpclib.Fault):
 		fault.log(error)
 	else:
-		fault.log(error)
-		logger.log("Exception: %s" % error, user=user.name)
+		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
+			# not a wrong API call
+			fault.log(error)
+			logger.log("Exception: %s" % error, user=user.name)
 		return fault.wrap(error)
 
 @db.commit_after
