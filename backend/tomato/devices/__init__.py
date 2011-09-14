@@ -101,7 +101,6 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				"download_image": isUser and not isBusy and self.state == State.PREPARED,
 			},
 			"configure": {
-				"pos": True,
 				"hostgroup": True,
 			}
 		}
@@ -155,11 +154,11 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	
 	def _assignBridges(self):
 		for iface in self.interfaceSetAll():
-			iface.connection.upcast()._assignBridgeId()
+			iface.connection.upcast().prepareBridge()
 			
 	def _unassignBridges(self):
 		for iface in self.interfaceSetAll():
-			iface.connection.upcast()._unassignBridgeId()				
+			iface.connection.upcast().destroyBridge()				
 	
 	def migrate(self, direct):
 		self.topology.renew()
@@ -227,13 +226,6 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def __unicode__(self):
 		return self.name
 		
-	def getIdUsage(self, host):
-		ids = {}
-		for iface in self.interfaceSetAll():
-			for (key, value) in iface.upcast().getIdUsage(host).iteritems():
-				ids[key] = ids.get(key, set()) | value
-		return ids
-		
 	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
@@ -266,9 +258,6 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def checkUploadedImage(self, filename):
 		pass
 			
-	def onConnectionStateChange(self, iface):
-		pass
-			
 class Interface(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
 	device = models.ForeignKey(Device)
@@ -281,9 +270,6 @@ class Interface(attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
-		
-	def getIdUsage(self, host):
-		return {}
 		
 	def isConfigured(self):
 		try:
@@ -340,9 +326,6 @@ class Interface(attributes.Mixin, models.Model):
 	
 	def getDestroyTasks(self):
 		return tasks.TaskSet()
-
-	def onConnectionStateChange(self):
-		self.device.upcast().onConnectionStateChange(self)
 
 
 # keep internal imports at the bottom to avoid dependency problems

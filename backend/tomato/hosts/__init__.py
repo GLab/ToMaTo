@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, atexit, threading, time
+import sys, atexit, threading, time, random
 
 from django.db import models
 from django.db.models import Q, Sum
@@ -41,22 +41,19 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	enabled = models.BooleanField(default=True)
 	
 	attrs = db.JSONField(default={})
-	
-	lock = threading.Lock()
 
 	class Meta:
 		ordering=["group", "name"]
 
 	def init(self):
 		self.attrs = {}
-		self.setAttribute("port_start", 7000)
-		self.setAttribute("port_count", 1000)
-		self.setAttribute("vmid_start", 1000)
-		self.setAttribute("vmid_count", 200)
-		self.setAttribute("bridge_start", 1000)
-		self.setAttribute("bridge_count", 1000)
-		self.setAttribute("ifb_start", 0)
-		self.setAttribute("ifb_count", 500)
+		resources.createPool(self, "port", 7000, 1000)
+		resources.createPool(self, "vmid", 1000, 200)
+		resources.createPool(self, "bridge", 1000, 1000)
+		resources.createPool(self, "ifb", 0, 500)
+
+	def getResourcePool(self, type):
+		return resources.getPool(self, type)
 
 	def getHostServer(self):
 		return hostserver.HostServer(self.name, self.getAttribute("hostserver_port"), 
@@ -85,17 +82,18 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		templates = tasks.Task("templates", self.fetchAllTemplates, reverseFn=self.disable, after=login)
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		create_ifbs = tasks.Task("ifb-interfaces", self._createIfbs, after=login)
-		free_ids = tasks.Task("id-usage", self._checkIds, after=create_ifbs)
-		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, free_ids, create_ifbs]
+		resources = tasks.Task("resources", self._checkResources, after=create_ifbs)
+		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, resources, create_ifbs]
 		enable = tasks.Task("enable", self._enable, after=other)
 		return other + [enable]
 
+	def _checkResources(self):
+		for pool in self.resourcepool_set.all():
+			pool.checkOwners()
+
 	def _createIfbs(self):
-		if self.getAttribute("ifb_start") is None:
-			self.setAttribute("ifb_start", 0)
-		if self.getAttribute("ifb_count") is None:
-			self.setAttribute("ifb_count", 500)
-		ifaceutil.createIfbs(self, self.getAttribute("ifb_start") + self.getAttribute("ifb_count"))
+		pool = self.getResourcePool("ifb")
+		ifaceutil.createIfbs(self, pool.first_num + pool.num_count)
 		
 	def _enable(self):
 		self.deleteAttribute("host_check_error")
@@ -154,160 +152,12 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	def hostServerBasedir(self):
 		return self.getAttribute("hostserver_basedir") 
 
-	def _calcFreeIds(self):
-		types = ["vmid", "port", "bridge", "ifb"]
-		ids = {}
-		for t in types:
-			ids[t] = range(self.getAttribute("%s_start" % t),self.getAttribute("%s_start" % t)+self.getAttribute("%s_count" % t))
-		from tomato import topology
-		for top in topology.all():
-			usage = top.getIdUsage(self)
-			for (t, used) in usage.iteritems():
-				assert t in types, "Unknown id type: %s" % t
-				assert set(ids[t]) >= used, "Topology %s uses %s ids that are not available: %s" % (top, t, used-set(ids[t]))
-				ids[t] = list(set(ids[t]) - used)
-		return ids			
-				
-	def _getFreeIds(self, recalc=False):
-		self.reload()
-		if self.getAttribute("free_ids") and not recalc:
-			return self._unpackIds(self.getAttribute("free_ids"))
-		ids = self._calcFreeIds()
-		self._setFreeIds(ids)
-		return ids
-
-	def _setFreeIds(self, ids):
-		self.setAttribute("free_ids", self._packIds(ids))
-		self.save()
-			
-	def _packList(self, ids):
-		packed = []
-		start = None
-		last = None
-		for i in sorted(ids):
-			assert isinstance(i, int), "List items must be int, was %s: %s" % (type(i), i)
-			if not last or (i != last + 1):
-				if not start is None:
-					if start == last:
-						packed.append(last)
-					else:
-						packed.append((start, last))						
-				start = i
-				last = i
-			else:
-				last += 1
-		if not start is None:
-			if start == last:
-				packed.append(last)
-			else:
-				packed.append((start, last))
-		return packed
-				
-	def _unpackList(self, packed):
-		ids = []
-		for i in packed:
-			if not isinstance(i, int):
-				i = tuple(i)
-				(start, end) = i
-				ids.extend(range(start, end+1))
-			else:
-				ids.append(i)
-		return ids
-
-	def _packIds(self, ids):
-		packed = {}
-		for (key, value) in ids.iteritems():
-			packed[key] = self._packList(value)
-		return packed
-
-	def _unpackIds(self, packed):
-		ids = {}
-		for (key, value) in packed.iteritems():
-			ids[key] = self._unpackList(value)
-		return ids
-
-	def _checkIds(self):
-		unused = self._calcFreeIds()
-		unclaimed = self._getFreeIds()
-		types = ["vmid", "port", "bridge", "ifb"]
-		for t in types:
-			if not t in unused or not t in unclaimed:
-				continue
-			for id in set(unused[t]) - set(unclaimed[t]):
-				# id is claimed but unused
-				realUsage = self._realIdState(t, id)
-				if realUsage:
-					self._freeId(t, id)
-				fault.errors_add("Free id mismatch", "%s %d on host %s is claimed but not used by any topology. Its real usage was %s." % (t, id, self.name, realUsage))
-			for id in set(unclaimed[t]) - set(unused[t]):
-				# id is used but not claimed
-				fault.errors_add("Free id mismatch", "%s %d on host %s is used by a topology but not claimed." % (t, id, self.name))
-		self._setFreeIds(unused)
-				
-	def _realIdState(self, type, id):
-		if type == "vmid":
-			return qm.getState(self, id) != State.CREATED or vzctl.getState(self, id) != State.CREATED
-		elif type == "port":
-			return not process.portFree(self, id)
-		elif type == "bridge":
-			return ifaceutil.bridgeExists(self, "gbr_%d" % id) 
-
-	def _freeId(self, type, id):
-		if type == "vmid":
-			if qm.getState(self, id) == State.STARTED:
-				qm.stop(self, id)
-			if qm.getState(self, id) == State.PREPARED:
-				qm.destroy(self, id)
-			if vzctl.getState(self, id) == State.STARTED:
-				vzctl.stop(self, id)
-			if vzctl.getState(self, id) == State.PREPARED:
-				vzctl.destroy(self, id)
-		elif type == "port":
-			process.killPortUser(self, id)
-		elif type == "bridge":
-			ifaceutil.bridgeRemove(self, "gbr_%d" % id, True, True)
-
-	def takeId(self, type, callback):
-		try:
-			Host.lock.acquire()
-			#print "enter"
-			ids = self._getFreeIds()
-			if not type in ids:
-				ids = self._getFreeIds(True)
-			fault.check(len(ids[type]), "No more free %ss on host %s", (type, self.name))
-			#print "Free %s ids: %s" % (type, self._packList(ids[type]))
-			#print "Callback: %s" % callback
-			id = sorted(ids[type])[0]
-			#print "Taken %s: %s" % (type, id)
-			ids[type].remove(id)
-			self._setFreeIds(ids)
-			callback(id)
-			#print "taken free %s: %d" % (type, id)
-			#assert not id in self._calcFreeIds()[type], "Id was not properly reserved"
-			#print "exit"
-		finally:
-			Host.lock.release()
-			
-	def giveId(self, type, id):
-		try:
-			Host.lock.acquire()
-			assert id in xrange(self.getAttribute("%s_start" % type),self.getAttribute("%s_start" % type)+self.getAttribute("%s_count" % type))
-			ids = self._getFreeIds()
-			if id in ids[type]:
-				#id was registered as free
-				return
-			ids[type].append(id)
-			self._setFreeIds(ids) 
-			#print "returned free %s: %d" % (type, id)
-		finally:
-			Host.lock.release()			
-	
 	def _exec(self, cmd, retries=3):
 		res = util.run_shell(cmd)
 		if res[0] != 0:
 			if retries:
 				print >>sys.stderr, "Retrying host %s, retry %d" % (self.name, 4-retries)
-				time.sleep(5)
+				time.sleep(1.0+random.random()*4.0)
 				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
@@ -408,9 +258,14 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		if "enabled" in properties:
 			self.setAttribute("manually_disabled", not self.enabled)
 			self.check()
-		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count", "ifb_start", "ifb_count"]:
-			if var in properties:
-				self.setAttribute(var, int(properties[var]))
+		for t in resources.TYPES:
+			pool = self.getResourcePool(t)
+			if "%s_start" % t in properties:
+				pool.first_num = int(properties["%s_start" % t])
+				pool.save()
+			if "%s_count" % t in properties:
+				pool.num_count = int(properties["%s_count" % t])
+				pool.save()
 		if "group" in properties:
 			self.group = properties["group"]
 		self.save()
@@ -428,6 +283,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			"manually_disabled": self.getAttribute("manually_disabled", False),
 			"host_check_errror": self.getAttribute("host_check_error", None)}
 		res.update(self.getAttributes().items())
+		for t in resources.TYPES:
+			pool = self.getResourcePool(t)
+			res.update({"%s_start" % t: pool.first_num, "%s_count" % t: pool.num_count})
 		return res
 	
 def getGroups():
@@ -481,7 +339,7 @@ def check(host):
 	return host.check()
 
 # keep internal imports at the bottom to avoid dependency problems
-import templates
+import templates, resources
 from external_networks import ExternalNetwork, ExternalNetworkBridge
 from tomato import fault
 from tomato.lib import util, tasks

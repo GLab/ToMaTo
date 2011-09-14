@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato import config, fault
-from tomato.hosts import templates
+from tomato.hosts import templates, resources
 from tomato.generic import State
-from tomato.devices import Device, Interface
+from tomato.devices import Device, Interface, common
 from tomato.topology import Permission
 
 from django.db import models
@@ -26,10 +26,10 @@ import hashlib
 
 from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db, exceptions
 
-class OpenVZDevice(Device):
+class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
-	vmid = models.PositiveIntegerField(null=True)
-	vnc_port = models.PositiveIntegerField(null=True)
+	vmid = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
+	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
 
 	class Meta:
@@ -42,27 +42,6 @@ class OpenVZDevice(Device):
 	def init(self):
 		self.attrs = {}
 		self.setAttribute("root_password", "glabroot", save=False)
-
-	def setVmid(self, value):
-		self.vmid = value
-		self.save()
-
-	def getVmid(self):
-		return self.vmid
-
-	def setVncPort(self, value):
-		self.vnc_port = value
-		self.save()
-
-	def getVncPort(self):
-		return self.vnc_port
-
-	def setTemplate(self, value):
-		self.template = value
-		self.save()
-
-	def getTemplate(self):
-		return self.template
 
 	def setRootPassword(self, value):
 		self.setAttribute("root_password", value)
@@ -109,17 +88,6 @@ class OpenVZDevice(Device):
 		else:
 			return Device._runAction(self, action, attrs, direct)
 
-	def vncPassword(self):
-		if not self.getVncPort():
-			return None 
-		m = hashlib.md5()
-		m.update(config.PASSWORD_SALT)
-		m.update(str(self.name))
-		m.update(str(self.getVmid()))
-		m.update(str(self.getVncPort()))
-		m.update(str(self.topology.owner))
-		return m.hexdigest()
-	
 	def _startVnc(self):
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
@@ -138,10 +106,10 @@ class OpenVZDevice(Device):
 
 	def _startDev(self):
 		host = self.host
-		vmid = self.vmid
+		vmid = self.getVmid()
 		state = vzctl.getState(host, vmid)
 		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
+			self._assignVncPort()
 		if state == State.CREATED:
 			self._prepareDev()
 			state = vzctl.getState(host, vmid)
@@ -176,8 +144,7 @@ class OpenVZDevice(Device):
 		if not self.host or not self.getVmid() or not self.getVncPort():
 			return
 		vzctl.stopVnc(self.host, self.getVmid(), self.getVncPort())
-		self.host.giveId("port", self.getVncPort())
-		self.setVncPort(None)
+		self._unassignVncPort()
 	
 	def _stopVm(self):
 		vzctl.stop(self.host, self.getVmid())
@@ -200,10 +167,6 @@ class OpenVZDevice(Device):
 		taskset.add(tasks.Task("stop", self._stopDev))
 		return taskset
 
-	def _assignTemplate(self):
-		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
-
 	def _unassignHost(self):
 		self.host = None
 		self.save()
@@ -213,16 +176,6 @@ class OpenVZDevice(Device):
 			self.host = self.hostOptions().best()
 			fault.check(self.host, "No matching host found")
 			self.save()
-
-	def _assignVmid(self):
-		assert self.host
-		if not self.getVmid():
-			self.host.takeId("vmid", self.setVmid)
-
-	def _assignVncPort(self):
-		assert self.host
-		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
 
 	def _configureVm(self):
 		if self.getRootPassword():
@@ -238,9 +191,8 @@ class OpenVZDevice(Device):
 		
 		self._assignBridges()
 		
-		if not self.getVmid():
-			self.host.takeId("vmid", self.setVmid)
-			fault.check(self.getVmid(), "No free vmid")
+		self._assignVmid()
+		fault.check(self.getVmid(), "No free vmid")
 		vmid = self.getVmid()
 		
 		state = vzctl.getState(host, vmid)
@@ -272,16 +224,6 @@ class OpenVZDevice(Device):
 		taskset = Device.getPrepareTasks(self)
 		taskset.add(tasks.Task("prepare", self._prepareDev))
 		return taskset
-
-	def _unassignVmid(self):
-		if self.vmid:
-			self.host.giveId("vmid", self.vmid)
-		self.setVmid(None)
-
-	def _unassignVncPort(self):
-		if self.vnc_port and self.host:
-			self.host.giveId("port", self.vnc_port)
-		self.setVncPort(None)
 
 	def _destroyVm(self):
 		if self.host:
@@ -388,22 +330,17 @@ class OpenVZDevice(Device):
 		task = tasks.get_current_task()
 		#save src data
 		src_host = self.host
-		src_vmid = self.getVmid()
-		self.setAttribute("migration", {src_host.name: src_vmid})
+		src_vmid = self.vmid
 		#assign new host and vmid
 		self.host = None
-		self.setVmid(None)
 		if host:
 			self.host = host
 		else:
 			self._assignHost()
-		self._assignVmid()
 		dst_host = self.host
-		dst_vmid = self.getVmid()
-		self.setAttribute("migration", {src_host.name: src_vmid, dst_host.name: dst_vmid})
+		dst_vmid = resources.take(dst_host, "vmid", self, "migration")
 		#reassign host and vmid
 		self.host = src_host
-		self.setVmid(src_vmid)
 		#destroy all connectors and save their state
 		constates={}
 		for iface in self.interfaceSetAll():
@@ -427,7 +364,7 @@ class OpenVZDevice(Device):
 				self.state = State.STARTED
 		ifaces = map(lambda x: x.name, self.interfaceSetAll())
 		try:
-			vzctl.migrate(src_host, src_vmid, dst_host, dst_vmid, self.getTemplate(), ifaces)
+			vzctl.migrate(src_host, src_vmid.num, dst_host, dst_vmid.num, self.getTemplate(), ifaces)
 		except:
 			# reverted to SRC host
 			if self.state == State.STARTED:
@@ -436,14 +373,14 @@ class OpenVZDevice(Device):
 			raise
 		#switch host and vmid
 		self.host = dst_host
-		self.setVmid(dst_vmid)
-		src_host.giveId("vmid", src_vmid)
+		self.vmid = dst_vmid
+		resources.give(self, self.VMID_SLOT)
+		self.vmid.slot = self.VMID_SLOT
 		self.save()
-		self.deleteAttribute("migration")
 		self._configureVm()
 		if self.state == State.STARTED:
 			self._assignVncPort()
-			self._startVnc()
+			self._startVnc()			
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():
 			if iface.isConnected():
@@ -490,28 +427,17 @@ class OpenVZDevice(Device):
 				traffic += ifaceutil.getTxBytes(self.host, dev)
 		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 
-	def getIdUsage(self, host):
-		ids = Device.getIdUsage(self, host)
-		if self.vnc_port and self.host == host:
-			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
-		if self.vmid and self.host == host:
-			ids["vmid"] = ids.get("vmid", set()) | set((self.vmid,))
-		if self.hasAttribute("migration"):
-			migration = self.getAttribute("migration")
-			if host.name in migration:
-				ids["vmid"] |= set((migration[host.name],))
-		return ids
-
 	def interfaceDevice(self, iface):
 		return vzctl.interfaceDevice(self.getVmid(), iface.name)
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		res["attrs"].update(vmid=self.getVmid(), vnc_port=self.getVncPort(), template=self.getTemplate(),
+		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getTemplate(),
 			gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))
 		if auth:
 			res["attrs"].update(root_password=self.getRootPassword(), vnc_password = self.vncPassword())
 		return res
+
 
 class ConfiguredInterface(Interface):
 

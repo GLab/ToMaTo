@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.devices import Device, Interface
+from tomato.devices import Device, Interface, common
 from tomato import fault, config
-from tomato.hosts import templates
+from tomato.hosts import templates, resources
 from tomato.generic import State
 from tomato.lib import qm, hostserver, tasks, ifaceutil, db
 from tomato.topology import Permission
@@ -25,10 +25,10 @@ from tomato.topology import Permission
 import hashlib, re
 from django.db import models
 
-class KVMDevice(Device):
+class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 	
-	vmid = models.PositiveIntegerField(null=True)
-	vnc_port = models.PositiveIntegerField(null=True)
+	vmid = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
+	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
 	
 	class Meta:
@@ -40,27 +40,6 @@ class KVMDevice(Device):
 
 	def init(self):
 		self.attrs = {}
-
-	def setVmid(self, value):
-		self.vmid = value
-		self.save()
-
-	def getVmid(self):
-		return self.vmid
-
-	def setVncPort(self, value):
-		self.vnc_port = value
-		self.save()
-
-	def getVncPort(self):
-		return self.vnc_port
-
-	def setTemplate(self, value):
-		self.template = value
-		self.save()
-
-	def getTemplate(self):
-		return self.template
 
 	def sendKeys(self, keycodes):
 		#not asserting state==Started because this is called during startup
@@ -110,7 +89,7 @@ class KVMDevice(Device):
 
 	def _startVnc(self):
 		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
+			self._assignVncPort()
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def connectToBridge(self, iface, bridge):
@@ -120,10 +99,10 @@ class KVMDevice(Device):
 
 	def _startDev(self):
 		host = self.host
-		vmid = self.vmid
+		vmid = self.getVmid()
 		state = qm.getState(host, vmid)
 		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
+			self._assignVncPort()
 		if state == State.CREATED:
 			self._prepareDev()
 			state = qm.getState(host, vmid)
@@ -176,10 +155,6 @@ class KVMDevice(Device):
 		taskset.add(tasks.Task("stop", self._stopDev))
 		return taskset
 
-	def _assignTemplate(self):
-		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
-
 	def _configureVm(self):
 		qm.setName(self.host, self.getVmid(), "%s_%s" % (self.topology.name, self.name))
 	
@@ -195,9 +170,8 @@ class KVMDevice(Device):
 		
 		self._assignBridges()
 		
-		if not self.getVmid():
-			self.host.takeId("vmid", self.setVmid)
-			fault.check(self.getVmid(), "No free vmid")
+		self._assignVmid()
+		fault.check(self.getVmid(), "No free vmid")
 		vmid = self.getVmid()
 		
 		state = qm.getState(host, vmid)
@@ -235,16 +209,6 @@ class KVMDevice(Device):
 		self.host = None
 		self.save()
 		
-	def _unassignVmid(self):
-		if self.vmid and self.host:
-			self.host.giveId("vmid", self.vmid)
-		self.setVmid(None)
-
-	def _unassignVncPort(self):
-		if self.vnc_port:
-			self.host.giveId("port", self.vnc_port)
-		self.setVncPort(None)
-
 	def _destroyDev(self):
 		host = self.host
 		vmid = self.getVmid()
@@ -335,17 +299,6 @@ class KVMDevice(Device):
 			qm.deleteInterface(self.host, self.getVmid(), iface.name)
 		iface.delete()
 		
-	def vncPassword(self):
-		if not self.getVmid():
-			return "---"
-		m = hashlib.md5()
-		m.update(config.PASSWORD_SALT)
-		m.update(str(self.name))
-		m.update(str(self.getVmid()))
-		m.update(str(self.getVncPort()))
-		m.update(str(self.topology.owner))
-		return m.hexdigest()
-
 	def getResourceUsage(self):
 		traffic = 0
 		disk = 0
@@ -360,18 +313,6 @@ class KVMDevice(Device):
 				traffic += ifaceutil.getRxBytes(self.host, dev)
 				traffic += ifaceutil.getTxBytes(self.host, dev)
 		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
-	
-	def getIdUsage(self, host):
-		ids = Device.getIdUsage(self, host)
-		if self.vnc_port and self.host == host:
-			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
-		if self.vmid and self.host == host:
-			ids["vmid"] = ids.get("vmid", set()) | set((self.vmid,))
-		if self.hasAttribute("migration"):
-			migration = self.getAttribute("migration")
-			if host.name in migration:
-				ids["vmid"] |= set((migration[host.name],))
-		return ids
 	
 	def interfaceDevice(self, iface):
 		try:
@@ -389,22 +330,17 @@ class KVMDevice(Device):
 		task = tasks.get_current_task()
 		#save src data
 		src_host = self.host
-		src_vmid = self.getVmid()
-		self.setAttribute("migration", {src_host.name: src_vmid})
+		src_vmid = self.vmid
 		#assign new host and vmid
 		self.host = None
-		self.setVmid(None)
 		if host:
 			self.host = host
 		else:
 			self._assignHost()
-		self._assignVmid()
 		dst_host = self.host
-		dst_vmid = self.getVmid()
-		self.setAttribute("migration", {src_host.name: src_vmid, dst_host.name: dst_vmid})
+		dst_vmid = resources.take(dst_host, "vmid", self, "migration")
 		#reassign host and vmid
 		self.host = src_host
-		self.setVmid(src_vmid)
 		#destroy all connectors and save their state
 		constates={}
 		for iface in self.interfaceSetAll():
@@ -427,13 +363,13 @@ class KVMDevice(Device):
 			finally:
 				self.state = State.STARTED			
 		ifaces = map(lambda x: x.name, self.interfaceSetAll())
-		qm.migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces)
+		qm.migrate(src_host, src_vmid.num, dst_host, dst_vmid.num, ifaces)
 		#switch host and vmid
 		self.host = dst_host
-		self.setVmid(dst_vmid)
-		src_host.giveId("vmid", src_vmid)
+		self.vmid = dst_vmid
+		resources.give(self, self.VMID_SLOT)
+		self.vmid.slot = self.VMID_SLOT
 		self.save()
-		self.deleteAttribute("migration")
 		self._configureVm()
 		if self.state == State.STARTED:
 			self._startVnc()
@@ -452,7 +388,7 @@ class KVMDevice(Device):
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		res["attrs"].update(vmid=self.getVmid(), template=self.getTemplate())
+		res["attrs"].update(template=self.getTemplate())
 		if auth:
 			res["attrs"].update(vnc_password=self.vncPassword(), vnc_port=self.getVncPort())
 		return res

@@ -190,6 +190,9 @@ def disconnectInterfaces(host, if1, if2, id):
 		#remove routes
 		host.execute ( "ip route del table %s default" % util.escape(table1) )
 		host.execute ( "ip route del table %s default" % util.escape(table2) )
+		#remove iptables filters
+		iptablesRemoveRules(host, if1)
+		iptablesRemoveRules(host, if2)
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 2: #Rule does not exist
 			raise
@@ -216,8 +219,17 @@ def getTxBytes(host, iface):
 		return 0.0
 	return int(host.execute("[ -f /sys/class/net/%s/statistics/tx_bytes ] && cat /sys/class/net/%s/statistics/tx_bytes || echo 0" % (util.identifier(iface), util.identifier(iface))))
 
-def ping(host, ip, samples=10, maxWait=5):
-	res = host.execute("ping -A -c %d -n -q -w %d %s" % (samples, maxWait, util.escape(ip)))
+def reachable(host, ip, iface=None):
+	try:
+		return bool(ping(host, ip, maxWait=1, iface=iface))
+	except:
+		return False
+
+def ping(host, ip, samples=10, maxWait=5, iface=None):
+	assert samples >= 2
+	iface = "" if iface is None else "-I %s" % util.escape(iface)
+	cmd = "ping" if isIpv4(ip) else "ping6" 
+	res = host.execute("%s -A -c %d -n -q -w %d %s %s" % (cmd, samples, maxWait, iface, util.escape(ip)))
 	if not res:
 		return
 	import re

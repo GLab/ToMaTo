@@ -223,6 +223,9 @@ def sendMail(to, subject, body):
 	import smtplib
 	from email.mime.text import MIMEText
 	from tomato import config
+	if not config.MAIL.get("ENABLED", True):
+		print "Mail sending is disabled"
+		return
 	msg = MIMEText(body)
 	msg["Subject"] = subject
 	msg["From"] = "%s <%s>" % (config.MAIL["SENDER_NAME"], config.MAIL["SENDER_MAIL"])

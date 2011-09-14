@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato import config, fault
-from tomato.hosts import templates
+from tomato.hosts import templates, resources
 from tomato.generic import State
-from tomato.devices import Device, Interface
+from tomato.devices import Device, Interface, common
 from tomato.topology import Permission
 
 from django.db import models
@@ -26,9 +26,9 @@ import hashlib
 
 from tomato.lib import util, repy, ifaceutil, hostserver, tasks, db, exceptions
 
-class ProgDevice(Device):
+class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
-	vnc_port = models.PositiveIntegerField(null=True)
+	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
 
 	class Meta:
@@ -40,20 +40,6 @@ class ProgDevice(Device):
 
 	def init(self):
 		self.attrs = {}
-
-	def setVncPort(self, value):
-		self.vnc_port = value
-		self.save()
-
-	def getVncPort(self):
-		return self.vnc_port
-
-	def setTemplate(self, value):
-		self.template = value
-		self.save()
-
-	def getTemplate(self):
-		return self.template
 
 	def setArgs(self, value):
 		self.setAttribute("args", value)
@@ -77,18 +63,11 @@ class ProgDevice(Device):
 			"console": isUser and self.getVncPort() and self.state == State.STARTED
 		})
 		return capabilities
-
-	def vncPassword(self):
-		if not self.getVncPort():
-			return None 
-		m = hashlib.md5()
-		m.update(config.PASSWORD_SALT)
-		m.update(str(self.name))
-		m.update(str(self.id))
-		m.update(str(self.getVncPort()))
-		m.update(str(self.topology.owner))
-		return m.hexdigest()
 	
+	def getVmid(self):
+		#for vncPassword
+		return self.id
+
 	def _startVnc(self):
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
 
@@ -110,7 +89,7 @@ class ProgDevice(Device):
 		vmid = self.id
 		state = repy.getState(host, vmid)
 		if not self.getVncPort():
-			self.host.takeId("port", self.setVncPort)
+			self._assignVncPort()
 		if state == State.CREATED:
 			self._prepareDev()
 			state = repy.getState(host, vmid)
@@ -155,15 +134,10 @@ class ProgDevice(Device):
 			repy.stopVnc(host, vmid, self.getVncPort())
 			self._unassignVncPort()
 
-
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
 		taskset.add(tasks.Task("stop", self._stopDev))
 		return taskset
-
-	def _assignTemplate(self):
-		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")
 
 	def _unassignHost(self):
 		self.host = None
@@ -212,11 +186,6 @@ class ProgDevice(Device):
 		taskset = Device.getPrepareTasks(self)
 		taskset.add(tasks.Task("prepare", self._prepareDev))
 		return taskset
-
-	def _unassignVncPort(self):
-		if self.vnc_port and self.host:
-			self.host.giveId("port", self.vnc_port)
-		self.setVncPort(None)
 
 	def _destroyDev(self):
 		host = self.host
@@ -319,12 +288,6 @@ class ProgDevice(Device):
 				traffic += ifaceutil.getRxBytes(self.host, dev)
 				traffic += ifaceutil.getTxBytes(self.host, dev)
 		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
-
-	def getIdUsage(self, host):
-		ids = Device.getIdUsage(self, host)
-		if self.vnc_port and self.host == host:
-			ids["port"] = ids.get("port", set()) | set((self.vnc_port,))
-		return ids
 
 	def interfaceDevice(self, iface):
 		return repy.interfaceDevice(self.id, iface.name)

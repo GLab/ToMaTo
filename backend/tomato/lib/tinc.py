@@ -324,6 +324,9 @@ def _setupRouting(endpoint):
 	#set bridge up
 	ifaceutil.ifup(host, bridge)
 	ifaceutil.connectInterfaces(host, bridge, tincname, id, endpoint.getGateways())
+	for gw in endpoint.getGateways():
+		ip = gw.split("/")[0]
+		assert ifaceutil.reachable(host, ip, iface=bridge), "Cannot reach %s in interface %s" % (ip, bridge)
 
 def _teardownRouting(endpoint, mode):
 	if mode != Mode.ROUTER:

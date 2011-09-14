@@ -33,10 +33,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -69,10 +67,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 20,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -105,10 +101,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -163,10 +157,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': '10.1.2.254/24',
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -199,10 +191,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 1000,
 							'bandwidth_from': 1000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': '10.1.1.254/24',
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -257,10 +247,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-							'bridge_id': None,
 							'capture_to_file': False,
 							'gateway4': None,
-							'tinc_port': None,
 							'capture_filter': '',
 							'capture_via_net': False
 						},
@@ -293,10 +281,8 @@ def simpleTop_checkTopInformation(topId):
 							'delay_from': 0,
 							'bandwidth_to': 10000,
 							'bandwidth_from': 10000,
-						 	'bridge_id': None, 
 						 	'capture_to_file': False, 
 						 	'gateway4': None, 
-						 	'tinc_port': None, 
 						 	'capture_filter': '', 
 						 	'capture_via_net': False
 						 }, 
@@ -344,7 +330,6 @@ def simpleTop_checkTopInformation(topId):
 					'kvm1.eth1': {
 						'interface': 'kvm1.eth1',
 						'attrs': {
-							'bridge_id': None
 						},
 						'capabilities': {
 							'action': {},
@@ -454,7 +439,6 @@ def simpleTop_checkTopInformation(topId):
 			 	'attrs': {
 					'name': 'kvm1',
 					'vnc_port': None, 
-					'vmid': None, 
 					'state': 'started', 
 					'_pos': None, 
 					'host': None, 
@@ -522,7 +506,6 @@ def simpleTop_checkTopInformation(topId):
 				'attrs': {
 					'name': 'openvz1', 
 					'vnc_port': None, 
-					'vmid': None, 
 					'_pos': None, 
 					'gateway6': 'fd01:ab1a:b1ab:1:1:FFFF:FFFF:FFFF', 
 					'gateway4': '10.1.1.254', 
@@ -596,7 +579,6 @@ def simpleTop_checkTopInformation(topId):
 				'attrs': {
 					'name': 'openvz2', 
 					'vnc_port': None, 
-					'vmid': None, 
 					'_pos': None, 
 					'gateway6': None, 
 					'gateway4': None, 

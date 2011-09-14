@@ -15,11 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from django.db import models
+
 from tomato.connectors import Connection
 from tomato.generic import State
 from tomato.topology import Permission
 from tomato.lib import tc, tcpdump, tasks, ifaceutil
 from tomato import fault
+from tomato.hosts import resources
 
 DEFAULT_CAPTURE_FILTER = ""
 DEFAULT_CAPTURE_TO_FILE = False
@@ -52,6 +55,11 @@ netemValuesChecks = {
 
 class EmulatedConnection(Connection):
 	
+	live_capture_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
+	LIVE_CAPTURE_PORT_SLOT = "lc"
+	ifb_id = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
+	IFB_ID_SLOT = "ifb"
+
 	class Meta:
 		db_table = "tomato_emulatedconnection"
 		app_label = 'tomato'
@@ -161,8 +169,9 @@ class EmulatedConnection(Connection):
 	def _configLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
-		assert not self.getAttribute("ifb_id", None) is None
-		ifb = "ifb%d" % self.getAttribute("ifb_id", None)
+		self._assignIfb()
+		assert self.ifb_id
+		ifb = "ifb%d" % self.ifb_id.num
 		ifaceutil.ifup(host, ifb)
 		tc.setLinkEmulation(host, iface, 
 			bandwidth=self.getNetemProp("bandwidth", "to"),
@@ -191,47 +200,39 @@ class EmulatedConnection(Connection):
 	def _captureName(self):
 		return "capture-%d-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
-	def _assignIfb(self, ifb_id=None):
-		if not ifb_id is None:
-			self.setAttribute("ifb_id", ifb_id)
-		if self.getAttribute("ifb_id") is None:
-			host = self.getHost()
-			host.takeId("ifb", self._assignIfb)
+	def _assignIfb(self):
+		if not self.ifb_id:
+			self.ifb_id = resources.take(self.getHost(), "ifb", self, self.IFB_ID_SLOT)
+			self.save()			
 	
 	def _unassignIfb(self):
-		if not self.getAttribute("ifb_id") is None:
-			host = self.getHost()
-			ifb_id = self.getAttribute("ifb_id")
-			self.deleteAttribute("ifb_id")
-			host.giveId("ifb", ifb_id)
+		self.ifb_id = None
+		self.save()
+		resources.give(self, self.IFB_ID_SLOT)
 	
-	def _startCapture(self):
+	def _startCaptureToFile(self):
+		host = self.interface.device.host
+		tcpdump.startCaptureToFile(host, self._captureName(), self.getBridge(), self.getCaptureFilter())
+
+	def _startCaptureViaNet(self):
+		host = self.interface.device.host
+		if not self.live_capture_port:
+			self.live_capture_port = resources.take(host, "port", self, self.LIVE_CAPTURE_PORT_SLOT)
+			self.save()
+		port = self.live_capture_port.num
+		tcpdump.startCaptureViaNet(host, self._captureName(), port, self.getBridge(), self.getCaptureFilter())
+
+	def _start(self):
+		self._configLink()
 		if self.getCaptureToFile():
 			self._startCaptureToFile()
 		if self.getCaptureViaNet():
 			self._startCaptureViaNet()
 
-	def _startCaptureToFile(self):
-		host = self.interface.device.host
-		tcpdump.startCaptureToFile(host, self._captureName(), self.getBridge(), self.getCaptureFilter())
-
-	def _setCapturePort(self, port):
-		self.setAttribute("capture_port", port)
-
-	def _startCaptureViaNet(self):
-		host = self.interface.device.host
-		port = self.getAttribute("capture_port", None)
-		if not port:
-			host.takeId("port", self._setCapturePort)
-		port = self.getAttribute("capture_port")
-		tcpdump.startCaptureViaNet(host, self._captureName(), port, self.getBridge(), self.getCaptureFilter())
-
 	def getStartTasks(self):
 		taskset = Connection.getStartTasks(self)
-		assign_ifb = tasks.Task("assign-ifb", self._assignIfb)
-		configure_link = tasks.Task("configure-link", self._configLink, after=assign_ifb)
-		start_capture = tasks.Task("start-capture", self._startCapture)
-		taskset.add([assign_ifb, configure_link, start_capture])
+		start_task = tasks.Task("start", self._start)
+		taskset.add([start_task])
 		return taskset
 	
 	def _stopCapture(self):
@@ -246,32 +247,34 @@ class EmulatedConnection(Connection):
 
 	def _stopCaptureViaNet(self):
 		host = self.getHost()
-		port = self.getAttribute("capture_port")
-		if host and port:
-			tcpdump.stopCaptureViaNet(host, self._captureName(), port)
-			self.deleteAttribute("capture_port")
-			host.giveId("port", port)
+		if self.live_capture_port:
+			tcpdump.stopCaptureViaNet(host, self._captureName(), self.live_capture_port.num)
+			self.live_capture_port = None
+			self.save()
+			resources.give(self, self.LIVE_CAPTURE_PORT_SLOT)
 
 	def _unconfigLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
 		ifb = None
-		if not self.getAttribute("ifb_id", None) is None:
-			ifb = "ifb%d" % self.getAttribute("ifb_id", None)
-		try:
-			tc.clearIncomingRedirect(host, iface)
-			tc.clearLinkEmulation(host, iface)
-			if ifb:
-				tc.clearLinkEmulation(host, ifb)
-		except:
-			pass
+		if self.ifb_id:
+			ifb = "ifb%d" % self.ifb_id.num
+		if ifaceutil.interfaceExists(host, iface):
+			try:
+				tc.clearIncomingRedirect(host, iface)
+				tc.clearLinkEmulation(host, iface)
+			except:
+				#might still fail if interface is deleted in between
+				pass
+		if ifb:
+			tc.clearLinkEmulation(host, ifb)
+		self._unassignIfb()
 	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
 		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
-		unassign_ifb = tasks.Task("unassign-ifb", self._unassignIfb, after=unconfigure_link)
 		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([unconfigure_link, unassign_ifb, stop_capture])
+		taskset.add([unconfigure_link, stop_capture])
 		return taskset
 	
 	def getPrepareTasks(self):
@@ -296,15 +299,5 @@ class EmulatedConnection(Connection):
 		res = Connection.toDict(self, auth)
 		res["attrs"].update(self.getAttributes())
 		if self.connector.state == State.STARTED and self.getCaptureViaNet():
-			res["attrs"].update(capture_host=self.getHost().name)
+			res["attrs"].update(capture_port=self.live_capture_port.num, capture_host=self.getHost().name)
 		return res
-	
-	def getIdUsage(self, host):
-		ids = Connection.getIdUsage(self, host)
-		capture_port = self.getAttribute("capture_port", None)
-		if capture_port:
-			ids.update(port=set((capture_port,)))
-		ifb_id = self.getAttribute("ifb_id", None)
-		if not ifb_id is None:
-			ids.update(ifb=set((ifb_id,)))
-		return ids
