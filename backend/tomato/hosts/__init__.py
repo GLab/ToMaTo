@@ -74,7 +74,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		assert fileutil.existsDir(self, config.REMOTE_DIR)
 
 	def checkTasks(self):
-		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable)
+		control_master = tasks.Task("control-master", self.startControlMaster, reverseFn=self.disable)
+		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable, after=control_master)
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
 		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, after=login)
 		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
@@ -85,7 +86,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		create_ifbs = tasks.Task("ifb-interfaces", self._createIfbs, after=login)
 		resources = tasks.Task("resources", self._checkResources, after=create_ifbs)
-		other = [login, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, resources, create_ifbs]
+		other = [login, control_master, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, resources, create_ifbs]
 		enable = tasks.Task("enable", self._enable, after=other)
 		return other + [enable]
 
@@ -164,9 +165,26 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
+
+	def _sshControlPath(self):
+		return config.LOCAL_TMP_DIR + "/ssh/" + self.name
+	
+	def _sshCommand(self, master=False):
+		cmd = Host.SSH_COMMAND[:]
+		cmd.append("-oControlMaster=%s" % ("yes" if master else "no"))
+		cmd.append("-oControlPath=%s" % self._sshControlPath())
+		if master:
+			cmd.append("-fN")
+		return cmd
+	
+	def startControlMaster(self):
+		if not fileutil.existsSocket(util.localhost, self._sshControlPath()):
+			fileutil.mkdir(util.localhost, config.LOCAL_TMP_DIR + "/ssh/")
+			import subprocess
+			subprocess.Popen(self._sshCommand(True) + ["root@%s" % self.name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
 	
 	def execute(self, command):
-		cmd = Host.SSH_COMMAND + ["root@%s" % self.name, command+"; echo $? >&2"]
+		cmd = self._sshCommand() + ["root@%s" % self.name, command+"; echo $? >&2"]
 		log_str = self.name + ": " + command + "\n"
 		if tasks.get_current_task():
 			fd = tasks.get_current_task().output

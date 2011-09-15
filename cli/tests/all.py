@@ -10,9 +10,6 @@ import migrate
 import periodicTasks
 import programmableDevices
 
-if __name__ == "__main__":
-	run(True)
-	
 def run(interactiveError=False):
 	from tests.top.simple import top
 	errors_remove()
@@ -61,4 +58,6 @@ def run(interactiveError=False):
 		return False
 	finally:
 		top_action(topId, "remove", direct=True)
-	
+
+if __name__ == "__main__":
+	run(True)	

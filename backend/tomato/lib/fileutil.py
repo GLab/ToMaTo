@@ -47,6 +47,13 @@ def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compresse
 		else:
 			chmod(src_host, src_path, mode)
 			
+def existsSocket(host, file):
+	try:
+		host.execute("[ -S %s ]" % util.escape(file))
+		return True
+	except exceptions.CommandError:
+		return False
+
 def existsFile(host, file):
 	try:
 		host.execute("[ -f %s ]" % util.escape(file))

@@ -326,6 +326,7 @@ def _setupRouting(endpoint):
 	ifaceutil.connectInterfaces(host, bridge, tincname, id, endpoint.getGateways())
 	for gw in endpoint.getGateways():
 		ip = gw.split("/")[0]
+		util.waitFor(lambda :ifaceutil.reachable(host, ip, iface=bridge))
 		assert ifaceutil.reachable(host, ip, iface=bridge), "Cannot reach %s in interface %s" % (ip, bridge)
 
 def _teardownRouting(endpoint, mode):
