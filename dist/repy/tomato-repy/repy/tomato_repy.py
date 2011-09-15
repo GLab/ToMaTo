@@ -71,12 +71,15 @@ def prepare_interfaces(interfaces):
             name = parts[0]
             options = {"alias": name, "mtu": emultap.DEFAULT_MTU, "mode": "tap"}
             for opt in parts[1:]:
-	        (key, value) = opt.split("=")
-	        options[key]=value
-	    options["mtu"] = int(options["mtu"])
-	    options["mode"] = {"tap": emultap.IFF_TAP | emultap.IFF_NO_PI, "tun": emultap.IFF_TUN | emultap.IFF_NO_PI, 
-	                       "tap+pi": emultap.IFF_TAP, "tun+pi": emultap.IFF_TUN}.get(options["mode"], emultap.IFF_TAP | emultap.IFF_NO_PI)
-	    emultap.device_create(name, **options)
+               (key, value) = opt.split("=")
+               options[key]=value
+            options["mtu"] = int(options["mtu"])
+            if options["mode"] == "raw":
+                emultap.device_open(name, **options)
+            else:
+                options["mode"] = {"tap": emultap.IFF_TAP | emultap.IFF_NO_PI, "tun": emultap.IFF_TUN | emultap.IFF_NO_PI, 
+                  "tap+pi": emultap.IFF_TAP, "tun+pi": emultap.IFF_TUN}.get(options["mode"], emultap.IFF_TAP | emultap.IFF_NO_PI)
+                emultap.device_create(name, **options)
     except IOError:
         if os.getuid() != 0:
             print >>sys.stderr, "Error: root privileges are needed to setup networking devices"

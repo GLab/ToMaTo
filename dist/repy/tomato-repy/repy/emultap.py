@@ -1,5 +1,5 @@
 from fcntl import ioctl
-import os, struct, atexit, thread
+import os, struct, atexit, thread, socket
 from threading import Thread, Lock, RLock, Condition
 import select
 
@@ -9,6 +9,50 @@ IFF_TAP   = 0x0002
 IFF_NO_PI = 0x1000 #prevent kernel from adding 4 additional bytes
 
 DEFAULT_MTU = 1518
+
+ETH_P_ALL = 0x0003
+
+class RawSocket:
+    def __init__(self, ifname, family = socket.AF_PACKET, type = socket.SOCK_RAW, proto = ETH_P_ALL, mtu = DEFAULT_MTU, alias=None):
+        self.ifname = ifname
+        self.family = family
+        self.type = type
+        self.proto = proto
+        self.mtu = mtu
+        self.alias = alias
+        self._sock = socket.socket(family, type)
+        self._sock.bind((ifname, proto))
+        self._sock.setblocking(0)
+        atexit.register(self.close)
+    def fileno(self):
+        return self._sock.fileno()
+    def _check_open(self):
+        if not self._sock:
+            raise Exception("Device has been closed")        
+    def _read(self):
+        self._check_open()
+        data = self._sock.recv(self.mtu)
+        return data
+    def _write(self, data):
+        self._check_open()
+        self._sock.send(data)
+    def close(self):
+        if self._sock:
+            self._sock.close()
+            self._sock = None
+    def send(self, data):
+        self._write(data)
+    def info(self):
+        info={}
+        info["type"] = self.type
+        info["family"] = self.family
+        info["proto"] = self.proto
+        info["open"] = self._fd != None
+        info["mtu"] = self.mtu
+        return info
+    def read(self):
+        self._check_open()
+        return self._read()    
 
 class TunTapDevice:
     """
@@ -65,12 +109,6 @@ class TunTapDevice:
         if self._fd:
             os.close(self._fd)
             self._fd = None
-    def _ifup(self):
-        self._check_open()
-        os.system("ip link set %s up" % self.ifname)
-    def _ifdown(self):
-        self._check_open()
-        os.system("ip link set %s down" % self.ifname)
     def send(self, data):
         '''
         Sends a packet to the device. The data must be byte string, otherwise
@@ -91,9 +129,18 @@ class TunTapDevice:
         return info
     def read(self):
         self._check_open()
-        return self._read()
+        return self._read()    
     
 devices = {}
+
+# public method, but not for repy code
+def device_open(ifname, mode="raw", alias=None, **kwargs):
+    if alias:
+        name = alias
+    else:
+        name = ifname
+    dev = RawSocket(ifname, alias=alias, **kwargs)
+    devices[name] = dev
 
 # public method, but not for repy code
 def device_create(ifname, mode=IFF_TAP|IFF_NO_PI, alias=None, mtu=DEFAULT_MTU, dev="/dev/net/tun"):
