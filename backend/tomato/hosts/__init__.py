@@ -396,8 +396,12 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		if "enabled" in properties:
-			self.setAttribute("manually_disabled", not self.enabled)
-			self.check()
+			self.setAttribute("manually_disabled", not properties["enabled"])
+			if properties["enabled"]:
+				self.check()
+			else:
+				self.enabled = False
+				self.save()
 		for var in ["vmid_start", "vmid_count", "port_start", "port_count", "bridge_start", "bridge_count", "ifb_start", "ifb_count"]:
 			if var in properties:
 				self.setAttribute(var, int(properties[var]))
