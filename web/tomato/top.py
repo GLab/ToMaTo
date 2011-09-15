@@ -109,6 +109,7 @@ def edit(api, request, top_id):
 def show(api, request, top_id):
 	try:
 		api.top_info(top_id)
+		api.top_action(top_id, "renew")
 	except:
 		return HttpResponseRedirect(reverse('tomato.top.index')) 
 	if not request.REQUEST.has_key("format"):
