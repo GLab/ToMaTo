@@ -256,8 +256,12 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def configure(self, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		if "enabled" in properties:
-			self.setAttribute("manually_disabled", not self.enabled)
-			self.check()
+			self.setAttribute("manually_disabled", not properties["enabled"])
+			if properties["enabled"]:
+				self.check()
+			else:
+				self.enabled = False
+				self.save()
 		for t in resources.TYPES:
 			pool = self.getResourcePool(t)
 			if "%s_start" % t in properties:
