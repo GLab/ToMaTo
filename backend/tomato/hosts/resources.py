@@ -44,7 +44,7 @@ def ownerTuple(obj):
 	raise fault.new("Invalid resource owner type: %s" % obj)
 
 def _log(msg):
-	print msg
+	fault.log_info("Resource problem", msg)
 
 class ResourcePoolEmpty(Exception):
 	pass

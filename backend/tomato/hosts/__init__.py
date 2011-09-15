@@ -32,6 +32,8 @@ class ClusterState:
 	NODE = "N"
 	NONE = "-"
 
+COMMAND_RETRIES = 10
+
 class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	SSH_COMMAND = ["ssh", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
@@ -152,12 +154,13 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	def hostServerBasedir(self):
 		return self.getAttribute("hostserver_basedir") 
 
-	def _exec(self, cmd, retries=3):
+	def _exec(self, cmd, retries=COMMAND_RETRIES):
 		res = util.run_shell(cmd)
 		if res[0] != 0:
 			if retries:
-				print >>sys.stderr, "Retrying host %s, retry %d" % (self.name, 4-retries)
-				time.sleep(1.0+random.random()*4.0)
+				if retries < COMMAND_RETRIES/2:
+					print >>sys.stderr, "Retrying host %s, retry %d" % (self.name, 4-retries)
+				time.sleep(random.random()*5.0+(COMMAND_RETRIES-retries)*10.0)
 				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
