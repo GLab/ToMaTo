@@ -159,6 +159,7 @@ class TincConnector(Connector):
 		
 	def _assignResources(self):
 		for con in self.connectionSetAll():
+			con.upcast().prepareBridge()
 			con.upcast()._assignTincPort()
 		
 	def _prepareExternalAccess(self):
@@ -308,7 +309,10 @@ class TincConnection(emulated.EmulatedConnection):
 		return self
 	
 	def getBridgeId(self):
-		return self.bridge_id.num
+		if self.bridge_id:
+			return self.bridge_id.num
+		else:
+			return None
 	
 	def getCapabilities(self, user):
 		capabilities = emulated.EmulatedConnection.getCapabilities(self, user)
@@ -349,11 +353,12 @@ class TincConnection(emulated.EmulatedConnection):
 	def destroyBridge(self):
 		if self.connector.state == State.STARTED:
 			return
+		if not self.bridge_id:
+			return
 		if self.interface.device.state != State.CREATED and ifaceutil.bridgeInterfaces(self.bridge_id.getHost(), self.getBridge()):
 			return
-		if self.bridge_id:
-			ifaceutil.bridgeRemove(self.bridge_id.getHost(), self.getBridge(), disconnectAll=True, setIfdown=True)
-			self._unassignBridgeId()
+		ifaceutil.bridgeRemove(self.bridge_id.getHost(), self.getBridge(), disconnectAll=True, setIfdown=True)
+		self._unassignBridgeId()
 
 	def _assignBridgeId(self):
 		if not self.bridge_id:

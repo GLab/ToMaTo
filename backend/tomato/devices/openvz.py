@@ -359,7 +359,10 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 			self._stopVnc()
 			try:
 				self.state = State.PREPARED
-				self._triggerConnections()
+				for iface in self.interfaceSetAll():
+					if iface.isConnected():
+						con = iface.connection.upcast()
+						con.destroyBridge()
 			finally:
 				self.state = State.STARTED
 		ifaces = map(lambda x: x.name, self.interfaceSetAll())
@@ -374,8 +377,10 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		#switch host and vmid
 		self.host = dst_host
 		self.vmid = dst_vmid
+		self.save()
 		resources.give(self, self.VMID_SLOT)
 		self.vmid.slot = self.VMID_SLOT
+		self.vmid.save()
 		self.save()
 		self._configureVm()
 		if self.state == State.STARTED:

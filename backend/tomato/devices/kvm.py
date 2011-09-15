@@ -158,12 +158,16 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 	def _configureVm(self):
 		qm.setName(self.host, self.getVmid(), "%s_%s" % (self.topology.name, self.name))
 	
-	def _prepareDev(self):
+	def _assignHost(self):
 		#assign host
 		if not self.host:
 			self.host = self.hostOptions().best()
 			fault.check(self.host, "No matching host found")
 			self.save()		
+			
+	
+	def _prepareDev(self):
+		self._assignHost()
 		host = self.host
 		
 		self._assignTemplate()
@@ -359,7 +363,10 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 			self._stopVnc()
 			try:
 				self.state = State.PREPARED
-				self._triggerConnections()
+				for iface in self.interfaceSetAll():
+					if iface.isConnected():
+						con = iface.connection.upcast()
+						con.destroyBridge()
 			finally:
 				self.state = State.STARTED			
 		ifaces = map(lambda x: x.name, self.interfaceSetAll())
@@ -367,8 +374,10 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 		#switch host and vmid
 		self.host = dst_host
 		self.vmid = dst_vmid
+		self.save()
 		resources.give(self, self.VMID_SLOT)
 		self.vmid.slot = self.VMID_SLOT
+		self.vmid.save()
 		self.save()
 		self._configureVm()
 		if self.state == State.STARTED:

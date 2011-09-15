@@ -20,7 +20,7 @@ import exceptions, util
 def fileTransfer(src_host, src_path, dst_host, dst_path, direct=False, compressed=False):
 	if compressed:
 		src = src_host.getHostServer().randomFilename()
-		dst = dst_host.getHostserver().randomFilename()
+		dst = dst_host.getHostServer().randomFilename()
 		compress(src_host, src_path, src)
 	else:
 		if direct:

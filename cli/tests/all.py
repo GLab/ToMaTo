@@ -11,6 +11,9 @@ import periodicTasks
 import programmableDevices
 
 if __name__ == "__main__":
+	run(True)
+	
+def run(interactiveError=False):
 	from tests.top.simple import top
 	errors_remove()
 	topId = top_create()
@@ -44,14 +47,18 @@ if __name__ == "__main__":
 
 		print "destroying topology..."
 		top_action(topId, "destroy", direct=True)
+		
+		return True
 	except:
 		import traceback
 		traceback.print_exc()
 		print "-" * 50
 		errors_print()
 		print "-" * 50
-		print "Topology id is: %d" % topId
-		raw_input("Press enter to remove topology")
+		if interactiveError:
+			print "Topology id is: %d" % topId
+			raw_input("Press enter to remove topology")
+		return False
 	finally:
 		top_action(topId, "remove", direct=True)
 	
