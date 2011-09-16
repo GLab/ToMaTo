@@ -134,9 +134,8 @@ def connectInterfaces(host, if1, if2, id, allowIps):
 		iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-d", util.escape(ip), "-j", "ACCEPT"], not isIpv4(ip))
 	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
 	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT", "--reject-with", "icmp-net-unreachable"])
-	#FIXME: find out how net-unreachable is named for ipv6
-	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT"], True)
-	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT"], True)
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if1), "-j", "REJECT", "--reject-with", "icmp6-no-route"], True)
+	iptables(host, ["-A", "INPUT", "-i", util.escape(if2), "-j", "REJECT", "--reject-with", "icmp6-no-route"], True)
 	#calculate table ids
 	table1 = 1000 + id * 2
 	table2 = 1000 + id * 2 + 1

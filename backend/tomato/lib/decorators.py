@@ -159,3 +159,41 @@ def xmlRpcSanitize(fn):
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
+
+"""
+RetryOnError
+  This decorator can be used to retry a method call on error.
+  
+Example:
+  @retryOnError()
+  def canFail():
+    ...
+"""
+def retryOnError(errorFilter=None, maxRetries=5, waitBetween=0.5, waitIncrease=2.0, randomWait=True):
+	from time import sleep
+	from random import random
+	def wrap(fn):
+		def call(*args, **kwargs):
+			retries = maxRetries
+			wait = waitBetween
+			while True:
+				try:
+					return fn(*args, **kwargs)
+				except Exception, exc:
+					if not retries:
+						raise 
+					if callable(errorFilter) and not errorFilter(exc):
+						raise
+				retries -= 1
+				if wait:
+					t = wait
+					if randomWait:
+						t *= 0.5 + random()
+					sleep(t)
+					if waitIncrease:
+						wait *= waitIncrease
+		call.__name__ = fn.__name__
+		call.__doc__ = fn.__doc__
+		call.__dict__.update(fn.__dict__)
+		return call
+	return wrap

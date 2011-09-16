@@ -241,8 +241,8 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'kvm1.eth2',
 						'attrs': {
 							'gateway6': None,
-							'lossratio_to': 0.0,							
-							'lossratio_from': 0.0,
+							'lossratio_to': 50.0,							
+							'lossratio_from': 50.0,
 							'delay_to': 0,
 							'delay_from': 0,
 							'bandwidth_to': 10000,
@@ -275,8 +275,8 @@ def simpleTop_checkTopInformation(topId):
 						'interface': 'openvz2.eth1',
 						'attrs': {
 							'gateway6': None,
-							'lossratio_to': 50.0,							
-							'lossratio_from': 50.0,
+							'lossratio_to': 0.0,							
+							'lossratio_from': 0.0,
 							'delay_to': 0,
 							'delay_from': 0,
 							'bandwidth_to': 10000,
@@ -620,7 +620,7 @@ def simpleTop_checkTopInformation(topId):
 			'connector_count': 4,
 			'state': 'started',
 			'stop_timeout': None, 
-			'device_count': 4, 
+			'device_count': 6, 
 			'remove_timeout': None, 
 			'owner': None
 		}, 

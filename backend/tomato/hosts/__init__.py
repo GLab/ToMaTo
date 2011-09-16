@@ -22,7 +22,7 @@ from django.db.models import Q, Sum
 
 from tomato import config, attributes
 
-from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions, hostserver
+from tomato.lib import fileutil, db, process, ifaceutil, qm, vzctl, exceptions, hostserver, decorators
 
 from tomato.generic import State
 from tomato.lib.decorators import *
@@ -77,7 +77,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		control_master = tasks.Task("control-master", self.startControlMaster, reverseFn=self.disable)
 		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable, after=control_master)
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
-		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzctl --version", "OpenVZ error"]), reverseFn=self.disable, after=login)
+		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzlist", "OpenVZ error"]), reverseFn=self.disable, after=login)
 		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
 		hostserver = tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, after=login)
 		hostserver_config = tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, after=hostserver)
@@ -155,14 +155,10 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	def hostServerBasedir(self):
 		return self.getAttribute("hostserver_basedir") 
 
-	def _exec(self, cmd, retries=COMMAND_RETRIES):
+	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError), waitBetween=5.0, maxRetries=COMMAND_RETRIES)
+	def _exec(self, cmd):
 		res = util.run_shell(cmd)
 		if res[0] != 0:
-			if retries:
-				if retries < COMMAND_RETRIES/2:
-					print >>sys.stderr, "Retrying host %s, retry %d" % (self.name, 4-retries)
-				time.sleep(random.random()*5.0+(COMMAND_RETRIES-retries)*10.0)
-				return self._exec(cmd, retries-1) 
 			raise exceptions.CommandError("localhost", cmd, res[0], res[1])
 		return res[1]
 

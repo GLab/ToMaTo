@@ -20,27 +20,12 @@ import re, uuid, time
 from tomato import config, generic
 from tomato.lib import util
 
-import fileutil, process, ifaceutil, exceptions
+import fileutil, process, ifaceutil, exceptions, decorators
 
-def _qm(host, vmid, cmd, params=[], maxWait=30, unlock=True):
-	waitStep = 1
-	while True:
-		try:
-			return host.execute("qm %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))))
-		except exceptions.CommandError, exc:
-			if not (exc.errorCode == 4 and "lock" in exc.errorMessage and "timeout" in exc.errorMessage):
-				raise
-			if maxWait > 0:
-				time.sleep(waitStep)
-				#print "wait %s" % waitStep
-				waitStep *= 2
-				maxWait -= waitStep
-			else:
-				if not unlock:
-					raise
-				unlock = False
-				#print "unlock"
-				fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
+def _qm(host, vmid, cmd, params=[]):
+	return host.execute("qm %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))))
+	#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
 def _monitor(host, vmid, cmd, timeout=60):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to access monitor"
@@ -54,12 +39,12 @@ def _imagePath(vmid):
 
 def _translateKeycode(keycode):
 	trans = {"enter": "ret", "\n": "ret", "return": "ret",
-			"-": "minus", "+": "plus"}
+			"-": "minus", "+": "plus", ".": "0x34", "*": "0x37", " ": "0x39"}
 	if len(keycode) == 1:
 		if keycode.islower():
-			return keycode
+			return trans.get(keycode, keycode)
 		if keycode.isupper():
-			return "shift-%s" % keycode.lower()
+			return "shift-%s" % trans.get(keycode.lower(), keycode.lower()) 
 	return trans.get(keycode, keycode)
 
 def sendKeys(host, vmid, keycodes):
@@ -198,6 +183,7 @@ def create(host, vmid):
 	res = _qm(host, vmid, "create")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to create VM: %s" % res
 	
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and "unable to create fairsched node - still in use" in x.errorMessage)
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
 	res = _qm(host, vmid, "start")

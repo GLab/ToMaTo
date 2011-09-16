@@ -24,6 +24,7 @@ def jsonToMods(data):
 	for conname, con in top["connectors"].iteritems():
 		mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
 		for c in con["connections"].values():
+			c["attrs"]["interface"] = c["interface"]
 			mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
 	return mods
 
