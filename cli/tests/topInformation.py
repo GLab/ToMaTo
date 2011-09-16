@@ -630,7 +630,7 @@ def simpleTop_checkTopInformation(topId):
 	}
 	real = top_info(topId)
 	(res, msg) = is_superset (real, expected)
-	assert res, "%s: real: %s, expected: %s" % (msg, real, expected)
+	assert res, msg
 
 if __name__ == "__main__":
 	from tests.top.simple import top

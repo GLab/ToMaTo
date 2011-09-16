@@ -270,11 +270,13 @@ class EmulatedConnection(Connection):
 			tc.clearLinkEmulation(host, ifb)
 		self._unassignIfb()
 	
+	def _stop(self):
+		self._unconfigLink()
+		self._stopCapture()
+	
 	def getStopTasks(self):
 		taskset = Connection.getStopTasks(self)
-		unconfigure_link = tasks.Task("unconfigure-link", self._unconfigLink)
-		stop_capture = tasks.Task("stop-capture", self._stopCapture)
-		taskset.add([unconfigure_link, stop_capture])
+		taskset.add(tasks.Task("stop", self._stop))
 		return taskset
 	
 	def getPrepareTasks(self):

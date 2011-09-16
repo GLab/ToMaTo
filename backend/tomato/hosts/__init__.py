@@ -200,6 +200,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		if "Warning" in res[0] and "known hosts" in res[0] and self.name in res[0]:
 			#remove Warning: Permanently added '...' (RSA) to the list of known hosts.
 			res = res[1:]
+		if "mux_client_request_session" in res[0] and "session request failed" in res[0]:
+			#remove error message due to MaxStartups setting in the host ssh deamon
+			res = res[1:]
 		retCode = int(res[-1].strip())
 		res = "\n".join(res[:-1])
 		if not res.endswith("\n"):

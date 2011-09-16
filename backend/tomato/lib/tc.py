@@ -102,7 +102,11 @@ def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
 	
 def clearLinkEmulation(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
-	_tc(host, "qdisc", "del", "root dev %s" % util.escape(dev))
+	try:
+		_tc(host, "qdisc", "del", "root dev %s" % util.escape(dev))
+	except exceptions.CommandError, exc:
+		if not "No such file or directory" in exc.errorMessage:
+			raise
 
 def setIncomingRedirect(host, srcDev, dstDev):
 	assert ifaceutil.interfaceExists(host, srcDev)

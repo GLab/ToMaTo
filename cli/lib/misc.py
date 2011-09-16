@@ -81,7 +81,7 @@ def is_superset(obj1, obj2, path=""):
 		return (True, None)
 	if isinstance(obj1, dict):
 		if not isinstance(obj2, dict):
-			return (False, "Type mismatch: %s" % path)
+			return (False, "Type mismatch: %s, is dict instead of %s" % (path, type(obj2)))
 		for key in obj2:
 			if not key in obj1:
 				return (False, "Key %s missing: %s" % (key, path))
@@ -90,12 +90,12 @@ def is_superset(obj1, obj2, path=""):
 				return (False, msg)
 	elif isinstance(obj1, list):
 		if not isinstance(obj2, list):
-			return (False, "Type mismatch: %s" % path)
+			return (False, "Type mismatch: %s, is list instead of %s" % (path, type(obj2)))
 		for el in obj2:
 			if not el in obj1:
 				return (False, "Element %s missing: %s" % (el, path))
 	else:
-		return (obj1 == obj2, "Value mismatch: %s" % path)
+		return (obj1 == obj2, "Value mismatch: %s, is %s instead of %s" % (path, repr(obj1), repr(obj2)))
 	return (True, None)
 	
 def upload(url, file, name="upload"):
