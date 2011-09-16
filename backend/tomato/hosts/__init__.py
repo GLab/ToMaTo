@@ -180,7 +180,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			subprocess.Popen(self._sshCommand(True) + ["root@%s" % self.name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
 	
 	def execute(self, command):
-		cmd = self._sshCommand() + ["root@%s" % self.name, command+"; echo $? >&2"]
+		cmd = self._sshCommand() + ["root@%s" % self.name, command+'; echo -e "\n$?" >&2']
 		log_str = self.name + ": " + command + "\n"
 		if tasks.get_current_task():
 			fd = tasks.get_current_task().output
