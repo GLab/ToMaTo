@@ -12,7 +12,6 @@ import programmableDevices
 
 def run(interactiveError=False):
 	from tests.top.simple import top
-	errors_remove()
 	topId = top_create()
 	try:
 		print "creating topology..."
@@ -60,4 +59,5 @@ def run(interactiveError=False):
 		top_action(topId, "remove", direct=True)
 
 if __name__ == "__main__":
+	errors_remove()
 	run(True)	

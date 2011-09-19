@@ -19,4 +19,7 @@ if __name__ == "__main__":
 		print "Statistics: %d succeeded, %d failed" % (succeeded, failed)
 		print "-" * 50
 		if n != runs:
-			time.sleep(10)
+			try:
+				time.sleep(10)
+			except:
+				break
