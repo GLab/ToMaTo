@@ -170,13 +170,11 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		self.save()
 
 	def _adaptTaskset(self, taskset):
-		taskset.after(taskset.find("reload"))
 		taskset.before(taskset.find("change-state"))
 		return taskset
 
 	def _initialTasks(self, state):
 		taskset = tasks.TaskSet()
-		taskset.add(tasks.Task("reload", self.reload))
 		taskset.add(tasks.Task("change-state", self._changeState, args=(state,)))
 		return taskset
 
