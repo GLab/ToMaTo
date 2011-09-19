@@ -152,6 +152,14 @@ class Task():
 					self._reverse()
 				else:
 					self.status = Status.FAILED
+			finally:
+				#remove references to free memory
+				self.fn = None
+				self.reverseFn = None
+				self.args = []
+				self.kwargs = {}
+				self.reverseArgs = []
+				self.reverseKwargs = {}
 		else:
 			self.status = Status.SUCCEEDED
 		self._runOnFinished()
@@ -320,6 +328,7 @@ class Process():
 					if not self.finished:
 						self.finished = time.time()
 						self._runOnFinished()
+						del self.dependencies
 					return
 				else:
 					time.sleep(1)
