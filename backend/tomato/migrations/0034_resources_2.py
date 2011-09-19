@@ -43,21 +43,21 @@ class Migration(DataMigration):
 				obj.bridge_id_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="c", owner_id=obj.id, slot="b", num=obj.bridge_id)
 		for obj in orm.KVMDevice.objects.all():
 			if obj.vmid and obj.host:
-				pool = orm.ResourcePool.objects.get(host=host, type="vmid")
+				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
 				obj.vmid_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vmid", num=obj.vmid)
 			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=host, type="port")
+				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
 		for obj in orm.OpenVZDevice.objects.all():
 			if obj.vmid and obj.host:
-				pool = orm.ResourcePool.objects.get(host=host, type="vmid")
+				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
 				obj.vmid_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vmid", num=obj.vmid)
 			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=host, type="port")
+				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
 		for obj in orm.ProgDevice.objects.all():
 			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=host, type="port")
+				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
 	
 	def backwards(self, orm):

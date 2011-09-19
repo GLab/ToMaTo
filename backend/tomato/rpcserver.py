@@ -28,10 +28,6 @@ from tomato.lib import db, util
 class SecureRequestHandler:
 	def setup(self):
 		self.connection = self.request
-		if self.timeout is not None:
-			self.connection.settimeout(self.timeout)
-		if self.disable_nagle_algorithm:
-			self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
 		if self.server.sslOpts:
 			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
 			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)

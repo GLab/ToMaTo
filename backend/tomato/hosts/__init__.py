@@ -77,7 +77,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		control_master = tasks.Task("control-master", self.startControlMaster, reverseFn=self.disable)
 		login = tasks.Task("login", util.curry(self._checkCmd, ["true", "Login error"]), reverseFn=self.disable, after=control_master)
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
-		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzlist", "OpenVZ error"]), reverseFn=self.disable, after=login)
+		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzlist -a", "OpenVZ error"]), reverseFn=self.disable, after=login)
 		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
 		hostserver = tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, after=login)
 		hostserver_config = tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, after=hostserver)
