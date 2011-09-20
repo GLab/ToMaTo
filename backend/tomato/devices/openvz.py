@@ -187,8 +187,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		self._assignHost()
 		host = self.host
 		
-		self._assignTemplate()
-		
 		self._assignBridges()
 		
 		self._assignVmid()
@@ -272,7 +270,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 				self._configureRoutes()
 		if "template" in properties:
 			self.setTemplate(properties["template"])
-			self._assignTemplate()
 			fault.check(self.getTemplate(), "Template not found: %s" % properties["template"])
 		self.save()
 
@@ -437,7 +434,7 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getTemplate(),
+		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getConfiguredTemplate(),
 			gateway4=self.getAttribute("gateway4"), gateway6=self.getAttribute("gateway6"))
 		if auth:
 			res["attrs"].update(root_password=self.getRootPassword(), vnc_password = self.vncPassword())

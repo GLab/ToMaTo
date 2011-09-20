@@ -69,15 +69,15 @@ class VMIDMixin:
 			self.save()
 			resources.give(self, self.VMID_SLOT)
 
-
 class TemplateMixin:
 	def setTemplate(self, value):
 		self.template = value
 		self.save()
 
-	def getTemplate(self):
+	def getConfiguredTemplate(self):
 		return self.template
-	
-	def _assignTemplate(self):
-		self.setTemplate(templates.findName(self.type, self.getTemplate()))
-		fault.check(self.getTemplate() and self.getTemplate() != "None", "Template not found")	
+
+	def getTemplate(self):
+		tpl = templates.findName(self.type, self.template)
+		fault.check(tpl, "Template not found")
+		return tpl
