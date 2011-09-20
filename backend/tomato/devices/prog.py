@@ -166,8 +166,9 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 			repy.stop(host, vmid)
 			state = repy.getState(host, vmid)
 		if state == State.PREPARED:
-			repy.destroy(host, vmid)
-			state = repy.getState(host, vmid)
+			self.state = repy.getState(host, vmid)
+			self.save()
+			return
 		assert state == State.CREATED
 		
 		#nothing happened until here

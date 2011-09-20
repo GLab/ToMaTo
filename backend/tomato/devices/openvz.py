@@ -201,8 +201,9 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 			vzctl.stop(host, vmid)
 			state = vzctl.getState(host, vmid)
 		if state == State.PREPARED:
-			vzctl.destroy(host, vmid)
-			state = vzctl.getState(host, vmid)
+			self.state = vzctl.getState(host, vmid)
+			self.save()
+			return
 		assert state == State.CREATED
 		
 		#nothing happened until here
