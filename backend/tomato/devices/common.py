@@ -85,7 +85,7 @@ class TemplateMixin:
 class RepairMixin:
 	def repair(self):
 		#check and repair state
-		self.state = self.getState()
+		self._changeState(self.getState())
 		if not self.host:
 			return
 		#check and repair vnc

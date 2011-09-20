@@ -297,6 +297,22 @@ class EmulatedConnection(Connection):
 		host = self.getHost()
 		return tcpdump.downloadCaptureUri(host, self._captureName())
 	
+	def repair(self):
+		state = self.connector.state
+		if state == State.STARTED:
+			self._configLink()
+			if self.getCaptureToFile() and not tcpdump.captureToFileRunning(self.getHost(), self._captureName()):
+				self._startCaptureToFile()
+			if self.getCaptureViaNet() and not tcpdump.captureViaNetRunning(self.getHost(), self._captureName()):
+				self._startCaptureViaNet()
+		if not self.getHost():
+			return
+		if state != State.STARTED:
+			if tcpdump.captureToFileRunning(self.getHost(), self._captureName()):
+				self._stopCaptureToFile()
+			if tcpdump.captureViaNetRunning(self.getHost(), self._captureName()):
+				self._stopCaptureViaNet()
+	
 	def toDict(self, auth):
 		res = Connection.toDict(self, auth)
 		res["attrs"].update(self.getAttributes())
