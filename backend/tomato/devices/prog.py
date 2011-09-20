@@ -154,8 +154,6 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 		self._assignHost()
 		host = self.host
 		
-		self._assignTemplate()
-		
 		self._assignBridges()
 		
 		vmid = self.id
@@ -219,10 +217,8 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 		Device.configure(self, properties)
 		if "template" in properties:
 			self.setTemplate(properties["template"])
-			self._assignTemplate()
 		if "args" in properties:
 			self.setArgs(properties["args"])
-			self._assignTemplate()
 		self.save()
 
 	def interfacesAdd(self, name, properties):
@@ -294,7 +290,7 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 
 	def toDict(self, auth):
 		res = Device.toDict(self, auth)
-		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getTemplate(), args=self.getArgs())
+		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getConfiguredTemplate(), args=self.getArgs())
 		if auth:
 			res["attrs"].update(vnc_password = self.vncPassword())
 		return res				

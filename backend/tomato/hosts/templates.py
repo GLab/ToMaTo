@@ -138,9 +138,10 @@ def getAll(ttype=None):
 
 def findName(ttype, name):
 	try:
-		tpl = Template.objects.get(type=ttype, name=name).name # pylint: disable-msg=E1101
+		tpl = Template.objects.get(type=ttype, name=name) # pylint: disable-msg=E1101
 		if not tpl.isEnabled():
 			return getDefault(ttype)
+		return tpl.name
 	except: #pylint: disable-msg=W0702
 		return getDefault(ttype)
 
