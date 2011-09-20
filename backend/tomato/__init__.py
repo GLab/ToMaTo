@@ -60,4 +60,5 @@ RepeatedProcess(5*60, "topology timeout", Task("check_timeout", topology.checkTi
 RepeatedProcess(60*60, "update_resource_usage",	Task("update_resource_usage", topology.updateResourceUsage), schedule=not config.MAINTENANCE)
 RepeatedProcess(60*60, "link_measurement", Task("measure_links", hosts.physical_links.measureRun), schedule=not config.MAINTENANCE)
 RepeatedProcess(5*60*60, "host_check", Task("check_all", hosts.checkAll), schedule=not config.MAINTENANCE)
+RepeatedProcess(5*60*60, "repair_topologies", Task("repair", topology.repairAll), schedule=not config.MAINTENANCE)
 RepeatedProcess(5*60, "auth_cleanup", Task("cleanup", auth.cleanup), schedule=not config.MAINTENANCE)

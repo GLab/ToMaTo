@@ -71,6 +71,9 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 	def _startVnc(self):
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
 
+	def _vncRunning(self):
+		return self.vmid and self.vnc_port and repy.vncRunning(self.host, self.getVmid(), self.getVncPort())
+
 	def connectToBridge(self, iface, bridge):
 		ifaceutil.bridgeCreate(self.host, bridge)
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))

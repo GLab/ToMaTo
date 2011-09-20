@@ -17,7 +17,7 @@
 
 from tomato.devices import Device, Interface
 from tomato.hosts import resources, templates
-from tomato import fault, config
+from tomato import fault, config, generic
 
 import hashlib
 
@@ -81,3 +81,21 @@ class TemplateMixin:
 		tpl = templates.findName(self.type, self.template)
 		fault.check(tpl, "Template not found")
 		return tpl
+	
+class RepairMixin:
+	def repair(self):
+		#check and repair state
+		self.state = self.getState()
+		if not self.host:
+			return
+		#check and repair vnc
+		if self._vncRunning():
+			if not self.state == generic.State.STARTED:
+				self._stopVnc()
+		else:
+			if self.state == generic.State.STARTED:
+				self._startVnc()
+		#check and repair interface connections
+		if self.state == generic.State.STARTED:
+			for iface in self.interfaceSetAll():
+				self.connectToBridge(iface, self.getBridge(iface))

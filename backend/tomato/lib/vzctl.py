@@ -47,6 +47,9 @@ def getState(host, vmid):
 def _vncPidfile(vmid):
 	return "%s/vnc-%d.pid" % (config.REMOTE_DIR, vmid)
 
+def vncRunning(host, vmid, port):
+	return process.processRunning(host, _vncPidfile(vmid), "vncterm")
+
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	if not process.portFree(host, port):

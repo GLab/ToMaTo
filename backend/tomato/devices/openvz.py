@@ -89,6 +89,8 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 			return Device._runAction(self, action, attrs, direct)
 
 	def _startVnc(self):
+		if not self.getVncPort():
+			self._assignVncPort()		
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def _configureRoutes(self):
@@ -104,12 +106,13 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
+	def _vncRunning(self):
+		return self.vmid and self.vnc_port and vzctl.vncRunning(self.host, self.getVmid(), self.getVncPort())
+
 	def _startDev(self):
 		host = self.host
 		vmid = self.getVmid()
 		state = vzctl.getState(host, vmid)
-		if not self.getVncPort():
-			self._assignVncPort()
 		if state == State.CREATED:
 			self._prepareDev()
 			state = vzctl.getState(host, vmid)
@@ -368,7 +371,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		except:
 			# reverted to SRC host
 			if self.state == State.STARTED:
-				self._assignVncPort()
 				self._startVnc()
 			raise
 		#switch host and vmid
@@ -381,7 +383,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		self.save()
 		self._configureVm()
 		if self.state == State.STARTED:
-			self._assignVncPort()
 			self._startVnc()			
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():

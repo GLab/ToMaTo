@@ -427,6 +427,20 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		res["traffic"] = res.get("traffic", 0)/2 #traffic is counted on devices and connectors
 		self.setAttribute("resources", res)
 		
+	def repair(self):
+		if self.isBusy():
+			return
+		for dev in self.deviceSetAll():
+			try:
+				dev.repair()
+			except Exception, exc:
+				fault.log(exc)
+		for con in self.connectorSetAll():
+			try:
+				con.repair()
+			except Exception, exc:
+				fault.log(exc)
+
 	def configure(self, properties):
 		self.setPrivateAttributes(properties)			
 					
@@ -494,5 +508,9 @@ def updateResourceUsage():
 	for top in all():
 		top.updateResourceUsage()
 		
+def repairAll():
+	for top in all():
+		top.repair()
+			
 import fault, generic
 from lib import log, tasks

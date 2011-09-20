@@ -203,6 +203,9 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 	def onInterfaceStateChange(self, connection):
 		pass
 
+	def repair(self):
+		pass
+
 	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"name": self.name, "type": self.type, "state": self.state},

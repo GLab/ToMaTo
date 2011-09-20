@@ -258,6 +258,9 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def checkUploadedImage(self, filename):
 		pass
 			
+	def repair(self):
+		pass
+			
 class Interface(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
 	device = models.ForeignKey(Device)
