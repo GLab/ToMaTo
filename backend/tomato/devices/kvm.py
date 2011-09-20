@@ -181,8 +181,9 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 			qm.stop(host, vmid)
 			state = qm.getState(host, vmid)
 		if state == State.PREPARED:
-			qm.destroy(host, vmid)
-			state = qm.getState(host, vmid)
+			self.state = qm.getState(host, vmid)
+			self.save()
+			return
 		assert state == State.CREATED
 		
 		#nothing happened until here
