@@ -81,6 +81,16 @@ class EmulatedConnection(Connection):
 			return True
 		except: #pylint: disable-msg=W0702
 			return False
+			
+	def getLiveCapturePort(self):
+		res = resources.get(self, self.LIVE_CAPTURE_PORT_SLOT, "live_capture_port")
+		if res:
+			return res.num
+
+	def getIfbId(self):
+		res = resources.get(self, self.IFB_ID_SLOT, "ifb_id")
+		if res:
+			return res.num
 				
 	def getNetemProp(self, prop, dir=None):
 		if dir == "to":
@@ -170,8 +180,8 @@ class EmulatedConnection(Connection):
 		host = self.getHost()
 		iface = self.internalInterface()
 		self._assignIfb()
-		assert self.ifb_id
-		ifb = "ifb%d" % self.ifb_id.num
+		assert self.getIfbId()
+		ifb = "ifb%d" % self.getIfbId()
 		ifaceutil.ifup(host, ifb)
 		tc.setLinkEmulation(host, iface, 
 			bandwidth=self.getNetemProp("bandwidth", "to"),
@@ -201,7 +211,7 @@ class EmulatedConnection(Connection):
 		return "capture-%d-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
 	def _assignIfb(self):
-		if not self.ifb_id:
+		if not self.getIfbId():
 			self.ifb_id = resources.take(self.getHost(), "ifb", self, self.IFB_ID_SLOT)
 			self.save()			
 	
@@ -216,10 +226,10 @@ class EmulatedConnection(Connection):
 
 	def _startCaptureViaNet(self):
 		host = self.interface.device.host
-		if not self.live_capture_port:
+		if not self.getLiveCapturePort():
 			self.live_capture_port = resources.take(host, "port", self, self.LIVE_CAPTURE_PORT_SLOT)
 			self.save()
-		port = self.live_capture_port.num
+		port = self.getLiveCapturePort()
 		tcpdump.startCaptureViaNet(host, self._captureName(), port, self.getBridge(), self.getCaptureFilter())
 
 	def _start(self):
@@ -247,8 +257,8 @@ class EmulatedConnection(Connection):
 
 	def _stopCaptureViaNet(self):
 		host = self.getHost()
-		if self.live_capture_port:
-			tcpdump.stopCaptureViaNet(host, self._captureName(), self.live_capture_port.num)
+		if self.getLiveCapturePort():
+			tcpdump.stopCaptureViaNet(host, self._captureName(), self.getLiveCapturePort())
 			self.live_capture_port = None
 			self.save()
 			resources.give(self, self.LIVE_CAPTURE_PORT_SLOT)
@@ -256,9 +266,6 @@ class EmulatedConnection(Connection):
 	def _unconfigLink(self):
 		host = self.getHost()
 		iface = self.internalInterface()
-		ifb = None
-		if self.ifb_id:
-			ifb = "ifb%d" % self.ifb_id.num
 		if ifaceutil.interfaceExists(host, iface):
 			try:
 				tc.clearIncomingRedirect(host, iface)
@@ -266,7 +273,8 @@ class EmulatedConnection(Connection):
 			except:
 				#might still fail if interface is deleted in between
 				pass
-		if ifb:
+		if self.getIfbId():
+			ifb = "ifb%d" % self.getIfbId()
 			tc.clearLinkEmulation(host, ifb)
 		self._unassignIfb()
 	
@@ -317,5 +325,5 @@ class EmulatedConnection(Connection):
 		res = Connection.toDict(self, auth)
 		res["attrs"].update(self.getAttributes())
 		if self.connector.state == State.STARTED and self.getCaptureViaNet():
-			res["attrs"].update(capture_port=self.live_capture_port.num, capture_host=self.getHost().name)
+			res["attrs"].update(capture_port=self.getLiveCapturePort(), capture_host=self.getHost().name)
 		return res

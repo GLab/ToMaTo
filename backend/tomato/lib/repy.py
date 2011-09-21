@@ -38,6 +38,7 @@ def vncRunning(host, vmid, port):
 	return process.processRunning(host, _vncPidFile(vmid), "vncterm")
 
 def getState(host, vmid):
+	assert vmid
 	if process.processRunning(host, _pidFile(vmid), "python"):
 		return generic.State.STARTED
 	if fileutil.existsFile(host, _imagePath(vmid)):

@@ -51,8 +51,7 @@ def sendKeys(host, vmid, keycodes):
 	return _monitor(host, vmid, "\n".join(map(lambda k: "sendkey %s 10" % util.identifier(_translateKeycode(k)), keycodes)))
 
 def getState(host, vmid):
-	if not vmid:
-		return generic.State.CREATED
+	assert vmid
 	res = _qm(host, vmid, "status")
 	if "running" in res:
 		return generic.State.STARTED

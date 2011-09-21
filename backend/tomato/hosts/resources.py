@@ -137,6 +137,9 @@ class ResourceEntry(models.Model):
 	def getHost(self):
 		return self.pool.host
 
+	def checkOwner(self, obj):
+		return ownerTuple(obj) == (self.owner_type, self.owner_id)
+
 	def getOwner(self):
 		return lookupOwner(self.owner_type, self.owner_id)
 		
@@ -166,10 +169,24 @@ def give(owner, slot):
 	if res:
 		res.pool.give(owner, slot)
 
-def get(owner, slot):
+def get(owner, slot, attr=None, assign=True, save=True):
 	owner_type, owner_id = ownerTuple(owner)
+	if attr and hasattr(owner, attr):
+		res = getattr(owner, attr)
+		if res and isinstance(attr, ResourceEntry):
+			if res.checkOwner(owner):
+				return res
+			elif assign:
+				setattr(owner, attr, None)
+				if save:
+					owner.save()
 	try:
-		return ResourceEntry.objects.get(owner_type=owner_type, owner_id=owner_id, slot=slot)
+		res = ResourceEntry.objects.get(owner_type=owner_type, owner_id=owner_id, slot=slot)
+		if attr and hasattr(owner, attr):
+			setattr(owner, attr, None)
+			if save:
+				owner.save()
+		return res
 	except ResourceEntry.DoesNotExist:
 		return None
 		

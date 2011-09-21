@@ -331,7 +331,7 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		task = tasks.get_current_task()
 		#save src data
 		src_host = self.host
-		src_vmid = self.vmid
+		src_vmid = resources.get(self, self.VMID_SLOT)
 		#assign new host and vmid
 		self.host = None
 		if host:
