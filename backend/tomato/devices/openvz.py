@@ -177,6 +177,9 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 			fault.check(self.host, "No matching host found")
 			self.save()
 
+	def selectHost(self):
+		self._assignHost()
+
 	def _configureVm(self):
 		if self.getRootPassword():
 			vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")

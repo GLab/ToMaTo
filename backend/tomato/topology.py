@@ -214,6 +214,11 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		"""
 		return config.REMOTE_DIR+"/"+str(self.id)
 
+	def _selectHosts(self):
+		for dev in self.deviceSetAll():
+			if dev.state == generic.State.CREATED:
+				dev.upcast().selectHost()
+
 	def _getTasks(self):
 		tmap = {"start": {}, "stop": {}, "prepare": {}, "destroy": {}}
 		for dev in self.deviceSetAll():
@@ -232,11 +237,14 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 		proc = tasks.Process("topology-%s" % "start" if start else "prepare")
 		proc.add(tasks.Task("renew", self.renew))
 		tmap = self._getTasks()
+		select_hosts = tasks.Task("select-hosts", self._selectHosts())
+		proc.add(select_hosts)
 		devs_prepared = tasks.Task("devices_prepared")
 		for dev in self.deviceSetAll():
 			if dev.state == generic.State.CREATED:
 				t = tmap["prepare"][dev]
 				proc.add(t)
+				t.after(select_hosts)
 				devs_prepared.after(t)
 		cons_prepared = tasks.Task("connectors_prepared")
 		for con in self.connectorSetAll():

@@ -149,6 +149,9 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 			fault.check(self.host, "No matching host found")
 			self.save()
 
+	def selectHost(self):
+		self._assignHost()
+
 	def _prepareDev(self):
 		#assign host
 		self._assignHost()

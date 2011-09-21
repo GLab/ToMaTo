@@ -165,6 +165,8 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 			fault.check(self.host, "No matching host found")
 			self.save()		
 			
+	def selectHost(self):
+		self._assignHost()
 	
 	def _prepareDev(self):
 		self._assignHost()
