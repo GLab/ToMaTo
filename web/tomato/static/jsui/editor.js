@@ -650,7 +650,8 @@ var ExternalConnector = Connector.extend({
 	setAttribute: function(name, value) {
 		this._super(name, value);
 		if (name == "network_type") {
-			if (value=="openflow" || value=="internet") this.iconsrc="images/"+value+".png";
+			var type = value.split(".")[0];
+			if (type=="openflow" || type=="internet") this.iconsrc="images/"+type+".png";
 			else this.iconsrc="images/external.png";
 			this.paintUpdate();
 		}
