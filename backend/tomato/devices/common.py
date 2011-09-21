@@ -85,7 +85,6 @@ class TemplateMixin:
 		tpl = templates.findName(self.type, self.template)
 		fault.check(tpl, "Template not found")
 		return tpl
-<<<<<<< Updated upstream
 	
 class RepairMixin:
 	def repair(self):
@@ -104,5 +103,3 @@ class RepairMixin:
 		if self.state == generic.State.STARTED:
 			for iface in self.interfaceSetAll():
 				self.connectToBridge(iface, self.getBridge(iface))
-=======
->>>>>>> Stashed changes
