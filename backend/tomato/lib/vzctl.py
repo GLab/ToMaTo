@@ -33,8 +33,7 @@ def _imagePath(vmid):
 	return "/var/lib/vz/private/%d" % vmid
 
 def getState(host, vmid):
-	if not vmid:
-		return generic.State.CREATED
+	assert vmid
 	res = _vzctl(host, vmid, "status")
 	if "exist" in res and "running" in res:
 		return generic.State.STARTED

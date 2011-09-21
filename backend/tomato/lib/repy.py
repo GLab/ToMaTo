@@ -35,6 +35,7 @@ def _vncPidFile(vmid):
 	return _path(vmid, "vnc-pid")
 
 def getState(host, vmid):
+	assert vmid
 	if process.processRunning(host, _pidFile(vmid), "python"):
 		return generic.State.STARTED
 	if fileutil.existsFile(host, _imagePath(vmid)):

@@ -24,6 +24,7 @@ class Migration(DataMigration):
 				host = obj.interface.device.host
 				obj.ifb_id = resources.take(host, "ifb", obj, obj.IFB_ID_SLOT, obj.getAttribute("ifb_id"))
 				obj.deleteAttribute("ifb_id")
+			obj.save()
 		for obj in m.TincConnector.objects.all():
 			if obj.getAttribute("external_access_port"):
 				port = obj.getAttribute("external_access_port")
@@ -33,6 +34,7 @@ class Migration(DataMigration):
 				con = obj.topology.interfacesGet(cname).connection
 				host = con.interface.device.host
 				obj.external_access_port = resources.take(host, "port", obj, obj.EXTERNAL_ACCESS_PORT_SLOT, port)
+			obj.save()
 		for obj in orm.TincConnection.objects.all():
 			host = obj.interface.device.host
 			if obj.tinc_port and host:
@@ -41,6 +43,7 @@ class Migration(DataMigration):
 			if obj.bridge_id and host:
 				pool = orm.ResourcePool.objects.get(host=host, type="bridge")
 				obj.bridge_id_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="c", owner_id=obj.id, slot="b", num=obj.bridge_id)
+			obj.save()
 		for obj in orm.KVMDevice.objects.all():
 			if obj.vmid and obj.host:
 				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
@@ -48,6 +51,7 @@ class Migration(DataMigration):
 			if obj.vnc_port and obj.host:
 				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
+			obj.save()
 		for obj in orm.OpenVZDevice.objects.all():
 			if obj.vmid and obj.host:
 				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
@@ -55,10 +59,12 @@ class Migration(DataMigration):
 			if obj.vnc_port and obj.host:
 				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
+			obj.save()
 		for obj in orm.ProgDevice.objects.all():
 			if obj.vnc_port and obj.host:
 				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
 				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
+				obj.save()
 	
 	def backwards(self, orm):
 		raise Exception("not implemented")

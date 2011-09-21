@@ -39,9 +39,9 @@ class ConnectionEndpoint(tinc.Endpoint):
 	def getId(self):
 		return self.con.id
 	def getPort(self):
-		port = self.con.upcast().tinc_port
+		port = self.con.upcast().getTincPort()
 		assert port
-		return port.num
+		return port
 	def getBridge(self):
 		bridge = self.con.upcast().getBridge()
 		assert bridge
@@ -80,6 +80,16 @@ class TincConnector(Connector):
 			endpoints.add(ConnectionEndpoint(con))
 		return endpoints
 	
+	def getExternalAccessPort(self):
+		res = resources.get(self, self.EXTERNAL_ACCESS_PORT_SLOT, "external_access_port")
+		if res:
+			return res.num
+
+	def getExternalAccessHost(self):
+		res = resources.get(self, self.EXTERNAL_ACCESS_PORT_SLOT, "external_access_port")
+		if res:
+			return res.getHost()
+	
 	def getExternalAccess(self):
 		return self.getAttribute("external_access", False)
 	
@@ -92,7 +102,7 @@ class TincConnector(Connector):
 		m = hashlib.md5()
 		m.update(config.PASSWORD_SALT)
 		m.update(str(self.name))
-		m.update(str(self.external_access_port.num))
+		m.update(str(self.getExternalAccessPort()))
 		m.update(str(self.topology.owner))
 		return m.hexdigest()
 			
@@ -122,10 +132,8 @@ class TincConnector(Connector):
 	def _startExternalAccess(self):
 		if not self.getExternalAccess():
 			return
-		assert self.external_access_port
-		host = self.external_access_port.getHost()
-		port = self.external_access_port.num
-		vtun.start(host, port)
+		assert self.getExternalAccessPort()
+		vtun.start(self.getExternalAccessHost(), self.getExternalAccessPort())
 				
 	def getStartTasks(self):
 		taskset = Connector.getStartTasks(self)
@@ -144,10 +152,9 @@ class TincConnector(Connector):
 	def _stopExternalAccess(self):
 		if not self.getExternalAccess():
 			return
-		assert self.external_access_port
-		host = self.external_access_port.getHost()
-		port = self.external_access_port.num
-		vtun.stop(host, port)
+		if not self.getExternalAccessPort():
+			return
+		vtun.stop(self.getExternalAccessHost(), self.getExternalAccessPort())
 
 	def getStopTasks(self):
 		taskset = Connector.getStopTasks(self)
@@ -166,9 +173,9 @@ class TincConnector(Connector):
 		if not self.getExternalAccess():
 			return
 		self._assignVtunData()
-		assert self.external_access_port
-		host = self.external_access_port.getHost()
-		port = self.external_access_port.num
+		host = self.getExternalAccessHost()
+		port = self.getExternalAccessPort()
+		assert port
 		password = self.getExternalAccessPassword()
 		assert password
 		for con in self.connectionSetAll():
@@ -194,9 +201,9 @@ class TincConnector(Connector):
 	def _destroyExternalAccess(self):
 		if not self.getExternalAccess():
 			return
-		if not self.external_access_port:
+		if not self.getExternalAccessPort():
 			return
-		vtun.destroy(self.external_access_port.getHost(), self.external_access_port.num)
+		vtun.destroy(self.getExternalAccessHost(), self.getExternalAccessPort())
 		self._unassignVtunData()
 
 	def getDestroyTasks(self):
@@ -241,7 +248,7 @@ class TincConnector(Connector):
 		disk = tinc.estimateDiskUsage(len(self.connectionSetAll())) if self.state != State.CREATED else 0
 		memory = tinc.estimateMemoryUsage(len(self.connectionSetAll())) if self.state == State.STARTED else 0
 		ports = len(self.connectionSetAll()) if self.state == State.STARTED else 0
-		if self.external_access_port:
+		if self.getExternalAccessPort():
 			ports += 1 if self.state == State.STARTED else 0
 			disk += 500 if self.state != State.CREATED else 0
 			memory += 200000 if self.state == State.STARTED else 0
@@ -272,12 +279,12 @@ class TincConnector(Connector):
 				host = con.interface.device.host
 				break
 		fault.check(host, "Failed to assign a host for external access")		
-		if not self.external_access_port:
+		if not self.getExternalAccessPort():
 			self.external_access_port = resources.take(host, "port", self, self.EXTERNAL_ACCESS_PORT_SLOT)
 			self.save()
 
 	def _unassignVtunData(self):
-		if self.external_access_port:
+		if self.getExternalAccessPort():
 			self.external_access_port = None
 			self.save()
 			resources.give(self, self.EXTERNAL_ACCESS_PORT_SLOT)
@@ -287,9 +294,9 @@ class TincConnector(Connector):
 		res["attrs"].update(external_access=self.getExternalAccess())
 		if auth:
 			if self.getExternalAccess():
-				if self.external_access_port:
-					res["attrs"]["external_access_host"] = self.external_access_port.getHost().name
-					res["attrs"]["external_access_port"] = self.external_access_port.num
+				if self.getExternalAccessPort():
+					res["attrs"]["external_access_host"] = self.getExternalAccessHost().name
+					res["attrs"]["external_access_port"] = self.getExternalAccessPort()
 					res["attrs"]["external_access_password"] = self.getExternalAccessPassword()
 		return res
 
@@ -308,11 +315,20 @@ class TincConnection(emulated.EmulatedConnection):
 	def upcast(self):
 		return self
 	
+	def getTincPort(self):
+		res = resources.get(self, self.TINC_PORT_SLOT, "tinc_port")
+		if res:
+			return res.num
+	
 	def getBridgeId(self):
-		if self.bridge_id:
-			return self.bridge_id.num
-		else:
-			return None
+		res = resources.get(self, self.BRIDGE_ID_SLOT, "bridge_id")
+		if res:
+			return res.num
+	
+	def getBridgeHost(self):
+		res = resources.get(self, self.BRIDGE_ID_SLOT, "bridge_id")
+		if res:
+			return res.getHost()
 	
 	def getCapabilities(self, user):
 		capabilities = emulated.EmulatedConnection.getCapabilities(self, user)
@@ -341,7 +357,7 @@ class TincConnection(emulated.EmulatedConnection):
 				self.setAttribute("gateway6", self.getAttribute("gateway6") + "/80")
 		
 	def _assignTincPort(self):
-		if not self.tinc_port:
+		if not self.getTincPort():
 			host = self.getHost()
 			assert host
 			self.tinc_port = resources.take(host, "port", self, self.TINC_PORT_SLOT)
@@ -353,28 +369,28 @@ class TincConnection(emulated.EmulatedConnection):
 	def destroyBridge(self):
 		if self.connector.state == State.STARTED:
 			return
-		if not self.bridge_id:
+		if not self.getBridgeId():
 			return
-		if self.interface.device.state != State.CREATED and ifaceutil.bridgeInterfaces(self.bridge_id.getHost(), self.getBridge()):
+		if self.interface.device.state != State.CREATED and ifaceutil.bridgeInterfaces(self.getBridgeHost(), self.getBridge()):
 			return
-		ifaceutil.bridgeRemove(self.bridge_id.getHost(), self.getBridge(), disconnectAll=True, setIfdown=True)
+		ifaceutil.bridgeRemove(self.getBridgeHost(), self.getBridge(), disconnectAll=True, setIfdown=True)
 		self._unassignBridgeId()
 
 	def _assignBridgeId(self):
-		if not self.bridge_id:
+		if not self.getBridgeId():
 			host = self.getHost()
 			assert host
 			self.bridge_id = resources.take(host, "bridge", self, self.BRIDGE_ID_SLOT)
 			self.save()
 
 	def _unassignBridgeId(self):
-		if self.bridge_id:
+		if self.getBridgeId():
 			self.bridge_id = None
 			self.save()
 			resources.give(self, self.BRIDGE_ID_SLOT)
 			
 	def _unassignTincPort(self):
-		if self.tinc_port:
+		if self.getTincPort():
 			self.tinc_port = None
 			self.save()
 			resources.give(self, self.TINC_PORT_SLOT)
