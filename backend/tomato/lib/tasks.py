@@ -328,7 +328,7 @@ class Process():
 					if not self.finished:
 						self.finished = time.time()
 						self._runOnFinished()
-						del self.dependencies
+						self.dependencies = None
 					return
 				else:
 					time.sleep(1)
