@@ -210,7 +210,7 @@ def run():
 		sslOpts = None
 		if settings["SSL"]:
 			sslOpts = SSLOpts(private_key=settings["SSL_OPTS"]["private_key"], certificate=settings["SSL_OPTS"]["ca_key"])
-		server = XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, onError=handleError)
+		server = XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
 		server.register(tomato.api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
