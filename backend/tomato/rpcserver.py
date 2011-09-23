@@ -72,15 +72,15 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		func = self.server.findMethod(method)
 		try:
 			ret = self.server.execute(func, args, kwargs, user)
-			self.send((ret,), method)
+			self.send((ret,))
 		except Exception, err:
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))
 			self.send(err, method)
 	def log_message(self, format, *args):
 		pass
-	def send(self, response, methodName=None):
-		res = xmlrpclib.dumps(response, methodname=methodName, methodresponse=True, allow_none=True)
+	def send(self, response):
+		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
 		self.send_response(200)
 		self.send_header("Content-Type", "text/xml")
 		self.end_headers()
