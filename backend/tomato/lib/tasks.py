@@ -326,7 +326,7 @@ class Process():
 					else:
 						return
 			else:
-				if not self.isActive():
+				if self.isDone():
 					if not self.finished:
 						self.finished = time.time()
 						self._runOnFinished()
