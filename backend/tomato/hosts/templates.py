@@ -81,10 +81,16 @@ class Template(attributes.Mixin, models.Model):
 		dir = {"kvm": "qemu", "openvz": "cache", "prog": "repy"}.get(self.type)
 		return "/var/lib/vz/template/%s/%s" % (dir, self.getFilename())
 	
+	def enable(self):
+		self.setAttribute("enabled", True)
+	
 	def uploadTask(self):
 		proc = tasks.Process("upload-template")
 		for host in getAllHosts():
 			proc.add(tasks.Task(host.name, fn=self.uploadToHost, args=(host,)))
+		task = tasks.Task("enable-template", fn=self.enable)
+		task.after(proc.tasks)
+		proc.add(task)
 		return proc.start()
 	
 	def uploadToHost(self, host):
@@ -99,15 +105,20 @@ class Template(attributes.Mixin, models.Model):
 			host.execute("curl -o %(filename)s -sfSR -z %(filename)s %(url)s" % {"url": util.escape(url), "filename": util.escape(dst)})
 
 	def configure(self, attributes):
+		newUpload = False
 		if "external_url" in attributes:
+			newUpload |= attributes["external_url"] != self.getAttribute("external_url")
 			self.setExternalUrl(attributes["external_url"])
 		if "on_hostserver" in attributes:
+			newUpload |= attributes["on_hostserver"] != self.getAttribute("on_hostserver")
 			self.setAttribute("on_hostserver", attributes["on_hostserver"])
 		if "enabled" in attributes:
+			newUpload |= attributes["enabled"] and not self.getAttribute("enabled")
 			self.setAttribute("enabled", attributes["enabled"])
 		if "notes" in attributes:
 			self.setAttribute("notes", attributes["notes"])
-		if self.isEnabled():
+		if newUpload:
+			self.setAttribute("enabled", False)
 			return self.uploadTask()
 
 	def __unicode__(self):
