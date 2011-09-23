@@ -490,13 +490,13 @@ class ConfiguredInterface(Interface):
 	def _configureNetwork(self):
 		dev = self.device.upcast()
 		#Note usage of dev instead of host is intentional
-		if self.hasAttribute("ip4address"):
+		if self.getAttribute("ip4address"):
 			ifaceutil.addAddress(dev, self.name, self.getAttribute("ip4address"))
 			ifaceutil.ifup(dev, self.name) 
-		if self.hasAttribute("ip6address"):
+		if self.getAttribute("ip6address"):
 			ifaceutil.addAddress(dev, self.name, self.getAttribute("ip6address"))
 			ifaceutil.ifup(dev, self.name) 
-		if self.hasAttribute("use_dhcp") and util.parse_bool(self.getAttribute("use_dhcp")):
+		if self.getAttribute("use_dhcp") and util.parse_bool(self.getAttribute("use_dhcp")):
 			ifaceutil.startDhcp(dev, self.name)
 			
 	def toDict(self, auth):
