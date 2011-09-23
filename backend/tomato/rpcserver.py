@@ -76,7 +76,7 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		except Exception, err:
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))
-			self.send(err, method)
+			self.send(err)
 	def log_message(self, format, *args):
 		pass
 	def send(self, response):
