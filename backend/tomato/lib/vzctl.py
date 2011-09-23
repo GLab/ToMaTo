@@ -19,10 +19,10 @@ import uuid
 
 from tomato import generic, config, fault
 
-import process, fileutil, ifaceutil, util, exceptions
+import process, fileutil, ifaceutil, util, exceptions, decorators
 
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and x.errorCode==9 and "Container already locked" in x.errorMessage)
 def _vzctl(host, vmid, cmd, params=[]):
-	#FIXME: make synchronized because vzctl creates a lock
 	return host.execute("vzctl %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))) )
 
 def execute(host, vmid, cmd):
