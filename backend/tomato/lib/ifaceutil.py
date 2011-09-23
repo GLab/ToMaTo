@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util, random, exceptions
+import util, random, exceptions, decorators
 
 def bridgeExists(host, bridge):
 	import fileutil
@@ -105,7 +105,6 @@ def addAddress(host, iface, address):
 		if exc.errorCode != 2: #RTNETLINK answers: File exists
 			raise
 	
-
 def randomIp4():
 	return "%d.%d.%d.%d"%(10, random.randint(10, 250), random.randint(10, 250), random.randint(10, 250))	
 
@@ -113,16 +112,9 @@ def isIpv4(s):
 	import re
 	return re.match("(\d+).(\d+).(\d+).(\d.)", s)
 
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and ("Resource temporarily unavailable" in x.errorMessage or "Bad file descriptor" in x.errorMessage))
 def iptables(host, args=[], ipv6=False):
-	try:
-		host.execute(" ".join(["ip6tables" if ipv6 else "iptables"]+args))
-	except exceptions.CommandError, exc:
-		if "Resource temporarily unavailable" in exc.errorMessage:
-			import time
-			time.sleep(0.1)
-			iptables(host, args, ipv6)
-		else:
-			raise
+	host.execute(" ".join(["ip6tables" if ipv6 else "iptables"]+args))
 
 def connectInterfaces(host, if1, if2, id, allowIps):
 	assert interfaceExists(host, if1)
@@ -166,17 +158,11 @@ def connectInterfaces(host, if1, if2, id, allowIps):
 	res = host.execute("ip route get %s from %s iif %s" % (util.escape(randomIp4()), util.escape(randomIp4()), util.escape(if1)))
 	assert if2 in res, "route should be %s but was %s" % (if2, res)
 
+
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and ("Resource temporarily unavailable" in x.errorMessage or "Bad file descriptor" in x.errorMessage))
 def iptablesRemoveRules(host, device):
-	try:
-		host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % util.identifier(device) )
-		host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % util.identifier(device) )
-	except exceptions.CommandError, exc:
-		if "Resource temporarily unavailable" in exc.errorMessage:
-			import time
-			time.sleep(0.1)
-			iptablesRemoveRules(host, device)
-		else:
-			raise
+	host.execute ( "iptables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do iptables $rule; done" % util.identifier(device) )
+	host.execute ( "ip6tables -S INPUT | fgrep 'i %s ' | sed 's/-A /-D /' | while read rule; do ip6tables $rule; done" % util.identifier(device) )
 
 def disconnectInterfaces(host, if1, if2, id):
 	#calculate table ids
