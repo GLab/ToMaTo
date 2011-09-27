@@ -17,8 +17,8 @@
 
 import util, exceptions
 
-def killPidfile(host, pidfile):
-	host.execute("[ -f %(pidfile)s ] && (cat %(pidfile)s | xargs -r kill; true) && rm %(pidfile)s; true" % {"pidfile": util.escape(pidfile)})
+def killPidfile(host, pidfile, force=False):
+	host.execute("[ -f %(pidfile)s ] && (cat %(pidfile)s | xargs -r kill %(force)s; true) && rm %(pidfile)s; true" % {"pidfile": util.escape(pidfile), "force": "-9" if force else ""})
 
 def _parentPid(host, pid):
 	assert pid
