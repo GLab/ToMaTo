@@ -15,10 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util, exceptions
+import util, exceptions, fileutil
 
 def killPidfile(host, pidfile, force=False):
 	host.execute("[ -f %(pidfile)s ] && (cat %(pidfile)s | xargs -r kill %(force)s; true) && rm %(pidfile)s; true" % {"pidfile": util.escape(pidfile), "force": "-9" if force else ""})
+
+def kill(host, pid=None, pidfile=None, force=True):
+	assert pid or pidfile
+	if pidfile:
+		pid = int(host.execute("cat %s" % util.escape(pidfile)))
+	if not alive(host, pid):
+		return
+	host.execute("kill %d" % pid)
+	if not util.waitFor(lambda :not alive(host, pid), 2.0):
+		host.execute("kill -9 %d" % pid)
+		util.waitFor(lambda :not alive(host, pid), 2.0)
+	assert not alive(host, pid)
+	
+def alive(host, pid):
+	return fileutil.existsDir(host, "/proc/%d" % pid)
 
 def _parentPid(host, pid):
 	assert pid
