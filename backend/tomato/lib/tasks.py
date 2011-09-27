@@ -272,11 +272,14 @@ class Process():
 			if task.status == Status.ABORTED:
 				return Status.ABORTED
 		for task in self.tasks:
+			if task.status == Status.WAITING:
+				return Status.WAITING
+		for task in self.tasks:
 			if task.status == Status.SUCCEEDED:
 				return Status.SUCCEEDED
 		if not self.tasks:
 			return Status.SUCCEEDED
-		return Status.WAITING
+		assert False
 	def isActive(self, status=None):
 		if not status:
 			status = self.getStatus()
