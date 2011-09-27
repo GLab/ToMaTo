@@ -301,7 +301,9 @@ def _stopEndpoint(endpoint):
 	except exceptions.CommandError, exc:
 		if exc.errorCode != 1: #tincd was not running
 			raise
-	util.waitFor(lambda :getState(endpoint) != generic.State.STARTED, 5.0)
+	util.waitFor(lambda :getState(endpoint) != generic.State.STARTED, 2.0)
+	if getState(endpoint) == generic.State.STARTED:
+		process.killPidfile(host, _pidFile(endpoint), force=True)
 	assert getState(endpoint) != generic.State.STARTED
 
 def _setupRouting(endpoint):
