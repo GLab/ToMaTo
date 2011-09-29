@@ -258,6 +258,10 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def checkUploadedImage(self, filename):
 		pass
 			
+	def _changeState(self, state):
+		self.state = state
+		self.save()	
+			
 	def repair(self):
 		pass
 			

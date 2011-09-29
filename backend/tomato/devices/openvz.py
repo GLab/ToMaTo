@@ -26,7 +26,7 @@ import hashlib
 
 from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db, exceptions
 
-class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
+class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
 	vmid = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')

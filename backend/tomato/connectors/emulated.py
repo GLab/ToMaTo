@@ -91,6 +91,9 @@ class EmulatedConnection(Connection):
 		res = resources.get(self, self.IFB_ID_SLOT, "ifb_id")
 		if res:
 			return res.num
+		
+	def hasIfbId(self):
+		return resources.get(self, self.IFB_ID_SLOT, "ifb_id")
 				
 	def getNetemProp(self, prop, dir=None):
 		if dir == "to":
@@ -180,7 +183,7 @@ class EmulatedConnection(Connection):
 		host = self.getHost()
 		iface = self.internalInterface()
 		self._assignIfb()
-		assert self.getIfbId()
+		assert self.hasIfbId()
 		ifb = "ifb%d" % self.getIfbId()
 		ifaceutil.ifup(host, ifb)
 		tc.setLinkEmulation(host, iface, 
@@ -211,7 +214,7 @@ class EmulatedConnection(Connection):
 		return "capture-%d-%s-%s" % (self.connector.topology.id, self.interface.device.name, self.interface.name)
 		
 	def _assignIfb(self):
-		if not self.getIfbId():
+		if not self.hasIfbId():
 			self.ifb_id = resources.take(self.getHost(), "ifb", self, self.IFB_ID_SLOT)
 			self.save()			
 	
@@ -273,7 +276,7 @@ class EmulatedConnection(Connection):
 			except:
 				#might still fail if interface is deleted in between
 				pass
-		if self.getIfbId():
+		if self.hasIfbId():
 			ifb = "ifb%d" % self.getIfbId()
 			tc.clearLinkEmulation(host, ifb)
 		self._unassignIfb()
@@ -308,6 +311,7 @@ class EmulatedConnection(Connection):
 	def repair(self):
 		state = self.connector.state
 		if state == State.STARTED:
+			self._assignIfb()
 			self._configLink()
 			if self.getCaptureToFile() and not tcpdump.captureToFileRunning(self.getHost(), self._captureName()):
 				self._startCaptureToFile()

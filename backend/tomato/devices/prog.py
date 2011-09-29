@@ -26,7 +26,7 @@ import hashlib
 
 from tomato.lib import util, repy, ifaceutil, hostserver, tasks, db, exceptions
 
-class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
+class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
 	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])

@@ -440,12 +440,12 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 			return
 		for dev in self.deviceSetAll():
 			try:
-				dev.repair()
+				dev.upcast().repair()
 			except Exception, exc:
 				fault.log(exc)
 		for con in self.connectorSetAll():
 			try:
-				con.repair()
+				con.upcast().repair()
 			except Exception, exc:
 				fault.log(exc)
 
