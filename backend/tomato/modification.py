@@ -47,7 +47,7 @@ class Modification():
 			elif dtype == "prog":
 				dev = prog.ProgDevice()
 			else:
-				raise fault.new("Unknown device type: %s" % type )
+				raise fault.new("Unknown device type: %s" % dtype, fault.USER_ERROR )
 			dev.topology = top
 			dev.type = dtype
 			dev.name = self.properties["name"]
@@ -93,7 +93,7 @@ class Modification():
 			elif ctype == "hub" or ctype =="switch" or ctype == "router":
 				con = vpn.TincConnector()
 			else:
-				raise fault.new("Unknown connector type: %s" % type )
+				raise fault.new("Unknown connector type: %s" % ctype )
 			con.type = ctype
 			con.topology = top
 			con.name = self.properties["name"]
@@ -112,7 +112,7 @@ class Modification():
 		elif self.type == "connector-delete":
 			con = top.connectorSetGet(self.element).upcast()
 			if not con.isExternal(): 
-				fault.check(con.state == generic.State.CREATED, "Cannot delete a running or prepared connector")
+				fault.check(con.state == generic.State.CREATED, "Cannot delete a running or prepared connector", fault.USER_ERROR)
 			con.delete()
 			
 		elif self.type == "connection-create":
