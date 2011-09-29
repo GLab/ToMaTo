@@ -110,7 +110,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write("<html>")
     if redirect:
-      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>")
+      self.wfile.write("<head><meta http-equiv=\"refresh\" content=\"0;url=%s\"/></head>" % redirect)
     self.wfile.write("<body>")
     self.wfile.write(html)
     self.wfile.write("</body></html>")

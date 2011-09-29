@@ -1,3 +1,9 @@
+tomato-host (0.17) stable; urgency=low
+
+  * Depending on hostserver >= 0.7
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 29 Sep 2011 15:18:25 +0200
+
 tomato-host (0.16) stable; urgency=low
 
   * Added vtun dependency needed for backend 2.2
