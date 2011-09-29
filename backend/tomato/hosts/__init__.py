@@ -174,6 +174,12 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		return cmd
 	
 	def startControlMaster(self):
+		if fileutil.existsSocket(util.localhost, self._sshControlPath()): 
+			try:
+				util.localhost.execute("netstat -l | fgrep %s" % self._sshControlPath())
+			except:
+				#remove defunct socket
+				fileutil.delete(util.localhost, self._sshControlPath())
 		if not fileutil.existsSocket(util.localhost, self._sshControlPath()):
 			fileutil.mkdir(util.localhost, config.LOCAL_TMP_DIR + "/ssh/")
 			import subprocess
@@ -198,6 +204,9 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			res = res[1:]
 		if "mux_client_request_session" in res[0] and "session request failed" in res[0]:
 			#remove error message due to MaxStartups setting in the host ssh deamon
+			res = res[1:]
+		if "Control socket" in res[0] and self._sshControlPath() in res[0] and "Connection refused" in res[0]:
+			#remove Control socket connect(...): Connection refused
 			res = res[1:]
 		retCode = int(res[-1].strip())
 		res = "\n".join(res[:-1])
