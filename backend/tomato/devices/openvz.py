@@ -122,7 +122,7 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 			if state == State.PREPARED:
 				vzctl.start(host, vmid)
 			for iface in self.interfaceSetAll():
-				assert ifaceutil.interfaceExists(host, self.interfaceDevice(iface))
+				assert util.waitFor(lambda: ifaceutil.interfaceExists(host, self.interfaceDevice(iface)))
 				self.connectToBridge(iface, self.getBridge(iface))
 				iface.upcast()._configureNetwork()
 			self._startVnc()
