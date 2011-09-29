@@ -154,12 +154,13 @@ class Task():
 					self.status = Status.FAILED
 			finally:
 				#remove references to free memory
-				self.fn = None
-				self.reverseFn = None
-				self.args = []
-				self.kwargs = {}
-				self.reverseArgs = []
-				self.reverseKwargs = {}
+				if not isinstance(self.process, RepeatedProcess):
+					self.fn = None
+					self.reverseFn = None
+					self.args = []
+					self.kwargs = {}
+					self.reverseArgs = []
+					self.reverseKwargs = {}
 		else:
 			self.status = Status.SUCCEEDED
 		self._runOnFinished()
@@ -240,6 +241,7 @@ class Process():
 			self.dependencies[task] = set(task.getAfter())
 			if not task.getAfter():
 				self.readyTasks.add(task)
+			task.process = self
 	def _taskDone(self, task):
 		if task.status == Status.SUCCEEDED:
 			for t in task.getBefore():
