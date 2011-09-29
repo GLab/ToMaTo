@@ -34,6 +34,8 @@ class ClusterState:
 
 COMMAND_RETRIES = 10
 
+MIN_HOST_VERSION = 0.17
+
 class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	SSH_COMMAND = ["ssh", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]
 	RSYNC_COMMAND = ["rsync", "-a", "-e", " ".join(SSH_COMMAND)]
@@ -133,7 +135,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			version = float(res.strip())
 		except:
 			assert False, "tomato-host not found"
-		assert version >= 0.16, "tomato-host version error, is %s" % version
+		assert version >= MIN_HOST_VERSION, "tomato-host version error, is %s" % version
 
 	def fetchHostserverConfig(self):
 		res = self.execute(". /etc/tomato-hostserver.conf; echo $port; echo $basedir; echo $secret_key").splitlines()

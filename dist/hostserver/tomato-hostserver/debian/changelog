@@ -1,3 +1,9 @@
+tomato-hostserver (0.7) stable; urgency=low
+
+  * Fixed redirect parameter
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 29 Sep 2011 14:01:00 +0200
+
 tomato-hostserver (0.6) stable; urgency=low
 
   * Implemented If-Modified-Since header
