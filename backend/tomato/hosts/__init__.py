@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import sys, atexit, threading, time, random
+import sys, atexit, threading, time, random, uuid
 
 from django.db import models
 from django.db.models import Q, Sum
@@ -186,7 +186,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			subprocess.Popen(self._sshCommand(True) + ["root@%s" % self.name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
 	
 	def execute(self, command):
-		cmd = self._sshCommand() + ["root@%s" % self.name, command+'; echo -e "\n$?" >&2']
+		stoken = str(uuid.uuid1())
+		cmd = self._sshCommand() + ["root@%s" % self.name, ('echo -e "\n%s"; ' % stoken) + command + ' ; echo -e "\n$?" >&2']
 		log_str = self.name + ": " + command + "\n"
 		if tasks.get_current_task():
 			fd = tasks.get_current_task().output
@@ -199,15 +200,8 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage)
 		res = util.removeControlChars(res) #might contain funny characters
 		res = res.splitlines()
-		if "Warning" in res[0] and "known hosts" in res[0] and self.name in res[0]:
-			#remove Warning: Permanently added '...' (RSA) to the list of known hosts.
-			res = res[1:]
-		if "mux_client_request_session" in res[0] and "session request failed" in res[0]:
-			#remove error message due to MaxStartups setting in the host ssh deamon
-			res = res[1:]
-		if "Control socket" in res[0] and self._sshControlPath() in res[0] and "Connection refused" in res[0]:
-			#remove Control socket connect(...): Connection refused
-			res = res[1:]
+		assert stoken in res
+		res = res[res.index(stoken)+1:]
 		retCode = int(res[-1].strip())
 		res = "\n".join(res[:-1])
 		if not res.endswith("\n"):
