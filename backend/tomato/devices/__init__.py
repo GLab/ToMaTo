@@ -127,7 +127,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 		elif action == "upload_image_use":
 			return self.useUploadedImage(attrs["filename"], direct)		
 		elif action == "download_image":
-			return self.downloadImageUri()		
+			return tasks.runTask(tasks.Task("%s-download-image-uri" % self, self.downloadImageUri))		
 	
 	def hostPreferences(self):
 		prefs = ObjectPreferences(True)
@@ -250,7 +250,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 				
 	def useUploadedImage(self, filename, direct=False):
 		path = "%s/%s" % (self.host.hostServerBasedir(), filename)
-		self.checkUploadedImage(path)
+		tasks.runTask(tasks.Task("%s-check-uploaded-image" % self, self.checkUploadedImage, args=(path,)))
 		proc = tasks.Process("use-uploaded-image")
 		proc.add(tasks.Task("main", self.upcast().useUploadedImageRun, args=(path,)))
 		return self.topology.startProcess(proc, direct)
