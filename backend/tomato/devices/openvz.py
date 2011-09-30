@@ -107,7 +107,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		ifaceutil.ifup(self.host, bridge)
 
 	def _vncRunning(self):
-		return self.vmid and self.vnc_port and vzctl.vncRunning(self.host, self.getVmid(), self.getVncPort())
+		return self.getVmid() and self.getVncPort() and vzctl.vncRunning(self.host, self.getVmid(), self.getVncPort())
 
 	def _startDev(self):
 		host = self.host
