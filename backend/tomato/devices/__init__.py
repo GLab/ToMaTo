@@ -301,10 +301,10 @@ class Interface(attributes.Mixin, models.Model):
 		return self
 
 	def __str__(self):
-		return str(self.device.name)+"."+str(self.name)
+		return unicode(self).encode("utf-8")
 		
 	def __unicode__(self):
-		return str(self)
+		return self.device.name + "." + self.name
 		
 	def getCapabilities(self, user):
 		return {

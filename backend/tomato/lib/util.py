@@ -217,7 +217,7 @@ def removeControlChars(s):
 	return s.translate(None, controlChars)
 
 def escape(s):
-	return repr(str(s))
+	return repr(unicode(s).encode("utf-8"))
 
 def sendMail(to, subject, body):
 	import smtplib
