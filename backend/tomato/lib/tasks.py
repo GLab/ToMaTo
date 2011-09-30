@@ -147,7 +147,7 @@ class Task():
 			except Exception, exc:
 				self.result = exc
 				fault.log(exc)
-				self.output.write('%s:%s' % (exc.__class__.__name__, exc))
+				self.output.write(('%s:%s' % (exc.__class__.__name__, exc)).encode("utf-8"))
 				if self.reverseFn:
 					self._reverse()
 				else:

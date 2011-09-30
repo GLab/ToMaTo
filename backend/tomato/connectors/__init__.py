@@ -267,7 +267,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 		return tasks.TaskSet()
 				
 	def __unicode__(self):
-		return str(self.connector) + "<->" + str(self.interface)
+		return unicode(self.connector) + "<->" + unicode(self.interface)
 
 	def configure(self, properties):
 		self.setPrivateAttributes(properties)

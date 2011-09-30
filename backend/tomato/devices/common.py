@@ -46,7 +46,7 @@ class VNCMixin:
 			return "---"
 		m = hashlib.md5()
 		m.update(config.PASSWORD_SALT)
-		m.update(str(self.name))
+		m.update(self.name.encode("utf-8"))
 		m.update(str(self.getVmid()))
 		m.update(str(self.getVncPort()))
 		m.update(str(self.topology.owner))
