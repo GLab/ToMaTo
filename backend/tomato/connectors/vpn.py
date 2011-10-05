@@ -32,8 +32,10 @@ class ConnectionEndpoint(tinc.Endpoint):
 		self.con = con
 	def getSite(self):
 		return self.getHost().group
+	def hasHost(self):
+		return self.con.upcast().getTincHost()
 	def getHost(self):
-		host = self.con.interface.device.host
+		host = self.con.upcast().getTincHost()
 		assert host
 		return host
 	def getId(self):
@@ -224,7 +226,7 @@ class TincConnector(Connector):
 		fault.check(self.state == State.CREATED, "Cannot add connections to started or prepared connector: %s -> %s", (iface_name, self.name) )
 		fault.check(iface.device.state != State.STARTED, "Cannot add connections to running device: %s -> %s", (iface_name, self.name) )
 		fault.check(not iface.isConnected(), "Cannot add connections to connected interface: %s -> %s", (iface_name, self.name) )
-		con = TincConnection ()
+		con = TincConnection()
 		con.connector = self
 		con.interface = iface
 		con.init()
@@ -320,6 +322,11 @@ class TincConnection(emulated.EmulatedConnection):
 		if res:
 			return res.num
 	
+	def getTincHost(self):
+		res = resources.get(self, self.TINC_PORT_SLOT, "tinc_port")
+		if res:
+			return res.getHost()
+
 	def getBridgeId(self):
 		res = resources.get(self, self.BRIDGE_ID_SLOT, "bridge_id")
 		if res:
