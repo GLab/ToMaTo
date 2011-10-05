@@ -148,6 +148,7 @@ class Task():
 				self._run()
 			except Exception, exc:
 				self.result = exc
+				exc.message += "\nException in task %s (%s)" % (self.name, self.fn) 
 				fault.log(exc)
 				self.output.write(('%s:%s' % (exc.__class__.__name__, exc)).encode("utf-8"))
 				if self.reverseFn:
