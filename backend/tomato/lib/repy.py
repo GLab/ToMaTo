@@ -48,7 +48,7 @@ def getState(host, vmid):
 def startVnc(host, vmid, port, password):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to start vnc"
 	assert process.portFree(host, port)
-	host.execute("vncterm -timeout 0 -rfbport %d -passwd %s -c tail -f %s >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), _logFile(vmid), _vncPidFile(vmid) ))
+	host.execute("vncterm -timeout 0 -rfbport %d -passwd %s -c tail -n +1 -f %s >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), _logFile(vmid), _vncPidFile(vmid) ))
 	assert not process.portFree(host, port)
 
 def stopVnc(host, vmid, port):
