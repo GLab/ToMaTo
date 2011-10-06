@@ -61,6 +61,9 @@ def build_context(quiet):
     context["tuntap_info"] = emultap.device_info
     import emulstruct
     context["struct"] = emulstruct.struct
+    import random, math
+    context["math"] = math
+    context["random"] = random
     return repy.prepare_usercontext({}, context)
     
 def prepare_interfaces(interfaces):
