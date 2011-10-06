@@ -90,6 +90,8 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 	def _startVnc(self):
 		if not self.getVncPort():
 			self._assignVncPort()
+		if self._vncRunning():
+			return
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def connectToBridge(self, iface, bridge):

@@ -91,6 +91,8 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 	def _startVnc(self):
 		if not self.getVncPort():
 			self._assignVncPort()		
+		if self._vncRunning():
+			return
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def _configureRoutes(self):

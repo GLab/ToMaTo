@@ -69,6 +69,8 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		return self.id
 
 	def _startVnc(self):
+		if self._vncRunning():
+			return
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
 
 	def _vncRunning(self):
