@@ -9,7 +9,7 @@ Package: tomato-host
 Architecture: all
 Depends: ${misc:Depends}, pve-qemu-kvm, vzctl, bridge-utils, iproute,
  lsof, vzdump, tinc, timeout, curl, tomato-hostserver (>=0.7), ucspi-tcp,
- rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.2), vtun
+ rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.3), vtun
 Description: Meta package to install packages needed for tomato
  The following dependencies are pulled in:
   * Tinc: tinc, vtun

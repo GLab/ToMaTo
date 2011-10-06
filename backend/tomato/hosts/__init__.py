@@ -34,7 +34,7 @@ class ClusterState:
 
 COMMAND_RETRIES = 10
 
-MIN_HOST_VERSION = 0.17
+MIN_HOST_VERSION = 0.18
 
 class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	SSH_COMMAND = ["ssh", "-oConnectTimeout=30", "-oStrictHostKeyChecking=no", "-oPasswordAuthentication=false", "-i%s" % config.SSH_KEY]

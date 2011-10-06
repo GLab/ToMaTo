@@ -124,15 +124,19 @@ def main(options):
     try:
         if options.verbose: print >>sys.stderr, "Running script %s, arguments = %s" % (options.program, options.arguments)
         repy.run_file(options.resources, options.program, options.arguments, usercontext, usercode=code)
-    except SystemExit:
-        import harshexit
-        harshexit.harshexit(4)
     except KeyboardInterrupt:
         return
+    except SystemExit:
+        pass
     except:
-        import tracebackrepy, harshexit
+        import tracebackrepy
         tracebackrepy.handle_exception()
-        harshexit.harshexit(3)
+    try:
+        import time
+        while True:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        return
         
 if __name__ == "__main__":
     main(parse_args())
