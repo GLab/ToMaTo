@@ -446,6 +446,13 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 					},
 			"resources": util.xml_rpc_sanitize(self.resources()),
 			}
+		if self.checkAccess(Permission.ROLE_USER, user):
+			task = self.getTask()
+			if task:
+				if task.isActive():
+					res.update(running_task=task.id)
+				else:
+					res.update(finished_task=task.id)
 		if self.date_usage:
 			res["attrs"].update(stop_timeout=str(self.date_usage + self.STOP_TIMEOUT), destroy_timeout=str(self.date_usage + self.DESTROY_TIMEOUT), remove_timeout=str(self.date_usage + self.REMOVE_TIMEOUT)) 
 		else:
@@ -459,13 +466,6 @@ class Topology(db.ReloadMixin, attributes.Mixin, models.Model):
 			res["capabilities"] = self.getCapabilities(user)
 			res["resources"] = util.xml_rpc_sanitize(self.resources())
 			res["attrs"].update(self.getPrivateAttributes())
-		if self.checkAccess(Permission.ROLE_USER, user):
-			task = self.getTask()
-			if task:
-				if task.isActive():
-					res.update(running_task=task.id)
-				else:
-					res.update(finished_task=task.id)
 		return res
 						
 class Permission(models.Model):
