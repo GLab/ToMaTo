@@ -34,6 +34,9 @@ def _pidFile(vmid):
 def _vncPidFile(vmid):
 	return _path(vmid, "vnc-pid")
 
+def vncRunning(host, vmid, port):
+	return process.processRunning(host, _vncPidFile(vmid), "vncterm")
+
 def getState(host, vmid):
 	assert vmid
 	if process.processRunning(host, _pidFile(vmid), "python"):

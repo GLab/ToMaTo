@@ -66,6 +66,8 @@ class Task():
 		return status == Status.FAILED or status == Status.ABORTED or status == Status.SUCCEEDED
 	def isSucceeded(self):
 		return self.status == Status.SUCCEEDED
+	def getName(self):
+		return self.name
 	def getOutput(self):
 		return self.output.getvalue()
 	def getResult(self):
@@ -146,6 +148,7 @@ class Task():
 				self._run()
 			except Exception, exc:
 				self.result = exc
+				exc.message += "\nException in task %s (%s)" % (self.name, self.fn) 
 				fault.log(exc)
 				self.output.write(('%s:%s' % (exc.__class__.__name__, exc)).encode("utf-8"))
 				if self.reverseFn:
@@ -455,5 +458,13 @@ def getStatus(task_id, details=False):
 		raise fault.new("No such task %s" % task_id, fault.USER_ERROR)
 		
 		
+def runTask(task, processName=None):
+	if not processName:
+		processName = task.getName()
+	proc = Process(processName)
+	proc.add(task)
+	proc.start(True)
+	return task.getResult()
+
 if not config.MAINTENANCE:	
 	atexit.register(keep_running)

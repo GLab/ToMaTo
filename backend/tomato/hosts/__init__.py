@@ -32,7 +32,7 @@ class ClusterState:
 	NODE = "N"
 	NONE = "-"
 
-COMMAND_RETRIES = 10
+COMMAND_RETRIES = 5
 
 MIN_HOST_VERSION = 0.18
 
@@ -157,7 +157,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 	def hostServerBasedir(self):
 		return self.getAttribute("hostserver_basedir") 
 
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError), waitBetween=5.0, maxRetries=COMMAND_RETRIES)
+	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError), waitBetween=1.0, maxRetries=COMMAND_RETRIES)
 	def _exec(self, cmd):
 		res = util.run_shell(cmd)
 		if res[0] != 0:

@@ -365,6 +365,9 @@ def startNetwork(endpoints, mode=Mode.SWITCH):
 		_startEndpoint(ep)
 		_connectEndpoint(ep, mode)
 
+def startEndpoint(ep, mode=Mode.SWITCH):
+	_startEndpointTask(ep, mode)
+
 def _startEndpointTask(endpoint, mode=Mode.SWITCH):
 	_startEndpoint(endpoint)
 	_connectEndpoint(endpoint, mode)
@@ -384,6 +387,9 @@ def stopNetwork(endpoints, mode=Mode.SWITCH):
 	for ep in endpoints:
 		_teardownRouting(ep, mode)
 		_stopEndpoint(ep)
+
+def stopEndpoint(ep, mode=Mode.SWITCH):
+	_stopEndpointTask(ep, mode)
 
 def _stopEndpointTask(endpoint, mode=Mode.SWITCH):
 	_teardownRouting(endpoint, mode)
@@ -446,6 +452,9 @@ def destroyNetwork(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)
 	for ep in endpoints:
 		_deleteFiles(ep)
+
+def destroyEndpoint(endpoint, mode=Mode.SWITCH):
+	_deleteFiles(endpoint)
 
 def getDestroyNetworkTasks(endpoints, mode=Mode.SWITCH):
 	assert _areEndpoints(endpoints)

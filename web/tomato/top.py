@@ -28,12 +28,29 @@ import xmlrpclib, tempfile
 import simplejson as json
 import zlib, base64
 
-def _display_top(api, top_id, task_id=None, action=None):
+def _display_top(api, top_id, format="jsui", edit=False):
 	try:
 		api.top_info(top_id)
+		api.top_action(top_id, "renew")
 	except:
 		return HttpResponseRedirect(reverse('tomato.top.index')) 
-	return render_to_response("top/edit_jsui.html", {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
+	if format == "json":
+		import json
+		return HttpResponse(json.dumps(api.top_info(top_id), indent=2), mimetype="text/plain")
+	tpls = api.template_map()
+	tpl_openvz=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("openvz", []))])
+	tpl_kvm=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("kvm", []))])
+	tpl_prog=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("prog", []))])
+	enlist = api.external_networks()
+	map = {}
+	for en in enlist:
+		if map.has_key(en["type"]):
+			map[en["type"]].append(en["group"])
+		else:
+			map[en["type"]] = [en["group"]]
+	external_networks=",".join([f+":"+("|".join(map[f])) for f in map])
+	host_groups=",".join(api.host_groups())
+	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':edit} )
 
 @wrap_rpc
 def index(api, request):
@@ -82,121 +99,16 @@ def renew(api, request, top_id):
 
 @wrap_rpc
 def edit(api, request, top_id):
-	try:
-		api.top_info(top_id)
-	except:
-		return HttpResponseRedirect(reverse('tomato.top.index'))
-	tpls = api.template_map()
-	tpl_openvz=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("openvz", []))])
-	tpl_kvm=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("kvm", []))])
-	tpl_prog=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("prog", []))])
-	enlist = api.external_networks()
-	map = {}
-	for en in enlist:
-		if map.has_key(en["type"]):
-			map[en["type"]].append(en["group"])
-		else:
-			map[en["type"]] = [en["group"]]
-	external_networks=",".join([f+":"+("|".join(map[f])) for f in map])
-	host_groups=",".join(api.host_groups())
-	if not request.REQUEST.has_key("editor"):
-		editor = "jsui"
-	else:
-		editor = request.REQUEST["editor"]
-	return render_to_response("top/edit_%s.html" % editor, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':True} )
+	return _display_top(api, top_id, format=request.REQUEST.get("format", "jsui"), edit=True)
 
 @wrap_rpc
 def show(api, request, top_id):
-	try:
-		api.top_info(top_id)
-		api.top_action(top_id, "renew")
-	except:
-		return HttpResponseRedirect(reverse('tomato.top.index')) 
-	if not request.REQUEST.has_key("format"):
-		format = "jsui"
-	else:
-		format = request.REQUEST["format"]
-	if format == "json":
-		import json
-		return HttpResponse(json.dumps(api.top_info(top_id), indent=2), mimetype="text/plain")		
-	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': "", 'tpl_kvm': "", 'host_groups': "", "special_features": ""} )
+	return _display_top(api, top_id, format=request.REQUEST.get("format", "jsui"), edit=False)
 
 @wrap_rpc
 def remove(api, request, top_id):
 	api.top_action(int(top_id), "remove", "topology", None)
 	return index(request)
-
-@wrap_rpc
-def prepare(api, request, top_id):
-	task_id=api.top_action(int(top_id), "prepare", "topology", None)
-	return _display_top(api, top_id, task_id, "Prepare topology")
-
-@wrap_rpc
-def destroy(api, request, top_id):
-	task_id=api.top_action(int(top_id), "destroy", "topology", None)
-	return _display_top(api, top_id, task_id, "Destroy topology")
-
-@wrap_rpc
-def start(api, request, top_id):
-	task_id=api.top_action(int(top_id), "start", "topology", None)
-	return _display_top(api, top_id, task_id, "Start topology")
-
-@wrap_rpc
-def stop(api, request, top_id):
-	task_id=api.top_action(int(top_id), "stop", "topology", None, "stop")
-	return _display_top(api, top_id, task_id, "Stop topology")
-
-@wrap_rpc
-def dev_prepare(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "prepare", "device", device_id)
-	return _display_top(api, top_id, task_id, "Prepare device")
-
-@wrap_rpc
-def dev_destroy(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "destroy", "device", device_id)
-	return _display_top(api, top_id, task_id, "Destroy device")
-
-@wrap_rpc
-def dev_start(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "start", "device", device_id)
-	return _display_top(api, top_id, task_id, "Start device")
-
-@wrap_rpc
-def dev_stop(api, request, top_id, device_id):
-	task_id=api.top_action(int(top_id), "stop", "device", device_id)
-	return _display_top(api, top_id, task_id, "Stop device")
-
-@wrap_rpc
-def con_prepare(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "prepare", "connector", connector_id)
-	return _display_top(api, top_id, task_id, "Prepare connector")
-
-@wrap_rpc
-def con_destroy(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "destroy", "connector", connector_id)
-	return _display_top(api, top_id, task_id, "Destroy connector")
-
-@wrap_rpc
-def con_start(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "start", "connector", connector_id)
-	return _display_top(api, top_id, task_id, "Start connector")
-
-@wrap_rpc
-def con_stop(api, request, top_id, connector_id):
-	task_id=api.top_action(int(top_id), "stop", "connector", connector_id)
-	return _display_top(api, top_id, task_id, "Stop connector")
-
-@wrap_rpc
-def permission_list(api, request, top_id):
-	top=api.top_info(int(top_id))
-	return render_to_response("top/permissions.html", {'top_id': top_id, 'top': top })
-
-@wrap_rpc
-def permission_set(api, request, top_id):
-	user=request.REQUEST["user"]
-	role=request.REQUEST["role"]
-	api.permission_set(top_id, user, role)
-	return permission_list(request, top_id)
 
 class ExportForm(forms.Form):
 	compress = forms.BooleanField(required=False)

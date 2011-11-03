@@ -26,7 +26,7 @@ import hashlib
 
 from tomato.lib import util, vzctl, ifaceutil, hostserver, tasks, db, exceptions
 
-class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
+class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
 	vmid = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
@@ -82,13 +82,17 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		if action == "execute":
 			fault.check("cmd" in attrs, "Command not given")
 			try:
-				return self.execute(attrs["cmd"])
+				return tasks.runTask(tasks.Task("%s-execute"%self, self.execute, args=(attrs["cmd"],)))
 			except exceptions.CommandError, exc:
 				raise fault.new(str(exc), fault.USER_ERROR)
 		else:
 			return Device._runAction(self, action, attrs, direct)
 
 	def _startVnc(self):
+		if not self.getVncPort():
+			self._assignVncPort()		
+		if self._vncRunning():
+			return
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def _configureRoutes(self):
@@ -104,12 +108,13 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		ifaceutil.bridgeConnect(self.host, bridge, self.interfaceDevice(iface))
 		ifaceutil.ifup(self.host, bridge)
 
+	def _vncRunning(self):
+		return self.getVmid() and self.getVncPort() and vzctl.vncRunning(self.host, self.getVmid(), self.getVncPort())
+
 	def _startDev(self):
 		host = self.host
 		vmid = self.getVmid()
 		state = vzctl.getState(host, vmid)
-		if not self.getVncPort():
-			self._assignVncPort()
 		if state == State.CREATED:
 			self._prepareDev()
 			state = vzctl.getState(host, vmid)
@@ -372,7 +377,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		except:
 			# reverted to SRC host
 			if self.state == State.STARTED:
-				self._assignVncPort()
 				self._startVnc()
 			raise
 		#switch host and vmid
@@ -385,7 +389,6 @@ class OpenVZDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Devi
 		self.save()
 		self._configureVm()
 		if self.state == State.STARTED:
-			self._assignVncPort()
 			self._startVnc()			
 		#redeploy all connectors
 		for iface in self.interfaceSetAll():

@@ -25,7 +25,7 @@ from tomato.topology import Permission
 import hashlib, re
 from django.db import models
 
-class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
+class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 	
 	vmid = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
@@ -90,6 +90,8 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 	def _startVnc(self):
 		if not self.getVncPort():
 			self._assignVncPort()
+		if self._vncRunning():
+			return
 		qm.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
 
 	def connectToBridge(self, iface, bridge):
@@ -150,6 +152,9 @@ class KVMDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device)
 			qm.stopVnc(host, vmid, self.getVncPort())
 			self._unassignVncPort()
 	
+	def _vncRunning(self):
+		return self.getVmid() and self.getVncPort() and qm.vncRunning(self.host, self.getVmid(), self.getVncPort())
+		
 	def getStopTasks(self):
 		taskset = Device.getStopTasks(self)
 		taskset.add(tasks.Task("stop", self._stopDev))

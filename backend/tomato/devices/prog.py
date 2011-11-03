@@ -26,7 +26,7 @@ import hashlib
 
 from tomato.lib import util, repy, ifaceutil, hostserver, tasks, db, exceptions
 
-class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
+class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device):
 
 	vnc_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
 	template = models.CharField(max_length=255, null=True, validators=[db.templateValidator])
@@ -69,7 +69,12 @@ class ProgDevice(common.TemplateMixin, common.VMIDMixin, common.VNCMixin, Device
 		return self.id
 
 	def _startVnc(self):
+		if self._vncRunning():
+			return
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
+
+	def _vncRunning(self):
+		return self.getVncPort() and repy.vncRunning(self.host, self.id, self.getVncPort())
 
 	def connectToBridge(self, iface, bridge):
 		ifaceutil.bridgeCreate(self.host, bridge)

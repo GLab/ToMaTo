@@ -127,7 +127,7 @@ class TincConnector(Connector):
 			fault.check(interface, "No such interface: %s", attrs["iface"])
 			con = interface.connection.upcast()
 			assert con.connector.id == self.id
-			return con.downloadCaptureUri()
+			return tasks.runTask(tasks.Task("%s-download-capture-uri" % self, con.downloadCaptureUri))		
 		else:
 			return Connector._runAction(self, action, attrs, direct)			
 				
@@ -290,6 +290,39 @@ class TincConnector(Connector):
 			self.external_access_port = None
 			self.save()
 			resources.give(self, self.EXTERNAL_ACCESS_PORT_SLOT)
+
+	def repair(self):
+		endpoints = self._endpoints()
+		started = []
+		prepared = []
+		created = []
+		for ep in endpoints:
+			state = tinc.getState(ep) if ep.hasHost() else State.CREATED
+			{State.CREATED: created, State.PREPARED: prepared, State.STARTED: started}.get(state).append(ep)
+		if len(started) > len(prepared) and len(created) == 0:
+			self._changeState(State.STARTED)
+		elif len(prepared) > len(started) and len(created) == 0:
+			self._changeState(State.PREPARED)
+		else:
+			self._changeState(State.CREATED)
+		if self.state != State.STARTED:
+			for ep in started:
+				tinc.stopEndpoint(ep, self.type)
+			self._stopExternalAccess()
+			prepared += started
+			started = []
+		if self.state == State.CREATED:
+			for ep in prepared:
+				tinc.destroyEndpoint(ep, self.type)
+			self._destroyExternalAccess()
+		if self.state == State.PREPARED:
+			assert not created
+		if self.state == State.STARTED:
+			for ep in started:
+				tinc.startEndpoint(ep, self.type)
+			self._startExternalAccess()
+			for con in self.connectionSetAll():
+				con.upcast().repair() 
 
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)

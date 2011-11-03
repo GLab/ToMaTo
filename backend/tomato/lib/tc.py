@@ -17,21 +17,8 @@
 
 import ifaceutil, exceptions, math, util
 
-def _tc(host, type, action, ref, params=""):
-	return host.execute("tc %s %s %s %s" % (type, action, ref, params))
-
-def _tc_mod(host, type, ref, params=""):
-	try:
-		return _tc(host, type, "change", ref, params)
-	except exceptions.CommandError:
-		try:
-			return _tc(host, type, "replace", ref, params)
-		except exceptions.CommandError:
-			try:
-				_tc(host, type, "del", ref)
-			except exceptions.CommandError:
-				pass
-			return _tc(host, type, "add", ref, params)
+def _tc_cmd(type, action, ref, params=""):
+	return "tc %s %s %s %s" % (type, action, ref, params)
 	
 def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, loss=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
 	netem = ["netem"]
@@ -92,18 +79,22 @@ def _buildTbf(bandwidth):
 	#	tbf.append("mtu %d" % int(mtu))
 	return " ".join(tbf)
 
-def setLinkEmulation(host, dev, bandwidth=None, **kwargs):
+def setLinkEmulation(host, dev, bandwidth=None, keepBandwidth=False, **kwargs):
 	assert ifaceutil.interfaceExists(host, dev)
 	netem_ref = "dev %s root handle 1:0" % util.escape(dev)
+	cmd = ""
 	if not bandwidth is None:
 		netem_ref = "dev %s parent 1:1 handle 10:" % util.escape(dev)
-		_tc_mod(host, "qdisc", "dev %s root handle 1:" % util.escape(dev), _buildTbf(bandwidth))
-	_tc_mod(host, "qdisc", netem_ref, _buildNetem(bandwidth=bandwidth, **kwargs))
+		if not keepBandwidth:
+			cmd = _tc_cmd("qdisc", "replace", "dev %s root handle 1:" % util.escape(dev), _buildTbf(bandwidth))
+			cmd += ";"
+	cmd += _tc_cmd("qdisc", "replace", netem_ref, _buildNetem(bandwidth=bandwidth, **kwargs))
+	host.execute(cmd)
 	
 def clearLinkEmulation(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
 	try:
-		_tc(host, "qdisc", "del", "root dev %s" % util.escape(dev))
+		host.execute(_tc_cmd("qdisc", "del", "root dev %s" % util.escape(dev)))
 	except exceptions.CommandError, exc:
 		if not "No such file or directory" in exc.errorMessage:
 			raise
@@ -111,15 +102,19 @@ def clearLinkEmulation(host, dev):
 def setIncomingRedirect(host, srcDev, dstDev):
 	assert ifaceutil.interfaceExists(host, srcDev)
 	assert ifaceutil.interfaceExists(host, dstDev)
-	_tc_mod(host, "qdisc", "dev %s ingress" % util.escape(srcDev))
+	try:
+		host.execute(_tc_cmd("qdisc", "del", "dev %s ingress" % util.escape(srcDev)))
+	except:
+		pass
+	host.execute(_tc_cmd("qdisc", "add", "dev %s ingress" % util.escape(srcDev)))
 	""" 
 	Protocol all would forward all traffic but that results
 	in ARP traffic being multiplied and causing lots of traffic
 	""" 
-	_tc_mod(host, "filter", "dev %s parent ffff:" % util.escape(srcDev), \
-	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev))
+	host.execute(_tc_cmd("filter", "replace", "dev %s parent ffff:" % util.escape(srcDev), \
+	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev)))
 		
 def clearIncomingRedirect(host, dev):
 	assert ifaceutil.interfaceExists(host, dev)
-	_tc(host, "qdisc", "del", "dev %s ingress" % util.escape(dev))
-	_tc(host, "filter", "del", "dev %s parent ffff: prio 49152" % util.escape(dev))
+	host.execute(_tc_cmd("qdisc", "del", "dev %s ingress" % util.escape(dev)))
+	host.execute(_tc_cmd("filter", "del", "dev %s parent ffff: prio 49152" % util.escape(dev)))
