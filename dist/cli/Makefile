@@ -1,5 +1,5 @@
 PACKAGE=tomato-cli
-_VERSION=2.3
+_VERSION=2.4
 _SUBVERSION=
 
 include ../common.mk
