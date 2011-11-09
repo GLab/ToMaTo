@@ -115,7 +115,7 @@ def checkImage(host, path):
 	
 def setName(host, vmid, name):
 	assert getState(host, vmid) != generic.State.CREATED, "VM must exist to change the name"
-	_qm(host, vmid, "set", ["--name", name])
+	_qm(host, vmid, "set", ["--name", util.identifier(name)])
 
 def addInterface(host, vmid, iface):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM must be stopped to add interfaces"
