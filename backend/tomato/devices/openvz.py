@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config, fault
+from tomato import config, fault, attributes
 from tomato.hosts import templates, resources
 from tomato.generic import State
 from tomato.devices import Device, Interface, common
@@ -39,9 +39,11 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 	def upcast(self):
 		return self
 
+	@db.changeset
 	def init(self):
 		self.attrs = {}
-		self.setAttribute("root_password", "glabroot", save=False)
+		self.setRootPassword("glabroot")
+		self.save()
 
 	def setRootPassword(self, value):
 		self.setAttribute("root_password", value)
@@ -261,6 +263,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		taskset.add(tasks.Task("destroy", self._destroyDev))
 		return taskset
 
+	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
@@ -291,13 +294,16 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
 		iface = ConfiguredInterface()
-		iface.name = name
-		iface.device = self
-		iface.init()
-		if self.state == State.PREPARED or self.state == State.STARTED:
-			vzctl.addInterface(self.host, self.getVmid(), iface.name)
-		iface.configure(properties)
-		iface.save()
+		try:
+			iface.beginChanges()
+			iface.name = name
+			iface.device = self
+			iface.init()
+			if self.state == State.PREPARED or self.state == State.STARTED:
+				vzctl.addInterface(self.host, self.getVmid(), iface.name)
+			iface.configure(properties)
+		finally:
+			iface.endChanges()
 		Device.interfaceSetAdd(self, iface)
 
 	def interfacesConfigure(self, name, properties):
@@ -454,9 +460,10 @@ class ConfiguredInterface(Interface):
 		db_table = "tomato_configuredinterface"
 		app_label = 'tomato'
 	
+	@db.changeset
 	def init(self):
 		self.attrs = {}		
-		self.setAttribute("use_dhcp", False, save=False)
+		self.setAttribute("use_dhcp", False)
 	
 	def upcast(self):
 		return self
@@ -473,6 +480,7 @@ class ConfiguredInterface(Interface):
 	def interfaceName(self):
 		return self.device.upcast().interfaceDevice(self)
 		
+	@db.changeset
 	def configure(self, properties):
 		Interface.configure(self, properties)
 		changed=False

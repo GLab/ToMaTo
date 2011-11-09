@@ -23,7 +23,7 @@ from tomato.generic import State, ObjectPreferences
 from tomato.lib import db, hostserver, util
 from tomato.lib.decorators import *
 
-class Device(db.ReloadMixin, attributes.Mixin, models.Model):
+class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPE_OPENVZ="openvz"
 	TYPE_KVM="kvm"
 	TYPE_PROG="prog"
@@ -43,6 +43,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 		
 	def interfaceSetGet(self, name):
 		return self.interface_set.get(name=name).upcast() # pylint: disable-msg=E1101
@@ -265,7 +266,7 @@ class Device(db.ReloadMixin, attributes.Mixin, models.Model):
 	def repair(self):
 		pass
 			
-class Interface(attributes.Mixin, models.Model):
+class Interface(db.ChangesetMixin, attributes.Mixin, models.Model):
 	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
 	device = models.ForeignKey(Device)
 
@@ -277,6 +278,7 @@ class Interface(attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 		
 	def isConfigured(self):
 		try:

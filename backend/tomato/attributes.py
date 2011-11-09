@@ -35,11 +35,10 @@ class Mixin:
 	def getAttributes(self):
 		assert isinstance(self.attrs, dict)
 		return self.attrs.copy()
-	def setAttribute(self, name, value, save=True):
+	def setAttribute(self, name, value):
 		assert isinstance(self.attrs, dict)
 		self.attrs[name] = value
-		if save:
-			self.save()
+		self.save()
 	def setAttributes(self, attrs):
 		assert isinstance(self.attrs, dict)
 		self.attrs.update(attrs)
@@ -52,7 +51,7 @@ class Mixin:
 		except KeyError:
 			pass
 	def clearAttributes(self):
-		self.attrs = None
+		self.attrs = {}
 		self.save()
 	def setPrivateAttributes(self, attrs):
 		assert isinstance(self.attrs, dict)

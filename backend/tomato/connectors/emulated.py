@@ -20,7 +20,7 @@ from django.db import models
 from tomato.connectors import Connection
 from tomato.generic import State
 from tomato.topology import Permission
-from tomato.lib import tc, tcpdump, tasks, ifaceutil
+from tomato.lib import db, tc, tcpdump, tasks, ifaceutil
 from tomato import fault
 from tomato.hosts import resources
 
@@ -64,6 +64,7 @@ class EmulatedConnection(Connection):
 		db_table = "tomato_emulatedconnection"
 		app_label = 'tomato'
 
+	@db.changeset
 	def init(self):
 		self.attrs = {}
 		self.setCaptureFilter("")
@@ -73,6 +74,7 @@ class EmulatedConnection(Connection):
 			val = netemValueConvert[prop]("")
 			self.setAttribute(prop+"_to", val)
 			self.setAttribute(prop+"_from", val)
+		self.save()
 	
 	def upcast(self):
 		if self.isTinc():
@@ -144,6 +146,7 @@ class EmulatedConnection(Connection):
 		}
 		return capabilities
 
+	@db.changeset
 	def configure(self, properties):
 		oldCaptureToFile = self.getCaptureToFile()
 		oldCaptureViaNet = self.getCaptureViaNet()

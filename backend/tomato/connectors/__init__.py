@@ -23,7 +23,7 @@ from tomato.lib import tasks, db, ifaceutil, util
 from tomato.topology import Topology, Permission
 from tomato.lib.decorators import *
 
-class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
+class Connector(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
@@ -38,6 +38,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 		
 	def connectionSetAdd(self, con):
 		return self.connection_set.add(con) # pylint: disable-msg=E1101
@@ -217,7 +218,7 @@ class Connector(db.ReloadMixin, attributes.Mixin, models.Model):
 		return res
 
 
-class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
+class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	connector = models.ForeignKey(Connector)
 	interface = models.OneToOneField(devices.Interface)
 
@@ -235,6 +236,7 @@ class Connection(db.ReloadMixin, attributes.Mixin, models.Model):
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 		
 	def isEmulated(self):
 		try:

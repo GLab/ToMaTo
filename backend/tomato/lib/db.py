@@ -101,6 +101,33 @@ def commit_after(fn):
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
+	
+class ChangesetMixin:
+	def beginChanges(self):
+		self._nosave = getattr(self, "_nosave", 0) + 1
+		#print "nosave %d" % self._nosave
+	def endChanges(self):
+		self._nosave = getattr(self, "_nosave", 1) - 1
+		#print "nosave %d" % self._nosave
+		if self._nosave == 0:
+			del self._nosave
+			self.save()
+	def save(self):
+		if not hasattr(self, "_nosave"):
+			#print "%s save" % self 
+			models.Model.save(self)
+
+def changeset(fn):
+	def call(*args, **kwargs):
+		args[0].beginChanges()
+		try:
+			return fn(*args, **kwargs)
+		finally:
+			args[0].endChanges()
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
 						
 nameValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_-]{2,}$")
 templateValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$")
