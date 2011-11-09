@@ -318,9 +318,13 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 			memory = qm.getMemoryUsage(self.host, self.getVmid())
 		if self.state == State.STARTED:
 			for iface in self.interfaceSetAll():
-				dev = self.interfaceDevice(iface)
-				traffic += ifaceutil.getRxBytes(self.host, dev)
-				traffic += ifaceutil.getTxBytes(self.host, dev)
+				try:
+					dev = self.interfaceDevice(iface)
+					traffic += ifaceutil.getRxBytes(self.host, dev)
+					traffic += ifaceutil.getTxBytes(self.host, dev)
+				except:
+					#might fail if VM is not actually started
+					self._changeState(self.getState())
 		return {"disk": disk, "memory": memory, "ports": ports, "traffic": traffic}		
 	
 	def interfaceDevice(self, iface):
