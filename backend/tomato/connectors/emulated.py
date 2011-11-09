@@ -69,6 +69,10 @@ class EmulatedConnection(Connection):
 		self.setCaptureFilter("")
 		self.setCaptureToFile(False)
 		self.setCaptureViaNet(False)
+		for prop in netemProperties:
+			val = netemValueConvert[prop]("")
+			self.setAttribute(prop+"_to", val)
+			self.setAttribute(prop+"_from", val)
 	
 	def upcast(self):
 		if self.isTinc():

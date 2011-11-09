@@ -1801,7 +1801,7 @@ var AttributeForm = Class.extend({
 	load: function() {
 		for (var name in this.fields) {
 			var val = this.obj.attributes[name];
-			if (val) this.fields[name].setValue(val);
+			if (val != null) this.fields[name].setValue(val);
 			var editable = this.obj.capabilities
 			  && this.obj.capabilities.configure
 			  && this.obj.capabilities.configure[name];
