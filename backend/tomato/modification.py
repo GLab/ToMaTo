@@ -52,10 +52,8 @@ class Modification():
 			dev.type = dtype
 			dev.name = self.properties["name"]
 			dev.init()
-			dev.save()
 			top.deviceSetAdd(dev)
 			dev.configure(self.properties)
-			dev.save()
 		elif self.type == "device-rename":
 			#FIXME: any steps to do if device is running ?
 			device = top.deviceSetGet(self.element)
@@ -100,7 +98,6 @@ class Modification():
 			con.init()
 			top.connectorSetAdd(con)
 			con.configure(self.properties)
-			con.save()
 		elif self.type == "connector-rename":
 			#FIXME: any steps to do if connector is running ?
 			con = top.connectorSetGet(self.element)

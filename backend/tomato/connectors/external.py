@@ -20,7 +20,7 @@ from tomato import fault, hosts
 
 from tomato.connectors import Connector, Connection
 from tomato.generic import State, ObjectPreferences
-from tomato.lib import ifaceutil, tasks
+from tomato.lib import db, ifaceutil, tasks
 from tomato.topology import Permission
 
 class ExternalNetworkConnector(Connector):
@@ -139,6 +139,7 @@ class ExternalNetworkConnector(Connector):
 		})
 		return capabilities
 
+	@db.changeset
 	def configure(self, properties):
 		if self.state != State.CREATED:
 			fault.check(not "network_type" in properties, "Cannot change type of external network with prepared connections: %s", self.name)

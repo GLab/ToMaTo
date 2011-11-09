@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config, fault
+from tomato import config, fault, attributes
 from tomato.hosts import templates, resources
 from tomato.generic import State
 from tomato.devices import Device, Interface, common
@@ -40,6 +40,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 
 	def setArgs(self, value):
 		self.setAttribute("args", value)
@@ -218,6 +219,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		taskset.add(tasks.Task("destroy", self._destroyDev))
 		return taskset
 
+	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.devices import Device, Interface, common
-from tomato import fault, config
+from tomato import fault, config, attributes
 from tomato.hosts import templates, resources
 from tomato.generic import State
 from tomato.lib import qm, hostserver, tasks, ifaceutil, db
@@ -40,6 +40,7 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 
 	def init(self):
 		self.attrs = {}
+		self.save()
 
 	def sendKeys(self, keycodes):
 		#not asserting state==Started because this is called during startup
@@ -244,6 +245,7 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 		taskset.add(tasks.Task("destroy", self._destroyDev))
 		return taskset
 
+	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
@@ -261,12 +263,15 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 				raise fault.new("Duplicate interface name: %s" % name, fault.USER_ERROR)
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702
 			pass
-		iface.name = name
-		iface.device = self
-		iface.init()
-		if self.state == State.PREPARED:
-			qm.addInterface(self.host, self.getVmid(), iface.name)
-		iface.save()
+		iface.beginChanges()
+		try:
+			iface.name = name
+			iface.device = self
+			iface.init()
+			if self.state == State.PREPARED:
+				qm.addInterface(self.host, self.getVmid(), iface.name)
+		finally:
+			iface.endChanges()
 		self.interfaceSetAdd(iface)
 		self.save()
 

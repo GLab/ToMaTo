@@ -24,7 +24,7 @@ from tomato import fault, hosts, config
 from tomato.hosts import resources
 from tomato.generic import State
 from tomato.connectors import Connector
-from tomato.lib import util, tinc, tasks, ifaceutil, vtun
+from tomato.lib import db, util, tinc, tasks, ifaceutil, vtun
 from tomato.topology import Permission 
 
 class ConnectionEndpoint(tinc.Endpoint):
@@ -379,6 +379,7 @@ class TincConnection(emulated.EmulatedConnection):
 		})
 		return capabilities
 	
+	@db.changeset
 	def configure(self, properties):
 		if "gateway4" in properties or "gateway6" in properties:
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
