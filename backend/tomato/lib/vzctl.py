@@ -22,8 +22,11 @@ from tomato import generic, config, fault
 import process, fileutil, ifaceutil, util, exceptions, decorators
 
 @decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and x.errorCode==9 and "Container already locked" in x.errorMessage)
-def _vzctl(host, vmid, cmd, params=[]):
-	return host.execute("vzctl %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params))) )
+def _vzctl(host, vmid, cmd, params=[], timeout=None):
+	cmd = "vzctl %s %d %s" % (util.escape(cmd), vmid, " ".join(map(util.escape, params)))
+	if timeout:
+		cmd = ("timeout -9 %d " % timeout) + cmd 
+	return host.execute(cmd)
 
 def execute(host, vmid, cmd):
 	assert getState(host, vmid) == generic.State.STARTED, "VM must be running to execute commands on it"
@@ -72,7 +75,7 @@ def create(host, vmid, template):
 	
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
-	res = _vzctl(host, vmid, "start")
+	res = _vzctl(host, vmid, "start", timeout=300)
 	util.waitFor (lambda :getState(host, vmid) == generic.State.STARTED)
 	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start: %s" % res
 
