@@ -4,6 +4,9 @@
 
 ETHERNET_TYPE_IP = 0x0800
 
+IP_GLOBAL_BROADCAST = "\xff\xff\xff\xff"
+IP_ZERO_ADDRESS = "\x00\x00\x00\x00"
+
 def ip_checksum(data):
     if len(data) & 1:
         data = data + "\x00"

@@ -1,0 +1,22 @@
+#ifndef dump_packet_loaded
+#define dump_packet_loaded
+
+#include <util/misc.repy>
+
+def dump_packet(data, showOffset=True, showHex=True, showPrintable=True, lineLength=16):
+  offset = 0
+  lines = []
+  for b in group(data, lineLength):
+    line = []
+    if showOffset:
+      line.append("%05x" % offset)
+    if showHex:
+      hexstr = hex(b[0:lineLength/2], " ") + "  " + hex(b[lineLength/2:], " ")
+      line.append(hexstr + " " * (3 * lineLength - len(hexstr)))
+    if showPrintable:
+      line.append("".join([if_then_else(ch in PRINTABLE, ch, ".") for ch in b]))
+    lines.append("   ".join(line))
+    offset += 16
+  return "\n".join(lines)
+
+#endif

@@ -5,9 +5,6 @@
 #include <util/send.repy>
 #include <layer2/ethernet_proto.repy>
 
-class Header:
-    pass
-
 class EthernetNode:
     def __init__(self, mac, **kwargs):
         self.mac = mac
@@ -21,7 +18,7 @@ class EthernetNode:
     def handle(self, dev, p):
         ether = ethernet_decode(p)
         self.mac_table[ether.src] = dev
-        if ether.dst == self.mac or ether.dst == "\xff\xff\xff\xff\xff\xff":
+        if ether.dst == self.mac or ether.dst == ETHERNET_GLOBAL_BROADCAST:
             self.handle_ethernet(ether, dev)
     def handle_ethernet(self, ethernet, dev):
         handler = self.ethernet_handlers.get(ethernet.type)

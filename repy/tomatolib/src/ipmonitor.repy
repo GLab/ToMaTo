@@ -1,0 +1,21 @@
+#include <util/run_forever.repy>
+#include <util/misc.repy>
+#include <layer2/ethernet_proto.repy>
+#include <layer3/ip_proto.repy>
+
+ipmap = {}
+
+def ipmonitor(src, pkt):
+  eth = ethernet_decode(pkt)
+  if eth.type != ETHERNET_TYPE_IP:
+    return
+  ip = ip_decode(eth.payload)
+  if ip.src in ipmap:
+    return
+  ipmap[ip.src]=eth.src
+  mac_addr = hex(eth.src, ":")
+  ip_addr = ".".join([str(ord(byte)) for byte in ip.src])
+  echo("%s has IP %s" % (mac_addr, ip_addr))
+
+if callfunc == 'initialize':
+    run_forever(ipmonitor)
