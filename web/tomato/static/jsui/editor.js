@@ -920,6 +920,7 @@ var Editor = Class.extend({
 		this.wizardForm = new WizardWindow(this);
 		this.paintBackground();
 		this.checkBrowser();
+		this.busy = false;
 	},
 	analyze: function() {
 		var top = this.topology;
@@ -1101,6 +1102,7 @@ var Editor = Class.extend({
 	},
 	ajaxModifyCommit: function() {
 		if (!this.ajaxModifyTransaction) return false;
+		if (this.busy) return false;
 		this.ajaxModifyExecute(this.ajaxModifyTransaction);
 		delete this.ajaxModifyTransaction;
 	},
@@ -1135,6 +1137,7 @@ var Editor = Class.extend({
 			log("reloading");
 			editor.reloadTopology();
 		};
+		this.setBusy(true);
 		this._ajax("top/"+topid+"/modify", data, func);
 	},
 	ajaxModify: function(mods, func) {
@@ -1145,6 +1148,12 @@ var Editor = Class.extend({
 			for (var i = 0; i < mods.length; i++) this.ajaxModifyTransaction.mods.push(mods[i]);
 			if (func) this.ajaxModifyTransaction.func.push(func);
 		} else this.ajaxModifyExecute({mods: mods, func:(func ? [func] : [])});
+	},
+	setBusy: function(busy) {
+		if (this.busy == busy) return;
+		this.busy = busy;
+		if (busy) this.ajaxModifyBegin(); //topology becomes busy
+		else this.ajaxModifyCommit(); //topology becomes unbusy
 	},
 	setHostGroups: function(groups) {
 		this.hostGroups = groups;
@@ -1179,6 +1188,7 @@ var Editor = Class.extend({
 		editor.topology.setResources(top.resources);
 		editor.topology.permissions = top.permissions;
 		editor.topology.finished_task = top.finished_task;
+		this.setBusy(Boolean(top.running_task)); 
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
@@ -1267,6 +1277,7 @@ var Editor = Class.extend({
 		this.topology.setResources(top.resources);
 		this.topology.permissions = top.permissions;
 		this.topology.finished_task = top.finished_task;
+		this.setBusy(Boolean(top.running_task)); 
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
