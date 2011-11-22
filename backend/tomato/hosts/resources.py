@@ -64,6 +64,10 @@ class ResourcePool(models.Model):
 		owner_type, owner_id = ownerTuple(owner)
 		try:
 			return ResourceEntry.objects.get(pool=self, owner_type=owner_type, owner_id=owner_id, slot=slot)
+		except ResourceEntry.MultipleObjectsReturned:
+			for res in ResourceEntry.objects.filter(pool=self, owner_type=owner_type, owner_id=owner_id, slot=slot)[1:]:
+				res.delete()
+			return self.get(owner, slot)
 		except ResourceEntry.DoesNotExist:
 			return None
 
