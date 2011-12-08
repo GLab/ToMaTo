@@ -57,7 +57,7 @@ def startVnc(host, vmid, port, password):
 	if not process.portFree(host, port):
 		process.killPortUser(host, port)
 	host.execute("vncterm -timeout 0 -rfbport %d -passwd %s -c vzctl enter %d >/dev/null 2>&1 & echo $! > %s" % ( port, util.escape(password), vmid, _vncPidfile(vmid) ))		
-	assert not process.portFree(host, port)
+	assert util.waitFor(lambda :not process.portFree(host, port))
 
 def stopVnc(host, vmid, port):
 	process.killPidfile(host, _vncPidfile(vmid))
