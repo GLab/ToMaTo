@@ -53,12 +53,11 @@ def getapi(request):
 		api.account()
 		return api
 	except Exception, exc:
-		print exc
 		import socket
 		if isinstance(exc, socket.error):
 			import os
 			raise xmlrpclib.Fault(exc.errno, os.strerror(exc.errno))
-		raise xmlrpclib.Fault("-1", "Unauthorized")
+		return None
 	return True
 
 class HttpResponseNotAuthorized(HttpResponse):
