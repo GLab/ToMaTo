@@ -443,7 +443,7 @@ var EmulatedConnection = Connection.extend({
 		var t = this;
 		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {}, function(msg) {
 			btn.setEditable(true);
-			btn.setContent("Download ready");
+			btn.setContent("Download capture");
 			btn.setFunc(function(){
 				window.location.href=msg;				
 			});
@@ -843,7 +843,7 @@ var Device = IconElement.extend({
 		var t = this;
 		this.editor._ajax("top/"+topid+"/download_image_uri/"+this.name, {}, function(msg) {
 			btn.setEditable(true);
-			btn.setContent("Download ready");
+			btn.setContent("Download image");
 			btn.setFunc(function(){
 				window.location.href=msg;				
 			});
@@ -1941,12 +1941,12 @@ var DeviceControlPanel = ControlPanel.extend({
 			}).getInputElement());
 		}
 		if (this.obj.downloadSupported()) {
-			this.div.append(this.downloadButton = new Button("download", 'download image', function(btn){
+			this.div.append(this.downloadButton = new Button("download", 'Prepare image download', function(btn){
 				t.obj.downloadImage(btn);
 			}).getInputElement());
 		}
 		if (this.obj.uploadSupported()) {
-			this.div.append(new Button("upload", 'upload image', function(){
+			this.div.append(new Button("upload", 'Upload image', function(){
 				t.obj.uploadImage();
 			}).getInputElement());
 		}
@@ -2296,7 +2296,7 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement()]))
 		var t = this;
 		if (this.obj.downloadSupported()) {
-			this.pc.append(table_row([new Button("download", "download capture", function(btn){
+			this.pc.append(table_row([new Button("download", "Prepare capture download", function(btn){
 				t.obj.downloadCapture(btn);
 			}).getInputElement(), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
 				t.obj.viewCapture(btn);
