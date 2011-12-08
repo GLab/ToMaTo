@@ -81,6 +81,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		tomato_host = tasks.Task("tomato-host", self._checkTomatoHostVersion, reverseFn=self.disable, after=login)
 		openvz = tasks.Task("openvz", util.curry(self._checkCmd, ["vzlist -a", "OpenVZ error"]), reverseFn=self.disable, after=login)
 		kvm = tasks.Task("kvm", util.curry(self._checkCmd, ["qm list", "KVM error"]), reverseFn=self.disable, after=login)
+		netem = tasks.Task("netem", util.curry(self._checkCmd, ["modprobe sch_tbf", "Kernel error, reboot system"]), after=login)
 		hostserver = tasks.Task("hostserver", util.curry(self._checkCmd, ["/etc/init.d/tomato-hostserver status", "Hostserver error"]), reverseFn=self.disable, after=login)
 		hostserver_config = tasks.Task("hostserver-config", self.fetchHostserverConfig, reverseFn=self.disable, after=hostserver)
 		hostserver_cleanup = tasks.Task("hostserver-cleanup", self.hostserverCleanup, reverseFn=self.disable, after=hostserver)
@@ -88,7 +89,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		folder_exists = tasks.Task("folder-exists", self.folderExists, reverseFn=self.disable, after=login)
 		create_ifbs = tasks.Task("ifb-interfaces", self._createIfbs, after=login)
 		resources = tasks.Task("resources", self._checkResources, after=create_ifbs)
-		other = [login, control_master, tomato_host, openvz, kvm, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, resources, create_ifbs]
+		other = [login, control_master, tomato_host, openvz, kvm, netem, hostserver, hostserver_config, hostserver_cleanup, templates, folder_exists, resources, create_ifbs]
 		enable = tasks.Task("enable", self._enable, after=other)
 		return other + [enable]
 
