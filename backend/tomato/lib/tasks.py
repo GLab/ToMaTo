@@ -368,7 +368,7 @@ class Process():
 				self._run()
 				return self.dict(True)
 			else:
-				workers = max(min(min(MAX_WORKERS - workerthreads, MAX_WORKERS_PROCESS), len(self.tasks)), 1)
+				workers = max(min(min(config.MAX_WORKERS - workerthreads, config.MAX_WORKERS_PROCESS), len(self.tasks)), 1)
 				while workers>0:
 					util.start_thread(self._worker)
 					workers -= 1
@@ -416,8 +416,6 @@ class RepeatedProcess(Process):
 	def check_delete(self):
 		pass #periodic tasks are never removed
 
-MAX_WORKERS = 100
-MAX_WORKERS_PROCESS = 20
 workerthreads = 0
 processes={}
 periodic_processes = {}
