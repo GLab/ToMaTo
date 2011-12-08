@@ -243,6 +243,7 @@ def ping(host, ip, samples=10, maxWait=5, iface=None):
 	return (loss, avg, stddev)
 
 def createIfbs(host, num=100):
+	host.execute("fgrep -q numifbs /etc/modules || echo 'ifb numifbs=%d' >> /etc/modules" % num)
 	if interfaceExists(host, "ifb%d" % (num-1)):
 		return
 	host.execute("modprobe ifb numifbs=%d" % num)
