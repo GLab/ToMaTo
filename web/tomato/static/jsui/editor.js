@@ -2273,8 +2273,11 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.pc = $("<table/>").addClass('ui-widget');
 		var t = this;
 		this.captureField = new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
+			e = t.obj.editor;
+			var tr = e.ajaxModifyBegin();
 			t.obj.setAttribute("capture_to_file", value == "to file");
 			t.obj.setAttribute("capture_via_net", value == "via network");
+			if (tr) e.ajaxModifyCommit();
 			t.attrs.fields["capture_filter"].setEditable(value!="disabled");
 		});		
 		this.attrs.registerField(this.captureField);
