@@ -32,6 +32,12 @@ $("head").append($('<link href="'+basepath+'glabdesign/jquery-ui-custom.css" rel
 
 editor = new Editor({x:800, y:600}, {% if edit %}true{% else %}false{% endif %});
 
+function errorHandler(desc,page,line,chr)  {
+  editor.errorMessage('JavaScript error occurred!', 'The following Javascript error occurred:<pre>'+desc+'</pre>\nScript: '+page+'<br/>Line: '+line);
+  return false;
+}
+window.onerror=errorHandler;
+
 editor.setTemplatesOpenVZ({% if tpl_openvz %}"{{tpl_openvz}}".split(","){% else %}[]{% endif %});
 editor.setTemplatesKVM({% if tpl_kvm %}"{{tpl_kvm}}".split(","){% else %}[]{% endif %});
 editor.setTemplatesProg({% if tpl_prog %}"{{tpl_prog}}".split(","){% else %}[]{% endif %});
