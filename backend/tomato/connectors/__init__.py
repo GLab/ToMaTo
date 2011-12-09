@@ -108,6 +108,10 @@ class Connector(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mode
 				"destroy": isUser and not isBusy and self.state == State.PREPARED,
 			},
 			"configure": {
+			},
+			"modify": {
+				"delete": self.state == State.CREATED,
+				"connections": self.state != State.STARTED
 			}
 		}
 		
@@ -280,7 +284,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 	def getCapabilities(self, user):
 		return {
 			"action": {},
-			"configure": {}
+			"configure": {},
 		}
 
 	def toDict(self, user):

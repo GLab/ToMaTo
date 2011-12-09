@@ -119,6 +119,7 @@ class TincConnector(Connector):
 		capabilities.update(other={
 			"external_access": self.state == State.STARTED and self.getExternalAccess()
 		})
+		capabilities["modify"]["connections"] = self.state == State.CREATED
 		return capabilities
 
 	def _runAction(self, action, attrs, direct):

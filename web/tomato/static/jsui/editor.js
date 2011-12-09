@@ -19,6 +19,9 @@ var NetElement = Class.extend({
 		this.editor.addElement(this);
 		this.attributes = {};
 	},
+	checkRemove: function(){
+		return true;
+	},
 	remove: function(){
 		this.editor.removeElement(this);
 		if (this.selectionFrame) this.selectionFrame.remove();
@@ -336,6 +339,9 @@ var Connection = NetElement.extend({
 		this.name = "connection";
 		this.form = new ConnectionWindow(this);		
 	},
+	checkRemove: function(){
+		return this.con.checkModifyConnections() && this.dev.checkModifyConnections();
+	},	
 	connect: function(iface) {
 		this.iface = iface;
 		this.attributes["interface"] = this.getSubElementName();
@@ -586,6 +592,18 @@ var Connector = IconElement.extend({
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
 	},
+	checkRemove: function(){
+		if (! this.capabilities.modify["delete"]) {
+			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
+			return false;
+		} else return true;
+	},	
+	checkModifyConnections: function(){
+		if (! this.capabilities.modify.connections) {
+			this.editor.errorMessage("Cannot modify connections", "The element " + this.getElementName() + " cannot be connected or disconnected in its current state");
+			return false;
+		} else return true;
+	},		
 	remove: function(){
 		var cons = this.connections.slice(0);
 		for (var i = 0; i < cons.length; i++) cons[i].remove();
@@ -604,7 +622,7 @@ var Connector = IconElement.extend({
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
-				if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
+				this.editor.connect(this, el);
 			}
 			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
@@ -742,6 +760,18 @@ var Device = IconElement.extend({
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
 	},
+	checkRemove: function(){
+		if (! this.capabilities.modify["delete"]) {
+			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
+			return false;
+		} else return true;
+	},		
+	checkModifyConnections: function(){
+		if (! this.capabilities.modify.connections) {
+			this.editor.errorMessage("Cannot modify connections", "The element " + this.getElementName() + " cannot be connected or disconnected in its current state");
+			return false;
+		} else return true;
+	},		
 	remove: function(){
 		var ifs = this.interfaces.slice(0);
 		for (var i = 0; i < ifs.length; i++) {
@@ -768,8 +798,7 @@ var Device = IconElement.extend({
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
-				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
-				if (el.isDevice && el != this) this.editor.connect(el, this);
+				this.editor.connect(el, this);
 			}
 			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
@@ -1426,19 +1455,24 @@ var Editor = Class.extend({
 		var p = this.parent;
 		p.wizardForm.toggle();
 	},
-	connect: function(connector, device) {
+	connect: function(connector, device, noCheck) {
+		if (connector == device) return;
 		if (connector.isConnector && device.isDevice) {
 			if (device.isConnectedWith(con)) return;
+			if (! noCheck && ! connector.checkModifyConnections() ) return;
+			if (! noCheck && ! device.checkModifyConnections() ) return;
 			var con = connector.createConnection(device);
 			var iface = device.createInterface(con);
 			con.connect(iface);
 		} else if (connector.isDevice && device.isConnector ) this.connect(device, connector);
 		else if (connector.isDevice && device.isDevice ) {
+			if (! noCheck && ! connector.checkModifyConnections() ) return;
+			if (! noCheck && ! device.checkModifyConnections() ) return;
 			var middle = {x: (connector.getPos().x + device.getPos().x) / 2, y: (connector.getPos().y + device.getPos().y) / 2}; 
 			var con = new SwitchConnector(this, this.getNameHint("switch"), middle);
-			this.connect(con, connector);
-			this.connect(con, device);
-		}
+			this.connect(con, connector, true);
+			this.connect(con, device, true);
+		} else this.errorMessage("Impossible connection", "Connectors cannot be connected with each others. Simple networks can be built by using only one connector. More complex networks can be built by using a device to do forward/route between the networks.");
 	},
 	disable: function() {
 		this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
@@ -1481,6 +1515,7 @@ var Editor = Class.extend({
 		}
 	},
 	removeElement: function(el) {
+		if (! el.checkRemove()) return;
 		this.elements.remove(el);
 		if (el.name) this.elementNames.remove(el.name);
 	},
@@ -1488,6 +1523,7 @@ var Editor = Class.extend({
 		var sel = this.selectedElements();
 		for (var i = 0; i < sel.length; i++) {
 			var el = sel[i];
+			if (! el.checkRemove()) continue;
 			if (el.isInterface) continue;
 			el.remove();
 		}
