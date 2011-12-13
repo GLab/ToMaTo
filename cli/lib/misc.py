@@ -1,11 +1,10 @@
 def waitForTask(task, assertSuccess=False):
 	import time
-	while task_status(task)["status"] == "waiting":
-		time.sleep(0.25)
-	while task_status(task)["active"]:
+	time.sleep(0.25)
+	while not task_status(task)["done"]:
 		time.sleep(0.25)
 	ts = task_status(task)
-	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts["name"]
+	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts
 	return ts
 
 def jsonToMods(data):

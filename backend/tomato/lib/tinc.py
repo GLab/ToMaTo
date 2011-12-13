@@ -304,6 +304,7 @@ def _stopEndpoint(endpoint):
 	util.waitFor(lambda :getState(endpoint) != generic.State.STARTED, 2.0)
 	if getState(endpoint) == generic.State.STARTED:
 		process.killPidfile(host, _pidFile(endpoint), force=True)
+	process.killPortUser(host, endpoint.getPort())
 	assert getState(endpoint) != generic.State.STARTED
 
 def _setupRouting(endpoint):
