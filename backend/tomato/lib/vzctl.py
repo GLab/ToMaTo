@@ -69,17 +69,24 @@ def _templatePath(name):
 
 def create(host, vmid, template):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"
-	res = _vzctl(host, vmid, "create", ["--ostemplate", template])
+	try:
+		res = _vzctl(host, vmid, "create", ["--ostemplate", template])
+	except exceptions.CommandError, exc:
+		if exc.errorCode == 44: #Warning: CT config file already exists, not applying a default config sample.
+			destroy(host, vmid)
+			res = _vzctl(host, vmid, "create", ["--ostemplate", template, "--applyconfig"])
+		else:
+			raise
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to create VM: %s" % res
 	_vzctl(host, vmid, "set", ["--devices", "c:10:200:rw", "--capability",  "net_admin:on", "--save"])
-	
+
+@decorators.retryOnError(lambda err: isinstance(err, Exception))	
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
 	res = _vzctl(host, vmid, "start", timeout=300)
 	util.waitFor (lambda :getState(host, vmid) == generic.State.STARTED)
-	assert getState(host, vmid) == generic.State.STARTED, "OpenVZ device failed to start: %s" % res
-
-	assert getState(host, vmid) == generic.State.STARTED, "Failed to start VM: %s" % res
+	if getState(host, vmid) != generic.State.STARTED:
+		raise Exception("Failed to start VM: %s" % res)
 	execute(host, vmid, "while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 
 def stop(host, vmid):

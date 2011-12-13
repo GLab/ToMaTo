@@ -394,7 +394,8 @@ class Process():
 			logger = log.getLogger(config.LOG_DIR + "/tasks/%s"%self.id)
 			logger.lograw(str(self.dict(True)))
 			logger.close()
-			del processes[self.id]
+			if self.id in processes:
+				del processes[self.id]
 
 class RepeatedProcess(Process):
 	def __init__(self, timeout, name=None, tasks=[], onFinished=None, schedule=True, cancelAtExit=True):
