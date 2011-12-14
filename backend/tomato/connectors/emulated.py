@@ -77,11 +77,11 @@ class EmulatedConnection(Connection):
 		self.save()
 	
 	def upcast(self):
-		if self.isTinc():
+		if self.isVPN():
 			return self.tincconnection # pylint: disable-msg=E1101
 		return self
 
-	def isTinc(self):
+	def isVPN(self):
 		try:
 			self.tincconnection # pylint: disable-msg=E1101,W0104
 			return True

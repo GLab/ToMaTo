@@ -88,7 +88,7 @@ class Modification():
 			ctype = self.properties["type"]
 			if ctype == "external":
 				con = external.ExternalNetworkConnector()
-			elif ctype == "hub" or ctype =="switch" or ctype == "router":
+			elif ctype == "vpn":
 				con = vpn.TincConnector()
 			else:
 				raise fault.new("Unknown connector type: %s" % ctype )

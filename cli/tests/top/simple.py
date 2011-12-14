@@ -52,7 +52,8 @@ top="""
       "attrs": {
         "external_access": false, 
         "state": "created", 
-        "type": "hub", 
+        "type": "vpn",
+        "mode": "hub", 
         "name": "hub1", 
         "_pos": "371.7312219132281,279.2482063903265"
       }
@@ -108,7 +109,8 @@ top="""
       "attrs": {
         "external_access": false, 
         "state": "created", 
-        "type": "router", 
+        "type": "vpn",
+        "mode": "router", 
         "name": "router1", 
         "_pos": "283.62906210229033,282.87548737394656"
       }
@@ -167,7 +169,8 @@ top="""
       "attrs": {
         "external_access": false, 
         "state": "created", 
-        "type": "switch", 
+        "type": "vpn",
+        "mode": "switch", 
         "name": "switch1", 
         "_pos": "330.21751983360576,362.3420810476748"
       }

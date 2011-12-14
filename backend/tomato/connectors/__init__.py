@@ -24,10 +24,9 @@ from tomato.topology import Topology, Permission
 from tomato.lib.decorators import *
 
 class Connector(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
-	TYPES = ( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub'), ('external', 'External Network') )
 	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
-	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=TYPES)
+	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=( ('vpn', 'VPN'), ('external', 'External Network') ))
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 
 	attrs = db.JSONField(default={})
@@ -49,14 +48,14 @@ class Connector(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mode
 	def connectionSetGet(self, interface):
 		return self.connection_set.get(interface=interface).upcast() # pylint: disable-msg=E1101
 
-	def isTinc(self):
-		return self.type=='router' or self.type=='switch' or self.type=='hub'
+	def isVPN(self):
+		return self.type=='vpn'
 
 	def isExternal(self):
 		return self.type=='external'
 
 	def upcast(self):
-		if self.isTinc():
+		if self.isVPN():
 			return self.tincconnector.upcast() # pylint: disable-msg=E1101
 		if self.isExternal():
 			return self.externalnetworkconnector.upcast() # pylint: disable-msg=E1101

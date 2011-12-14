@@ -46,7 +46,8 @@ top="""
       "attrs": {
         "external_access": false, 
         "state": "started", 
-        "type": "switch", 
+        "type": "vpn",
+        "mode": "switch", 
         "name": "\u0427\u0443\u0436\u0434\u0438 \u0415\u0437\u0438\u0446\u0438", 
         "_pos": "289,216"
       }
