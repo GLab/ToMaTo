@@ -96,7 +96,12 @@ def stop(host, vmid):
 
 def destroy(host, vmid):
 	assert getState(host, vmid) != generic.State.STARTED, "VM not stopped"
-	res = _vzctl(host, vmid, "destroy")
+	try:
+		res = _vzctl(host, vmid, "destroy")
+	except exceptions.CommandError, err:
+		if err.errorCode == 14: #[14] Container config file does not exist
+			return
+		raise
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM: %s" % res
 
 def setUserPassword(host, vmid, password, username="root"):

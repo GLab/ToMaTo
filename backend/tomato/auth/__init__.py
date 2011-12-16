@@ -84,6 +84,7 @@ def cleanup():
 	for user in User.objects.filter(password_time__lte = datetime.datetime.now() - timeout):
 		user.password = None
 		user.password_time = None
+		user.save()
 	
 def provider_login(username, password):
 	for prov in providers:
