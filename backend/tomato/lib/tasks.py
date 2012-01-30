@@ -227,10 +227,10 @@ class Process():
 		self.id = str(uuid.uuid1())
 		processes[self.id]=self
 		self.lock = threading.Lock()
-		self.started = None
+		self.started = time.time()
 		self.finished = None
 	def _prepare(self):
-		self.started = None
+		self.started = time.time()
 		self.finished = None
 		self.dependencies = {}
 		self.readyTasks = set()
