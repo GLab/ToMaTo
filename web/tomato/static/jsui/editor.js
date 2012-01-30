@@ -19,6 +19,9 @@ var NetElement = Class.extend({
 		this.editor.addElement(this);
 		this.attributes = {};
 	},
+	checkRemove: function(){
+		return true;
+	},
 	remove: function(){
 		this.editor.removeElement(this);
 		if (this.selectionFrame) this.selectionFrame.remove();
@@ -336,6 +339,9 @@ var Connection = NetElement.extend({
 		this.name = "connection";
 		this.form = new ConnectionWindow(this);		
 	},
+	checkRemove: function(){
+		return this.con.checkModifyConnections() && this.dev.checkModifyConnections();
+	},	
 	connect: function(iface) {
 		this.iface = iface;
 		this.attributes["interface"] = this.getSubElementName();
@@ -419,8 +425,17 @@ var EmulatedConnection = Connection.extend({
 		this.attributes["lossratio"] = "0.0";
 	},
 	getIPHint: function() {
-		return {ipv4: "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24", 
+		if (this.con.isRouted()) return {ipv4: "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24",
+			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/80"};
+		else return {ipv4: "10."+this.con.IPHintNumber+".0."+this.IPHintNumber+"/24", 
 			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/64"};
+	},
+	connect: function(iface) {
+		this._super(iface);
+		if (! this.getAttribute("gateway4")) this.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
+		if (! this.getAttribute("gateway6")) this.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF/80");
+		if (! this.dev.getAttribute("gateway4")) this.dev.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254");
+		if (! this.dev.getAttribute("gateway6")) this.dev.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF");
 	},
 	downloadSupported: function() {
 		return this.capabilities && this.capabilities.action && this.capabilities.action.download_capture && Boolean.parse(this.capabilities.action.download_capture);
@@ -455,24 +470,6 @@ var EmulatedConnection = Connection.extend({
 			window.open("http://www.cloudshark.org/view?url="+escape(unescape(msg)), "_newtab")
 		});
 	}
-});
-
-var EmulatedRouterConnection = EmulatedConnection.extend({
-	init: function(editor, dev, con){
-		this._super(editor, dev, con);
-		this.form = new EmulatedRouterConnectionWindow(this);
-	},
-	connect: function(iface) {
-		this._super(iface);
-		if (! this.getAttribute("gateway4")) this.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254/24");
-		if (! this.getAttribute("gateway6")) this.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF/80");
-		if (! this.dev.getAttribute("gateway4")) this.dev.setAttribute("gateway4", "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".254");
-		if (! this.dev.getAttribute("gateway6")) this.dev.setAttribute("gateway6", "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+":FFFF:FFFF:FFFF");
-	},
-	getIPHint: function() {
-		return {ipv4: "10."+this.con.IPHintNumber+"."+this.IPHintNumber+".1/24",
-			ipv6: "fd01:ab1a:b1ab:"+this.con.IPHintNumber.toString(16)+":"+this.IPHintNumber.toString(16)+"::1/80"};
-	}	
 });
 
 var Interface = NetElement.extend({
@@ -586,6 +583,18 @@ var Connector = IconElement.extend({
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
 	},
+	checkRemove: function(){
+		if (! this.capabilities.modify["delete"]) {
+			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
+			return false;
+		} else return true;
+	},	
+	checkModifyConnections: function(){
+		if (! this.capabilities.modify.connections) {
+			this.editor.errorMessage("Cannot modify connections", "The element " + this.getElementName() + " cannot be connected or disconnected in its current state");
+			return false;
+		} else return true;
+	},		
 	remove: function(){
 		var cons = this.connections.slice(0);
 		for (var i = 0; i < cons.length; i++) cons[i].remove();
@@ -604,7 +613,7 @@ var Connector = IconElement.extend({
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
-				if (el.isDevice && !this.isConnectedWith(el)) this.editor.connect(this, el);
+				this.editor.connect(this, el);
 			}
 			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
@@ -664,62 +673,37 @@ var ExternalConnector = Connector.extend({
 	}
 });
 
-var HubConnector = Connector.extend({
-	init: function(editor, name, pos) {
-		this._super(editor, name, "images/hub.png", {x: 32, y: 16}, pos);
-		this.form = new HubConnectorWindow(this);
-	},
-	baseName: function() {
-		return "hub";
-	},
-	createAnother: function(pos) {
-		return new HubConnector(this.editor, this.nextName(), pos);
-	},
-	createConnection: function(dev) {
-		var con = new EmulatedConnection(this.editor, this, dev);
-		this.connections.push(con);
-		return con;
-	}
-});
-
-var SwitchConnector = Connector.extend({
+var VPNConnector = Connector.extend({
 	init: function(editor, name, pos) {
 		if (!pos) { //called with 2 parameters
 			pos = name;
 			name = this.nextName();
 		}
 		this._super(editor, name, "images/switch.png", {x: 32, y: 16}, pos);
-		this.form = new SwitchConnectorWindow(this);
-	},
-	baseName: function() {
-		return "switch";
-	},
-	createAnother: function(pos) {
-		return new SwitchConnector(this.editor, this.nextName(), pos);
-	},
-	createConnection: function(dev) {
-		var con = new EmulatedConnection(this.editor, this, dev);
-		this.connections.push(con);
-		return con;
-	}
-});
-
-var RouterConnector = Connector.extend({
-	init: function(editor, name, pos) {
-		this._super(editor, name, "images/router.png", {x: 32, y: 16}, pos);
-		this.form = new RouterConnectorWindow(this);
+		this.form = new VPNConnectorWindow(this);
+		this.setAttribute("mode", "switch");
 	},
 	nextIPHint: function() {
 		return "10."+this.IPHintNumber+"."+(this.nextIPHintNumber++)+".1/24";
 	},
+	setAttribute: function(name, value) {
+		this._super(name, value);
+		if (name == "mode") {
+			this.iconsrc="images/"+value+".png";
+			this.paintUpdate();
+		}
+	},
+	isRouted: function() {
+		return this.getAttribute("mode") == "router";
+	},
 	baseName: function() {
-		return "router";
+		return "vpn";
 	},
 	createAnother: function(pos) {
-		return new RouterConnector(this.editor, this.nextName(), pos);
+		return new VPNConnector(this.editor, this.nextName(), pos);
 	},
 	createConnection: function(dev) {
-		var con = new EmulatedRouterConnection(this.editor, this, dev);
+		var con = new EmulatedConnection(this.editor, this, dev);
 		this.connections.push(con);
 		return con;
 	}
@@ -742,6 +726,18 @@ var Device = IconElement.extend({
 	nextName: function() {
 		return this.editor.getNameHint(this.baseName());
 	},
+	checkRemove: function(){
+		if (! this.capabilities.modify["delete"]) {
+			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
+			return false;
+		} else return true;
+	},		
+	checkModifyConnections: function(){
+		if (! this.capabilities.modify.connections) {
+			this.editor.errorMessage("Cannot modify connections", "The element " + this.getElementName() + " cannot be connected or disconnected in its current state");
+			return false;
+		} else return true;
+	},		
 	remove: function(){
 		var ifs = this.interfaces.slice(0);
 		for (var i = 0; i < ifs.length; i++) {
@@ -768,8 +764,7 @@ var Device = IconElement.extend({
 			var selectedElements = this.editor.selectedElements();
 			for (var i = 0; i < selectedElements.length; i++) {
 				var el = selectedElements[i];
-				if (el.isConnector && !this.isConnectedWith(el)) this.editor.connect(el, this);
-				if (el.isDevice && el != this) this.editor.connect(el, this);
+				this.editor.connect(el, this);
 			}
 			if (tr) this.editor.ajaxModifyCommit();
 		} else this._super(event);
@@ -1209,16 +1204,8 @@ var Editor = Class.extend({
 					el = new ProgDevice(editor, name, pos);
 					devices[name] = el;
 					break;
-				case "hub": 
-					el = new HubConnector(editor, name, pos);
-					connectors[name] = el;
-					break;
-				case "switch": 
-					el = new SwitchConnector(editor, name, pos);
-					connectors[name] = el;
-					break;
-				case "router": 
-					el = new RouterConnector(editor, name, pos);
+				case "vpn": 
+					el = new VPNConnector(editor, name, pos);
 					connectors[name] = el;
 					break;
 				case "external": 
@@ -1333,15 +1320,11 @@ var Editor = Class.extend({
 		this.kvmPrototype.paletteItem = true;
 		this.progPrototype = new ProgDevice(this, "Prog", {x: this.paletteWidth/2, y: y+=50});
 		this.progPrototype.paletteItem = true;
-		y+=20;
+		y+=40;
 		this.externalPrototype = new ExternalConnector(this, "External", {x: this.paletteWidth/2, y: y+=50});
 		this.externalPrototype.paletteItem = true;
-		this.hubPrototype = new HubConnector(this, "Hub", {x: this.paletteWidth/2, y: y+=50});
-		this.hubPrototype.paletteItem = true;
-		this.switchPrototype = new SwitchConnector(this, "Switch", {x: this.paletteWidth/2, y: y+=40});
-		this.switchPrototype.paletteItem = true;
-		this.routerPrototype = new RouterConnector(this, "Router", {x: this.paletteWidth/2, y: y+=40});
-		this.routerPrototype.paletteItem = true;
+		this.vpnPrototype = new VPNConnector(this, "VPN", {x: this.paletteWidth/2, y: y+=50});
+		this.vpnPrototype.paletteItem = true;
 
 		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-100, 32, 32);
 		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-63, "Layout");
@@ -1426,19 +1409,24 @@ var Editor = Class.extend({
 		var p = this.parent;
 		p.wizardForm.toggle();
 	},
-	connect: function(connector, device) {
+	connect: function(connector, device, noCheck) {
+		if (connector == device) return;
 		if (connector.isConnector && device.isDevice) {
 			if (device.isConnectedWith(con)) return;
+			if (! noCheck && ! connector.checkModifyConnections() ) return;
+			if (! noCheck && ! device.checkModifyConnections() ) return;
 			var con = connector.createConnection(device);
 			var iface = device.createInterface(con);
 			con.connect(iface);
 		} else if (connector.isDevice && device.isConnector ) this.connect(device, connector);
 		else if (connector.isDevice && device.isDevice ) {
+			if (! noCheck && ! connector.checkModifyConnections() ) return;
+			if (! noCheck && ! device.checkModifyConnections() ) return;
 			var middle = {x: (connector.getPos().x + device.getPos().x) / 2, y: (connector.getPos().y + device.getPos().y) / 2}; 
 			var con = new SwitchConnector(this, this.getNameHint("switch"), middle);
-			this.connect(con, connector);
-			this.connect(con, device);
-		}
+			this.connect(con, connector, true);
+			this.connect(con, device, true);
+		} else this.errorMessage("Impossible connection", "Connectors cannot be connected with each others. Simple networks can be built by using only one connector. More complex networks can be built by using a device to do forward/route between the networks.");
 	},
 	disable: function() {
 		this.disableRect = this.g.rect(0, 0, this.size.x,this.size.y).attr({fill:"#FFFFFF", opacity:.8});
@@ -1481,6 +1469,7 @@ var Editor = Class.extend({
 		}
 	},
 	removeElement: function(el) {
+		if (! el.checkRemove()) return;
 		this.elements.remove(el);
 		if (el.name) this.elementNames.remove(el.name);
 	},
@@ -1488,6 +1477,7 @@ var Editor = Class.extend({
 		var sel = this.selectedElements();
 		for (var i = 0; i < sel.length; i++) {
 			var el = sel[i];
+			if (! el.checkRemove()) continue;
 			if (el.isInterface) continue;
 			el.remove();
 		}
@@ -1638,12 +1628,16 @@ var SelectField = EditElement.extend({
 		if (val) this.setValue(val);
 	},
 	setValue: function(value) {
+		log(value);
 		var found = false;
 		this.input.find("option").each(function(){
-			$(this).attr({selected: $(this).attr("value") == value});
-			found |= $(this).attr("value") == value; 		
+			log($(this).attr("value"));
+			log($(this).attr("value") == value);
+			$(this).attr({selected: false});
+			if ( $(this).attr("value") == value ) found = $(this); 		
 		});
-		if (!found) this.input.append($('<option value="'+value+'" selected>'+value+'</option>'));
+		if (found) found.attr({selected: true});
+		else this.input.append($('<option value="'+value+'" selected>'+value+'</option>'));
 	},
 	getValue: function() {
 		return this.input[0].value;
@@ -1749,6 +1743,12 @@ var Tabs = Class.extend({
 		this._addButton(title, name);
 		this.div.append(div);
 		if (! this.selection) this.select(name);
+	},
+	delTab: function(name) {
+		if (! this.tabs[name]) return;
+		this.tabs[name].detach();
+		this.buttons[name].remove();
+		delete this.tabs[name];
 	},
 	getSelection: function() {
 		return this.selection;
@@ -2196,16 +2196,13 @@ var ExternalConnectorWindow = ConnectorWindow.extend({
 	}
 });
 
-var HubConnectorWindow = ConnectorWindow.extend({
+var VPNConnectorWindow = ConnectorWindow.extend({
 	init: function(obj) {
 		this._super(obj);
+		this.attrs.addField(new SelectField("mode", ["hub", "switch", "router"], "switch"), "mode");
 		this.attrs.addField(new CheckField("external_access"), "external&nbsp;access");
 	}
 });
-
-var SwitchConnectorWindow = HubConnectorWindow;
-
-var RouterConnectorWindow = HubConnectorWindow;
 
 var InterfaceWindow = ElementWindow.extend({
 	init: function(obj) {
@@ -2286,6 +2283,15 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.tabs.addTab("packet_capturing", "Packet capturing", this.pc);
 		for (var f in fields) this.attrs.registerField(fields[f]);
 		this.add(this.tabs.getDiv());
+		//routing
+		this.routing = $("<table/>").addClass('ui-widget');
+		var fields = {}
+		fields.gateway4 = new MagicTextField("gateway4", pattern.ip4net, "")
+		this.attrs.registerField(fields.gateway4);
+		this.routing.append(table_row(["gateway&nbsp;(ip4/prefix)", fields.gateway4.getInputElement()]));
+		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "")
+		this.attrs.registerField(fields.gateway6);
+		this.routing.append(table_row(["gateway&nbsp;(ip6/prefix)", fields.gateway6.getInputElement()]));
 	},
 	show: function() {
 		this.attrs.load();
@@ -2310,23 +2316,11 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 				t.obj.showLiveCaptureInfo();
 			}).getInputElement()]));
 		}
+		var sel = this.tabs.getSelection();
+		this.tabs.delTab("routing");
+		if (this.obj.con.isRouted()) this.tabs.addTab("routing", "Routing", this.routing);
+		this.tabs.select(sel);
 		this._super();
-	}
-});
-
-var EmulatedRouterConnectionWindow = EmulatedConnectionWindow.extend({
-	init: function(obj) {
-		this._super(obj);
-		//routing
-		this.routing = $("<table/>").addClass('ui-widget');
-		var fields = {}
-		fields.gateway4 = new MagicTextField("gateway4", pattern.ip4net, "")
-		this.attrs.registerField(fields.gateway4);
-		this.routing.append(table_row(["gateway&nbsp;(ip4/prefix)", fields.gateway4.getInputElement()]));
-		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "")
-		this.attrs.registerField(fields.gateway6);
-		this.routing.append(table_row(["gateway&nbsp;(ip6/prefix)", fields.gateway6.getInputElement()]));
-		this.tabs.addTab("routing", "Routing", this.routing);
 	}
 });
 

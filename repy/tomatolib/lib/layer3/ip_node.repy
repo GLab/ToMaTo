@@ -9,7 +9,7 @@
 class FastPing:
     def handle(self, dev, p):
         if p[0:6] == self.mac and p[12:16] == "\x08\x00\x45\x00" and p[23] == "\x01" and p[30:34] == self.ip and p[34:36] == "\x08\x00":
-            r = p[6:12] + self.mac + p[12:24] + "\00\00" + self.ip + p[26:30] + "\x00\x00\x00\x00" + p[38:]
+            r = p[6:12] + self.mac + p[12:24] + "\00\00" + self.ip + p[26:30] + IP_ZERO_ADDRESS + p[38:]
             r = r[0:24] + struct.pack("!H", ip_checksum(r[14:34])) + r[26:34] + r[34:36] + struct.pack("!H", ip_checksum(r[34:])) + r[38:]
             send(dev, r)
         else:
@@ -59,7 +59,7 @@ class IPNode(EthernetNode):
             echo("Invalid IP chechsum")
             return
         self.arp_table[ip.src] = ethernet.src
-        if ip.dst == self.ip or ip.dst == "\xff\xff\xff\xff":
+        if ip.dst == self.ip or ip.dst == IP_GLOBAL_BROADCAST:
             self.handle_ip(ip, ethernet, dev)
     def handle_arp(self, arp, ethernet, dev):
         if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
@@ -79,7 +79,7 @@ class IPNode(EthernetNode):
             handler(ip, ethernet, dev)
     def send(self, dst, protocol, payload, ether_dst=None, dev=None, **kwargs):
         if not ether_dst:
-            ether_dst = self.arp_table.get(dst)
+            ether_dst = self.arp_table.get(dst, ETHERNET_GLOBAL_BROADCAST)
         #FIXME: fragment
         #FIXME: send arp request and cache packet if ether_dst still None
         packet = ip_encode(self.ip, dst, protocol, payload, **kwargs)

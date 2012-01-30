@@ -129,7 +129,8 @@ def simpleTop_checkTopInformation(topId):
 				'resources': None, 
 				'attrs': {
 					'state': 'started',
-					'type': 'switch',
+					'type': 'vpn',
+					'mode': 'switch',
 					'name': 'switch1', 
 					'_pos': None
 				},
@@ -219,7 +220,8 @@ def simpleTop_checkTopInformation(topId):
 				'resources': None,
 				'attrs': {
 					'state': 'started', 
-					'type': 'router', 
+					'type': 'vpn',
+					'mode': 'router', 
 					'name': 'router1', 
 					'_pos': None
 				},
@@ -309,7 +311,8 @@ def simpleTop_checkTopInformation(topId):
 				'resources': None,
 				'attrs': {
 					'state': 'started',
-					'type': 'hub',
+					'type': 'vpn',
+					'mode': 'hub',
 					'name': 'hub1',
 					'_pos': None
 				},

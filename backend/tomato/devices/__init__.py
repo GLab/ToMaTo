@@ -103,6 +103,10 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 			},
 			"configure": {
 				"hostgroup": True,
+			},
+			"modify": {
+				"delete": self.state == State.CREATED,
+				"connections": self.state != State.STARTED
 			}
 		}
 		
@@ -311,7 +315,7 @@ class Interface(db.ChangesetMixin, attributes.Mixin, models.Model):
 	def getCapabilities(self, user):
 		return {
 			"action": {},
-			"configure": {}
+			"configure": {},
 		}		
 		
 	def toDict(self, user):

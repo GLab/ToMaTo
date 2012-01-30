@@ -2,6 +2,11 @@
 #ifndef ethernet_proto_loaded
 #define ethernet_proto_loaded
 
+ETHERNET_GLOBAL_BROADCAST = "\xff\xff\xff\xff\xff\xff"
+
+class Header:
+    pass
+    
 def ethernet_decode(p):
     h = Header()
     h.dst = p[0:6]

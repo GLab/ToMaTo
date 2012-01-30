@@ -1,5 +1,5 @@
 PACKAGE=tomato-backend
-_VERSION=2.4
+_VERSION=2.4.1
 _SUBVERSION=
 
 include ../common.mk

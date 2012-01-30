@@ -222,7 +222,9 @@ height: 1%;
 #legal{
 	font-size:12px;
 	color:#999999;
-	margin-top: 20px;
+	margin-top: 15px;
+	margin-left: 110px;
+	margin-right: 25px;
 }
 
 .clearer {

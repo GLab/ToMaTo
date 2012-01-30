@@ -137,6 +137,7 @@ class ExternalNetworkConnector(Connector):
 			"network_type": self.state == State.CREATED,
 			"network_group": self.state == State.CREATED,
 		})
+		capabilities["modify"]["connections"] = True
 		return capabilities
 
 	@db.changeset

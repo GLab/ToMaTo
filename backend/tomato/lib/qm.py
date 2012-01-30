@@ -182,7 +182,7 @@ def create(host, vmid):
 	res = _qm(host, vmid, "create")
 	assert getState(host, vmid) == generic.State.PREPARED, "Failed to create VM: %s" % res
 	
-@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and "unable to create fairsched node - still in use" in x.errorMessage)
+@decorators.retryOnError(errorFilter=lambda x: isinstance(x, exceptions.CommandError) and "unable to create fairsched node - still in use" in x.errorMessage, waitBetween=10.0)
 def start(host, vmid):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM already running"
 	res = _qm(host, vmid, "start")

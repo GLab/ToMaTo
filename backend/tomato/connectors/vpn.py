@@ -50,13 +50,13 @@ class ConnectionEndpoint(tinc.Endpoint):
 		return bridge
 	def getSubnets(self):
 		subnets = []
-		if self.con.connector.type == tinc.Mode.ROUTER:
+		if self.con.connector.upcast().mode == tinc.Mode.ROUTER:
 			subnets.append(util.calculate_subnet4(self.con.getAttribute("gateway4")))
 			subnets.append(util.calculate_subnet6(self.con.getAttribute("gateway6")))
 		return subnets
 	def getGateways(self):
 		gws = []
-		if self.con.connector.type == tinc.Mode.ROUTER:
+		if self.con.connector.upcast().mode == tinc.Mode.ROUTER:
 			gws.append(self.con.getAttribute("gateway4"))
 			gws.append(self.con.getAttribute("gateway6"))
 		return gws
@@ -65,8 +65,9 @@ class ConnectionEndpoint(tinc.Endpoint):
 
 
 class TincConnector(Connector):
-
 	external_access_port = models.ForeignKey(resources.ResourceEntry, null=True, related_name='+')
+	mode = models.CharField(max_length=10, default="switch", validators=[db.nameValidator], choices=( ('router', 'Router'), ('switch', 'Switch'), ('hub', 'Hub') ))
+	
 	EXTERNAL_ACCESS_PORT_SLOT = "ea"
 
 	class Meta:
@@ -98,6 +99,10 @@ class TincConnector(Connector):
 	def setExternalAccess(self, flag):
 		self.setAttribute("external_access", flag)
 		
+	def setMode(self, mode):
+		self.mode = mode
+		self.save()
+		
 	def getExternalAccessPassword(self):
 		if not self.getExternalAccess():
 			return False
@@ -112,6 +117,7 @@ class TincConnector(Connector):
 		capabilities = Connector.getCapabilities(self, user)
 		capabilities["configure"].update({
 			"external_access": self.state == State.CREATED,
+			"mode": self.state == State.CREATED,
 		})
 		capabilities["action"].update({
 			"download_capture": self.state != State.CREATED,
@@ -119,6 +125,7 @@ class TincConnector(Connector):
 		capabilities.update(other={
 			"external_access": self.state == State.STARTED and self.getExternalAccess()
 		})
+		capabilities["modify"]["connections"] = self.state == State.CREATED
 		return capabilities
 
 	def _runAction(self, action, attrs, direct):
@@ -139,7 +146,7 @@ class TincConnector(Connector):
 				
 	def getStartTasks(self):
 		taskset = Connector.getStartTasks(self)
-		tinc_tasks = tinc.getStartNetworkTasks(self._endpoints(), self.type)
+		tinc_tasks = tinc.getStartNetworkTasks(self._endpoints(), self.mode)
 		taskset.add(tinc_tasks)
 		tinc_tasks_dummy = tasks.Task("tinc_started")
 		tinc_tasks_dummy.after(tinc_tasks)
@@ -160,7 +167,7 @@ class TincConnector(Connector):
 
 	def getStopTasks(self):
 		taskset = Connector.getStopTasks(self)
-		taskset.add(tinc.getStopNetworkTasks(self._endpoints(), self.type))
+		taskset.add(tinc.getStopNetworkTasks(self._endpoints(), self.mode))
 		for con in self.connectionSetAll():
 			taskset.add(con.upcast().getStopTasks().prefix(con))
 		taskset.add(tasks.Task("stop-external-access", self._stopExternalAccess))
@@ -189,7 +196,7 @@ class TincConnector(Connector):
 	def getPrepareTasks(self):
 		taskset = Connector.getPrepareTasks(self)
 		assign_resources = tasks.Task("assign-resources", self._assignResources)
-		tinc_tasks = tinc.getPrepareNetworkTasks(self._endpoints(), self.type)
+		tinc_tasks = tinc.getPrepareNetworkTasks(self._endpoints(), self.mode)
 		tinc_tasks.after(assign_resources)
 		taskset.add([assign_resources, tinc_tasks])
 		taskset.add(tasks.Task("prepare-external-access", self._prepareExternalAccess))
@@ -210,7 +217,7 @@ class TincConnector(Connector):
 
 	def getDestroyTasks(self):
 		taskset = Connector.getDestroyTasks(self)
-		tinc_tasks = tinc.getDestroyNetworkTasks(self._endpoints(), self.type)
+		tinc_tasks = tinc.getDestroyNetworkTasks(self._endpoints(), self.mode)
 		unassign_resources = tasks.Task("destroy-bridges", self._unassignResources, after=tinc_tasks)
 		taskset.add([tinc_tasks, unassign_resources])
 		taskset.add(tasks.Task("destroy-external-access", self._destroyExternalAccess))
@@ -220,6 +227,8 @@ class TincConnector(Connector):
 		Connector.configure(self, properties)
 		if "external_access" in properties:
 			self.setExternalAccess(properties["external_access"])
+		if "mode" in properties:
+			self.setMode(properties["mode"])
 	
 	def connectionsAdd(self, iface_name, properties):
 		iface = self.topology.interfacesGet(iface_name)
@@ -307,26 +316,26 @@ class TincConnector(Connector):
 			self._changeState(State.CREATED)
 		if self.state != State.STARTED:
 			for ep in started:
-				tinc.stopEndpoint(ep, self.type)
+				tinc.stopEndpoint(ep, self.mode)
 			self._stopExternalAccess()
 			prepared += started
 			started = []
 		if self.state == State.CREATED:
 			for ep in prepared:
-				tinc.destroyEndpoint(ep, self.type)
+				tinc.destroyEndpoint(ep, self.mode)
 			self._destroyExternalAccess()
 		if self.state == State.PREPARED:
 			assert not created
 		if self.state == State.STARTED:
 			for ep in started:
-				tinc.startEndpoint(ep, self.type)
+				tinc.startEndpoint(ep, self.mode)
 			self._startExternalAccess()
 			for con in self.connectionSetAll():
 				con.upcast().repair() 
 
 	def toDict(self, auth):
 		res = Connector.toDict(self, auth)
-		res["attrs"].update(external_access=self.getExternalAccess())
+		res["attrs"].update(external_access=self.getExternalAccess(), mode=self.mode)
 		if auth:
 			if self.getExternalAccess():
 				if self.getExternalAccessPort():
@@ -372,10 +381,10 @@ class TincConnection(emulated.EmulatedConnection):
 	
 	def getCapabilities(self, user):
 		capabilities = emulated.EmulatedConnection.getCapabilities(self, user)
-		con = self.connector
+		con = self.connector.upcast()
 		capabilities["configure"].update({
-			"gateway4": con.state == State.CREATED and con.type == "router",
-			"gateway6": con.state == State.CREATED and con.type == "router",
+			"gateway4": con.state == State.CREATED and con.mode == "router",
+			"gateway6": con.state == State.CREATED and con.mode == "router",
 		})
 		return capabilities
 	
@@ -384,7 +393,7 @@ class TincConnection(emulated.EmulatedConnection):
 		if "gateway4" in properties or "gateway6" in properties:
 			fault.check(self.connector.state == State.CREATED, "Cannot change gateways on prepared or started router: %s" % self)
 		emulated.EmulatedConnection.configure(self, properties)
-		if self.connector.type == "router":
+		if self.connector.upcast().mode == "router":
 			for key in ["gateway4", "gateway6"]:
 				if key in properties:
 					self.setAttribute(key, properties[key])

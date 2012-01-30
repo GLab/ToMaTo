@@ -3,71 +3,19 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from tomato import hosts
-from tomato.hosts import resources
-from tomato import models as m
 
 class Migration(DataMigration):
 	
 	def forwards(self, orm):
-		for host in hosts.getAll():
-			for type in resources.TYPES:
-				resources.createPool(host, type, host.getAttribute("%s_start" % type), host.getAttribute("%s_count" % type))
-				host.deleteAttribute("%s_start" % type)
-				host.deleteAttribute("%s_count" % type)
-		for obj in m.EmulatedConnection.objects.all():
-			if obj.getAttribute("capture_port"):
-				host = obj.interface.device.host
-				obj.live_capture_port = resources.take(host, "port", obj, obj.LIVE_CAPTURE_PORT_SLOT, obj.getAttribute("capture_port"))
-				obj.deleteAttribute("capture_port")
-			if not obj.getAttribute("ifb_id") is None:
-				host = obj.interface.device.host
-				obj.ifb_id = resources.take(host, "ifb", obj, obj.IFB_ID_SLOT, obj.getAttribute("ifb_id"))
-				obj.deleteAttribute("ifb_id")
-			obj.save()
-		for obj in orm.TincConnector.objects.all():
-			if obj.getAttribute("external_access_port"):
-				port = obj.getAttribute("external_access_port")
-				obj.deleteAttribute("external_access_port")
-				cname = obj.getAttribute("external_access_con")
-				obj.deleteAttribute("external_access_con")
-				con = obj.topology.interfacesGet(cname).connection
-				host = con.interface.device.host
-				obj.external_access_port = resources.take(host, "port", obj, obj.EXTERNAL_ACCESS_PORT_SLOT, port)
-			obj.save()
-		for obj in orm.TincConnection.objects.all():
-			host = obj.interface.device.host
-			if obj.tinc_port and host:
-				pool = orm.ResourcePool.objects.get(host=host, type="port")
-				obj.tinc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="c", owner_id=obj.id, slot="tinc", num=obj.tinc_port)
-			if obj.bridge_id and host:
-				pool = orm.ResourcePool.objects.get(host=host, type="bridge")
-				obj.bridge_id_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="c", owner_id=obj.id, slot="b", num=obj.bridge_id)
-			obj.save()
-		for obj in orm.KVMDevice.objects.all():
-			if obj.vmid and obj.host:
-				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
-				obj.vmid_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vmid", num=obj.vmid)
-			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
-				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
-			obj.save()
-		for obj in orm.OpenVZDevice.objects.all():
-			if obj.vmid and obj.host:
-				pool = orm.ResourcePool.objects.get(host=obj.host, type="vmid")
-				obj.vmid_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vmid", num=obj.vmid)
-			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
-				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
-			obj.save()
-		for obj in orm.ProgDevice.objects.all():
-			if obj.vnc_port and obj.host:
-				pool = orm.ResourcePool.objects.get(host=obj.host, type="port")
-				obj.vnc_port_ref = orm.ResourceEntry.objects.create(pool=pool, owner_type="D", owner_id=obj.id, slot="vnc", num=obj.vnc_port)
-				obj.save()
+		for con in orm.Connector.objects.all():
+			if con.type in ["hub", "switch", "router"]:
+				con.tincconnector.mode = con.type
+				con.type = "vpn"
+				con.tincconnector.save()
+				con.save()
 	
 	def backwards(self, orm):
-		raise Exception("not implemented")
+		raise Exception("not supported")
 	
 	models = {
 		'tomato.configuredinterface': {
@@ -77,7 +25,6 @@ class Migration(DataMigration):
 		'tomato.connection': {
 			'Meta': {'unique_together': "(('connector', 'interface'),)", 'object_name': 'Connection'},
 			'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
-			'bridge_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
 			'connector': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Connector']"}),
 			'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
 			'interface': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True'})
@@ -159,19 +106,15 @@ class Migration(DataMigration):
 			'Meta': {'object_name': 'KVMDevice', '_ormbases': ['tomato.Device']},
 			'device_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Device']", 'unique': 'True', 'primary_key': 'True'}),
 			'template': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
-			'vmid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'vmid_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
-			'vnc_port': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'vnc_port_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
+			'vmid': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
+			'vnc_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
 		},
 		'tomato.openvzdevice': {
 			'Meta': {'object_name': 'OpenVZDevice', '_ormbases': ['tomato.Device']},
 			'device_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Device']", 'unique': 'True', 'primary_key': 'True'}),
 			'template': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
-			'vmid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'vmid_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
-			'vnc_port': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'vnc_port_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
+			'vmid': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
+			'vnc_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
 		},
 		'tomato.permission': {
 			'Meta': {'unique_together': "(('topology', 'user'),)", 'object_name': 'Permission'},
@@ -193,8 +136,7 @@ class Migration(DataMigration):
 			'Meta': {'object_name': 'ProgDevice', '_ormbases': ['tomato.Device']},
 			'device_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Device']", 'unique': 'True', 'primary_key': 'True'}),
 			'template': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
-			'vnc_port': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'vnc_port_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
+			'vnc_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
 		},
 		'tomato.resourceentry': {
 			'Meta': {'unique_together': "(('pool', 'num'), ('owner_type', 'owner_id', 'slot'))", 'object_name': 'ResourceEntry'},
@@ -223,15 +165,15 @@ class Migration(DataMigration):
 		},
 		'tomato.tincconnection': {
 			'Meta': {'object_name': 'TincConnection', '_ormbases': ['tomato.EmulatedConnection']},
-			'bridge_id_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
+			'bridge_id': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
 			'emulatedconnection_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.EmulatedConnection']", 'unique': 'True', 'primary_key': 'True'}),
-			'tinc_port': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-			'tinc_port_ref': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
+			'tinc_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
 		},
 		'tomato.tincconnector': {
 			'Meta': {'object_name': 'TincConnector', '_ormbases': ['tomato.Connector']},
 			'connector_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Connector']", 'unique': 'True', 'primary_key': 'True'}),
-			'external_access_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"})
+			'external_access_port': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': "orm['tomato.ResourceEntry']"}),
+			'mode': ('django.db.models.fields.CharField', [], {'default': "'switch'", 'max_length': '10'})
 		},
 		'tomato.topology': {
 			'Meta': {'object_name': 'Topology'},
