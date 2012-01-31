@@ -34,6 +34,7 @@ def startCaptureToFile(host, name, iface, filter=""):
 	assert ifaceutil.interfaceExists(host, iface), "Interface does not exist"
 	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
 	rdir = _remoteDir(name) 
+	fileutil.delete(host, rdir, True)
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
 	_tcpdump(host, "-i %(iface)s -n -C 10 -w %(rdir)s/capture -U -W 5 -s0 %(filter)s >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.file.pid" % {"iface": util.escape(iface), "rdir": rdir, "filter": util.escape(filter) })		
