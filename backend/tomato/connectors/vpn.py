@@ -134,7 +134,7 @@ class TincConnector(Connector):
 			fault.check(interface, "No such interface: %s", attrs["iface"])
 			con = interface.connection.upcast()
 			assert con.connector.id == self.id
-			return tasks.runTask(tasks.Task("%s-download-capture-uri" % self, con.downloadCaptureUri))		
+			return tasks.runTask(tasks.Task("%s-download-capture-uri" % self, con.downloadCaptureUri, kwargs={"onlyLatest": "onlyLatest" in attrs and attrs["onlyLatest"]}))		
 		else:
 			return Connector._runAction(self, action, attrs, direct)			
 				

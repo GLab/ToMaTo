@@ -310,10 +310,10 @@ class EmulatedConnection(Connection):
 		taskset.add(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
-	def downloadCaptureUri(self):
+	def downloadCaptureUri(self, onlyLatest=False):
 		fault.check(not self.connector.state == State.CREATED and self.getCaptureToFile(), "Captures not ready")
 		host = self.getHost()
-		return tcpdump.downloadCaptureUri(host, self._captureName())
+		return tcpdump.downloadCaptureUri(host, self._captureName(), onlyLatest)
 	
 	def repair(self):
 		state = self.connector.state

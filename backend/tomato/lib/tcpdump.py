@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import config
+from tomato import config, fault
 
 import ifaceutil, fileutil, process, hostserver, util
 
@@ -72,9 +72,16 @@ def removeCapture(host, name):
 	fileutil.delete(host, rdir, recursive=True)
 	fileutil.delete(host, "%s.*.pid" % rdir)
 			
-def downloadCaptureUri(host, name):
+def downloadCaptureUri(host, name, onlyLatest=False):
 	filename = "%s.pcap" % name
 	path = host.getHostServer().randomFilename()
-	host.execute("tcpslice -w %s %s/*" % (path, _remoteDir(name)))
-	assert fileutil.existsFile(host, path), "No packages captured yet"
+	if onlyLatest:
+		print path
+		latest = util.lines(host.execute("ls -t1 %s | head -n1" % _remoteDir(name)))[0]
+		if latest:
+			fileutil.copy(host, "%s/%s" % (_remoteDir(name), latest), path)
+	else:
+		host.execute("tcpslice -w %s %s/*" % (path, _remoteDir(name)))
+	if not fileutil.existsFile(host, path) or not fileutil.fileSize(host, path):
+		raise fault.new("No packages captured yet")
 	return host.getHostServer().downloadGrant(path, filename=filename)

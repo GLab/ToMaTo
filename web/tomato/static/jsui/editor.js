@@ -466,7 +466,7 @@ var EmulatedConnection = Connection.extend({
 	},
 	viewCapture: function(btn) {
 		var t = this;
-		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {}, function(msg) {
+		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {"onlyLatest": true}, function(msg) {
 			window.open("http://www.cloudshark.org/view?url="+escape(unescape(msg)), "_newtab")
 		});
 	}
