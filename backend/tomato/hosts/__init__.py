@@ -200,7 +200,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		try:
 			res = self._exec(cmd)
 		except exceptions.CommandError, exc:
-			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage)
+			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage, mustLog=self.enabled)
 		res = util.removeControlChars(res) #might contain funny characters
 		res = res.splitlines()
 		assert stoken in res
