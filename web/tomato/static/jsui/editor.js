@@ -215,10 +215,10 @@ var IconElement = NetElement.extend({
 	},
 	setAttribute: function(name, value) {
 		if (name == "name") {
-			this._super(name, value);
 			this.editor.elementNames.remove(this.name);
 			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 			this.name = value;
+			this.attributes[name] = value;
 			this.paintUpdate();
 			this.editor.elementNames.push(value);
 		} else if (name == "state") {
@@ -1628,11 +1628,8 @@ var SelectField = EditElement.extend({
 		if (val) this.setValue(val);
 	},
 	setValue: function(value) {
-		log(value);
 		var found = false;
 		this.input.find("option").each(function(){
-			log($(this).attr("value"));
-			log($(this).attr("value") == value);
 			$(this).attr({selected: false});
 			if ( $(this).attr("value") == value ) found = $(this); 		
 		});
