@@ -55,7 +55,7 @@ def startCaptureViaNet(host, name, port, iface, filter=""):
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)
-	host.execute("tcpserver -qHRl 0 0 %(port)d tcpdump -i %(iface)s -nUw - '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.net.pid" % {"iface": util.escape(iface), "rdir": rdir, "filter": util.escape(filter), "port": port })
+	host.execute("tcpserver -qHRl 0 0 %(port)d tcpdump -i %(iface)s -s0 -nUw - '%(filter)s' >/dev/null 2>&1 </dev/null & echo $! > %(rdir)s.net.pid" % {"iface": util.escape(iface), "rdir": rdir, "filter": util.escape(filter), "port": port })
 	assert not process.portFree(host, port)
 
 def captureViaNetRunning(host, name="_dummy"):
