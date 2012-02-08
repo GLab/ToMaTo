@@ -1,0 +1,37 @@
+
+#ifndef dhcp_client_loaded
+#define dhcp_client_loaded
+
+#include <layer3/ip_proto.repy>
+#include <layer4/udp_server.repy>
+#include <layer5/dhcp_proto.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
+
+#FIXME: renewal
+
+class DHCPClient(UDPServer):
+    def __init__(self, ip=IP_ZERO_ADDRESS, **kwargs):
+        UDPServer.__init__(self, ip=ip, **kwargs)
+        UDPServer.bind(self, UDP_PORT_BOOTP_CLIENT, self._dhcp)
+    def _dhcp(self, udp, ip, ethernet, dev):
+        dhcp = dhcp_decode(udp.payload)
+        if dhcp.op != DHCP_OP_REPLY or dhcp.xid != self.dhcp_xid:
+            return #received unrelated request/reply
+        if dhcp.options[DHCP_OPTION_MSG_TYPE] == DHCP_OPTION_VALUE_OFFER:
+            msg = dhcp_encode(DHCP_OP_REQUEST, dhcp.xid, IP_ZERO_ADDRESS, IP_ZERO_ADDRESS, dhcp.siaddr, IP_ZERO_ADDRESS, self.mac, {DHCP_OPTION_MSG_TYPE: DHCP_OPTION_VALUE_REQUEST})
+            UDPServer.send(self, UDP_PORT_BOOTP_CLIENT, IP_GLOBAL_BROADCAST, UDP_PORT_BOOTP_SERVER, msg)
+        if dhcp.options[DHCP_OPTION_MSG_TYPE] == DHCP_OPTION_VALUE_ACK:
+            self.ip = dhcp.yiaddr
+            echo("DHCP CLient: Got IP address: %s" % ip_to_str(self.ip))
+    def requestIP(self):
+        (self.dhcp_xid,) = struct.unpack("!I", randombytes()[:4])
+        msg = dhcp_encode(DHCP_OP_REQUEST, self.dhcp_xid, IP_ZERO_ADDRESS, IP_ZERO_ADDRESS, IP_ZERO_ADDRESS, IP_ZERO_ADDRESS, self.mac, {DHCP_OPTION_MSG_TYPE: DHCP_OPTION_VALUE_DISCOVER})
+        UDPServer.send(self, UDP_PORT_BOOTP_CLIENT, IP_GLOBAL_BROADCAST, UDP_PORT_BOOTP_SERVER, msg)
+    def requestLoop(self):
+        while self.ip == IP_ZERO_ADDRESS:
+            echo("DHCP CLient: Requesting IP")
+            self.requestIP()
+            sleep(5.0)
+
+#endif

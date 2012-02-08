@@ -5,6 +5,10 @@
 #include <util/send.repy>
 #include <layer2/ethernet_proto.repy>
 
+#ifdef ETHERNET_DEBUG
+#include <util/dump_packet.repy>
+#endif
+
 class EthernetNode:
     def __init__(self, mac, **kwargs):
         self.mac = mac
@@ -16,6 +20,11 @@ class EthernetNode:
     def bind(self, type, handler):
         self.ethernet_handlers[type] = handler
     def handle(self, dev, p):
+#ifdef ETHERNET_DEBUG
+        echo("Received via " + dev)
+        echo(dump_packet(p))
+        echo("")
+#endif
         ether = ethernet_decode(p)
         self.mac_table[ether.src] = dev
         if ether.dst == self.mac or ether.dst == ETHERNET_GLOBAL_BROADCAST:
@@ -27,6 +36,12 @@ class EthernetNode:
     def send(self, dst, type, payload, dev=None):
         if not dev:
             dev = self.mac_table.get(dst)
-        send(dev, ethernet_encode(dst, self.mac, type, payload))
+        p = ethernet_encode(dst, self.mac, type, payload)
+#ifdef ETHERNET_DEBUG
+        echo("Sending via " + str(dev))
+        echo(dump_packet(p))
+        echo("")
+#endif
+        send(dev, p)
 
 #endif

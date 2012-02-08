@@ -1,0 +1,18 @@
+
+#include <layer5/dhcp_client.repy>
+#include <util/parse_args.repy>
+#include <util/run_forever.repy>
+#include <util/ip_util.repy>
+#include <util/mac_util.repy>
+
+class Server(DHCPClient):
+    def __init__(self, **kwargs):
+        DHCPClient.__init__(self, **kwargs)
+
+if callfunc == 'initialize':
+    defaults = {"mac":random_mac()}
+    options = parse_args(defaults)
+    echo("Options: %s" % options)
+    node = Server(**options)
+    createthread(node.requestLoop)
+    run_forever(node.handle)

@@ -6,6 +6,12 @@
 #include <layer2/arp_proto.repy>
 #include <layer3/ip_proto.repy>
 
+#ifdef IP_DEBUG
+#include <util/dump_packet.repy>
+#endif
+
+#FIXME: gateways, netmasks, etc.
+
 class FastPing:
     def handle(self, dev, p):
         if p[0:6] == self.mac and p[12:16] == "\x08\x00\x45\x00" and p[23] == "\x01" and p[30:34] == self.ip and p[34:36] == "\x08\x00":
@@ -55,6 +61,11 @@ class IPNode(EthernetNode):
                pos += len(frags[pos])/8
     def _ip(self, ethernet, dev):
         ip = ip_decode(ethernet.payload)
+#ifdef IP_DEBUG
+        echo("Received via " + dev)
+        echo(dump_packet(ethernet.payload))
+        echo("")
+#endif
         if not ip.checksum_correct:
             echo("Invalid IP chechsum")
             return
@@ -83,6 +94,11 @@ class IPNode(EthernetNode):
         #FIXME: fragment
         #FIXME: send arp request and cache packet if ether_dst still None
         packet = ip_encode(self.ip, dst, protocol, payload, **kwargs)
+#ifdef IP_DEBUG
+        echo("Sending via " + str(dev))
+        echo(dump_packet(packet))
+        echo("")
+#endif
         EthernetNode.send(self, ether_dst, ETHERNET_TYPE_IP, packet, dev=dev)
 
 #endif
