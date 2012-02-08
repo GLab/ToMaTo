@@ -1423,7 +1423,7 @@ var Editor = Class.extend({
 			if (! noCheck && ! connector.checkModifyConnections() ) return;
 			if (! noCheck && ! device.checkModifyConnections() ) return;
 			var middle = {x: (connector.getPos().x + device.getPos().x) / 2, y: (connector.getPos().y + device.getPos().y) / 2}; 
-			var con = new SwitchConnector(this, this.getNameHint("switch"), middle);
+			var con = new VPNConnector(this, this.getNameHint("vpn"), middle);
 			this.connect(con, connector, true);
 			this.connect(con, device, true);
 		} else this.errorMessage("Impossible connection", "Connectors cannot be connected with each others. Simple networks can be built by using only one connector. More complex networks can be built by using a device to do forward/route between the networks.");
