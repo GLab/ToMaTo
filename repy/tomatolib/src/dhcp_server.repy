@@ -7,7 +7,7 @@
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
 
-defaults = {"ip":"10.0.0.1", "mac":randomMac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
+defaults = {"ip":"10.0.0.1", "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
 options = parse_args(defaults)
 options["pool"] = rangeToIps(options["pool"])
 echo("Options: %s" % options)

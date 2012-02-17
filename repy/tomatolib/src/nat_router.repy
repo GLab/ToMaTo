@@ -3,7 +3,7 @@
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
 
-defaults = {"uplink_ip": "dhcp", "local_ip": "10.0.0.1"}
+defaults = {"uplink": "eth0", "uplink_ip": "dhcp", "local_ip": "10.0.0.1"}
 options = parse_args(defaults)
 echo("Options: %s" % options)
 
@@ -14,7 +14,9 @@ for (k, v) in options.iteritems():
     local_options[k[6:]] = v
   if k.startswith("uplink_"):
     uplink_options[k[7:]] = v
+local_options["id"] = options["id"]
+uplink_options["id"] = options["id"]
 
-node = NatRouter("wan", uplink_options, local_options)
+node = NatRouter(options["uplink"], uplink_options, local_options)
 
 run_forever(node.handle)

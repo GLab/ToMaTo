@@ -7,7 +7,7 @@
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
 
-defaults = {"ip":"10.0.0.1", "mac":random_mac(), "qname":None, "qtype":None, "qclass":None, "answer": "10.0.0.1", "ttl":1000}
+defaults = {"ip":"10.0.0.1", "qname":None, "qtype":None, "qclass":None, "answer": "10.0.0.1", "ttl":1000}
 options = parse_args(defaults)
 echo("Options: %s" % options)
 options["ip"] = strToIp(options["ip"])

@@ -70,6 +70,7 @@ def start(host, vmid, ifaces, args=[]):
 	ilist = ["-i repy%d.%s,alias=%s" % (vmid, util.identifier(i), util.identifier(i)) for i in ifaces]
 	if isinstance(args, basestring):
 		args = [args]
+	args.append("id=%d" % vmid)
 	alist = [util.escape(a) for a in args] 
 	host.execute("tomato-repy -p %s -v %s %s > %s 2>&1 & echo $! > %s" % (_imagePath(vmid), " ".join(ilist), " ".join(alist), _logFile(vmid), _pidFile(vmid) ))
 	assert getState(host, vmid) == generic.State.STARTED, "Repy device failed to start"

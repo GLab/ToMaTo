@@ -23,7 +23,7 @@ class EchoServer:
   def handle(self, p, dev):
     self.ethernet.handle(p, dev)
 
-defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+defaults = {"ip":"10.0.0.1"}
 options = parse_args(defaults)
 echo("Options: %s" % options)
 

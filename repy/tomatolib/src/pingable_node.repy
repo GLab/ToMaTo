@@ -5,10 +5,9 @@
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
 
-defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+defaults = {"ip":"10.0.0.1"}
 options = parse_args(defaults)
 echo("Options: %s" % options)
-options["ip"] = str_to_ip(options["ip"])
 
 ethernet = EthernetNode(**options)
 ipv4 = IPv4Node(ethernet, **options)
