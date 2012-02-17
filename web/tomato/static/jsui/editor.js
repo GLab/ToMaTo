@@ -467,7 +467,7 @@ var EmulatedConnection = Connection.extend({
 	viewCapture: function(btn) {
 		var t = this;
 		this.editor._ajax("top/"+topid+"/download_capture_uri/"+this.getElementName()+"/"+this.getSubElementName(), {"onlyLatest": true}, function(msg) {
-			window.open("http://www.cloudshark.org/view?url="+escape(unescape(msg)), "_newtab")
+			window.open("http://www.cloudshark.org/view?url="+escape(unescape(msg)), "_newtab");
 		});
 	}
 });
@@ -490,7 +490,6 @@ var Interface = NetElement.extend({
 		var base = "eth";
 		var num = 0;
 		while (existingNames.indexOf(base+num)>=0) num++;
-		log("name: " + base+num)
 		return base+num;
 	},
 	getElementType: function () {
@@ -1215,7 +1214,7 @@ var Editor = Class.extend({
 			}
 			el.setAttributes(attrs);
 			el.setCapabilities(obj.capabilities);
-			el.setResources(obj.resources)
+			el.setResources(obj.resources);
 		};
 		for (var name in top.devices) f(top.devices[name]);
 		for (var name in top.connectors) f(top.connectors[name]);
@@ -1270,7 +1269,7 @@ var Editor = Class.extend({
 			var dev = top.devices[name];
 			dev_obj.setAttributes(dev.attrs);
 			dev_obj.setCapabilities(dev.capabilities);
-			dev_obj.setResources(dev.resources)
+			dev_obj.setResources(dev.resources);
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
@@ -1283,7 +1282,7 @@ var Editor = Class.extend({
 			var con = top.connectors[name];
 			con_obj.setAttributes(con.attrs);
 			con_obj.setCapabilities(con.capabilities);
-			con_obj.setResources(con.resources)
+			con_obj.setResources(con.resources);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
@@ -1869,7 +1868,7 @@ var NotesPanel = Class.extend({
 		var changed = function(){
 			log(textarea[0].value);
 			t.obj.setAttribute("_notes", textarea[0].value);
-		}
+		};
 		textarea.change(changed);
 		this.div.append(textarea);
 		var center = $('<center/>');
@@ -2230,38 +2229,38 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this._super(obj);
 		this.attrs = new TableAttributeForm(obj);
 		this.tabs = new Tabs();
-		var fields = {}
+		var fields = {};
 		//link emulation
 		this.le = $("<table/>").addClass('ui-widget');
-		this.le.append(table_row(["", "<b>To connector</b>", "<b>From connector</b>", ""]))
-		fields.bandwidth_to = new MagicTextField("bandwidth_to", pattern.float, "")
-		fields.bandwidth_from = new MagicTextField("bandwidth_from", pattern.float, "")
-		this.le.append(table_row(["bandwidth", fields.bandwidth_to.getInputElement(), fields.bandwidth_from.getInputElement(), "kbit/s"]))
-		fields.delay_to = new MagicTextField("delay_to", pattern.float, "")
-		fields.delay_from = new MagicTextField("delay_from", pattern.float, "")
-		this.le.append(table_row(["delay", fields.delay_to.getInputElement(), fields.delay_from.getInputElement(), "ms"]))
-		fields.jitter_to = new MagicTextField("jitter_to", pattern.float, "")
-		fields.jitter_from = new MagicTextField("jitter_from", pattern.float, "")
-		this.le.append(table_row(["jitter", fields.jitter_to.getInputElement(), fields.jitter_from.getInputElement(), "ms"]))
+		this.le.append(table_row(["", "<b>To connector</b>", "<b>From connector</b>", ""]));
+		fields.bandwidth_to = new MagicTextField("bandwidth_to", pattern.float, "");
+		fields.bandwidth_from = new MagicTextField("bandwidth_from", pattern.float, "");
+		this.le.append(table_row(["bandwidth", fields.bandwidth_to.getInputElement(), fields.bandwidth_from.getInputElement(), "kbit/s"]));
+		fields.delay_to = new MagicTextField("delay_to", pattern.float, "");
+		fields.delay_from = new MagicTextField("delay_from", pattern.float, "");
+		this.le.append(table_row(["delay", fields.delay_to.getInputElement(), fields.delay_from.getInputElement(), "ms"]));
+		fields.jitter_to = new MagicTextField("jitter_to", pattern.float, "");
+		fields.jitter_from = new MagicTextField("jitter_from", pattern.float, "");
+		this.le.append(table_row(["jitter", fields.jitter_to.getInputElement(), fields.jitter_from.getInputElement(), "ms"]));
 		//disabled because delay correlation is broken in netem
 		//fields.delay_correlation_to = new MagicTextField("delay_correlation_to", pattern.float, "")
 		//fields.delay_correlation_from = new MagicTextField("delay_correlation_from", pattern.float, "")
 		//this.le.append(table_row(["delay&nbsp;correlation", fields.delay_correlation_to.getInputElement(), fields.delay_correlation_from.getInputElement(), "%"]))
-		fields.distribution_to = new SelectField("distribution_to", ["uniform", "normal", "pareto", "paretonormal"], "uniform")
-		fields.distribution_from = new SelectField("distribution_from", ["uniform", "normal", "pareto", "paretonormal"], "uniform")
-		this.le.append(table_row(["delay&nbsp;distribution", fields.distribution_to.getInputElement(), fields.distribution_from.getInputElement(), ""]))
-		fields.lossratio_to = new MagicTextField("lossratio_to", pattern.float, "")
-		fields.lossratio_from = new MagicTextField("lossratio_from", pattern.float, "")
-		this.le.append(table_row(["packet&nbsp;loss", fields.lossratio_to.getInputElement(), fields.lossratio_from.getInputElement(), "%"]))
-		fields.lossratio_correlation_to = new MagicTextField("lossratio_correlation_to", pattern.float, "")
-		fields.lossratio_correlation_from = new MagicTextField("lossratio_correlation_from", pattern.float, "")
-		this.le.append(table_row(["loss&nbsp;correlation", fields.lossratio_correlation_to.getInputElement(), fields.lossratio_correlation_from.getInputElement(), "%"]))
-		fields.duplicate_to = new MagicTextField("duplicate_to", pattern.float, "")
-		fields.duplicate_from = new MagicTextField("duplicate_from", pattern.float, "")
-		this.le.append(table_row(["duplication", fields.duplicate_to.getInputElement(), fields.duplicate_from.getInputElement(), "%"]))
-		fields.corrupt_to = new MagicTextField("corrupt_to", pattern.float, "")
-		fields.corrupt_from = new MagicTextField("corrupt_from", pattern.float, "")
-		this.le.append(table_row(["corrupt&nbsp;packets", fields.corrupt_to.getInputElement(), fields.corrupt_from.getInputElement(), "%"]))
+		fields.distribution_to = new SelectField("distribution_to", ["uniform", "normal", "pareto", "paretonormal"], "uniform");
+		fields.distribution_from = new SelectField("distribution_from", ["uniform", "normal", "pareto", "paretonormal"], "uniform");
+		this.le.append(table_row(["delay&nbsp;distribution", fields.distribution_to.getInputElement(), fields.distribution_from.getInputElement(), ""]));
+		fields.lossratio_to = new MagicTextField("lossratio_to", pattern.float, "");
+		fields.lossratio_from = new MagicTextField("lossratio_from", pattern.float, "");
+		this.le.append(table_row(["packet&nbsp;loss", fields.lossratio_to.getInputElement(), fields.lossratio_from.getInputElement(), "%"]));
+		fields.lossratio_correlation_to = new MagicTextField("lossratio_correlation_to", pattern.float, "");
+		fields.lossratio_correlation_from = new MagicTextField("lossratio_correlation_from", pattern.float, "");
+		this.le.append(table_row(["loss&nbsp;correlation", fields.lossratio_correlation_to.getInputElement(), fields.lossratio_correlation_from.getInputElement(), "%"]));
+		fields.duplicate_to = new MagicTextField("duplicate_to", pattern.float, "");
+		fields.duplicate_from = new MagicTextField("duplicate_from", pattern.float, "");
+		this.le.append(table_row(["duplication", fields.duplicate_to.getInputElement(), fields.duplicate_from.getInputElement(), "%"]));
+		fields.corrupt_to = new MagicTextField("corrupt_to", pattern.float, "");
+		fields.corrupt_from = new MagicTextField("corrupt_from", pattern.float, "");
+		this.le.append(table_row(["corrupt&nbsp;packets", fields.corrupt_to.getInputElement(), fields.corrupt_from.getInputElement(), "%"]));
 		this.tabs.addTab("link_emulation", "Link emulation", this.le);
 		//packet capturing
 		this.pc = $("<table/>").addClass('ui-widget');
@@ -2282,11 +2281,11 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.add(this.tabs.getDiv());
 		//routing
 		this.routing = $("<table/>").addClass('ui-widget');
-		var fields = {}
-		fields.gateway4 = new MagicTextField("gateway4", pattern.ip4net, "")
+		var fields = {};
+		fields.gateway4 = new MagicTextField("gateway4", pattern.ip4net, "");
 		this.attrs.registerField(fields.gateway4);
 		this.routing.append(table_row(["gateway&nbsp;(ip4/prefix)", fields.gateway4.getInputElement()]));
-		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "")
+		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "");
 		this.attrs.registerField(fields.gateway6);
 		this.routing.append(table_row(["gateway&nbsp;(ip6/prefix)", fields.gateway6.getInputElement()]));
 	},
@@ -2294,12 +2293,12 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.attrs.load();
 		this.captureField.setEditable(true);
 		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
-			this.captureField.setValue("to file")
+			this.captureField.setValue("to file");
 		if (Boolean.parse(this.obj.getAttribute("capture_via_net", "false")))
-			this.captureField.setValue("via network")
+			this.captureField.setValue("via network");
 		this.pc.empty();
-		this.pc.append(table_row(["capture&nbsp;packets", this.captureField.getInputElement()]))
-		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement()]))
+		this.pc.append(table_row(["capture&nbsp;packets", this.captureField.getInputElement()]));
+		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement()]));
 		var t = this;
 		if (this.obj.downloadSupported()) {
 			this.pc.append(table_row([new Button("download", "Prepare capture download", function(btn){
