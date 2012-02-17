@@ -149,7 +149,10 @@ class Task():
 			except Exception, exc:
 				self.result = exc
 				exc.message += "\nException in task %s (%s)" % (self.name, self.fn) 
-				fault.log(exc)
+				try:
+					fault.log(exc)
+				except:
+					pass #might fail due to aborted db transaction
 				self.output.write(('%s:%s' % (exc.__class__.__name__, exc)).encode("utf-8"))
 				if self.reverseFn:
 					self._reverse()
