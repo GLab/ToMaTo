@@ -252,6 +252,9 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 
 	def interfacesRename(self, name, properties):
 		iface = self.interfaceSetGet(name).upcast()
+		import re
+		newName = properties["name"]
+		fault.check(re.match("eth(\d+)", newName), "Invalid interface name: %s" % name)
 		try:
 			fault.check(not self.interfaceSetGet(properties["name"]), "Duplicate interface name: %s" % properties["name"])
 		except Interface.DoesNotExist: #pylint: disable-msg=W0702

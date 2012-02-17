@@ -534,12 +534,12 @@ var Interface = NetElement.extend({
 		delete this.dev;
 	},
 	setAttribute: function(name, value){
-		this._super(name, value);
 		if (name == "name") {
 			this.form.setTitle(value);
 			this.editor.ajaxModify([this.modification("rename", {name: value})], function(res) {});
 			this.name = value;
-		}
+			this.attributes[name] = value;
+		} else this._super(name, value);
 	},
 	_click: function(event) {
 		var p = this.parent;
