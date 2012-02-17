@@ -271,7 +271,7 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 		pass
 			
 class Interface(db.ChangesetMixin, attributes.Mixin, models.Model):
-	name = models.CharField(max_length=5, validators=[db.ifaceValidator])
+	name = models.CharField(max_length=10, validators=[db.ifaceValidator])
 	device = models.ForeignKey(Device)
 
 	attrs = db.JSONField(default={})
