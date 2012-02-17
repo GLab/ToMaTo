@@ -1,18 +1,21 @@
 
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
+#include <layer4/udp.repy>
 #include <layer5/dhcp_client.repy>
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
-#include <util/ip_util.repy>
-#include <util/mac_util.repy>
 
-class Server(DHCPClient):
-    def __init__(self, **kwargs):
-        DHCPClient.__init__(self, **kwargs)
+defaults = {}
+options = parse_args(defaults)
+echo("Options: %s" % options)
 
-if callfunc == 'initialize':
-    defaults = {"mac":random_mac()}
-    options = parse_args(defaults)
-    echo("Options: %s" % options)
-    node = Server(**options)
-    createthread(node.requestLoop)
-    run_forever(node.handle)
+ethernet = EthernetNode(**options)
+ipv4 = IPv4Node(ethernet, **options)
+icmp = IcmpNode(ipv4, **options)
+udp = UdpNode(ipv4, **options)
+dhcp_client = DhcpClient(udp, **options)
+
+dhcp_client.run()
+run_forever(ethernet.handle)

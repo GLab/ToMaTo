@@ -1,14 +1,16 @@
 
-#include <layer3/icmp_node.repy>
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
-#include <util/ip_util.repy>
-#include <util/mac_util.repy>
 
-if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac()}
-    options = parse_args(defaults)
-    echo("Options: %s" % options)
-    options["ip"] = str_to_ip(options["ip"])
-    node = ICMPNode(**options)
-    run_forever(node.handle)
+defaults = {"ip":"10.0.0.1", "mac":random_mac()}
+options = parse_args(defaults)
+echo("Options: %s" % options)
+options["ip"] = str_to_ip(options["ip"])
+
+ethernet = EthernetNode(**options)
+ipv4 = IPv4Node(ethernet, **options)
+icmp = IcmpNode(ipv4, **options)
+run_forever(ethernet.handle)

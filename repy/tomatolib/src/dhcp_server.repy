@@ -1,24 +1,21 @@
 
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
+#include <layer4/udp.repy>
 #include <layer5/dhcp_server.repy>
-#include <layer3/icmp_node.repy>
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
-#include <util/ip_util.repy>
-#include <util/mac_util.repy>
 
-class Server(DHCPServer,ICMPNode):
-    def __init__(self, **kwargs):
-        DHCPServer.__init__(self, **kwargs)
-        ICMPNode.__init__(self, **kwargs)
+defaults = {"ip":"10.0.0.1", "mac":randomMac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
+options = parse_args(defaults)
+options["pool"] = rangeToIps(options["pool"])
+echo("Options: %s" % options)
 
-if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "gateway":"10.0.0.254", "pool":"10.0.0.3-250", "netmask":"255.255.255.0", "domain":"example.com", "nameserver":"10.0.0.254"}
-    options = parse_args(defaults)
-    echo("Options: %s" % options)
-    options["ip"] = str_to_ip(options["ip"])
-    options["gateway"] = str_to_ip(options["gateway"])
-    options["nameserver"] = str_to_ip(options["nameserver"])
-    options["netmask"] = str_to_ip(options["netmask"])
-    options["pool"] = range_to_ips(options["pool"])
-    node = Server(**options)
-    run_forever(node.handle)
+ethernet = EthernetNode(**options)
+ipv4 = IPv4Node(ethernet, **options)
+icmp = IcmpNode(ipv4, **options)
+udp = UdpNode(ipv4, **options)
+dhcp_server = DhcpServer(udp, **options)
+
+run_forever(ethernet.handle)

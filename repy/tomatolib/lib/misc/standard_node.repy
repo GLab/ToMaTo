@@ -1,0 +1,39 @@
+
+#ifndef standard_node_loaded
+#define standard_node_loaded
+
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
+#include <layer4/udp.repy>
+#include <layer4/tcp.repy>
+#include <layer5/dhcp_client.repy>
+
+class StandardNode:
+  def __init__(self, noUdp=False, noTcp=False, **options):
+    dhcp = False
+    if options.get("ip", "dhcp") == "dhcp":
+      dhcp = True
+      options["ip"] = IP_ZERO_ADDRESS
+    self.ethernet = EthernetNode(**options)
+    self.ipv4 = IPv4Node(self.ethernet, **options)
+    self.icmp = IcmpNode(self.ipv4, **options)
+    if not noTcp:
+      self.tcp = TcpNode(self.ipv4, **options)
+    if not noUdp or dhcp:
+      self.udp = UdpNode(self.ipv4, **options)
+    if dhcp:
+      self.dhcp_client = DhcpClient(self.udp, **options)
+      self.dhcp_client.run()
+  def bindUdp(self, port, fn):
+    self.udp.register(EVENT_PACKET_MATCH, port, fn)
+  def sendUdp(self, srcport, dstport, dst_ip, data):
+    self.udp.send(src=srcport, dst=dstport, dst_ip=dst_ip, src_ip=self.ipv4.ip, payload=data)
+  def bindTcp(self, port, fn):
+    self.tcp.register(EVENT_PACKET_MATCH, port, fn)
+  def tcpOpen(self, ip, port):
+    pass
+  def handle(self, dev, p):
+    self.ethernet.handle(dev, p)
+
+#endif

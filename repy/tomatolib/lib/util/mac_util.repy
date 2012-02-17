@@ -3,7 +3,7 @@
 #define mac_util_loaded
 
 def mac_to_str(s):
-    return ":".join([hex(ord(b))[2:] for b in s])
+    return ":".join(["%02x" % ord(b) for b in s])
 
 def str_to_mac(s):
     return "".join([chr(int(c, 16)) for c in s.split(":")])

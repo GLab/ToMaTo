@@ -2,69 +2,86 @@
 #ifndef dns_proto_loaded
 #define dns_proto_loaded
 
+#include <general.repy>
+
 UDP_PORT_DNS = 53
 
 DNS_QR_REQUEST = 0
 DNS_QR_REPLY = 1
 
-def dns_read_label(p, pos, allowPointer):
+class DnsEntry:
+  pass
+
+class DnsHeader(Header):
+  def create(self, id, qr, question=[], answer=[], authority=[], additional=[], rcode=0, opcode=0, aa=0, tc=0, rd=1, ra=0, z=0):
+    self.id = id
+    self.qr = qr
+    self.question = question
+    self.answer = answer
+    self.authority = authority
+    self.additional = additional
+    self.rcode = rcode
+    self.opcode = opcode
+    self.aa = aa
+    self.tc = tc
+    self.rd = rd
+    self.ra = ra
+    self.z = z
+  def readLabel(self, p, pos, allowPointer):
     label = ""
     while True:
-        l = ord(p[pos])
-        if l >= 192 and allowPointer: #offset into packet, short int offset value
-            offs = struct.unpack("!H", p[pos:pos+2]) & 0x3fff
-            pos += 2
-            return label + dns_read_label(p, offs, False)
-        # 1 byte length of domain part + data
-        pos += 1
-        if not l: #last part is empy
-            return (label, pos)
-        label += p[pos:pos+l] + "."
-        pos += l
-
-def dns_decode(p):
-    h = Header()
-    (h.id, flags1, flags2, qdcount, ancount, nscount, arcount) = struct.unpack("!HBBHHHH", p[0:12])
-    h.qr = (flags1 >> 7) & 0x1
-    h.opcode = (flags1 >> 3) & 0xf
-    h.aa = (flags1 >> 2) & 0x1
-    h.tc = (flags1 >> 1) & 0x1
-    h.rd = flags1 & 0x1
-    h.ra = (flags2 >> 7) & 0x1
-    h.z = (flags2 >> 4) & 0x7
-    h.rcode = flags2 & 0xf
+      l = ord(p[pos])
+      if l >= 192 and allowPointer: #offset into packet, short int offset value
+        offs = struct.unpack("!H", p[pos:pos+2]) & 0x3fff
+        pos += 2
+        return label + self.readLabel(p, offs, False)
+      # 1 byte length of domain part + data
+      pos += 1
+      if not l: #last part is empy
+        return (label, pos)
+      label += p[pos:pos+l] + "."
+      pos += l
+  def decode(self, p):
+    (self.id, flags1, flags2, qdcount, ancount, nscount, arcount) = struct.unpack("!HBBHHHH", p[0:12])
+    self.qr = (flags1 >> 7) & 0x1
+    self.opcode = (flags1 >> 3) & 0xf
+    self.aa = (flags1 >> 2) & 0x1
+    self.tc = (flags1 >> 1) & 0x1
+    self.rd = flags1 & 0x1
+    self.ra = (flags2 >> 7) & 0x1
+    self.z = (flags2 >> 4) & 0x7
+    self.rcode = flags2 & 0xf
     pos = 12
-    h.question = []
+    self.question = []
     for i in range(0, qdcount):
-        q = Header()
-        (q.qname, pos) = dns_read_label(p, pos, False)
+        q = DnsEntry()
+        (q.qname, pos) = self.readLabel(p, pos, False)
         (q.qtype, q.qclass) = struct.unpack("!HH", p[pos:pos+4])
         pos += 4
-        h.question.append(q)
+        self.question.append(q)
     other = []
     for i in range(0, ancount+nscount+arcount):
-        o = Header()
-        (o.name, pos) = dns_read_label(p, pos, True)
+        o = DnsEntry()
+        (o.name, pos) = self.readLabel(p, pos, True)
         (o.type_, o.class_, o.ttl, rdlen) = struct.unpack("!HHIH", p[pos:pos+10])
         pos += 10
         o.rdata = p[pos:pos+rdlen]
         pos += rdlen
         other.append(o)
-    h.answer = other[0:ancount]
-    h.authority = other[ancount:ancount+nscount]
-    h.additional = other[ancount+nscount:ancount+nscount+arcount]
-    return h
-
-def dns_encode(id, qr, question=[], answer=[], authority=[], additional=[], rcode=0, opcode=0, aa=0, tc=0, rd=1, ra=0, z=0):
-    flags1 = ((qr & 0x1) << 7) | ((opcode & 0xf) << 3) | ((aa & 0x1) << 2) | ((tc & 0x1) << 1) | (rd & 0x1)
-    flags2 = ((ra & 0x1) << 7) | ((z & 0x7) << 4) | (rcode & 0xf)
-    p = struct.pack("!HBBHHHH", id, flags1, flags2, len(question), len(answer), len(authority), len(additional))
-    for q in question:
+    self.answer = other[0:ancount]
+    self.authority = other[ancount:ancount+nscount]
+    self.additional = other[ancount+nscount:ancount+nscount+arcount]
+    return self
+  def encode(self):
+    flags1 = ((self.qr & 0x1) << 7) | ((self.opcode & 0xf) << 3) | ((self.aa & 0x1) << 2) | ((self.tc & 0x1) << 1) | (self.rd & 0x1)
+    flags2 = ((self.ra & 0x1) << 7) | ((self.z & 0x7) << 4) | (self.rcode & 0xf)
+    p = struct.pack("!HBBHHHH", self.id, flags1, flags2, len(self.question), len(self.answer), len(self.authority), len(self.additional))
+    for q in self.question:
         if not q.qname.endswith("."):
             q.qname += "."
         p += "".join([(chr(len(part)) + part) for part in q.qname.split(".")])
         p += struct.pack("!HH", q.qtype, q.qclass)
-    for o in answer + authority + additional:
+    for o in self.answer + self.authority + self.additional:
         if not o.name.endswith("."):
             o.name += "."
         parts = o.name.split(".")
