@@ -26,6 +26,11 @@ from django.core.urlresolvers import reverse
 from lib import *
 
 @wrap_json
+def template_info(api, request, type, name):
+	tpl = api.template_info(type, name)
+	return tpl
+
+@wrap_json
 def modify(api, request, top_id):
 	if not request.REQUEST.has_key("mods"):
 		raise Exception("mods not found") 

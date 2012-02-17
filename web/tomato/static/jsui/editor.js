@@ -187,7 +187,7 @@ var IconElement = NetElement.extend({
 	paint: function(){
 		this._super();
 		if (this.text) this.text.remove();
-		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+6, this.name);
+		this.text = this.editor.g.text(this.pos.x, this.pos.y+this.iconsize.y/2+10, this.name);
 		if (! isIE) this.text.attr(this.editor.defaultFont);
 		this.text.parent = this;
 		if (this.icon) this.icon.remove();
@@ -209,7 +209,7 @@ var IconElement = NetElement.extend({
 	paintUpdate: function() {
 		this.icon.attr({x: this.pos.x-this.iconsize.x/2, y: this.pos.y-this.iconsize.y/2, src: basepath+this.iconsrc});
 		this.stateIcon.attr({x: this.pos.x+5, y: this.pos.y+5});
-		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+6, text: this.name});
+		this.text.attr({x: this.pos.x, y: this.pos.y+this.iconsize.y/2+10, text: this.name});
 		this.rect.attr(this.getRect());
 		this._super(); //must be at end, so rect has already been updated
 	},
@@ -842,6 +842,13 @@ var Device = IconElement.extend({
 				window.location.href=msg;				
 			});
 		});
+	},
+	showTemplateInfo: function() {
+		var tpl = this.getAttribute("template");
+		if (! tpl) tpl = "auto";
+		this.editor._ajax("template/"+this.baseName()+"/"+tpl+"/info", {}, function(ret) {
+			this.editor.infoMessageBig("Template information: " + ret.name, $("<pre>").append(ret.notes));
+		});
 	}
 });
 
@@ -911,6 +918,9 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (editable) this.paintPalette();
 		this.topology = new Topology(this, "Topology", {x: 30+this.paletteWidth, y: 20});
+		this.help = this.g.image(basepath+"images/help.png", this.size.x-24, 2, 22, 22);
+		this.help.parent = this;
+		this.help.click(this._helpClick);
 		this.wizardForm = new WizardWindow(this);
 		this.paintBackground();
 		this.checkBrowser();
@@ -1307,7 +1317,7 @@ var Editor = Class.extend({
 		this.icon.parent = this;
 		this.icon.click(this._iconClick);
 		this.wizard = this.g.image(basepath+"images/wizard.png", this.paletteWidth/2-16, (y+=50)-16, 32, 32);
-		this.wizardText = this.g.text(this.paletteWidth/2, y+=20, "Wizard");
+		this.wizardText = this.g.text(this.paletteWidth/2, y+=25, "Wizard");
 		if (! isIE) this.wizardText.attr(this.defaultFont);
 		this.wizardRect = this.g.rect(this.paletteWidth/2 -24, y-35, 48, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.wizardRect.parent = this;
@@ -1326,22 +1336,19 @@ var Editor = Class.extend({
 		this.vpnPrototype.paletteItem = true;
 
 		this.layout = this.g.image(basepath+"images/layout.png", this.paletteWidth/2 -16, this.size.y-100, 32, 32);
-		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-63, "Layout");
+		this.layoutText = this.g.text(this.paletteWidth/2, this.size.y-60, "Layout");
 		if (! isIE) this.layoutText.attr(this.defaultFont);
 		this.layoutRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-100, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.layoutRect.parent = this;
 		this.layoutRect.click(this._layoutClick);
 		this.eraser = this.g.image(basepath+"images/eraser.png", this.paletteWidth/2 -16, this.size.y-50, 32, 32);
-		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-13, "Remove");
+		this.eraserText = this.g.text(this.paletteWidth/2, this.size.y-10, "Remove");
 		if (! isIE) this.eraserText.attr(this.defaultFont);
 		this.eraserRect = this.g.rect(this.paletteWidth/2 -16, this.size.y-50, 32, 42).attr({fill:"#FFFFFF", opacity:0});
 		this.eraserRect.parent = this;
 		this.eraserRect.click(this._eraserClick);
 		this.nextIPHintNumber = 0; //reset to 0
 		this.isLoading = false;
-		this.help = this.g.image(basepath+"images/help.png", this.size.x-24, 2, 22, 22);
-		this.help.parent = this;
-		this.help.click(this._helpClick);
 	},
 	paintBackground: function() {
 		this.background = this.g.rect(this.paletteWidth, 0, this.size.x-this.paletteWidth, this.size.y);
@@ -1839,15 +1846,18 @@ var TableAttributeForm = AttributeForm.extend({
 		this._super(obj, $('<table/>').addClass('ui-widget'));
 		this.table = this.div;
 	}, 
-	addRow: function(desc, element) {
+	addRow: function(desc, element, additional) {
 		var tr = $('<tr/>');
 		tr.append($('<td>'+desc+'</td>'));
-		tr.append($('<td/>').append(element));
+		var data = $('<td/>');
+		data.append(element);
+		if (additional) data.append(additional); 
+		tr.append(data);
 		this.table.append(tr);
 	},
-	addField: function(field, desc) {
+	addField: function(field, desc, additional) {
 		this.registerField(field);
-		this.addRow(desc, field.getInputElement());
+		this.addRow(desc, field.getInputElement(), additional);
 	},
 	removeField: function(name) {
 		if (this.getField(name)) this.getField(name).getInputElement().remove();
@@ -2116,7 +2126,9 @@ var DeviceWindow = ElementWindow.extend({
 var OpenVZDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template");
+		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
+		infoBtn.click(function(){obj.showTemplateInfo();});
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template", infoBtn);
 		this.attrs.addField(new TextField("root_password", ""), "root&nbsp;password");
 		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
 		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6, ""), "gateway6");
@@ -2126,14 +2138,18 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 var KVMDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template");
+		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
+		infoBtn.click(function(){obj.showTemplateInfo();});
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template", infoBtn);
 	}	
 });
 
 var ProgDeviceWindow = DeviceWindow.extend({
 	init: function(obj) {
 		this._super(obj);
-		this.attrs.addField(new SelectField("template", this.obj.editor.templatesProg, "auto"), "template");
+		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
+		infoBtn.click(function(){obj.showTemplateInfo();});
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesProg, "auto"), "template", infoBtn);
 		this.attrs.addField(new TextField("args", ""), "arguments");
 	}	
 });

@@ -23,6 +23,8 @@ def template_info(type, name, user=None): #@UnusedVariable, pylint: disable-msg=
 
 	Returns: dict of string -> list of templates
 	"""
+	if not name or name == "auto":
+		name = hosts.templates.getDefault(type)
 	tpl = hosts.templates.get(type, name)
 	if not tpl:
 		return None
