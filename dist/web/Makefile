@@ -1,5 +1,5 @@
 PACKAGE=tomato-web
-_VERSION=2.4.1
+_VERSION=2.4.2
 
 include ../common.mk
 
