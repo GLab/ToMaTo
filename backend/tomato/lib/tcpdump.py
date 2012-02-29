@@ -25,14 +25,15 @@ def _tcpdump(host, cmd):
 def _remoteDir(name):
 	return "%s/%s" % (config.REMOTE_DIR, util.identifier(name))
 	
-def _checkSyntax(host, iface, filter):
-	ifaceutil.ifup(host, iface)
-	return _tcpdump(host, "-i %s -d %s >/dev/null 2>&1; echo $?" % (util.escape(iface), util.escape(filter))).strip() == "0"
+def _checkSyntax(host, iface="lo", filter=""):
+	if iface != "lo":
+		ifaceutil.ifup(host, iface)
+	return _tcpdump(host, "-i %s -d %s >/dev/null; echo $?" % (util.escape(iface), util.escape(filter))).strip() == "0"
 	
 def startCaptureToFile(host, name, iface, filter=""):
 	assert name, "Name not given"
 	assert ifaceutil.interfaceExists(host, iface), "Interface does not exist"
-	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
+	assert _checkSyntax(host, filter=filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
 	rdir = _remoteDir(name) 
 	fileutil.delete(host, rdir, True)
 	fileutil.mkdir(host, rdir)
@@ -51,7 +52,7 @@ def startCaptureViaNet(host, name, port, iface, filter=""):
 	assert port, "Port not given"
 	assert ifaceutil.interfaceExists(host, iface), "Interface does not exist"
 	assert process.portFree(host, port), "Port already in use"
-	assert _checkSyntax(host, iface, filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
+	assert _checkSyntax(host, filter=filter), "Syntax error: tcpdump -i %s %s" % (iface, filter)
 	rdir = _remoteDir(name) 
 	fileutil.mkdir(host, rdir)
 	ifaceutil.ifup(host, iface)

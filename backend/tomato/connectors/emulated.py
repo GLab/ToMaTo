@@ -151,11 +151,14 @@ class EmulatedConnection(Connection):
 		oldCaptureToFile = self.getCaptureToFile()
 		oldCaptureViaNet = self.getCaptureViaNet()
 		oldCaptureFilter = self.getCaptureFilter()
-		#FIXME: validate filter
+		if "capture_filter" in properties:
+			filter = properties["capture_filter"]
+			host = self.getHost()
+			if host:
+				fault.check(tcpdump._checkSyntax(host, filter=filter), "Syntax error in filter")
+			self.setCaptureFilter(properties["capture_filter"])
 		if "capture_to_file" in properties:
 			self.setCaptureToFile(properties["capture_to_file"])
-		if "capture_filter" in properties:
-			self.setCaptureFilter(properties["capture_filter"])
 		if "capture_via_net" in properties:
 			self.setCaptureViaNet(properties["capture_via_net"])
 		for p in netemProperties:
