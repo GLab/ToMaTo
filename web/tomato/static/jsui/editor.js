@@ -340,6 +340,7 @@ var Connection = NetElement.extend({
 		this.form = new ConnectionWindow(this);		
 	},
 	checkRemove: function(){
+		if (! this.con) return true; //orphan connection
 		return this.con.checkModifyConnections() && this.dev.checkModifyConnections();
 	},	
 	connect: function(iface) {
@@ -583,13 +584,13 @@ var Connector = IconElement.extend({
 		return this.editor.getNameHint(this.baseName());
 	},
 	checkRemove: function(){
-		if (! this.capabilities.modify["delete"]) {
+		if (!this.capabilities || ! this.capabilities.modify["delete"]) {
 			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
 			return false;
 		} else return true;
 	},	
 	checkModifyConnections: function(){
-		if (! this.capabilities.modify.connections) {
+		if (!this.capabilities || !this.capabilities.modify.connections) {
 			this.editor.errorMessage("Cannot modify connections", "The element " + this.getElementName() + " cannot be connected or disconnected in its current state");
 			return false;
 		} else return true;
@@ -729,7 +730,12 @@ var Device = IconElement.extend({
 		if (! this.capabilities.modify["delete"]) {
 			this.editor.errorMessage("Cannot delete element", "The element " + this.getElementName() + " cannot be deleted in its current state");
 			return false;
-		} else return true;
+		}
+		for (var i = 0; i < this.interfaces.length; i++) {
+			var iface = this.interfaces[i];
+			if (iface.con && ! iface.con.checkRemove()) return false;
+		}
+		return true;
 	},		
 	checkModifyConnections: function(){
 		if (! this.capabilities.modify.connections) {
@@ -1267,12 +1273,14 @@ var Editor = Class.extend({
 		for (var name in top.devices) {
 			var dev_obj = this.getElement("device", name);
 			var dev = top.devices[name];
+			if (! dev_obj) continue;
 			dev_obj.setAttributes(dev.attrs);
 			dev_obj.setCapabilities(dev.capabilities);
 			dev_obj.setResources(dev.resources);
 			for (var ifname in dev.interfaces) {
 				var iface_obj = dev_obj.getInterface(ifname);
 				var iface = dev.interfaces[ifname];
+				if (! iface_obj) continue;
 				iface_obj.setAttributes(iface.attrs);
 				iface_obj.setCapabilities(iface.capabilities);
 			}
@@ -1280,12 +1288,14 @@ var Editor = Class.extend({
 		for (var name in top.connectors) {
 			var con_obj = this.getElement("connector", name);
 			var con = top.connectors[name];
+			if (! con_obj) continue;
 			con_obj.setAttributes(con.attrs);
 			con_obj.setCapabilities(con.capabilities);
 			con_obj.setResources(con.resources);
 			for (var ifname in con.connections) {				
 				var c_obj = con_obj.getConnection(ifname);
 				var c = con.connections[ifname];
+				if (! c_obj) continue;
 				c_obj.setAttributes(c.attrs);
 				c_obj.setCapabilities(c.capabilities);
 			}
