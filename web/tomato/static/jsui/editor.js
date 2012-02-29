@@ -2324,7 +2324,12 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 			this.captureField.setValue("via network");
 		this.pc.empty();
 		this.pc.append(table_row(["capture&nbsp;packets", this.captureField.getInputElement()]));
-		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement()]));
+		var editor = this.obj.editor;
+		var filter_help = $('<img src="'+basepath+'images/help.png">');
+		filter_help.click(function(){
+			editor.showIframe("Filter help", basepath+"filter_help.html");
+		}); 
+		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement(), filter_help]));
 		var t = this;
 		if (this.obj.downloadSupported()) {
 			this.pc.append(table_row([new Button("download", "Prepare capture download", function(btn){

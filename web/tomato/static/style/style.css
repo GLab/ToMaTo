@@ -16,6 +16,11 @@ pre {
   white-space: pre-wrap;
 }
 
+tt em {
+  color:#0000ff;
+  font-style: normal;
+}
+
 #nonfooter {
   min-height: 100%;
 }
@@ -278,8 +283,11 @@ td {
 	vertical-align:top;
 }
 
-form table th {
+th {
 	text-align: left;
+}
+
+form table th {
 	font-weight: normal;
 	vertical-align:top;
 }
