@@ -28,7 +28,7 @@ def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, di
 		packets until they can be consumed by the rate limit, thereby 
 		preventing them from being dropped and increasing the delay infinitely.
 		"""
-		limit = 1
+		limit = 10
 		if delay or jitter:
 			"""
 			The average packet consumption rate of the rate limiter is:
@@ -42,7 +42,7 @@ def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, di
 			We are taking the double to be sure.
 			Assumption: pktsize=512b 
 			""" 
-			limit = math.ceil(max(delay, jitter/2.0) * bandwidth / 2000.0)
+			limit = max(math.ceil(max(delay, jitter/2.0) * bandwidth / 2000.0), 10.0)
 		netem.append("limit %d" % limit)
 	if delay or jitter or delay_correlation:
 		assert delay >= 0.0
