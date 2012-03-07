@@ -25,6 +25,25 @@ from OpenSSL import SSL
 from tomato import fault
 from tomato.lib import db, util
 
+#Bugfix: Python 2.6 will not call the needed shutdown_request function
+if not SocketServer.BaseServer.shutdown_request:
+	def _handle_request_noblock(self):
+		try:
+			request, client_address = self.get_request()
+		except socket.error:
+			return
+		if self.verify_request(request, client_address):
+			try:
+				self.process_request(request, client_address)
+			except:
+				self.handle_error(request, client_address)
+				self.shutdown_request(request)
+	SocketServer.BaseServer._handle_request_noblock = _handle_request_noblock
+	def process_request(self, request, client_address):
+		self.finish_request(request, client_address)
+		self.shutdown_request(request)
+	SocketServer.BaseServer.process_request = process_request
+
 class SecureRequestHandler:
 	def setup(self):
 		self.connection = self.request
