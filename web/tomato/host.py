@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.http import Http404
 from django import forms
+from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
@@ -68,8 +69,6 @@ def edit(api, request, hostname):
 @wrap_rpc
 def public_key(api, request):
 	return HttpResponse(api.admin_public_key(), mimetype='application/force-download')
-
-	return api.admin_public_key();
 		
 @wrap_rpc
 def check(api, request, hostname):
@@ -91,3 +90,23 @@ def debug(api, request, hostname):
 def remove(api, request, hostname):
 	api.host_remove(hostname)
 	return index(request)
+	
+@wrap_rpc
+def device_migrate(api, request, hostname, topid, devname):
+	task = api.top_action(topid, "migrate", "device", devname)
+	return device_list(request, hostname, task)
+
+@wrap_rpc
+def device_list(api, request, hostname, task=None):
+	devices = []
+	for top in api.top_list(host_filter=hostname):
+		top = api.top_info(top["id"])
+		for name, dev in top["devices"].iteritems():
+			if dev["attrs"]["host"] == hostname:
+				dev["top"] = top["id"]
+				dev["topname"] = top["attrs"]["name"]
+				dev["owner"] = top["attrs"]["owner"]
+				devices.append(dev)
+				print dev
+	return render_to_response("admin/host_device_list.html", {'host': hostname, 'device_list': devices, 'task': task})
+	

@@ -63,6 +63,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		capabilities.update(other={
 			"console": isUser and self.getVncPort() and self.state == State.STARTED
 		})
+		capabilities["action"]["migrate"] = False
 		return capabilities
 	
 	def getVmid(self):
@@ -307,4 +308,4 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		res["attrs"].update(vnc_port=self.getVncPort(), template=self.getConfiguredTemplate(), args=self.getArgs())
 		if auth:
 			res["attrs"].update(vnc_password = self.vncPassword())
-		return res				
+		return res

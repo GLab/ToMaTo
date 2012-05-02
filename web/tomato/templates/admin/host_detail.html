@@ -6,6 +6,7 @@
 <h2>Actions</h2>
 <a href="{%url host.remove hostname=host.name%}" onclick="javascript:return confirm('Are you sure? All devices on this host will be lost!')"><img src="/static/icons/delete.png" alt="remove" title="remove"/> remove</a><br/>
 <a href="{%url top.index host_filter=host.name%}"><img src="/static/icons/view_list.png" alt="all topologies" title="all topologies"/> all topologies</a><br/>
+<a href="{%url host.device_list host.name%}"><img src="/static/icons/view_list.png" alt="device list" title="device list"/> device list</a><br/>
 <a href="{%url host.debug host.name%}"><img src="/static/icons/chart_bar.png" alt="debug info" title="debug info"/> debug info</a><br/>
 <a href="{%url host.check host.name%}"><img src="/static/icons/magnifier.png" alt="check host" title="check host"/> check host</a><br/>
 <a href="{%url host.update host.name%}" onclick="javascript:return confirm('Are you sure?')"><img src="/static/icons/update.png" alt="check host" title="update host"/> update host</a><br/>
