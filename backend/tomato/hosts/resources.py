@@ -101,6 +101,7 @@ class ResourcePool(models.Model):
 						db.transaction.commit()
 					return res
 				except Exception:
+					db.transaction.commit() #must commit so that transaction is finished
 					import traceback
 					traceback.print_exc()
 					pass
