@@ -1,0 +1,199 @@
+
+#ifndef tcp_loaded
+#define tcp_loaded
+
+#include <general.repy>
+#include <layer3/ipv4.repy>
+
+IP_PROTOCOL_TCP = 6
+
+class TcpHeader(Header):
+  def __init__(self, *args, **kwargs):
+    if args and len(args) == 3:
+      self.decode(args[0], args[1], args[2])
+    else:
+      self.create(*args, **kwargs)
+  def create(self, ip_src, ip_dst, src, dst, seq_num, ack_num, window, payload, fin_flag=0, syn_flag=0, rst_flag=0, psh_flag=0, ack_flag=1, urg_flag=0, options="", urg_ptr=0):
+    self.ip_src = ip_src
+    self.ip_dst = ip_dst
+    self.src = src
+    self.dst = dst
+    self.seq_num = seq_num
+    self.ack_num = ack_num
+    self.window = window
+    self.payload = payload
+    self.fin_flag = fin_flag
+    self.syn_flag = syn_flag
+    self.rst_flag = rst_flag
+    self.psh_flag = psh_flag
+    self.ack_flag = ack_flag
+    self.urg_flag = urg_flag
+    self.options = options
+    self.urg_ptr = urg_ptr
+  def decode(self, p, ip_src, ip_dst):
+    self.ip_src = ip_src
+    self.ip_dst = ip_dst
+    (self.src, self.dst, self.seq_num, self.ack_num, offs_flags, self.window) = struct.unpack("!HHIIHH", p[0:16])
+    checksum = p[16:18]
+    self.urg_ptr = struct.unpack("!H", p[18:20])[0]
+    offset = offs_flags >> 12
+    self.fin_flag = offs_flags & 0x1
+    self.syn_flag = (offs_flags & 0x2)>>1
+    self.rst_flag = (offs_flags & 0x4)>>2
+    self.psh_flag = (offs_flags & 0x8)>>3
+    self.ack_flag = (offs_flags & 0x10)>>4
+    self.urg_flag = (offs_flags & 0x20)>>5
+    self.options = p[20:4*offset]
+    self.payload = p[4*offset:]
+    pseudo_header = ip_src + ip_dst + struct.pack("!HH", 6, len(p))
+    self.checksum_correct = ip_checksum(pseudo_header + p) == 0
+    return self
+  def encode(self):
+    offset = 5 + len(self.options)/4
+    flags = ((self.urg_flag & 0x01) << 5) | ((self.ack_flag & 0x01) << 4) | ((self.psh_flag & 0x01) << 3) | ((self.rst_flag & 0x01) << 2) | ((self.syn_flag & 0x01) << 1) | (self.fin_flag & 0x01)
+    offs_flags = (offset << 12) | flags
+    p = struct.pack("!HHIIHHHH", self.src, self.dst, self.seq_num, self.ack_num, offs_flags, self.window, 0, self.urg_ptr) + self.options + self.payload
+    pseudo_header = self.ip_src + self.ip_dst + struct.pack("!HH", 6, len(p))
+    checksum = struct.pack("!H", ip_checksum(pseudo_header + p)^0xffff)
+    p = p[:16] + checksum + p[18:]
+    return p
+  def __str__(self):
+    flags = []
+    if self.fin_flag:
+      flags.append("FIN")
+    if self.syn_flag:
+      flags.append("SYN")
+    if self.rst_flag:
+      flags.append("RST")
+    if self.psh_flag:
+      flags.append("PSH")
+    if self.ack_flag:
+      flags.append("ACK")
+    if self.urg_flag:
+      flags.append("URG")
+    return "TCP(src=%d, dst=%d, seq=%d, ack=%d, window=%d, flags=%s)" % (self.src, self.dst, self.seq_num, self.ack_num, self.window, " ".join(flags))
+
+DEFAULT_MSS = 1460
+
+EVENT_TCP_CON_DATA = 20
+EVENT_TCP_CON_NEW = 21
+EVENT_TCP_CON_CLOSED = 22
+
+class TCPConnection(Node):
+  #FIXME: use a retransmission timer
+  #FIXME: implement window mechanisms
+  #FIXME: implement client mode
+  #FIXME: randomize starting sequence numbers 
+  def __init__(self, parent, remote_ip, remote_port, local_ip, local_port, remote_seq_num, local_seq_num):
+    Node.__init__(self)
+    self.parent = parent
+    self.remote_ip = remote_ip
+    self.remote_port = remote_port
+    self.local_ip = local_ip
+    self.local_port = local_port
+    self.remote_seq_num = remote_seq_num
+    self.sent_data = ""
+    self.sent_offset = local_seq_num
+    self.remote_window = DEFAULT_MSS
+    self.received = {}
+    self.callback = None
+    self.closed = 0
+    #FIXME: start a timer
+  def _handle(self, tcp, ip, ethernet, dev):
+    #FIXME: reset timer
+    self.remote_window = tcp.window
+    if tcp.ack_flag:
+      #handle ack, tcp.ack_num is seq_num of next byte to receive
+      if tcp.ack_num > self.sent_offset and self.sent_data:
+        #remove acked data
+        self.sent_data = self.sent_data[tcp.ack_num-self.sent_offset:]
+        self.sent_offset = tcp.ack_num
+      if tcp.ack_num == self.sent_offset and self.sent_data:
+        #send last unacked packet
+        self._send(payload=self.sent_data[:DEFAULT_MSS], seq_num=self.sent_offset)
+    self.received[tcp.seq_num] = tcp.payload
+    oldseq = self.remote_seq_num
+    while self.remote_seq_num in self.received:
+      data = self.received[self.remote_seq_num]
+      self._received(data)
+      del self.received[self.remote_seq_num]
+      self.remote_seq_num+=len(data)
+    if self.remote_seq_num != oldseq:
+      #send ack
+      self._send()
+    if tcp.rst_flag: #connection broken
+      self.parent._del_con(self)
+    self.closed |= tcp.fin_flag
+    if self.closed and not len(self.sent_data):
+      #FIXME: stop timer
+      self._send()
+      self.parent._del_con(self)
+  def _received(self, data):
+    self._fireEvent(EVENT_TCP_CON_DATA, 0, self, data)
+  def _send(self, **kwargs):
+    args = {}
+    args.update(ip_src=self.local_ip, ip_dst=self.remote_ip, src=self.local_port, dst=self.remote_port, seq_num=self.sent_offset + len(self.sent_data), ack_num=self.remote_seq_num, window=DEFAULT_WINDOW, payload="", fin_flag=self.closed and not len(self.sent_data))
+    args.update(**kwargs)
+    self.parent._send(**args)
+  def send(self, data):
+    if self.closed:
+      raise Exception("Connection closed")
+    #FIXME: handle window overflow
+    self._send(payload=data)
+    self.sent_data += data
+    self.remote_window -= len(data)
+  def close(self):
+    self.closed = 1
+    self._send()
+
+DEFAULT_WINDOW = 14600
+
+class TcpNode(Node):
+  def __init__(self, parent, **kwargs):
+    Node.__init__(self)
+    self.connections = {}
+    self.parent = parent
+    parent.register(EVENT_PACKET_MATCH, IP_PROTOCOL_TCP, self._tcp)
+  def open(self, ip, port):
+    pass
+    #FIXME implement client mode
+  def _get_con(self, remote_ip, remote_port, local_ip, local_port):
+    key = remote_ip + local_ip + struct.pack("!HH", remote_port, local_port)
+    return self.connections.get(key)
+  def _add_con(self, con):
+    key = con.remote_ip + con.local_ip + struct.pack("!HH", con.remote_port, con.local_port)
+    self.connections[key] = con
+  def _del_con(self, con):
+    key = con.remote_ip + con.local_ip + struct.pack("!HH", con.remote_port, con.local_port)
+    del self.connections[key]
+  def _tcp(self, ip, ethernet, dev):
+    tcp = TcpHeader(ip.payload, ip.src, ip.dst)
+#ifdef DEBUG_TCP
+    echo("Received via " + dev + ":\n\t" + str(ethernet) + "\n\t" + str(ip) + "\n\t" + str(tcp))
+#ifdef DEBUG_DUMP
+    echo(dump_packet(p))
+#endif
+    echo("")
+#endif
+    if tcp.syn_flag and not tcp.ack_flag: #new connection
+      if self._getRegistrations(EVENT_TCP_CON_NEW, tcp.dist): #someone listening -> SYN-ACK
+        self._send(ip_src=ip.dst, ip_dst=ip.src, src=tcp.dst, dst=tcp.src, seq_num=0, ack_num=tcp.seq_num+1, window=DEFAULT_WINDOW, payload="", syn_flag=1)
+        con = TCPConnection(self, ip.src, tcp.src, ip.dst, tcp.dst, tcp.seq_num+1, 1)
+        self._add_con(con)
+        self._fireEvent(EVENT_TCP_CON_NEW, tcp.dist, con)
+      else: #port not open -> RST
+        self._send(ip_src=ip.dst, ip_dst=ip.src, src=tcp.dst, dst=tcp.src, seq_num=0, ack_num=tcp.seq_num+1, window=0, payload="", rst_flag=1)
+    if not tcp.syn_flag: #normal data packet
+      con = self._get_con(ip.src, tcp.src, ip.dst, tcp.dst)
+      if con: #known connection
+        con._handle(tcp, ip, ethernet, dev)
+      else: #unknown connection -> RST
+        self._send(ip_src=ip.dst, ip_dst=ip.src, src=tcp.dst, dst=tcp.src, seq_num=tcp.ack_num+1, ack_num=tcp.seq_num, window=0, payload="", rst_flag=1, fin_flag=tcp.fin_flag)
+  def _send(self, ip_dst, **kwargs):
+    tcp = TcpHeader(ip_dst=ip_dst, **kwargs)
+#ifdef DEBUG
+    echo("\t" + str(tcp))
+#endif
+    self.parent.send(self, ip_dst, IP_PROTOCOL_TCP, tcp.encode())
+
+#endif

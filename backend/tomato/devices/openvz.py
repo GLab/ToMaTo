@@ -84,7 +84,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		if action == "execute":
 			fault.check("cmd" in attrs, "Command not given")
 			try:
-				return tasks.runTask(tasks.Task("%s-execute"%self, self.execute, args=(attrs["cmd"],)))
+				return self.execute(attrs["cmd"])
 			except exceptions.CommandError, exc:
 				raise fault.new(str(exc), fault.USER_ERROR)
 		else:

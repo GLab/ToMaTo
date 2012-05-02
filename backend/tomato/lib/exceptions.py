@@ -16,18 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 class ConnectError(Exception):
-	def __init__(self, hostname, errorCode, errorMessage):
+	def __init__(self, hostname, errorCode, errorMessage, mustLog=True):
 		self.errorMessage = errorMessage
 		self.hostname = hostname
 		self.errorCode = errorCode
+		self.mustLog = mustLog
 	def __str__(self):
 		return "Error connecting to %s: [%d] %s" % (self.hostname, self.errorCode, self.errorMessage)
 	
 class CommandError(Exception):
-	def __init__(self, hostname, command, errorCode, errorMessage):
+	def __init__(self, hostname, command, errorCode, errorMessage, mustLog=True):
 		self.command = command
 		self.errorMessage = errorMessage
 		self.hostname = hostname
 		self.errorCode = errorCode
+		self.mustLog = mustLog
 	def __str__(self):
 		return "Error executing command '%s' on %s: [%d] %s" % (self.command, self.hostname, self.errorCode, self.errorMessage)

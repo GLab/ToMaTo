@@ -200,7 +200,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 		try:
 			res = self._exec(cmd)
 		except exceptions.CommandError, exc:
-			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage)
+			raise exceptions.ConnectError(self.name, exc.errorCode, exc.errorMessage, mustLog=self.enabled)
 		res = util.removeControlChars(res) #might contain funny characters
 		res = res.splitlines()
 		assert stoken in res
@@ -313,6 +313,7 @@ class Host(db.ReloadMixin, attributes.Mixin, models.Model):
 			"manually_disabled": self.getAttribute("manually_disabled", False),
 			"host_check_errror": self.getAttribute("host_check_error", None)}
 		res.update(self.getAttributes().items())
+		del res["hostserver_secret_key"]
 		for t in resources.TYPES:
 			pool = self.getResourcePool(t)
 			res.update({"%s_start" % t: pool.first_num, "%s_count" % t: pool.num_count})

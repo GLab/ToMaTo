@@ -1,0 +1,31 @@
+
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
+#include <layer4/tcp.repy>
+#include <util/parse_args.repy>
+#include <util/run_forever.repy>
+
+class EchoServer:
+  def __init__(self, **options):
+    self.ethernet = EthernetNode(**options)
+    self.ipv4 = IPv4Node(self.ethernet, **options)
+    self.icmp = IcmpNode(self.ipv4, **options)
+    self.tcp = TcpNode(self.ipv4, **options)
+    self.tcp.register(EVENT_TCP_CON_NEW, 80, self._newConnection)
+  def newConnection(self, con):
+    echo("New connection")
+    con.register(EVENT_TCP_CON_DATA, 0, self.newData)
+  def newData(self, con, data):
+    if data.endswith("\n"):
+      echo(data[:-1])
+      con.send(data)
+  def handle(self, p, dev):
+    self.ethernet.handle(p, dev)
+
+defaults = {"ip":"10.0.0.1"}
+options = parse_args(defaults)
+echo("Options: %s" % options)
+
+node = EchoServer(**options)
+run_forever(node.handle)

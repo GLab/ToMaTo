@@ -1,25 +1,26 @@
 
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer3/icmp.repy>
+#include <layer4/udp.repy>
 #include <layer5/dns_server.repy>
-#include <layer3/icmp_node.repy>
 #include <util/parse_args.repy>
 #include <util/run_forever.repy>
-#include <util/ip_util.repy>
-#include <util/mac_util.repy>
 
-class Server(DNSServer,ICMPNode):
-    def __init__(self, **kwargs):
-        DNSServer.__init__(self, **kwargs)
-        ICMPNode.__init__(self, **kwargs)
+defaults = {"ip":"10.0.0.1", "qname":None, "qtype":None, "qclass":None, "answer": "10.0.0.1", "ttl":1000}
+options = parse_args(defaults)
+echo("Options: %s" % options)
+options["ip"] = strToIp(options["ip"])
+data = {(options["qname"], options["qtype"], options["qclass"]): strToIp(options["answer"])}
+del options["qname"]
+del options["qtype"]
+del options["qclass"]
+del options["answer"]
 
-if callfunc == 'initialize':
-    defaults = {"ip":"10.0.0.1", "mac":random_mac(), "qname":None, "qtype":None, "qclass":None, "answer": "10.0.0.1", "ttl":1000}
-    options = parse_args(defaults)
-    echo("Options: %s" % options)
-    options["ip"] = str_to_ip(options["ip"])
-    data = {(options["qname"], options["qtype"], options["qclass"]): str_to_ip(options["answer"])}
-    del options["qname"]
-    del options["qtype"]
-    del options["qclass"]
-    del options["answer"]
-    node = Server(data=data, **options)
-    run_forever(node.handle)
+ethernet = EthernetNode(**options)
+ipv4 = IPv4Node(ethernet, **options)
+icmp = IcmpNode(ipv4, **options)
+udp = UdpNode(ipv4, **options)
+dns_server = DnsServer(udp, data=data, **options)
+
+run_forever(ethernet.handle)

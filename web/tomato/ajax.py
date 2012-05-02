@@ -26,6 +26,11 @@ from django.core.urlresolvers import reverse
 from lib import *
 
 @wrap_json
+def template_info(api, request, type, name):
+	tpl = api.template_info(type, name)
+	return tpl
+
+@wrap_json
 def modify(api, request, top_id):
 	if not request.REQUEST.has_key("mods"):
 		raise Exception("mods not found") 
@@ -65,7 +70,7 @@ def download_image_uri(api, request, top_id, device):
 
 @wrap_json
 def download_capture_uri(api, request, top_id, connector, ifname):
-	return api.top_action(top_id, "download_capture", "connector", connector, attrs={"iface": ifname})
+	return api.top_action(top_id, "download_capture", "connector", connector, attrs={"iface": ifname, "onlyLatest": request.REQUEST.has_key("onlyLatest") and request.REQUEST["onlyLatest"]})
 
 @wrap_json
 def upload_image_uri(api, request, top_id, device):

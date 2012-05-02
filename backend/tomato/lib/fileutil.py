@@ -117,3 +117,9 @@ def uncompress(host, src, dst):
 	assert existsFile(host, src)
 	host.execute("gunzip < %s > %s" % (util.escape(src), util.escape(dst)))
 	assert existsFile(host, dst)
+
+def fileSize(host, path):
+	try:
+		return int(host.execute("wc -c %s" % util.escape(path)).split()[0])
+	except:
+		return None

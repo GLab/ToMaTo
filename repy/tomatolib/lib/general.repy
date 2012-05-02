@@ -1,0 +1,52 @@
+
+#ifndef general_loaded
+#define general_loaded
+
+class Header:
+  def __init__(self, *args, **kwargs):
+    if args and len(args) == 1:
+      self.decode(args[0])
+    else:
+      self.create(*args, **kwargs)
+  def create(self):
+    pass
+  def decode(self, bytes):
+    pass
+  def encode(self):
+    pass
+  def __str__(self):
+    return "unknown header"
+
+EVENT_PACKET_ANY = 1
+EVENT_PACKET_MATCH = 2
+EVENT_PACKET_BROADCAST = 3
+EVENT_PACKET_NO_MATCH = 4
+EVENT_PACKET_NO_REGISTRATION = 5
+
+class Node:
+  def __init__(self):
+    self.eventHandlers = {}
+  def register(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      self.eventHandlers[event] = {}
+    if not key in self.eventHandlers[event]:
+      self.eventHandlers[event][key] = []
+    self.eventHandlers[event][key].append(handlerFn)
+  def unregister(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      return
+    if not key in self.eventHandlers[event]:
+      return
+    self.eventHandlers[event][key].remove(handlerFn)
+  def _getRegistrations(self, event, key):
+    if event in self.eventHandlers and key in self.eventHandlers[event]:
+      return self.eventHandlers[event][key]
+    else:
+      return []
+  def _fireEvent(self, event, key, *args, **kwargs):
+    for eh in self._getRegistrations(event, key):
+      eh(*args, **kwargs)
+  def handle(self, dev, packet):
+    pass
+    
+#endif

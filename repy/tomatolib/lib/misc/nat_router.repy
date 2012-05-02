@@ -1,0 +1,71 @@
+
+#ifndef nat_router_loaded
+#define nat_router_loaded
+
+#include <misc/standard_node.repy>
+
+class NatMapping:
+  def __init__(self):
+    self.srcToPortMap = {}
+    self.portToDstMap = {}
+    self.nextPort = 1024
+  def srcToPort(self, src):
+    if src in self.srcToPortMap:
+      return self.srcToPortMap[src]
+    self.srcToPortMap[src] = self.nextPort
+    self.portToDstMap[self.nextPort] = src
+    self.nextPort += 1
+    return self.srcToPortMap[src]
+  def portToDst(self, port):
+    return self.portToDstMap.get(port)
+
+class NatRouter:
+  def __init__(self, uplink_dev, uplink_options, local_options):
+    self.uplink_devs = [uplink_dev]
+    self.local_devs = tuntap_list()
+    self.local_devs.remove(uplink_dev)
+    self.uplink = StandardNode(noTcp=True, devs=self.uplink_devs, **uplink_options)
+    self.uplink.ipv4.register(EVENT_PACKET_MATCH, IP_PROTOCOL_ICMP, self._uplink_icmp)
+    self.uplink.ipv4.register(EVENT_PACKET_MATCH, IP_PROTOCOL_UDP, self._uplink_udp)
+    self.uplink.ipv4.register(EVENT_PACKET_MATCH, IP_PROTOCOL_TCP, self._uplink_tcp)
+    self.local = StandardNode(noTcp=True, devs=self.local_devs, **local_options)
+    self.local.ipv4.register(EVENT_PACKET_NO_MATCH, IP_PROTOCOL_ICMP, self._local_icmp)
+    self.local.ipv4.register(EVENT_PACKET_NO_MATCH, IP_PROTOCOL_UDP, self._local_udp)
+    self.local.ipv4.register(EVENT_PACKET_NO_MATCH, IP_PROTOCOL_TCP, self._local_tcp)
+    self.udpMap = NatMapping()
+    self.tcpMap = NatMapping()
+  def handle(self, dev, p):
+    if dev in self.uplink_devs:
+      self.uplink.handle(dev, p)
+    else:
+      self.local.handle(dev, p)
+  def _uplink_icmp(self, ip, ethernet, dev):
+    self.local.ipv4.send(dst=IP_GLOBAL_BROADCAST, src=ip.src, protocol=IP_PROTOCOL_ICMP, payload=ip.payload)
+  def _local_icmp(self, ip, ethernet, dev):
+    self.uplink.ipv4.send(dst=ip.dst, protocol=IP_PROTOCOL_ICMP, payload=ip.payload)
+  def _uplink_udp(self, ip, ethernet, dev):
+    udp = UdpHeader(ip.payload)
+    dst = self.udpMap.portToDst(udp.dst)
+    if not dst:
+      return
+    (dst_ip, udp.dst) = dst
+    self.local.ipv4.send(dst=dst_ip, src=ip.src, protocol=IP_PROTOCOL_UDP, payload=udp.encode())
+  def _local_udp(self, ip, ethernet, dev):
+    udp = UdpHeader(ip.payload)
+    udp.src = self.udpMap.srcToPort((ip.src, udp.src))
+    self.uplink.ipv4.send(dst=ip.dst, protocol=IP_PROTOCOL_UDP, payload=udp.encode())
+  def _uplink_tcp(self, ip, ethernet, dev):
+    tcp = TcpHeader(ip.payload, ip.src, ip.dst)
+    dst = self.tcpMap.portToDst(tcp.dst)
+    if not dst:
+      return
+    (dst_ip, tcp.dst) = dst
+    tcp.ip_dst = dst_ip
+    self.local.ipv4.send(dst=dst_ip, src=ip.src, protocol=IP_PROTOCOL_TCP, payload=tcp.encode())
+  def _local_tcp(self, ip, ethernet, dev):
+    tcp = TcpHeader(ip.payload, ip.src, ip.dst)
+    tcp.ip_src = self.uplink.ipv4.ip
+    tcp.src = self.tcpMap.srcToPort((ip.src, tcp.src))
+    self.uplink.ipv4.send(dst=ip.dst, protocol=IP_PROTOCOL_TCP, payload=tcp.encode())
+
+#endif

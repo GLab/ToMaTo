@@ -1,7 +1,6 @@
 */config
 */logs
 *.pyc
-web/apache.conf
 *.komodoproject
 *.sqlite
 buildui/nbproject/private

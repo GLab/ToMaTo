@@ -1,0 +1,52 @@
+
+#ifndef udp_loaded
+#define udp_loaded
+
+#include <general.repy>
+
+IP_PROTOCOL_UDP = 17
+
+class UdpHeader(Header):
+  def create(self, src, dst, payload):
+    self.src = src
+    self.dst = dst
+    self.payload = payload
+  def decode(self, p):
+    (self.src, self.dst, length, checksum) = struct.unpack("!HHHH", p[0:8])
+    self.payload = p[8:]
+    #FIXME: check checksum
+    return self
+  def encode(self):
+    return struct.pack("!HHHH", self.src, self.dst, 8+len(self.payload), 0) + self.payload
+  def __str__(self):
+    return "UDP(src=%d, dst=%d)" % (self.src, self.dst)
+
+class UdpNode(Node):
+  def __init__(self, parent, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.parent.register(EVENT_PACKET_MATCH, IP_PROTOCOL_UDP, self._udp)
+    self.parent.register(EVENT_PACKET_BROADCAST, IP_PROTOCOL_UDP, self._udp)
+  def _udp(self, ip, ethernet, dev):
+    udp = UdpHeader(ip.payload)
+#ifdef DEBUG_UDP
+    echo("Received via " + dev + ":\n\t" + str(ethernet) + "\n\t" + str(ip) + "\n\t" + str(udp))
+#ifdef DEBUG_DUMP
+    echo(dump_packet(p))
+#endif
+    echo("")
+#endif
+    self.handle_udp(udp, ip, ethernet, dev)
+  def handle_udp(self, udp, ip, ethernet, dev):
+    if self._getRegistrations(EVENT_PACKET_MATCH, udp.dst):
+      self._fireEvent(EVENT_PACKET_MATCH, udp.dst, udp, ip, ethernet, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_REGISTRATION, 0, udp, ip, ethernet, dev)
+  def send(self, srcport, dstip, dstport, payload, **kwargs):
+    udp_msg = UdpHeader(srcport, dstport, payload)
+#ifdef DEBUG
+    echo("\t" + str(udp_msg))
+#endif
+    self.parent.send(dstip, IP_PROTOCOL_UDP, udp_msg.encode(), **kwargs)
+
+#endif

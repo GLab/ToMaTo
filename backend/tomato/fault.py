@@ -70,6 +70,8 @@ INTERNAL_ERROR = 500
 def _must_log(exc):
 	if isinstance(exc, Fault):
 		return exc.faultCode in [UNKNOWN_ERROR, INTERNAL_ERROR]
+	if hasattr(exc, "mustLog"):
+		return exc.mustLog
 	return True 
 
 def log_info(title, message):

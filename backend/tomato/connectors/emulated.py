@@ -151,11 +151,14 @@ class EmulatedConnection(Connection):
 		oldCaptureToFile = self.getCaptureToFile()
 		oldCaptureViaNet = self.getCaptureViaNet()
 		oldCaptureFilter = self.getCaptureFilter()
-		#FIXME: validate filter
+		if "capture_filter" in properties:
+			filter = properties["capture_filter"]
+			host = self.getHost()
+			if host:
+				fault.check(tcpdump._checkSyntax(host, filter=filter), "Syntax error in filter")
+			self.setCaptureFilter(properties["capture_filter"])
 		if "capture_to_file" in properties:
 			self.setCaptureToFile(properties["capture_to_file"])
-		if "capture_filter" in properties:
-			self.setCaptureFilter(properties["capture_filter"])
 		if "capture_via_net" in properties:
 			self.setCaptureViaNet(properties["capture_via_net"])
 		for p in netemProperties:
@@ -310,10 +313,10 @@ class EmulatedConnection(Connection):
 		taskset.add(tasks.Task("remove-capture-dir", self._removeCaptureDir))
 		return taskset
 
-	def downloadCaptureUri(self):
+	def downloadCaptureUri(self, onlyLatest=False):
 		fault.check(not self.connector.state == State.CREATED and self.getCaptureToFile(), "Captures not ready")
 		host = self.getHost()
-		return tcpdump.downloadCaptureUri(host, self._captureName())
+		return tcpdump.downloadCaptureUri(host, self._captureName(), onlyLatest)
 	
 	def repair(self):
 		state = self.connector.state
