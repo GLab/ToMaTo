@@ -159,3 +159,6 @@ def ticket(request, page=""):
 
 def project(request, page=""):
 	return HttpResponseRedirect(settings.project_url % page)
+
+def logout(request):
+	return HttpResponseNotAuthorized()

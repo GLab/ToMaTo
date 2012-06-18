@@ -62,7 +62,7 @@ def getapi(request):
 
 class HttpResponseNotAuthorized(HttpResponse):
 	status_code = 401
-	def __init__(self, redirect_to):
+	def __init__(self):
 		HttpResponse.__init__(self)
 		self['WWW-Authenticate'] = 'Basic realm="%s"' % server_httprealm
 
@@ -73,7 +73,7 @@ class wrap_rpc:
 		try:
 			api = getapi(request)
 			if api is None:
-				return HttpResponseNotAuthorized("Authorization required!")
+				return HttpResponseNotAuthorized()
 			return self.fun(api, request, *args, **kwargs) 
 		except xmlrpclib.ProtocolError, e:
 			f={"faultCode": e.errcode, "faultString": e.errmsg}
@@ -88,7 +88,7 @@ class wrap_json:
 		try:
 			api = getapi(request)
 			if api is None:
-				return HttpResponseNotAuthorized("Authorization required!")
+				return HttpResponseNotAuthorized()
 			try:
 				res = self.fun(api, request, *args, **kwargs)
 				return HttpResponse(json.dumps({"success": True, "output": res}))
