@@ -48,3 +48,4 @@ from hosts import *
 from misc import *
 from templates import *
 from topologies import *
+from device_profiles import *
