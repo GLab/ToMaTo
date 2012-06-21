@@ -53,5 +53,60 @@ class DeviceProfile(attributes.Mixin, models.Model):
 		res = {"name": self.name, "type": self.type, "default": self.default,
 			"restricted": self.restricted, "attrs": self.attrs}
 		return res
+	
+	def configure(self, attributes):
+		self.attrs = attributes
+		self.save()
+		
+	def setDefault(self):
+		DeviceProfile.objects.filter(type=self.type).update(default=False) # pylint: disable-msg=E1101
+		self.default=True
+		self.save()
 
+def getAll(type_=None):
+	prfls = DeviceProfile.objects.all() # pylint: disable-msg=E1101
+	if type_:
+		prfls = prfls.filter(type=type_)
+	return prfls
+
+def findName(type_, name):
+	try:
+		prfl = DeviceProfile.objects.get(type=type_, name=name) # pylint: disable-msg=E1101
+		return prfl.name
+	except: #pylint: disable-msg=W0702
+		return getDefault(type_)
+
+def getMap(auth):
+	map = {}
+	for prfl in getAll():
+		if not prfl.type in map:
+			map[prfl.type] = []
+		map[prfl.type].append(prfl.toDict(auth)) 
+	return map
+
+def get(type_, name):
+	return DeviceProfile.objects.get(type=type_, name=name) # pylint: disable-msg=E1101
+
+def add(type_, name, attributes):
+	prfl = DeviceProfile.objects.create(name=name, type=type_) # pylint: disable-msg=E1101
+	return prfl.configure(attributes)
+
+def change(type_, name, attributes):
+	prfl = get(type_, name)
+	return prfl.configure(attributes)
+	
+def remove(type_, name):
+	DeviceProfile.objects.filter(type=type_, name=name).delete() # pylint: disable-msg=E1101
+	
+def getDefault(type_):
+	prfls = DeviceProfile.objects.filter(type=type_, default=True) # pylint: disable-msg=E1101
+	if prfls.count() >= 1:
+		return prfls[0].name
+	else:
+		return None
+
+# keep internal imports at the bottom to avoid dependency problems
+from tomato.hosts import getAll as getAllHosts
 from tomato import fault
+from tomato.lib import tasks
+from tomato.hosts import ClusterState

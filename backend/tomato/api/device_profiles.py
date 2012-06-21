@@ -40,7 +40,7 @@ def device_profile_map(user=None): #@UnusedVariable, pylint: disable-msg=W0613
 	"""
 	return hosts.device_profiles.getMap(user.is_admin)
 
-def device_profile_add(type, name, properties=[], user=None):
+def device_profile_add(type, name, properties={}, user=None):
 	"""
 	Adds a device profile. This method requires admin access.
 
