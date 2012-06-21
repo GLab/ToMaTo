@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+
+{% if task %}
+<h1>Task: {{taskname}}</h1>
+<iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task%}"></iframe>
+{% endif %}
+
+<h1>List of devices on {{host}}</h1>
+
+<script src="/static/enhancetable.js"></script>
+<table class="sortable,filterable">
+	<tr>
+		<th>Name</th>
+		<th>Topology</th>
+		<th>User</th>
+		<th>Status</th>
+		<th>Actions</th>
+	</tr>
+{% for device in device_list %}
+	<tr>
+		<td>{{device.attrs.name}}</td>
+		<td><a href="{%url top.show device.top%}">{{device.topname}}</a></td>
+		<td>{{device.owner}}</td>
+		<td>{{device.attrs.state}}</td>
+		<td>
+			{% if device.capabilities.action.migrate %}
+			<a href="{%url host.device_migrate host device.top device.attrs.name%}"><img src="/static/icons/migrate.png" alt="migrate" title="migrate"/> migrate</a>
+			{% endif %}
+		</td>
+	</tr>
+{% endfor %}
+</table>
+
+{% endblock %}

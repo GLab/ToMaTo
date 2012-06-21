@@ -31,4 +31,5 @@ from hosts.external_networks import ExternalNetwork, ExternalNetworkBridge #@Unu
 from hosts.physical_links import  PhysicalLink #@UnusedImport
 from hosts.templates import Template #@UnusedImport
 from hosts.resources import ResourcePool, ResourceEntry #@UnusedImport
+from hosts.device_profiles import DeviceProfile #@UnusedImport
 from auth import User #@UnusedImport

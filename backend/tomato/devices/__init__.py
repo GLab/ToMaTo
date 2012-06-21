@@ -20,6 +20,7 @@ from django.db import models
 from tomato import attributes, hosts
 from tomato.topology import Topology, Permission
 from tomato.generic import State, ObjectPreferences
+from tomato.hosts.device_profiles import DeviceProfile
 from tomato.lib import db, hostserver, util
 from tomato.lib.decorators import *
 
@@ -31,6 +32,7 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	name = models.CharField(max_length=20, validators=[db.nameValidator])
 	topology = models.ForeignKey(Topology)
 	type = models.CharField(max_length=10, validators=[db.nameValidator], choices=TYPES)
+	profile = models.ForeignKey(DeviceProfile, null=True, on_delete=models.SET_NULL)
 	state = models.CharField(max_length=10, choices=((State.CREATED, State.CREATED), (State.PREPARED, State.PREPARED), (State.STARTED, State.STARTED)), default=State.CREATED)
 	host = models.ForeignKey(hosts.Host, null=True)
 	hostgroup = models.CharField(max_length=20, validators=[db.nameValidator], null=True)
