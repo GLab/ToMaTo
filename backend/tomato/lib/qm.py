@@ -244,3 +244,9 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, ifaces):
 	#remove tmp directories
 	fileutil.delete(src_host, src_tmp, recursive=True)
 	fileutil.delete(dst_host, dst_tmp, recursive=True)
+	
+def setProfile(host, vmid, cpus, ram, **other):
+	assert getState(host, vmid) == generic.State.PREPARED
+	cpus = int(cpus)
+	ram = int(ram)
+	_qm(host, vmid, "set", ["--memory", ram, "--cores", cpus])

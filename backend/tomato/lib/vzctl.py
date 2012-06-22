@@ -226,5 +226,4 @@ def setProfile(host, vmid, ram, disk, **other):
 	assert getState(host, vmid) != generic.State.CREATED
 	disk = "%dM" % int(disk)
 	ram = "%dM" % int(ram)
-	print ram, disk
 	_vzctl(host, vmid, "set", ["--vmguarpages", ram, "--privvmpages", ram, "--diskspace", disk, "--save"])

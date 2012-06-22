@@ -163,6 +163,7 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 
 	def _configureVm(self):
 		qm.setName(self.host, self.getVmid(), "%s_%s" % (self.topology.name, self.name))
+		self._profileChanged()
 	
 	def _assignHost(self):
 		#assign host
@@ -253,6 +254,9 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 		if "template" in properties:
 			self.setTemplate(properties["template"])
 		self.save()
+			
+	def _profileChanged(self):
+		qm.setProfile(self.host, self.getVmid(), **self.getProfile().attrs)	
 			
 	def interfacesAdd(self, name, properties): #@UnusedVariable, pylint: disable-msg=W0613
 		fault.check(self.state != State.STARTED, "Changes of running KVMs are not supported")
