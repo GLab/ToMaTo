@@ -7,8 +7,9 @@
 <iframe width="80%" height="60%" frameborder="0" src="{%url main.task_status task%}"></iframe>
 {% endif %}
 
-<h1>List of hosts</h1>
+<h1>List of hosts <a href="{%url host.edit%}"><img src="/static/icons/add.png" alt="add" title="add"/></a></h1>
 
+{% if host_list %}
 <script src="/static/enhancetable.js"></script>
 <table class="sortable,filterable">
 	<tr>
@@ -26,5 +27,8 @@
 	</tr>
 {% endfor %}
 </table>
+{% else %}
+No hosts registered, click on <a href="{%url host.edit%}"><img src="/static/icons/add.png" alt="add" title="add"/></a> to add one.
+{% endif %}
 
 {% endblock %}

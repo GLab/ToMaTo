@@ -1,8 +1,9 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-<h1>List of templates</h1>
+<h1>List of templates <a href="{%url template.add%}"><img src="/static/icons/add.png" alt="add" title="add"/></a></h1>
 
+{% if templates.kvm or templates.openvz or templates.prog %}
 <h2>KVM templates</h2>
 <ul>
 {% for tpl in templates.kvm %}
@@ -23,5 +24,8 @@
 <li><a href="{%url template.detail tpl.type tpl.name %}">{{tpl.name}}</a> {% if tpl.default %}<b>(default)</b>{% endif %}</li>
 {% endfor %}
 </ul>
+{% else %}
+No templates registered, click on <a href="{%url template.add%}"><img src="/static/icons/add.png" alt="add" title="add"/></a> to add one.
+{% endif %}
 
 {% endblock %}

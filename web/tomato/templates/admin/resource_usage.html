@@ -3,7 +3,7 @@
 {% block content %}
 <script src="/static/enhancetable.js"></script>
 
-<h1>Resource usage by {% if by_user %}user{% else %}topology{% endif %}</h1>
+<h1>Resource usage by {% if by_user %}user <a href="{%url main.resource_usage_by_topology%}">[by topology]</a>{% else %}topology <a href="{%url main.resource_usage_by_user%}">[by user]</a>{% endif %}</h1>
 <table class="sortable,filterable">
 	<tr>
 		<th>{% if by_user %}User{% else %}Topology{% endif %}</th>

@@ -2,8 +2,9 @@
 
 {% block content %}
 
-<h1>List of external networks</h1>
+<h1>List of external networks <a href="{%url external_networks.add%}"><img src="/static/icons/add.png" alt="add" title="add"/></a></h1>
 
+{% if list %}
 {% for en in list %}
 <h2>{{en.type}} ({{en.group}}) 
 <a href="{%url external_networks.change type=en.type group=en.group%}"><img src="/static/icons/edit.png" alt="edit" title="edit"/></a>
@@ -40,4 +41,8 @@ Avoid duplicates: {{en.avoid_duplicates}}<br/>
 </form>
 </table>
 {% endfor %}
+{% else %}
+No external networks registered, click on <a href="{%url external_networks.add%}"><img src="/static/icons/add.png" alt="add" title="add"/></a> to add one.
+{% endif %}
+
 {% endblock %}

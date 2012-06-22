@@ -13,49 +13,27 @@
 
 {% block left %}
 <div id="sidemenu">
-	<h2>Hosts</h2>
+	<h2>Resources</h2>
 	<ul>
-		<li><a href="{%url host.index%}">list of all hosts</a></li>
-		<li><a href="{%url host.edit%}">add new host</a></li>
-	</ul>
-</div>
-
-<div id="sidemenu">
-	<h2>External Networks</h2>
-	<ul>
-		<li><a href="{%url external_networks.index%}">list of external networks</a></li>
-		<li><a href="{%url external_networks.add%}">add external network</a></li>
-	</ul>
-</div>
-
-<div id="sidemenu">
-	<h2>Templates</h2>
-	<ul>
-		<li><a href="{%url template.index%}">list of all templates</a></li>
-		<li><a href="{%url template.add%}">add new template</a></li>
+		<li><a href="{%url host.index%}">Hosts</a></li>
+		<li><a href="{%url template.index%}">Templates</a></li>
+		<li><a href="{%url external_networks.index%}">External networks</a></li>
 	</ul>
 </div>
 
 <div id="sidemenu">
 	<h2>Statistics</h2>
 	<ul>
-		<li><a href="{%url main.physical_links%}">physical link statistics</a></li>
-		<li><a href="{%url main.resource_usage_by_topology%}">resource usage (top)</a></li>
-		<li><a href="{%url main.resource_usage_by_user%}">resource usage (user)</a></li>
+		<li><a href="{%url main.physical_links%}">Physical links</a></li>
+		<li><a href="{%url main.resource_usage_by_user%}">Resource usage</a></li>
 	</ul>
 </div>
 
 <div id="sidemenu">
-	<h2>Tasks</h2>
+	<h2>Debug</h2>
 	<ul>
-		<li><a href="{%url main.task_list%}">list of all tasks</a></li>
-	</ul>
-</div>
-
-<div id="sidemenu">
-	<h2>Errors</h2>
-	<ul>
-		<li><a href="{%url main.error_list%}">list of all errors</a></li>
+		<li><a href="{%url main.task_list%}">Tasks</a></li>
+		<li><a href="{%url main.error_list%}">Errors</a></li>
 	</ul>
 </div>
 {% endblock %}
