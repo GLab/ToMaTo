@@ -41,6 +41,9 @@ window.onerror=errorHandler;
 editor.setTemplatesOpenVZ({% if tpl_openvz %}"{{tpl_openvz}}".split(","){% else %}[]{% endif %});
 editor.setTemplatesKVM({% if tpl_kvm %}"{{tpl_kvm}}".split(","){% else %}[]{% endif %});
 editor.setTemplatesProg({% if tpl_prog %}"{{tpl_prog}}".split(","){% else %}[]{% endif %});
+editor.setProfilesOpenVZ({% if profiles_openvz %}"{{profiles_openvz}}".split(","){% else %}[]{% endif %});
+editor.setProfilesKVM({% if profiles_kvm %}"{{profiles_kvm}}".split(","){% else %}[]{% endif %});
+editor.setProfilesProg({% if profiles_prog %}"{{profiles_prog}}".split(","){% else %}[]{% endif %});
 editor.setHostGroups({% if host_groups %}"{{host_groups}}".split(","){% else %}[]{% endif %});
 
 var external_networks = {};

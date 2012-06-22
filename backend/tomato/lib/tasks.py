@@ -46,6 +46,7 @@ class Task():
 		self.after(after)
 		self.before(before)
 		self.callWithTask = callWithTask
+		self.user = auth.current_user()
 		self._prepare()
 	def _prepare(self):
 		self.output = StringIO()
@@ -125,6 +126,7 @@ class Task():
 			self.fn.__self__.reload()
 		except:
 			pass
+		auth.set_current_user(self.user)
 		self.status = Status.RUNNING
 		if self.callWithTask:
 			self.result = self.fn(self, *(self.args), **(self.kwargs))
@@ -470,3 +472,5 @@ def runTask(task, processName=None):
 
 if not config.MAINTENANCE:	
 	atexit.register(keep_running)
+
+from tomato import auth

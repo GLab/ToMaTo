@@ -919,6 +919,9 @@ var Editor = Class.extend({
 		this.templatesOpenVZ = [];
 		this.templatesKVM = [];
 		this.templatesProg = [];
+		this.profilesOpenVZ = [];
+		this.profilesKVM = [];
+		this.profilesProg = [];
 		this.externalNetworks = {};
 		this.nextIPHintNumber = 0;
 		this.isLoading = false;
@@ -1176,6 +1179,15 @@ var Editor = Class.extend({
 	},
 	setTemplatesProg: function(tpls) {
 		this.templatesProg = tpls;
+	},
+	setProfilesOpenVZ: function(profiles) {
+		this.profilesOpenVZ = profiles;
+	},
+	setProfilesKVM: function(profiles) {
+		this.profilesKVM = profiles;
+	},
+	setProfilesProg: function(profiles) {
+		this.profilesProg = profiles;
 	},
 	setExternalNetworks: function(enmap) {
 		this.externalNetworks = enmap;
@@ -2139,6 +2151,7 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
 		infoBtn.click(function(){obj.showTemplateInfo();});
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template", infoBtn);
+		this.attrs.addField(new SelectField("profile", this.obj.editor.profilesOpenVZ, "auto"), "profile");
 		this.attrs.addField(new TextField("root_password", ""), "root&nbsp;password");
 		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
 		this.attrs.addField(new MagicTextField("gateway6", pattern.ip6, ""), "gateway6");
@@ -2151,6 +2164,7 @@ var KVMDeviceWindow = DeviceWindow.extend({
 		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
 		infoBtn.click(function(){obj.showTemplateInfo();});
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template", infoBtn);
+		this.attrs.addField(new SelectField("profile", this.obj.editor.profilesKVM, "auto"), "profile");
 	}	
 });
 
@@ -2160,6 +2174,7 @@ var ProgDeviceWindow = DeviceWindow.extend({
 		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
 		infoBtn.click(function(){obj.showTemplateInfo();});
 		this.attrs.addField(new SelectField("template", this.obj.editor.templatesProg, "auto"), "template", infoBtn);
+		this.attrs.addField(new SelectField("profile", this.obj.editor.profilesProg, "auto"), "profile");
 		this.attrs.addField(new TextField("args", ""), "arguments");
 	}	
 });

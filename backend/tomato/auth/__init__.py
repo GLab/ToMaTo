@@ -17,7 +17,7 @@
 
 from tomato import config, fault
 from tomato.lib import util
-import time, atexit, datetime, crypt, string, random, sys
+import time, atexit, datetime, crypt, string, random, sys, threading
 
 from django.db import models
 
@@ -97,11 +97,14 @@ def provider_login(username, password):
 	return None
 
 def login(username, password):
+	global _currentUser
 	for user in User.objects.filter(name = username):
 		if user.password and user.checkPassword(password):
+			_currentUser.user = user
 			return user
 	user = provider_login(username, password)
 	if not user:
+		_currentUser.user = None
 		return None
 	try:
 		stored = User.objects.get(models.Q(name=user.name) & (models.Q(origin=user.origin) | models.Q(origin=None)))
@@ -115,7 +118,17 @@ def login(username, password):
 		user.save()
 		stored = user
 	stored.storePassword(password)
+	_currentUser.user = stored
 	return stored
+
+_currentUser = threading.local()
+
+def current_user():
+	return _currentUser.user if hasattr(_currentUser, "user") else None
+	
+
+def set_current_user(user):
+	_currentUser.user = user
 
 providers = []
 print >>sys.stderr, "Loading auth modules..."

@@ -104,7 +104,8 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 				"download_image": isUser and not isBusy and self.state == State.PREPARED,
 			},
 			"configure": {
-				"hostgroup": True,
+				"hostgroup": self.state == State.CREATED,
+				"profile": self.state != State.STARTED,
 			},
 			"modify": {
 				"delete": self.state == State.CREATED,
@@ -217,12 +218,34 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	def getDestroyTasks(self):
 		return tasks.TaskSet()
 	
+	def setProfile(self, profileName):
+		if profileName:
+			profile = hosts.device_profiles.get(self.type, hosts.device_profiles.findName(self.type, profileName))
+		else:
+			profile = None
+		if profile == self.profile:
+			return
+		if profile and profile.restricted:
+			fault.check(auth.current_user().is_admin, "Device profile %s is restricted to admin users" % profile.name)
+		self.profile = profile
+	
+	def getProfile(self):
+		if self.profile:
+			return self.profile
+		else:
+			return hosts.device_profiles.get(hosts.device_profiles.getDefault(self.type))
+	
 	def configure(self, properties):
 		if "hostgroup" in properties:
 			fault.check(self.state == State.CREATED, "Cannot change hostgroup of prepared device: %s" % self.name)
 			if properties["hostgroup"] == "auto":
 				properties["hostgroup"] = None
 			self.hostgroup = properties["hostgroup"]
+		if "profile" in properties:
+			fault.check(self.state != State.STARTED, "Cannot change profile of running device: %s" % self.name)
+			if properties["profile"] == "auto":
+				properties["profile"] = None
+			self.setProfile(properties["profile"])
 		self.setPrivateAttributes(properties)
 		self.save()
 
@@ -236,10 +259,10 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	@xmlRpcSafe
 	def toDict(self, user):
 		res = {"attrs": {"host": str(self.host) if self.host else None,
-					"hostgroup": self.hostgroup,
+					"hostgroup": self.hostgroup, "profile": self.profile.name if self.profile else None,
 					"name": self.name, "type": self.type, "state": self.state,
 					},
-			"resources" : util.xml_rpc_sanitize(self.getAttribute("resources")),
+			"resources": util.xml_rpc_sanitize(self.getAttribute("resources")),
 			"interfaces": dict([[i.name, i.upcast().toDict(user)] for i in self.interfaceSetAll()]),
 			"capabilities": self.getCapabilities(user)
 		}
@@ -344,5 +367,5 @@ class Interface(db.ChangesetMixin, attributes.Mixin, models.Model):
 
 
 # keep internal imports at the bottom to avoid dependency problems
-from tomato import fault
+from tomato import fault, auth
 from tomato.lib import tasks

@@ -41,6 +41,10 @@ def _display_top(api, top_id, format="jsui", edit=False):
 	tpl_openvz=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("openvz", []))])
 	tpl_kvm=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("kvm", []))])
 	tpl_prog=",".join([t["name"] for t in filter(lambda t: t.get("enabled", False), tpls.get("prog", []))])
+	profiles = api.device_profile_map()
+	profiles_openvz=",".join([t["name"] for t in profiles.get("openvz", [])])
+	profiles_kvm=",".join([t["name"] for t in profiles.get("kvm", [])])
+	profiles_prog=",".join([t["name"] for t in profiles.get("prog", [])])
 	enlist = api.external_networks()
 	map = {}
 	for en in enlist:
@@ -50,7 +54,7 @@ def _display_top(api, top_id, format="jsui", edit=False):
 			map[en["type"]] = [en["group"]]
 	external_networks=",".join([f+":"+("|".join(map[f])) for f in map])
 	host_groups=",".join(api.host_groups())
-	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':edit} )
+	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'profiles_openvz': profiles_openvz, 'profiles_kvm': profiles_kvm, 'profiles_prog': profiles_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':edit} )
 
 @wrap_rpc
 def index(api, request):
