@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>Details of {{profile.name}} ({{profile.type}} profile)</h1>
+
+<h2>Actions</h2>
+<a href="{%url device_profile.set_default profile.type profile.name%}"><img src="/static/icons/star.png" alt="set default" title="set default"/> set default</a><br/>
+<a href="{%url device_profile.remove profile.type profile.name%}" onclick="javascript:return confirm('Are you sure?')"><img src="/static/icons/delete.png" alt="remove" title="remove"/> remove</a><br/>
+
+<h2>Attributes <a href='javascript:document.getElementById("attr_view").setAttribute("style", "display: none");document.getElementById("attr_edit").removeAttribute("style");'><img src="/static/icons/edit.png" alt="edit" title="edit"/></a></h2>
+<div id="attr_view">
+<table>
+{% for name, value in profile.attrs.iteritems %}
+  <tr><td>{{name}}</td><td>{{value}}</td></tr>
+{% endfor %}
+</table>
+</div>
+
+<form id="attr_edit" action="{%url device_profile.edit profile.type profile.name%}" method="POST">
+<table>
+{{ form.management_form }}
+  <tr><th>Name</th><th>Value</th><th></th></tr>
+{% for f in form %}
+  <tr><td>{{f.name}}</td><td>{{f.value}}</td></tr>
+{% endfor %}
+</table>
+<input type="submit"/>
+</form>
+<script language="javascript"><!--
+  document.getElementById("attr_{% if show_form %}view{% else %}edit{% endif %}").setAttribute("style", "display: none");
+--></script>
+
+{% endblock %}
