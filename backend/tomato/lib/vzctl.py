@@ -221,3 +221,10 @@ def migrate(src_host, src_vmid, dst_host, dst_vmid, template, ifaces):
 	#remove tmp directories
 	fileutil.delete(src_host, src_tmp, recursive=True)
 	fileutil.delete(dst_host, dst_tmp, recursive=True)
+
+def setProfile(host, vmid, ram, disk, **other):
+	assert getState(host, vmid) != generic.State.CREATED
+	disk = "%dM" % int(disk)
+	ram = "%dM" % int(ram)
+	print ram, disk
+	_vzctl(host, vmid, "set", ["--vmguarpages", ram, "--privvmpages", ram, "--diskspace", disk, "--save"])

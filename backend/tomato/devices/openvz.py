@@ -71,6 +71,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 			"root_password": True,
 			"gateway4": True,
 			"gateway6": True,
+			"profile": True,
 		})
 		capabilities["action"].update({
 			"execute": isUser and self.state == State.STARTED,
@@ -96,6 +97,9 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		if self._vncRunning():
 			return
 		vzctl.startVnc(self.host, self.getVmid(), self.getVncPort(), self.vncPassword())
+
+	def _profileChanged(self):
+		vzctl.setProfile(self.host, self.getVmid(), **self.getProfile().attrs)
 
 	def _configureRoutes(self):
 		#Note: usage of self as host is intentional
@@ -191,6 +195,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		if self.getRootPassword():
 			vzctl.setUserPassword(self.host, self.getVmid(), self.getRootPassword(), username="root")
 		vzctl.setHostname(self.host, self.getVmid(), "%s-%s" % (self.topology.name.replace("_","-"), self.name ))
+		self._profileChanged()
 
 	def _prepareDev(self):
 		#assign host

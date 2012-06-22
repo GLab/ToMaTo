@@ -228,12 +228,16 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 		if profile and profile.restricted:
 			fault.check(auth.current_user().is_admin, "Device profile %s is restricted to admin users" % profile.name)
 		self.profile = profile
+		self._profileChanged()
 	
 	def getProfile(self):
 		if self.profile:
 			return self.profile
 		else:
-			return hosts.device_profiles.get(hosts.device_profiles.getDefault(self.type))
+			return hosts.device_profiles.get(self.type, hosts.device_profiles.getDefault(self.type))
+		
+	def _profileChanged(self):
+		pass
 	
 	def configure(self, properties):
 		if "hostgroup" in properties:
@@ -242,7 +246,7 @@ class Device(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 				properties["hostgroup"] = None
 			self.hostgroup = properties["hostgroup"]
 		if "profile" in properties:
-			fault.check(self.state != State.STARTED, "Cannot change profile of running device: %s" % self.name)
+			fault.check(self.getCapabilities(auth.current_user())["configure"]["profile"], "Cannot change profile of running device: %s" % self.name)
 			if properties["profile"] == "auto":
 				properties["profile"] = None
 			self.setProfile(properties["profile"])
