@@ -13,7 +13,7 @@ class EchoServer:
     self.icmp = IcmpNode(self.ipv4, **options)
     self.tcp = TcpNode(self.ipv4, **options)
     self.tcp.register(EVENT_TCP_CON_NEW, 80, self._newConnection)
-  def newConnection(self, con):
+  def _newConnection(self, con):
     echo("New connection")
     con.register(EVENT_TCP_CON_DATA, 0, self.newData)
   def newData(self, con, data):

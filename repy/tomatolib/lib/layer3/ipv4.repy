@@ -98,7 +98,7 @@ class IPv4Header(Header):
     return "IP(version=%d, src=%s, dst=%s, ttl=%d, protocol=%d)" % (self.version, ipToStr(self.src), ipToStr(self.dst), self.ttl, self.protocol)
 
 class IPv4Node(Node):
-  def __init__(self, parent, ip=IP_ZERO_ADDRESS, gateway=IP_ZERO_ADDRESS, networkSize=0, answer_arp=True, **kwargs):
+  def __init__(self, parent, ip="0.0.0.0", gateway="0.0.0.0", networkSize=0, answer_arp=True, **kwargs):
     Node.__init__(self)
     self.parent = parent
     self.ip = toIp(ip)

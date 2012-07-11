@@ -8,5 +8,5 @@ class Switch:
   def handle(self, dev, p):
     ether = EthernetHeader(p)
     self.mac_table[ether.src] = dev
-    dev = self.mac_table.get(ether.dst)
-    send(dev, EthernetHeader(ether.dst, ether.src, ether.type, ether.payload).encode())
+    dstDev = self.mac_table.get(ether.dst)
+    send(dstDev, EthernetHeader(ether.dst, ether.src, ether.type, ether.payload).encode(), exclude=dev)
