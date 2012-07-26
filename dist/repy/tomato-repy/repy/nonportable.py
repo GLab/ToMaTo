@@ -263,7 +263,7 @@ def getruntime():
   return elapsedtime
  
 
-# This lock is used to serialize calls to get_resouces
+# This lock is used to serialize calls to get_resources
 get_resources_lock = threading.Lock()
 
 # Cache the disk used from the external process
@@ -280,7 +280,7 @@ process_stopped_max_entries = 100
 def get_resources():
   """
   <Purpose>
-    Returns the resouce utilization limits as well
+    Returns the resource utilization limits as well
     as the current resource utilization.
 
   <Arguments>
@@ -289,13 +289,13 @@ def get_resources():
   <Returns>
     A tuple of dictionaries and an array (limits, usage, stoptimes).
 
-    Limits is the dictionary which maps the resouce name
+    Limits is the dictionary which maps the resource name
     to its maximum limit.
 
     Usage is the dictionary which maps the resource name
     to its current usage.
 
-    Stoptimes is an array of tuples with the times which the Repy proces
+    Stoptimes is an array of tuples with the times which the Repy process
     was stopped and for how long, due to CPU over-use.
     Each entry in the array is a tuple (TOS, Sleep Time) where TOS is the
     time of stop (respective to getruntime()) and Sleep Time is how long the
@@ -367,12 +367,13 @@ class WindowsNannyThread(threading.Thread):
     threading.Thread.__init__(self,name="NannyThread")
 
   def run(self):
-    # Calculate how often disk should be checked
-    if ostype == "WindowsCE":
-      disk_interval = int(repy_constants.RESOURCE_POLLING_FREQ_WINCE / repy_constants.CPU_POLLING_FREQ_WINCE)
-    else:
-      disk_interval = int(repy_constants.RESOURCE_POLLING_FREQ_WIN / repy_constants.CPU_POLLING_FREQ_WIN)
-    current_interval = 0 # What cycle are we on  
+    # How often the memory will be checked (seconds)
+    memory_check_interval = repy_constants.CPU_POLLING_FREQ_WIN
+    # The ratio of the disk polling time to memory polling time.
+    disk_to_memory_ratio = int(repy_constants.DISK_POLLING_HDD / memory_check_interval)
+      
+    # Which cycle number we're on  
+    counter = 0
     
     # Elevate our priority, above normal is higher than the usercode, and is enough for disk/mem
     windows_api.set_current_thread_priority(windows_api.THREAD_PRIORITY_ABOVE_NORMAL)
@@ -383,27 +384,25 @@ class WindowsNannyThread(threading.Thread):
     # run forever (only exit if an error occurs)
     while True:
       try:
+        # Increment the interval counter
+        counter += 1
+        
         # Check memory use, get the WorkingSetSize or RSS
         memused = windows_api.process_memory_info(mypid)['WorkingSetSize']
-        
+
         if memused > nanny.get_resource_limit("memory"):
           # We will be killed by the other thread...
           raise Exception, "Memory use '"+str(memused)+"' over limit '"+str(nanny.get_resource_limit("memory"))+"'"
-        
-        # Increment the interval we are on
-        current_interval += 1
 
         # Check if we should check the disk
-        if (current_interval % disk_interval) == 0:
+        if (counter % disk_to_memory_ratio) == 0:
           # Check diskused
           diskused = compute_disk_use(repy_constants.REPY_CURRENT_DIR)
           if diskused > nanny.get_resource_limit("diskused"):
             raise Exception, "Disk use '"+str(diskused)+"' over limit '"+str(nanny.get_resource_limit("diskused"))+"'"
-        
-        if ostype == 'WindowsCE':
-          time.sleep(repy_constants.CPU_POLLING_FREQ_WINCE)
-        else:
-          time.sleep(repy_constants.CPU_POLLING_FREQ_WIN)
+        # Sleep until the next iteration of checking the memory
+        time.sleep(memory_check_interval)
+
         
       except windows_api.DeadProcess:
         #  Process may be dead, or die while checking memory use
@@ -419,7 +418,7 @@ class WindowsNannyThread(threading.Thread):
 # Windows specific CPU Nanny Stuff
 winlastcpuinfo = [0,0]
 
-# Enfoces CPU limit on Windows and Windows CE
+# Enforces CPU limit on Windows and Windows CE
 def win_check_cpu_use(cpulim, pid):
   global winlastcpuinfo
   
@@ -535,7 +534,7 @@ def IPC_handle_diskused(bytes):
   cached_disk_used = bytes
 
 
-# This method handles meessages on the "repystopped" channel from
+# This method handles messages on the "repystopped" channel from
 # the external process. When the external process stops repy, it sends
 # a tuple with (TOS, amount) where TOS is time of stop (getruntime()) and
 # amount is the amount of time execution was suspended.
@@ -625,7 +624,7 @@ def read_message_from_pipe(readhandle):
       # Read 8 bytes at a time
       mesg = os.read(readhandle,8)
       if len(mesg) == 0:
-        raise EnvironmentError, "Read returned emtpy string! Pipe broken!"
+        raise EnvironmentError, "Read returned empty string! Pipe broken!"
       data += mesg
 
     # Increment the index while there is data and we have not found a colon
@@ -644,7 +643,7 @@ def read_message_from_pipe(readhandle):
       while more_data > 0:
         mesg = os.read(readhandle, more_data)
         if len(mesg) == 0:
-          raise EnvironmentError, "Read returned emtpy string! Pipe broken!"
+          raise EnvironmentError, "Read returned empty string! Pipe broken!"
         data += mesg
         more_data -= len(mesg)
 
@@ -820,7 +819,7 @@ def resource_monitor(childpid, pipe_handle):
   # Run forever...
   while True:
     ########### Check CPU ###########
-    # Get elasped time
+    # Get elapsed time
     currenttime = getruntime()
     elapsedtime1 = currenttime - last_time     # Calculate against last run
     elapsedtime2 = currenttime - resume_time   # Calculate since we last resumed repy

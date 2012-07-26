@@ -704,7 +704,7 @@ TCP_SOCKET_OBJECT_WRAPPER_INFO = {
   'send' :
       {'func' : emulcomm.EmulatedSocket.send,
        'args' : [Str()],
-       'return' : Int(min=1)},
+       'return' : Int(min=0)},
 }
 
 # TODO: Figure out which real object should be wrapped. It doesn't appear

@@ -108,7 +108,7 @@ def parse_resourcedict_from_string(resourcestring):
         Reads resource information from a file, returning a dict
 
     <Arguments>
-        filename: the name of the file to read resource information from.
+        resourcestring: the string of data to parse
 
     <Exceptions>
         ResourceParseError: if the file does not have the correct format
@@ -154,7 +154,7 @@ def parse_resourcedict_from_string(resourcestring):
  
     # should be either a resource or a call line
     if linetypestring != 'resource' and linetypestring != 'call':
-      raise ResourceParseError("Line '"+line+"' not understood in file '"+filename+"'")
+      raise ResourceParseError("Line '"+line+"' not understood.")
     
 
 
@@ -162,7 +162,7 @@ def parse_resourcedict_from_string(resourcestring):
 
       ####### Okay, it's a resource.  It must have two other tokens!
       if len(tokenlist) != 3:
-        raise ResourceParseError("Line '"+line+"' has wrong number of items in '"+filename+"'")
+        raise ResourceParseError("Line '"+line+"' has wrong number of items")
 
       # the other tokens are the resource and the resource value
       knownresourcename = tokenlist[1]
@@ -170,13 +170,13 @@ def parse_resourcedict_from_string(resourcestring):
 
       # and the second token must be a known resource
       if knownresourcename not in resource_constants.known_resources:
-        raise ResourceParseError("Line '"+line+"' has an unknown resource '"+knownresourcename+"' in '"+filename+"'")
+        raise ResourceParseError("Line '"+line+"' has an unknown resource '"+knownresourcename+"'")
 
       # and the last item should be a valid float
       try:
         resourcevalue = float(resourcevaluestring)
       except ValueError:
-        raise ResourceParseError("Line '"+line+"' has an invalid resource value '"+resourcevaluestring+"' in '"+filename+"'")
+        raise ResourceParseError("Line '"+line+"' has an invalid resource value '"+resourcevaluestring+"'")
 
       # if it's an individual_item_resource, then there can be a list of 
       # different values for the resource (like ports)
@@ -188,7 +188,7 @@ def parse_resourcedict_from_string(resourcestring):
 
       # other resources should not have been previously assigned
       if knownresourcename in returned_resource_dict:
-        raise ResourceParseError("Line '"+line+"' has a duplicate resource rule for '"+knownresourcename+"' in '"+filename+"'")
+        raise ResourceParseError("Line '"+line+"' has a duplicate resource rule for '"+knownresourcename+"'")
 
         
       # Finally, we assign it to the table
@@ -207,7 +207,7 @@ def parse_resourcedict_from_string(resourcestring):
       continue
 
     else:
-      raise ResourceParseError("Internal error for '"+line+"' in file '"+filename+"'")
+      raise ResourceParseError("Internal error for '"+line+"'")
 
 
   # make sure that if there are required resources, they are defined

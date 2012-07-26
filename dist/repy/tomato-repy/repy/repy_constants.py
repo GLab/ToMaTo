@@ -36,6 +36,8 @@ CPU_POLLING_FREQ_LINUX = .1 # Linux
 CPU_POLLING_FREQ_WIN = .1 # Windows
 CPU_POLLING_FREQ_WINCE = .5 # Mobile devices are pretty slow
 
+#Disk Polling Frequency:
+DISK_POLLING_HDD = 3
 
 # These IP addresses are used to resolve our external IP address
 # We attempt to connect to these IP addresses, and then check our local IP

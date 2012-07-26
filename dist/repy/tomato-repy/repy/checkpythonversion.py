@@ -6,6 +6,7 @@ Start Date: Feb 27th, 2009
 Description:
 Exits if they are using an unsupported Python version...
 
+Python v2.5 and v2.6 are officially supported, v2.7 is unofficially supported.
 
 """
 
@@ -26,6 +27,6 @@ def ensure_python_version_is_supported():
   # This should allow us to keep the VM standardized across different Python
   # versions.
   if majorversionnumber != 2 or minorversionnumber < 5:
-    print >> sys.stderr, "Python version not supported!   Use 2.5.X or 2.6.X"
+    print >> sys.stderr, "Python version not supported!   Use 2.5.X, 2.6.X, or 2.7.X"
     sys.exit(93)
 
