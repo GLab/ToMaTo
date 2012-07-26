@@ -2,6 +2,8 @@ from fcntl import ioctl
 import os, struct, atexit, thread, socket
 from threading import Thread, Lock, RLock, Condition
 import select
+import namespace
+from exception_hierarchy import *
 
 TUNSETIFF = 0x400454ca
 IFF_TUN   = 0x0001
@@ -28,7 +30,7 @@ class RawSocket:
         return self._sock.fileno()
     def _check_open(self):
         if not self._sock:
-            raise Exception("Device has been closed")        
+            raise NetworkError("Device has been closed")        
     def _read(self):
         self._check_open()
         data = self._sock.recv(self.mtu)
@@ -93,7 +95,7 @@ class TunTapDevice:
         return self._fd
     def _check_open(self):
         if not self._fd:
-            raise Exception("Device has been closed")        
+            raise NetworkError("Device has been closed")        
     def _read(self):
         self._check_open()
         data = os.read(self._fd, self.mtu)
@@ -153,7 +155,7 @@ def device_create(ifname, mode=IFF_TAP|IFF_NO_PI, alias=None, mtu=DEFAULT_MTU, d
 
 def _get_device(name):
     if not name in devices:
-        raise Exception("No such device: %s" % name)
+        raise NetworkError("No such device: %s" % name)
     return devices[name]
 
 # public method, but not for repy code
@@ -170,7 +172,7 @@ def _read(devs, timeout=None):
     if ready:
         dev = ready[0]
         return (dev.alias, dev.read())
-    return (None, None)
+    raise TimeoutError("No data read")
 
 # public method for repy code
 def device_read(name, timeout=None):
@@ -189,3 +191,36 @@ def device_list():
 # public method for repy code
 def device_info(name):
     return _get_device(name).info()
+    
+METHODS = {
+    'tuntap_read': {
+        'func': device_read,
+        'args': [namespace.Str(), namespace.NoneOrInt()],
+        'raise': [TimeoutError, NetworkError],
+        'return': namespace.Str(),
+    },
+    'tuntap_read_any': {
+        'func': device_read_any,
+        'args': [namespace.NoneOrInt()],
+        'raise': [TimeoutError, NetworkError],
+        'return': (namespace.Str(), namespace.Str()),
+    },
+    'tuntap_send': {
+        'func': device_send,
+        'args': [namespace.Str(), namespace.Str()],
+        'raise': [NetworkError],
+        'return': None,
+    },
+    'tuntap_list': {
+        'func': device_list,
+        'args': [],
+        'raise': [],
+        'return': namespace.ListOfStr(),
+    },
+    'tuntap_info': {
+        'func': device_info,
+        'args': [namespace.Str()],
+        'raise': [NetworkError],
+        'return': namespace.Dict(),
+     },
+}

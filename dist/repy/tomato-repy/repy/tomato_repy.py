@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import sys, os
+import sys, os, tempfile, shutil, pwd, grp
+import repy, namespace, exception_hierarchy, tracebackrepy
 
 def parse_args():
     try:
@@ -32,39 +33,42 @@ def parse_args():
        options.resources = os.path.dirname(os.path.realpath(sys.argv[0]))+"/default.resources"
     if not options.interface:
        options.interface=[]
+    (uname, gname) = options.runas.split(":")
+    options.runas_uid = pwd.getpwnam(uname).pw_uid
+    options.runas_gid = grp.getgrnam(gname).gr_gid
     return options
 
+class ExceptionValue(namespace.ValueProcessor):
+    def check(self, val):
+        if not isinstance(val, Exception):
+            raise RepyArgumentError("Invalid type %s" % type(val))
+    def copy(self, val):
+        return val
+    
 def build_context(quiet):
-    import repy
-    context = {}
-    context["echo"] = lambda s: sys.stdout.write(str(s) + "\n")
-    import traceback
-    context["print_exc"] = traceback.print_exc
+    import traceback, emultap, emulstruct
+    namespace.USERCONTEXT_WRAPPER_INFO.update({
+        'print_exc': {
+            'func': traceback.print_exc,
+            'args': [ExceptionValue()],
+            'return': None,
+        },
+    })
+    namespace.USERCONTEXT_WRAPPER_INFO.update(emultap.METHODS)
+    namespace.USERCONTEXT_WRAPPER_INFO.update(emulstruct.METHODS)
     if quiet:
-        context["echo"] = lambda s: None
-        context["print_exc"] = lambda s: None
-    import emulmisc
-    context["randombytes"] = emulmisc.randombytes
-    context["getruntime"] = emulmisc.getruntime
-    context["exitall"] = emulmisc.exitall
-    context["createlock"] = emulmisc.createlock
-    context["getthreadname"] = emulmisc.getthreadname
-    context["getlasterror"] = emulmisc.getlasterror
-    import emultimer
-    context["createthread"] = emultimer.createthread
-    context["sleep"] = emultimer.sleep
-    import emultap
-    context["tuntap_read"] = emultap.device_read
-    context["tuntap_read_any"] = emultap.device_read_any
-    context["tuntap_send"] = emultap.device_send
-    context["tuntap_list"] = emultap.device_list
-    context["tuntap_info"] = emultap.device_info
-    import emulstruct
-    context["struct"] = emulstruct.struct
-    import random, math
-    context["math"] = math
-    context["random"] = random
-    return repy.prepare_usercontext({}, context)
+        namespace.USERCONTEXT_WRAPPER_INFO.update({
+            'log': {
+                'func': lambda s: None,
+                'args': [namespace.NonCopiedVarArgs()],
+                'return': None,
+            },
+            'print_exc': {
+                'func': lambda s: None,
+                'args': [],
+                'return': None,
+            },
+        })
     
 def prepare_interfaces(interfaces):
     try:
@@ -89,29 +93,27 @@ def prepare_interfaces(interfaces):
             sys.exit(-1)
         raise
     
-def drop_privileges(user_group):
+def drop_privileges(uid, gid):
     if os.getuid() != 0:
         return #nothing to drop
-    import pwd, grp
-    (uname, gname) = user_group.split(":")
-    running_uid = pwd.getpwnam(uname).pw_uid
-    running_gid = grp.getgrnam(gname).gr_gid
-    os.setgid(running_gid)
-    os.setuid(running_uid)
+    os.setgid(gid)
+    os.setuid(uid)
     
 def main(options):
     #prepare network interfaces
     if options.verbose: print >>sys.stderr, "Preparing networking interfaces %s" % options.interface
     prepare_interfaces(options.interface)
 
-    #read program code
-    if options.verbose: print >>sys.stderr, "Reading program from %s" % options.program
-    import repy
-    code = repy.read_file(options.program)
+    #move file to tmp dir and chown it to executing user
+    if options.verbose: print >>sys.stderr, "Moving program to /tmp"
+    tmpHandle, tmpName = tempfile.mkstemp()
+    shutil.copyfile(options.program, tmpName)
+    if os.getuid() == 0:
+        os.chown(tmpName, options.runas_uid, options.runas_gid)
     
     #build usercontext
     if options.verbose: print >>sys.stderr, "Building script context"
-    usercontext = build_context(options.quiet)
+    build_context(options.quiet)
     
     #change directory to directory of safe_check.py
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
@@ -119,20 +121,21 @@ def main(options):
     #drop privileges
     if not options.runasroot:
         if options.verbose: print >>sys.stderr, "Dropping privileges (%s)" % options.runas
-        drop_privileges(options.runas)
+        drop_privileges(options.runas_uid, options.runas_gid)
     else:
         if options.verbose: print >>sys.stderr, "Not dropping privileges !!!"      
         
     #run script
     try:
         if options.verbose: print >>sys.stderr, "Running script %s, arguments = %s" % (options.program, options.arguments)
-        repy.run_file(options.resources, options.program, options.arguments, usercontext, usercode=code)
+        repy.simpleexec = False; repy.logfile = None #make repy happy
+        repy.main(options.resources, options.program, options.arguments)
+        os.remove(tmpName)
     except KeyboardInterrupt:
         return
     except SystemExit:
         pass
     except:
-        import tracebackrepy
         tracebackrepy.handle_exception()
     try:
         import time

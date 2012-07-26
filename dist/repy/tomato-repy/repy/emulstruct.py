@@ -1,18 +1,42 @@
 import struct as orig_struct
+from exception_hierarchy import *
+import namespace
 
-class struct:
-    @classmethod
-    def pack(cls, *args, **kwargs):
-        return orig_struct.pack(*args, **kwargs)
-    @classmethod
-    def unpack(cls, *args, **kwargs):
-        return orig_struct.unpack(*args, **kwargs)
-    @classmethod
-    def pack_into(cls, *args, **kwargs):
-        return orig_struct.pack_into(*args, **kwargs)
-    @classmethod
-    def unpack_from(cls, *args, **kwargs):
-        return orig_struct.unpack_from(*args, **kwargs)
-    @classmethod
-    def calcsize(cls, *args, **kwargs):
-        return orig_struct.calcsize(*args, **kwargs)
+def pack(fmt, fields):
+  try:
+    return orig_struct.pack(fmt, *fields)
+  except struct.error, exc:
+    raise RepyException(exc)
+
+def unpack(fmt, data):
+  try:
+    return list(orig_struct.unpack(fmt, data))
+  except struct.error, exc:
+    raise RepyException(exc)
+  
+def calcsize(fmt):
+  try:
+    return orig_struct.calcsize(fmt)
+  except struct.error, exc:
+    raise RepyException(exc)
+  
+METHODS = {
+    'struct_pack': {
+        'func': pack,
+        'args': [namespace.Str(), namespace.List()],
+        'raise': [],
+        'return': namespace.Str(),
+    },
+    'struct_unpack': {
+        'func': unpack,
+        'args': [namespace.Str(), namespace.Str()],
+        'raise': [],
+        'return': namespace.List(),
+    },
+    'struct_calcsize': {
+        'func': calcsize,
+        'args': [namespace.Str()],
+        'raise': [],
+        'return': namespace.Int(),
+    },
+}
