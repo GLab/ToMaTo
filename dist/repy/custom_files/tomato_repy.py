@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys, os, tempfile, shutil, pwd, grp
-import repy, namespace, exception_hierarchy, tracebackrepy
+import repy, namespace, exception_hierarchy, tracebackrepy, virtual_namespace
 
 def parse_args():
     try:
@@ -103,7 +103,7 @@ def prepare_interfaces(interfaces):
     except IOError:
         if os.getuid() != 0:
             print >>sys.stderr, "Error: root privileges are needed to setup networking devices"
-            sys.exit(-1)
+            sys.exit(1)
         raise
     
 def drop_privileges(uid, gid):
@@ -118,14 +118,14 @@ def main(options):
     prepare_interfaces(options.interface)
 
     #move file to tmp dir and chown it to executing user
-    if options.verbose: print >>sys.stderr, "Moving program to /tmp"
-    tmpHandle, tmpName = tempfile.mkstemp()
-    shutil.copyfile(options.program, tmpName)
-    if os.getuid() == 0:
-        os.chown(tmpName, options.runas_uid, options.runas_gid)
+    if options.verbose: print >>sys.stderr, "Reading program from %s" % options.program
+    with open(options.program) as fp:
+      usercode = fp.read()
     
     #build usercontext
     if options.verbose: print >>sys.stderr, "Building script context"
+    import time, nonportable
+    nonportable.getruntime = time.time #change getruntime to time.time to gain preformance
     build_context(options.quiet)
     
     #change directory to directory of safe_check.py
@@ -140,12 +140,14 @@ def main(options):
         
     #run script
     try:
+        if options.verbose: print >>sys.stderr, "Checking script %s" % options.program
+        namespace = virtual_namespace.VirtualNamespace(usercode, options.program)
+        usercode = None # allow the (potentially large) code string to be garbage collected
+        if options.verbose: print >>sys.stderr, "Initializing resource restrictions %s" % options.resources
+        repy.initialize_nanny(options.resources)
         if options.verbose: print >>sys.stderr, "Running script %s, arguments = %s" % (options.program, options.arguments)
-        repy.simpleexec = False; repy.logfile = None #make repy happy
-        import time, nonportable
-        nonportable.getruntime = time.time
-        repy.main(options.resources, options.program, options.arguments)
-        os.remove(tmpName)
+        context = repy.get_safe_context(options.arguments)
+        repy.execute_namespace_until_completion(namespace, context)
     except KeyboardInterrupt:
         return
     except SystemExit:

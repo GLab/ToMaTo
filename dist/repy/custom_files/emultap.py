@@ -137,21 +137,15 @@ devices = {}
 
 # public method, but not for repy code
 def device_open(ifname, mode="raw", alias=None, **kwargs):
-    if alias:
-        name = alias
-    else:
-        name = ifname
+    name = alias or ifname #alias if alias is defined, otherwise name is ifname
     dev = RawSocket(ifname, alias=alias, **kwargs)
     devices[name] = dev
 
 # public method, but not for repy code
 def device_create(ifname, mode=IFF_TAP|IFF_NO_PI, alias=None, mtu=DEFAULT_MTU, dev="/dev/net/tun"):
-    if alias:
-        name = alias
-    else:
-        name = ifname
-    dev = TunTapDevice(ifname, mode, alias=name, mtu=mtu, dev=dev)
-    devices[name] = dev
+  name = alias or ifname #alias if alias is defined, otherwise name is ifname
+  dev = TunTapDevice(ifname, mode, alias=name, mtu=mtu, dev=dev)
+  devices[name] = dev
 
 def _get_device(name):
     if not name in devices:

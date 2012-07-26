@@ -1,3 +1,10 @@
+tomato-repy (0.5) unstable; urgency=low
+
+  * Merged with new upstream version
+  * Removed forked repy code
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 26 Jul 2012 14:30:12 +0200
+
 tomato-repy (0.4) unstable; urgency=low
 
   * Added math and random libraries to environment
