@@ -1,4 +1,4 @@
-class simplejson_String:
+class json_String:
   def __init__(self, s):
     self._str = s
     self._pos = 0
@@ -22,7 +22,7 @@ class simplejson_String:
   def __str__(self):
     return "%s [%d]" % (self._str, self._pos)
 
-def simplejson_decode_number(s):
+def json_decode_number(s):
   num = s.readChars("0123456789.+-eE")
   try:
     return int(num)
@@ -38,7 +38,7 @@ def simplejson_decode_number(s):
     pass
   raise Exception("Number format error: %s" % num)
 
-def simplejson_decode_string(s):
+def json_decode_string(s):
   if s.read() != '"':
     raise Exception("Invalid string: %s" % s)
   st = ""
@@ -50,22 +50,22 @@ def simplejson_decode_string(s):
   s.skip()
   return st
 
-def simplejson_decode_dict(s):
+def json_decode_dict(s):
   if s.read() != '{':
     raise Exception("Invalid dict: %s" % s)
   dic = {}
   while True:
-    simplejson_skip_whitespace(s)
+    json_skip_whitespace(s)
     if s.peek() == "}":
       s.skip()
       return dic
-    key = simplejson_decode_string(s)
-    simplejson_skip_whitespace(s)
+    key = json_decode_string(s)
+    json_skip_whitespace(s)
     if s.peek() != ":":
       raise Exception("Invalid dictionary: %s" % s)
     s.skip()
-    simplejson_skip_whitespace(s)
-    val = simplejson_decode_any(s)
+    json_skip_whitespace(s)
+    val = json_decode_any(s)
     dic[key] = val
     if s.peek() == ",":
       s.skip()
@@ -75,17 +75,17 @@ def simplejson_decode_dict(s):
       return dic
     raise Exception("Dict not closed: %s" % s)
 
-def simplejson_decode_array(s):
+def json_decode_array(s):
   if s.read() != '[':
     raise Exception("Invalid array: %s" % s)
   arr = []
   while True:
-    simplejson_skip_whitespace(s)
+    json_skip_whitespace(s)
     if s.peek() == "]":
       s.skip()
       return arr
-    simplejson_skip_whitespace(s)
-    arr.append(simplejson_decode_any(s))
+    json_skip_whitespace(s)
+    arr.append(json_decode_any(s))
     if s.peek() == ",":
       s.skip()
       continue
@@ -94,31 +94,31 @@ def simplejson_decode_array(s):
       return arr
     raise Exception("Array not closed: %s" % s)
 
-def simplejson_decode_fixed(s, name, value=None):
+def json_decode_fixed(s, name, value=None):
   s.skip(len(name))
   return value
 
-def simplejson_skip_whitespace(s):
+def json_skip_whitespace(s):
   s.skipChars(" \t\n\r")
 
-def simplejson_decode_any(s):
-  simplejson_skip_whitespace(s)
+def json_decode_any(s):
+  json_skip_whitespace(s)
   if s.peek() == "{":
-    return simplejson_decode_dict(s)
+    return json_decode_dict(s)
   if s.peek() == "[":
-    return simplejson_decode_array(s)
+    return json_decode_array(s)
   if s.peek() == '"':
-    return simplejson_decode_string(s)
+    return json_decode_string(s)
   if s.startswith("true"):
-    return simplejson_decode_fixed(s, "true", True)
+    return json_decode_fixed(s, "true", True)
   if s.startswith("false"):
-    return simplejson_decode_fixed(s, "false", False)
+    return json_decode_fixed(s, "false", False)
   if s.startswith("null"):
-    return simplejson_decode_fixed(s, "null", None)
+    return json_decode_fixed(s, "null", None)
   if s.peek() in "0123456789.":
-    return simplejson_decode_number(s)
+    return json_decode_number(s)
   
-def simplejson_encode(obj):
+def json_encode(obj):
   if obj is None:
     return "null"
   if obj is True:
@@ -130,14 +130,14 @@ def simplejson_encode(obj):
   if isinstance(obj, basestring):
     return '"' + repr(str(obj))[1:-1] + '"'
   if isinstance(obj, list):
-    return "[" + (", ".join([simplejson_encode(el) for el in obj])) + "]"
+    return "[" + (", ".join([json_encode(el) for el in obj])) + "]"
   if isinstance(obj, dict):
-    return "{" + (", ".join(["%s: %s" % (simplejson_encode(k), simplejson_encode(v)) for k, v in obj.iteritems()])) + "}"
+    return "{" + (", ".join(["%s: %s" % (json_encode(k), json_encode(v)) for k, v in obj.iteritems()])) + "}"
   raise Exception("Invalid type for json: %s" % type(obj))
   
-class simplejson_Class:
+class json_Class:
   def loads(self, s):
-    return simplejson_decode_any(simplejson_String(s))
+    return json_decode_any(json_String(s))
   def dumps(self, obj):
-    return simplejson_encode(obj)
-simplejson = simplejson_Class()
+    return json_encode(obj)
+json = json_Class()

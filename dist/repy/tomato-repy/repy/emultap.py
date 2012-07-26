@@ -2,7 +2,7 @@ from fcntl import ioctl
 import os, struct, atexit, thread, socket
 from threading import Thread, Lock, RLock, Condition
 import select
-import namespace
+import namespace, nanny
 from exception_hierarchy import *
 
 TUNSETIFF = 0x400454ca
@@ -165,13 +165,17 @@ def device_destroy(name):
     
 # public method for repy code
 def device_send(name, data):
+    nanny.tattle_quantity("netsend", len(data))
     _get_device(name).send(data)
 
 def _read(devs, timeout=None):
     ready = select.select(devs, [], [], timeout)[0]
     if ready:
         dev = ready[0]
-        return (dev.alias, dev.read())
+        nanny.tattle_quantity("netrecv", 0)
+        data = dev.read()
+        nanny.tattle_quantity("netrecv", len(data))
+        return (dev.alias, data)
     raise TimeoutError("No data read")
 
 # public method for repy code

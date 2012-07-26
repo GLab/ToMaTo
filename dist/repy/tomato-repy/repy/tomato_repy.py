@@ -46,12 +46,25 @@ class ExceptionValue(namespace.ValueProcessor):
         return val
     
 def build_context(quiet):
-    import traceback, emultap, emulstruct
+    import traceback, emultap, emulstruct, time
+    starttime = time.time()
+    for call in set(namespace.USERCONTEXT_WRAPPER_INFO.keys())-set(['exitall', 'createlock', 'getruntime', 'randombytes', 'createthread', 'sleep', 'log', 'getthreadname', 'createvirtualnamespace', 'getresources']):
+        del namespace.USERCONTEXT_WRAPPER_INFO[call]
     namespace.USERCONTEXT_WRAPPER_INFO.update({
         'print_exc': {
             'func': traceback.print_exc,
             'args': [ExceptionValue()],
             'return': None,
+        },
+        'getruntime': {
+            'func' : lambda :time.time() - starttime,
+            'args' : [],
+            'return' : namespace.Float()
+        },
+        'time': {
+            'func' : time.time,
+            'args' : [],
+            'return' : namespace.Float()
         },
     })
     namespace.USERCONTEXT_WRAPPER_INFO.update(emultap.METHODS)
@@ -129,6 +142,8 @@ def main(options):
     try:
         if options.verbose: print >>sys.stderr, "Running script %s, arguments = %s" % (options.program, options.arguments)
         repy.simpleexec = False; repy.logfile = None #make repy happy
+        import time, nonportable
+        nonportable.getruntime = time.time
         repy.main(options.resources, options.program, options.arguments)
         os.remove(tmpName)
     except KeyboardInterrupt:
