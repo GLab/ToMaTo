@@ -1,0 +1,18 @@
+
+#include <util/net.repy>
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+
+ipmap = {}
+
+def ipmonitor(src, pkt):
+  eth = EthernetHeader(pkt)
+  if eth.type != ETHERNET_TYPE_IP:
+    return
+  ip = IPv4Header(eth.payload)
+  if ip.src in ipmap:
+    return
+  ipmap[ip.src]=eth.src
+  echo("%s has IP %s" % (macToStr(eth.src), ipToStr(ip.src))
+
+run_forever(ipmonitor)

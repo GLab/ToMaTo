@@ -1,2 +1,5 @@
 build
 *.repy~
+seattlelib/.svn
+seattlelib/test*
+lib/seattlelib

@@ -1,0 +1,140 @@
+"""
+Program Name: getvesselresources.repy
+Author: Monzur Muhammad
+Started: April 25, 2009
+Description:
+Given a vessel name the functions finds the correct vessel and print out all the resources available.
+"""
+
+include nmclient.repy
+include rsa.repy
+
+def getvesselresources_portnum(portnum, ipaddr=getmyip(), portval=1224):
+  """
+  <Purpose>
+    Find all the vessels that have the port number requested and then return a dictionary with all the vessels
+    and their resources that are available
+	
+  <Arguments>
+    portnum(int) - the port number that the user is looking for
+    ipaddr-the ip address for which to get the vessels for. By default it is local ip address
+    portval-the port number for which to find vessels. By defaults it is 1224	
+	
+  <Exceptions>
+    Throws a ValueError exception if the resource file is not formatted well.
+	
+  <Side Effects>
+    No side effects
+	
+  <Result>
+    returns a dictionary where the keys are the vessel name and the values are a list of resources.
+    resources can be accessed by returnresult[vessel_name][resource_name]
+	if the port value or ip address provided is not associated with the resource port number, then an empty dictionary is returned.
+  """
+
+  nmhandle = nmclient_createhandle(ipaddr, portval)
+	
+  #dictionary that contains all the resources for the vessel
+  resultdict={}
+	
+  #get a list of all the vessels
+
+  try: 
+    vessel_list = nmclient_getvesseldict(nmhandle)
+  except Exception, e:
+    raise
+  finally:
+    nmclient_destroyhandle(nmhandle)	
+
+  #go through all the vessels 
+  for cur_vessel in vessel_list['vessels']:
+    resource_dict=getvesselresources_vesselname(cur_vessel, ipaddr, portval)
+			
+    #check to see if the current vessel has the port number as one of the resource, if not then continue on to the next vessel
+    if str(portnum) in resource_dict[cur_vessel]['messport']:
+      resultdict[cur_vessel]=resource_dict[cur_vessel]
+	
+    elif str(portnum) in resource_dict[cur_vessel]['connport']:
+      resultdict[cur_vessel]=resource_dict[cur_vessel]
+			
+  return resultdict
+
+  
+
+
+  
+def getvesselresources_vesselname(vesselname, ipaddr=getmyip(), portval=1224):
+  """
+  <Purpose>
+    Given a vessel name (and maybe ip address and the port value), find all the resources available for that vessel 
+	and return a dictionary of the resources for that vessel
+	
+  <Arguments>
+    vesselname(string) - the vessel that the user wants the resource for
+    ipaddr-the ip address for which to get the vessels for. By default it is local ip address
+    portval-the port number for which to find vessels. By defaults it is 1224
+
+  <Exceptions>
+    Throws ValueError exception on an invalide vessel name input
+	Throws a ValueError exception if the resource file is not formatted well.
+	
+  <Side Effects>
+    No side effects
+	
+  <Result>
+    returns a dictionary where the keys are the vessel name and the values are a list of resources.
+    resources can be accessed by returnresult[vessel_name][resource_name]
+	if the portnumber or ip address provided is not associated with the vesselname, then an empty dictionary is returned.
+  """	
+
+  nmhandle = nmclient_createhandle(ipaddr, portval)
+	
+  #dictionary that contains all the resources for the vessel
+  resultdict={}
+
+  #initialize the list for the vessel that the user is looking for  
+  resultdict[vesselname]={}
+	
+  #if vessel name is invalid, throw a value error
+  try:
+    fullresource_string = nmclient_rawsay(nmhandle, "GetVesselResources",vesselname)
+
+  except Exception, e:
+    if 'No such vessel' in str(e):
+      raise ValueError("Invalid vessel name: '"+str(vesselname)+"'") 
+    else: 
+      raise
+  finally:
+    nmclient_destroyhandle(nmhandle)
+
+  #go through all the lines in fullresource_string and make a dictionary of the resources
+  for cur_resource in fullresource_string.split('\n'):
+    #if the line is a comment line or if the line has some kind of comment in it, the comment is stripped out.  
+    cur_resource=cur_resource.split('#')[0]
+	
+	#make sure that the line begins with 'resource' and the line is well formatted 
+    if ('resource' in cur_resource) and (len(cur_resource.split('resource ')) == 2):
+      #gets rid of the keyword 'resource ' and then seperates the resource name and the resource value. Then gets rid of trailing white space
+      partial_resource_line = cur_resource.split('resource ')[1].rstrip()
+	  
+	  #checks to see that the line is in the format: <resource_name> <resource_value> or else it throws an error if the format is wrong.
+      if(len(partial_resource_line.split(' ')) == 2):
+        resource_name = partial_resource_line.split(' ')[0]
+        resource_value = partial_resource_line.split(' ')[1]
+      else:
+        raise ValueError("Invalid format for resource file:")	  
+        	  
+      #if it is a new type of resource then add it in the dictionary as an empty list
+      if not resource_name in resultdict[vesselname].keys():
+        resultdict[vesselname][resource_name]=[]
+	  
+      #adds the resrouce value in the list for the resource
+      resultdict[vesselname][resource_name].append(resource_value)
+	  
+  return resultdict
+  
+
+	
+
+	
+

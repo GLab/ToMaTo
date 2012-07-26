@@ -1,0 +1,776 @@
+"""
+This is a sub-component os librepy, and provides
+thread, and locking related functionality. It must
+be imported, and cannot be used directly as a module.
+
+This module will import librepyrunloop, so if one unified
+run-loop is to be used, then the global variable
+"librunloop" should be overriden.
+
+This module provides the following objects:
+  - Lock()
+  - RLock()
+  - Thread()
+  - Timer()
+  - ThreadPool()
+
+These objects are meant to emulate the python builtin
+versions. The Lock is a generic binary semaphore,
+RLock is a re-entrant lock (meaning the same thread can
+re-acquire the lock without deadlocking). The Thread
+is wrapper around the createthread() API, and can be
+sub-classed to implement a thread. The Timer is a sub-class
+of the Thread object, and is the same except that it
+supports a delay before the thread is initialized.
+
+When start() is called on a Timer object, the creation
+of the thread is scheduled in a runloop. In this manner,
+it is possible to schedule multiple threads simultaneously
+without wasting events. For example, if threads are set
+to start staggered, in (1,2,3) seconds, then it is possible
+for one event to be used rather than having three threads
+which are sleeping until their start time.
+
+The ThreadPool() object implements a generic thread
+pool which can execute arbitrary tasks. It supports
+scaling to maximize flexibility.
+
+"""
+##### Imports
+
+# Get a run loop
+librunloop = dy_import_module("librepyrunloop")
+
+
+##### Public methods
+
+def active_threads():
+  """Returns the active thread count."""
+  # Call getresources to get the usage and return the event count
+  lim, usage, stops = getresources()
+  return usage["events"]
+
+
+##### Class Definitions
+
+class Lock (object):
+  """Generic binary semaphore."""
+  def __init__(self):
+    self.lock = createlock()
+
+  def acquire(self, blocking=True):
+    return self.lock.acquire(blocking)
+
+  def release(self):
+    self.lock.release()
+
+
+
+class RLock (object):
+  """Re-entrant lock object."""
+  def __init__(self):
+    self.lock = createlock()
+    self.holding_lock = createlock()
+    self.holding_thread = None
+    self.acquire_count = 0
+
+  def acquire(self, blocking=True):
+    """
+    <Purpose>
+      Acquires the lock. If the current thread has already acquired
+      this lock, calling acquire() will NOT deadlock. The lock will be
+      re-acquired. Each time acquire() is successful, release() must be called.
+
+    <Arguments>
+      blocking: (Optional) If True, the thread will block until the lock is acquired.
+                Defaults to True.
+
+    <Returns>
+      True if the lock was acquired.
+    """
+    # Get the first lock
+    self.lock.acquire(True)
+    try:
+      # Check if we are the holding lock, or if it is none
+      thread_name = getthreadname()
+      if self.holding_thread is None and self.holding_lock.acquire(False):
+        self.holding_thread = thread_name
+        self.acquire_count = 1
+        return True
+
+      elif self.holding_thread == thread_name:
+        self.acquire_count += 1
+        return True
+
+      # If we are not willing to block, then we just return now
+      elif not blocking:
+        return False
+
+    finally:
+      self.lock.release()
+
+    # Otherwise, we wait to get the holding lock
+    self.holding_lock.acquire(True)
+    self.holding_thread = thread_name
+    self.acquire_count = 1
+    return True
+
+  
+  def release(self):
+    """
+    <Purpose>
+      Releases the lock. This must be called once per successful acquire()
+
+    <Exceptions>
+      Raises RuntimeError if this thread does not hold the lock.
+
+    <Returns>
+      None
+    """
+    # Get the first lock
+    self.lock.acquire(True)
+    try:
+      # Check if the thread name matches
+      thread_name = getthreadname()
+      if thread_name == self.holding_thread:
+        # Reduce the acquire count
+        self.acquire_count = max(0, self.acquire_count - 1)
+        
+        # If this thread has no more acquire counts, we are no longer
+        # the holding thread
+        if self.acquire_count == 0:
+          self.holding_thread = None
+          self.holding_lock.release()
+
+      else:
+        raise RuntimeError("Cannot release a lock held by another thread!")
+    finally:
+      self.lock.release()
+
+
+
+class Thread (object):
+  """
+  Provides an implementation of a thread like object.
+  A sub-class should override the run() method.
+
+  """
+  def __init__(self,target=None,args=None,kwargs=None):
+    """
+    <Purpose>
+      Creates a new Thread object
+    
+    <Arguments>
+       target: The callable object to be invoked by the run() method.
+       args : The argument tuple for the target invocation
+       kwargs : A dictionary of keyword arguments for the target invocation
+
+    <Returns>
+      A new thread object.
+    """
+    # Substitude default args
+    if args is None:
+      args = ()
+    if kwargs is None:
+      kwargs = {}
+
+    # Store the args
+    self.target = target
+    self.args = args
+    self.kwargs = kwargs
+
+    # Set alive to false
+    self.alive = False
+    self.alive_lock = createlock()
+
+    # This is a list of locks which are all trying to be acquired
+    # by threads which have "joined" this thread
+    self.join_locks = []
+
+
+  def start(self):
+    """
+    <Purpose>
+      Starts the thread.
+
+    <Exceptions>
+      Raises RuntimeError if the thread is already started.
+
+    <Returns>
+      None
+    """
+    # Launch a thread on the _run() method
+    # That will invoke run()
+    self.alive_lock.acquire(True)
+    try:
+      if self.alive:
+        raise RuntimeError("Thread already started!")
+
+      self.alive = True
+      createthread(self._run)
+    
+    finally:
+      self.alive_lock.release()
+
+
+  def _run(self):
+    """Private run method."""
+    try:
+      self.run()
+    finally:
+      self.alive_lock.acquire(True)
+      self.alive = False
+    
+      # Release all joined threads
+      for lock in self.join_locks:
+        lock.release()
+      self.join_locks = []
+
+      self.alive_lock.release()
+
+
+  def run(self):
+    """
+    This should be overridden by sub-classes.
+    Default run method invokes the target given at initialization time.
+    """
+    # Invoke the target method
+    if self.target is not None:
+      func = self.target
+      func(*self.args, **self.kwargs)
+
+
+  def is_alive(self):
+    """Returns if a thread is alive. Live from start() until run() exits."""
+    self.alive_lock.acquire(True)
+    try:
+      return self.alive
+    finally:
+      self.alive_lock.release()
+
+
+  def join(self):
+    """
+    <Purpose>
+      Joins the thread. 
+    
+    <Exceptions>
+      Raises RuntimeError if the thread is not alive.
+
+    <Returns>
+      None
+    """
+    # Check if the thread is alive
+    if not self.is_alive():
+      raise RuntimeError("Thread is not alive!")
+
+    # Create a lock
+    lock = createlock()
+    lock.acquire(True) # Acquire once
+    self.join_locks.append(lock) # Append this lock
+    lock.acquire(True) # This will block until the thread exits
+
+
+
+class Timer (Thread):
+  """
+  This class emulates a Timer thread.
+  """
+  def __init__(self, interval, target=None, args=None, kwargs=None):
+    """
+    <Purpose>
+    Creates a new Timer object
+
+    <Arguments>
+      interval: How long to delay between calling start() and starting the thread.
+      target: The callable object to be invoked by the run() method.
+      args : The argument tuple for the target invocation
+      kwargs : A dictionary of keyword arguments for the target invocation
+
+    <Exceptions>
+      TypeError if the interval is not an int or float.
+      ValueError if the interval is negative.
+
+    <Returns>
+      A new Timer object
+    """
+    if type(interval) not in [int, float]:
+      raise TypeError("Interval must be an integer or floating point value!")
+    if interval < 0:
+      raise ValueError("Interval cannot be negative!")
+    
+    # Initialize the super-class
+    Thread.__init__(self, target=target, args=args, kwargs=kwargs)
+
+    # Store the interval
+    self.intv = interval
+
+    # Store a lock to serialize cancel / start
+    self.cancel_lock = createlock()
+
+    # This is our runloop handle
+    self.rl_handle = None
+
+
+  def start(self):
+    """
+    <Purpose>
+      Schedules the thread to be started.
+
+    <Exceptions>
+      Raises RuntimeError if the thread is already started.
+      Raises RuntimeError if the thread is scheduled to start.
+
+    <Notes>
+      This calls runEvery() which is a method provided by the
+      runloop. If the run loop is not running, this will consume
+      an event to start the run loop. Once the 'interval' number
+      of seconds has elapsed, the run-loop will launch the thread.
+    """
+    # Acquire the canceled lock
+    self.cancel_lock.acquire(True)
+    try:
+      # Check if we are started
+      if self.is_alive():
+        raise RuntimeError("Thread is already started!")
+      if self.rl_handle is not None:
+        raise RuntimeError("Thread is already scheduled to start!")
+
+      # Create a wrapper function
+      def wrapper():
+        librunloop.stopSchedule(self.rl_handle)
+        Thread.start(self)
+        self.rl_handle = None
+
+      # Schedule us. The run loop will wait for the interval
+      # and then launch the thread
+      self.rl_handle = librunloop.runEvery(self.intv, wrapper)
+
+    finally:
+      self.cancel_lock.release()
+
+
+  def cancel(self):
+    """
+    <Purpose>
+      Cancels starting the thread after start() has been called.
+
+    <Exceptions>
+      Raises RuntimeError if the thread is already started.
+      Raises RuntimeError if the thread is not scheduled to start.
+
+    <Returns>
+      None.
+    """
+    # Get the cancel lock
+    self.cancel_lock.acquire(True)
+    try:
+      # Check if we are started
+      if self.is_alive():
+        raise RuntimeError("Thread is already started!")
+      if self.rl_handle is None:
+        raise RuntimeError("Thread is not scheduled to start!")
+
+      # Cancel the schedule
+      librunloop.stopSchedule(self.rl_handle)
+
+      # Set the handle to None
+      self.rl_handle = None
+
+    finally:
+      self.cancel_lock.release()
+
+
+
+class ThreadPool (object):
+  """
+  This object implements a generic scaling thread pool.
+  The thread pool is initialized with a minimum and maximum
+  thread count, and a scaling threshold.
+
+  The scaling threshold controls when new threads are created,
+  or existing threads destroyed. The pool tries to ensure there
+  are at most "scaling_thres" tasks queued per thread. So, if if the
+  threshold is 100, and 1000 tasks are queued, there will be up to
+  10 threads.
+
+  """
+  # Fields:
+  # min_threads: The minimum thread pool size
+  # max_threads: The maximum thread pool size
+  # scaling_thres: The scaling constant
+  # print_tb: Controls printing tracebacks for uncaught errors
+  #
+  # live_threads: A set containing the names of all active threads
+  # live_threads_lock: A lock protecting the set
+  #
+  # num_tasks: A counter for the number of queued tasks
+  # tasks: A linked list of tasks. Each entry is a function pointer,
+  #        which is linked to the next using the ._next_task attribute
+  # last_task: A pointer to the last element in the tasks list.
+  # tasks_lock: A lock protecting the linked list
+  #
+  # should_stop: A boolean indicating if the pool should stop
+  #
+  # worker_lock: This lock is used to serialize the thread which gets the next task
+  # task_block_lock: When there are no available tasks, a worker will block trying
+  #                  to acquire this lock
+  #
+
+  def __init__(self,min_threads=1,max_threads=4, scaling_thres=5, print_tb=True):
+    """
+    <Purpose>
+      Initializes the thread pool.
+
+    <Arguments>
+      min_threads: The minimum number of threads to maintain. Defaults to 1.
+      max_threads: The maximum number of threads allowed. Defaults to 4.
+      scaling_thres: The scaling constant. Defaults to 5.
+      print_tb: Should a traceback be printed if a function has an uncaught exception
+
+    <Exceptions>
+      Raises a TypeError if the arguments are not numeric.
+      Raises a ValueError if the arguments are not positive.
+      Raises a TypeERror if the print_tb argument is not a bool.
+      Raises a ValueError if the minimum threads is greater than
+      the maximum threads.
+
+    <Returns>
+      A ThreadPool object.
+    """
+    # Check the types
+    if type(min_threads) is not int or type(max_threads) is not int or type(scaling_thres) is not int:
+      raise TypeError("Arguments must be an integer type!")
+    if min_threads <= 0 or max_threads <= 0 or scaling_thres <= 0:
+      raise ValueError("Arguments must be positive!")
+    if min_threads > max_threads:
+      raise ValueError("Minimum thread count cannot be greater than the maximum thread count!")
+    if type(print_tb) is not bool:
+      raise TypeError("Print Traceback argument must be a boolean!")
+
+    # Store the values
+    self.min_threads = min_threads
+    self.max_threads = max_threads
+    self.scaling_thres = scaling_thres
+    self.print_tb = print_tb
+
+    # Initialize the other structures
+    self.live_threads = set([])
+    self.live_threads_lock = createlock()
+    
+    self.num_tasks = 0
+    self.tasks = None
+    self.last_task = None
+    self.tasks_lock = createlock()
+    
+    self.should_stop = False
+
+    self.worker_lock = createlock()
+    self.task_block_lock = createlock()
+
+
+  def start(self):
+    """
+    <Purpose>
+      Starts the thread pool
+
+    <Exceptions>
+      Raises ResourceExhaustedError if there are not enough thread resources
+      to launch the minimum number of threads. The threads that did launch
+      will continue to run.
+
+      Raises RuntimeError if the Thread pool has been destroyed already.
+
+    <Returns>
+      None
+    """
+    # Check if we are already destroyed
+    if self.should_stop:
+      raise RuntimeError, "Thread Pool has been destroyed!"
+
+    # Try launching the threads
+    needed, launched = self._launch_threads()
+
+    # See if we launched the minimum
+    if launched < self.min_threads and needed > 0:
+      raise ResourceExhaustedError, "Not enough events to launch the minimum threads!"
+
+
+  def destroy(self):
+    """
+    <Purpose>
+      Signals for the thread pool to shutdown.
+      If there are queued jobs, they will not be executed
+      before stopping.
+
+    <Returns>
+      None
+    """
+    # Set the flag to stop
+    self.should_stop = True
+
+    # If there are blocking threads, unblock them so they can exit
+    # We do this by adding "noop" tasks that are enough to unblock
+    # the thread, so they can check for the exit flag.
+    noop_tasks = self.max_threads - self.num_tasks
+    if noop_tasks > 0:
+      def noop():
+        pass
+
+      for n in xrange(noop_tasks):
+        self.add_task(noop)
+
+
+  def queued_tasks(self):
+    """
+    Returns the number of queued tasks.
+    """
+    # Return the counter
+    return self.num_tasks
+  
+
+  def threads(self):
+    """
+    Returns the number of active threads.
+    """
+    # Return the length of the set of live threads
+    return len(self.live_threads)
+
+
+  def add_task(self,task):
+    """
+    <Purpose>
+      Queues a task for execution. This will start the thread
+      pool if it is not yet started.
+
+    <Arguments>
+      task: A function to invoke. Must not take arguments.
+            To invoke a function requiring arguments, define
+            a closure around the function.
+
+    <Returns>
+      None
+    """
+    # Acquire the lock to the tasks list
+    self.tasks_lock.acquire(True)
+
+    # Always add the pointer to the next task
+    # Since this is the last task, it is always
+    # going to be None
+    task._next_task = None
+
+    # Add the task
+    if self.tasks is None:
+      self.tasks = task
+      self.last_task = task
+
+    else:
+      self.last_task._next_task = task
+      self.last_task = task
+
+    # Increment the task count
+    self.num_tasks += 1
+
+    # Check if we need to launch more threads to handle the load
+    # We do this while we have the lock to avoid a race where
+    # multiple threads try to launch new threads
+    self._launch_threads()
+    
+    # Unblock any threads that are waiting
+    try:
+      self.task_block_lock.release()
+    except:
+      pass
+
+    # Release the lock
+    self.tasks_lock.release()
+
+  
+  def _launch_threads(self):
+    """
+    This private method checks if additional threads need
+    to be spawned, and launches them.
+
+    Due to thread restrictions, we may not launch all the
+    threads we want to. This is factored into the return.
+
+    We return a tuple: (Threads needed to launch, Threads launched).
+    """
+    # Do nothing if we are signaled to stop
+    if self.should_stop:
+      return (0,0)
+
+    self.live_threads_lock.acquire(True)
+    try:
+      # Determine the thread count
+      thread_count = len(self.live_threads)
+      
+      # We are done if we are already at the max
+      if thread_count >= self.max_threads:
+        return (0,)
+
+      # Start enough to reach the minimum
+      need_to_launch = max(0, self.min_threads - thread_count)
+
+      # Add enough threads that we meet the scaling factor
+      while self.num_tasks / (thread_count + need_to_launch + 1) >= self.scaling_thres and \
+            thread_count + need_to_launch < self.max_threads:
+        need_to_launch += 1
+
+      # Launch the threads
+      num_launched = 0
+      while need_to_launch > num_launched:
+        try:
+          createthread(self._thread_main)
+          num_launched += 1
+
+          # Wait for the thread to start, we don't want to waste too
+          # much time here
+          while len(self.live_threads) < thread_count + num_launched:
+            sleep(0.01)
+
+        except ResourceExhaustedError:
+          break # No more threads
+
+      # Return the threads needed and launched
+      return (need_to_launch, num_launched)
+
+    finally:
+      self.live_threads_lock.release()
+
+ 
+  def _get_task(self):
+    """
+    This method is called by the workers to get the next task.
+    Returns a function, or None if the thread should exit.
+
+    This will park the worker until a task is available.
+    """
+    # Check if we should exit
+    if self.should_stop:
+      return None
+
+    # Get the worker lock and task lock
+    self.worker_lock.acquire(True)
+    self.tasks_lock.acquire(True)
+   
+    try:
+      # If there are no tasks, block and wait for one
+      if self.tasks is None:
+        self.task_block_lock.acquire(True)
+        self.tasks_lock.release()
+
+        # Wait until there is a task. We will block on this
+        # first acquire until add_task is called. Then we need
+        # to get the tasks_lock to read the task.
+        self.task_block_lock.acquire(True)
+        self.tasks_lock.acquire(True)
+        try:
+          self.task_block_lock.release()
+        except:
+          # Race condition is possible
+          pass
+
+        # Check if we should exit, after we blocked
+        if self.should_stop:
+          return None
+
+      # Get the first task, advance to the next task
+      task = self.tasks
+      self.tasks = task._next_task
+      self.num_tasks -= 1
+
+      # Return the task
+      return task
+
+    finally:
+      # Release the tasks lock and the worker lock
+      self.tasks_lock.release()
+      self.worker_lock.release()
+
+
+  def _register_worker(self):
+    """Registers a new worker thread on start."""
+    # Add us as a live thread
+    thread_name = getthreadname()
+    self.live_threads.add(thread_name)
+
+
+  def _deregister_worker(self):
+    """De-Registers a worker thread on exit."""
+    thread_name = getthreadname()
+    try:
+      self.live_threads.remove(thread_name)
+    except KeyError:
+      pass
+
+
+  def _should_worker_quit(self):
+    """
+    This private method checks if the worker thread
+    should exit, e.g. if there are too many worker threads.
+
+    Returns a boolean indicating if the thread should exit.
+    """
+    # Check the stop flag
+    if self.should_stop:
+      return True
+
+    # Acquire a lock on the live_threads set
+    self.live_threads_lock.acquire(True)
+    try:
+      # Determine the thread count
+      thread_count = len(self.live_threads)
+
+      # Check if we are at the minimum
+      if thread_count <= self.min_threads:
+        return False
+
+      # Based on the jobs per thread, and the scaling factor
+      # determine if we should exit
+      # We minimize churn by using a 0.9 multiplier to keep the
+      # thread around a bit longer
+      jobs_per_thread = self.num_tasks / (thread_count-1)
+      if jobs_per_thread >= self.scaling_thres * 0.9:
+        return False
+
+      else:
+        # Prevent a race by removing the thread of the live list
+        self.live_threads.remove(getthreadname())
+        return True
+
+    finally:
+      # Release the lock
+      self.live_threads_lock.release()
+
+
+  # This is the main entry point for worker threads
+  def _thread_main(self):
+    # Register this thread
+    self._register_worker()
+
+    while True:
+      # Get the next task
+      next_task = self._get_task()
+    
+      # Stop if the next task is None
+      if next_task is None:
+        break
+      
+      # Otherwise, invoke the next task
+      try:
+        next_task()
+      except:
+        if self.print_tb:
+          print getlasterror()
+
+      # Check if this worker should quit
+      if self._should_worker_quit():
+        break
+
+    #### After the while loop
+      
+    # Deregister us as a worker
+    self._deregister_worker()
+     
+

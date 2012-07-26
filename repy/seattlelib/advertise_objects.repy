@@ -1,0 +1,209 @@
+"""
+
+<Author>
+  Eric Kimbrel kimbrl@cs.washington.edu
+
+<Start Date>
+  Jan 29 2010
+
+<Purpose>
+  Provied 2 objects to make more efficent use of resouces when using advertising
+  or looking up values.
+
+  LookupCache: 
+
+  Provide cacheing of lookups to reduce the time spent doing
+  lookups by programs that need to lookup the same value frequently.
+  The cache is global so any instance of the object will have the same
+  values stored in the cache.
+
+  usage:  Call lookup_obj.lookup(key) to perform a lookup of key using
+          advertise_lookup with default arguments.  Values will be returned
+          from the cache if they are available and not too old.
+
+  AdvertisePipe:
+
+  Stores a list of (key,value) tuples and uses a single thread to advertise
+  each tuple in the list.  This prevents a program from using multiple threads
+  to repeatedly advertise values.
+
+  usage:  Call ad_obj.add(key,value) to add (key,value) to the list of tuples
+          to be advertised.  This call returns an ad_handle which can be used
+          with a call to ad_obj.remove(ad_handle) to remove (key,value) from 
+          the list.
+
+"""
+
+
+
+dy_import_module_symbols('advertise')
+
+
+
+
+class LookupCache():
+  # caches lookups in a global data structure
+
+
+  cache = {} # a dict that will map lookups to results
+  lock = createlock()
+
+  def __init__(self,refresh_time=120):
+    # refresh_time is the amount of time the we will return results
+    # from the cache without doing a new lookup
+    self.refresh_time = refresh_time
+
+  
+  def lookup(self,key, maxvals=100, lookuptype=['central','opendht','DOR'], \
+                            concurrentevents=2, graceperiod=10, timeout=60):    
+    """
+    <Purpose>
+      lookup the values stored at the given key
+
+    <Arguments>
+      see advertise.repy
+      WARNING optional arguments are passed on to advertise.repy if a new
+      advertisement is performed.  If cache values are returned nothing is 
+      done with the extra arguments.
+
+    <Returns>
+      a list of unique values advertised at the key
+
+    <Excpetions>
+      see advertise_lookup from advertise.repy
+    """ 
+    
+    if key not in self.cache:
+      # do the initial look up 
+      results = advertise_lookup(key, maxvals, lookuptype,concurrentevents,
+                              graceperiod, timeout)
+      
+      if len(results) > 0 and results[0] != '':
+        # don't cache results of a failed lookup
+        self.cache[key] = {'results':results,'time':getruntime()}
+
+      return results
+
+    else:
+      # if the key is in the cache see how old it is
+      time_expired = getruntime() - self.cache[key]['time']
+      if time_expired > self.refresh_time or time_expired < 0:
+        # refresh the cache value if its old or the time doesnt make since
+        results = advertise_lookup(key, maxvals, lookuptype,concurrentevents,
+                                            graceperiod, timeout)
+        if len(results) > 0 and results[0] != '':
+          # don't cache failed results
+          self.cache[key]['results'] = results
+          self.cache[key]['time'] = getruntime()
+
+        return results      
+
+
+      else:
+        # return the cache results without a lookup
+        return self.cache[key]['results']
+
+
+
+
+
+
+class AdvertisePipe():
+  # shares a thread of execution across instances to 
+  # advertise key value pairs
+  
+  advertise_dict = {} # store info to be advertised
+  state= {'run':False} # should the add thread be running
+  state_lock = createlock()
+  ttlv = 240
+  redo = 120
+
+
+  def _advertise_thread(self):
+    # add a short sleep so that key,value pairs added 
+    # close to the same time will be advertised together
+    #without waiting for the next cycle
+    sleep(2)   
+
+    # advertise values stored in the advertise_dict
+    while self.state['run']:
+      
+      # get the start time of the advertisement pass
+      start = getruntime()
+
+      # advertise each key,value pair that was in the dict
+      # at the beggining of this pass
+      entry_keys = self.advertise_dict.keys()
+      for entry_key in entry_keys:
+        try:
+          (key,value) = self.advertise_dict[entry_key]
+          advertise_announce(key,value,self.ttlv)
+        except:
+          pass #the key must have been deleted
+    
+          
+  
+      # now wait until redo time has expired
+      # if run has gone to false we want to stop sleeping and kill the thread
+      while getruntime() - start < self.redo and self.state['run']:
+        sleep(10)
+          
+
+
+  def add(self,key,value):
+    """
+    <Purpose>
+      add the key,value pair to the advertise pipe
+
+    <Arguments>
+      the key value pair to advertise
+
+    <Returns>
+      a handle that can be used to remove the key,value pair
+
+    <Excpetions>
+      Possible exception from settimer if the advertise thread 
+      can not be started
+    """ 
+    
+    # create a unique handle
+    handle = object() 
+    self.advertise_dict[handle]=(key,value)
+    
+    # if the advertise thread is not running start it
+    self.state_lock.acquire(True)
+    if not self.state['run']:
+      self.state['run'] = True
+      createthread(self._advertise_thread)
+    self.state_lock.release()    
+    
+    # return the handle
+    return handle
+    
+
+  def remove(self,handle):
+   """
+    <Purpose>
+      removes the key,value pair corresponding to the handle from
+      the advertise pipe
+
+    <Arguments>
+      a handle returned from AdvertisePipe.add
+
+    <Returns>
+      None
+
+    <Excpetions>
+      Exception on invalid handle
+    """ 
+   self.state_lock.acquire(True)  
+   if handle not in self.advertise_dict:
+     self.state_lock.release()
+     raise Exception('Invalid advertise handle')
+   else: 
+     del self.advertise_dict[handle]
+     if len(self.advertise_dict) == 0:
+       self.state['run'] = False
+     self.state_lock.release()
+    
+  

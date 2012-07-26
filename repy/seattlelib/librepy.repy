@@ -1,0 +1,153 @@
+"""
+This is the "Libc" of Repy. This file provides convenient and functional
+wrappers around the Repy API to make programming more convenient.
+
+It can either be loaded as a Repy module, or it can be imported directly.
+This module just imports all of its sub-components and exports their
+symbols.
+
+If it is loaded as a module, then a run-loop is initialized prior
+to dispatching the next module.
+
+"""
+# This array holds things to export if we loaded as a module
+LIBREPY_EXPORTS = ["LIBREPY_EXPORTS"]
+
+#### Constants
+
+# How often we should check if the Run Loop should be shutdown
+# It is shutdown where there are no active threads and no
+# more scheduled tasks.
+CHECK_RL_SHUTDOWN = 1
+
+
+##### Imports
+#
+# To minimize the complexity of this file,
+# we import the sub-components of librepy using dylink rather
+# than defining everything here.
+#
+
+# Import the sub-library, librepyrunloop
+librunloop = dy_import_module("librepyrunloop")
+LIBREPY_EXPORTS.append("librunloop")
+
+# Import the sub-library, librepyfile
+libfile = dy_import_module("librepyfile")
+LIBREPY_EXPORTS.append("libfile")
+
+# Import the sub-library, librepyrandom
+librandom = dy_import_module("librepyrandom")
+LIBREPY_EXPORTS.append("librandom")
+
+# Import the sub-library, librepythread
+libthread = dy_import_module("librepythread")
+LIBREPY_EXPORTS.append("libthread")
+
+# Import the sub-library, librepysocket
+libsocket = dy_import_module("librepysocket")
+LIBREPY_EXPORTS.append("libsocket")
+
+# Override the imported version of librunloop to use a unified run-loop
+libthread._context["librunloop"] = librunloop
+libsocket._context["librunloop"] = librunloop
+
+
+##### Exports
+#
+# Here we export symbols from our sub-libraries
+
+# Exports from librepyrunloop
+PriorityQueue = librunloop.PriorityQueue
+start_runloop = librunloop.start_runloop
+runAt = librunloop.runAt
+runIn = librunloop.runIn
+runEvery = librunloop.runEvery
+stopSchedule = librunloop.stopSchedule
+terminate_runloop = librunloop.terminate
+LIBREPY_EXPORTS.append("PriorityQueue")
+LIBREPY_EXPORTS.append("start_runloop")
+LIBREPY_EXPORTS.append("runAt")
+LIBREPY_EXPORTS.append("runIn")
+LIBREPY_EXPORTS.append("runEvery")
+LIBREPY_EXPORTS.append("stopSchedule")
+LIBREPY_EXPORTS.append("terminate_runloop")
+
+
+# Exports from librepyfile
+open = libfile.open
+rmfile = libfile.rmfile
+removefile = rmfile # Override removefile
+lsdir = libfile.lsdir
+LIBREPY_EXPORTS.append("open")
+LIBREPY_EXPORTS.append("rmfile")
+LIBREPY_EXPORTS.append("removefile")
+LIBREPY_EXPORTS.append("lsdir")
+
+
+# Exports from librandom
+randomint = librandom.randomint
+randomlong = librandom.randomlong
+randomfloat = librandom.randomfloat
+randomstring = librandom.randomstring
+LIBREPY_EXPORTS.append("randomint")
+LIBREPY_EXPORTS.append("randomlong")
+LIBREPY_EXPORTS.append("randomfloat")
+LIBREPY_EXPORTS.append("randomstring")
+
+
+# Exports from libthread
+Lock = libthread.Lock
+RLock = libthread.RLock
+Thread = libthread.Thread
+Timer = libthread.Timer
+ThreadPool = libthread.ThreadPool
+LIBREPY_EXPORTS.append("Lock")
+LIBREPY_EXPORTS.append("RLock")
+LIBREPY_EXPORTS.append("Thread")
+LIBREPY_EXPORTS.append("Timer")
+LIBREPY_EXPORTS.append("ThreadPool")
+
+# Exports from libsocket
+sendmess = libsocket.sendmess
+recvmess = libsocket.recvmess
+openconn = libsocket.openconn
+waitforconn = libsocket.waitforconn
+LIBREPY_EXPORTS.append("sendmess")
+LIBREPY_EXPORTS.append("recvmess")
+LIBREPY_EXPORTS.append("openconn")
+LIBREPY_EXPORTS.append("waitforconn")
+
+
+##### Run-time
+
+# If we are loaded as a module, we need to dispatch the next module
+if callfunc == "initialize":
+  # Get the idle thread count
+  idle_threads = libthread.active_threads()
+
+  # This function will be periodically scheduled to see if the
+  # run-loop should shutdown so the program can terminate
+  def check_terminate():
+    # Get the number of threads
+    active_threads = libthread.active_threads()
+
+    # If active equals idle, then check if there are
+    # any scheduled tasks. If there aren't, then terminate the runloop.
+    if active_threads == idle_threads:
+      num_scheduled = librunloop._context["_TASK_QUEUE"].count
+      if num_scheduled == 0:
+        librunloop.terminate() 
+
+
+  # Schedule this checker to run every once in a while
+  runEvery(CHECK_RL_SHUTDOWN, check_terminate)
+
+  # Export everything
+  for key in LIBREPY_EXPORTS:
+    CHILD_CONTEXT[key] = _context[key]
+  
+  # Start the next module
+  dy_dispatch_module()
+
+

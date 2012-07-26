@@ -1,0 +1,497 @@
+"""
+<Program Name>
+  sshkey_paramiko.repy
+
+<Started>
+  2009-05-00
+
+<Purpose>
+  To be used by sshkey.repy, this is not a stand alone module. sshkey.repy
+  is the wrapper that developers should use. This file contains the code 
+  that has been modified or taken from paramiko. It is licensed under a 
+  different license then the rest of the code and to avoid any conflict it 
+  has been separated into its own module.
+  
+  It makes heavy use of the paramiko code base, I have 
+  deconstructed their scheme in an attempt to port only the necessary
+  code into repy.
+  
+<Authors>  
+  Modified by Anthony Honstain
+  
+
+  Paramiko   
+  paramiko/util.py paramiko/message.py paramiko/rsakey.py were the source
+  for the functions:
+    _sshkey_paramiko_get_bytes
+    _sshkey_paramiko_inflate_long
+    _sshkey_paramiko_get_string
+    _sshkey_paramiko_generate_key_bytes
+    _sshkey_paramiko_BER
+    _sshkey_paramiko_read_public_key
+    _sshkey_paramiko_decode_public_key
+    _sshkey_paramiko_read_private_key
+
+    Copyright (C) 2003-2007 Robey Pointer <robey@lag.net>
+  
+    This file is part of paramiko.
+  
+    Paramiko is free software; you can redistribute it and/or modify it under the
+    terms of the GNU Lesser General Public License as published by the Free
+    Software Foundation; either version 2.1 of the License, or (at your option)
+    any later version.
+  
+    Paramiko is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+    A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+    details.
+
+"""
+
+include sshkey.repy
+include base64.repy
+include md5py.repy
+include pydes.repy
+include binascii.repy
+
+
+class sshkey_paramiko_BERException (Exception):
+  """ This exception indicates that the BER decoding was not recognized """
+  pass
+
+
+  
+class sshkey_paramiko_SSHException(Exception):
+  """This exception indicates that the ssh key was unable to be decoded"""
+  pass
+
+
+
+class sshkey_paramiko_EncryptionException(Exception):
+  """This exception indicates that the ssh key was unable to be decrypted"""
+  pass
+
+
+
+class _sshkey_paramiko_BER(object):
+  """
+  <Purpose>
+    Perform BER decoding.
+    
+  <Side Effects>
+    None
+    
+  <Example Use>
+    ber_obj _sshkey_paramiko_BER(data)
+    list = ber_obj.decode()
+    
+  """
+
+  """
+  Robey's tiny little attempt at a BER decoder.
+  """
+
+  def __init__(self, content=''):
+      self.content = content
+      self.idx = 0
+
+  def decode(self):
+      return self.decode_next()
+  
+  def decode_next(self):
+    if self.idx >= len(self.content):
+      return None
+    ident = ord(self.content[self.idx])
+    self.idx += 1
+    if (ident & 31) == 31:
+      # identifier > 30
+      ident = 0
+      while self.idx < len(self.content):
+        t = ord(self.content[self.idx])
+        self.idx += 1
+        ident = (ident << 7) | (t & 0x7f)
+        if not (t & 0x80):
+          break
+    if self.idx >= len(self.content):
+      return None
+    # now fetch length
+    size = ord(self.content[self.idx])
+    self.idx += 1
+    if size & 0x80:
+      # more complicated...
+      # FIXME: theoretically should handle indefinite-length (0x80)
+      t = size & 0x7f
+      if self.idx + t > len(self.content):
+        return None
+      size = _sshkey_paramiko_inflate_long(self.content[self.idx : self.idx + t], True)
+      self.idx += t
+    if self.idx + size > len(self.content):
+      # can't fit
+      return None
+    data = self.content[self.idx : self.idx + size]
+    self.idx += size
+    # now switch on id
+    if ident == 0x30:
+      # sequence
+      return self.decode_sequence(data)
+    elif ident == 2:
+      # int
+      return _sshkey_paramiko_inflate_long(data)
+    else:
+      # 1: boolean (00 false, otherwise true)
+      raise sshkey_paramiko_BERException('Unknown ber encoding type %d' % ident)
+
+  # Removed staticmethod
+  def decode_sequence(self, data):
+    out = []
+    b = _sshkey_paramiko_BER(data)
+    while True:
+      x = b.decode_next()
+      if x is None:
+        break
+      out.append(x)
+    return out
+  #decode_sequence = staticmethod(decode_sequence)
+
+
+
+def _sshkey_paramiko_get_bytes(packet, n):
+  """
+  <Exception>
+    ValueError if I/O operation on closed _sshkey_StringIO object. This is raised 
+    by the _sshkey_StringIO object, but it is never closed in this code so 
+    this is unlikely.
+  
+  MODIFIED FROM paramiko/message.py
+  
+  Return the next C{n} bytes of the Message, without decomposing into
+  an int, string, etc. Just the raw bytes are returned.
+ 
+  @return: a string of the next C{n} bytes of the Message, or a string
+  of C{n} zero bytes, if there aren't C{n} bytes remaining.
+  
+  @rtype: string
+  """
+  b = packet.read(n)
+  if len(b) < n:
+    return b + '\x00' * (n - len(b))
+  return b
+
+
+
+def _sshkey_paramiko_inflate_long(s, always_positive=False):
+  """
+  TAKEN FROM paramiko/util.py
+
+  turns a normalized byte string into a 
+  long-int (adapted from Crypto.Util.number)
+  """
+  
+  out = 0L
+  negative = 0
+  if not always_positive and (len(s) > 0) and (ord(s[0]) >= 0x80):
+    negative = 1
+  if len(s) % 4:
+    filler = '\x00'
+    if negative:
+      filler = '\xff'
+    s = filler * (4 - len(s) % 4) + s
+  for i in range(0, len(s), 4):
+    # Anthony - replaces struct functionality
+    #out = (out << 32) + struct.unpack('>I', s[i:i+4])[0]
+    out = (out << 32)  
+    out += (ord(s[i]) << 24)
+    out += ord(s[i+1]) << 16
+    out += ord(s[i+2]) << 8
+    out += ord(s[i+3])
+    
+  if negative:
+    out -= (1L << (8 * len(s)))
+  return out
+
+
+
+def _sshkey_paramiko_get_string(packet):
+  """
+  <Purpose>
+    Takes a StringIO object and reads off 4 bytes and converts them to an integer,
+    that integer is used to decide how many bytes are to be read off of the packet.
+    
+    Example: If the byte string in packet (StringIO object) were 
+             '\x00\x00\x00\x01A'
+             Stage1
+               Then the first 4 bytes will be '\x00\x00\x00\x01' which will be
+               converted into the integer num_bytes=1.
+             Stage2
+               Then num_bytes=1 will be read from packet and returned. 
+             
+    
+    Heavily modified to remove object used in paramiko/message.py
+  
+  <Arguments>
+    A StringIO object that is not closed.
+    
+  <Exceptions>
+    ValueError if I/O operation on closed _sshkey_StringIO object. This is raised 
+    by the _sshkey_StringIO object, but it is never closed in this code so 
+    this is unlikely.
+
+  <Side Effects>
+    None
+    
+  <Return>    
+    The string encoded in the packet.
+      
+  """
+  
+  # Get 4 bytes from packet which will tell us how many bytes to
+  # extract for stage 2.
+  stage1 = _sshkey_paramiko_get_bytes(packet, 4)
+     
+  # Replacing struct module
+  #num_bytes = struct.unpack('>I', stage1)[0] 
+  num_bytes = 0
+  for byte in stage1:
+    num_bytes = num_bytes << 8
+    num_bytes += ord(byte) 
+  
+  # This is the desired string from the packet.  
+  stage2 = _sshkey_paramiko_get_bytes(packet, num_bytes)
+  return stage2
+  
+
+
+# Anthony modified to force use of our md5 instead pycrypto md5
+def _sshkey_paramiko_generate_key_bytes(salt, key, nbytes):
+#def generate_key_bytes(hashclass, salt, key, nbytes):
+  """
+  <Purpose>
+    Used to generate the DES3 key so that the private key can
+    be decrypted.
+    
+  Given a password, passphrase, or other human-source key, scramble it
+  through a secure hash into some keyworthy bytes.  This specific algorithm
+  is used for encrypting/decrypting private key files.
+
+  @param hashclass: class from L{Crypto.Hash} that can be used as a secure
+      hashing function (like C{MD5} or C{SHA}).
+  @type hashclass: L{Crypto.Hash}
+  @param salt: data to salt the hash with.
+  @type salt: string
+  @param key: human-entered password or passphrase.
+  @type key: string
+  @param nbytes: number of bytes to generate.
+  @type nbytes: int
+  @return: key data
+  @rtype: string
+  """
+  keydata = ''
+  digest = ''
+  if len(salt) > 8:
+    salt = salt[:8]
+  while nbytes > 0:
+    # Anthony - not using pycrypto for hash function
+    hash_obj = md5py_MD5()
+    #hash_obj = hashclass.new()
+    if len(digest) > 0:
+      hash_obj.update(digest)
+    hash_obj.update(key)
+    hash_obj.update(salt)
+    digest = hash_obj.digest()
+    size = min(nbytes, len(digest))
+    keydata += digest[:size]
+    nbytes -= size
+  return keydata
+
+
+
+def _sshkey_paramiko_read_public_key(openfile):
+  """
+  <Purpose>
+    Take a file process the headers and decrypt if needed, it
+    will then return the encoded data.
+  """
+  data = openfile.read()
+  data = data.split()
+  # Example value for data at this point
+  # data = ['ssh-rsa', 'AAAAB3NzaC1yc2...' , 'root@' ]
+  
+  # We discard data[0], the string 'ssh-rsa' is encoded in data[1] in base64
+  data = data[1]
+
+  # The base64 data is decoded and put in a StringIO object to make it easier
+  # to handle as data is read off.
+  packet = _sshkey_StringIO(base64_b64decode(data))
+
+  keyname = _sshkey_paramiko_get_string(packet)
+  
+  if keyname != 'ssh-rsa':
+    raise sshkey_paramiko_SSHException("Invalid SSH-rsa key")  
+
+  # The exponent is encoded first
+  e_exp = _sshkey_paramiko_inflate_long(_sshkey_paramiko_get_string(packet))
+  n_modulus = _sshkey_paramiko_inflate_long(_sshkey_paramiko_get_string(packet))
+  packet.close()
+  
+  return e_exp, n_modulus
+  
+  
+
+def _sshkey_paramiko_read_private_key(tag, openfile, password=None):
+  """
+  <Exceptions>
+  
+    sshkey_paramiko_SSHException:
+                    not a valid RSA private key file  
+                      A header with "-----BEGIN DSA PRIVATE KEY-----" would
+                      cause this.
+                    
+                    base64 decoding error
+                    
+                    Unknown private key structure
+                    
+                    Can't parse DEK-info in private key file
+                      If a header was found but did not contain
+                      'DEK-Info: DES-EDE3-CBC,57987BCBC21F738A'
+                    
+                    Unable to parse key file
+                    
+                    Not a valid RSA private key file (bad ber encoding)
+                    
+    sshkey_paramiko_EncryptionException:
+                    Unknown private key cipher
+                      If a unsported cipher was used to encrypt the ssh key,
+                      only DES3 is supported. A key encrypted with AES would
+                      raise this exception.
+                      
+                    Private key file is encrypted, password needed.
+                      No password was provided to decrypt the key.
+                    
+  """
+  keydata = _sshkey_paramiko_decode_private_key(tag, openfile, password)
+  
+  # private key file contains:                                                                                          
+  # keylist = { version = 0, n, e, d, p, q, d mod p-1, d mod q-1, q**-1 mod p }                                   
+  try:
+    keylist = _sshkey_paramiko_BER(keydata).decode()
+  except sshkey_paramiko_BERException:
+    raise sshkey_paramiko_SSHException('Unable to parse key file')
+  
+  if (type(keylist) is not list) or (len(keylist) < 4) or (keylist[0] != 0):
+    raise sshkey_paramiko_SSHException('Not a valid RSA private key file (bad ber encoding)')
+  
+  return keylist
+    
+
+
+def _sshkey_paramiko_decode_private_key(tag, file, password=None):
+  """
+  <Purpose>
+    Take a file process the headers and decrypt if needed, it
+    will then return the encoded data.
+  
+  
+  <Detailed Walkthrough>
+    file.readlines() returns a list like the following
+    ['-----BEGIN RSA PRIVATE KEY-----\n', 
+    'MIIEowIBAAKCAQEAq6Sbj5wJWmDbyQnyACihkpwttRG57u9MGiB59jT/Nl96Q0Lc\n', 
+    'kMACD45GB+JUSzMvBpT0R9Dp+e83Jk12sV756wD9Qn5x4uKvVp4aFea2k6EPf/2x\n', 
+    'c/QHtzBR6YugFrzeuHaeQZLtvXzKZsaQJMYQwR8Njn+kP/oM6gvIBaWV6FUScAmF\n', 
+    .
+    .
+    'oqBUsB6Bfp+NZGCxwICn+OV9N8z2bFWENYwx0Ubr7UlnETe05IqO\n', 
+    '-----END RSA PRIVATE KEY-----\n']
+
+    currentline will be set to the line number where the key data begins,
+    marked by the line '-----BEGIN RSA PRIVATE KEY-----\n'
+    
+    Header information will be removed, I do know the details because
+    my key files do not contain this information.
+    
+    end will be set to currentline and incremented untill the string
+    '-----END RSA PRIVATE KEY-----\n' is found.
+    
+    In the case of the sample data, it was not encrypted and therefore
+    base64.decodestring(''.join(lines[currentline:end])) will be returned.
+  
+  """
+  _CIPHER_TABLE = {
+        'DES-EDE3-CBC': { 'cipher': pydes_triple_des, 'keysize': 24, 'blocksize': 8, 'mode': pydes_CBC }
+  }
+  
+  lines = file.readlines()
+    
+  currentline = 0
+  # File must contain the string '-----BEGIN RSA PRIVATE KEY-----\n'
+  targetstring = '-----BEGIN ' + tag + ' PRIVATE KEY-----'
+  while (currentline < len(lines)) and (lines[currentline].strip() != targetstring):
+    currentline += 1
+  if currentline >= len(lines): 
+    # String not found, this must an invalid key file.
+    raise sshkey_paramiko_SSHException('not a valid ' + tag + ' private key file')
+
+  # parse any headers first
+  headers = {}
+  currentline += 1
+  while currentline < len(lines):
+    l = lines[currentline].split(': ')
+    if len(l) == 1:
+      break
+    headers[l[0].lower()] = l[1].strip()
+    currentline += 1
+
+  # find end
+  end = currentline
+  while (lines[end].strip() != '-----END ' + tag + ' PRIVATE KEY-----') and (end < len(lines)):
+    # Modified to remove new line
+    lines[end] = lines[end].strip('\n')
+    end += 1
+    
+  # if we trudged to the end of the file, just try to cope.
+  try:
+    data = base64_b64decode(''.join(lines[currentline:end]))
+  except TypeError, e:
+    raise sshkey_paramiko_SSHException('base64 decoding error: ' + str(e))
+
+  # If NOT encrypted ?
+  if 'proc-type' not in headers:
+    # unencryped: done
+    return data
+  
+  
+  # Key was encrypted so it will need to go through the decryption
+  # process.
+  # encrypted keyfile: will need a password
+  if headers['proc-type'] != '4,ENCRYPTED':
+    raise sshkey_paramiko_SSHException('Unknown private key structure "%s"' % headers['proc-type'])
+  try:
+    encryption_type, saltstr = headers['dek-info'].split(',')
+  except:
+    raise sshkey_paramiko_SSHException('Can\'t parse DEK-info in private key file')
+  if encryption_type not in _CIPHER_TABLE:
+    raise sshkey_paramiko_EncryptionException('Key encrypted with unkown cipher "%s", new key needed.' % encryption_type)
+  # if no password was passed in, raise an exception pointing out that we need one
+  if password is None:
+    raise sshkey_paramiko_EncryptionException('Private key file is encrypted, password needed.')
+  
+  cipher = _CIPHER_TABLE[encryption_type]['cipher']
+  keysize = _CIPHER_TABLE[encryption_type]['keysize']
+  mode = _CIPHER_TABLE[encryption_type]['mode']
+  
+  # Anthony - Replaced binascii
+  #salt = binascii.unhexlify(saltstr)
+  salt = binascii_a2b_hex(saltstr)
+  
+  # Anthony modified to use hashlib instead of pycrypto hash
+  key = _sshkey_paramiko_generate_key_bytes(salt, password, keysize)
+  #key = generate_key_bytes(MD5, salt, password, keysize)
+  
+  # Anthony - modified to use pydes instead of pycrypto DES3
+  temp_des_obj = pydes_triple_des(key, mode, salt)
+  decrypted = temp_des_obj.decrypt(data)
+  #decrypted = cipher.new(key, mode, salt).decrypt(data)
+  
+  return decrypted
+
+
+

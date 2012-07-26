@@ -1,0 +1,51 @@
+
+#ifndef arp_loaded
+#define arp_loaded
+
+#include <general.repy>
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+
+ETHERNET_TYPE_ARP = 0x0806
+
+ARP_HTYPE_ETHERNET = 1
+ARP_PTYPE_IP = ETHERNET_TYPE_IP
+ARP_OPER_REQUEST = 1
+ARP_OPER_REPLY = 2
+
+class ArpHeader(Header):
+  def create(self, htype, ptype, hlen, plen, oper, sha, spa, tha, tpa):
+    self.htype = htype
+    self.ptype = ptype
+    self.hlen = hlen
+    self.plen = plen
+    self.oper = oper
+    self.sha = sha
+    self.spa = spa
+    self.tha = tha
+    self.tpa = tpa
+  def decode(self, p):
+    (self.htype, self.ptype, self.hlen, self.plen, self.oper) = struct_unpack("!2H2BH", p[0:8])
+    pos = 8
+    self.sha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.spa = p[pos:pos+self.plen]
+    pos += self.plen
+    self.tha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.tpa = p[pos:pos+self.plen]
+    return self
+  def encode(self):
+    return struct_pack("!2H2BH", [self.htype, self.ptype, self.hlen, self.plen, self.oper]) + self.sha + self.spa + self.tha + self.tpa
+  def __str__(self):
+    sha = macToStr(self.sha)
+    tha = macToStr(self.tha)
+    spa = ipToStr(self.spa)
+    tpa = ipToStr(self.tpa)
+    if self.oper == ARP_OPER_REQUEST:
+      return "ARP(%s, %s who has %s)" % (sha, spa, tpa)
+    if self.oper == ARP_OPER_REPLY:
+      return "ARP(%s has %s)" % (sha, spa)
+    return "ARP"
+
+#endif

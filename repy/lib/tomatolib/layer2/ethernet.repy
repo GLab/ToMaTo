@@ -1,0 +1,85 @@
+
+#ifndef ethernet_loaded
+#define ethernet_loaded
+
+#include <general.repy>
+
+def macToStr(s):
+    return ":".join(["%02x" % ord(b) for b in s])
+
+def strToMac(s):
+    return "".join([chr(int(c, 16)) for c in s.split(":")])
+
+mycontext["macs"] = []
+
+def assignMac(deviceId, macNum):
+    return struct_pack("!BIB", [2, deviceId, macNum])
+
+ETHERNET_GLOBAL_BROADCAST = "\xff\xff\xff\xff\xff\xff"
+
+class EthernetHeader(Header):
+  def create(self, dst, src, type, payload):
+    self.dst = dst
+    self.src = src
+    self.type = type
+    self.payload = payload
+  def decode(self, p):
+    self.dst = p[0:6]
+    self.src = p[6:12]
+    self.type = struct_unpack("!H", p[12:14])[0]
+    self.payload = p[14:]
+    return self
+  def encode(self):
+    return self.dst + self.src + struct_pack("!H", [self.type]) + self.payload
+  def __str__(self):
+    return "Ethernet(dst=%s, src=%s, type=%d)" % (macToStr(self.dst), macToStr(self.src), self.type)
+  
+class EthernetNode(Node):
+  def __init__(self, devs=tuntap_list(), mac=None, id=-1, **kwargs):
+    Node.__init__(self)
+    if not mac:
+      mac = assignMac(int(id), len(mycontext["macs"]))
+      mycontext["macs"].append(mac)
+      echo("Assigned MAC address %s" % macToStr(mac))
+    self.mac = mac
+    self.devs = devs
+    self.mac_table = {}
+  def handle(self, dev, p):
+    ether = EthernetHeader(p)
+#ifdef DEBUG_ETHERNET
+    echo("Received via " + dev + ":\n\t" + str(ether))
+#ifdef DEBUG_DUMP
+    echo(dump_packet(p))
+#endif
+    echo("")
+#endif
+    self.mac_table[ether.src] = dev
+    self._fireEvent(EVENT_PACKET_ANY, ether.type, ether, dev)
+    if ether.dst == self.mac:
+      self._fireEvent(EVENT_PACKET_MATCH, ether.type, ether, dev)
+    elif ether.dst == ETHERNET_GLOBAL_BROADCAST:
+      self._fireEvent(EVENT_PACKET_BROADCAST, ether.type, ether, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_MATCH, ether.type, ether, dev)
+  def send(self, dst, type, payload, dev=None):
+    if not dev:
+      dev = self.mac_table.get(dst)
+    p = EthernetHeader(dst=dst, src=self.mac, type=type, payload=payload)
+#ifdef DEBUG
+    if dev:
+      echo("\t" + str(p) + "\nSending via " + str(dev) )
+    else:
+      echo("\t" + str(p) + "\nSending via " + str(self.devs) )
+#ifdef DEBUG_DUMP
+    echo(dump_packet(p.encode()))
+#endif
+    echo("")
+#endif
+    if dev:
+      tuntap_send(dev, str(p.encode()))
+    else:
+      for dev in self.devs:
+        tuntap_send(dev, str(p.encode()))
+
+  
+#endif

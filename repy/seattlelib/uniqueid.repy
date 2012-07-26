@@ -1,0 +1,50 @@
+""" 
+Author: Justin Cappos
+
+Module: A simple library that provides a unique ID for each call
+
+Start date: November 11th, 2008
+
+This is a really, really simple module, only broken out to avoid duplicating 
+functionality.
+
+NOTE: This will give unique ids PER FILE.   If you have multiple python 
+modules that include this, they will have the potential to generate the
+same ID.
+
+"""
+
+# This is a list to prevent using part of the user's mycontext dict
+uniqueid_idlist = [0]
+uniqueid_idlock = createlock()
+
+def uniqueid_getid():
+  """
+   <Purpose>
+      Return a unique ID in a threadsafe way
+
+   <Arguments>
+      None
+
+   <Exceptions>
+      None
+
+   <Side Effects>
+      None.
+
+   <Returns>
+      The ID (an integer)
+  """
+
+  uniqueid_idlock.acquire(True)
+
+  # I'm using a list because I need a global, but don't want to use the 
+  # programmer's dict
+  myid = uniqueid_idlist[0]
+  uniqueid_idlist[0] = uniqueid_idlist[0] + 1
+
+  uniqueid_idlock.release()
+
+  return myid
+
+

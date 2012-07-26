@@ -1,0 +1,239 @@
+"""
+Author: Vjekoslav Brajkovic
+
+
+Start date: May 24th, 2009
+
+Purpose: This module provides condition variable (cv) interface.
+
+Abstract: Conceptually a condition variable is a queue of threads, 
+associated with a semaphore upon which a thread(s) may wait for some 
+assertion to become true. Thus each condition variable is associated with 
+some assertion. While a thread is waiting upon a condition variable, that 
+thread is not considered to occupy the semaphore, and so other threads may
+enter the semaphore to notify the waiting thread(s).
+
+Thread-Safety: Safe to call notify_one()/notify_all()/wait()
+concurrently. However, in case you call destroy() make sure this
+is a last call for that conditional variable -- otherwise you will
+receive an exception about invalid handle. 
+"""
+
+include semaphore.repy
+
+
+
+cv_handle_dict = {}
+
+
+
+def cv_create():
+  """
+  <Purpose>
+    Create a new condition variable and return it to the user.
+      
+  <Precondition>
+    None.
+    
+  <Arguments>
+    None.
+
+  <Exceptions>
+    None.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The semaphore handle. 
+  """
+  # An unique ID associated with the condition variable.
+  new_handle = uniqueid_getid()
+  
+  # Waiters Semaphore is used as a simple mutex, assuring that at most
+  # one function in this module is executed at any point in time.
+  waiters_semaphore = semaphore_create()
+  semaphore_up(waiters_semaphore)
+  
+  # Dispatcher Semaphore is used as a queuing mechanism for threads.
+  dispatcher_semaphore = semaphore_create()
+  
+  # How many waiting threads do we have in queue?
+  waiter_count = 0
+  
+  cv_handle_dict[new_handle] = {'waiters_semaphore':waiters_semaphore,
+                                'dispatcher_semaphore':dispatcher_semaphore,
+                                'waiter_count':waiter_count}
+
+  return new_handle
+
+
+
+
+
+def cv_destroy(handle):
+  """
+  <Purpose>
+    Destroy the condition variable.
+      
+  <Arguments>
+    handle: The condition variable handle.
+
+  <Precondition>
+    All threads waiting on this condition variable have been notified by a 
+    call to notify_one or notify_all.
+  
+    No other function calls in this module should be called concurrently or
+    after. The fact that some other function call in this module might raise 
+    an exception  while the condition variable is getting destroyed implies a
+    design error in client's code.
+    
+  <Exceptions>
+    ValueError if the condition variable handle is invalid.
+    
+  <Side Effects>
+    Undefined behavior when the second precondition is not met.
+
+  <Returns>
+    None.
+  """
+  try:
+    
+    waiters_semaphore = cv_handle_dict[handle]['waiters_semaphore']
+    
+    # Block all other functions from accessing the number of waiting threads.
+    semaphore_down(waiters_semaphore)
+  
+    # Are there any threads waiting for this condition variable? If so,
+    # notify the client by raising the exception. This is an exceptional 
+    # state and implies a bug in client's code.
+    if cv_handle_dict[handle]['waiter_count'] > 0:
+      raise RuntimeError("condition variable thread queue not empty")
+    
+    # Now that we know that the thread queue is empty, we can safely
+    # delete all internal variables.
+    semaphore_destroy(cv_handle_dict[handle]['dispatcher_semaphore'])
+    semaphore_destroy(cv_handle_dict[handle]['waiters_semaphore'])
+    
+    del cv_handle_dict[handle] 
+   
+  except (IndexError, KeyError, ValueError):
+    raise ValueError("invalid or destroyed condition variable handle: " + str(handle)) 
+ 
+
+
+def cv_wait(handle):
+  """
+  <Purpose>
+    Wait for a condition.
+
+  <Arguments>
+    handle: The condition variable handle.
+
+  <Precondition>
+    None.
+
+  <Exceptions>
+    ValueError if the condition variable handle is invalid.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    None.
+  """
+  try:
+    
+    waiters_semaphore = cv_handle_dict[handle]['waiters_semaphore']  
+  
+    # OK, we want to wait for a condition. Signal the Writers Semaphore
+    # that we want to enter a critical section, and increment the
+    # number of threads that are currently waiting.
+    semaphore_down(waiters_semaphore) # Begin critical section.
+    cv_handle_dict[handle]['waiter_count'] = cv_handle_dict[handle]['waiter_count'] + 1
+    semaphore_up(waiters_semaphore) # End critical section.
+    
+    # ... and wait for the condition to happen.
+    semaphore_down(cv_handle_dict[handle]['dispatcher_semaphore'])
+
+  except (IndexError, KeyError, ValueError):
+    raise ValueError("invalid or destroyed condition variable handle: " + str(handle)) 
+
+
+
+def cv_notify_one(handle):
+  """
+  <Purpose>
+    Notify the next thread in line that the condition was met.
+
+  <Arguments>
+    handle: The condition variable handle.
+
+  <Precondition>
+    None.
+
+  <Exceptions>
+    ValueError if the condition variable handle is invalid.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    None.
+  """
+  try:
+    
+    waiters_semaphore = cv_handle_dict[handle]['waiters_semaphore']
+    
+    semaphore_down(waiters_semaphore) # Begin critical section.
+    
+    # In case there is at least one thread waiting for a condition,
+    # update the number of threads waiting for that condition, and 
+    # signal the change.
+    if cv_handle_dict[handle]['waiter_count'] > 0:
+      cv_handle_dict[handle]['waiter_count'] = cv_handle_dict[handle]['waiter_count'] - 1
+      semaphore_up(cv_handle_dict[handle]['dispatcher_semaphore'])
+      
+    semaphore_up(waiters_semaphore) # End critical section.
+  
+  except (IndexError, KeyError, ValueError):
+    raise ValueError("invalid or destroyed condition variable handle: " + str(handle)) 
+
+
+
+def cv_notify_all(handle):
+  """
+  <Purpose>
+    Notify all waiting threads that the condition was met.
+
+  <Arguments>
+    handle: The condition variable handle.
+
+  <Precondition>
+    None.
+
+  <Exceptions>
+    ValueError if the condition variable handle is invalid.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+     None.
+  """
+
+  try:
+    
+    waiters_semaphore = cv_handle_dict[handle]['waiters_semaphore']
+    
+    semaphore_down(waiters_semaphore) # Begin critical section.
+    
+    # Cycle through all waiting threads and signal the change.
+    while cv_handle_dict[handle]['waiter_count'] > 0:
+      cv_handle_dict[handle]['waiter_count'] = cv_handle_dict[handle]['waiter_count'] - 1
+      semaphore_up(cv_handle_dict[handle]['dispatcher_semaphore'])
+      
+    semaphore_up(waiters_semaphore) # End critical section.
+  
+  except (IndexError, KeyError, ValueError):
+    raise ValueError("invalid or destroyed condition variable handle: " + str(handle))  

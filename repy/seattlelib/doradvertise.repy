@@ -1,0 +1,186 @@
+"""
+Author: Conrad Meyer
+
+Start Date: Wed Dec 9 2009
+
+Description:
+Advertisements to the Digital Object Registry run by CNRI.
+
+"""
+
+
+
+
+include sockettimeout.repy
+include httpretrieve.repy
+include xmlparse.repy
+
+
+
+
+doradvertise_FORM_LOCATION = "http://geni.doregistry.org/SeattleGENI/HashTable"
+
+
+
+
+class doradvertise_XMLError(Exception):
+  """
+  Exception raised when the XML recieved from the Digital Object Registry
+  server does not match the structure we expect.
+  """
+  pass
+
+
+
+
+class doradvertise_BadRequest(Exception):
+  """
+  Exception raised when the Digital Object Registry interface indigates we
+  have made an invalid request.
+  """
+
+
+  def __init__(self, errno, errstring):
+    self.errno = errno
+    self.errstring = errstring
+    Exception.__init__(self, "Bad DOR request (%s): '%s'" % (str(errno), errstring))
+
+
+
+
+def doradvertise_announce(key, value, ttlval, timeout=None):
+  """
+  <Purpose>
+    Announce a (key, value) pair to the Digital Object Registry.
+
+  <Arguments>
+    key:
+            The new key the value should be stored under.
+
+    value:
+            The value to associate with the given key.
+
+    ttlval:
+            The length of time (in seconds) to persist this key <-> value
+            association in DHT.
+
+    timeout:
+            The number of seconds to spend on this operation before failing
+            early.
+
+  <Exceptions>
+    xmlparse_XMLParseError if the xml returned isn't parseable by xmlparse.
+    doradvertise_XMLError if the xml response structure does not correspond
+      to what we expect.
+    doradvertise_BadRequest if the response indicates an error.
+    Any exception httpretrieve_get_string() throws (including timeout errors).
+
+  <Side Effects>
+    The key <-> value association gets stored in openDHT for a while.
+
+  <Returns>
+    None.
+  """
+
+  post_params = {'command': 'announce', 'key': key, 'value': value,
+      'lifetime': str(int(ttlval))}
+
+  _doradvertise_command(post_params, timeout=timeout)
+
+  return None
+
+
+
+
+
+def doradvertise_lookup(key, maxvals=100, timeout=None):
+  """
+  <Purpose>
+    Retrieve a stored value from the Digital Object Registry.
+
+  <Arguments>
+    key:
+            The key the value is stored under.
+
+    maxvals:
+            The maximum number of values stored under this key to
+            return to the caller.
+
+    timeout:
+            The number of seconds to spend on this operation before failing
+            early.
+
+  <Exceptions>
+    xmlparse_XMLParseError if the xml returned isn't parseable by xmlparse.
+    doradvertise_XMLError if the xml response structure does not correspond
+      to what we expect.
+    doradvertise_BadRequest if the response indicates an error.
+    Any exception httpretrieve_get_string() throws (including timeout errors).
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The value stored in the Digital Object Registry at key.
+  """
+
+  post_params = {'command': 'lookup', 'key': key, 'maxvals': str(maxvals)}
+
+  return _doradvertise_command(post_params, timeout=timeout)
+
+
+
+def _doradvertise_command(parameters, timeout=None):
+  # Internal helper function; calls the remote command, and returns
+  # the results we can glean from it.
+
+  post_result = httpretrieve_get_string(doradvertise_FORM_LOCATION, \
+      postdata=parameters, timeout=timeout, \
+      httpheaders={"Content-Type": "application/x-www-form-urlencoded"})
+
+  # Parse the result to check for success. Throw several exceptions to
+  # ensure the XML we're reading makes sense.
+  xmltree = xmlparse_parse(post_result)
+
+  if xmltree.tag_name != "HashTableService":
+    raise doradvertise_XMLError(
+        "Root node error. Expected: 'HashTableService', " +
+        "got: '%s'" % xmltree.tag_name)
+
+  if xmltree.children is None:
+    raise doradvertise_XMLError("Root node contains no children nodes.")
+
+  # We expect to get an error code, an error string, and possibly some
+  # values from the server.
+  error_msg = ""
+  error = None
+  values = None
+
+  for xmlchild in xmltree.children:
+    # Read the numeric error code.
+    if xmlchild.tag_name == "status" and xmlchild.content is not None:
+      error = int(xmlchild.content.strip())
+
+    # String error message (description:status as strerror:errno).
+    elif xmlchild.tag_name == "description":
+      error_msg = xmlchild.content
+
+    # We found a <values> tag. Let's try and get some values.
+    elif xmlchild.tag_name == "values" and xmlchild.children is not None:
+      values = []
+      for valuenode in xmlchild.children:
+        if valuenode.tag_name != "value":
+          raise doradvertise_XMLError(
+              "Child tag of <values>; expected: '<value>', got: '<%s>'" % \
+                  valuenode.tag_name)
+
+        content = valuenode.content
+        if content is None:
+          content = ""
+
+        values.append(content)
+
+  if error is not 0:
+    raise doradvertise_BadRequest(error, error_msg)
+
+  return values

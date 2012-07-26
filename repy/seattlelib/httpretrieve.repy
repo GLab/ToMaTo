@@ -1,0 +1,448 @@
+"""
+<Program Name>
+  httpretrieve.repy
+
+<Started>
+  August 19, 2009
+
+<Author>
+  Yafete Yemuru
+
+<Purpose>
+  Provides a method for retrieving content from web servers using the HTTP
+  protocol. The content can be accessed as a file like object, or saved to
+  a file or returned as a string.
+"""
+
+
+
+include urlparse.repy
+include sockettimeout.repy
+include urllib.repy
+
+
+
+class HttpConnectionError(Exception):
+  """
+  Error indicating that the web server has unexpectedly dropped the
+  connection.
+  """
+
+
+
+
+class HttpBrokenServerError(Exception):
+  """
+  Error indicating that the web server has sent us complete garbage instead
+  of something resembling HTTP.
+  """
+
+
+
+
+def httpretrieve_open(url, postdata=None, querydata=None, \
+    httpheaders=None, timeout=None):
+  """
+  <Purpose>
+     Returns a file-like object that can be used to read the content from
+     an HTTP server. Follows 3xx redirects.
+
+  <Arguments>
+    url:
+           The URL to perform a GET or POST request on.
+    postdata (optional):
+           A dictionary of form data or a string to POST to the server.
+           Passing a non-None value results in a POST request being sent
+           to the server.
+    querydata (optional):
+           A dictionary of form data or a string to send as the query
+           string to the server.
+
+           If postdata is omitted, the URL is retrieved with GET. If
+           both postdata and querydata are omitted, there is no query
+           string sent in the request.
+
+           For both querydata and postdata, strings are sent *unmodified*.
+           This means you probably should encode them first, with
+           urllib_quote().
+    httpheaders (optional):
+           A dictionary of supplemental HTTP request headers to add to the
+           request.
+    timeout (optional):
+           A timeout for establishing a connection to the web server,
+           sending headers, and reading the response headers.
+
+           If excluded or None, never times out.
+
+  <Exceptions>
+    ValueError if given an invalid URL, or malformed limit or timeout
+      values. This is also raised if the user attempts to call a method
+      on the file-like object after closing it.
+
+    HttpConnectionError if opening the connection fails, or if the
+      connection is closed by the server before we expect.
+
+    SocketTimeoutError if the timeout is exceeded.
+
+    HttpBrokenServerError if the response or the Location response header
+      is malformed.
+
+  <Side Effects>
+    None
+
+  <Returns>
+    Returns a file-like object which can be used to read the body of
+    the response from the web server. The protocol version spoken by the
+    server, status code, and response headers are available as members of
+    the object.
+  """
+
+  # TODO: Make sure the timeout actually works correctly everywhere it
+  # should. I'm 99% sure it's broken somewhere.
+
+  starttime = getruntime()
+
+  # Check if the URL is valid and get host, path, port and query
+  parsedurl = urlparse_urlsplit(url)
+  host = parsedurl['hostname']
+  path = parsedurl['path']
+  port = parsedurl.get('port')
+  port = port or 80
+
+  if parsedurl['scheme'] != 'http':
+    raise ValueError("URL doesn't seem to be for the HTTP protocol.")
+  if host is None:
+    raise ValueError("Missing hostname.")
+  if parsedurl['query'] is not None and parsedurl['query'] != "":
+    raise ValueError("URL cannot include a query string.")
+
+  # Open connection to the web server
+  try:
+    sock = timeout_openconn(host, port)
+
+  except Exception, e:
+    if repr(e).startswith("timeout("):
+      raise HttpConnectionError("Socket timed out connecting to host/port.")
+    raise
+
+  # build an HTTP request using the given port, host, path and query
+  method = "GET"
+  if postdata is not None:
+    method = "POST"
+    if type(postdata) is dict:
+      postdata = urllib_quote_parameters(postdata)
+    if type(postdata) is not str:
+      raise TypeError("postdata should be a dict of form data or string")
+  else:
+    postdata = ""
+
+  if path == "":
+    raise ValueError("Invalid path -- empty string.")
+  if type(querydata) is dict:
+    querydata = urllib_quote_parameters(querydata)
+  if type(querydata) is str and querydata != "":
+    encquerydata = "?" + querydata
+  else:
+    encquerydata = ""
+
+  httpheader = method + ' ' + path + encquerydata + ' HTTP/1.0\r\n'
+  if httpheaders is not None:
+    if type(httpheaders) is not dict:
+      raise TypeError("Expected HTTP headers as a dictionary.")
+    else:
+      if "Host" not in httpheaders:
+        httpheader += "Host: " + host + ':' + str(port) + "\r\n"
+      for key, val in httpheaders.items():
+        httpheader += key + ": " + val + '\r\n'
+
+  if method == "POST":
+    httpheader += 'Content-Length: ' + str(len(postdata)) + '\r\n'
+  httpheader += '\r\n'
+  if method == "POST":
+    httpheader += postdata
+
+  # send HTTP request to the web server
+  sock.send(httpheader)
+
+  # receive the header lines from the web server
+  if timeout is None:
+    sock.settimeout(0)
+  elif getruntime() - starttime >= timeout:
+    raise SocketTimeoutError("Timed out")
+  else:
+    sock.settimeout(timeout - (getruntime() - starttime))
+
+  headers_str = ""
+  while True:
+    try:
+      headers_str += sock.recv(1)
+      if headers_str.endswith("\r\n\r\n"):
+        break
+    except Exception, e:
+      if str(e) == "Socket closed":
+        break
+      else:
+        raise
+
+  httpheaderlines = headers_str.split("\r\n")
+  while httpheaderlines[-1] == "":
+    httpheaderlines = httpheaderlines[:-1]
+
+  # get the status code and status message from the HTTP response
+  statusline, httpheaderlines = httpheaderlines[0], httpheaderlines[1:]
+  headersplit = statusline.split(' ', 2)
+  if len(headersplit) < 3:
+    raise HttpBrokenServerError("Server returned garbage for HTTP response.")
+  if not headersplit[0].startswith('HTTP'):
+    raise HttpBrokenServerError("Server returned garbage for HTTP response.")
+  statusmsg = headersplit[2]
+  try:
+    statusnum = int(headersplit[1])
+  except ValueError, e:
+    raise HttpBrokenServerError("Server returned garbage for HTTP response.")
+
+  responseheaders = _httpretrieve_parse_responseheaders(httpheaderlines)
+
+  if statusnum == 301 or statusnum == 302:
+    # redirect to the new location via recursion
+    sock.close()
+    try:
+      redirect_location = responseheaders["Location"][0]
+    except (KeyError, IndexError), ke:
+      raise HttpBrokenServerError("Server returned garbage for HTTP" + \
+          " response. Redirect response missing Location header.")
+    else:
+      return httpretrieve_open(redirect_location)
+
+  else:
+    return _httpretrieve_filelikeobject(sock, responseheaders, \
+        (headersplit[0], statusnum, statusmsg))
+
+
+
+
+def httpretrieve_save_file(url, filename, querydata=None, postdata=None, \
+    httpheaders=None, timeout=None):
+  """
+  <Purpose>
+    Perform an HTTP request, and save the content of the response to a
+    file.
+
+  <Arguments>
+    filename:
+           The file name to save the response to.
+    Other arguments:
+           See documentation for httpretrieve_open().
+
+  <Exceptions>
+    This function will raise any exception raised by Repy file objects
+    in opening, writing to, and closing the file.
+
+    This function will all also raise any exception raised by
+    httpretrieve_open(), for the same reasons.
+
+  <Side Effects>
+    Writes the body of the response to 'filename'.
+
+  <Returns>
+    None
+  """
+
+  httpcontent = ''
+  newfile = open(filename, 'w')
+
+  http_obj = httpretrieve_open(url, querydata=querydata, postdata=postdata, \
+      httpheaders=httpheaders, timeout=timeout)
+
+  # Read from the file-like HTTP object into our file.
+  while True:
+    httpcontent = http_obj.read(4096)
+    if httpcontent == '':
+      # we're done reading
+      newfile.close()
+      http_obj.close()
+      break
+    newfile.write(httpcontent)
+
+
+
+
+def httpretrieve_get_string(url, querydata=None, postdata=None, \
+    httpheaders=None, timeout=30):
+  """
+  <Purpose>
+    Performs an HTTP request on the given URL, using POST or GET,
+    returning the content of the response as a string. Uses
+    httpretrieve_open.
+
+  <Arguments>
+    See httpretrieve_open.
+
+  <Exceptions>
+    See httpretrieve_open.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    Returns the body of the HTTP response (no headers).
+  """
+
+  http_obj = httpretrieve_open(url, querydata=querydata, postdata=postdata, \
+      httpheaders=httpheaders, timeout=timeout)
+  httpcontent = http_obj.read()
+  http_obj.close()
+  return httpcontent
+
+
+
+
+class _httpretrieve_filelikeobject:
+  # This class implements a file-like object used for performing HTTP
+  # requests and retrieving responses.
+
+  def __init__(self, sock, headers, httpstatus):
+    self._sock = sock
+    self._fileobjclosed = False
+    self._totalcontentisreceived = False
+    self._totalread = 0
+    self.headers = headers
+    self.httpstatus = httpstatus
+
+
+
+  def read(self, limit=None, timeout=None):
+    """
+    <Purpose>
+      Behaves like Python's file.read(), with the potential to raise
+      additional informative exceptions.
+
+    <Arguments>
+      limit (optional):
+            The maximum amount of data to read. If omitted or None, this
+            reads all available data.
+
+    <Exceptions>
+      See file.read()'s documentation, as well as that of
+      httpretrieve_open().
+
+    <Side Effects>
+      None.
+
+    <Returns>
+      See file.read().
+    """
+
+    if self._fileobjclosed == True:
+      raise ValueError("I/O operation on closed file")
+
+    if self._totalcontentisreceived:
+      return ''
+
+    if limit is not None:
+      # Sanity check type/value of limit
+      if type(limit) is not int:
+        raise TypeError("Expected an integer or None for limit")
+      elif limit < 0:
+        raise ValueError("Expected a non-negative integer for limit")
+
+      lefttoread = limit
+    else:
+      lefttoread = None
+
+    if timeout is None:
+      self._sock.settimeout(0)
+    else:
+      self._sock.settimeout(timeout)
+
+    # Try to read up to limit, or until there is nothing left.
+    httpcontent = ''
+    while True:
+      try:
+        content = self._sock.recv(lefttoread or 4096)
+      except Exception, e:
+        if str(e) == "Socket closed":
+          self._totalcontentisreceived = True
+          break
+        else:
+          raise
+      
+      httpcontent += content
+      self._totalread += len(content)
+      if limit is not None:
+        if len(content) == lefttoread:
+          break
+        else:
+          lefttoread -= len(content)
+      if content == "":
+        self._totalcontentisreceived = True
+        break
+
+    return httpcontent
+
+
+
+  def close(self):
+    """
+    <Purpose>
+      Close the file-like object.
+
+    <Arguments>
+      None
+
+    <Exceptions>
+      None
+
+    <Side Effects>
+      Disconnects from the HTTP server.
+
+    <Returns>
+      Nothing
+    """
+    self._fileobjclosed = True
+    try:
+      self._sock.close()
+    except Exception, e:
+      pass # don't care
+
+
+
+
+def _httpretrieve_parse_responseheaders(headerlines):
+  # Parse rfc822-style headers (this could be abstracted out to an rfc822
+  # library that would be quite useful for internet protocols). Returns
+  # a dictionary mapping headers to arrays of values. E.g.:
+  #
+  # Foo: a
+  # Bar:
+  #   b
+  # Bar: c
+  #
+  # Becomes: {"Foo": ["a"], "Bar": ["b", "c"]}
+
+  i = 0
+  lastheader = None
+  lastheader_str = ""
+  res = {}
+  try:
+    while True:
+      # non-CRLF whitespace characters
+      if headerlines[i][0] in (" ", "\t") and lastheader is not None:
+        lastheader_str += headerlines[i]
+      else:
+        if lastheader is not None:
+          if lastheader not in res:
+            res[lastheader] = []
+          res[lastheader].append(lastheader_str.strip())
+        lastheader, lastheader_str = headerlines[i].split(":", 1)
+      i += 1
+      if i >= len(headerlines):
+        if lastheader is not None:
+          if lastheader not in res:
+            res[lastheader] = []
+          res[lastheader].append(lastheader_str.strip())
+        break
+    return res
+  except IndexError, idx:
+    raise HttpBrokenServerError("Server returned garbage for HTTP" + \
+        " response. Bad header.")

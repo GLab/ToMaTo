@@ -1,0 +1,16 @@
+def send(dev, p, exclude=None):
+  if dev:
+    if dev != exclude:
+      tuntap_send(dev, str(p))
+  else:
+    for dev in tuntap_list():
+      send(dev, p, exclude)
+      
+def run_forever(handle_fn):
+  while True:
+    try:
+      (dev, packet) = tuntap_read_any(None)
+      if packet:
+        handle_fn(dev, packet)
+    except Exception, e:
+      print_exc(e)

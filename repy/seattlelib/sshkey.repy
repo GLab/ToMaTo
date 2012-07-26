@@ -1,0 +1,263 @@
+"""
+<Program Name>
+  sshkey.repy
+
+<Started>
+  2009-05-00
+
+<Purpose>
+  To read ssh_keys, will read both public and private keys. It is also capable
+  of reading private keys encrypted with DES3.  
+
+
+<Author>
+  Modified by Anthony Honstain
+  
+  Python 2.6.2
+    _sshkey_StringIO
+  
+  
+<Guide for future modifications>
+
+  sshkey_file_to_publickey
+    Classes Used:
+      _sshkey_StringIO
+    Functions Used:
+      _sshkey_paramiko_get_string
+      _sshkey_paramiko_get_bytes
+      _sshkey_paramiko_inflate_long
+      _sshkey_paramiko_read_public_key
+    Repy Library Used:
+      base64_b64decode  
+      
+  sshkey_file_to_privatekey    
+    Classes Used:
+      _sshkey_paramiko_BER
+    Functions Used:
+      _sshkey_paramiko_generate_private_key
+      _sshkey_paramiko_read_private_key
+      _sshkey_paramiko_decode_private_key
+      _sshkey_paramiko_inflate_long
+      binascii_a2b_hex      
+    Repy Library Used:
+      base64_b64decode
+      pydes
+      md5py      
+
+"""
+
+include sshkey_paramiko.repy
+
+
+class sshkey_SSHException(Exception):
+  """This exception indicates that the ssh key was unable to be decoded"""
+  pass
+
+
+
+class sshkey_EncryptionException(Exception):
+  """This exception indicates that the ssh key was unable to be decrypted"""
+  pass
+
+
+
+class _sshkey_StringIO():
+  """
+  <Purpose>
+    A file-like class, StringIO, that reads and writes a string buffer.
+    
+  <Side Effects>
+    None
+    
+  <Example Use>
+    packet = _sshkey_StringIO('123456')
+    
+    packet.read(1)
+    # Returns '1'
+    
+    packet.read(2)
+    # Returns '23'
+    
+  """
+  
+  """class StringIO([buffer])
+
+  When a StringIO object is created, it can be initialized to an existing
+  string by passing the string to the constructor. If no string is given,
+  the StringIO will start empty.
+
+  The StringIO object can accept either Unicode or 8-bit strings, but
+  mixing the two may take some care. If both are used, 8-bit strings that
+  cannot be interpreted as 7-bit ASCII (that use the 8th bit) will cause
+  a UnicodeError to be raised when getvalue() is called.
+  """
+  def __init__(self, buf = ''):
+    # Force self.buf to be a string
+
+    if type(buf) != type(''):
+      buf = str(buf)
+    self.buf = buf
+    self.len = len(buf)
+    self.buflist = []
+    self.pos = 0
+    self.closed = False
+    self.softspace = 0
+
+
+  def close(self):
+    """Free the memory buffer.
+    """
+    if not self.closed:
+      self.closed = True
+      del self.buf, self.pos
+
+
+  def read(self, n = -1):
+    """Read at most size bytes from the file
+    (less if the read hits EOF before obtaining size bytes).
+
+    If the size argument is negative or omitted, read all data until EOF
+    is reached. The bytes are returned as a string object. An empty
+    string is returned when EOF is encountered immediately.
+    
+    <Exception>
+      ValueError if I/O operation on closed file.
+    """
+    if self.closed:
+      raise ValueError, "I/O operation on closed file"  
+    if self.buflist:
+      self.buf += ''.join(self.buflist)
+      self.buflist = []
+    if n < 0:
+      newpos = self.len
+    else:
+      newpos = min(self.pos+n, self.len)
+    r = self.buf[self.pos:newpos]
+    self.pos = newpos
+    return r
+
+
+
+def sshkey_file_to_privatekey(filename, password=None):
+  """
+  <Purpose>
+    Reads a ssh private key file and returns the key in a format
+    suitable to used by rsa.repy.
+  
+      Example ssh private key:
+       -----BEGIN RSA PRIVATE KEY-----
+       MIIEowIBAAKCAQEAq6Sbj5wJWmDbyQnyACihkpwttRG57u9MGiB59jT/Nl96Q0Lc
+       kMACD45GB+JUSzMvBpT0R9Dp+e83Jk12sV756wD9Qn5x4uKvVp4aFea2k6EPf/2x
+       ...
+       oqBUsB6Bfp+NZGCxwICn+OV9N8z2bFWENYwx0Ubr7UlnETe05IqO
+       -----END RSA PRIVATE KEY-----
+     
+     Example ssh private key with encryption:
+        -----BEGIN RSA PRIVATE KEY-----
+        Proc-Type: 4,ENCRYPTED
+        DEK-Info: DES-EDE3-CBC,57987BCBC21F738A
+  
+        1ROqqy4LIzr6yENPZo0tXAJCARSV3eQIUXfPzaYtAwbp/mm2JHeLlmHd/1mj2bsj
+        mcclABIA95mHkKSLMGirgHxlbvfHvUoQt08YIb9iEd5DpQSwHmUP7FfmvUaFvhvR
+        ...
+        oqBUsB6Bfp+NZGCxwICn+OV9N8z2bFWENYwx0Ubr7UlnETe05IqO
+        -----END RSA PRIVATE KEY-----
+    
+  <Arguments>
+    filename:
+             The name of the file containing the ssh-rsa private key. Key
+             should be either unencrypted or encrypted with DES3.
+                          
+    password: 
+             The password used to encrypt the ssh-rsa private key.
+
+  <Exceptions>
+    IOError if the file cannot be opened.
+    
+    sshkey_SSHException if private key was unable to be decoded. This could
+    happen for any number of reasons and the only quick fix is to generate a
+    a new key that is supported.
+    
+    sshkey_EncryptionException is raised if either the password is
+    not provided or if the SSH private key was encrypted with a cipher
+    not supported. 
+
+  <Side Effects>
+    None
+    
+  <Return>
+    Returns a publickey and a privatekey dictionary in the format used by 
+    the rsa.repy module.
+    publickey:
+      {'n': 1.., 'e': 6..} with the keys 'n' and 'e'. 
+    privatekey:
+      {'d':1.., 'p':1.. 'q': 1..} with the keys 'd', 'p', and 'q'.
+      
+  """
+  
+  openfile = open(filename, 'r')
+  
+  try:
+    keylist = _sshkey_paramiko_read_private_key('RSA', openfile, password)
+  except sshkey_paramiko_SSHException, e:
+    openfile.close()
+    raise sshkey_SSHException("Unable to read private sshkey, error '" + \
+                              str(e)+"'")
+  except sshkey_paramiko_EncryptionException, e:
+    openfile.close()
+    raise sshkey_EncryptionException("Unable to decrypt private sshkey," + \
+                                     " error '" + str(e) + "'") 
+  
+  openfile.close()
+  
+  publickey = {'n': keylist[1], 'e':keylist[2]}
+  privatekey = {'d': keylist[3], 'p': keylist[4], 'q': keylist[5]}
+    
+  return publickey, privatekey
+  
+
+def sshkey_file_to_publickey(filename):
+  """
+  <Purpose> 
+    Reads a ssh public key file and returns the key in a format
+    suitable to used by rsa.repy.
+  
+  <Arguments>
+    filename:
+             The name of the file containing the ssh-rsa publickey.   
+             Example file would be similar to: 
+               'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq6S ...'
+
+  <Exceptions>
+    sshkey_SSHException if private key was unable to be decoded. This could
+    happen for any number of reasons and the only quick fix is to generate a
+    a new key that is supported.
+    This could happen if the file contains a dss key. 
+    
+    IOError if the file cannot be opened.
+
+    ValueError if I/O operation on closed _sshkey_StringIO object. 
+    This is raised by the _sshkey_StringIO object, but it is never closed 
+    in this code so this is unlikely.
+
+  <Side Effects>
+    None
+    
+  <Return>
+    A publickey dictionary in the format used by the rsa.repy module.
+    {'n': 1.., 'e': 6..} with the keys 'n' and 'e'. 
+  
+  """
+    
+  openfile = open(filename, 'r')
+  
+  try:
+    e_exp, n_modulus = _sshkey_paramiko_read_public_key(openfile)
+  except sshkey_paramiko_SSHException, e:
+    openfile.close()
+    raise sshkey_SSHException("Unable to read public sshkey, error '" + \
+                              str(e) + "'")
+  
+  openfile.close()
+  
+  return {'n': n_modulus, 'e':e_exp}

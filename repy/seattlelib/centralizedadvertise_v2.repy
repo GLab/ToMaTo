@@ -1,0 +1,214 @@
+"""
+<Program Name>
+  centralizedadvertise.repy (repyv2 compliant)
+
+<Started>
+  July 8, 2008
+
+<Author>
+  Justin Cappos
+  Modified by Sebastian Morgan
+
+<Purpose>
+  PUT/GET advertisements to the central server.
+"""
+
+include session
+include sockettimeout
+include serialize
+
+class CentralAdvertiseError(Exception):
+  pass
+
+# Public variables. Feel free to modify these if using a nonstandard server.
+servername = "satya.cs.washington.edu"
+serverport = 10101
+localip = getmyip()
+# localport = 49030 # Arbitrary.
+
+
+
+def centralizedadvertise_announce(key, value, ttlval):
+  """
+  <Purpose>
+    Place a value in the centralized advertise server. Places a key:value 
+    dictionary entry in the server for ttlval seconds if successful.
+
+  <Arguments>
+    key
+      The dictionary entry key. This is how the entry can be retrieved
+      in a lookup.
+    value
+      The dictionary value associated with the key.
+    ttlval
+      Time until the advertise server should expire this entry, in seconds.
+
+  <Exceptions>
+    [TODO : POPULATE]
+
+  <Side Effects>
+    If the connection fails or is slow, this will block code execution 
+    in the calling thread.
+
+  <Returns>
+    None
+  """
+  # It shouldn't be possible for either of these calls to crash.
+  key = str(key)
+  value = str(value)
+
+  # Type checking
+  if not type(ttlval) is int and not type(ttlval) is long:
+    raise TypeError("Invalid argument! ttlval must be an integer!")
+
+  if ttlval < 1:
+    raise ValueError("Invalid argument! ttlval must be greater than zero!")
+
+  # Construct the packet.
+  data_to_send = ('PUT', key, value, ttlval)
+  formatted_datastring = serialize_serializedata(data_to_send)
+
+  # Open a connection with the server.
+  sockobj = timeout_openconn(servername,serverport, localip, timeout=10)
+
+  try:
+    # Attempt to send the packet.
+    session_sendmessage(sockobj, formatted_datastring)
+
+    # We're expecting a confirmation from the server.
+    response = _wait_for_message(sockobj)
+    # response = session_recvmessage(sockobj)
+  finally:
+    # Could crash.
+    sockobj.close()
+
+  # Verify integrity of returned packet.
+  try:
+    # Decode response.
+    response = serialize_deserializedata(response)
+
+    # If we successfully decoded, anything other than 'OK' indicates a failure.
+    if response != 'OK':
+      raise CentralAdvertiseError("Centralized announce failed with '" + str(response) + "'")
+  
+  except ValueError, e:
+    raise CentralAdvertiseError("Received unknown response from server '" + str(response) + "'")
+      
+
+
+
+def centralizedadvertise_lookup(key, maxvals=100):
+  """
+  <Purpose>
+    Retrieve a value associated with the given key from the centralized 
+    advertise server. Returns a list of values if successful.
+
+  <Arguments>
+    key
+      The key to look up in the advertise database.
+    maxvals
+      The maximum number of values to return.
+
+  <Exceptions>
+    [TODO : POPULATE]
+
+  <Side Effects>
+    This will block in the calling thread until complete or timed out.
+
+  <Returns>
+    An array of values from the central advertise server.
+  """
+  # This won't crash.
+  key = str(key)
+
+  # Type checking.
+  if not type(maxvals) is int and not type(maxvals) is long:
+    raise TypeError("Invalid argument! maxvals must be a positive integer!")
+
+  if maxvals < 1:
+    raise ValueError("Invalid argument! maxvals must be positive!")
+
+  # Construct the packet.
+  message_to_send = ('GET', key, maxvals)
+  formatted_datastring = serialize_serializedata(message_to_send)
+
+  # Open a connection with the server.
+  sockobj = timeout_openconn(servername,serverport, localip, timeout=10)
+
+  try:
+    # Send packet.
+    session_sendmessage(sockobj, formatted_datastring)
+
+    # We expect a response from the server with our data in it.
+    raw_received_data = _wait_for_message(sockobj)
+    # raw_received_data = session_recvmessage(sockobj)
+  finally:
+    # Could crash.
+    sockobj.close()
+
+  try:
+    # Try to decode the response.
+    response_tuple = serialize_deserializedata(raw_received_data)
+  except ValueError, e:
+    raise CentralAdvertiseError("Received unknown response from server '" + str(raw_received_data) + "'")
+
+  # If it isn't a tuple, something is grossly wrong here.
+  if not type(response_tuple) is tuple:
+    raise CentralAdvertiseError("Received data is not a tuple '" + str(raw_received_data) + "'")
+
+  # We expect exactly two elements in the response: A confirmation and a list.
+  if len(response_tuple) != 2:
+    raise CentralAdvertiseError("Response tuple did not contain exactly two elements '" + str(raw_received_data) + "'")
+
+  # If the confirmation is not 'OK', the server met with an error.
+  if response_tuple[0] != 'OK':
+    raise CentralAdvertiseError("Central server returned error: " + str(response_tuple) + "'")
+
+  # If the response is not a list, something is wrong.
+  if not type(response_tuple[1]) is list:
+    raise CentralAdvertiseError("Received item is not a list '" + str(raw_received_data) + "'")
+
+  # All entries in the list should be strings.
+  for responseitem in response_tuple[1]:
+    if not type(responseitem) is str:
+      raise CentralAdvertiseError("Received item '" + str(responseitem) + "' is not a string in '" + str(raw_received_data) + "'")
+
+  # End result.
+  return response_tuple[1]
+
+
+
+
+def _wait_for_message(sockobj, timeout = 0.3):
+  """
+  <Purpose>
+    Attempts to call session_recv until it works or times out.
+
+  <Arguments>
+    sockobj
+      The socket object to listen on.
+    timeout
+      How long to wait before giving up. (In seconds)
+
+  <Exceptions>
+    CentralAdvertiseError
+      This will be raised if the attempt times out.
+
+  <Side Effects>
+    Blocks until success or timeout.
+
+  <Returns>
+    A string, if successful.
+  """
+  success = False
+  data = None
+  start_time = getruntime()
+
+  while not success:
+    try:
+      data = session_recvmessage(sockobj)
+      return data
+    except SocketWouldBlockError:
+      if getruntime() - start_time > timeout:
+        raise CentralAdvertiseError("session_recvmessage timed out!")
+      pass

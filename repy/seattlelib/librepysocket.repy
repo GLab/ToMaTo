@@ -1,0 +1,1222 @@
+"""
+This library is a sub-component of librepy, and
+provides socket related functionality. It must
+be imported and cannot be used directly as a
+repy module.
+
+This module will import librepyrunloop so if
+one unified run-loop is to be used, then the global
+variable "librunloop" should be overriden.
+
+We provide an enhanced socket object, RepySocket
+which supports blocking and nonblocking operation,
+as well as custom timeouts. It supports recvall
+and sendall as a convenience function to the generic
+logic required to send a fixed size message or recieve
+a specific amount of data.
+
+Wrappers are provided around listenforconnection
+and listenformessage so that either callbacks or
+thread pools can be utilized with minimal effort.
+
+"""
+
+##### Imports
+
+# Get a run loop
+librunloop = dy_import_module("librepyrunloop")
+
+##### Module Data
+
+# As an optimization, we will never call socket.recv()
+# with fewer than this many bytes. Any data the user does
+# not want is stored in an internal buffer.
+_MIN_SOCK_RECV = 4096
+
+# We don't want to mask a CleanupInProgressError
+# by retrying again and again, and then on the
+# last call to openconnection() specifying a timeout
+# of like 0.0001. If the remaining time is less than
+# this, and we are waiting for cleanup, then we
+# will just give CleanupInProgress
+_CLEANUP_THRESHOLD = 0.05
+
+# Store a set of listening IP/Ports
+# Entries are like (IP, Port)
+LISTENING_TUPLES = set([])
+
+# Store a set of listening IP/Ports
+# Entries are like (IP, Port)
+# This is for UDP only
+LISTENING_TUPLES_UDP = set([])
+
+
+##### Private Methods
+
+def _is_valid_ip_address(ipaddr):
+  """
+  <Purpose>
+    Determines if ipaddr is a valid IP address.
+
+  <Arguments>
+    ipaddr: String to check for validity. (It will check that this is a string).
+
+  <Returns>
+    True if a valid IP, False otherwise.
+  """
+  # Argument must be of the string type
+  if not type(ipaddr) == str:
+    return False
+
+  # A valid IP should have 4 segments, explode on the period
+  octets = ipaddr.split(".")
+
+  # Check that we have 4 parts
+  if len(octets) != 4:
+    return False
+
+  # Check that each segment is a number between 0 and 255 inclusively.
+  for octet in octets:
+    # Attempt to convert to an integer
+    try:
+      ipnumber = int(octet)
+    except ValueError:
+      # There was an error converting to an integer, not an IP
+      return False
+
+    # IP addresses octets must be between 0 and 255
+    if not (ipnumber >= 0 and ipnumber <= 255):
+      return False
+
+  # At this point, assume the IP is valid
+  return True
+
+
+def _get_free_events():
+  """
+  Returns the number of free events
+  """
+  lim, usage, stops = getresources()
+  max_events = lim["events"]
+  current_events = usage["events"]
+  avail = max_events - current_events
+  return avail
+
+
+def _err_delegate(type, localip, localport, errstr):
+  """
+  <Purpose>
+    This is the default error delegate for when a listening
+    connection fails. Prints out some info
+
+  <Arguments>
+    type: "TCP" or "UDP"
+    localip / localport : The tuple bound to listen on
+    errstr: The output of getlasterror()
+
+  <Returns>
+    None
+  """
+  log("Unexpected error while listening on a network socket!\n")
+  log("Listening for: "+type+" on IP: "+localip+" Port: "+str(localport), '\n')
+  log("Debug string:\n"+errstr, '\n')
+
+
+##### Public Methods
+
+def get_connports(localip=None):
+  """
+  <Purpose>
+    Returns a list of ports that can be used for binding to create a socket.
+
+  <Arguments>
+    localip: Optional, The local IP to bind to. Defaults to getmyip().
+
+  <Exceptions>
+    Raises ResourceExhaustedError if there are no available ports.
+    Raises RepyArgumentError if the localip is not valid.
+
+  <Returns>
+    A list of valid connports for localport
+  """
+  # Check if the IP is valid
+  if localip is not None and not _is_valid_ip_address(localip):
+    raise RepyArgumentError("Invalid IP address specified!")
+
+  # Resolve the IP
+  if localip is None:
+  	localip = getmyip()
+
+  # Get the available ports
+  lim, usage, stops = getresources()
+  ports = lim["connport"]
+
+  # Construct a list of all ports
+  all = set([])
+  for port in ports:
+    port = int(port) # Convert to an int
+    all.add((localip, port))
+
+  # We can use all the ports that we are not listening
+  # on. We get this by all - LISTENING_TUPLES
+  avail = all - LISTENING_TUPLES
+
+  # Check if there is anything available
+  if len(avail) == 0:
+    raise ResourceExhaustedError("No ports available for connections!")
+
+  # Convert the set to an array
+  avail_ports = []
+  for ip,port in avail:
+    avail_ports.append(port)
+    
+  # Sort the array
+  avail_ports.sort()
+
+  # Returns the array
+  return avail_ports
+
+
+def get_messports(localip=None):
+  """
+  <Purpose>
+    Returns a list of ports that can be used for sending and recv'ing
+    UDP messages.
+
+  <Arguments>
+    localip: Optional, The local IP to bind to. Defaults to getmyip().
+
+  <Exceptions>
+    Raises ResourceExhaustedError if there are no available ports.
+    Raises RepyArgumentError if the localip is not valid.
+
+  <Returns>
+    A list of valid messports for localport
+  """
+  # Check if the IP is valid
+  if localip is not None and not _is_valid_ip_address(localip):
+    raise RepyArgumentError("Invalid IP address specified!")
+
+  # Resolve the IP
+  if localip is None:
+    localip = getmyip()
+
+  # Get the available ports
+  lim, usage, stops = getresources()
+  ports = lim["messport"]
+
+  # Construct a list of all ports
+  all = set([])
+  for port in ports:
+    port = int(port) # Convert to an int
+    all.add((localip, port))
+
+  # We can use all the ports that we are not listening
+  # on. We get this by all - LISTENING_TUPLES_UDP
+  avail = all - LISTENING_TUPLES_UDP
+
+  # Check if there is anything available
+  if len(avail) == 0:
+    raise ResourceExhaustedError("No ports available for connections!")
+
+  # Convert the set to an array
+  avail_ports = []
+  for ip,port in avail:
+    avail_ports.append(port)
+    
+  # Sort the array
+  avail_ports.sort()
+
+  # Returns the array
+  return avail_ports
+
+### UDP Functions
+
+def sendmess(host, port, mess, localip=None, localport=None):
+  """
+  <Purpose>
+    Sends a message to a remote host
+
+  <Arguments>
+    host: Either an IP address or a host name
+    port: The port to connect to
+    mess: The message to send
+    localip: Optional, the IP to bind to. If None, getmyip() is used.
+    localport: Optional, the port to bind to. If None, one will be provided.
+
+  <Exceptions>
+    As with sendmessage(), and gethostbyname() if a host IP is not provided.
+    Raises RepyArgumentError if the host is not a string.
+    Raises RepyArgumentError if the port is not an int.
+    Raises RepyArgumentError if the localip is not None or a string.
+    Raises RepyArgumentError if the localport is not None or a int.
+	  Raises ResourceExhaustedError if there are no available local ports to bind to.
+
+  <Returns>
+    The number of bytes sent.
+  """
+  # Check the arguments
+  if type(host) is not str:
+    raise RepyArgumentError("Host must be provided as a string!")
+  if localip is not None and type(localip) is not str:
+    raise RepyArgumentError("Local IP must be a string or None!")
+  if localport is not None and type(localport) is not int:
+    raise RepyArgumentError("Local Port must be an int or None!")
+
+  # Check if the host is not an IP, and resolve to an IP
+  if not _is_valid_ip_address(host):
+    host = gethostbyname(host)
+
+  # Get a local ip if not given
+  if localip is None:
+    localip = getmyip()
+
+  # Get an available local port if none is specified
+  can_choose_localport = False
+  available_localports = None
+  if localport is None:
+    can_choose_localport = True
+    available_localports = get_messports(localip)
+    localport = available_localports.pop(0) # Use the first
+
+    # This is a secondary sanity check, we don't want to connect
+    # to ourself from the same port. E.g. prevent localip == destip
+    # and localport == destport
+    if localip == host and localport == port:
+      try:
+        localport = available_localports.pop(0)
+      except IndexError:
+        raise ResourceExhaustedError("No ports available for this connection!")
+
+    
+  # Loop until we run out of ports to try, or we succeed
+  while True:
+    try:
+      # Try to send the message
+      sent = sendmessage(host, port, mess, localip, localport)
+      return sent
+      
+    except (AlreadyListeningError,DuplicateTupleError), e:
+      # If we are allowed to pick a local port, try something else
+      if can_choose_localport: 
+        try: 
+          # Get a new port 
+          localport = available_localports.pop(0) 
+                 
+          # Apply a sanity check which is to prevent us from 
+          # having the Local/Dest IP and Port match 
+          if localip == host and localport == port: 
+            localport = available_localports.pop(0)     
+
+        except IndexError: 
+          # There are no ports available
+          raise ResourceExhaustedError("No ports available for this connection! Would cause AlreadyListeningError/DuplicateTupleError.")
+        
+      # Otherwise, the open has failed (DuplicateTupleError)
+      else:
+        raise
+
+
+def recvmess(localport, func, localip=None, thread_pool=None, check_intv=0.1, err_delegate=None):
+  """
+  <Purpose>
+    Listens for incoming UDP messages to the local machine and triggers
+    a callback function. If a thread pool is provided, the callbacks
+    will be handled by the thread pool, otherwise threads will be launched
+    on-demand.
+
+  <Arguments>
+    localport: The local port to listen on
+
+    func: The function to trigger when a connection comes in. This function should
+          take three arguments, the remote IP, remote port and message from a remote peer.
+
+    localip: A local ip to listen on. If None, then getmyip() will be used.
+
+    thread_pool: An optional thread pool to use, if not provided then threads
+                 will be launched on demand.
+
+    check_intv: Optional, defaults to 0.1. Controls how often we check for
+                new inbound messages.
+
+    err_delegate: Optional, a method to invoke with debugging information if the acceptor
+                  function encounters a NetworkError. This function should take the following
+                  parameters: Type, Local IP, Local Port, Error String. Type will be
+                  "TCP" or "UDP". The default handler will print debugging information.
+
+  <Exceptions>
+    As with listenformessage(), getmyip().
+    Raises RepyArugmentError if the local ip is not a string or None
+    Raises RepyArgumentError if the thread_pool argument is not a thread pool
+    Raises RepyArgumentError if check_intv is not a positive numeric value
+
+  <Returns>
+    A function that can be invoked to stop listening for messages
+    on this local ip / port. It takes an optional boolean, which controls
+    if the provided thread pool should be destroyed. This defaults to True.
+
+  <Examples>
+    To implement a simple callback one could do:
+    ---
+
+    def incoming(remoteip, remoteport, mess):
+      log("Got a message! Stop listening.\n")
+      stop_func()
+
+    stop_func = recvmess(12345, incoming)
+
+    ---
+    To implement a more advanced callback on top
+    of a thread pool, one could do:
+    ---
+
+    def incoming(remoteip, remoteport, mess):
+      log("Got a message!\n")
+
+    # This pool has 2 threads minimum, 4 threads maximum,
+    # and adds a thread for every 3 connections
+    tpool = ThreadPool(min_threads=2, max_threads=4, scaling_thres=3)
+    tpool.start()
+
+    stop_func = recvmess(12345, incoming, thread_pool=tpool)
+    ...
+    # Stop listening, the True bool will
+    # stop listening and destroy the thread pool.
+    stop_func(True)
+
+    ----
+  """
+  # Check the args
+  if localip is not None and not _is_valid_ip_address(localip):
+    raise RepyArgumentError("Invalid Local IP address specified!")
+  if thread_pool is not None and "ThreadPool" not in str(type(thread_pool)):
+    raise RepyArgumentError("Invalid object provided for the thread pool!")
+  if type(check_intv) not in [int, float]:
+    raise RepyArgumentError("The check interval must be numeric!")
+  if check_intv <= 0:
+    raise RepyArgumentError("The check interval must be positive!")
+
+  # Get an error delegate
+  if err_delegate is None:
+    err_delegate = _err_delegate
+
+  # Resolve the localip
+  if localip is None:
+    localip = getmyip()
+
+
+  # Get a listening socket
+  listen_sock = listenformessage(localip, localport)
+ 
+  # Add this to LISTENING_TUPLES_UDP
+  LISTENING_TUPLES_UDP.add((localip, localport))
+
+
+  # Create a function that checks for new connections
+  def accept_waiting():
+    # Check if we can / should accept another connection
+    while thread_pool is not None or _get_free_events() > 0:
+      try:
+        # Try to accept a message
+        remoteip, remoteport, mesg = listen_sock.getmessage()
+
+        # Define a wrapper function to invoke
+        def callback():
+          try:
+            func(remoteip, remoteport, mesg)
+          except:
+            # Generate an error string
+            error_str = "Uncaught exception invoking callback for UDP listener!\n"
+            error_str += getlasterror()
+            
+            # Invoke the error delegate
+            try:
+              err_delegate("UDP",localip,localport,error_str)
+            except:
+              pass
+
+        # If we have a thread pool, add this task
+        if thread_pool is not None:
+          thread_pool.add_task(callback)
+
+        # Otherwise, launch a thread with the callback
+        else:
+          createthread(callback)
+
+      except SocketWouldBlockError:
+        break
+
+      except:
+        # Get the error
+        error_str = getlasterror()
+
+        # Stop scheduling this function
+        stop_listening()
+
+        # Invoke the error delegate
+        try:
+          err_delegate("UDP", localip, localport, error_str)
+        except:
+          pass
+        break
+
+
+  # Schedule the run-loop to run this function
+  # every check_intv seconds
+  job_handle = librunloop.runEvery(check_intv, accept_waiting)
+
+
+  # Define a function which can be used to stop this
+  # listener
+  def stop_listening(destroy_pool=True):
+    # Stop scheduling first
+    librunloop.stopSchedule(job_handle)
+
+    # Close the listening socket
+    listen_sock.close()
+
+    # Remove from LISTENING_TUPLES_UDP
+    try:
+      LISTENING_TUPLES_UDP.remove((localip, localport))
+    except KeyError:
+      pass
+
+    # Shutdown the thread pool
+    if thread_pool is not None and destroy_pool:
+      thread_pool.destroy()
+
+  # Return a reference to this function
+  return stop_listening
+
+
+### TCP Functions
+
+def openconn(host, port, localip=None, localport=None, timeout=60):
+  """
+  <Purpose>
+    Opens a connection to a remote host
+
+  <Arguments>
+    host: Either an IP address or a host name
+    port: The port to connect to
+    localip: Optional, the IP to bind to. If None, getmyip() is used.
+    localport: Optional, the port to bind to. If None, one will be provided.
+    timeout: Optional, defaults to 60 seconds.
+
+  <Exceptions>
+    As with openconnection(), and gethostbyname() if a host IP is not provided.
+    Raises RepyArgumentError if the host is not a string.
+    Raises RepyArgumentError if the port is not an int.
+    Raises RepyArgumentError if the localip is not None or a string.
+    Raises RepyArgumentError if the localport is not None or a int.
+	  Raises ResourceExhaustedError if there are no available local ports to bind to.
+
+  <Returns>
+    A RepySocket object.
+  """
+  # Check the arguments
+  if type(host) is not str:
+    raise RepyArgumentError("Host must be provided as a string!")
+  if localip is not None and type(localip) is not str:
+    raise RepyArgumentError("Local IP must be a string or None!")
+  if localport is not None and type(localport) is not int:
+    raise RepyArgumentError("Local Port must be an int or None!")
+  if type(timeout) not in [int, float]:
+    raise RepyArgumentError("Timeout must be numeric!")
+  if timeout <= 0:
+    raise RepyArgumentError("Timeout must be positive!")
+
+  # Check if the host is not an IP, and resolve to an IP
+  if not _is_valid_ip_address(host):
+    host = gethostbyname(host)
+
+  # Get a local ip if not given
+  if localip is None:
+    localip = getmyip()
+
+  # Get an available local port if none is specified
+  can_choose_localport = False
+  available_localports = None
+  if localport is None:
+    can_choose_localport = True
+    available_localports = get_connports(localip)
+    localport = available_localports.pop(0) # Use the first
+
+    # This is a secondary sanity check, we don't want to connect
+    # to ourself from the same port. E.g. prevent localip == destip
+    # and localport == destport
+    if localip == host and localport == port:
+      try:
+        localport = available_localports.pop(0)
+      except IndexError:
+        raise ResourceExhaustedError("No ports available for this connection!")
+
+    
+
+  # Get the stop time
+  stoptime = getruntime() + timeout
+
+  # If the socket is being cleaned up, then keep trying
+  real_sock = None
+  cleanup_in_progress = False
+  while getruntime() < stoptime:
+    try:
+      # Determine the time remaining. If there is less than
+      remaining = stoptime - getruntime()
+      if remaining <= _CLEANUP_THRESHOLD and cleanup_in_progress:
+        break
+  
+      # Call down to openconnection now
+      real_sock = openconnection(host, port, localip, localport, max(0,stoptime - getruntime()))
+      break
+      
+    except (AlreadyListeningError, DuplicateTupleError, CleanupInProgressError), e:
+      # If we are allowed to pick a local port, try something else
+      if can_choose_localport: 
+        try: 
+          # Get a new port 
+          localport = available_localports.pop(0) 
+                 
+          # Apply a sanity check which is to prevent us from 
+          # having the Local/Dest IP and Port match 
+          if localip == host and localport == port: 
+            localport = available_localports.pop(0)     
+        except IndexError: 
+          # If this is DuplicateTupleError, then we give up.
+          # If this is CleanupInProgressError, we can try to wait
+          if type(e) == DuplicateTupleError:
+            raise ResourceExhaustedError("No ports available for this connection! Would cause DuplicateTupleError.")
+          if type(e) == AlreadyListeningError:
+             raise ResourceExhaustedError("No ports available for this connection! Would cause AlreadyListeningError.")
+          elif type(e) == CleanupInProgressError:
+            cleanup_in_progress = True
+            sleep(0.2)
+        
+      # We can wait a little for cleanup to take place
+      elif type(e) == CleanupInProgressError:
+        cleanup_in_progress = True
+        sleep(0.2)
+      
+      # Otherwise, the open has failed (DuplicateTupleError)
+      else:
+        raise
+      
+     
+  # If we still don't have a socket, raise CleanupInProgressError
+  if real_sock is None and cleanup_in_progress:
+    raise CleanupInProgressError("The socket is being cleaned up by the operating system!")
+  elif real_sock is None:
+    raise TimeoutError("Timed out connecting to remote host!")
+
+  # Wrap this, use defaults for timeout and poll_intv
+  wrapped_sock = RepySocket(real_sock, localip, localport, host, port)
+
+  # Return the wrapped socket
+  return wrapped_sock
+
+
+def waitforconn(localport, func, localip=None, thread_pool=None, check_intv=0.1, err_delegate=None):
+  """
+  <Purpose>
+    Listens for incoming connections to the local machine and triggers
+    a callback function. If a thread pool is provided, the callbacks
+    will be handled by the thread pool, otherwise threads will be launched
+    on-demand.
+
+  <Arguments>
+    localport: The local port to listen on
+
+    func: The function to trigger when a connection comes in. This function should
+          take a single argument which is a RepySocket object connected to the remote peer
+
+    localip: A local ip to listen on. If None, then getmyip() will be used.
+
+    thread_pool: An optional thread pool to use, if not provided then threads
+                 will be launched on demand.
+
+    check_intv: Optional, defaults to 0.1. Controls how often we check for
+                new inbound connections.
+
+    err_delegate: Optional, a method to invoke with debugging information if the acceptor
+                  function encounters a NetworkError. This function should take the following
+                  parameters: Type, Local IP, Local Port, Error String. Type will be
+                  "TCP" or "UDP". The default handler will print debugging information.
+
+  <Exceptions>
+    As with listenforconnection(), getmyip().
+    Raises RepyArugmentError if the local ip is not a string or None
+    Raises RepyArgumentError if the thread_pool argument is not a thread pool
+    Raises RepyArgumentError if check_intv is not a positive numeric value
+
+  <Returns>
+    A function that can be invoked to stop listening for connections
+    on this local ip / port. It takes an optional boolean, which controls
+    if the provided thread pool should be destroyed. This defaults to True.
+
+  <Examples>
+    To implement a simple callback one could do:
+    ---
+
+    def incoming(sock):
+      log("Got a connection! Stop listening.\n")
+      stop_func()
+
+    stop_func = waitforconn(12345, incoming)
+
+    ---
+    To implement a more advanced callback on top
+    of a thread pool, one could do:
+    ---
+
+    def incoming(sock):
+      log("Got a connection!\n")
+
+    # This pool has 2 threads minimum, 4 threads maximum,
+    # and adds a thread for every 3 connections
+    tpool = ThreadPool(min_threads=2, max_threads=4, scaling_thres=3)
+    tpool.start()
+
+    stop_func = waitforconn(12345, incoming, thread_pool=tpool)
+    ...
+    # Stop listening, the True bool will
+    # stop listening and destroy the thread pool.
+    stop_func(True)
+
+    ----
+  """
+  # Check the args
+  if localip is not None and not _is_valid_ip_address(localip):
+    raise RepyArgumentError("Invalid Local IP address specified!")
+  if thread_pool is not None and "ThreadPool" not in str(type(thread_pool)):
+    raise RepyArgumentError("Invalid object provided for the thread pool!")
+  if type(check_intv) not in [int, float]:
+    raise RepyArgumentError("The check interval must be numeric!")
+  if check_intv <= 0:
+    raise RepyArgumentError("The check interval must be positive!")
+
+  # Get an error delegate
+  if err_delegate is None:
+    err_delegate = _err_delegate
+
+  # Resolve the localip
+  if localip is None:
+    localip = getmyip()
+
+
+  # Get a listening socket
+  listen_sock = listenforconnection(localip, localport)
+ 
+  # Add this to LISTENING_TUPLES
+  LISTENING_TUPLES.add((localip, localport))
+
+
+  # Create a function that checks for new connections
+  def accept_waiting():
+    # Check if we can / should accept another connection
+    while thread_pool is not None or _get_free_events() > 0:
+      try:
+        # Try to accept a connection
+        remoteip, remoteport, real_sock = listen_sock.getconnection()
+
+        # Create a RepySocket
+        wrapped_sock = RepySocket(real_sock, localip, localport, remoteip, remoteport)
+
+        # Define a wrapper function to invoke
+        def callback():
+          try:
+            func(wrapped_sock)
+          except:
+            # Generate an error string
+            error_str = "Uncaught exception invoking callback for TCP listener!\n"
+            error_str += "Socket will be closed automatically.\n"
+            error_str += getlasterror()
+ 
+            # Prevent socket leaks for them
+            try:
+              wrapped_sock.close()
+            except:
+              pass
+
+            # Invoke the error delegate
+            try:
+              err_delegate("TCP",localip,localport,error_str)
+            except:
+              pass
+
+        # If we have a thread pool, add this task
+        if thread_pool is not None:
+          thread_pool.add_task(callback)
+
+        # Otherwise, launch a thread with the callback
+        else:
+          createthread(callback)
+
+      except SocketWouldBlockError:
+        break
+
+      except:
+        # Get the error string
+        error_str = getlasterror()
+
+        # Stop scheduling this function
+        stop_listening()
+
+        # Invoke the error delegate
+        try:
+          err_delegate("TCP", localip, localport, error_str)
+        except:
+          pass
+        break
+
+
+  # Schedule the run-loop to run this function
+  # every check_intv seconds
+  job_handle = librunloop.runEvery(check_intv, accept_waiting)
+
+
+  # Define a function which can be used to stop this
+  # listener
+  def stop_listening(destroy_pool=True):
+    # Stop scheduling first
+    librunloop.stopSchedule(job_handle)
+
+    # Close the listening socket
+    listen_sock.close()
+
+    # Remove from LISTENING_TUPLES
+    try:
+      LISTENING_TUPLES.remove((localip, localport))
+    except KeyError:
+      pass
+
+    # Shutdown the thread pool
+    if thread_pool is not None and destroy_pool:
+      thread_pool.destroy()
+
+  # Return a reference to this function
+  return stop_listening
+
+
+
+##### Class Definition
+
+class RepySocket (object):
+  """
+  Provides an enhanced socket like object which supports
+  blocking and non-blocking behavior, as well as custom
+  timeouts.
+  """
+  # Fields:
+  # sock : Underlying Repy Socket
+  # timeout : Operation timeouts. None means no timeout
+  # poll_intv : The polling interval
+  #
+  # recv_buffer : A buffer of data that has been retrieved from
+  #               the underlying socket, but not yet returned
+  #               to the user.
+  #
+  # recv_lock : A lock used to serialize recieving data
+  # send_lock : A lock used to serialize sending data
+  #
+  # localip : Our local IP
+  # localport : Our local port
+  # remoteip : Remote Host IP
+  # remoteport : Remote Host Port
+
+  def __init__(self, underlying, localip, localport, remoteip, remoteport, timeout=None, poll_intv=0.005):
+    """
+    <Purpose>
+      Initializes the RepySocket.
+
+    <Arguments>
+      underlying: The underlying repy socket
+      localip : The local ip of the socket
+      localport : The local port of the socket
+      remoteip : The IP of the remote host
+      remoteport : The port on the remote host
+      timeout : Timeout for operations. None means no timeout. 0 means non-blocking.
+      poll_intv : Interval for polling socket when it is not ready. This is used
+                  to support blocking operation.
+
+    <Exceptions>
+      RepyArgumentError is raised if the IP's are not strings,
+      if the ports are not int's, if the timeout is not None or numeric,
+      or if poll_intv is not numeric.
+
+    <Returns>
+      A RepySocket object
+    """
+    # Type check
+    if type(localip) is not str or type(remoteip) is not str:
+      raise RepyArgumentError("IP's should be strings!")
+    if type(localport) is not int or type(remoteport) is not int:
+      raise RepyArgumentError("Port values should be ints!")
+    
+    # Store the input
+    self.sock = underlying
+    self.localip = localip
+    self.localport = localport
+    self.remoteip = remoteip
+    self.remoteport = remoteport
+
+    # Create a recv buffer
+    self.recv_buffer = ""
+    self.recv_lock = createlock()
+    self.send_lock = createlock()
+
+    # Set the timeout and poll interval
+    self.settimeout(timeout)
+    self.setpollinterval(poll_intv)
+
+  def willblock(self):
+    return False, False
+
+  def settimeout(self, timeout):
+    """
+    <Purpose>
+      Sets the timeout for socket operations.
+
+    <Arguments>
+      timeout: The new timeout. None for no timeout. 0 for non-blocking.
+
+    <Exceptions>
+      Raises RepyArgumentError if the timeout is not None or numeric.
+
+    <Returns>
+      None
+    """
+    # Check the argument and update the value
+    if timeout is not None and type(timeout) not in [int, float]:
+      raise RepyArgumentError("Timeout should be None or numeric!")
+    if timeout is not None and timeout < 0:
+      raise RepyArgumentError("Timeout cannot be negative!")
+    self.timeout = timeout
+
+
+  def gettimeout(self):
+    """
+    <Purpose>
+      Returns the timeout for socket operations.
+
+    <Arguments>
+      None
+
+    <Returns>
+      The timeout for socket operations. None means no timeout.
+      0 means non-blocking.
+    """
+    return self.timeout
+
+
+  def setpollinterval(self, poll_intv):
+    """
+    <Purpose>
+      Sets the poll interval for socket operations.
+
+    <Arguments>
+      poll_intv: The new poll interval
+
+    <Exceptions>
+      Raises RepyArgumentError if the poll interval is not numeric.
+
+    <Returns>
+      None
+    """
+    if type(poll_intv) not in [int, float]:
+      raise RepyArgumentError("Poll interval should be numeric!")
+    if poll_intv <= 0:
+      raise RepyArgumentError("Poll interval must be positive!")
+    self.poll_intv = poll_intv
+
+  
+  def getpollinterval(self):
+    """
+    <Purpose>
+      Returns the poll interval for socket operations.
+
+    <Arguments>
+      None
+
+    <Exceptions>
+      None
+
+    <Returns>
+      The poll interval
+    """
+    return self.poll_intv
+
+
+  def getpeername(self):
+    """
+    <Purpose>
+      Gets the name of the remote peer.
+
+    <Arguments>
+      None
+
+    <Returns>
+      A tuple of (IP, Port) which represents the remote hosts IP,
+      and the port we are connected to.
+    """
+    return (self.remoteip, self.remoteport)
+ 
+
+  def getsockname(self):
+    """
+    <Purpose>
+      Gets the name of the local socket.
+
+    <Arguments>
+      None
+
+    <Returns>
+      A tuple of (IP, Port) which represents the local IP,
+      and the source port we are bound to.
+    """
+    return (self.localip, self.localport)
+
+
+  def _recv(self, bytes, timeout):
+    """
+    Private recv method.
+    Semantics like recv.
+    recv_lock should be acquire prior to calling.
+    """
+    # Check if we have any data in the buffer
+    data = ""
+    if len(self.recv_buffer) > 0:
+      data = self.recv_buffer[:bytes]
+      self.recv_buffer = self.recv_buffer[bytes:]
+      return data
+
+    # Get the start time
+    starttime = getruntime()
+
+    # Loop until we timeout
+    while True:
+      try:
+        # Recv at least _MIN_SOCK_RECV
+        extra = self.sock.recv(max(bytes, _MIN_SOCK_RECV))
+    
+        # Add what is needed to data for the user
+        data += extra[:bytes]
+
+        # Add the rest to the buffer
+        extra = extra[bytes:]
+        if extra != "":
+          self.recv_buffer += extra
+
+        # Success
+        return data
+
+      # Ignore would block 
+      except SocketWouldBlockError:
+        # Check if we are in non-blocking mode
+        if timeout == 0.0:
+          raise
+
+        # Check if we have more time
+        if timeout is None or timeout > getruntime() - starttime:
+          sleep(self.poll_intv)
+
+        # We've timed out
+        else:
+          raise TimeoutError("recv() timed out!")
+
+
+
+  def recv(self, bytes):
+    """
+    <Purpose>
+      Recv's some data from the socket.
+
+    <Arguments>
+      bytes: The maximum number of bytes to read.
+
+    <Exceptions>
+      As with socket.recv() of Repy. SocketWouldBlockError is not
+      raised if the socket is set to blocking mode. Additionally,
+      TimeoutError may be raised if we timeout.
+
+    <Returns>
+      The data read as a string
+    """
+    # Acquire the recv lock
+    self.recv_lock.acquire(True)
+    try:
+      # Use the timeout value for the socket
+      return self._recv(bytes, self.timeout)
+    finally:
+      self.recv_lock.release()
+
+
+  def _send(self, data, timeout):
+    """
+    Private send method.
+    Semantics like send.
+    send_lock should be acquire prior to calling.
+    """
+    # Check if there is no data to send
+    if len(data) == 0:
+      return 0
+
+    # Get the start time
+    starttime = getruntime()
+
+    # Loop until we timeout
+    while True:
+      try:
+        # Send the data
+        sent = self.sock.send(data)
+    
+        # Success
+        return sent
+
+      # Ignore would block 
+      except SocketWouldBlockError:
+        # Check if we are in non-blocking mode
+        if timeout == 0.0:
+          raise
+        
+        # Check if we have more time
+        elif timeout is None or timeout > getruntime() - starttime:
+          sleep(self.poll_intv)
+
+        # We've timed out
+        else:
+          raise TimeoutError("send() timed out!")
+
+
+  def send(self, data):
+    """
+    <Purpose>
+      Sends some data.
+
+    <Arguments>
+      data: The data to send.
+
+    <Exceptions>
+      As with socket.send() of Repy. SocketWouldBlockError is not
+      raised if the socket is set to blocking mode. Additionally,
+      TimeoutError may be raised if we timeout.
+
+    <Returns>
+      The number of bytes sent. DO NOT ASSUME this is the full
+      length of data.
+    """
+    # Acquire the send lock
+    self.send_lock.acquire(True)
+    try:
+      # Use the timeout value for the socket
+      return self._send(data, self.timeout)
+    finally:
+      self.send_lock.release()
+
+
+  def recvall(self, bytes):
+    """
+    <Purpose>
+      Recv's a specific amount of data from the socket.
+      This operation always runs in blocking mode.
+
+    <Arguments>
+      bytes: The number of bytes to read, exactly.
+
+    <Exceptions>
+      As with socket.recv() of Repy. SocketWouldBlockError is not
+      raised.
+
+    <Returns>
+      The data read as a string, this will only be less than
+      the bytes specified if the socket is closed.
+    """
+    # Acquire the recv lock
+    self.recv_lock.acquire(True)
+    try:
+      # Store the users data
+      data = ""
+
+      # Loop until we have all the data
+      needed = bytes
+      while needed > 0:
+        # recv with no timeout, break if we get
+        # an exception
+        try:
+          more = self._recv(needed, None)
+        except:
+          break
+
+        # Add this data, re-calc needed bytes
+        data += more
+        needed -= len(more)
+
+      # Return the data
+      return data
+
+    finally:
+      self.recv_lock.release()
+
+
+  def sendall(self, data):
+    """
+    <Purpose>
+      Sends a specific amount of data.
+      This operation always runs in blocking mode.
+
+    <Arguments>
+      data: The data to send.
+
+    <Exceptions>
+      As with socket.send() of Repy. SocketWouldBlockError is
+      not raised.
+
+    <Returns> 
+      The amount of data sent. This will only be less than
+      the length of data if the socket is closed.
+    """
+    # Acquire the send lock
+    self.send_lock.acquire(True)
+    try:
+      # Store the bytes sent and message size
+      sent = 0
+      size = len(data)
+
+      # Loop until we have sent all the data
+      while sent < size:
+        # send with no timeout, break if we get
+        # an exception
+        try:
+          sent += self._send(data[sent:], None)
+        except:
+          break
+
+      # Return the bytes sent
+      return sent
+
+    finally:
+      self.send_lock.release()
+
+
+  def close(self):
+    """
+    <Purpose>
+      Closes the socket.
+
+    <Arguments>
+      None
+
+    <Exceptions>
+      None
+
+    <Returns>
+      True if this was the first time the socket is closed.
+    """
+    # Close the underlying socket
+    return self.sock.close()
+
+
+  def __del__(self):
+    # Close the socket
+    self.close()
+
+

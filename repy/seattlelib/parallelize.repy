@@ -1,0 +1,324 @@
+""" 
+Author: Justin Cappos
+
+Module: A parallelization module.   It performs actions in parallel to make it
+        easy for a user to call a function with a list of tasks.
+
+Start date: November 11th, 2008
+
+This module is adapted from code in seash which had similar functionality.
+
+NOTE (for the programmer using this module).   It's really important to 
+write concurrency safe code for the functions they provide us.  It will not 
+work to write:
+
+def foo(...):
+  mycontext['count'] = mycontext['count'] + 1
+
+YOU MUST PUT A LOCK AROUND SUCH ACCESSES.
+
+"""
+
+
+# I use this to get unique identifiers. 
+include uniqueid.repy
+
+
+
+class ParallelizeError(Exception):
+  """An error occurred when operating on a parallelized task"""
+
+
+# This has information about all of the different parallel functions.
+# The keys are unique integers and the entries look like this:
+# {'abort':False, 'callfunc':callfunc, 'callargs':callargs,
+# 'targetlist':targetlist, 'availabletargetpositions':positionlist,
+# 'runninglist':runninglist, 'result':result}
+#
+# abort is used to determine if future events should be aborted.
+# callfunc is the function to call
+# callargs are extra arguments to pass to the function
+# targetlist is the list of items to call the function with
+# runninglist is used to track which events are executing
+# result is a dictionary that contains information about completed function.
+#    The format of result is:
+#      {'exception':list of tuples with (target, exception string), 
+#       'aborted':list of targets,
+#       'returned':list of tuples with (target, return value)}
+# 
+parallelize_info_dict = {}
+
+
+
+def parallelize_closefunction(parallelizehandle):
+  """
+   <Purpose>
+      Clean up the state created after calling parallelize_initfunction.
+
+   <Arguments>
+      parallelizehandle:
+         The handle returned by parallelize_initfunction
+          
+
+   <Exceptions>
+      None
+
+   <Side Effects>
+      Will try to abort future functions if possible
+
+   <Returns>
+      True if the parallelizehandle was recognized or False if the handle is
+      invalid or already closed.
+  """
+
+  # There is no sense trying to check then delete, since there may be a race 
+  # with multiple calls to this function.
+  try:
+    del parallelize_info_dict[parallelizehandle]
+  except KeyError:
+    return False
+  else:
+    return True
+
+    
+
+
+
+def parallelize_abortfunction(parallelizehandle):
+  """
+   <Purpose>
+      Cause pending events for a function to abort.   Events will finish 
+      processing their current event.
+
+   <Arguments>
+      parallelizehandle:
+         The handle returned by parallelize_initfunction
+          
+
+   <Exceptions>
+      ParallelizeError is raised if the handle is unrecognized
+
+   <Side Effects>
+      None
+
+   <Returns>
+      True if the function was not previously aborting and is now, or False if 
+      the function was already set to abort before the call.
+  """
+
+  
+  try:
+    if parallelize_info_dict[parallelizehandle]['abort'] == False:
+      parallelize_info_dict[parallelizehandle]['abort'] = True
+      return True
+    else:
+      return False
+  except KeyError:
+    raise ParallelizeError("Cannot abort the parallel execution of a non-existent handle:"+str(parallelizehandle))
+
+
+
+def parallelize_isfunctionfinished(parallelizehandle):
+  """
+   <Purpose>
+      Indicate if a function is finished
+
+   <Arguments>
+      parallelizehandle:
+         The handle returned by parallelize_initfunction
+          
+
+   <Exceptions>
+      ParallelizeError is raised if the handle is unrecognized
+
+   <Side Effects>
+      None
+
+   <Returns>
+      True if the function has finished, False if it is still has events running
+  """
+
+  
+  try:
+    if parallelize_info_dict[parallelizehandle]['runninglist']:
+      return False
+    else:
+      return True
+  except KeyError:
+    raise ParallelizeError("Cannot get status for the parallel execution of a non-existent handle:"+str(parallelizehandle))
+
+
+
+
+
+def parallelize_getresults(parallelizehandle):
+  """
+   <Purpose>
+      Get information about a parallelized function
+
+   <Arguments>
+      parallelizehandle:
+         The handle returned by parallelize_initfunction
+          
+   <Exceptions>
+      ParallelizeError is raised if the handle is unrecognized
+
+   <Side Effects>
+      None
+
+   <Returns>
+      A dictionary with the results.   The format is
+        {'exception':list of tuples with (target, exception string), 
+         'aborted':list of targets, 'returned':list of tuples with (target, 
+         return value)}
+  """
+
+  
+  try:
+    # I copy so that the user doesn't have to deal with the fact I may still
+    # be modifying it
+    return parallelize_info_dict[parallelizehandle]['result'].copy()
+  except KeyError:
+    raise ParallelizeError("Cannot get results for the parallel execution of a non-existent handle:"+str(parallelizehandle))
+
+
+
+      
+
+
+
+      
+
+
+def parallelize_initfunction(targetlist, callerfunc,concurrentevents=5, *extrafuncargs):
+  """
+   <Purpose>
+      Call a function with each argument in a list in parallel
+
+   <Arguments>
+      targetlist:
+          The list of arguments the function should be called with.   Each
+          argument is passed once to the function.   Items may appear in the
+          list multiple times
+
+      callerfunc:
+          The function to call
+ 
+      concurrentevents:
+          The number of events to issue concurrently (default 5).   No more 
+          than len(targetlist) events will be concurrently started.
+
+      extrafuncargs:
+          Extra arguments the function should be called with (every function
+          is passed the same extra args).
+
+   <Exceptions>
+      ParallelizeError is raised if there isn't at least one free event.   
+      However, if there aren't at least concurrentevents number of free events,
+      this is not an error (instead this is reflected in parallelize_getstatus)
+      in the status information.
+
+   <Side Effects>
+      Starts events, etc.
+
+   <Returns>
+      A handle used for status information, etc.
+  """
+
+  parallelizehandle = uniqueid_getid()
+
+  # set up the dict locally one line at a time to avoid a ginormous line
+  handleinfo = {}
+  handleinfo['abort'] = False
+  handleinfo['callfunc'] = callerfunc
+  handleinfo['callargs'] = extrafuncargs
+  # make a copy of target list because 
+  handleinfo['targetlist'] = targetlist[:]
+  handleinfo['availabletargetpositions'] = range(len(handleinfo['targetlist']))
+  handleinfo['result'] = {'exception':[],'returned':[],'aborted':[]}
+  handleinfo['runninglist'] = []
+
+  
+  parallelize_info_dict[parallelizehandle] = handleinfo
+
+  # don't start more threads than there are targets (duh!)
+  threads_to_start = min(concurrentevents, len(handleinfo['targetlist']))
+
+  for workercount in range(threads_to_start):
+    # we need to append the workercount here because we can't return until 
+    # this is scheduled without having race conditions
+    parallelize_info_dict[parallelizehandle]['runninglist'].append(workercount)
+    try:
+      
+      def function_to_run():
+        parallelize_execute_function(parallelizehandle, workercount)
+        
+      createthread(function_to_run)
+      
+    except:
+      # If I'm out of resources, stop
+      # remove this worker (they didn't start)
+      parallelize_info_dict[parallelizehandle]['runninglist'].remove(workercount)
+      if not parallelize_info_dict[parallelizehandle]['runninglist']:
+        parallelize_closefunction(parallelizehandle)
+        raise Exception, "No events available!"
+      break
+  
+  return parallelizehandle
+    
+
+
+def parallelize_execute_function(handle, myid):
+  # This is internal only.   It's used to execute the user function...
+
+  # No matter what, an exception in me should not propagate up!   Otherwise,
+  # we might result in the program's termination!
+  try:
+
+    while True:
+      # separate this from below functionality to minimize scope of try block
+      thetargetlist = parallelize_info_dict[handle]['targetlist']
+      try:
+        mytarget = thetargetlist.pop()
+      except IndexError:
+        # all items are gone, let's return
+        return
+
+      # if they want us to abort, put this in the aborted list
+      if parallelize_info_dict[handle]['abort']:
+        parallelize_info_dict[handle]['result']['aborted'].append(mytarget)
+
+      else:
+        # otherwise process this normally
+
+        # limit the scope of the below try block...
+        callfunc = parallelize_info_dict[handle]['callfunc']
+        callargs = parallelize_info_dict[handle]['callargs']
+
+        try:
+          retvalue = callfunc(mytarget,*callargs)
+        except Exception, e:
+          # always log on error.   We need to report what happened
+          parallelize_info_dict[handle]['result']['exception'].append((mytarget,str(e)))
+        else:
+          # success, add it to the dict...
+          parallelize_info_dict[handle]['result']['returned'].append((mytarget,retvalue))
+
+
+  except KeyError:
+    # A KeyError is normal if they've closed the handle
+    return
+
+  except Exception, e:
+    log('Internal Error: Exception in parallelize_execute_function', e, '\n')
+
+  finally:
+    # remove my entry from the list of running worker threads...
+    try:
+      parallelize_info_dict[handle]['runninglist'].remove(myid)
+    except (ValueError, KeyError):
+      pass
+    
+
+    
+

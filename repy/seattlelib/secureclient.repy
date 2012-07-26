@@ -1,0 +1,99 @@
+"""
+<Program Name>
+  advertise_client.repy
+
+<Started>
+  August 3, 2011
+
+<Author>
+  Sebastian Morgan sebass63@uw.edu
+
+<Purpose>
+  Provides a command-line interface for sending advertisement queries
+  to a central-style secured advertise server.
+"""
+
+dy_import_module_symbols("secureadvertise_client")
+dy_import_module_symbols("serialize")
+dy_import_module_symbols("rsa")
+dy_import_module_symbols("session")
+
+
+
+# Default location of public and private keys.
+mycontext['default_keyfiles'] = ('advertise.publickey', 'advertise.privatekey')
+
+# Default size of public and private keys.
+mycontext['default_keysize'] = 1024
+
+# Default advertise server address.
+mycontext['advertise_address'] = "128.208.4.96"
+
+# Default advertise server port.
+mycontext['advertise_port'] = 49010
+
+# Default outsocket port for sending.
+mycontext['out_port'] = 49000
+
+# Default maximum number of return values.
+mycontext['default_maxvals'] = 20
+
+def blocking_recv(socketobj):
+  success = False
+  raw_response = ""
+  while not success:
+    try:
+      raw_response = session_recvmessage(socketobj)
+      success = True
+    except SocketWouldBlockError:
+      sleep(0.005)
+
+  return raw_response
+
+
+if callfunc == 'initialize':
+  # Right now this whole method is a little sloppy, with uncaught input 
+  # errors and that sort of thing. I will have this resolved soon.
+  # -Sebastian
+
+  if len(callargs) < 1:
+    log("ERROR: No arguments provided!\n")
+
+  # Currently, this will overwrite any existing keys that you have.
+  # I can't really think of a better way to do this.
+  elif callargs[0].lower() == 'createkeys':
+    log(" > Creating keys . . . ")
+    public_key, private_key = rsa_gen_pubpriv_keys(1024)
+    log("Done.\n")
+
+    log(" > Writing keys to file . . . ")
+    rsa_publickey_to_file(public_key, mycontext['default_keyfiles'][0])
+    rsa_privatekey_to_file(private_key, mycontext['default_keyfiles'][1])
+    log("Done.\n")
+
+  elif callargs[0].lower() == 'put':
+    if len(callargs) < 3:
+      log(" > Not enough arguments provided. PUT usage:\n")
+      log(" > advertise_client.repy put <value> <time to live>\n")
+    else:
+      advertise_val = callargs[1]
+      advertise_ttl = int(callargs[2])
+  
+      log(" > Loading keys . . . ")
+      public_key = rsa_file_to_publickey(mycontext['default_keyfiles'][0])
+      private_key = rsa_file_to_privatekey(mycontext['default_keyfiles'][1])
+      log("Done.\n")
+
+      log(" > Attempting announce . . . ")
+      result = secureadvertise_announce(public_key, private_key, advertise_val, advertise_ttl)
+      log("Done.\n")
+
+      log(" > Advertise Result: " + str(result) + "\n")
+
+  elif callargs[0].lower() == 'get':
+    get_key = rsa_file_to_publickey(mycontext['default_keyfiles'][0])
+
+    data = secureadvertise_lookup(get_key)
+
+    log(" > GET data received. Server returned the following answers:\n")
+    log(" >  " + str(data[1]) + "\n")

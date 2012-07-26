@@ -1,0 +1,22 @@
+"""
+<Program Name>
+  time.repy
+
+<Author>
+  Eric Kimbrel
+
+<Started>
+  Jul 2, 2009
+
+<Purpose>
+ replaces the previous time.repy by use of the active interface 
+ time_interface.repy and the implementors ntp_time.repy and tcp_time.repy
+
+ see time_interface.repy for details
+
+"""
+
+
+include ntp_time.repy
+include tcp_time.repy
+

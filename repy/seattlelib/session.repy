@@ -1,0 +1,107 @@
+# This module wraps communications in a signaling protocol.   The purpose is to
+# overlay a connection-based protocol with explicit message signaling.   
+#
+# The protocol is to send the size of the message followed by \n and then the
+# message itself.   The size of a message must be able to be stored in 
+# sessionmaxdigits.   A size of -1 indicates that this side of the connection
+# should be considered closed.
+#
+# Note that the client will block while sending a message, and the receiver 
+# will block while recieving a message.   
+#
+# While it should be possible to reuse the connectionbased socket for other 
+# tasks so long as it does not overlap with the time periods when messages are 
+# being sent, this is inadvisable.
+
+class SessionEOF(Exception):
+  pass
+
+sessionmaxdigits = 20
+
+# get the next message off of the socket...
+def session_recvmessage(socketobj):
+
+  messagesizestring = ''
+  # first, read the number of characters...
+  for junkcount in range(sessionmaxdigits):
+
+    while True:
+      try:
+        currentbyte = socketobj.recv(1)
+      except SocketWouldBlockError:
+        sleep(0.001)
+      else:
+        break
+
+    if currentbyte == '\n':
+      break
+    
+    # not a valid digit
+    if currentbyte not in '0123456789' and messagesizestring != '' and currentbyte != '-':
+      raise ValueError, "Bad message size"
+     
+    messagesizestring = messagesizestring + currentbyte
+
+  else:
+    # too large
+    raise ValueError, "Bad message size"
+
+  messagesize = int(messagesizestring)
+  
+  # nothing to read...
+  if messagesize == 0:
+    return ''
+
+  # end of messages
+  if messagesize == -1:
+    raise SessionEOF, "Connection Closed"
+
+  if messagesize < 0:
+    raise ValueError, "Bad message size"
+
+  data = ''
+  while len(data) < messagesize:
+    try:
+      chunk =  socketobj.recv(messagesize-len(data))
+    except SocketWouldBlockError:
+      sleep(0.001)
+      continue
+
+    if chunk == '': 
+      raise SessionEOF, "Connection Closed"
+    data = data + chunk
+
+  return data
+
+# a private helper function
+def session_sendhelper(socketobj,data):
+  sentlength = 0
+  # if I'm still missing some, continue to send (I could have used sendall
+  # instead but this isn't supported in repy currently)
+  while sentlength < len(data):
+    try:
+      thissent = socketobj.send(data[sentlength:])
+    except SocketWouldBlockError:
+      sleep(0.001)
+      continue
+
+    sentlength = sentlength + thissent
+
+
+
+# send the message 
+def session_sendmessage(socketobj,data):
+  header = str(len(data)) + '\n'
+
+  fulldata = header + data
+
+  session_sendhelper(socketobj, fulldata)
+
+  # This was used before. For some reason, it causes a "Bad Message Size"
+  # failure on most queries sent over a network with realistic latency. (>5ms)
+  # session_sendhelper(socketobj,header)
+
+  # session_sendhelper(socketobj,data)
+
+
+

@@ -1,0 +1,208 @@
+def urllib_quote(string, safe="/"):
+  """
+  <Purpose>
+    Encode a string such that it can be used safely in a URL or XML
+    document.
+
+  <Arguments>
+    string:
+           The string to urlencode.
+
+    safe (optional):
+           Specifies additional characters that should not be quoted --
+           defaults to "/".
+
+  <Exceptions>
+    TypeError if the safe parameter isn't an enumerable.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    Urlencoded version of the passed string.
+  """
+
+  resultstr = ""
+
+  # We go through each character in the string; if it's not in [0-9a-zA-Z]
+  # we wrap it.
+
+  safeset = set(safe)
+
+  for char in string:
+    asciicode = ord(char)
+    if (asciicode >= ord("0") and asciicode <= ord("9")) or \
+        (asciicode >= ord("A") and asciicode <= ord("Z")) or \
+        (asciicode >= ord("a") and asciicode <= ord("z")) or \
+        asciicode == ord("_") or asciicode == ord(".") or \
+        asciicode == ord("-") or char in safeset:
+      resultstr += char
+    else:
+      resultstr += "%%%02X" % asciicode
+
+  return resultstr
+
+
+
+
+def urllib_quote_plus(string, safe=""):
+  """
+  <Purpose>
+    Encode a string to go in the query fragment of a URL.
+
+  <Arguments>
+    string:
+           The string to urlencode.
+
+    safe (optional):
+           Specifies additional characters that should not be quoted --
+           defaults to the empty string.
+
+  <Exceptions>
+    TypeError if the safe parameter isn't a string.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    Urlencoded version of the passed string.
+  """
+
+  return urllib_quote(string, safe + " ").replace(" ", "+")
+
+
+
+
+def urllib_unquote(string):
+  """
+  <Purpose>
+    Unquote a urlencoded string.
+
+  <Arguments>
+    string:
+           The string to unquote.
+
+  <Exceptions>
+    ValueError thrown if the last wrapped octet isn't a valid wrapped octet
+    (i.e. if the string ends in "%" or "%x" rather than "%xx". Also throws
+    ValueError if the nibbles aren't valid hex digits.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The decoded string.
+  """
+
+  resultstr = ""
+
+  # We go through the string from end to beginning, looking for wrapped
+  # octets. When one is found we add it (unwrapped) and the following
+  # string to the resultant string, and shorten the original string.
+
+  while True:
+    lastpercentlocation = string.rfind("%")
+    if lastpercentlocation < 0:
+      break
+
+    wrappedoctetstr = string[lastpercentlocation+1:lastpercentlocation+3]
+    if len(wrappedoctetstr) != 2:
+      raise ValueError("Quoted string is poorly formed")
+
+    resultstr = \
+        chr(int(wrappedoctetstr, 16)) + \
+        string[lastpercentlocation+3:] + \
+        resultstr
+    string = string[:lastpercentlocation]
+
+  resultstr = string + resultstr
+  return resultstr
+
+
+
+
+def urllib_unquote_plus(string):
+  """
+  <Purpose>
+    Unquote the urlencoded query fragment of a URL.
+
+  <Arguments>
+    string:
+           The string to unquote.
+
+  <Exceptions>
+    ValueError thrown if the last wrapped octet isn't a valid wrapped octet
+    (i.e. if the string ends in "%" or "%x" rather than "%xx". Also throws
+    ValueError if the nibbles aren't valid hex digits.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The decoded string.
+  """
+
+  return urllib_unquote(string.replace("+", " "))
+
+
+
+
+def urllib_quote_parameters(dictionary):
+  """
+  <Purpose>
+    Encode a dictionary of (key, value) pairs into an HTTP query string or
+    POST body (same form).
+
+  <Arguments>
+    dictionary:
+           The dictionary to quote.
+
+  <Exceptions>
+    None.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The quoted dictionary.
+  """
+
+  quoted_keyvals = []
+  for key, val in dictionary.items():
+    quoted_keyvals.append("%s=%s" % (urllib_quote(key), urllib_quote(val)))
+
+  return "&".join(quoted_keyvals)
+
+
+
+
+def urllib_unquote_parameters(string):
+  """
+  <Purpose>
+    Decode a urlencoded query string or POST body.
+
+  <Arguments>
+    string:
+           The string to decode.
+
+  <Exceptions>
+    ValueError if the string is poorly formed.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    A dictionary mapping keys to values.
+  """
+
+  keyvalpairs = string.split("&")
+  res = {}
+
+  for quotedkeyval in keyvalpairs:
+    # Throw ValueError if there is more or less than one '='.
+    quotedkey, quotedval = quotedkeyval.split("=")
+    key = urllib_unquote_plus(quotedkey)
+    val = urllib_unquote_plus(quotedval)
+    res[key] = val
+
+  return res

@@ -1,0 +1,16 @@
+
+#ifndef mac_util_loaded
+#define mac_util_loaded
+
+#include <random.repy>
+
+def mac_to_str(s):
+    return ":".join(["%02x" % ord(b) for b in s])
+
+def str_to_mac(s):
+    return "".join([chr(int(c, 16)) for c in s.split(":")])
+
+def random_mac():
+    return "\x02" + random_randombytes(5)
+
+#endif

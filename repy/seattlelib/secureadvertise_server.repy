@@ -1,0 +1,576 @@
+"""
+<Program Name>
+  secureadvertise_server.repy
+
+<Started>
+  July 24, 2011
+
+<Author>
+  Sebastian Morgan (sebass63@u.washington.edu)
+
+<Purpose>
+  Handles secure GET and PUT advertisements from clients. Compatible with old 
+  versions of advertise GET protocol, but PUT now requires signing with a 
+  private key.
+"""
+
+
+
+
+dy_import_module_symbols("session")
+dy_import_module_symbols("serialize")
+dy_import_module_symbols("time")
+dy_import_module_symbols("rsa")
+
+
+
+# This is the dictionary which stores all advertise associations.
+# They will be stored as tuples with the following format:
+# (data, ttl, public key of owner)
+mycontext['data_table'] = {}
+
+# All debug output will be written here.
+mycontext['debuglog_path'] = "output.txt"
+
+# All requests will be listed here.
+mycontext['requestlog_path'] = "requests.txt"
+
+# Should we be chatty?
+mycontext['verbose'] = False
+
+# Sleep time in each maintenance thread iteration. Think of this as a refresh 
+# rate for the data table, in seconds.
+mycontext['maintenance_sleep'] = 1
+
+# Sleep time to be used upon connection listen failure . . . Making this very 
+# long will result in very slow connection times.
+mycontext['connection_sleep'] = 0.004
+
+# Sleep time to be used if there don't seem to be any connections remaining to 
+# process.
+mycontext['handle_sleep'] = 0.004
+
+# Network interface to use.
+mycontext['local_ip'] = getmyip()
+
+# Port to listen on for connections. (We do not support legacy.)
+mycontext['connect_port'] = 49010
+
+# List in which we keep connections waiting to be processed. These are 
+# 3-tuples with the form: (remote_ip, remote_port, sockobj)
+mycontext['received_connections'] = []
+
+# Most recent time log.
+mycontext['last_runtime'] = 0
+
+# The bitsize of the private and public keys used.
+mycontext['keysize'] = 1024
+
+# Server's private key.
+mycontext['private_key'] = None
+
+# Server's public key.
+mycontext['public_key'] = None
+
+# Server's private key file.
+mycontext['private_keyfile'] = "advertise.privatekey"
+
+# Server's public key file.
+mycontext['public_keyfile'] = "advertise.publickey"
+
+
+
+def _purge_expired_items(decrement):
+  """
+  <Purpose>
+    Iterates through the data table and removes all entries whose persist 
+    time has fallen to zero or lower. In other words, this removes entries 
+    that have expired.
+
+  <Arguments>
+    decrement (integer)
+      The amount by which to reduce the TTL of all entries.
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    Blocks the maintenance thread.
+
+  <Returns>
+    None
+  """
+  # This is going to run REALLY FREQUENTLY, so we have to be pretty careful 
+  # about resource consumption.
+  keys = mycontext['data_table'].keys()
+  keycount = len(keys)
+  key_index = 0
+
+  decrement = 1
+
+  # Iterate through all of the keys in the dictionary.
+  while key_index < keycount:
+
+    # Iterate through all of the entries in the current key.
+    for i in range(len(mycontext['data_table'][keys[key_index]])):
+      entry = mycontext['data_table'][keys[key_index]][i]
+
+      # Reduce the entry's time to live, possibly making it fall below zero.
+      mycontext['data_table'][keys[key_index]][i] = (entry[0], entry[1] - decrement)
+
+      # If it has fallen to zero or lower, it'll show up as expired, so we 
+      # delete it.
+      if mycontext['data_table'][keys[key_index]][i][1] <= 0:
+        del mycontext['data_table'][keys[key_index]][i]
+
+      
+    # Edge case where an empty array exists at the specified key, but there is 
+    # no data there.
+    if mycontext['data_table'][keys[key_index]] == []:
+      mycontext['data_table'].pop(keys[key_index])
+
+    key_index += 1
+
+  return
+
+
+
+
+
+def _maintenance_thread():
+  while True:
+    _purge_expired_items(mycontext['maintenance_sleep'])
+    sleep(mycontext['maintenance_sleep'])
+  return
+
+  
+
+
+def insert_item(key, value, time_to_live):
+  """
+  <Purpose>
+    Adds an entry to the data table. If the entry already exists, the time to 
+    live value is updated to the new one if it results in an increase. This 
+    method cannot be used to force items to expire. If adding the new key-value 
+    pair would result in a duplicate entry, nothing will be added. (In that 
+    situation, if the time_to_live passed in is longer than the value currently 
+    stored, it will be updated to reflect the new value.)
+
+  <Arguments>
+    key
+      An object to be used as the key for this key-value pair.
+      Must be a primitive.
+
+    value
+      An object to be associated with the given key.
+      Must be a primitive.
+
+    time_to_live
+      A floating point value representing how long the association should 
+      persist.
+
+    public_key
+      The public key of the owner of this association. (First advertiser.)
+
+  <Exceptions>
+    Todo: Populate
+
+  <Side Effects>
+    Write operations to the dictionary are blocking, but short.
+
+  <Returns>
+    None
+  """
+  # Check whether or not the key is in the database. If not, create an entry
+  # for it.
+  if key not in mycontext['data_table'].keys():
+    mycontext['data_table'][key] = []
+
+  new_entry = (value, time_to_live)
+
+  pair_exists = False
+
+  # If the entry being advertised already exists, increase TTL to be equal 
+  # to the provided one.
+  for i in range(len(mycontext['data_table'][key])):
+    entry = mycontext['data_table'][key][i]
+    if entry[0] == value:
+      pair_exists = True
+
+      if entry[1] < time_to_live:
+        temp_entry = (entry[0], time_to_live)
+        mycontext['data_table'][key][i] = temp_entry
+
+  # If the entry is new, add it to the table.
+  if pair_exists == False:
+    mycontext['data_table'][key].append(new_entry)
+
+  return
+
+
+
+
+def read_item(key, maxvals):
+  """
+  <Purpose>
+    Returns all Advertise_Entry objects associated with the provided key.
+    Will not return more than maxkeys entries.
+
+  <Arguments>
+    key
+      The key to look for in the data table.
+      Must be a primitive.
+
+    maxvals
+      Maximum number of objects to return.
+      Must be an integer.
+
+  <Exceptions>
+    Todo: Populate
+
+  <Side Effects>
+    Not a locking process, so there shouldn't be any side effects.
+
+  <Returns>
+    An array of tuples.
+  """
+  retlist = []
+
+  try:
+    for item in mycontext['data_table'][key]:
+      retlist.append((item[0], item[1]))
+  except KeyError:
+    retlist = []
+
+  return retlist
+
+
+
+
+
+def listen_for_connections():
+  """
+  <Purpose>
+    Forwards all new connections to the request handler method.
+
+  <Arguments>
+    None
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    None
+
+  <Returns>
+    None
+  """
+  serversocket = listenforconnection(mycontext['local_ip'], mycontext['connect_port'])
+  previous_error = None
+  time_temp = 0
+
+  while True:
+    try:
+      start_time = getruntime()
+
+      data_tuple = serversocket.getconnection()
+
+      time_temp = getruntime() - start_time
+    except SocketWouldBlockError:
+      data_tuple = None
+      sleep(mycontext['connection_sleep'])
+    except Exception, e:
+      log("::ERROR: Unknown exception in listen for connection thread: " + str(e) + "\n")
+      sleep(mycontext['connection_sleep'])
+
+    if data_tuple is not None:
+      # Expand it for the sake of readability.
+      remote_ip, remote_port, sockobj = data_tuple
+      if mycontext['verbose']:
+        log("::NOTICE: Connection recieved!\n")
+        log(" > Connection acquisition took " + str(time_temp) + "s\n")
+        log(" > HOSTNAME: " + str(remote_ip) + "\n")
+        log(" > HOSTPORT: " + str(remote_port) + "\n")
+
+      mycontext['received_connections'].append((remote_ip, remote_port, sockobj))
+
+
+
+
+def _handle_pending_connections():
+  """
+  <Purpose>
+    Checks for pending requests, and handles them if they exist. This isn't 
+    multithreaded currently, so the server is easily overloaded.
+
+  <Arguments>
+    None
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    None
+
+  <Returns>
+    None
+  """
+  while True:
+    if len(mycontext['received_connections']) > 0:
+      remote_ip, remote_port, sockobj = mycontext['received_connections'].pop()
+
+      handle_request(remote_ip, remote_port, sockobj)
+      sockobj.close()
+      
+    else:
+      sleep(mycontext['handle_sleep'])
+
+
+
+
+def _blocking_recv(sockobj):
+  """
+  <Purpose>
+    Attempts and re-attempts session_recvmessage until successful.
+
+  <Arguments>
+    sockobj
+      A socket-like object
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    None
+
+  <Returns>
+    The raw request data
+  """
+  sleep_time = 0.0001
+  backoff_factor = 2
+  maximum_backoff = 0.001
+  while True:
+    try:
+      return session_recvmessage(sockobj)
+    except SocketWouldBlockError:
+      sleep(sleep_time)
+      sleep_time = sleep_time * backoff_factor
+      if sleep_time > maximum_backoff:
+        sleep_time = maximum_backoff
+
+
+
+
+def handle_request(remote_ip, remote_port, sockobj):
+  """
+  <Purpose>
+    Asynchronous connection handler. Once the server gets around to serving 
+    a client, this runs and deals with their connection.
+
+  <Arguments>
+    socket
+      A sockobj that allows us to read data from the network.
+
+  <Exceptions>
+    None known.
+
+  <Returns>
+    None
+  """
+  # A few declarations to avoid scope issues . . .
+  value = 0
+  key = 0
+  ttlval = 0
+
+  if mycontext['verbose']:
+    log("::EVENT: Begin handle connection\n")
+
+  try:
+    rawrequestdata = _blocking_recv(sockobj)
+
+    try:
+      requesttuple = serialize_deserializedata(rawrequestdata)
+    except ValueError, e:
+      log(' > ERROR: serialize_deserializedata:' + str(e) + ' with string "' + str(rawrequestdata) + '"\n')
+      return
+
+    if not type(requesttuple) is tuple:
+      log(' > ERROR: Request is '+str(type(requesttuple))+' not tuple.\n')
+      return
+
+    if requesttuple[0] == 'KEY':
+      if mycontext['verbose']:
+        log(" > TYPE: KEY\n")
+
+      try:
+        session_sendmessage(sockobj, serialize_serializedata(mycontext['public_key']))
+      except Exception:
+        log("::ERROR:: Key send failed!\n")
+
+    if requesttuple[0] == 'PUT':
+      if mycontext['verbose']:
+        log(" > TYPE: PUT\n")
+
+      
+      query_type, public_key, encrypted_data = requesttuple
+
+      key = rsa_publickey_to_string(public_key)
+
+      # First, decrypt the data using the server's private key.
+      decrypted_data = rsa_decrypt(encrypted_data, mycontext['private_key'])
+
+      # We're not done yet. If the user is genuine, this data has been signed.
+      plaintext = rsa_verify(decrypted_data, public_key)
+
+      # Now that we're done with the decryption, it's business as usual.
+      query_tuple = serialize_deserializedata(plaintext)
+
+      requesttuple = (key, query_tuple[0], query_tuple[1])
+
+      ############# START Tons of type checking
+      try:
+        (key, value, ttlval) = requesttuple
+      except ValueError, e:
+        log(' > ERROR: Incorrect format for request tuple: ' + str(requesttuple) + "\n")
+        return
+
+      if type(key) is not str:
+        log(' > ERROR: Key type for PUT must be str, not' + str(type(key)) + "\n")
+        return
+
+      if type(value) is not str:
+        log(' > ERROR: Value type must be str, not' + str(type(value)) + "\n")
+        return
+    
+      if type(ttlval) is not int and type(ttlval) is not long:
+        log(' > ERROR: TTL type must be int or long, not' + str(type(ttlval)) + "\n")
+        return
+
+      if ttlval <=0:
+        log(' > ERROR: TTL must be positive, not ' + str(ttlval) + "\n")
+        return
+
+      ############# END Tons of type checking
+
+      # Make sure someone has not already claimed the value.
+      already_in_use = False
+
+      for temp_key in mycontext['data_table'].keys():
+        if value in mycontext['data_table'][temp_key] and temp_key != key:
+          already_in_use = True
+
+      if already_in_use:
+        log(" > > This key is already in use by another user. Notifying.\n")
+        senddata = serialize_serializedata("KEY IN USE")
+
+      else:
+        insert_item(key, value, ttlval)
+        insert_item('%all', value, ttlval)
+      
+        if mycontext['verbose']:
+          log(" > ITEM ADDED: " + str(key) + " : " + str(value) + "\n")
+          log(" > OWNER: " + str(public_key) + "\n")
+          log(" > PERSIST: " + str(ttlval) + "\n")
+
+        senddata = serialize_serializedata("OK")
+
+      log(" > > RETURNING: " + str(senddata) + "\n")
+ 
+      # all is well...
+      session_sendmessage(sockobj, senddata)
+
+      return
+
+
+
+    elif requesttuple[0] == 'GET':
+
+      if mycontext['verbose']:
+        log(" > TYPE: GET\n")
+
+      ############# START Tons of type checking (similar to above
+      try:
+        (key, maxvals) = requesttuple[1:]
+      except ValueError, e:
+        log(' > ERROR: Incorrect format for request tuple: ' + str(requesttuple) + "\n")
+        return
+
+      if type(key) is not str:
+        log(' > ERROR: Key type for GET must be str, not' + str(type(key)) + "\n")
+        return
+
+      if type(maxvals) is not int and type(maxvals) is not long:
+        log(' > ERROR: Maximum value type must be int or long, not' + str(type(maxvals)) + "\n")
+        return
+
+      if maxvals <=0:
+        log(' > ERROR: maxvals; Value type must be positive, not ' + str(maxvals) + "\n")
+        return
+
+      ############# END Tons of type checking
+
+      readlist = []
+      entries = read_item(key, maxvals)
+
+      log("ENTRIES: " + str(entries) + "\n")
+
+      for entry in entries:
+        readlist.append(entry[0])
+
+      if mycontext['verbose']:
+        log(" > ITEM REQUESTED: " + str(key) + "\n")
+        log(" > MAX VALUES: " + str(maxvals) + "\n")
+        log(" > RETURNING: " + str(readlist) + "\n")
+
+      senddata = serialize_serializedata(("OK", readlist))
+
+      # all is well...
+      session_sendmessage(sockobj, senddata)
+      return
+
+
+  except Exception,e:
+    log(" > ERROR: While handling request, received: " + str(e) + "\n")
+
+  return
+
+
+
+
+
+if callfunc == 'initialize':
+  if '-v' in callargs:
+    mycontext['verbose'] = True
+
+  log("Creating maintenance thread . . .\n")
+  createthread(_maintenance_thread)
+  log("Maintenance thread started successfully!\n")
+
+  log("Creating server listen thread . . .\n")
+  createthread(listen_for_connections)
+  log("Listen thread started successfully!\n")
+
+  log("Creating pending connection thread . . .\n")
+  createthread(_handle_pending_connections)
+  log("Pending connection thread started successfully!\n\n")
+
+  log("Loading server's public key . . . ")
+  mycontext['public_key'] = rsa_file_to_publickey(mycontext['public_keyfile'])
+  log("Done.\n")
+
+  log("Loading server's private key . . . ")
+  mycontext['private_key'] = rsa_file_to_privatekey(mycontext['private_keyfile'])
+  log("Done.\n")
+
+  # log("Opening debug output file '" + str(mycontext['debuglog_path']) + "' . . .")
+  # openfile(mycontext['debuglog_path'], True)
+  # log("Done.\n")
+
+  log("===========================================================\n")
+  log("{                 Repy V2 Advertise Server                }\n")
+  log("===========================================================\n")
+  log("::NOTICE: Server is now running on: " + str(mycontext['local_ip']) + 
+      ":" + str(mycontext['connect_port']) + "\n")
+
+  if mycontext['verbose']:
+    log("::NOTICE: Verbose mode requested.\n")

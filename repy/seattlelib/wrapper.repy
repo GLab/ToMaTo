@@ -1,0 +1,634 @@
+"""
+Author: Armon Dadgar
+Description:
+  This module helps wrap references in a way that helps
+  prevent accidentally leaking references.
+
+ A context definition must have a key entry for each
+ key that exists in the context.
+ Each definition must follow the following format:
+ - Contains a "type" key
+ --   This may be "func" for a function, "objc" for an object constructor
+ --   "const" for a constant, or "any" for allowing anything (copies the target).
+
+ Anything that is of type "func" or "objc" must define
+ - "args"
+ - "exceptions"
+ - "return".
+ 
+ "args" is either None, for no arguments or a tuple which
+ represents the expected type for each argument.
+
+ If the type can be variable, this can be represented as a tuple
+ which contains all the possible types.
+ The string "any" can be used as a wildcard for any type. Additionally,
+ the string "var" can be used for variable length arguments, which means
+ there will be no type checking for those arguments.
+
+ E.g. if foo accepts 1 argument which is either an int or string,
+ it would be specified as "arg" : ((int, str))
+
+ "exceptions" is a tuple of all possible exceptions to raise.
+
+ "return" is different depending on the "type" of the entry.
+ If "type" if "func", it should be a tuple containing all allowable
+ return types.
+
+ If "type is "objc", then the return is a dictionary just like the
+ context definition which defines each method of the object. You must
+ specify "obj-type" to enable checking the type of the object.
+"""
+
+# Define a useless class, so that we can extract types
+class _noop():
+  def noop(self):
+    pass
+_junk = _noop()
+
+def _func():
+  pass
+
+# Get access to some types we don't have a direct reference to
+NONE_TYPE = type(None)
+FUNC_TYPE = type(_func)
+METHOD_TYPE = type(_noop.noop)
+INSTANCE_TYPE = type(_junk)
+CLASS_TYPE = type(_noop)
+TYPE_TYPE = type(CLASS_TYPE)
+
+
+# These are the types that are not copied, but are just returned as the same
+# instance. These should all be immutable.
+NON_COPIED_TYPES = set((str, unicode, int, long, float, complex, bool,
+                    frozenset, NONE_TYPE, FUNC_TYPE, METHOD_TYPE,
+                    INSTANCE_TYPE, CLASS_TYPE, TYPE_TYPE))
+
+# Optimization
+LIST_TUPLE_SET = set([list, tuple, set])
+LIST_TUPLE = set([list, tuple])
+
+# This store is used to hide the underlying instance
+# objects which are wrapped by WrappedObject class.
+# The key is the id of the WrappedObject, and the value
+# is the actual instance object
+INSTANCE_STORE = {}
+
+# We use instances of this to bind attributes
+# It takes the actual instance on initialization
+# and stores it in the INSTANCE_STORE. The instance
+# is deleted when the wrapper is deleted.
+class WrappedObject():
+  def __init__(self, instance):
+    # Get our id
+    self_id = id(self)
+
+    # Store the instance
+    INSTANCE_STORE[self_id] = instance
+
+  def __del__(self):
+    # Get our id
+    self_id = id(self)
+
+    # Delete the instance
+    try:
+      del INSTANCE_STORE[self_id]
+    except:
+      pass
+
+
+# This is the main function
+def wrap_references(definition):
+  """
+  <Purpose>
+    Wraps the references into a context according to a definition.
+
+  <Arguments>
+    definition: A dictionary which properly defines the references in the
+                context
+
+  <Exceptions>
+    RepyArgumentError is raised if there are references which are not defined.
+    RepyArgumentError is raised if there is an invalid definition.
+  
+  <Returns>
+    A new context which is properly wrapped.
+  """
+  # Get the keys in each set
+  defined_references = set(definition.keys())
+
+  # Create a dictionary to store the wrapped references
+  wrapped_references = {}
+
+  # Wrap each reference now
+  for ref_name in defined_references:
+    # Get the reference definition
+    ref_definition = definition[ref_name]
+
+    # Set the wrapped value
+    wrapped_references[ref_name] = _wrap_reference(ref_name, ref_definition)
+
+
+  # Return the wrapped references
+  return wrapped_references
+
+
+# Wraps a single reference
+def _wrap_reference(name, definition):
+  # Get the type of this reference
+  try:
+    reference_type = definition["type"]
+
+    if reference_type not in ["const", "func", "objc", "any"]:
+      raise RepyArgumentError("Bad type provided for reference '"+name+"'")
+  except KeyError:
+    raise RepyArgumentError("Definition for reference '"+name+"' is missing a type!")
+
+  try:
+    target = definition["target"]
+  except KeyError:
+    raise RepyArgumentError("Definition for reference '"+name+"' is missing a target!")
+
+
+  # Determine what the wrapped value should be
+  if reference_type == "any":
+    # Use the target without modifying it
+    return target
+
+  elif reference_type == "const":
+    # Provide a copy of any constants
+    return copy(target)
+
+  elif reference_type == "func":
+    # Provide a wrapper around the function
+    return _wrap_function(name, target, definition)
+
+  else:
+    # Provide a wrapper around an object constructor
+    return _wrap_obj_constructor(name, target, definition)
+
+
+# Wraps a function reference 
+def _wrap_function(name, func, definition, obj_attribute=False):
+  # Get the necessary definition bits
+  try:
+    args_defin = definition["args"]
+  except KeyError:
+    raise RepyArgumentError("No definition of arguments provided for '"+name+"'")
+  try:
+    excp_defin = definition["exceptions"]
+  except KeyError:
+    raise RepyArgumentError("No definition of exceptions provided for '"+name+"'")
+  try:
+    return_defin = definition["return"]
+  except KeyError:
+    raise RepyArgumentError("No definition of return values provided for '"+name+"'")
+
+  # Define a wrapper function to check args, return values, and exceptions
+  def _wrapped_func(*args):
+    # Copy the arguments
+    copied_args = copy(args)
+
+    # Check if this is an object attribute, pull off the self value
+    # Since that is not specified in the definition
+    if obj_attribute:
+      checked_args = copied_args[1:]
+    else:
+      checked_args = copied_args
+
+    # Check the args
+    _check_func_args(name, args_defin, checked_args)
+
+    # Call the function
+    try:
+      retval = func(*copied_args)
+    except Exception, e:
+      # Check the exception
+      _check_func_exception(name, excp_defin, e)
+
+      # Raise the error after checking
+      raise
+
+    # Check the return value
+    _check_func_return(name, return_defin, retval)
+
+    # Return a copy of the return value
+    return copy(retval)
+
+
+  # Return the wrapper function
+  return _wrapped_func
+
+
+# Wraps a reference to an object constructor (or a 
+# function which returns an object)
+def _wrap_obj_constructor(name, func, definition, obj_attribute=False):
+  # Get the necessary definition bits
+  try:
+    return_defin = definition["return"]
+    
+    if type(return_defin) is not dict:
+      raise RepyArgumentError("Definition of return value provided for '"+name+"' is not a dictionary!")
+  except KeyError:
+    raise RepyArgumentError("No definition of return values provided for '"+name+"'")
+  
+  try:
+    obj_type = return_defin["obj-type"]
+  except KeyError:
+    raise RepyArgumentError("No definition of return object type provided for '"+name+"'!")
+
+  # Construct a wrapper class
+  _construct_object_wrapper(return_defin)
+
+  # Override the allowed return type to obj_type, and use
+  # wrap_function initially, and then handle the return.
+  definition["return"] = obj_type
+
+  # Get an initial wrapper that handles arguments and exceptions
+  initial_wrapped_func = _wrap_function(name, func, definition, obj_attribute)
+
+  # Restore the return type
+  definition["return"] = return_defin
+  definition_id = id(return_defin)
+
+  def _wrapped_objc(*args):
+    # Call the initial wrapper function to get the object
+    # and wrap the object before return
+    return _wrap_obj_instance(initial_wrapped_func(*args), definition_id)
+
+  # Return a reference to the wrapper function
+  return _wrapped_objc
+
+
+# This cache is used to store the byte-code
+# required to wrap an object instance.
+# They key is the id() of the defining dictionary
+# The value is a tuple of (bind context, bind VN)
+OBJECT_WRAPPER_CACHE = {}
+
+# Wraps an instance of an object
+def _wrap_obj_instance(instance, definition_id):
+  # Get the cached wrapper class
+  wrapper_class = OBJECT_WRAPPER_CACHE[definition_id]
+
+  # Return the wrapper
+  return wrapper_class(instance)
+
+
+# Constructs an object wrapper from a definition
+def _construct_object_wrapper(definition):
+  # Check if we've already constructed a wrapper
+  if id(definition) in OBJECT_WRAPPER_CACHE:
+    return
+
+  # We are going to construct a wrapper now, so
+  # add a junk entry until we are complete
+  else:
+    OBJECT_WRAPPER_CACHE[id(definition)] = None
+
+
+  # This string is compiled to substitute setattribute()
+  # and to bind all the methods. We do this by creating a new
+  # class WrappedObjectAnon which extends WrappedObject.
+  # Then, we dynamically add all the attributes to this class.
+  bind_str = "class WrappedObjectAnon (WrappedObject):\n"
+
+  # This dictionary is used as the context to execute
+  # bind_str, and has the attributes to bind
+  bind_context = SafeDict({"WrappedObject":WrappedObject, "INSTANCE_STORE":INSTANCE_STORE})
+
+  # Get the VN name if specified
+  if "name" in definition:
+    obj_name = definition["name"]
+    vn_name = str(obj_name) + " wrapper class"
+
+  else:
+    raise RepyArgumentError("'name' attribute not provided for object definition!")
+
+
+  # Bind each attribute
+  for attribute in definition:
+    # Ignore the "obj-type" attribute
+    if attribute == "obj-type" or attribute == "name":
+      continue
+
+    # Forbid defining the __init__ and __del__ attributes
+    if attribute in ("__init__", "__del__"):
+      raise RepyArgumentError("Cannot define attribute '"+attribute+"' for object!")
+
+    # Get the attribute definition
+    attr_definition = definition[attribute]
+  
+    # Get a name for the wrapper function
+    if attribute[-1] == "_":
+      wrapper_name = attribute+"wrapper"
+    else:
+      wrapper_name = attribute+"_wrapper"
+ 
+    # Add a string to define the attribute for the class.
+    # the attribute will call to _attribute_wrapper
+    bind_str += "  def "+attribute+"(self, *args):\n"
+    bind_str += "    return "+wrapper_name+"(INSTANCE_STORE[id(self)], *args)\n\n"
+
+    # Get the attribute wrapper
+    attr_wrapper = _wrap_attribute(obj_name+"."+attribute, attr_definition)
+
+    # Add this to the context
+    bind_context[wrapper_name] = attr_wrapper
+
+  
+  # DEBUG: Dump the bind string
+  # log(bind_str)
+
+  # Create a Virtual Namespace to perform the binding
+  bind_vn = createvirtualnamespace(bind_str, vn_name)
+  bind_vn.evaluate(bind_context)
+
+  # Cache the object wrapper
+  OBJECT_WRAPPER_CACHE[id(definition)] = bind_context["WrappedObjectAnon"]
+
+
+
+# Wraps a single reference
+def _wrap_attribute(name, definition):
+  # Get the type of this reference
+  try:
+    reference_type = definition["type"]
+
+    if reference_type not in ["func", "objc"]:
+      raise RepyArgumentError("Bad type provided for object attribute '"+name+"'")
+  except KeyError:
+    raise RepyArgumentError("Definition for object attribute '"+name+"' is missing a type!")
+
+  # Extract the target, use as the value
+  try:
+    value = definition["target"]
+  except KeyError:
+    raise RepyArgumentError("Definition for object attribute '"+name+"' is missing a target!")
+
+  # Get a wrapper for the underlying function
+  if reference_type == "func":
+    # Provide a wrapper around the function
+    func = _wrap_function(name, value, definition, True)
+
+  else:
+    # Provide a wrapper around an object constructor
+    func = _wrap_obj_constructor(name, value, definition, True)
+
+  # Return a reference to this wrapper
+  return func
+
+
+# Caches certain properties about a function call
+# Maps id of definition -> tuple of info
+FUNCTION_PROP_CACHE = {}
+
+# Check the arguments to a function
+def _check_func_args(name, arg_definition, args):
+  """
+  <Purpose>
+    Checks the arguments for validity
+
+  <Arguments>
+    name: The name of the function
+    arg_definition: The definition of the arguments
+    args: The arguments
+
+  <Exceptions>
+    RepyArgumentError if the arguments are incorrect.
+
+  <Returns>
+    None
+  """
+  # Check for cached properties
+  def_id = id(arg_definition)
+  if def_id in FUNCTION_PROP_CACHE:
+    defined_length, min_args, has_var_args = FUNCTION_PROP_CACHE[def_id]
+
+  else:
+    # Generate the properties
+    defined_length = 0
+    num_default_args = 0
+    has_var_args = 0
+
+    # Get the length of the arguments and the definitions
+    if type(arg_definition) in LIST_TUPLE:
+      defined_length = len(arg_definition)
+     
+      # Check for variable length arguments 
+      has_var_args = arg_definition[-1] == "var"
+      if has_var_args:
+        num_default_args += 1
+
+      # Check if the function supports default arguments
+      for arg_type in arg_definition:
+        if type(arg_type) in LIST_TUPLE_SET and None in arg_type:
+          num_default_args += 1
+
+    elif arg_definition is not None:
+      fatal_error("Function '"+name+"' does not specify argument definition as tuple or list!")
+
+    # Mimimum arg count
+    min_args = defined_length - num_default_args
+
+    # Cache the important bits
+    FUNCTION_PROP_CACHE[def_id] = (defined_length, min_args, has_var_args)
+
+
+  # Get the number of arguments
+  num_args = len(args)
+
+  # Check the length
+  if min_args > num_args or num_args > defined_length and not has_var_args:
+    raise RepyArgumentError("Function '"+name+"' expects at least "+str(min_args)+" arguments, "+str(num_args)+" provided.")
+
+  for index in xrange(num_args):
+    # If we get into the var-args, then stop processing
+    # the arguments, since they are all allowed.
+    if index >= defined_length-1 and has_var_args:
+      break
+
+    # Check the argument type's match
+    arg_type = type(args[index])
+    expected_types = arg_definition[index]
+
+    # Check if the expected_types is a single type, or a list.
+    if type(expected_types) in LIST_TUPLE_SET:
+
+      # Check for "any" in the allowed types
+      if "any" in expected_types:
+        match = True
+      else:
+        match = isinstance(args[index], expected_types)
+
+    # Only a single type
+    else:
+      match = arg_type is expected_types or expected_types == "any"
+
+    # If there is no match, raise an exception
+    if not match:
+      raise RepyArgumentError("Argument number "+str(index+1)+" to function '"+name+"' is of the wrong type! Must be of type:"+str(expected_types))
+
+
+def _check_func_exception(name, exc_definition, excp):
+  """
+  <Purpose>
+    Checks if the exception that is raised is allowed.
+
+  <Arguments>
+    name: The name of the function
+    exc_definition: The definition of allowed exceptions
+    excp: The exception raised
+
+  <Exceptions>
+    None, on error the program is terminated.
+
+  <Returns>
+    None
+  """
+  # Get the type of the exception
+  excp_type = type(excp)
+
+  # If the exc_definition is None, this is automatic failure
+  # If the exc_definition is a list/set then check for a matching element or "any"
+  # If the exc_definition is a single value, check for "any" or a match
+  if exc_definition is None or \
+     (type(exc_definition) in LIST_TUPLE_SET and excp_type not in exc_definition and "any" not in exc_definition) or \
+     (exc_definition != "any" and excp_type is not exc_definition and not isinstance(excp, exc_definition)):
+    fatal_error("Function '"+name+"' tried to raise exception of type: '"+str(excp_type)+"' which is forbidden.")
+
+
+def _check_func_return(name, return_definition, retval):
+  """
+  <Purpose>
+    Checks if the return value is allowed.
+
+  <Arguments>
+    name: The name of the function
+    return_definition: The definition of allowed return types
+    retval: The return value
+
+  <Exceptions>
+    None, on error the program is terminated.
+
+  <Returns>
+    None
+  """
+  # Get the type of the return
+  ret_type = type(retval)
+ 
+  # If the return definition is None, then make sure that retval is None
+  if return_definition is None:
+    error = (retval is not None)
+
+  # If the return_definition is a list/set then check for a matching element or "any"
+  elif type(return_definition) in LIST_TUPLE_SET:
+    error = ret_type not in return_definition and "any" not in return_definition
+
+  # If the return_definition is a single value, check for "any" or a match
+  else:
+    error = ret_type is not return_definition and return_definition != "any" and not isinstance(retval, return_definition)
+
+  # Abort if there is an error
+  if error:
+    fatal_error("Function '"+name+"' tried to return value with type: '"+str(ret_type)+"' which is forbidden.")
+
+
+
+# Called on a fatal error 
+def fatal_error(message):
+  # Log the error message
+  log("---\n", getruntime(), "Fatal Error:", message, "\n---\n")
+
+  # Terminate program execution
+  exitall()
+
+
+def copy(item):
+  """
+  <Purpose>
+    Copies an item, potentially recursively if possible.
+
+  <Arguments>
+    item: The item to copy
+
+  <Returns>
+    A deep copy of the item
+  """
+  # Call the helper _copy, provide a blank dictionary
+  return _copy(item, {})
+
+
+def _copy(item, copymap):
+
+  # Check if we can ignore this item
+  item_type = type(item)
+  if item_type in NON_COPIED_TYPES:
+    return item
+
+  # Check if we've already copied this item
+  item_id = id(item)
+  if item_id in copymap:
+    return copymap[item_id]
+
+  elif item_type is list:
+    # Create a temporary list
+    temp_list = []
+
+    # Must map item's copy to this list to prevent circular reference problems
+    copymap[item_id] = temp_list
+
+    # Add all the element, copied as well
+    for elem in item:
+      temp_list.append(_copy(elem, copymap))
+
+    return temp_list
+
+  elif item_type is tuple:
+    # Temporary list
+    temp_list = []
+
+    # Add all the element, copied as well
+    for elem in item:
+      temp_list.append(_copy(elem, copymap))
+
+    # From Justin Samuel, we might contain a reference
+    # to ourself, so we need to check the map
+    if item_id in copymap:
+      return copymap[item_id]
+
+    # Convert to tuple, use that as our copied value
+    tuple_copy = tuple(temp_list)
+    copymap[item_id] = tuple_copy
+    return tuple_copy
+
+  elif item_type is set:
+    # New empty set
+    copied_set = set([])
+    copymap[item_id] = copied_set
+
+    # Add each item
+    for elem in item:
+      copied_set.add(_copy(elem, copymap))
+
+    # Return the copied set
+    return copied_set
+
+  elif item_type is dict:
+    # New dict
+    copied_dict = {}
+    copymap[item_id] = copied_dict
+
+    for key,value in item.items():
+      copied_key = _copy(key, copymap)
+      copied_val = _copy(value, copymap)
+      copied_dict[copied_key] = copied_val
+
+    return copied_dict
+
+  else:
+    # Unable to handle this object
+    #raise Exception("Cannot copy item of type: "+str(item_type)+" Item: "+str(item))
+    #log("WARN: Cannot copy item of type: "+str(item_type)+ "Item: "+str(item)+". Using reference.\n")
+    return item # Return reference
+
+

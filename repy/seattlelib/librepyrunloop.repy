@@ -1,0 +1,385 @@
+"""
+This library is a sub-component of librepy, and provides
+a run-loop implementation. It must be imported, and
+cannot be used directly as a repy module.
+
+The run-loop is essentially a thread and a PriorityQueue.
+Tasks are added to a priority queue, and the run-loop
+continuously polls and executes pending tasks. If the next
+task is more than RUN_LOOP_MIN_INTV seconds away, then the
+run-loop sleeps. Otherwise, the run-loop will enter an
+uninterruptable execution of the next task. In that case,
+the run-loop cannot be terminated or another task pre-empt
+the task being exected.
+
+There are some convenience methods provided which allow
+for scheduling events to occur on a re-curring interval,
+which is convenient for polling multiple things without
+wasting many events.
+
+Example uses:
+  - Implementing Timers without launching the threads early
+  - Implementing callbacks
+  - Polling sockets for connections
+  - Running periodic tasks
+  - Allowing a thread to terminate and letting the RL
+    execute some delayed finalization
+  - etc.
+
+It is important to not schedule a task that may take
+a substantial amount of time to execute. If this is something
+that is needed, schedule a task which launches a thread
+that performs the long running computation. If a scheduled
+task takes too long to return, other scheduled events will be
+delayed.
+"""
+
+##### Imports
+
+# We use a priority queue for the tasks
+dy_import_module_symbols("priority_queue")
+
+##### Constants
+
+# This is the minimum interval offset
+# that events can be scheduled on.
+RUN_LOOP_MIN_INTV = 0.05
+
+# This flag controls if we print a traceback
+# when a scheduled task has an uncaught exception
+PRINT_DEBUG_ON_EXCPT = True
+
+# This is the prefix we use for our
+# scheduled handles. To this, we append
+# the timer interval "::" and an incrementing
+# counter
+SCHEDULED_HANDLES_PREFIX = "RL::SCHED::"
+
+##### Module Data
+
+# We use a Priority Queue to track the tasks
+# that we need to execute. The priority of each
+# entry is the time the task should be run,
+# and the value is a function that is called.
+_TASK_QUEUE = PriorityQueue()
+
+# This lock is used to serialize access
+# to the task_queue
+_TASK_QUEUE_LOCK = createlock()
+
+# This array stores the current status of the run loop.
+# The entries are defined as:
+#   0 : Should the Run-Loop continue running
+#   1 : Is the Run-Loop currently running
+#   
+_RL_STATUS = [False, False]
+_RL_STATUS_LOCK = createlock()
+
+
+# This dictionary is used to track scheduled
+# events. It has a "counter" entry which is
+# incremented after creating each event,
+# and is used to generate unique handles.
+# Otherwise, each handle maps to another dictionary.
+# e.g. RL::SCHED::0.1::0 -> {"func": <function to call>
+#                            "intv": <interval to execute on>
+#                            "canceled" : is it canceled
+#                            "wrapper" : The RL wrapper function}
+#
+_EVENT_SCHED = {"counter":0}
+_EVENT_SCHED_LOCK = createlock()
+
+
+##### Internal Methods
+
+# Ensures that the run-loop is running.
+# Raises ResourceExhaustedError if there are no events.
+def _init_runloop():
+  # Check the Run-Loop status
+  _RL_STATUS_LOCK.acquire(True)
+  try:
+    # Check if the thread is started and start it
+    if not _RL_STATUS[1]:
+      _RL_STATUS[0] = True
+      createthread(_runloop_main)
+      _RL_STATUS[1] = True
+
+  finally:
+    _RL_STATUS_LOCK.release()
+
+
+# Checks if the run-loop should terminate
+def _runloop_should_terminate():
+  # Check the flag
+  _RL_STATUS_LOCK.acquire(True)
+  try:
+    return not _RL_STATUS[0]
+  finally:
+    _RL_STATUS_LOCK.release()
+
+
+# Previews the next scheduled task
+# but leaves it in the queue
+def _runloop_preview_next_task():
+  # Acquire the lock first
+  _TASK_QUEUE_LOCK.acquire(True)
+  try:
+    return _TASK_QUEUE.getMinimum()
+  finally:
+    _TASK_QUEUE_LOCK.release()
+
+
+# Returns the next scheduled task
+# removing it from the queue
+def _runloop_get_next_task():
+  # Acquire the lock first
+  _TASK_QUEUE_LOCK.acquire(True)
+  try:
+    return _TASK_QUEUE.deleteMinimum()
+  finally:
+    _TASK_QUEUE_LOCK.release()
+
+
+# This is the main entry point for the run-loop
+def _runloop_main():
+  while True:
+    # Check if we should terminate
+    if _runloop_should_terminate():
+      break
+
+    # Preview the next task
+    next_task = _runloop_preview_next_task()
+
+    # If there is no next task, just sleep for the minimum interval
+    if next_task is None:
+      sleep(RUN_LOOP_MIN_INTV)
+      continue
+
+    # De-compose the task
+    scheduled_time, func = next_task
+    time_remaining = scheduled_time - getruntime()
+
+    # If the next task is less than the MIN_INTV away,
+    # do an un-interruptable execution
+    if time_remaining <= RUN_LOOP_MIN_INTV:
+      _runloop_uninterruptable_exc()
+
+    # We can just sleep until the next interval,
+    # and check everything again
+    else:
+      sleep(RUN_LOOP_MIN_INTV)
+
+
+  ### This is after we exit the loop
+  _RL_STATUS_LOCK.acquire(True)
+  try:
+    # Specify that we are exiting
+    _RL_STATUS[1] = False
+  finally:
+    _RL_STATUS_LOCK.release()
+
+
+
+# Does an un-interruptable execution of the next event
+def _runloop_uninterruptable_exc():
+  # Get the next task
+  scheduled_time, func = _runloop_get_next_task()
+
+  # Check the amount of wait time
+  waittime = scheduled_time - getruntime()
+
+  # Sleep until execution time
+  if waittime > 0:
+    sleep(waittime)
+
+  # Try to execute
+  try:
+    func()
+  except:
+    if PRINT_DEBUG_ON_EXCPT:
+      log("---\nUncaught exception for scheduled task! Debug string below.\n")
+      log(getlasterror(), '\n')
+
+
+# This is a wrapper function around
+# an event handle, to handle scheduled tasks
+def _runloop_scheduled_task(handle):
+  # Get the info for this event
+  event_info = _EVENT_SCHED[handle]
+
+  # Check if it is canceled
+  is_canceled = event_info["canceled"]
+  if is_canceled:
+    # Delete the entry
+    _EVENT_SCHED_LOCK.acquire(True)
+    try:
+      del _EVENT_SCHED[handle]
+    finally:
+      _EVENT_SCHED_LOCK.release()
+    return
+
+  # Otherwise, lets get the info
+  func = event_info["func"]
+  intv = event_info["intv"]
+  wrapper = event_info["wrapper"]
+
+  # Call the function
+  try:
+    func()
+  except:
+    if PRINT_DEBUG_ON_EXCPT:
+      log("---\nUncaught exception for scheduled task! Task handle: "+str(handle)+"\nDebug string below.\n")
+      log(getlasterror(), '\n')
+
+  # Schedule us again
+  runIn(intv, wrapper)
+
+
+##### Public Methods
+
+def start_runloop():
+  """
+  Starts the runloop. Raises ResourceExhaustedError if there are no free events.
+  This is performed implicitly by the run*() commands, but this can be used to
+  guarentee the launch of the run loop.
+  """
+  # Just use the private method
+  _init_runloop()
+
+
+def runAt(time, func):
+  """
+  <Purpose>
+    Schedules a function to be executed at a certain time.
+
+  <Arguments>
+    time: The time the function should be executed (given WRT getruntime())
+    func: The function to execute at the given time
+
+  <Exceptions>
+    If the runloop is not started, and there are no free events
+    a ResourceExhaustedError will be raised.
+
+    TypeError will be raised if the time given is not an
+    int or a float.
+  """
+  # Check the time argument
+  if type(time) not in [int, float]:
+    raise TypeError("Time must be numeric!")
+
+  # Add this task to the queue
+  _TASK_QUEUE_LOCK.acquire(True)
+  try:
+    _TASK_QUEUE.insert(time, func)
+  finally:
+    _TASK_QUEUE_LOCK.release()
+
+  # Make sure the run-loop is running
+  _init_runloop()
+
+
+def runIn(offset, func):
+  """
+  <Purpose>
+    Schedules a function to be executed after a certain time.
+  
+  <Arguments>
+    offset: Seconds from now to execute this function.
+    func: The function to executed.
+
+  <Exceptions>
+    Raises TypeError if the offset is not an int or float
+    Raises ValueError if the offset is negative.
+    See runAt().
+  """
+  # Check that the offset is valid
+  if type(offset) not in [int, float]:
+    raise TypeError("Offset must be numeric!")
+  if offset < 0:
+    raise ValueError("Offset cannot be negative!")
+
+  # Schedule this
+  runAt(getruntime() + offset, func)
+
+
+def runEvery(interval, func):
+  """
+  <Purpose>
+    Schedules a function to be executed every interval seconds.
+  
+  <Arguments>
+    interval: On what interval should this function be executed
+    func: The function to execute
+
+  <Exceptions>
+    Raises TypeError if the interval is not an int or flat
+    Raises ValueError if the interval is not positive
+    See runIn().
+
+  <Returns>
+    Returns a handle which can be used to cancel the scheduling of the function.
+  """
+   # Check that the offset is valid
+  if type(interval) not in [int, float]:
+    raise TypeError("Interval must be numeric!")
+  if interval <= 0:
+    raise ValueError("Interval must be positive!")
+
+  # Make sure the RL is started
+  _init_runloop()
+
+  # Generate a name, increment the counter and create an entry for the event
+  _EVENT_SCHED_LOCK.acquire(True)
+  try:
+    handle = SCHEDULED_HANDLES_PREFIX + str(interval) + "::" + str(_EVENT_SCHED["counter"])
+    _EVENT_SCHED["counter"] += 1
+    _EVENT_SCHED[handle] = {"func":func, "intv":interval, "canceled":False, "wrapper":None}
+  finally:
+    _EVENT_SCHED_LOCK.release()
+
+  # Create a wrapper function
+  def wrapper():
+    _runloop_scheduled_task(handle)
+
+  # Store the wrapper function
+  _EVENT_SCHED[handle]["wrapper"] = wrapper
+
+  # Schedule it
+  runIn(interval, wrapper)
+
+  # Return the handle
+  return handle
+
+
+def stopSchedule(handle):
+  """
+  <Purpose>
+    Stops the scheduling of a function.
+
+  <Arguments>
+    handle: A handle returned by runEvery()
+
+  <Returns>
+    None.
+  """
+  # Set the canceled flag to true
+  try:
+    _EVENT_SCHED[handle]["canceled"] = True
+  except KeyError:
+    pass
+
+
+def terminate():
+  """
+  Terminates the Run-Loop.
+  This method will return before the RL has terminated.
+  """
+  # Set the "should run" flag to false
+  _RL_STATUS_LOCK.acquire(True)
+  try:
+    _RL_STATUS[0] = False
+  finally:
+    _RL_STATUS_LOCK.release()
+
+
+

@@ -1,0 +1,95 @@
+"""
+This library is a sub-component of librepy and provides
+random data related functionality. It must be imported,
+and cannot be used directly.
+
+This module acts as a simple wrapper around the randombytes()
+API call, and parcels the random data to be more usable and
+fast. Since the API call always returns 1024 bytes of random data,
+and rarely is more than 4-8 bytes needed, the random data is
+cached and replenished as necessary.
+
+"""
+
+##### Module Data
+
+# This array stores a single element, which is a string
+# of random data. The _RANDOM_DATA_LOCK is used to serialize
+# access to _RANDOM_DATA to prevent race conditions.
+_RANDOM_DATA = [""]
+_RANDOM_DATA_LOCK = createlock()
+
+##### Internal Methods
+
+# Gets some random bytes
+# Return bytes number of bytes of random data.
+# This method utilizes and replenishes the cached
+# random data, and should be used instead of directly
+# accessing the cache.
+def _get_randombytes(bytes):
+  # Get the lock
+  _RANDOM_DATA_LOCK.acquire(True)
+  try:
+    # Check if we have enough data and get more
+    while len(_RANDOM_DATA[0]) < bytes:
+      _RANDOM_DATA[0] += randombytes()
+
+    # Take off the amount we need
+    data = _RANDOM_DATA[0][:bytes]
+
+    # Strip that data from the store
+    _RANDOM_DATA[0] = _RANDOM_DATA[0][bytes:]
+
+    # Return the random data
+    return data
+
+  finally:
+    _RANDOM_DATA_LOCK.release()
+
+
+# Converts some number of random bytes into a number
+# Treats random data as an unsigned long.
+def _get_randomint(bytes):
+  # Get enough random data
+  data = _get_randombytes(bytes)
+
+  # Store the number
+  num = 0L
+  offset = 0
+  for char in data:
+    num |= ord(char) << offset * 8
+    offset += 1
+
+  return num
+
+##### Public methods
+
+def randomint():
+  """Returns a random 4-byte unsigned integer"""
+  return int(_get_randomint(4) % 2**31)
+
+
+def randomlong():
+  """Returns a random 8-byte unsigned integer"""
+  return _get_randomint(8)
+
+
+def randomfloat():
+  """Returns a random floating point number"""
+  # Get an 8 byte int
+  num = _get_randomint(8)
+
+  # Maximum value is 2**64-1, normalize
+  return num * (2**(-64))
+
+
+def randomstring(bytes=4):
+  """Returns some number of random bytes as a string."""
+  if type(bytes) is not int:
+    raise TypeError("Bytes must be given as an integer!")
+  if bytes <= 0:
+    raise ValueError("Bytes must be a positive integer!")
+
+  return _get_randombytes(bytes)
+
+

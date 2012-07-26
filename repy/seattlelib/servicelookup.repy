@@ -1,0 +1,33 @@
+"""
+<Program>
+  servicelookup.py
+
+<Date Started>
+  Feburary 11th, 2008
+
+<Author>
+  Sean (Xuanhua) Ren
+  shawiz@cs.washington.edu
+
+<Purpose>
+  Look up the vesseldict
+  
+"""
+
+include rsa.repy
+
+def servicelookup_get_servicevessels(vesseldict, ownerkey, ownerinfo):
+  """
+  <Purpose>
+    Return a list of vessels that match the owner key and contain the ownerinfo
+  <Arguments>
+    vesseldict - the vesselinfo dictionary
+    ownerkey - the ownerkey string to match
+    ownerinfo - the owner information string that contained in the vessels
+  """
+  ret = []
+  for vesselid, vesselinfodict in vesseldict.iteritems():
+    if (ownerkey == rsa_publickey_to_string(vesselinfodict['ownerkey']) and ownerinfo in vesselinfodict['ownerinformation']):
+      ret.append(vesselid)
+  return ret
+

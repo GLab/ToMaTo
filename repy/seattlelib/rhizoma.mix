@@ -1,0 +1,578 @@
+"""
+  <Author>
+    richard@jordan.ham-radio-op.net
+ 
+  <Purpose>
+    I do all kinds of remote interactions with GENI.  I can deploy
+    scripts, acquire vessels, release vessels, run code, stop code,
+    and check logs and statuses.
+
+    Specificatlly, I may either:
+      case(command):
+        status: output the status of your vessels
+        start: upload and run your daemon to those vessels
+        stop: kill your daemon on all vessels
+        log: output the log of all your vessels
+        acquire: go to GENI and get more resources
+        release: get rid of resources
+
+    Please have ready your:
+      * keyname.public/.private key pair
+      * daemon script
+
+    I may prompt for your GENI password.  Don't worry, 
+    you can trust me.
+
+  <Usage>
+    python rhizoma.py keyname command [args]
+              
+"""
+
+# TODO: convert to Repy?
+from repyportability import *
+
+# python core
+import getpass
+import re
+import sys # switch to repy
+import socket # switch to repy
+
+# from autograder; thanks Alper!
+import nm_remote_api
+
+# seattle libs
+include centralizedadvertise.repy
+include rsa.repy
+
+# it's the bizarrest thing; beraber works but 
+# satya.cs refuses to accept a socket connection
+# So for now I'll override the default in centralizedadvertise.repy
+servername = "beraber.cs.washington.edu"
+
+######################
+# nm remote API changes
+#######################
+# i want to change the way the nm_remote_api module works a little
+# without editing the actual file in case I'd mess somebody else up
+# but I don't want to duplicate nm_remote_api.
+#
+# Some of these changes may be temporary or could be integrated in the future.
+
+def infinitely_run_target(longname, filename, filedata, argstring, timeout=240):
+    """
+    <Purpose>
+      Uploads and starts the filename Repy script running on the given longname node.
+    
+    <Differences>
+      While the original nm_remote_api function times out, this function allows the 
+      script to run forever.
+    """
+
+    # smart argstring check:
+    if filename.find("/") != -1:
+        error_msg = "Please pass in the filename without any directory/hierarchy information (passed in '%s')" % filename
+        return (False, error_msg)
+
+    argparts = argstring.partition(" ")
+    if argparts[0] != filename:
+      # attempt to fix
+      if argparts[2] != "":
+        argstring = filename + " " + argparts[2].strip()
+      else:
+        argstring = filename
+
+    nm_remote_api.check_is_initialized()
+
+    vesselname = nm_remote_api.vesselinfo[longname]['vesselname']
+    try:
+        nm_remote_api.nmclient_signedsay(nm_remote_api.vesselinfo[longname]['handle'], "AddFileToVessel", 
+                           vesselname, filename, filedata)
+    except nm_remote_api.NMClientException, e:
+        return (False, str(e))
+    
+    #print "Successfully added ", filename, " to vessel"
+    
+    try:
+        nm_remote_api.nmclient_signedsay(nm_remote_api.vesselinfo[longname]['handle'], "StartVessel", 
+                           vesselname, argstring)
+    except nm_remote_api.NMClientException, e:
+        return (False, str(e))
+    
+    # CHANGE: April 08, 2009  RJ 
+    return (True, "No checking for termination")
+
+
+def uservessels_add_node_by_hostname(host, port=nm_remote_api.DEFAULT_NODEMANAGER_PORT):
+    """
+    <Purpose>
+      Attempts to find a running Seattle instance at the host specified, 
+      connect to it, and add meta-information about the instance and its 
+      available vessels to the internal dictionary (vesselinfo).
+
+      See documentation in nm_remote_api.mix for more.
+ 
+    <Differences>
+      Uses uservessels instead of owner vessels.
+   
+    <Note>
+      This function does no checking of whether the uservessels
+      are allocated through GENI.  You may get vessels that you don't
+      have access to.  Please lookup with centralizedadvertise.repy first
+      to find your vessels.
+    """
+
+    nm_remote_api.check_is_initialized(check_vesselinfo=False)
+        
+    # get information about the node's vessels
+    thishandle = nm_remote_api.nmclient_createhandle(host, port, privatekey = nm_remote_api.key['private'], 
+                                       publickey = nm_remote_api.key['public'])
+    ownervessels, uservessels = nm_remote_api.nmclient_listaccessiblevessels(thishandle, 
+                                                               nm_remote_api.key['public'])
+    
+    new_vessel_list = []
+    
+    # CHANGE: April 08, 2009  RJ 
+    # we should add anything we can access (we only care about uservessels)
+    for vesselname in uservessels:
+      longname = host+":"+str(port)+":"+vesselname
+      if longname not in nm_remote_api.vesselinfo:
+        # set the vesselname
+        # NOTE: we leak handles (no cleanup of thishandle).   
+        # I think we don't care...
+        newhandle = nm_remote_api.nmclient_duplicatehandle(thishandle)
+        handleinfo = nm_remote_api.nmclient_get_handle_info(newhandle)
+        handleinfo['vesselname'] = vesselname
+        nm_remote_api.nmclient_set_handle_info(newhandle, handleinfo)
+        
+        nm_remote_api.add_vessel(longname, newhandle)
+        new_vessel_list.append(longname)
+        
+    # tell the user what we did...
+    if len(new_vessel_list) == 0:
+        print "Could not add any targets."
+    else:
+        print "Added targets: "+", ".join(new_vessel_list)
+
+    return new_vessel_list
+
+def desperate_initialize(host_list, keyname):
+    """
+    <Purpose>
+      Initializes the state of the module, attempts to connect to each instance
+      of Seattle on the given nodes.
+
+      See nm_remote_api for more documentation.
+
+    <Diffences>
+      Thinks that any vessels found is a success.  Even if we get less than
+      we asked for, we'll take it.
+    """
+    
+    summary = ""
+
+    # check if any state has been initialized
+    if not nm_remote_api.key == {} or not nm_remote_api.vesselinfo == {}:
+        summary += "Initialized state still exists, tear_down() first."
+        return (False, summary)
+    
+    # attempt to read in authentication keys
+    nm_remote_api.key['public'] = rsa_file_to_publickey(keyname + ".publickey")
+    nm_remote_api.key['private'] = rsa_file_to_privatekey(keyname + ".privatekey")
+
+    # critical for nmclient to work, attempt to get the current time on port
+    nm_remote_api.time_updatetime(34933)
+    
+    # attempt to contact and store state, append vessel longnames to list
+    acquired_vessels = []
+    for host in host_list:
+        try:
+            new_vessels = nm_remote_api.add_node_by_hostname(host)
+        except nm_remote_api.NMClientException, e:
+            summary += " " + str(e)
+        else:
+            acquired_vessels.extend(new_vessels)
+            
+    # CHANGE RJ 4/8/09
+    # if we get anything, we'll take it
+    if len(acquired_vessels) == 0:
+        return (False, summary)
+    else:
+        return (True, acquired_vessels)
+
+
+# override functions
+nm_remote_api.run_target = infinitely_run_target # let process run forever
+nm_remote_api.add_node_by_hostname = uservessels_add_node_by_hostname # use uservessels instead of ownervessels
+nm_remote_api.initialize = desperate_initialize # take any found vessels as success
+
+#############
+# Helpers
+###############
+
+def usage():
+  print """Usage: python rhizoma.py keyname command [args]
+  keyname is your username for GENI
+  command is either:
+    acquire [num_vessels <LAN | WAN | Random>] - allocate number, type new vessels through GENI
+    log - output the logs of all vessels
+    release - unallocate vessels through GENI
+    status - show the status of all vessels
+    start file_to_run.repy [args] - start a script on all vessels
+    stop - stop all scripts running on all vessels
+
+  Example usage:
+    python rhizoma.py richard acquire # default is 1 LAN vessel
+    python rhizoma.py richard start hello.repy # run the script
+    python rhizoma.py richard status # check status
+    python rhizoma.py richard stop #  kill it
+    python rhizoma.py richard release # give up the vessel
+
+  Requirements:
+    Please put your keyname.publickey and keyname.privatekey
+    in your current directory.  All commands require your keys.
+
+    If you want to start a script, the script must also be in
+    your current directory.
+  """
+  sys.exit(1)
+
+def get_uservessels(keyname):
+  """Return the given user's GENI vessels"""
+
+  # check with advertiser
+  key_public = rsa_file_to_publickey(keyname + ".publickey")
+  raw_hosts = centralizedadvertise_lookup(key_public)
+
+  # BUG in centralizedadvertise.  Should return [].
+  if raw_hosts == ['']:
+    raw_hosts = []
+
+  hosts = []
+
+  # strip off the port
+  for raw_host in raw_hosts:
+    host, port = raw_host.split(':')
+    hosts += [host]
+
+  return hosts
+
+
+def geni_logon(ss, keyname, password):
+  """
+  <Purpose>
+    Use HTTP to logon to GENI.
+  
+  <Args>
+    ss - ssl socket connected to GENI
+    keyname - username of the GENI accoutn
+    password - user's GENI password
+
+  <Return>
+    The sessionid of the logged on user.
+  """
+  
+  # GET the test cookie by hitting the home page
+  message = """GET /geni/accounts/login HTTP/1.1 \r
+Host: seattlegeni.cs.washington.edu\r
+Accept: */*\r\n\r\n"""
+  ss.write(message)
+
+
+  # see the result
+  data = ""
+  for x in range(0,6):
+    data += ss.read()
+
+
+  # parse out the cookie
+  m = re.search(r".*sessionid=([^;]+);.*", data)
+  ms = m.groups()
+  sessionid = list(ms).pop()
+
+
+  # POST to the login with test cookie
+  postdata = "username=" + keyname + "&password=" + password + "&next=&jsenabled=true"
+  message = """POST /geni/accounts/login HTTP/1.1 \r
+Host: seattlegeni.cs.washington.edu\r
+Accept: */*\r
+Cookie: sessionid=""" + sessionid + """\r
+Content-Type: application/x-www-form-urlencoded\r
+Content-Length: """ + str(len(postdata)) + "\r\n\r\n" + postdata + "\r\n\r\n"
+  ss.write(message)
+
+
+  # see the result
+  data = ""
+  data += ss.read() # here
+#  print repr(data)
+
+  
+  # parse the real cookie
+  m = re.search(r".*sessionid=([^;]+);.*", data)
+  if not m:
+    print
+    print "Could not log on to GENI.  Was your password right, " + keyname + "?"
+    print
+    sys.exit(4)
+
+  ms = m.groups()
+  sessionid = list(ms).pop()
+  
+  return sessionid
+
+def request_vessels(ss, sessionid, num =1, env = 1):
+  """
+  <Purpose>
+    Use HTTP to get some vessels.
+
+  <Args>
+    ss - ssl socket 
+    sessionid - geni session for the user
+    num - number of vessels to acquire
+    env - the type either LAN, WAN, or Random
+
+  <Pre condition>
+    ss is connected to GENI
+    session is valid (result of calling geni_logon)
+
+  <Return>
+    None # maybe new vessels? would be nice
+  """
+  # POST to acquire resources
+  postdata = "num=" + str(num) + "&env=" + str(env)
+  message = """POST /geni/control/get_resources HTTP/1.1 \r
+Host: seattlegeni.cs.washington.edu\r
+Accept: */*\r
+Cookie: sessionid=""" + sessionid + """\r
+Content-Type: application/x-www-form-urlencoded\r
+Content-Length: """ + str(len(postdata)) + "\r\n\r\n" + postdata + "\r\n"
+  ss.write(message)
+#  print message
+
+  # see the result
+  data = ""
+  for x in range(0,6):
+    data += ss.read()
+#  print repr(data)
+
+
+def acquire_uservessels(keyname, num=1, env=1):
+  """
+  <Purpose>
+    The user, keyname, wants some more vessels.  We'll
+    do it for her.
+  
+    Let's login to GENI and them ask for some.
+
+  <Args>
+    keyname - the username of the GENI account
+    num - number of vessels to acquire
+    env - the type either LAN, WAN, or Random
+
+  <Side Effects>
+    Prompts the user for their GENI password.
+  """
+ 
+  # the GENI site
+  HOST = 'seattlegeni.cs.washington.edu'
+  PORT = 443 # ssl
+
+  # set up a secure socket 
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.connect((HOST, PORT))
+  ss = socket.ssl(s)
+
+  # login to GENI
+  password = getpass.getpass("I'll get them for you, " + keyname + ".\nPlease enter your GENI password: ")
+  sessionid = geni_logon(ss, keyname, password)
+
+  # acquire them
+  request_vessels(ss, sessionid, num , env)
+
+  # clean up
+  del ss
+  s.close()
+
+def return_vessels(ss, sessionid):
+  """
+  <Purpose>
+    Use HTTP to get rid of all my vessels.
+
+  <Args>
+    ss - ssl socket 
+    sessionid - geni session for the user
+
+  <Pre condition>
+    ss is connected to GENI
+    session is valid (result of calling geni_logon)
+
+  <Return>
+    None
+  """
+  # POST to acquire resources
+  postdata = ""
+  message = """POST /geni/control/del_all_resource HTTP/1.1 \r
+Host: seattlegeni.cs.washington.edu\r
+Accept: */*\r
+Cookie: sessionid=""" + sessionid + """\r
+Content-Type: application/x-www-form-urlencoded\r
+Content-Length: """ + str(len(postdata)) + "\r\n\r\n" + postdata + "\r\n"
+  ss.write(message)
+  # print message
+
+  # see the result
+  data = ""
+  for x in range(0,6):
+    data += ss.read()
+  #print repr(data)  
+
+
+def release_uservessels(keyname):
+  """
+  <Purpose>
+    The user, keyname, wants to get rid of all her vessels.  
+    We'll do it for her.
+  
+    Let's login to GENI and them hit the del page.
+
+  <Args>
+    keyname - the username of the GENI account
+
+  <Side Effects>
+    Prompts the user for their GENI password.
+  """
+ 
+  # the GENI site
+  HOST = 'seattlegeni.cs.washington.edu'
+  PORT = 443 # ssl
+
+  # set up a secure socket 
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.connect((HOST, PORT))
+  ss = socket.ssl(s)
+
+  # login to GENI
+  password = getpass.getpass("I'll release the vessels for you, " + keyname + ".\nPlease enter your GENI password: ")
+  sessionid = geni_logon(ss, keyname, password)
+
+  # release them
+  return_vessels(ss, sessionid)
+
+  # clean up
+  del ss
+  s.close()
+
+
+#############
+# Main
+###########
+def main():
+  # must give exactly one argument
+  if not len(sys.argv) >= 3:
+    usage()
+
+  my_name = sys.argv.pop(0) # this script's name
+
+  keyname = sys.argv.pop(0) # aka username
+
+  # Do we have any vessels?
+  hosts = get_uservessels(keyname)
+  print "Found: ", hosts
+  print
+
+
+  # everything is ready to go
+  # what was the arg?
+  cmd = sys.argv.pop(0)
+
+  
+  if cmd == 'acquire':
+    # defaults
+    num = 1
+    env = 1
+
+    # optionals overwrite
+    if len(sys.argv):
+      num = sys.argv.pop(0)
+    if len(sys.argv):
+      env = sys.argv.pop(0)
+      if env == "LAN":
+        env = 1
+      elif env == "WAN":
+        env = 2
+      elif env == "Random":
+	env = 3
+      else:
+	print "Bad Environment: must be one of LAN, WAN, or Random"
+	print
+        usage()
+
+    # go to GENI and do it
+    acquire_uservessels(keyname, num ,env)
+
+    # Try again the advertise server and show the result
+    hosts = get_uservessels(keyname)
+    print "User Vessels: " + str(hosts)
+ 
+    # return early
+    sys.exit(0)
+  elif cmd == 'release':
+    print "Releasing all vessels..."
+    release_uservessels(keyname)
+    print "Changes may take a few minutes to propagate"    
+
+    # return early
+    sys.exit(0)
+ 
+  else:
+    # use the vessels we have
+    print "Initializing vessels..."
+    success, info = nm_remote_api.initialize(hosts, keyname)
+    if not success:
+      print info
+      print "Could not acquire hosts.  Please wait a little and try again.  Or acquire some vessels."
+      sys.exit(2)
+    print
+
+
+  if cmd == 'status':
+    print "Checking the status of vessels..."
+    for lname in info:
+      nm_remote_api.is_vessel_finished(lname)
+
+  elif cmd == 'start' and len(sys.argv) > 0:
+    # get file name
+    filename = sys.argv.pop(0)
+  
+    # any args?
+    argstring = filename
+    while len(sys.argv) > 0:
+      argstring += " " + sys.argv.pop(0)
+
+    # read in the file and run it
+    print "Starting " + str(filename) + " on all vessels..."
+    FILE = open(filename)
+    filedata = FILE.read()
+    FILE.close()
+    dic = nm_remote_api.run_on_targets(info, filename, filedata, argstring, 10)
+
+    # result?
+    print dic
+
+  elif cmd == 'stop':
+    print "Stopping " + str(filename) + " on all vessels..."
+    for longname in info:
+      nm_remote_api.stop_target(longname)
+
+  elif cmd == 'log':
+    print "Showing the logs of vessels..."
+    for lname in info:
+      print nm_remote_api.showlog_vessel(lname)
+
+  else:
+    usage()
+
+
+if __name__ == '__main__':
+  main()
+  sys.exit(0)

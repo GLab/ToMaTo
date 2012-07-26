@@ -1,0 +1,161 @@
+
+"""
+<Program Name>
+  binascii.repy
+
+<Started>
+  Jun 29, 2009
+
+<Purpose>
+  The binascii module contains a number of methods to convert between binary 
+  and various ASCII-encoded binary representations. Currently it only 
+  provides binascii_a2b_hex and binascii_b2a_hex but others may be added
+  in the future as needed.
+  
+<Authors> 
+  binascii_a2b_hex and binascii_b2a_hex:
+    Modified by Anthony
+    Origionally written by: Maciek Fijalkowski from 
+    http://codespeak.net/pypy/dist/pypy/doc/
+      
+    pypy source is released under the 
+    The MIT License
+
+    Permission is hereby granted, free of charge, to any person 
+    obtaining a copy of this software and associated documentation 
+    files (the "Software"), to deal in the Software without 
+    restriction, including without limitation the rights to use, 
+    copy, modify, merge, publish, distribute, sublicense, and/or 
+    sell copies of the Software, and to permit persons to whom the 
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included 
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+    DEALINGS IN THE SOFTWARE.
+
+"""
+
+
+
+def binascii_a2b_hex(hexstr):
+  """
+  <Purpose> 
+    Return the binary data represented by the hexadecimal string hexstr. 
+    This function is the inverse of b2a_hex(). hexstr must contain an 
+    even number of hexadecimal digits (which can be upper or lower 
+    case), otherwise a TypeError is raised.
+
+  <Arguments>
+    hexstr: A string containing a even number of hexadecimal digits 
+            (which can be upper or lower case).
+  
+  <Exception>
+    TypeError if the number of hexadecimal digits is not even.
+
+  <Return>
+    Return the binary data represented by the hexadecimal string hexstr. 
+    This function is the inverse of b2a_hex().
+  
+  <Porting Note>
+    Anthony - I had to remove the yield statement for repy and in the
+    process I had to do a major rewrite of the function. This
+    is the origional.
+    
+    
+    def pairs_gen(s):
+      while s:
+        try:
+          yield table_hex[ord(s[0])], table_hex[ord(s[1])]
+        except IndexError:
+          if len(s):
+            raise TypeError('Odd-length string')
+          return
+        s = s[2:]
+  
+    for a, b in pairs_gen(t):
+      if a < 0 or b < 0:
+        raise TypeError('Non-hexadecimal digit found')
+      result.append(chr((a << 4) + b))
+    return ''.join(result)
+  
+  """
+  
+  table_hex = [
+    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+    -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1]
+  
+  result = []
+  
+  # Cannot be of odd length
+  if(len(hexstr) % 2 != 0):
+    raise TypeError('Odd-length string')
+  
+  # Since two hexidecimal digits will be converted into a character
+  # hex characters will be read in groups of two.
+  #   A simple walk-through of this code with a trivial example
+  #     'ff' -> 
+  #       left_hex = 15, right_hex = 15  ->
+  #         result.append(chr(255))
+  for i in range(0,len(hexstr), 2):
+    left_hex, right_hex = table_hex[ord(hexstr[i])], table_hex[ord(hexstr[i+1])]
+    if left_hex < 0 or right_hex < 0:
+      raise TypeError('Non-hexadecimal digit found')
+    result.append(chr((left_hex << 4) + right_hex))
+  return ''.join(result) 
+
+
+
+def binascii_b2a_hex(binary_data):
+  """
+  <Purpose> 
+    Return the hexadecimal representation of the binary data. Every byte of 
+    data is converted into the corresponding 2-digit hex representation. The 
+    resulting string is therefore twice as long as the length of data.
+
+  <Arguments>
+    binary_data:
+                binary data to be converted.
+  
+  <Exception>
+    None
+
+  <Side Effects>
+    None
+    
+  <Return>
+    The hexadecimal representation of the binary data.
+    
+  """
+  
+  result = []
+  for char in binary_data:
+    # Read four bits from the left of the octet
+    four_bits = (ord(char) >> 4) & 0xf
+    if four_bits > 9:
+      four_bits = four_bits + ord('a') - 10
+    else:
+      four_bits = four_bits + ord('0')
+    result.append(chr(four_bits))
+    
+    # Read four bits from the right side of the octet
+    four_bits = ord(char) & 0xf
+    if four_bits > 9:
+      four_bits = four_bits + ord('a') - 10
+    else:
+      four_bits = four_bits + ord('0')
+    result.append(chr(four_bits))
+    
+  return ''.join(result)

@@ -1,0 +1,101 @@
+
+#ifndef dns_proto_loaded
+#define dns_proto_loaded
+
+#include <general.repy>
+
+UDP_PORT_DNS = 53
+
+DNS_QR_REQUEST = 0
+DNS_QR_REPLY = 1
+
+class DnsEntry:
+  pass
+
+class DnsHeader(Header):
+  def create(self, id, qr, question=[], answer=[], authority=[], additional=[], rcode=0, opcode=0, aa=0, tc=0, rd=1, ra=0, z=0):
+    self.id = id
+    self.qr = qr
+    self.question = question
+    self.answer = answer
+    self.authority = authority
+    self.additional = additional
+    self.rcode = rcode
+    self.opcode = opcode
+    self.aa = aa
+    self.tc = tc
+    self.rd = rd
+    self.ra = ra
+    self.z = z
+  def readLabel(self, p, pos, allowPointer):
+    label = ""
+    while True:
+      l = ord(p[pos])
+      if l >= 192 and allowPointer: #offset into packet, short int offset value
+        offs = struct_unpack("!H", p[pos:pos+2]) & 0x3fff
+        pos += 2
+        return label + self.readLabel(p, offs, False)
+      # 1 byte length of domain part + data
+      pos += 1
+      if not l: #last part is empy
+        return (label, pos)
+      label += p[pos:pos+l] + "."
+      pos += l
+  def decode(self, p):
+    (self.id, flags1, flags2, qdcount, ancount, nscount, arcount) = struct_unpack("!HBBHHHH", p[0:12])
+    self.qr = (flags1 >> 7) & 0x1
+    self.opcode = (flags1 >> 3) & 0xf
+    self.aa = (flags1 >> 2) & 0x1
+    self.tc = (flags1 >> 1) & 0x1
+    self.rd = flags1 & 0x1
+    self.ra = (flags2 >> 7) & 0x1
+    self.z = (flags2 >> 4) & 0x7
+    self.rcode = flags2 & 0xf
+    pos = 12
+    self.question = []
+    for i in range(0, qdcount):
+        q = DnsEntry()
+        (q.qname, pos) = self.readLabel(p, pos, False)
+        (q.qtype, q.qclass) = struct_unpack("!HH", p[pos:pos+4])
+        pos += 4
+        self.question.append(q)
+    other = []
+    for i in range(0, ancount+nscount+arcount):
+        o = DnsEntry()
+        (o.name, pos) = self.readLabel(p, pos, True)
+        (o.type_, o.class_, o.ttl, rdlen) = struct_unpack("!HHIH", p[pos:pos+10])
+        pos += 10
+        o.rdata = p[pos:pos+rdlen]
+        pos += rdlen
+        other.append(o)
+    self.answer = other[0:ancount]
+    self.authority = other[ancount:ancount+nscount]
+    self.additional = other[ancount+nscount:ancount+nscount+arcount]
+    return self
+  def encode(self):
+    flags1 = ((self.qr & 0x1) << 7) | ((self.opcode & 0xf) << 3) | ((self.aa & 0x1) << 2) | ((self.tc & 0x1) << 1) | (self.rd & 0x1)
+    flags2 = ((self.ra & 0x1) << 7) | ((self.z & 0x7) << 4) | (self.rcode & 0xf)
+    p = struct_pack("!HBBHHHH", [self.id, flags1, flags2, len(self.question), len(self.answer), len(self.authority), len(self.additional)])
+    for q in self.question:
+        if not q.qname.endswith("."):
+            q.qname += "."
+        p += "".join([(chr(len(part)) + part) for part in q.qname.split(".")])
+        p += struct_pack("!HH", [q.qtype, q.qclass])
+    for o in self.answer + self.authority + self.additional:
+        if not o.name.endswith("."):
+            o.name += "."
+        parts = o.name.split(".")
+        while parts:
+            name_bytes = "".join([(chr(len(part)) + part) for part in parts])
+            index = p.find(name_bytes)
+            if index >= 0:
+                p += struct_pack("!H", [index | 0xc000])
+                break
+            else:
+                p += chr(len(parts[0])) + parts[0]
+                parts = parts[1:]
+        p += struct_pack("!HHIH", [o.type_, o.class_, o.ttl, len(o.rdata)] )
+        p += o.rdata
+    return p
+    
+#endif

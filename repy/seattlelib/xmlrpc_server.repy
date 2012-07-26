@@ -1,0 +1,301 @@
+"""
+<Program Name>
+  xmlrpc_server.repy
+
+<Started>
+  April 2009
+
+<Author>
+  Conrad Meyer <cemeyer@u.washington.edu>
+
+<Purpose>
+  Provide a usable XML-RPC server interface for RePy code. This module
+  aims to be as similar in behavior to the Python SimpleXMLRPCServer as
+  is possible with RePy.
+"""
+
+include xmlparse.repy
+include xmlrpc_common.repy
+include urllib.repy
+
+def _xmlrpc_server_lookup_ip(hostname):
+  # Looks up an ip address for a given hostmask.  Throws an exception for
+  # invalid hostnames.
+
+  # The third item of the 3-tuple returned by gethostbyname_ex() is a list
+  # of ips for this hostname.
+  listen_ips = gethostbyname_ex(hostname)[2]
+
+  # If the host to listen on resolves to more than one ip, we can't behave
+  # in a deterministic manner.  So, we except.
+  if len(listen_ips) != 1:
+    raise ValueError("Host '%s' resolved to more than one ip (or zero ips)" % hostname)
+
+  return listen_ips[0]
+
+
+
+
+class xmlrpc_server_ClientError(Exception):
+  """Exception raised when the client does something wrong."""
+  pass
+
+
+
+
+class xmlrpc_server_ServerError(Exception):
+  """Exception raised when the server does something wrong."""
+  pass
+
+
+
+
+class xmlrpc_server_SimpleXMLRPCServer:
+  """
+  <Purpose>
+    Provide a simple server-side API for programs wishing to expose their
+    functions to an XMLRPC client.
+
+  <Side Effects>
+    None.
+
+  <Exceptions>
+    ValueError if the host part of the address passed to the
+    constructor is a hostname that resolves to more than one ip.
+
+  <Example Use>
+    # create a server object
+    server = xmlrpc_server_SimpleXMLRPCServer(("localhost", 12345))
+    # register a function
+    server.register_function(pow)
+    # wait for clients to connect and call the function
+    server.serve_forever()
+  """
+
+
+  def __init__(self, addr):
+    """
+    <Purpose>
+      Provide a simple server-side API for programs wishing to expose their
+      functions to an XMLRPC client.
+
+    <Side Effects>
+      None.
+
+    <Exceptions>
+      ValueError if the host part of the address passed to the
+      constructor is a hostname that resolves to more than one ip.
+
+      TypeError if the passed variable addr isn't a container (list,
+      tuple, etc) of length 2.
+
+    <Example Use>
+      # create a server object
+      server = xmlrpc_server_SimpleXMLRPCServer(("localhost", 12345))
+      # register a function
+      server.register_function(pow)
+      # wait for clients to connect and call the function
+      server.serve_forever()
+    """   
+
+    # This is to ensure 'addr' is the correct type (something that has a
+    # length) and is the correct length, 2.
+    try:
+      if len(addr) != 2:
+        raise TypeError()
+    except TypeError, e:
+      raise TypeError("SimpleXMLRPCServer(): addr must be a 2-tuple " + \
+          "containing the hostname and port to listen on.")
+
+    self._listen_ip = _xmlrpc_server_lookup_ip(addr[0])
+    self._listen_port = addr[1]
+
+    self._callback_functions = {}
+
+    self._listen_comm = None
+    self._serverstopped = True
+    self._stoplock = createlock()
+
+
+  def register_function(self, function, name):
+    """
+    <Purpose>
+      Register a callback function with this XMLRPC server.
+
+    <Arguments>
+      function:
+             The function to expose to the XMLRPC client.
+
+      name:
+             The name for this function that the client will call.
+
+    <Exceptions>
+      None.
+
+    <Side Effects>
+      Adds this function to this server's function lookup table.
+
+    <Returns>
+      None.
+    """
+
+    self._callback_functions[name] = function
+
+
+  def serve_forever(self):
+    """
+    <Purpose>
+      Serve forever (until someone tells the server to shut down).
+
+    <Arguments>
+      None.
+
+    <Exceptions>
+      None.
+
+    <Side Effects>
+      Starts listening on the host/port this server was created with and
+      serving requests.
+
+    <Returns>
+      None.
+    """
+
+    self._listen_comm = waitforconn(self._listen_ip, self._listen_port, \
+        self._connect)
+
+    self._stoplock.acquire(True)
+    self._stopped = False
+
+    # Wait until shutdown() releases the lock.
+    self._stoplock.acquire(True)
+    self._stoplock.release()
+
+
+  def serve_nonblocking(self):    # Better name suggestions are welcome.
+    """
+    <Purpose>
+      Start serving.  Returns control of the thread to the calling code.
+
+    <Arguments>
+      None.
+
+    <Exceptions>
+      None.
+
+    <Side Effects>
+      Starts listening on the host/port this server was created with and
+      serving requests.
+
+    <Returns>
+      None.
+    """
+
+    self._listen_comm = waitforconn(self._listen_ip, self._listen_port, \
+        self._connect)
+
+    # Acquire the lock so we don't try to listen in more than one server
+    # thread. Also, shutdown() excepts to release the lock.
+    self._stoplock.acquire(True)
+    self._stopped = False
+
+
+  def shutdown(self):
+    """
+    <Purpose>
+      Stop the server.
+
+    <Arguments>
+      None.
+
+    <Exceptions>
+      None.
+
+    <Side Effects>
+      Tells the serving loop to stop.
+
+    <Returns>
+      None.
+    """
+
+    if not self._stopped:
+      self._stoplock.release()
+      stopcomm(self._listen_comm)
+      self._stopped = True
+
+
+  def _call_function(self, function_name, args):
+    # Call the registered function function_name with the given arguments
+    # (args) and return the result.
+
+    if self._callback_functions.has_key(function_name):
+      return self._callback_functions[function_name](*args)
+
+    # If we haven't gotten a result yet, the function doesn't exist.
+    raise xmlrpc_server_ClientError("xmlrpc_server error: client tried" + \
+        " to call a function that does not exist")
+
+
+  def _connect(self, remoteip, remoteport, socket, commhandle, listen_commhandle):
+    # The callback for client connections.  Handle the request.
+    full_request_data = ""
+    while full_request_data.find("\r\n\r\n") < 0:   # working around
+                                          # our sockets not knowing when they
+                                          # hit EOF
+      try:
+        full_request_data += socket.recv(4096)
+      except Exception:
+        # The client probably disconnected.
+        stopcomm(commhandle)
+        return
+
+    http_commandline, request_data = full_request_data.split("\r\n", 1)
+
+    http_command, http_path, http_protocol = http_commandline.split(None, 2)
+    if not (http_path == "/RPC2" or http_path == "/") or http_command != "POST":
+      raise xmlrpc_server_ClientError("xmlrpc_server error: client " + \
+          "sent invalid request (wrong path or wrong HTTP method)")
+
+    # Ignore protocol for now, we'll close connections from HTTP/1.1 clients
+    # that want keep-alive for now.
+
+    http_header_text, post_payload = request_data.split("\r\n\r\n", 1)
+
+    http_headers = {}
+    for line in http_header_text.split("\r\n"):
+      header_name, header_value = line.split(": ", 1)
+      http_headers[header_name.lower()] = header_value
+
+    # Sometimes the client hasn't finished sending us the request; in this
+    # case we keep trying to recieve more data until we can parse the
+    # data. There is probably a better way of doing this (one solution is
+    # to fix our client to send the request as one chunk of data so we
+    # don't have to do things like this; another is to add EOF and non-
+    # blocking support to our emulated_socket class).
+    while True:
+      try:
+        methodname, params = xmlrpc_common_call2python(post_payload)
+        break
+      except Exception:
+        post_payload += socket.recv(4096)
+
+    # Make the method call, get the result.
+    try:
+      result = self._call_function(methodname, params)
+    except Exception:
+      result = None   # Maybe we should send a fault back to the client?
+
+    # Encode the result and send it back to the client.
+    xmlresponse = xmlrpc_common_response2xml(result)
+
+    response = "HTTP/1.1 200 OK\r\nServer: SimpleXMLRPCServer on Repy\r\n" + \
+      "Content-type: text/xml\r\nContent-length: %i\r\n\r\n%s" % \
+      (len(xmlresponse), xmlresponse)
+
+    while True:
+      sent = socket.send(response)
+      if sent >= len(response):
+        break
+      response = response[sent:]
+
+    stopcomm(commhandle)

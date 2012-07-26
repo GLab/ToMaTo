@@ -1,0 +1,288 @@
+"""
+Author: Justin Cappos
+
+Start Date: July 8, 2008
+
+Description:
+Advertises availability to openDHT...
+
+This code is partially adapted from the example openDHT code.
+
+"""
+
+include random.repy
+include sha.repy
+include xmlrpc_client.repy
+include parallelize.repy
+
+
+opendhtadvertise_context = {}
+opendhtadvertise_context["proxylist"] = []
+opendhtadvertise_context["currentproxy"] = None
+opendhtadvertise_context["serverlist"] = []
+opendhtadvertise_context["serverlistlock"] = createlock()
+
+def opendhtadvertise_announce(key, value, ttlval, concurrentevents=5, proxiestocheck=5, timeout=None):
+  """
+  <Purpose>
+    Announce a (key, value) pair to openDHT.
+
+  <Arguments>
+    key:
+            The new key the value should be stored under.
+
+    value:
+            The value to associate with the given key.
+
+    ttlval:
+            The length of time (in seconds) to persist this key <-> value
+            association in DHT.
+
+    concurrentevents:
+            The number of concurrent events to use when checking for
+            functional openDHT proxies. Defaults to 5.
+
+    proxiestocheck:
+            The number of openDHT proxies to check. Defaults to 5.
+
+  <Exceptions>
+    Exception if the xmlrpc server behaves erratically.
+
+  <Side Effects>
+    The key <-> value association gets stored in openDHT for a while.
+
+  <Returns>
+    None.
+  """
+
+  # JAC: Copy value because it seems that Python may otherwise garbage collect
+  # it in some circumstances.   This seems to fix the problem
+  value = str(value)[:]
+
+  # convert ttl to an int
+  ttl = int(ttlval)
+
+  # If no timeout was specified, choose 10 seconds (completely arbitrary).
+  if timeout is None:
+    timeout = 10.0
+
+#  print "Announce key:",key,"value:",value, "ttl:",ttl
+  while True:
+    # if we have an empty proxy list and no proxy, get more
+    if opendhtadvertise_context["currentproxy"] == None and opendhtadvertise_context["proxylist"] == []:
+      opendhtadvertise_context["proxylist"] = opendhtadvertise_get_proxy_list( \
+          concurrentevents=concurrentevents, maxnumberofattempts=proxiestocheck)
+      # we couldn't get any proxies
+      if opendhtadvertise_context["proxylist"] == []:
+        return False
+
+
+    # if there isn't a proxy we should use, get one from our list
+    if opendhtadvertise_context["currentproxy"] == None and opendhtadvertise_context["proxylist"] != []:
+      opendhtadvertise_context["currentproxy"] = opendhtadvertise_context["proxylist"][0]
+      del opendhtadvertise_context["proxylist"][0]
+
+
+    # This code block is adopted from put.py from OpenDHT
+    pxy = xmlrpc_client_Client(opendhtadvertise_context["currentproxy"])
+    keytosend = xmlrpc_common_Binary(sha_new(str(key)).digest())
+    valtosend = xmlrpc_common_Binary(value)
+
+    try:
+      pxy.send_request("put", (keytosend, valtosend, ttl, "put.py"), timeout=timeout)
+      # if there isn't an exception, we succeeded
+      break
+    except (xmlrpc_common_ConnectionError, xmlrpc_common_Timeout):
+      # Let's avoid this proxy.   It seems broken
+      opendhtadvertise_context["currentproxy"] = None
+
+  return True
+
+
+
+
+def opendhtadvertise_lookup(key, maxvals=100, concurrentevents=5, proxiestocheck=5, timeout=None):
+  """
+  <Purpose>
+    Retrieve a stored value from openDHT.
+
+  <Arguments>
+    key:
+            The key the value is stored under.
+
+    maxvals:
+            The maximum number of values stored under this key to
+            return to the caller.
+
+    concurrentevents:
+            The number of concurrent events to use when checking for
+            functional openDHT proxies. Defaults to 5.
+
+    proxiestocheck:
+            The number of openDHT proxies to check. Defaults to 5.
+
+  <Exceptions>
+    Exception if the xmlrpc server behaves erratically.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    The value stored in openDHT at key.
+  """
+
+  # if no timeout is specified, pick 10 seconds (arbitrary value).
+  if timeout is None:
+    timeout = 10.0
+
+  while True:
+    # if we have an empty proxy list and no proxy, get more
+    if opendhtadvertise_context["currentproxy"] == None and opendhtadvertise_context["proxylist"] == []:
+      opendhtadvertise_context["proxylist"] = opendhtadvertise_get_proxy_list( \
+          concurrentevents=concurrentevents, maxnumberofattempts=proxiestocheck)
+      # we couldn't get any proxies
+      if opendhtadvertise_context["proxylist"] == []:
+        raise Exception, "Lookup failed"
+
+
+    # if there isn't a proxy we should use, get one from our list
+    if opendhtadvertise_context["currentproxy"] == None and opendhtadvertise_context["proxylist"] != []:
+      opendhtadvertise_context["currentproxy"] = opendhtadvertise_context["proxylist"][0]
+      del opendhtadvertise_context["proxylist"][0]
+
+
+    # This code block is adopted from get.py from OpenDHT
+    pxy = xmlrpc_client_Client(opendhtadvertise_context["currentproxy"])
+    maxvalhash = int(maxvals)
+    # I don't know what pm is for but I assume it's some sort of generator / 
+    # running counter
+    pm = xmlrpc_common_Binary("")
+    keyhash = xmlrpc_common_Binary(sha_new(str(key)).digest())
+
+
+    listofitems = []
+    # If the proxy fails, then we will go to the next one...
+    while opendhtadvertise_context["currentproxy"]:
+      try:
+        vals, pm = pxy.send_request("get", (keyhash, maxvalhash, pm, "get.py"), timeout=timeout)
+        # if there isn't an exception, we succeeded
+
+        # append the .data part of the items, the other bits are:
+        # the ttl and hash / hash algorithm.
+        for item in vals:
+          listofitems.append(item.data)
+
+        # reached the last item.  We're done!
+        if pm.data == "":
+          return listofitems
+
+      except (xmlrpc_common_ConnectionError, xmlrpc_common_Timeout):
+        # Let's avoid this proxy.   It seems broken
+        opendhtadvertise_context["currentproxy"] = None
+
+
+
+
+# check to see if a server is up and ready for OpenDHT...
+def opendhtadvertise_checkserver(servername):
+  # try three times.   Why three?   Arbitrary value
+  for junkcount in range(3):
+    s = openconn(servername, 5851, timeout=2.0)
+    s.close()
+
+  # this list is the "return value".   Add ourselves if no problems...
+  opendhtadvertise_context["serverlistlock"].acquire(True)
+  try:
+    opendhtadvertise_context["serverlist"].append(servername)
+  finally:
+    opendhtadvertise_context["serverlistlock"].release()
+
+
+
+
+# Loosely based on find-gateway.py from the OpenDHT project...
+def opendhtadvertise_get_proxy_list(maxnumberofattempts=5, concurrentevents=5):
+  """
+  <Purpose>
+    Gets a list of active openDHT proxies.
+
+  <Arguments>
+    maxnumberofattemps:
+            Maximum number of servers to attempt to connect to.
+
+    concurrentevents:
+            Maximum number of events to use.
+
+  <Exceptions>
+    Exception if there are no servers in the server list.
+
+  <Side Effects>
+    Tries to connect to several proxies to see if they are online.
+
+  <Returns>
+    A list of openDHT approxies that appear to be up.
+  """
+
+  # populate server list
+  socket = openconn('www.cs.washington.edu', 80)
+  try: 
+    socket.send("GET /homes/arvind/servers.txt HTTP/1.0\r\nHost: www.cs.washington.edu\r\n\r\n")
+  
+    body = ""
+    while True:
+      try:
+        newdata = socket.recv(4096)
+      except:
+        # Server decided it is done.
+        break
+      if len(newdata) == 0:
+        break   # Server finished sending us the response.
+      body += newdata
+  finally:
+    socket.close()
+
+  try:
+    socket.close()
+  except:
+    pass
+
+  headers, payload = body.split("\r\n\r\n", 1)
+  lines = payload.split("\n")
+  # throw away the header line
+  lines = lines[1:]
+  # get the server list
+  servers = []
+  for line in lines:
+    if line.strip() == "":
+      continue
+    # The lines look like:
+    # 4:	134.121.64.7:5850	planetlab2.eecs.wsu.edu
+    # The third field is the server name
+    servers.append(line.split()[2])
+
+  if len(servers) == 0:
+    raise Exception, "No servers in server list"
+
+  numberofattempts = min(len(servers), maxnumberofattempts)
+  serverstocheck = random_sample(servers, numberofattempts)
+
+  # empty the server list
+  opendhtadvertise_context["serverlist"] = []
+
+  # start checking...
+  parhandle = parallelize_initfunction(serverstocheck, opendhtadvertise_checkserver, concurrentevents=concurrentevents)
+
+  # wait until all are finished
+  while not parallelize_isfunctionfinished(parhandle):
+    sleep(0.2)
+
+  parallelize_closefunction(parhandle)
+
+
+  retlist = []
+  for serverip in opendhtadvertise_context["serverlist"]:
+    # make it look like the right sort of url...
+    retlist.append("http://"+serverip+":5851/")
+
+
+  return retlist

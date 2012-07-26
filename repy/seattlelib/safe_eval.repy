@@ -1,0 +1,62 @@
+"""
+Author: Armon Dadgar
+Description:
+  Provides a method to safely evaluate a string.
+"""
+
+
+# Provides a method to safely evaluate a string
+def safe_eval(code, context=None):
+  """
+  <Purpose>
+    Allows code to be safely evaluated.
+
+  <Arguments>
+    code:
+        The code to be evaluated.
+
+    context:
+        The context to evaluate the code in. If not specified, an empty context is used.
+
+  <Exceptions>
+    As with the code to be evaluated
+
+  <Returns>
+    The result of evaluating the code.
+
+  <Notes>
+    To perform the evaluation, a new entry '_result' is added into the
+    context prior to execution and removed afterward. This will override any
+    existing value. The code is evaluated by prepending '_result = ', so
+    make sure the code still is sane after this. See safe_exec.
+
+    As an example:
+      val = safe_eval('123')
+      print val # 123
+
+      val = safe_eval('10 * 20 / 5')
+      print val # 40
+
+      val = safe_eval('print "Hi!"') # Exception, _result = print "Hi!" is not valid.
+  """
+
+  # Prepend _result to the code, so that we can get the result back
+  code = "_result = " + code
+
+  # Get a context
+  if context == None:
+    context = {}
+
+  # Try to evaluate this
+  virt_space = VirtualNamespace(code)
+  context = virt_space.evaluate(context)
+
+  # Get the value
+  value = context["_result"]
+
+  # Clear the special _result entry
+  del context["_result"]
+
+  # Return the result
+  return value
+

@@ -1,0 +1,149 @@
+"""
+Author: Armon Dadgar
+Description:
+  Implements a Piority Queue class using a heap.
+  Expected runtime:
+    - getMinimum: O(1)
+    - deleteMinimum: O(log n)
+    - insert: O(log n)
+"""
+
+class PriorityQueue():
+  
+  # Initialize, create a heap
+  def __init__(self):
+    self.heap = []
+    self.count = 0
+
+  def getMinimum(self):
+    """
+    <Purpose>
+      Gets the element with the minimum priority.
+
+    <Returns>
+      A tuple (priority, value). None if there are no nodes.
+    """
+    # Check the heap size
+    if self.count == 0:
+      return None
+
+    # Return the first element
+    return self.heap[0]
+
+  def insert(self, priority, value):
+    """
+    <Purpose>
+      Inserts a new node into the Priority Queue.
+    
+    <Arguments>
+      priority:
+        The priority for this new node.
+
+      value:
+        The value to associate with this priority
+    """
+    # Create a structure to hold this
+    node = (priority, value)
+
+    # Insert in the last spot
+    index = self.count
+    self.heap.insert(index, node)
+
+    # Increment the node count
+    self.count += 1
+  
+    # While this node has a lower priority, swap it up
+    heap = self.heap
+    parent = ((index-1)>>1)
+    while index > 0 and parent >= 0:
+      parent_node = heap[parent]
+
+      if parent_node[0] > priority:
+        heap[index] = parent_node
+        index = parent
+        parent = ((index-1)>>1)
+
+      else:
+        break
+
+    # Move us to our final place
+    heap[index] = node
+
+
+  def deleteMinimum(self):
+    """
+    <Purpose>
+      Deletes and returns the element with the minimum priority.
+
+    <Returns>
+      A tuple (priority, value). None if there are no nodes.
+    """
+    # Check the heap size
+    if self.count == 0:
+      return None
+
+    # Store a reference to the minimum node
+    minimum_node = self.heap[0]
+
+    # Reduce the heap count
+    self.count -= 1
+    entries = self.count
+
+    # Return if there is nothing left to do
+    if entries == 0:
+      return minimum_node
+
+    # Move the last element to the root
+    heap = self.heap
+    current_node = heap[0] = heap[entries]
+    del heap[entries]
+
+    index = 0
+    while True:
+      # Calculate the left child and break if it is out of range
+      left_child = ((index<<1)+1)
+      if left_child >= entries:
+        break
+
+      left_child_node = heap[left_child]
+
+      # Check if there is a right child
+      if (left_child+1 < entries):
+        right_child_node = heap[left_child+1]
+
+        # Compare the two children, check if left is smaller
+        if left_child_node[0] <= right_child_node[0]:
+          # Compare us to our left child and swap if it is less
+          if left_child_node[0] < current_node[0]:
+            heap[left_child] = current_node
+            heap[index] = left_child_node
+            index = left_child
+
+          else:
+            break
+
+        # Right child is larger
+        else:
+          #Compare us to our right child and swap if it is less
+          if right_child_node[0] < current_node[0]:
+            heap[left_child+1] = current_node
+            heap[index] = right_child_node
+            index = left_child + 1
+
+          else:
+            break
+
+      # Only a left child, swap if less
+      elif left_child_node[0] < current_node[0]:
+        heap[left_child] = current_node
+        heap[index] = left_child_node
+        index = left_child
+
+      # Done otherwise
+      else:
+        break
+
+
+    # Return the original minimum node
+    return minimum_node
+

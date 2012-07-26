@@ -1,0 +1,6 @@
+
+#include <misc/switch.repy>
+#include <util/net.repy>
+
+node = Switch()
+run_forever(node.handle)

@@ -1,0 +1,92 @@
+"""
+<Author>
+  Evan Meagher
+
+<Start Date>
+  Nov 26, 2009
+
+<Description>
+  XMl-RPC client for remote GeoIP server. Given an IP:port of a GeoIP
+  XML-RPC server, allows location lookup of hostnames and IP addresses.
+
+<Usage>
+  client = geoip_client(server_address)
+
+  Where server_address is the ip address of a remote GeoIP XMl-RPC server.
+"""
+
+include xmlrpc_client.repy
+
+
+"""
+Initialize global GeoIP XML-RPC client object to None
+Note: client is stored in wrapper list to avoid using mycontext dict
+"""
+geoip_clientlist = [None]
+
+def geoip_init_client(url="http://geoip.cs.washington.edu:12679"):
+  """
+  <Purpose>
+    Create a new GeoIP XML-RPC client object.
+  
+  <Arguments>
+    url:
+    URL (protocol://ip:port) of GeoIP XML-RPC server.
+
+  <Exceptions>
+    None.
+
+  <Side Effects>
+    Inserts GeoIP XML-RPC client as first element of global
+    geoip_clientlist.
+
+  <Returns>
+    None.
+      
+  """
+  # Store XML-RPC client globally in list to avoid using mycontext dict
+  geoip_clientlist[0] = xmlrpc_client_Client(url)
+
+
+def geoip_record_by_addr(addr):
+  """
+  <Purpose>
+    Request location data of provided IP address from GeoIP XML-RPC server
+
+  <Arguments>
+    addr:
+      IP address of which to look up location
+
+  <Exceptions>
+    None.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    Dictionary of location data of provided IP address.
+  """
+
+  return geoip_clientlist[0].send_request("record_by_addr", (addr,))
+
+
+def geoip_record_by_name(name):
+  """
+  <Purpose>
+    Request location data of provided hostname from GeoIP XML-RPC server
+
+  <Arguments>
+    name:
+      Hostname of which to look up location
+
+  <Exceptions>
+    None.
+
+  <Side Effects>
+    None.
+
+  <Returns>
+    Dictionary of location data of provided hostname.
+  """
+
+  return geoip_clientlist[0].send_request("record_by_name", (name,))

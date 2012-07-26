@@ -1,0 +1,780 @@
+"""
+This library is a sub-component of librepy and provides
+file related functionality. It must be imported, and
+cannot be used directly as a repy module.
+
+The module uses a two tier design to allowing multiple handles
+to a single file while maintaining effiency in file operations.
+
+Each unique file has an entry in the _FILES dictionary.
+This entry tracks the repy file object, the number of 
+references to the file, the size of the file, and a cache
+of disk blocks. The cache is a LRU cache of the last 
+MAX_BLOCK_CACHE blocks used. Each block has a 'dirty' flag
+which is used to track if we've written to the block. 
+When the cache grows too large, we delete the oldest cached
+entries, flushing them to disk if they are dirty.
+
+On top of this, we implement the open() call, and
+the RepyFile object. Every time open is called, we return
+a RepyFile object, potentially to a file that is already open.
+The RepyFile object supports a dup() call, so it is possible to
+have many RepyFile objects which all refer to the same underlying
+file. Since each file has only one entry in the _FILES dict,
+this consumes only a single file handle. Consistency is provided
+since all the operations go though the cache.
+
+The main reason for this design is to minimize the impact
+of the resource consumption accounting. Since each read/write
+to a block is charged for a full 4096 bytes. So, if a user
+wants to read a single byte, it does not make sense to call
+readat(1,0) since the user will still be charged for 4096 bytes.
+Instead, we read the entire block into the cache, and read from
+our cache. With writes, we read the entire block and then
+modify our cached version of the data.
+
+Since the block based abstraction is tedious to use, the
+RepyFile object implements a traditional cursor based handle,
+so that reads and writes are done linearly though the file,
+as with a traditional file handle.
+"""
+
+##### Constants
+
+# This controls the maximum number of blocks which are cached
+# per file. Blocks are replaced using a LRU policy.
+MAX_BLOCK_CACHE = 20
+
+##### Module Data
+
+# This dictionary is used to maintain information about all the open files.
+# Each entry is a mapping from filename -> file dictionary
+# Each file dictionary has the following entries:
+#   "lock" : A lock object to syncronize access to the dictionary
+#   "fobj" : The underlying file object
+#   "retain_count" : A count of the numer of references to this file.
+#                   When decremented to 0, the dictionary should be removed
+#   "cache" : A cache of disk blocks. This dictionary is block number -> (Last Used, Is Dirty, Data)
+#             Last Used is from getruntime(), Is Dirty if True if there has been a write that has not been
+#             flushed, and Data is the data.
+#   "size"  : Size of the file. This is computed once, and then updated based on writes
+
+_FILES = {}
+
+# Serializes access to the _FILES dictionary
+_FILES_LOCK = createlock()
+
+# Cache of the files in the directory
+# Prevents excessive calls to listfiles()
+_DIR_CONTENTS = None
+
+##### Internal Methods
+
+# Creates an entry for a file given a repy file object
+# and a file name. The _FILES_LOCK should be held.
+def _create_file_entry(filename, fobj):
+  # Create a dictionary for the file
+  file_dict = {
+                "lock":createlock(),
+                "fobj":fobj,
+                "retain_count":0,
+                "cache":{},
+                "size":None,
+              }
+
+  # Add this
+  _FILES[filename] = file_dict
+
+  # Set the file size
+  file_dict["size"] = _probe_file_size(filename)
+
+
+# Increments the reference count of a file
+def _inc_file_refcount(filename):
+    # Increment the retain count
+    file_dict = _FILES[filename]
+    file_dict["lock"].acquire(True)
+    file_dict["retain_count"] += 1
+    file_dict["lock"].release()
+
+
+# Checks if we have over-cached data.
+# If so, we delete the last accessed block,
+# flushing to disk if the block is dirty.
+def _check_file_cache_size(file_dict):
+  cache = file_dict["cache"]
+
+  # Get the size
+  if len(cache) > MAX_BLOCK_CACHE:
+    # Get the oldest, store (block #, Block Info)
+    min_block = None
+
+    for block, block_info in cache.items():
+      if min_block is None or min_block[1][0] > block_info[0]:
+        min_block = (block, block_info)
+
+    # Check if the block is dirty and flush it
+    if min_block[1][1]:
+      # Flush it out
+      file_dict["fobj"].writeat(min_block[1][2], 4096*min_block[0])
+
+    # Not dirty now
+    del cache[min_block[0]]
+
+
+# Reads a single block from a file.
+# block: The block number.
+def _read_file_block(filename, block):
+  # Get the file dict
+  file_dict = _FILES[filename]
+  file_dict["lock"].acquire(True)
+ 
+  try:
+    # Check if the block is cached
+    if block in file_dict["cache"]:
+      # Update the LRU time, return the cached version
+      file_dict["cache"][block][0] = getruntime()
+      return file_dict["cache"][block][2]
+
+    # We need to read in the block
+    else:
+      data = file_dict["fobj"].readat(4096,block*4096)
+
+      # Cache this, check if the cache is too large
+      file_dict["cache"][block] = [getruntime(), False, data]
+      _check_file_cache_size(file_dict)
+
+      # Return the data
+      return data
+
+  finally:
+    # Release the lock
+    file_dict["lock"].release()
+
+
+# Writes a single block to a file
+# block: The block number
+# data: A string of length <= 4096
+def _write_file_block(filename, block, data):
+  # Check the data length
+  assert(len(data) <= 4096)
+
+  # Get the file dict
+  file_dict = _FILES[filename]
+  file_dict["lock"].acquire(True)
+
+  try:
+    # Check if the block is cached
+    cached = block in file_dict["cache"]
+  
+    # Check if the data is different
+    changed = True
+    if cached:
+      changed = data != file_dict["cache"][block][2]
+
+    # Check if this is the last block
+    last_block = file_dict["size"] / 4096
+    if block == last_block:
+      # Update the file size
+      file_dict["size"] = 4096*block + len(data)
+
+    # Create/Update an entry
+    file_dict["cache"][block] = [getruntime(), changed, data]
+
+    # If it was not cached before, we just grew the cache size,
+    # check it is not too large
+    if not cached:
+      _check_file_cache_size(file_dict)
+
+  finally:
+    # Release the lock
+    file_dict["lock"].release()
+
+
+# Binary probe to find the file size
+def _probe_file_size(filename):
+  """Returns the size of the file in bytes."""
+  current_block = 1
+  max_block = 0
+  while True:
+    try:
+      block_data = _read_file_block(filename, current_block-1)
+      current_block *= 2
+    except SeekPastEndOfFileError:
+      max_block = current_block-1
+      current_block = current_block/2 - 1
+      break
+
+  while current_block < max_block-1:
+    check_block = current_block + (max_block - current_block) / 2
+    try:
+      block_data = _read_file_block(filename, check_block)
+      current_block = check_block
+    except SeekPastEndOfFileError:
+      max_block = check_block
+  
+  return 4096*current_block + len(block_data)
+
+
+
+##### Public Methods
+
+# Sets the maximum number of cached blocks per
+# file. This setting should not be set below the
+# default value if there are open files.
+def set_max_cached_blocks(num_blocks):
+  """
+  <Purpose>
+    Sets the number of blocks to cache per file.
+
+  <Arguments>
+    num_blocks: The number of blocks to cache per file.
+                This cannot be reduced if there are open files.
+
+  <Exceptions>
+    Raises RepyArgumentError if the argument is not an integer,
+    or if it reduces the cache size with open files.
+
+  <Returns>
+    None
+  """
+  if type(num_blocks) not in (int, long):
+    raise RepyArgumentError("Argument must be an integer type!")
+
+  if len(_FILES) > 0 and num_blocks < MAX_BLOCK_CACHE:
+    raise RepyArgumentError("Cannot reduce the cache size with open files!")
+
+  # Update the value
+  _context["MAX_BLOCK_CACHE"] = num_blocks
+
+
+# Refreshes cached directory contents
+def refresh_directory():
+  """
+  <Purpose>
+    Refreshes the cached directory contents. This may be necessary if the
+    underlying kernel API's are used instead of open and rmfile.
+
+  <Arguments>
+    None
+
+  <Exceptions>
+    None
+
+  <Returns>
+    None
+  """
+  _FILES_LOCK.acquire(True)
+  _context["_DIR_CONTENTS"] = set(listfiles())
+  _FILE_LOCK.release()
+
+
+# Generic open file function
+def open(filename, mode="rw", create=True):
+  """
+  <Purpose>
+    Opens a handle to a file. If you open a handle to a file which
+    is already open, you will get an independent handle, with it's own
+    cursor.
+
+  <Arguments>
+    filename:
+      The filename to open
+
+    mode:
+      The mode of the file. rw - Read and write, r - Read-only, w- Write-only
+
+    create:
+      A flag which controls if the file should be created if it does not exist.
+
+  <Exceptions>
+    RepyArgumentError if the filename is invalid
+    ResourceExhaustedError if there are no available file handles.
+    FileNotFoundError if the filename does not exist and create is False.
+
+  <Returns>
+    A file-like object.
+  """
+  # Acquire the lock
+  _FILES_LOCK.acquire(True)
+
+  # Check if we have a directory cache
+  if _DIR_CONTENTS is None:
+    _context["_DIR_CONTENTS"] = set(listfiles())
+
+  try:
+    # If the file does not exist, and we cannot create it,
+    # raise an exception without making the system call
+    exists = filename in _DIR_CONTENTS
+    if not exists and not create:
+      raise FileNotFoundError("File does not exist, and specified not to create!")
+
+    # Check if this file is already open
+    if filename not in _FILES:
+      fobj = openfile(filename, create)
+      _create_file_entry(filename, fobj)
+      
+      # Add to the file cache if we created it
+      if not exists:
+        _DIR_CONTENTS.add(filename)
+      
+    return RepyFile(filename, mode)
+
+  finally:
+    _FILES_LOCK.release()
+
+
+def rmfile(filename):
+  """
+  <Purpose>
+    Deletes a file.
+  
+  <Arguments>
+    filename:
+      The filename to delete
+
+  <Exceptions>
+    ResourceExhaustedError if there are no available file handles.
+    FileNotFoundError if the filename does not exist and create is False.
+
+  <Returns>
+    None
+  """
+  # Acquire the lock
+  _FILES_LOCK.acquire(True)
+
+  # Check if we have a directory cache
+  if _DIR_CONTENTS is None:
+    _context["_DIR_CONTENTS"] = set(listfiles())
+
+  try:
+    # Do an internel check if the file does not exist, or
+    # if it is in use
+    if filename not in _DIR_CONTENTS:
+      raise FileNotFoundError("Specified file does not exist!")
+
+    # Check if this file is already open
+    if filename in _FILES:
+      raise FileInUseError("Specified file is in use!")
+
+    # Call down
+    removefile(filename)
+  
+  finally:
+    _FILES_LOCK.release()
+
+
+def lsdir():
+  """
+  <Purpose>
+    Returns the contents of the working directory as a set
+
+  <Arguments>
+    None
+
+  <Returns>
+    A cached copy of the directory contents
+  """
+  # Check if we have a directory cache
+  if _DIR_CONTENTS is None:
+    _FILES_LOCK.acquire(True)
+    _context["_DIR_CONTENTS"] = set(listfiles())
+    _FILES_LOCK.release() 
+
+  return _DIR_CONTENTS.copy()
+
+
+##### Class definitions
+
+class RepyFile (object):
+  """
+  This object emulates a normal file object.
+  It has a cursor which starts at the beginning of the file,
+  and can be manipulated via seek().
+  """
+  def __init__(self, filename, mode):
+    """
+    <Purpose>
+      Initializes the RepyFile object.
+
+    <Arguments>
+      filename: The filename
+      mode: A mode for the file object, should be "r","w", or "rw"
+
+    <Exceptions>
+      Raises RepyArgumentError if the RepyFile is initializes outside of open().
+    """
+    if filename not in _FILES:
+      raise RepyArgumentError("Do not initialize the RepyFile object directly! Use open()")
+    
+    # Increment the retain count
+    _inc_file_refcount(filename) 
+
+    # Store the inputs
+    self.filename = filename
+    self.mode = mode
+
+    # Store a cursor
+    self.cursor = 0
+    self.cursor_lock = createlock()
+
+  
+  def __iter__(self):
+    return self
+
+
+  def _closed(*args, **kwargs):
+    raise FileClosedError("File is closed!")
+
+
+  def tell(self):
+    """Returns the current position of the cursor."""
+    return self.cursor
+
+
+  def seek(self, offset, fromStart=True):
+    """
+    <Purpose>
+      Seeks to an aboslute offset.
+
+    <Arguments>
+      offset: The offset into the file
+
+      fromStart: If True, then offset is from the start of the file.
+                 If fromStart is False, then offset if from the end of the file.
+
+    <Exceptions>
+      Raises TypeError if the offset is not an int.
+      Raises ValueError if the Offset is negative.
+      Raises RepyArgumentError if the offset exceeds the file size. 
+
+    <Returns>
+      None      
+    """
+    if type(offset) not in (int, long):
+      raise TypeError("Invalid type for offset! Must be int!")
+    if offset < 0:
+      raise ValueError("Offset must be a non-negative value!")
+
+    # Check the file size
+    size = self.size()
+    if offset > size:
+      raise RepyArgumentError("Offset exceeds the file size!")
+
+
+    # Acquire the lock, update the cursor and release
+    self.cursor_lock.acquire(True)
+
+    if fromStart:
+      self.cursor = offset
+    else:
+      self.cursor = self.size() - offset
+
+    self.cursor_lock.release()
+
+
+  def size(self):
+    """Returns the size of the file in bytes."""
+    # Get the file dict
+    file_dict = _FILES[self.filename]
+    return file_dict["size"]
+
+
+  # Private read method. The cursor_lock should be
+  # held prior to calling this method.
+  def _read(self, bytes=None):
+    # Check the mode
+    if "r" not in self.mode:
+      raise RepyArgumentError("File opened as write-only! Cannot read!")
+
+    # Check the bytes argument
+    if bytes is not None and type(bytes) is not int:
+      raise TypeError("Bytes argument must be an integer or 'None'!")
+    if bytes is not None and bytes < 0:
+      raise ValueError("Bytes must be a non-negative integer!")
+
+    # Store a copy of the cursor
+    cursor = self.cursor
+
+    # Get the boundary blocks, and the offsets into them
+    start_block = cursor / 4096
+    start_offset = cursor % 4096
+    
+    end_block = None
+    if bytes is not None:
+      end_block = (cursor + bytes) / 4096
+      end_offset = (cursor + bytes) % 4096
+
+    # Read the data in one block at a time
+    data = ""
+    current_block = start_block
+    while current_block <= end_block or end_block is None:
+      try:
+        block_data = _read_file_block(self.filename, current_block)
+      except SeekPastEndOfFileError:
+        break
+      if len(block_data) == 0:
+        break
+      
+      # If this is a boundary block, adjust the data we read
+      if current_block == end_block:
+        block_data = block_data[:end_offset]
+      if current_block == start_block:
+        block_data = block_data[start_offset:]
+
+      # Add this to the total data
+      data += block_data
+      current_block += 1
+
+    # Move the cursor
+    self.cursor = cursor + len(data)
+
+    return data
+
+
+  def read(self, bytes=None):
+    """
+    <Purpose>
+      Reads a given number of bytes or until the EOF is reached.
+
+    <Arguments>
+      bytes: The maximum number of bytes to read. None for unlimited.
+
+    <Exceptions>
+      Raises RepyArgumentError if the file is opened in write only mode.
+      Raises TypeError if bytes is not an int
+      Raises ValueError if the number of bytes is negative
+
+    <Returns>
+      The data read as a string.
+    """
+    # Acquire the cursor lock
+    self.cursor_lock.acquire(True)
+
+    try:
+      return self._read(bytes)
+    
+    finally:
+      # Release the cursor lock
+      self.cursor_lock.release()
+
+
+  def readline(self):
+    """
+    <Purpose>
+      Reads a single line of input, until \n or EOF is reached.
+
+    <Exceptions>
+      Raises RepyArgumentError if the file is opened in write only mode. 
+
+    <Returns>
+      The data as a string.
+    """
+    # Acquire the cursor lock
+    self.cursor_lock.acquire(True)
+
+    try:
+      data = ""
+      while True:
+        # Read 64 bytes at a time
+        extra_data = self._read(64)
+
+        # Stop if we are EOF
+        if extra_data == "":
+          break
+
+        # Find the new line
+        index = extra_data.find("\n")
+        if index >= 0:
+          data += extra_data[:index+1]
+          
+          # Seek backward
+          backward = len(extra_data) - (index+1)
+          self.cursor = self.tell() - backward
+          break
+
+        else:
+          data += extra_data
+
+      return data
+
+    finally:
+      # Release the cursor lock
+      self.cursor_lock.release()
+
+
+  # Read a line at a time for iteration
+  def next(self):
+    data = self.readline()
+    if data == "":
+      raise StopIteration
+    return data
+
+
+  def write(self, data):
+    """
+    <Purpose>
+       Writes the given data to the file. Not guarenteed to be written unless flush() is called.
+
+    <Arguments>
+      data: The data to write.
+
+    <Exceptions>
+      Raises RepyArgumentError if the file is opened as read-only.
+      Raises TypeError if the data is not a string.
+
+    <Returns>
+      None
+    """
+    # Check the mode
+    if "w" not in self.mode:
+      raise RepyArgumentError("File is opened as read-only! Cannot write!")
+
+    # Check the data argument
+    if type(data) is not str:
+      raise TypeError("Data must be provided as a string type!")
+    if len(data) == 0:
+      return
+
+    # Acquire the cursor lock
+    self.cursor_lock.acquire(True)
+
+    try:
+      # Store a copy of the cursor
+      cursor = self.cursor
+
+      # Get the block offset
+      start_block = cursor / 4096
+      start_offset = cursor % 4096
+      
+      bytes = len(data)
+      end_block = (cursor + bytes) / 4096
+      end_offset = (cursor + bytes) % 4096
+
+      # If we are writing a whole block, then we are okay.
+      # If we are writing a partial block, we need to read in
+      # the block, and then fill it in.
+      if start_offset > 0:
+        block_data = _read_file_block(self.filename, start_block)
+        data = block_data[:start_offset] + data
+      if end_offset > 0:
+        try:
+          block_data = _read_file_block(self.filename, end_block)
+          data = data + block_data[end_offset:]
+        except SeekPastEndOfFileError:
+          pass
+
+      current_block = start_block
+      while current_block <= end_block or end_block is None:
+        block_data = _write_file_block(self.filename, current_block, data[:4096])
+        data = data[4096:]
+        current_block += 1
+        
+      # Move the cursor
+      self.cursor = cursor + bytes
+
+    finally:
+      # Release the cursor lock
+      self.cursor_lock.release()
+
+
+  def flush(self):
+    """
+    <Purpose>
+      Flushes the data that has been written to disk.
+
+    <Returns>
+      None
+    """
+    # Get the file dict
+    file_dict = _FILES[self.filename]
+    cache = file_dict["cache"]
+
+    # Acquire the lock
+    file_dict["lock"].acquire(True)
+    try:
+      # Get a list of all the dirty blocks
+      dirty_blocks = []
+
+      for block, block_info in cache.items():
+        if block_info[1]:
+          dirty_blocks.append(block)
+
+      # Sort the blocks, we must flush in-order
+      # to prevent seeking past the end of the file
+      dirty_blocks.sort()
+
+      # Flush it out
+      for block in dirty_blocks:
+        file_dict["fobj"].writeat(cache[block][2], 4096*block)
+        cache[block][1] = False # Set dirty to false
+
+    finally:
+      # Release the lock
+      file_dict["lock"].release()
+
+
+  def close(self):
+    """
+    Closes the file handle and flushes the data to disk.
+    If this is the last reference to the file, the underlying
+    file handle is closed.
+    """
+    # Flush the dirty blocks
+    self.flush()
+
+    # Switch all the functions to the closed function
+    self.tell = self._closed
+    self.seek = self._closed
+    self.size = self._closed
+    self._read = self._closed
+    self.read = self._closed
+    self.readline = self._closed
+    self.next = self._closed
+    self.write = self._closed
+    self.flush = self._closed
+    self.close = self._closed
+    self.dup = self._closed
+
+    # Get the dictionary for this file
+    file_dict = _FILES[self.filename]
+
+    _FILES_LOCK.acquire(True)
+    file_dict["lock"].acquire(True)
+    try:
+      # Reduce the retain count
+      file_dict["retain_count"] -= 1
+
+      # If the retain count is 0, delete the file
+      if file_dict["retain_count"] == 0:
+        file_dict["fobj"].close()
+        del _FILES[self.filename]
+
+    finally:
+      file_dict["lock"].release()
+      _FILES_LOCK.release()
+
+
+  def dup(self):
+    """
+    Returns another handle to the same file.
+    That handle has an independent cursor, which starts
+    at the same location as the current cursor.
+    """
+    # Create another instance
+    fileh_dup = RepyFile(self.filename, self.mode)
+
+    # Seek to the current position
+    fileh_dup.seek(self.cursor)
+
+    # Return the duplicate
+    return fileh_dup
+
+  # Handle GC for implicit cleanup
+  def __del__(self):
+    try:
+      self.close()
+    except:
+      pass
+
+

@@ -1,0 +1,64 @@
+""" 
+Author: Justin Cappos
+
+Start Date: July 8, 2008
+
+Description:
+Advertisements to a central server (similar to openDHT)
+
+
+"""
+
+include session.repy
+# I'll use socket timeout to prevent hanging when it takes a long time...
+include sockettimeout.repy
+servername = "satya.cs.washington.edu"
+serverport = 10101
+
+def centralizedadvertise_announce(key, value, ttlval):
+  # Escape commas because they have a special meaning. Encoding scheme:
+  # , -> \c
+  # \ -> \\
+  value = value.replace("\\", "\\\\")
+  value = value.replace(",", "\\c")
+
+  sockobj = timeout_openconn(servername,serverport, timeout=10)
+  try:
+    session_sendmessage(sockobj, "PUT|"+str(key)+"|"+str(value)+"|"+str(ttlval))
+    response = session_recvmessage(sockobj)
+    if response != 'OK':
+      raise Exception, "Centralized announce failed '"+response+"'"
+  finally:
+    # BUG: This raises an error right now if the call times out ( #260 )
+    # This isn't a big problem, but it is the "wrong" exception
+    sockobj.close()
+  
+  return True
+      
+
+
+
+def centralizedadvertise_lookup(key, maxvals=100):
+  sockobj = timeout_openconn(servername,serverport, timeout=10)
+  try:
+    session_sendmessage(sockobj, "GET|"+str(key)+"|"+str(maxvals))
+    recvdata = session_recvmessage(sockobj)
+    # worked
+    if recvdata.endswith('OK'):
+      # Decode the values (unescape commas).
+      encoded_values = recvdata[:-len('OK')].split(',')
+      values = []
+      for encoded_value in encoded_values:
+        value = encoded_value.replace("\\c", ",")
+        value = value.replace("\\\\", "\\")
+        values.append(value)
+
+      return values
+    raise Exception, "Centralized lookup failed"
+  finally:
+    # BUG: This raises an error right now if the call times out ( #260 )
+    # This isn't a big problem, but it is the "wrong" exception
+    sockobj.close()
+      
+
+

@@ -1,0 +1,389 @@
+dy_import_module_symbols("centralizedadvertise_v2")
+
+
+# During simultaneous sends, this lock acts as a starter pistol for the 
+# "wave" of queries to the advertise server, so to speak.
+mycontext['wavelock'] = createlock()
+
+# During a query wave, individual threads use this database to log their 
+# information. Info will be stored in the following format:
+# (TYPE, SUCCESS/FAILURE, TIME REQUIRED, EXTRA)
+#
+# CAUSE can have the following values:
+#   'TIMEOUT'
+#   'OTHER' (default)
+mycontext['tick_data'] = []
+
+# These are the number of threads we expect to report in this wave. A 
+# controller thread will release a special second lock once all threads
+# have reported back, or after a specific timeout has been reached.
+mycontext['get_quota'] = 0
+mycontext['put_quota'] = 0
+
+# After this number of seconds, we should assume that the advertise 
+# query has failed, and report as such. Try to keep this low so that 
+# the testing takes less time, but be realistic.
+mycontext['thread_timeout'] = 0.500
+
+# The current multithread test send wave.
+mycontext['current_wave'] = 0
+
+# Once this is released by the controller thread, we can process the 
+# wave information. 
+mycontext['wave_complete_lock'] = createlock()
+
+mycontext['failure_distribution'] = {
+          'OTHER': 0,
+          'TIMEOUT': 0,
+          'EXPIRED': 0 }
+
+# Keeps track of the total data produced during the multiple thread trials.
+mycontext['grand_collection'] = {
+          'total_successes': 0,
+          'total_failures': 0,
+          'get_successes': 0,
+          'get_failures': 0,
+          'put_successes': 0,
+          'put_failures': 0,
+          'get_times': [],
+          'put_times': [] }
+
+# When time's up, entries cannot be added to tick data.
+mycontext['time_up'] = True
+
+
+
+
+def calc_mean(numbers):
+  total = 0
+
+  for number in numbers:
+    total += number
+
+  return total / len(numbers)
+
+
+def format_rate(successes, total):
+  raw_data = str((successes / total) * 100)
+
+  return raw_data[:5] + "%"
+
+
+
+
+# Send simultaneous advertisements from multiple threads.
+# test_count is the number of repetitions to execute, 
+# thread_count is the number of simultaneous queries per repetition,
+# query determines the type of advertisements sent, something like this:
+#   'PUT' --> Only send PUT requests
+#   'GET' --> Only send GET requests
+#    '*'  --> Send equal parts PUT and GET requests in every repetition.
+def test_simul(test_count, thread_count, query='*'):
+  test_style = query
+
+  if query == '*':
+    test_style = "Both GET and PUT"
+  log("Beginning simultaneous test sequence with arguments:\n")
+  log("  Waves:            " + str(test_count) + "\n")
+  log("  Threads per wave: " + str(thread_count) + "\n")
+  log("  Query Types:      " + str(test_style) + "\n")
+  
+  for test_number in range(test_count):
+    # print "Wave " + str(test_number) + " begins." ####
+
+    mycontext['wavelock'].acquire(True)
+    mycontext['current_wave'] = test_number
+
+    # Create all of the threads for this test.
+    if query != '*':
+      for thread_number in range(thread_count):
+        settimer(run_advertise_thread, query, "key_" + str(thread_number), test_number)
+        if query == 'GET':
+          mycontext['get_quota'] += 1
+        elif query == 'PUT':
+          mycontext['put_quota'] += 1
+    elif query == '*':
+      for thread_number in range(thread_count):
+        if thread_number % 2 == 0:
+          settimer(run_advertise_thread, 'GET', "key_" + str(thread_number), test_number)
+          mycontext['get_quota'] += 1
+        else:
+          settimer(run_advertise_thread, 'PUT', "key_" + str(thread_number), test_number)
+          mycontext['put_quota'] += 1
+
+    # settimer(0, run_control_thread, [])
+    # print "Control thread for wave " + str(test_number) + " created!" ####
+    # print "Unleashing wave " + str(test_number) + "!"
+
+    mycontext['time_up'] = False
+    # This will act as a starter pistol for the threads to execute.
+    mycontext['wavelock'].release()
+    createthread(run_control_thread)
+
+    sleep(0.010)
+
+    # This will be released when all threads are complete or deemed 
+    # failed by the controller thread. We wait till processing is done 
+    # in the controller thread to begin a fresh wave of queries.
+    mycontext['wave_complete_lock'].acquire(True)
+    mycontext['wave_complete_lock'].release()
+    # print "Wave " + str(test_number) + " complete!" ####
+
+    mycontext['get_quota'] = 0
+    mycontext['put_quota'] = 0
+
+  # Process and print statistical information about the testing.
+  print "Tests complete. Tabulating vital statistics . . ."
+  
+  total_operations = mycontext['grand_collection']['total_successes'] + mycontext['grand_collection']['total_failures']
+  total_puts = mycontext['grand_collection']['put_failures'] + mycontext['grand_collection']['put_successes']
+  total_gets = mycontext['grand_collection']['get_failures'] + mycontext['grand_collection']['get_successes']
+
+  grand_failure_rate = format_rate(mycontext['grand_collection']['total_failures'], total_operations)
+  put_failure_rate = "N/A"
+  try:
+    put_failure_rate = format_rate(mycontext['grand_collection']['put_failures'], total_puts)
+  except ZeroDivisionError:
+    pass
+
+  get_failure_rate = "N/A"
+  try:
+    get_failure_rate = format_rate(mycontext['grand_collection']['get_failures'], total_gets)
+  except ZeroDivisionError:
+    pass
+
+  mean_get_time = "N/A"
+  mean_put_time = "N/A"
+  
+  try:
+    mean_get_time = str(calc_mean(mycontext['grand_collection']['get_times'])) + "s"
+  except ZeroDivisionError:
+    pass
+
+  try:
+    mean_put_time = str(calc_mean(mycontext['grand_collection']['put_times'])) + "s"
+  except ZeroDivisionError:
+    pass
+
+  log("  Total Operations:   " + str(total_operations) + "\n")
+  log("  Total Successes:    " + str(mycontext['grand_collection']['total_successes']) + "\n")
+  log("  Total Failures:     " + str(mycontext['grand_collection']['total_failures']) + "\n")
+  log("  PUT Mean Time:      " + str(mean_put_time) + "\n")
+  log("  GET Mean Time:      " + str(mean_get_time) + "\n")
+  log("\n\n\n")
+  log("  FAILURE DISTRIBUTION:" + "\n")
+  
+  for entry in mycontext['failure_distribution']:
+    log("    " + str(entry) + ": " + str(mycontext['failure_distribution'][entry]) + "\n")
+
+  log("\nThis concludes the simultaneous query test.\n")
+
+# Controls program flow during waves, ensuring that none take too much time.
+# If a timeout occurs this does not terminate the failing thread, but instead 
+# marks it as a failure and forgets about it. (Potential memory and process 
+# leak if threads are miscoded.)
+def run_control_thread():
+  mycontext['wave_complete_lock'].acquire(True)
+  mycontext['wavelock'].acquire(True)
+  mycontext['wavelock'].release()
+  
+  start = getruntime()
+
+  run_loop = True
+
+  # Run the loop until either tick_data is filled, or thread_timeout elapses.
+  while run_loop:
+    if getruntime() - start > mycontext['thread_timeout']:
+      run_loop = False
+      break
+
+    if len(mycontext['tick_data']) < mycontext['put_quota'] + mycontext['get_quota']:
+      sleep(0.005)
+
+  mycontext['time_up'] = True
+
+
+  total_successes = 0
+  total_failures = 0
+  reported_successes = 0
+  reported_failures = 0
+  put_successes = 0
+  put_failures = 0
+  get_successes = 0
+  get_failures = 0
+
+  # Lock in a tick data state, since the autonomous 'failed' threads might
+  # still try to populate the table behind our back.
+  tick_data = mycontext['tick_data']
+
+  # Account for all reported results.
+  for entry in tick_data:
+    query_type, result, time, extra = entry
+
+    if query_type == 'PUT':
+      if result == 'SUCCESS':
+        total_successes += 1
+        reported_successes += 1
+        put_successes += 1
+        mycontext['grand_collection']['put_times'].append(time)
+      elif result == 'FAILURE':
+        total_failures += 1
+        reported_failures += 1
+        put_failures += 1
+        mycontext['failure_distribution'][extra] += 1
+    elif query_type == 'GET':
+      if result == 'SUCCESS':
+        total_successes += 1
+        reported_successes += 1
+        get_successes += 1
+        mycontext['grand_collection']['get_times'].append(time)
+      elif result == 'FAILURE':
+        total_failures += 1
+        reported_failures += 1
+        get_failures += 1
+        mycontext['failure_distribution'][extra] += 1
+
+  mycontext['tick_data'] = []
+
+  # print "WAVE " + str(mycontext['current_wave']) + " DATA:"
+  # print "  PUT QUOTA:     " + str(mycontext['put_quota'])
+  # print "  PUT SUCCESSES: " + str(put_successes)
+  # print "  PUT FAILURES:  " + str(put_failures)
+
+  # If the reported quantities don't match the quotas, we know that some 
+  # threads have failed to respond.
+  if put_successes + put_failures < mycontext['put_quota']:
+    difference = mycontext['put_quota'] - put_successes - put_failures
+    put_failures += difference
+    total_failures += difference
+    mycontext['failure_distribution']['EXPIRED'] += difference
+
+  if get_successes + get_failures < mycontext['get_quota']:
+    difference = mycontext['get_quota'] - get_successes - get_failures
+    get_failures += difference
+    total_failures += difference
+    mycontext['failure_distribution']['EXPIRED'] += difference
+
+  mycontext['grand_collection']['total_successes'] += total_successes
+  mycontext['grand_collection']['total_failures'] += total_failures
+  mycontext['grand_collection']['put_successes'] += put_successes
+  mycontext['grand_collection']['put_failures'] += put_failures
+  mycontext['grand_collection']['get_successes'] += get_successes
+  mycontext['grand_collection']['get_failures'] += get_failures
+
+  mycontext['wave_complete_lock'].release()
+
+
+
+def settimer(function, test_type, key, wave_number):
+  # Hasty enclosure for createthread, since we must send the thread arguments.
+  # This is certainly not the best approach, but it should work fine in the context.
+  mycontext['thread_test_type'] = test_type
+  mycontext['thread_key'] = key
+  mycontext['thread_wave_number'] = wave_number
+
+  createthread(function)
+
+
+
+# One single advertise request to the server. No value needed.
+def run_advertise_thread():
+  # The wavelock is just a permission of sorts. If we don't release 
+  # it quickly, our threads do not begin simultaneously.
+  # mycontext['wavelock'].acquire()
+  # mycontext['wavelock'].release()
+
+  test_type = mycontext['thread_test_type']
+  key = mycontext['thread_key']
+  wave_number = mycontext['thread_wave_number']
+
+  success = 'FAILURE'
+  reason = 'OTHER'
+  time_required = 0
+  start = 0
+  end = 0
+
+  if test_type == 'PUT':
+    try:
+      start = getruntime()
+      data = centralizedadvertise_announce(key, 'foobar', 600)
+      end = getruntime()
+      time_required = end - start
+      success = 'SUCCESS'
+    except Exception: # There's really nothing else this could be.
+      reason = 'TIMEOUT'
+      pass
+
+  elif test_type == 'GET':
+    try:
+      start = getruntime()
+      data = centralizedadvertise_lookup(key, 100)
+      end = getruntime()
+      time_required = end - start
+      success = 'SUCCESS'
+    except Exception:
+      reason = 'TIMEOUT'
+      pass
+
+  # print "ONE ADVERTISE FOR WAVE " + str(wave_number) + " IS COMPLETE!"
+
+  if not mycontext['time_up']:
+    mycontext['tick_data'].append((test_type, success, time_required, reason))
+
+
+
+
+# Send test_count sequential queries to the server, and print summary 
+# statistical data on them.
+def test_sequential(test_count):
+  print "Begin sequential test routine."
+  success_count = 0
+  failure_count = 0
+
+  query_times = []
+  loop_start = getruntime()
+
+  print "Advertising entries, this could take some time."
+
+  # First step, populate the server with 850 entries to emulate normal conditions.
+  for i in range(0, test_count):
+    loop_key = "entry" + str(i)
+    loop_val = "val" + str(i)
+
+    start_time = getruntime()
+
+    # Prep the server for eight hours
+    centralizedadvertise_announce(loop_key, loop_val, 4800)
+
+    end_time = getruntime()
+
+    query_times.append((end_time - start_time))
+
+    success_count += 1
+
+  loop_end = getruntime()
+
+  log("Operation(s) complete.\n")
+  log("  Total Time Taken: " + str(loop_end - loop_start) + "s\n")
+  log("  Mean Query Time:  " + str(calc_mean(query_times)) + "s\n")
+  log("  Total Successes:  " + str(success_count) + "\n")
+  log("  Total Failures:   " + str(failure_count) + "\n")
+  log("  Failure Rate:     " + format_rate(failure_count, test_count) + "\n")
+  log("\nSequential test complete.\n\n")
+
+
+if callfunc == 'initialize':
+  log("Initializing.\n")
+
+  servername = '192.168.0.49'
+  serverport = 10102
+
+  # Based on data taken during the week of 8/21/11, 850 entries is a 
+  # reasonable average of server database popualtion.
+  # test_sequential(850)
+
+  test_count = 10
+  thread_count = 4
+  test_type = 'PUT'
+
+  test_simul(test_count, thread_count, test_type)

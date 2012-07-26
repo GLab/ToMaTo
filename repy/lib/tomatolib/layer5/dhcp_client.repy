@@ -1,0 +1,64 @@
+
+#ifndef dhcp_client_loaded
+#define dhcp_client_loaded
+
+#include <general.repy>
+#include <layer5/dhcp_proto.repy>
+#include <random.repy>
+
+ #FIXME: renewal
+
+class DhcpClient(Node):
+  def __init__(self, parent, timeout=10.0, tries=18, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.ipnode = parent.parent
+    self.ethnode = self.ipnode.parent
+    self.timeout = timeout
+    self.tries = tries
+    parent.register(EVENT_PACKET_MATCH, UDP_PORT_BOOTP_CLIENT, self._dhcp)
+  def _dhcp(self, udp, ip, ethernet, dev):
+    dhcp = DhcpHeader(udp.payload)
+#ifdef DEBUG_DHCP
+    echo("Received via " + dev + ":\n\t" + str(ethernet) + "\n\t" + str(ip) + "\n\t" + str(udp) + "\n\t" + str(dhcp))
+#ifdef DEBUG_DUMP
+    echo(dump_packet(p))
+#endif
+    echo("")
+#endif
+    if dhcp.op != DHCP_OP_REPLY or dhcp.xid != self.dhcp_xid:
+      return #received unrelated request/reply
+    if dhcp.options[DHCP_OPTION_MSG_TYPE] == DHCP_OPTION_VALUE_OFFER:
+      self.send(xid=dhcp.xid, siaddr=dhcp.siaddr, options={DHCP_OPTION_MSG_TYPE: DHCP_OPTION_VALUE_REQUEST})
+    if dhcp.options[DHCP_OPTION_MSG_TYPE] == DHCP_OPTION_VALUE_NACK:
+      pass
+    else:
+      self.ipnode.ip = dhcp.yiaddr
+      if DHCP_OPTION_GATEWAY in dhcp.options:
+        self.ipnode.gateway = dhcp.options[DHCP_OPTION_GATEWAY]
+      if DHCP_OPTION_NETMASK in dhcp.options:
+        self.ipnode.networkSize = netmaskToNetworkSize(dhcp.options[DHCP_OPTION_NETMASK])
+      echo("DHCP CLient: Got IP address: %s" % ipToStr(self.ipnode.ip))
+  def send(self, xid, options, ciaddr="\x00\x00\x00\x00", yiaddr="\x00\x00\x00\x00", siaddr="\x00\x00\x00\x00", giaddr="\x00\x00\x00\x00", mac=None, op=DHCP_OP_REQUEST, chaddr=None):
+    if not chaddr:
+      chaddr = self.ethnode.mac
+    reply = DhcpHeader(op, xid, ciaddr, yiaddr, siaddr, giaddr, chaddr, options)
+    self.parent.send(UDP_PORT_BOOTP_CLIENT, IP_GLOBAL_BROADCAST, UDP_PORT_BOOTP_SERVER, reply.encode(), ether_dst=mac)
+  def _requestIP(self):
+    self.dhcp_xid = random_nbit_int(32)
+    self.send(xid=self.dhcp_xid, options={DHCP_OPTION_MSG_TYPE: DHCP_OPTION_VALUE_DISCOVER})
+  def _requestLoop(self):
+    self.ipnode.ip=IP_ZERO_ADDRESS
+    tries = 0
+    while self.ipnode.ip == IP_ZERO_ADDRESS:
+      echo("DHCP CLient: Requesting IP")
+      self._requestIP()
+      tries += 1
+      if tries == self.tries:
+        echo("No IP received, giving up")
+        return
+      sleep(self.timeout)
+  def run(self):
+    createthread(self._requestLoop)
+
+#endif
