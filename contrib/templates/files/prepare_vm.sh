@@ -123,6 +123,15 @@ sed -i -e 's@\([[:space:]]\)\(/var/log/\)@\1-\2@' /etc/*syslog.conf
 ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 
+echo "Auto-login on consoles..."
+case $DISTRO in
+  ubuntu*|debian*)
+    apt-get install -y mingetty
+    sed -i -e 's/\/sbin\/getty 38400/\/sbin\/mingetty --autologin root --noclear/g' /etc/inittab
+    ;;
+esac
+
+
 # locale: en_US.UTF-8
 echo "Setting locale..."
 case $DISTRO in
