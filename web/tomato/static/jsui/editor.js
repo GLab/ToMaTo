@@ -10,6 +10,9 @@
  * - IE8 does not support auto-sizing of dialogs, so dialogs look awful.
  * - IE8 does not correctly support transparency in svg but transparent images can
  * 	 be used
+ * JQuery quirks:
+ * - element.empty() not only removes all child elements but also makes them 
+     unusable by stripping them from all of their javascript handlers
  ********************************************************************************/ 
 
 var NetElement = Class.extend({
@@ -933,6 +936,8 @@ var Editor = Class.extend({
 		this.wizardForm = new WizardWindow(this);
 		this.paintBackground();
 		this.checkBrowser();
+		this.loadingIcon = this.g.image(basepath+"images/loading.gif", 50+this.paletteWidth, 2, 16, 16);
+		this.loadingIcon.hide();
 		this.busy = false;
 	},
 	analyze: function() {
@@ -1138,6 +1143,7 @@ var Editor = Class.extend({
 	ajaxAction: function(action, func) {
 		var data = {"action": $.toJSON(action)};
 		var editor = this;
+		this.setBusy(true);
 		this._ajax("top/"+topid+"/action", data, func);
 	},
 	ajaxModifyExecute: function(transaction) {
@@ -1165,6 +1171,8 @@ var Editor = Class.extend({
 	setBusy: function(busy) {
 		if (this.busy == busy) return;
 		this.busy = busy;
+		if (busy) this.loadingIcon.show();
+		else this.loadingIcon.hide();
 		if (busy) this.ajaxModifyBegin(); //topology becomes busy
 		else this.ajaxModifyCommit(); //topology becomes unbusy
 	},
@@ -1210,7 +1218,7 @@ var Editor = Class.extend({
 		editor.topology.setResources(top.resources);
 		editor.topology.permissions = top.permissions;
 		editor.topology.finished_task = top.finished_task;
-		this.setBusy(Boolean(top.running_task)); 
+		this.setBusy(this.busy || Boolean(top.running_task));
 		var f = function(obj){
 			var attrs = obj.attrs;
 			var name = attrs.name;
@@ -1276,6 +1284,7 @@ var Editor = Class.extend({
 		this.analyze();
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
+		this.setBusy(Boolean(top.running_task));
 		if (top.running_task) this.followTask(top.running_task);
 	},
 	reloadTopology: function(callback) {
@@ -2319,12 +2328,13 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		this.pc = $("<table/>").addClass('ui-widget');
 		var t = this;
 		this.captureField = new SelectField("", ["disabled", "to file", "via network"], "disabled", function(value){
-			e = t.obj.editor;
+			var e = t.obj.editor;
 			var tr = e.ajaxModifyBegin();
 			t.obj.setAttribute("capture_to_file", value == "to file");
 			t.obj.setAttribute("capture_via_net", value == "via network");
 			if (tr) e.ajaxModifyCommit();
 			t.attrs.fields["capture_filter"].setEditable(value!="disabled");
+			return true;
 		});		
 		this.attrs.registerField(this.captureField);
 		this.captureFilterField = new TextField("capture_filter", "");
@@ -2341,40 +2351,52 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 		fields.gateway6 = new MagicTextField("gateway6", pattern.ip6net, "");
 		this.attrs.registerField(fields.gateway6);
 		this.routing.append(table_row(["gateway&nbsp;(ip6/prefix)", fields.gateway6.getInputElement()]));
+		this.filter_help = $('<img src="'+basepath+'images/help.png">');
+		this.filter_help.click(function(){
+			t.obj.editor.showIframe("Filter help", basepath+"filter_help.html");
+		}); 
+		this.capture_row = table_row(["capture&nbsp;packets", this.captureField.getInputElement()]);
+		this.capture_filter_row = table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement(), this.filter_help]);
+		this.download_btn_row = table_row([new Button("download", "Prepare capture download", function(btn){
+			t.obj.downloadCapture(btn);
+		}).getInputElement(), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
+			t.obj.viewCapture(btn);
+		}).getInputElement()]);
+		this.live_capture_row = table_row(["", new Button("livecapture", "live capture info", function(btn){
+			t.obj.showLiveCaptureInfo();
+		}).getInputElement()]);
+		this.unused = $("<div/>");
+	    log("init");
 	},
 	show: function() {
+	    log("show");
+		this.reloadCapture();
+		this._super();
+	},
+	reload: function() {
+	    log("reload");
+		this.reloadCapture();
+	},
+	reloadCapture: function() {
 		this.attrs.load();
 		this.captureField.setEditable(true);
 		if (Boolean.parse(this.obj.getAttribute("capture_to_file", "false")))
 			this.captureField.setValue("to file");
 		if (Boolean.parse(this.obj.getAttribute("capture_via_net", "false")))
 			this.captureField.setValue("via network");
-		this.pc.empty();
-		this.pc.append(table_row(["capture&nbsp;packets", this.captureField.getInputElement()]));
-		var editor = this.obj.editor;
-		var filter_help = $('<img src="'+basepath+'images/help.png">');
-		filter_help.click(function(){
-			editor.showIframe("Filter help", basepath+"filter_help.html");
-		}); 
-		this.pc.append(table_row(["capture&nbsp;filter", this.captureFilterField.getInputElement(), filter_help]));
+		this.unused.append(this.capture_row);
+		this.unused.append(this.capture_filter_row);
+		this.unused.append(this.download_btn_row);
+		this.unused.append(this.live_capture_row);
+		this.pc.append(this.capture_row);
+		this.pc.append(this.capture_filter_row);
 		var t = this;
-		if (this.obj.downloadSupported()) {
-			this.pc.append(table_row([new Button("download", "Prepare capture download", function(btn){
-				t.obj.downloadCapture(btn);
-			}).getInputElement(), new Button("cloudshark", '<img height="40%" src="'+basepath+'/images/cloudshark.png"/>', function(btn){
-				t.obj.viewCapture(btn);
-			}).getInputElement()]));
-		}
-		if (this.obj.liveCaptureSupported()) {
-			this.pc.append(table_row(["", new Button("livecapture", "live capture info", function(btn){
-				t.obj.showLiveCaptureInfo();
-			}).getInputElement()]));
-		}
+		if (this.obj.downloadSupported()) this.pc.append(this.download_btn_row);
+		if (this.obj.liveCaptureSupported()) this.pc.append(this.live_capture_row);
 		var sel = this.tabs.getSelection();
 		this.tabs.delTab("routing");
 		if (this.obj.con.isRouted()) this.tabs.addTab("routing", "Routing", this.routing);
 		this.tabs.select(sel);
-		this._super();
 	}
 });
 
