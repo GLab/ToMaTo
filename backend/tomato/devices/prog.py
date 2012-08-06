@@ -59,6 +59,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		capabilities["configure"].update({
 			"template": self.state == State.CREATED,
 			"args": self.state != State.STARTED,
+			"profile": True,
 		})
 		capabilities.update(other={
 			"console": isUser and self.getVncPort() and self.state == State.STARTED
@@ -74,6 +75,9 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		if self._vncRunning():
 			return
 		repy.startVnc(self.host, self.id, self.getVncPort(), self.vncPassword())
+
+	def _profileChanged(self):
+		repy.setProfile(self.host, self.id, **self.getProfile().attrs)
 
 	def _vncRunning(self):
 		return self.getVncPort() and repy.vncRunning(self.host, self.id, self.getVncPort())
@@ -106,6 +110,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 			ifaceutil.bridgeCreate(self.host, bridge)
 			ifaceutil.ifup(self.host, bridge)
 		try: 
+			self._profileChanged()
 			if state == State.PREPARED:
 				ifaces = [iface.name for iface in self.interfaceSetAll()]
 				repy.start(host, vmid, ifaces, self.getArgs())

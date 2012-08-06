@@ -15,7 +15,10 @@ class Migration(DataMigration):
         orm.DeviceProfile.objects.create(type="kvm", name="M", default=True, restricted=False, attrs=json.dumps({"ram": 256, "cpus": 1, "disk": 5000}))
         orm.DeviceProfile.objects.create(type="kvm", name="L", default=False, restricted=False, attrs=json.dumps({"ram": 512, "cpus": 1, "disk": 10000}))
         orm.DeviceProfile.objects.create(type="kvm", name="XL", default=False, restricted=True, attrs=json.dumps({"ram": 1024, "cpus": 2, "disk": 25000}))
-        orm.DeviceProfile.objects.create(type="prog", name="default", default=True, restricted=False, attrs=json.dumps({}))
+        orm.DeviceProfile.objects.create(type="prog", name="S", default=False, restricted=False, attrs=json.dumps({"ram": 15, "cpus": 0.1, "bandwidth": 1000000}))
+        orm.DeviceProfile.objects.create(type="prog", name="M", default=True, restricted=False, attrs=json.dumps({"ram": 25, "cpus": 0.33, "bandwidth": 10000000}))
+        orm.DeviceProfile.objects.create(type="prog", name="L", default=False, restricted=False, attrs=json.dumps({"ram": 50, "cpus": 1.0, "bandwidth": 100000000}))
+        orm.DeviceProfile.objects.create(type="prog", name="XL", default=False, restricted=True, attrs=json.dumps({"ram": 250, "cpus": 2.0, "bandwidth": 1000000000}))
 
 
     def backwards(self, orm):

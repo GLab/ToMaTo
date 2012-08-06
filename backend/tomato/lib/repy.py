@@ -34,6 +34,9 @@ def _pidFile(vmid):
 def _vncPidFile(vmid):
 	return _path(vmid, "vnc-pid")
 
+def _profileFile(vmid):
+	return _path(vmid, "profile")
+
 def vncRunning(host, vmid, port):
 	return process.processRunning(host, _vncPidFile(vmid), "vncterm")
 
@@ -72,7 +75,7 @@ def start(host, vmid, ifaces, args=[]):
 		args = [args]
 	args.append("id=%d" % vmid)
 	alist = [util.escape(a) for a in args] 
-	host.execute("tomato-repy -p %s -v %s %s > %s 2>&1 & echo $! > %s" % (_imagePath(vmid), " ".join(ilist), " ".join(alist), _logFile(vmid), _pidFile(vmid) ))
+	host.execute("tomato-repy -p %s -r %s -v %s %s > %s 2>&1 & echo $! > %s" % (_imagePath(vmid), _profileFile(vmid), " ".join(ilist), " ".join(alist), _logFile(vmid), _pidFile(vmid) ))
 	assert getState(host, vmid) == generic.State.STARTED, "Repy device failed to start"
 	for i in ifaces:
 		waitForInterface(host, vmid, i)
@@ -93,6 +96,7 @@ def destroy(host, vmid):
 	fileutil.delete(host, _logFile(vmid))
 	fileutil.delete(host, _pidFile(vmid))
 	fileutil.delete(host, _vncPidFile(vmid))
+	fileutil.delete(host, _profileFile(vmid))
 	assert getState(host, vmid) == generic.State.CREATED, "Failed to destroy VM"
 
 def check(host, file):
@@ -128,3 +132,11 @@ def getMemoryUsage(host, vmid):
 
 def interfaceDevice(vmid, iface):
 	return "repy%s.%s" % ( vmid, iface )
+
+def setProfile(host, vmid, cpus, ram, bandwidth, **other):
+	assert getState(host, vmid) == generic.State.PREPARED
+	res = {"diskused": 1000000, "lograte": 10000, "events": 10000, "random": 10000}
+	res.update({"cpu": float(cpus), "memory": int(ram)*1000000, "netrecv": int(bandwidth), "netsend": int(bandwidth)})
+	resConf = "\n".join(["resource %s %s" % (key, value) for (key, value) in res.iteritems()])
+	host.execute("echo -e %s > %s" % (util.escape(resConf), util.escape(_profileFile(vmid))) )
+	
