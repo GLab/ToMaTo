@@ -119,8 +119,11 @@ def main(options):
 
     #move file to tmp dir and chown it to executing user
     if options.verbose: print >>sys.stderr, "Reading program from %s" % options.program
-    with open(options.program) as fp:
+    try:
+      fp = open(options.program)
       usercode = fp.read()
+    finally:
+      fp.close()
     
     #build usercontext
     if options.verbose: print >>sys.stderr, "Building script context"
