@@ -826,7 +826,7 @@ var Device = IconElement.extend({
 				if (! msg) return;
 				iframe.remove();
 				info.remove();
-				if (! Boolean.parse(msg.success)) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+				if (! Boolean.parse(msg.success)) editor.errorMessage("Oops: Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor. If the error persists please file a bug report.</p>").bind("dialogclose", function(){
 					window.location.reload();
 				});
 				else t.editor.followTask(msg.output);
@@ -1125,14 +1125,14 @@ var Editor = Class.extend({
 			return $.ajax({type: "POST", url:ajaxpath+path, async: true, data: data, complete: function(res){
 				if (res.status == 200) {
 					var msg = $.parseJSON(res.responseText);
-					if (! msg.success) editor.errorMessage("Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor.</p>").bind("dialogclose", function(){
+					if (! msg.success) editor.errorMessage("Oops: Request failed", "<p><b>Error message:</b> " + msg.output + "</p><p>This page will be reloaded to refresh the editor. If the error persists please file a bug report.</p>").bind("dialogclose", function(){
 						window.location.reload();						
 					});
 					else func(msg.output);
-				} else editor.errorMessage("AJAX request failed", res.statusText);
+				} else editor.errorMessage("Oops: AJAX request failed", res.statusText);
 			}});
 		} catch (e) {
-			editor.errorMessage("AJAX request failed", e);
+			editor.errorMessage("Oops: AJAX request failed", e);
 		}
 	},
 	ajaxAction: function(action, func) {
