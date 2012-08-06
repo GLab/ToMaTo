@@ -30,7 +30,7 @@ import zlib, base64
 
 def _display_top(api, top_id, format="jsui", edit=False):
 	try:
-		api.top_info(top_id)
+		top = api.top_info(top_id)
 		api.top_action(top_id, "renew")
 	except:
 		return HttpResponseRedirect(reverse('tomato.top.index')) 
@@ -54,7 +54,7 @@ def _display_top(api, top_id, format="jsui", edit=False):
 			map[en["type"]] = [en["group"]]
 	external_networks=",".join([f+":"+("|".join(map[f])) for f in map])
 	host_groups=",".join(api.host_groups())
-	return render_to_response("top/edit_%s.html" % format, {'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'profiles_openvz': profiles_openvz, 'profiles_kvm': profiles_kvm, 'profiles_prog': profiles_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':edit} )
+	return render_to_response("top/edit_%s.html" % format, {'top': top, 'top_id': top_id, 'tpl_openvz': tpl_openvz, 'tpl_kvm': tpl_kvm, 'tpl_prog': tpl_prog, 'profiles_openvz': profiles_openvz, 'profiles_kvm': profiles_kvm, 'profiles_prog': profiles_prog, 'host_groups': host_groups, "external_networks": external_networks, 'edit':edit} )
 
 @wrap_rpc
 def index(api, request):

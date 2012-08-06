@@ -3,9 +3,9 @@
 {% block content %}
 {% if top_id %}
 {% if edit %}
-<h1>Edit topology {{top_id}}</h1>
+<h1>Edit {{top.attrs.name}} [{{top_id}}]</h1>
 {% else %}
-<h1>Details of topology {{top_id}}</h1>
+<h1>Details of {{top.attrs.name}} [{{top_id}}]</h1>
 {% endif %}
 {% else %}
 <h1>Creation of new topology</h1>
