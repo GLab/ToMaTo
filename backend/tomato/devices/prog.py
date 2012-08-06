@@ -57,7 +57,7 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 		capabilities = Device.getCapabilities(self, user)
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
 		capabilities["configure"].update({
-			"template": self.state == State.CREATED,
+			"template": self.state != State.STARTED,
 			"args": self.state != State.STARTED,
 			"profile": True,
 		})
@@ -228,12 +228,14 @@ class ProgDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, com
 	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
-			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
+			fault.check(self.state != State.STARTED, "Cannot change template of running device: %s" % self.name)
 		if "args" in properties:
 			fault.check(self.state != State.STARTED, "Cannot change arguments of running device: %s" % self.name)
 		Device.configure(self, properties)
 		if "template" in properties:
 			self.setTemplate(properties["template"])
+			if self.state == State.PREPARED:
+				repy.useTemplate(self.host, self.getVmid(), self.getTemplate())
 		if "args" in properties:
 			self.setArgs(properties["args"])
 		self.save()

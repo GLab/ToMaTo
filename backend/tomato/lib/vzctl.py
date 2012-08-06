@@ -65,7 +65,7 @@ def stopVnc(host, vmid, port):
 	assert process.portFree(host, port)
 	
 def _templatePath(name):
-	return "/var/lib/vz/template/qemu/%s.qcow2" % name
+	return "/var/lib/vz/template/cache/%s.tar.gz" % name
 
 def create(host, vmid, template):
 	assert getState(host, vmid) == generic.State.CREATED, "VM already exists"
@@ -124,6 +124,9 @@ def checkImage(host, path):
 		fault.check("0/0" in res, "Image contents not owned by root")
 	except exceptions.CommandError, err:
 		return err.errorMessage
+
+def useTemplate(host, vmid, template):
+	useImage(host, vmid, _templatePath(template))
 
 def useImage(host, vmid, image, forceGzip=False):
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"

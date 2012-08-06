@@ -67,7 +67,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		capabilities = Device.getCapabilities(self, user)
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
 		capabilities["configure"].update({
-			"template": self.state == State.CREATED,
+			"template": self.state != State.STARTED,
 			"root_password": True,
 			"gateway4": True,
 			"gateway6": True,
@@ -271,7 +271,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
-			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
+			fault.check(self.state != State.STARTED, "Cannot change template of running device: %s" % self.name)
 		Device.configure(self, properties)
 		if "root_password" in properties:
 			self.setRootPassword(properties["root_password"])
@@ -288,6 +288,8 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 		if "template" in properties:
 			self.setTemplate(properties["template"])
 			fault.check(self.getTemplate(), "Template not found: %s" % properties["template"])
+			if self.state == State.PREPARED:
+				vzctl.useTemplate(self.host, self.getVmid(), self.getTemplate())
 		self.save()
 
 	def interfacesAdd(self, name, properties):

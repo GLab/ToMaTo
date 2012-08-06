@@ -1561,12 +1561,17 @@ var EditElement = Class.extend({
 	init: function(name, listener) {
 		this.name = name;
 		this.changeListener = listener;
+		this.oldValue = null;
 	},
 	onChanged: function(value) {
-		if (this.changeListener) this.changeListener(value, this);
+		if (this.changeListener && ! this.changeListener(value, this)) {
+		  this.setValue(this.oldValue);
+		  return;
+		}
 		if (this.form && this.name) this.form.onChanged(this.name, value);
 	},
 	setValue: function(value) {
+	  this.oldValue = value
 	},
 	getValue: function() {
 	},
@@ -1594,6 +1599,7 @@ var TextField = EditElement.extend({
 		this.input.attr({disabled: !editable});
 	},
 	setValue: function(value) {
+	    this._super(value);
 		this.input[0].value = value;
 	},
 	getValue: function() {
@@ -1656,6 +1662,7 @@ var SelectField = EditElement.extend({
 		if (val) this.setValue(val);
 	},
 	setValue: function(value) {
+	    this._super(value);
 		var found = false;
 		this.input.find("option").each(function(){
 			$(this).attr({selected: false});
@@ -1687,6 +1694,7 @@ var CheckField = EditElement.extend({
 		this.input.attr({disabled: !editable});
 	},
 	setValue: function(value) {
+	    this._super(value);
 		this.input[0].checked = Boolean.parse(value);
 	},
 	getValue: function() {
@@ -1714,6 +1722,7 @@ var Button = EditElement.extend({
 		this.enabled = editable;
 	},
 	setValue: function(value) {
+	    this._super(value);
 	},
 	getValue: function() {
 		return "";
@@ -2142,6 +2151,9 @@ var DeviceWindow = ElementWindow.extend({
 	show: function() {
 		this.reload();
 		this._super();
+	},
+	warnTemplateChange: function() {
+	    return confirm("Warning: changing the template of a prepared device causes the loss of all data");
 	}
 });
 
@@ -2150,7 +2162,7 @@ var OpenVZDeviceWindow = DeviceWindow.extend({
 		this._super(obj);
 		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
 		infoBtn.click(function(){obj.showTemplateInfo();});
-		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto"), "template", infoBtn);
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesOpenVZ, "auto", this.warnTemplateChange), "template", infoBtn);
 		this.attrs.addField(new SelectField("profile", this.obj.editor.profilesOpenVZ, "auto"), "profile");
 		this.attrs.addField(new TextField("root_password", ""), "root&nbsp;password");
 		this.attrs.addField(new MagicTextField("gateway4", pattern.ip4, ""), "gateway4");
@@ -2163,7 +2175,7 @@ var KVMDeviceWindow = DeviceWindow.extend({
 		this._super(obj);
 		var infoBtn = $('<img src="'+basepath+'/images/info.png" alt="template info"/>');
 		infoBtn.click(function(){obj.showTemplateInfo();});
-		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto"), "template", infoBtn);
+		this.attrs.addField(new SelectField("template", this.obj.editor.templatesKVM, "auto", this.warnTemplateChange), "template", infoBtn);
 		this.attrs.addField(new SelectField("profile", this.obj.editor.profilesKVM, "auto"), "profile");
 	}	
 });

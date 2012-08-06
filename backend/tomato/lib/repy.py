@@ -106,6 +106,9 @@ def check(host, file):
 		res = re.match("<(type|class) '([^']*)'> (.*)", res)
 		return (res.group(2), res.group(3))
 
+def useTemplate(host, vmid, template):
+	useImage(host, vmid, _templatePath(template))
+
 def useImage(host, vmid, image):
 	#FIXME check script sanity
 	assert getState(host, vmid) == generic.State.PREPARED, "VM not prepared"

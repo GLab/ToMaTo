@@ -56,7 +56,7 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 		isUser = self.topology.checkAccess(Permission.ROLE_USER, user)
 		isManager = self.topology.checkAccess(Permission.ROLE_MANAGER, user)
 		capabilities["configure"].update({
-			"template": self.state == State.CREATED,
+			"template": self.state != State.STARTED,
 		})
 		capabilities["action"].update({
 			"send_keys": isUser and self.state == State.STARTED,
@@ -249,10 +249,12 @@ class KVMDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, comm
 	@db.changeset
 	def configure(self, properties):
 		if "template" in properties:
-			fault.check(self.state == State.CREATED, "Cannot change template of prepared device: %s" % self.name)
+			fault.check(self.state != State.STARTED, "Cannot change template of running device: %s" % self.name)
 		Device.configure(self, properties)
 		if "template" in properties:
 			self.setTemplate(properties["template"])
+			if self.state == State.PREPARED:
+				qm.useTemplate(self.host, self.getVmid(), self.getTemplate())
 		self.save()
 			
 	def _profileChanged(self):
