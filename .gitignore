@@ -6,9 +6,7 @@
 buildui/nbproject/private
 buildui/dist
 buildui/build
-*.lyx~
+*~
 *.lyx#
-*.dia~
-*.png~
 *Thumbs.db*
 ~$*.pptx
