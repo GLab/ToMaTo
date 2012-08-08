@@ -1,0 +1,48 @@
+.msoffice-icon-22x22 {
+	width: 22px !important;
+	height: 22px !important;
+	margin-top: 0px !important;
+	background-position: left top !important;
+}
+.ui-icon.msoffice-icon-22x22 {
+	margin-left: -2px !important;
+	margin-top: -2px !important;
+	margin-right: -2px !important;
+}
+.msoffice-icon-32x32 {
+	width: 32px !important;
+	height: 32px !important;
+	background-position: left top !important;
+}
+
+.msoffice-icon-22x22.msoffice-icon-save {
+	background-image: url("./common/icons/icon-save-22x22.gif") !important;
+}
+.msoffice-icon-22x22.msoffice-icon-preferences {
+	background-image: url("./common/icons/icon-preferences-22x22.gif") !important;
+}
+.msoffice-icon-22x22.msoffice-icon-exit {
+	background-image: url("./common/icons/icon-exit-22x22.gif") !important;
+}
+.msoffice-icon-22x22.msoffice-icon-cut {
+    background-image: url("./common/icons/icon-cut-22x22.gif") !important;
+}
+.msoffice-icon-22x22.msoffice-icon-copy {
+    background-image: url("./common/icons/icon-copy-22x22.gif") !important;
+}
+
+.msoffice-icon-32x32.msoffice-icon-paste {
+    background-image: url("./common/icons/icon-paste-32x32-noshadow.gif") !important;
+}
+.ui-state-disabled .msoffice-icon-32x32.msoffice-icon-paste {
+    background-image: url("./common/icons/icon-paste-32x32-disabled-noshadow.gif") !important;
+}
+.msoffice-icon-32x32.msoffice-icon-properties {
+    background-image: url("./common/icons/icon-properties-32x32-noshadow.gif") !important;
+}
+.msoffice-icon-32x32.msoffice-icon-zoom {
+    background-image: url("./common/icons/icon-zoom-32x32.gif") !important;
+}
+.msoffice-icon-32x32.msoffice-icon-zoom100 {
+    background-image: url("./common/icons/icon-zoom100-32x32.gif") !important;
+}

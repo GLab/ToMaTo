@@ -1,0 +1,287 @@
+/* Hide useless elements in print layouts... */
+@media print {
+    .ui-ribbon {
+        display: none; /* totally hide ribbon in print layout */
+    }
+}
+.ui-ribbon {
+	position: relative;
+
+	padding: 1px;
+	padding-top: 2px;
+	
+	cursor: default;
+	
+	font-size: 1em;
+}
+.ui-ribbon .ui-ribbon-minimized-border {
+	display: none;
+}
+.ui-ribbon.ui-ribbon-minimized {
+	padding-bottom: 0px;
+}
+.ui-ribbon.ui-ribbon-minimized .ui-ribbon-minimized-border {
+	display: block;
+	margin-top: 1px;
+	border-right-width: 0px;
+	border-left-width: 0px;
+	border-top-width: 0px;
+}
+
+
+/* (CONTEXTUAL) TABSETS */
+.ui-ribbon .ui-ribbon-tabset-contextual {
+	position: absolute;
+	left: -1000px;
+	top: -21px;
+	z-index: 1;
+	
+	width: 42px; /* span.style.width + span.style.paddingLeft + span.style.paddingRight + ileft.style.width + iright.style.width */
+	height: 25px;
+	
+	text-align: left;
+	white-space: nowrap;
+}
+.ui-ribbon .ui-ribbon-tabset-contextual span {
+	display: block;
+	float: left;
+	height: 14px;
+	padding: 9px 5px 2px 5px;
+	
+	overflow: hidden;
+	
+	font-size: 12px;
+	font-weight: normal;
+	
+	cursor: default;
+	
+	border: 0 none;
+	/*opacity: 0.7;*/
+}
+.ui-ribbon .ui-ribbon-tabset-contextual i.left, 
+.ui-ribbon .ui-ribbon-tabset-contextual i.right {
+	display: block;
+	width: 1px;
+	height: 50px;
+}
+.ui-ribbon .ui-ribbon-tabset-contextual i.left {
+	float: left;
+}
+.ui-ribbon .ui-ribbon-tabset-contextual i.right {
+	float: right;
+}
+
+.ui-ribbon.ui-ribbon-tabsets-collapsed .ui-ribbon-tabset-contextual {
+	top: 0px;
+	height: 4px;
+}
+.ui-ribbon.ui-ribbon-tabsets-collapsed .ui-ribbon-tabset-contextual span {
+	height: 0px;
+	padding: 4px 0 0 0;
+}
+.ui-ribbon.ui-ribbon-tabsets-collapsed .ui-ribbon-tabset-contextual i.left, 
+.ui-ribbon.ui-ribbon-tabsets-collapsed .ui-ribbon-tabset-contextual i.right {
+	height: 25px;
+}
+
+
+/* TABS */
+.ui-ribbon .ui-ribbon-tabs { 
+	margin-left: 5px;
+}
+.ui-ribbon .ui-ribbon-tabs li {
+}
+.ui-ribbon .ui-ribbon-tabs li a, .ui-ribbon  .ui-ribbon-tabs li a span {
+}
+.ui-ribbon .ui-ribbon-tabs li a {
+	padding: 2px 6px;
+}
+.msie .ui-ribbon .ui-ribbon-tabs li a {
+}
+.ui-ribbon .ui-ribbon-tabs .ui-ribbon-tab-selected li a {
+}
+.ui-ribbon .ui-ribbon-tabs li a span {
+}
+.ui-ribbon .ui-ribbon-tabs li a span label,
+.ui-ribbon .ui-ribbon-tabs li.ui-state-hover a span label,
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a span label {
+	/*font-weight: normal;*/
+}
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a:link, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a:visited, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a:link, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a:visited { /* @ Opera, use pseudo classes otherwise it confuses cursor... */
+    cursor: default;
+}
+.ui-ribbon .ui-ribbon-tabs li.ui-state-hover a, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-focus a, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a,
+.ui-ribbon .ui-ribbon-tabs li a span, 
+.ui-ribbon .ui-ribbon-tabs li.ui-state-active a span { /* @ Opera, we need to be explicit again here now... */
+    cursor: default;
+}
+.ui-ribbon .ui-ribbon-tabs li.ui-state-processing em {
+}
+.ui-ribbon .ui-ribbon-tabs li.ui-ribbon-tab-contextual {
+	opacity: 1.0; /* restores border for contextual tabs */
+}
+
+
+/* PANELS */
+.ui-ribbon .ui-ribbon-panel {
+	padding: 1px !important;
+	border-width: 1px !important; /* restore ui-widget-content border */
+}
+.ui-ribbon .ui-ribbon-panel ul {
+	margin: 0;
+	padding: 0;
+}
+.ui-ribbon .ui-ribbon-panel-contextual {
+	opacity: 1.0; /* restores border for contextual tabs */
+}
+
+
+/* GROUPS */
+.ui-ribbon .ui-ribbon-panel .ui-ribbon-groups {
+    display: block;
+	padding: 0px; 
+	margin: 0px;
+}
+.ui-ribbon .ui-ribbon-group {
+    display: block;
+    float: left;
+    padding: 0px; 
+	margin: 2px;
+	margin-right: 0px;
+    position: relative;
+	background-position: left -200px;
+}
+.ui-ribbon .ui-ribbon-group:hover, 
+.ui-ribbon .ui-ribbon-group.ui-state-hover {
+	background-position: left -200px;
+}
+
+
+/*      group content */
+.ui-ribbon .ui-ribbon-group .ui-ribbon-group-content {
+	display: block;
+    
+	height: 5.6em;
+	overflow: hidden;
+	
+	padding: 0.1em 0.1em 0 0.1em;
+	
+	border-width: 0;
+}
+.ui-ribbon .ui-ribbon-group:hover .ui-ribbon-group-content,
+.ui-ribbon .ui-ribbon-group.ui-state-hover .ui-ribbon-group-content {
+	border-width: 0;
+}
+
+/*      group label */
+.ui-ribbon .ui-ribbon-group .ui-ribbon-group-label {
+	height: 14px;
+    margin: 0 auto;
+	padding: 0 10px 0 10px;
+	
+	text-align: center;
+	
+	border-width: 1px 0 0 0;
+}
+.ui-ribbon .ui-ribbon-group:hover .ui-ribbon-group-label,
+.ui-ribbon .ui-ribbon-group.ui-state-hover .ui-ribbon-group-label {
+	border-width: 1px 0 0 0;
+}
+.ui-ribbon .ui-ribbon-group .ui-ribbon-group-label span {
+	font-size: 11px;
+	font-weight: normal;
+}
+
+
+/*   TODO:   group dialog button */
+.ui-ribbon .ui-ribbon-group  .ui-ribbon-group-label .ui-ribbon-group-dialog-button {
+	position: absolute;
+	top: 1px;
+	right: 1px;
+}
+
+
+/* CONTROLS */
+.ui-ribbon .ui-ribbon-group .ui-ribbon-list, .ui-ribbon-group .ui-ribbon-list li {
+    list-style-type: none;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+.ui-ribbon .ui-ribbon-group .ui-ribbon-list {
+    display: block;
+    height: 5.6em;
+}
+.ui-ribbon .ui-ribbon-group .ui-ribbon-list li {
+    display: block;
+    width: auto;
+    float: none;
+    height: 1.5em;
+    line-height: 1.5em;
+	/*overflow: hidden;*/
+	margin-bottom: 0.1em;
+}
+.ui-ribbon .ui-ribbon-group .ui-ribbon-element {
+    float: left;
+	margin-right: 0.1em;
+}
+.ui-ribbon .ui-ribbon-group .ui-ribbon-list li .ui-ribbon-control {
+}
+
+
+/* BUTTONS */
+/* require "ui.button.css" */
+
+/* SIMPLE button */
+.ui-ribbon .ui-ribbon-group .ui-button { 
+	padding: 0 0.1em 0 0.1em;
+	font-size: 1em; 
+	height: 1.5em;
+	line-height: 1.5em;
+	overflow: hidden;
+}
+.ui-ribbon .ui-ribbon-group .ui-button .ui-icon {
+	vertical-align: top;
+}
+.ui-ribbon .ui-ribbon-group .ui-button .ui-button-label {
+	vertical-align: top;
+}
+
+
+/* LARGE button */
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button { 
+	font-size: 1em; 
+	height: 5.5em;
+}
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon {
+	display: block;
+	height: 2.5em;
+    float: none;
+    clear: both;
+    margin: 0 auto;
+}
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon .ui-icon,
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-icon img {
+	margin: 0 auto;
+	padding: 0.1em auto 0.1em auto;
+}
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-label {
+	display: block;
+	top: 0px;
+	float: none;
+    margin: 0 auto;
+    padding: 0px;
+	line-height: 1.2em;
+	text-align: center;
+    white-space: normal;
+    min-width: 4em;
+    max-width: 6.5em;
+}
+.ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-label br {
+    display: none;
+}

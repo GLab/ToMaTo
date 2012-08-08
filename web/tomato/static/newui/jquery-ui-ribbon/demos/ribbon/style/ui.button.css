@@ -1,0 +1,114 @@
+/* missing icon position for no icon */
+.ui-icon-none {
+	background-position: 100px 100px;
+}
+
+/* REQUIRED SLIDING-DOORS STYLES: */		
+.ui-button { 
+	position: relative;
+	/*border: 0; */
+	padding: 0;
+	cursor: pointer;
+	overflow: visible; /* removes extra side padding in IE */
+}
+
+.ui-button::-moz-focus-inner {
+	border: none;  /* overrides extra padding in Firefox */
+}
+
+.ui-button .ui-button-door-left { 
+	position: relative;
+	display: block; 
+	white-space: nowrap;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+	/* Safari and Google Chrome only - fix margins */
+	.ui-button span {
+		margin-top: -1px;
+	}
+}
+
+/* CUSTOM LOOK&FEEL: */
+.ui-button {
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	display: inline-block !important;
+	vertical-align: middle;
+	white-space: nowrap;
+	overflow: hidden;
+	
+	padding: 0.4em 1em 0.4em 1em;
+}
+.ui-button.ui-button-checked.ui-state-focus {
+	opacity: 0.8;
+}
+.ui-button .ui-button-icon { 
+	display: block; 
+	float: left;
+	
+	margin-top: 0em;
+}
+button.ui-button .ui-icon {
+	margin-left: 0px;
+}
+.ui-button .ui-button-label { 
+	display: block;
+	float: left;
+	margin-left: 0.2em;
+	vertical-align: middle;
+}
+
+.ui-button.ui-button-icon-left .ui-button-icon {
+	float: left;
+}
+.ui-button.ui-button-icon-right .ui-button-icon {
+	float: right;
+}
+.ui-button.ui-button-icon-solo .ui-button-label {
+	display: none;
+}
+
+.ui-button .ui-icon.ui-icon-none {
+	width: 0px;
+}
+
+/* Safari & Chrome */
+@media screen and (-webkit-min-device-pixel-ratio:0) { 
+	.ui-button { /* Safari & Chrome */
+		padding: 0.5em 2.5em 0.5em 1em;
+	}
+	button.ui-button { /* Safari & Chrome */
+		padding: 0.4em 2.5em 0.4em 1em;
+	}
+	body:not(:root:root) .ui-button { /* Safari only */
+		padding: 0.4em 2.5em 0.4em 1em;
+	}
+	.ui-button.ui-button-icon-none { /* Safari & Chrome */
+		padding: 0.5em 1.1em 0.5em 1em;
+	}
+	button.ui-button.ui-button-icon-none { /* Safari & Chrome */
+		padding: 0.4em 1.1em 0.4em 1em;
+	}
+	body:not(:root:root) button.ui-button { /* Safari only */
+		padding: 0.4em 2.5em 0.4em 1em;
+	}
+	body:not(:root:root) .ui-button.ui-button-icon-none { /* Safari only */
+		padding: 0.4em 1em 0.4em 1em;
+	}
+}
+
+/* IE all */
+a.ui-button { line-height: 1.1em\9; }
+button.ui-button { margin-top: -1px\9; }
+button.ui-button { display: inline\9; overflow: hidden !important\9; height: 2.1em\9; }
+button.ui-button .ui-button-icon { display: block\9; margin-top: -1px\9; }
+button.ui-button .ui-button-label { display: block\9; margin-top: -1.5em\9; padding-left: 19px\9; }
+span.ui-button { display: block\9; }
+
+/* IE8 */
+a.ui-button .ui-button-icon { display: block\0; }
+button.ui-button { display: inline\0; margin-top: 0\0; }
+button.ui-button .ui-button-icon { display: inline\0; margin-top: 0\0; }
+button.ui-button .ui-button-label { display: inline\0; margin-top: 0\0; padding-left: 0\0; }
