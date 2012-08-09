@@ -24,9 +24,13 @@ class ServerProxy(object):
 		import xmlrpclib
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
 	def __getattr__(self, name):
+		import xmlrpclib
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
 		def _call(*args, **kwargs):
-			return call_proxy(args, kwargs)
+			try:
+				return call_proxy(args, kwargs)
+			except xmlrpclib.Fault, exc:
+				print exc
 		return _call
 
 def getConnection(hostname, port, ssl, username, password):
