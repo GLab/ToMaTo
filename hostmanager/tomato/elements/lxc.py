@@ -21,18 +21,15 @@ from tomato import connections, elements, resources, config
 from tomato.lib import cmd
 from tomato.lib.attributes import attribute
 
-class KVM(elements.Element):
+class LXC(elements.Element):
 	path = attribute("path", str)
-	cpus = attribute("cpus", int)
 	ram = attribute("ram", int)
-	kblang = attribute("kblang", str)
-	usbtablet = attribute("usbtablet", bool)
 	template = models.ForeignKey(resources.Resource, null=True)
 
 	ST_CREATED = "created"
 	ST_PREPARED = "prepared"
 	ST_STARTED = "started"
-	TYPE = "kvm"
+	TYPE = "lxc"
 	CAP_ACTIONS = {
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
@@ -48,32 +45,23 @@ class KVM(elements.Element):
 		"template": [ST_CREATED, ST_PREPARED],
 	}
 	CAP_CHILDREN = {
-		"kvm_interface": [ST_CREATED, ST_PREPARED],
+		"lxc_interface": [ST_CREATED, ST_PREPARED],
 	}
 	CAP_PARENT = []
-	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
+	DEFAULT_ATTRS = {"ram": 256}
 	
 	class Meta:
-		db_table = "tomato_kvm"
+		db_table = "tomato_lxc"
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		self.state = self.ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.path = os.path.join(config.DATA_DIR, "kvm", str(self.id))
+		self.path = os.path.join(config.DATA_DIR, "lxc", str(self.id))
 				
-	def modify_cpus(self, cpus):
-		self.cpus = cpus
-
 	def modify_ram(self, ram):
 		self.ram = ram
-		
-	def modify_kblang(self, kblang):
-		self.kblang = kblang
-		
-	def modify_usbtablet(self, usbtablet):
-		self.usbtablet = usbtablet
 		
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
@@ -107,27 +95,27 @@ class KVM(elements.Element):
 		return info
 
 
-class KVM_Interface(elements.Element):
+class LXC_Interface(elements.Element):
 	name = attribute("name", str)
 
-	TYPE = "kvm_interface"
+	TYPE = "lxc_interface"
 	CAP_ACTIONS = {
-		"__remove__": [KVM.ST_CREATED, KVM.ST_PREPARED]
+		"__remove__": [LXC.ST_CREATED, LXC.ST_PREPARED]
 	}
 	CAP_ATTRS = {
-		"name": [KVM.ST_CREATED, KVM.ST_PREPARED]
+		"name": [LXC.ST_CREATED, LXC.ST_PREPARED]
 	}
 	CAP_CHILDREN = {}
-	CAP_PARENT = [KVM.TYPE]
+	CAP_PARENT = [LXC.TYPE]
 	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
 	
 	class Meta:
-		db_table = "tomato_kvm_interface"
+		db_table = "tomato_lxc_interface"
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = KVM.ST_CREATED
+		self.state = LXC.ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 
 	def upcast(self):
@@ -139,10 +127,10 @@ class KVM_Interface(elements.Element):
 		return info
 
 
-qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
+lxcVersion = cmd.getDpkgVersion("lxc")
 
-if [0, 15, 0] <= qmVersion <= [1, 1]:
-	elements.TYPES[KVM.TYPE] = KVM
-	elements.TYPES[KVM_Interface.TYPE] = KVM_Interface
+if [0, 7] <= lxcVersion < [0, 8]:
+	elements.TYPES[LXC.TYPE] = LXC
+	elements.TYPES[LXC_Interface.TYPE] = LXC_Interface
 else:
-	print "Warning: KVM not supported on pve-qemu-kvm version %s" % qmVersion
+	print "Warning: LXC not supported on lxc version %s" % lxcVersion

@@ -138,12 +138,11 @@ def element_info(id):
     
 def element_list():
     """
-    Retrieves information about all topmost (i.e. elements without parent 
-    elements) elements of the user. 
+    Retrieves information about all elements of the user. 
      
     @return: Information about the elements
     @rtype: list of dicts    
     """
-    return [el.info() for el in elements.getAll(owner=currentUser(), parent=None)]
+    return [el.info() for el in elements.getAll(owner=currentUser())]
 
 from tomato import fault, elements, currentUser

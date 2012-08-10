@@ -20,7 +20,7 @@ import subprocess
 def runUnchecked(cmd, shell=False):
 	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell, close_fds=True)
 	res=proc.communicate()
-	return (proc.returncode,)+res
+	return (proc.returncode,res[0])
 
 class CommandError(Exception):
 	def __init__(self, command, errorCode, errorMessage, mustLog=True):
@@ -41,6 +41,22 @@ def removeControlChars(s):
 	#allow TAB=9, LF=10, CR=13
 	controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
 	return s.translate(None, controlChars)
+
+def getDpkgVersion(package):
+	fields = {}
+	error, output = runUnchecked(["dpkg-query", "-s", package])
+	if error:
+		return None 
+	for line in output.splitlines():
+		if ": " in line:
+			name, value = line.split(": ")
+			fields[name.lower()] = value
+	if not "installed" in fields["status"]:
+		return None
+	verStr = fields["version"]
+	if "-" in verStr:
+		verStr = verStr.split("-")[0]
+	return [int(n) for n in verStr.split(".")]
 
 def escape(s):
 	return repr(unicode(s).encode("utf-8"))

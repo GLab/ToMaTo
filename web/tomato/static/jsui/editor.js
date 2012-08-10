@@ -1285,6 +1285,7 @@ var Editor = Class.extend({
 		this.isLoading = false;
 		if (dangling_interfaces_mods.length > 0) this.ajaxModify(dangling_interfaces_mods, new function(res){});
 		this.setBusy(Boolean(top.running_task));
+		log(top)
 		if (top.running_task) this.followTask(top.running_task);
 	},
 	reloadTopology: function(callback) {
@@ -1916,7 +1917,6 @@ var NotesPanel = Class.extend({
 		var notes = this.obj.getAttribute("_notes", "");
 		var textarea = $('<textarea style="width:100%;" rows=20>' + notes + '</textarea>');
 		var changed = function(){
-			log(textarea[0].value);
 			t.obj.setAttribute("_notes", textarea[0].value);
 		};
 		textarea.change(changed);
@@ -2366,15 +2366,12 @@ var EmulatedConnectionWindow = ConnectionWindow.extend({
 			t.obj.showLiveCaptureInfo();
 		}).getInputElement()]);
 		this.unused = $("<div/>");
-	    log("init");
 	},
 	show: function() {
-	    log("show");
 		this.reloadCapture();
 		this._super();
 	},
 	reload: function() {
-	    log("reload");
 		this.reloadCapture();
 	},
 	reloadCapture: function() {

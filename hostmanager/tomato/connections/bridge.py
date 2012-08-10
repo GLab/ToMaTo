@@ -18,6 +18,7 @@
 import os
 from django.db import models
 from tomato import connections
+from tomato.lib import cmd 
 from tomato.lib.attributes import attribute
 
 class Bridge(connections.Connection):
@@ -64,6 +65,12 @@ class Bridge(connections.Connection):
 		#FIXME: implement
 		self.setState(self.ST_PREPARED)
 
+	def connectInterface(self, ifname):
+		pass
+	
+	def disconectInterface(self, ifname):
+		pass
+
 	def upcast(self):
 		return self
 
@@ -72,4 +79,9 @@ class Bridge(connections.Connection):
 		return info
 
 
-connections.TYPES[Bridge.TYPE] = Bridge
+bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
+
+if bridgeUtilsVersion:
+	connections.TYPES[Bridge.TYPE] = Bridge
+else:
+	print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion

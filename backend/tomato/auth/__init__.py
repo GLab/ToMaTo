@@ -126,7 +126,6 @@ _currentUser = threading.local()
 def current_user():
 	return _currentUser.user if hasattr(_currentUser, "user") else None
 	
-
 def set_current_user(user):
 	_currentUser.user = user
 

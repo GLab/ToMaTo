@@ -51,6 +51,32 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('tomato', ['KVM_Interface'])
 
+        # Adding model 'OpenVZ'
+        db.create_table('tomato_openvz', (
+            ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
+            ('template', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resource'], null=True)),
+        ))
+        db.send_create_signal('tomato', ['OpenVZ'])
+
+        # Adding model 'OpenVZ_Interface'
+        db.create_table('tomato_openvz_interface', (
+            ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
+        ))
+        db.send_create_signal('tomato', ['OpenVZ_Interface'])
+
+        # Adding model 'LXC'
+        db.create_table('tomato_lxc', (
+            ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
+            ('template', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resource'], null=True)),
+        ))
+        db.send_create_signal('tomato', ['LXC'])
+
+        # Adding model 'LXC_Interface'
+        db.create_table('tomato_lxc_interface', (
+            ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
+        ))
+        db.send_create_signal('tomato', ['LXC_Interface'])
+
         # Adding model 'Bridge'
         db.create_table('tomato_bridge', (
             ('connection_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Connection'], unique=True, primary_key=True)),
@@ -82,6 +108,18 @@ class Migration(SchemaMigration):
 
         # Deleting model 'KVM_Interface'
         db.delete_table('tomato_kvm_interface')
+
+        # Deleting model 'OpenVZ'
+        db.delete_table('tomato_openvz')
+
+        # Deleting model 'OpenVZ_Interface'
+        db.delete_table('tomato_openvz_interface')
+
+        # Deleting model 'LXC'
+        db.delete_table('tomato_lxc')
+
+        # Deleting model 'LXC_Interface'
+        db.delete_table('tomato_lxc_interface')
 
         # Deleting model 'Bridge'
         db.delete_table('tomato_bridge')
@@ -120,6 +158,24 @@ class Migration(SchemaMigration):
         },
         'tomato.kvm_interface': {
             'Meta': {'object_name': 'KVM_Interface', '_ormbases': ['tomato.Element']},
+            'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'})
+        },
+        'tomato.lxc': {
+            'Meta': {'object_name': 'LXC', '_ormbases': ['tomato.Element']},
+            'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'}),
+            'template': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resource']", 'null': 'True'})
+        },
+        'tomato.lxc_interface': {
+            'Meta': {'object_name': 'LXC_Interface', '_ormbases': ['tomato.Element']},
+            'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'})
+        },
+        'tomato.openvz': {
+            'Meta': {'object_name': 'OpenVZ', '_ormbases': ['tomato.Element']},
+            'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'}),
+            'template': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resource']", 'null': 'True'})
+        },
+        'tomato.openvz_interface': {
+            'Meta': {'object_name': 'OpenVZ_Interface', '_ormbases': ['tomato.Element']},
             'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'})
         },
         'tomato.resource': {

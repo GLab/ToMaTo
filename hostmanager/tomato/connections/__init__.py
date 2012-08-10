@@ -23,7 +23,31 @@ from tomato.lib.decorators import *
 TYPES = {}
 REMOVE_ACTION = "__remove__"
 
+"""
+General interface:
+- The element must provide two methods:
+	onConnected()
+  		Called when both elements are successfully connected and communication
+  		is now possible.
+  	onDisconnected()
+  		Called when one element was disconnected and communication is no longer
+  		possible.
+"""
+
+
 PARADIGM_INTERFACE = "interface"
+"""
+Interface paradigm interface:
+- The connection must provide two methods:
+	connectInterface(ifname)
+		Called to connect the interface ifname to the connection.
+		The interface must exist and be fully configured.
+	disconnectInterface(ifname)
+		Called to disconnect the interface ifname from the connection.
+		The interface must exist all the time until this call.
+"""
+
+
 
 class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()])
