@@ -33,6 +33,8 @@ def new(text, code=UNKNOWN_ERROR):
 	return Fault(code, text)
 
 def errors_add(error, trace):
+	if isinstance(error, Fault) and error.faultCode == USER_ERROR:
+		return
 	print trace
 
 def wrap(exc):

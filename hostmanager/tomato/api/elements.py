@@ -140,9 +140,6 @@ def element_list():
     """
     Retrieves information about all topmost (i.e. elements without parent 
     elements) elements of the user. 
-    
-    @param id: The id of the element
-    @type id: int
      
     @return: Information about the elements
     @rtype: list of dicts    

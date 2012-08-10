@@ -50,10 +50,10 @@ class JSONField(models.TextField):
 	def _dumps(self, data):
 		return JSONDateEncoder().encode(data)
 
-	def _loads(self, str):
+	def _loads(self, str_):
 		if config.MAINTENANCE:
-			return str
-		return json.loads(str, encoding="UTF-8")
+			return str_
+		return json.loads(str_, encoding="UTF-8")
 
 	def db_type(self):
 		return 'text'

@@ -17,4 +17,5 @@
 
 from host import *
 from elements import *
+from connections import *
 from resources import *

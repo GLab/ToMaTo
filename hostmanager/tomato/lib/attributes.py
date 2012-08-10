@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from db import JSONField
-
-from django.db import models
-
 from south.modelsinspector import add_introspection_rules
 add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
 

@@ -17,7 +17,8 @@
 
 
 from elements import Element #@UnusedImport
-from elements.openvz import OpenVZ #@UnusedImport
 from elements.kvm import KVM #@UnusedImport
+from connections import Connection #@UnusedImport
+from connections.bridge import Bridge #@UnusedImport
 from resources import Resource #@UnusedImport
 from resources.template import Template #@UnusedImport

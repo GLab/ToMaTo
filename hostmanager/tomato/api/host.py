@@ -25,8 +25,14 @@ def host_info():
     }
 
 def host_capabilities():
+    element_types = {}
+    for type_, class_ in tomato.elements.TYPES.iteritems():
+        caps = {}
+        for cap in ["cap_actions", "cap_attrs", "cap_children", "cap_parent", "cap_con_paradigms"]:
+            caps[cap] = getattr(class_, cap.upper())
+        element_types[type_] = caps
     return {
-        "element_types": dict([(type_, {}) for type_ in tomato.elements.TYPES]),
+        "element_types": element_types,
         "resource_types": dict([(type_, {}) for type_ in tomato.resources.TYPES]),
     }
 

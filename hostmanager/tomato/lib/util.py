@@ -39,7 +39,7 @@ class RepeatedTimer(threading.Thread):
 					self.func(*self.args, **self.kwargs)
 				except Exception, exc: #pylint: disable-msg=W0703
 					from tomato import fault
-					fault.log(exc)
+					fault.errors_add(exc, traceback.format_exc())
 	def stop(self):
 		self.event.set()
 
@@ -49,8 +49,7 @@ def print_except_helper(func, args, kwargs):
 	except Exception, exc: #pylint: disable-msg=W0703
 		from tomato import fault
 		try:
-			traceback.print_exc()
-			fault.log(exc)
+			fault.errors_add(exc, traceback.format_exc())
 		except:
 			pass
 		raise
@@ -60,14 +59,6 @@ def print_except(func, *args, **kwargs):
 
 def start_thread(func, *args, **kwargs):
 	return thread.start_new_thread(print_except_helper, (func, args, kwargs))
-
-def lines(str):
-	return str.strip().split("\n")
-
-def run_shell(cmd, shell=False):
-	proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell, close_fds=True)
-	res=proc.communicate()
-	return (proc.returncode,)+res
 
 def parse_bool(x):
 	"""
@@ -190,9 +181,6 @@ def xml_rpc_safe(s):
 	print type(s)
 	return False
 
-def nothing():
-	pass
-
 def datestr(date):
 	import datetime
 	return datetime.datetime.fromtimestamp(date).strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -210,20 +198,3 @@ def waitFor(conditionFn, maxWait=5, waitStep=0.1):
 		time.sleep(waitStep)
 		waited += waitStep
 	return waited < maxWait
-
-def removeControlChars(s):
-	#allow TAB=9, LF=10, CR=13
-	controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
-	return s.translate(None, controlChars)
-
-def escape(s):
-	return repr(unicode(s).encode("utf-8"))
-
-def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.", subst="_"):
-	ret=""
-	for ch in s:
-		if ch in allowed:
-			ret += ch
-		elif subst:
-			ret += subst
-	return ret

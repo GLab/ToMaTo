@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import os
 from django.db import models
-from tomato import elements, resources
+from tomato import connections, elements, resources, config
 from tomato.lib.attributes import attribute
 
 class KVM(elements.Element):
@@ -45,8 +46,11 @@ class KVM(elements.Element):
 		"usbtablet": [ST_CREATED, ST_PREPARED],
 		"template": [ST_CREATED, ST_PREPARED],
 	}
-	CAP_CHILDREN = {}
+	CAP_CHILDREN = {
+		"kvm_interface": [ST_CREATED, ST_PREPARED],
+	}
 	CAP_PARENT = []
+	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
 	
 	class Meta:
 		db_table = "tomato_kvm"
@@ -55,11 +59,8 @@ class KVM(elements.Element):
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		self.state = self.ST_CREATED
-		elements.Element.init(self, *args, **kwargs)
-		self.cpus = 1
-		self.ram = 256
-		self.kblang = "de"
-		self.usbtablet = True
+		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		self.path = os.path.join(config.DATA_DIR, "kvm", str(self.id))
 				
 	def modify_cpus(self, cpus):
 		self.cpus = cpus
@@ -77,16 +78,40 @@ class KVM(elements.Element):
 		self.template = resources.template.get(self.TYPE, tmplName)
 
 	def action_prepare(self):
-		self.state = self.ST_PREPARED
+		#FIXME: implement
+		self.setState(self.ST_PREPARED, True)
 		
 	def action_destroy(self):
-		self.state = self.ST_CREATED
+		#FIXME: implement
+		self.setState(self.ST_CREATED, True)
 
 	def action_start(self):
-		self.state = self.ST_STARTED
+		#FIXME: implement
+		print " ".join(self._buildCmd())
+		self.setState(self.ST_STARTED, True)
 				
 	def action_stop(self):
-		self.state = self.ST_PREPARED
+		#FIXME: implement
+		self.setState(self.ST_PREPARED, True)
+
+	def _relPath(self, file_):
+		assert self.path
+		return os.path.join(self.path, file_)
+
+	def _buildCmd(self):
+		cmd = ["kvm", "-daemonize"]
+		cmd += ["-smp", str(self.cpus)]
+		cmd += ["-chardev", "socket,id=mon,path=%s,server,nowait" % self._relPath("monitor.socket"), "-mon", "chardev=mon"]
+		cmd += ["-vnc", "unix:%s,password" % self._relPath("vnc.socket")]
+		cmd += ["-pidfile", self._relPath("pidfile")]
+		if self.usbtablet:
+			cmd += ["-usbdevice", "tablet"]
+		cmd += ["-vga", "cirrus"]
+		cmd += ["-k", self.kblang]
+		cmd += ["-drive", "file=%s" % self._relPath("hda.qcow2")]
+		cmd += ["-m", str(self.ram)]
+		cmd += ["-cpuunits", "1000"]
+		return cmd
 
 	def upcast(self):
 		return self
@@ -97,4 +122,37 @@ class KVM(elements.Element):
 		return info
 
 
-elements.TYPE_CLASSES[KVM.TYPE] = KVM
+class KVM_Interface(elements.Element):
+	name = attribute("name", str)
+
+	TYPE = "kvm_interface"
+	CAP_ACTIONS = {
+		"__remove__": [KVM.ST_CREATED, KVM.ST_PREPARED]
+	}
+	CAP_ATTRS = {
+		"name": [KVM.ST_CREATED, KVM.ST_PREPARED]
+	}
+	CAP_CHILDREN = {}
+	CAP_PARENT = [KVM.TYPE]
+	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	
+	class Meta:
+		db_table = "tomato_kvm_interface"
+		app_label = 'tomato'
+	
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		self.state = KVM.ST_CREATED
+		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+
+	def upcast(self):
+		return self
+
+	def info(self):
+		info = elements.Element.info(self)
+		info["attrs"]["name"] = self.name
+		return info
+
+
+elements.TYPES[KVM.TYPE] = KVM
+elements.TYPES[KVM_Interface.TYPE] = KVM_Interface

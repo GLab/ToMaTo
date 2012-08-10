@@ -35,11 +35,11 @@ def logCall(function, args, kwargs):
 @db.commit_after
 def handleError(error, function, args, kwargs):
 	if isinstance(error, xmlrpclib.Fault):
-		fault.errors_add('%s:%s' % (error.__class__.__name__, error), traceback.format_exc())
+		fault.errors_add(error, traceback.format_exc())
 	else:
 		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
 			# not a wrong API call
-			fault.errors_add('%s:%s' % (error.__class__.__name__, error), traceback.format_exc())
+			fault.errors_add(error, traceback.format_exc())
 			logger.log("Exception: %s" % error)
 		return fault.wrap(error)
 
