@@ -81,7 +81,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 			return getattr(self, self.type)
 		except:
 			pass
-		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type))
+		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
 
 	def _determineParadigm(self, el1, el2):
 		for (p1, p2) in self.CAP_CON_PARADIGMS:
@@ -150,6 +150,7 @@ def create(el1, el2, type_=None, attrs={}):
 		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 		con = TYPES[type_]()
 		con.init(el1, el2, attrs)
+		con.save()
 		return con
 	else:
 		for type_ in TYPES:

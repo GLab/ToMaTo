@@ -38,18 +38,31 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('tomato', ['Resource'])
 
-        # Adding model 'KVM'
-        db.create_table('tomato_kvm', (
+        # Adding model 'ResourceInstance'
+        db.create_table('tomato_resourceinstance', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('num', self.gf('django.db.models.fields.IntegerField')()),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Element'])),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
+        ))
+        db.send_create_signal('tomato', ['ResourceInstance'])
+
+        # Adding unique constraint on 'ResourceInstance', fields ['num', 'type']
+        db.create_unique('tomato_resourceinstance', ['num', 'type'])
+
+        # Adding model 'KVMQM'
+        db.create_table('tomato_kvmqm', (
             ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
             ('template', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resource'], null=True)),
         ))
-        db.send_create_signal('tomato', ['KVM'])
+        db.send_create_signal('tomato', ['KVMQM'])
 
-        # Adding model 'KVM_Interface'
+        # Adding model 'KVMQM_Interface'
         db.create_table('tomato_kvm_interface', (
             ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
         ))
-        db.send_create_signal('tomato', ['KVM_Interface'])
+        db.send_create_signal('tomato', ['KVMQM_Interface'])
 
         # Adding model 'OpenVZ'
         db.create_table('tomato_openvz', (
@@ -88,12 +101,16 @@ class Migration(SchemaMigration):
             ('resource_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Resource'], unique=True, primary_key=True)),
             ('tech', self.gf('django.db.models.fields.CharField')(max_length=20)),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('preference', self.gf('django.db.models.fields.IntegerField')(default=0)),
         ))
         db.send_create_signal('tomato', ['Template'])
 
 
     def backwards(self, orm):
         
+        # Removing unique constraint on 'ResourceInstance', fields ['num', 'type']
+        db.delete_unique('tomato_resourceinstance', ['num', 'type'])
+
         # Deleting model 'Connection'
         db.delete_table('tomato_connection')
 
@@ -103,10 +120,13 @@ class Migration(SchemaMigration):
         # Deleting model 'Resource'
         db.delete_table('tomato_resource')
 
-        # Deleting model 'KVM'
-        db.delete_table('tomato_kvm')
+        # Deleting model 'ResourceInstance'
+        db.delete_table('tomato_resourceinstance')
 
-        # Deleting model 'KVM_Interface'
+        # Deleting model 'KVMQM'
+        db.delete_table('tomato_kvmqm')
+
+        # Deleting model 'KVMQM_Interface'
         db.delete_table('tomato_kvm_interface')
 
         # Deleting model 'OpenVZ'
@@ -151,13 +171,13 @@ class Migration(SchemaMigration):
             'state': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '20'})
         },
-        'tomato.kvm': {
-            'Meta': {'object_name': 'KVM', '_ormbases': ['tomato.Element']},
+        'tomato.kvmqm': {
+            'Meta': {'object_name': 'KVMQM', '_ormbases': ['tomato.Element']},
             'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'}),
             'template': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resource']", 'null': 'True'})
         },
-        'tomato.kvm_interface': {
-            'Meta': {'object_name': 'KVM_Interface', '_ormbases': ['tomato.Element']},
+        'tomato.kvmqm_interface': {
+            'Meta': {'object_name': 'KVMQM_Interface', 'db_table': "'tomato_kvm_interface'", '_ormbases': ['tomato.Element']},
             'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'})
         },
         'tomato.lxc': {
@@ -184,9 +204,18 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'type': ('django.db.models.fields.CharField', [], {'max_length': '20'})
         },
+        'tomato.resourceinstance': {
+            'Meta': {'unique_together': "(('num', 'type'),)", 'object_name': 'ResourceInstance'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'num': ('django.db.models.fields.IntegerField', [], {}),
+            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Element']"}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '20'})
+        },
         'tomato.template': {
             'Meta': {'object_name': 'Template', '_ormbases': ['tomato.Resource']},
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'preference': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'resource_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Resource']", 'unique': 'True', 'primary_key': 'True'}),
             'tech': ('django.db.models.fields.CharField', [], {'max_length': '20'})
         }

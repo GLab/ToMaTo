@@ -67,6 +67,9 @@ import api
 
 from rpcserver import run as runRPCserver
 
-from tomato import lib
+from tomato import lib, resources
+
+if not config.MAINTENANCE:
+	resources.init()
 
 #RepeatedProcess(5*60, "task cleanup", Task("cleanup", lib.tasks.cleanup), schedule=not config.MAINTENANCE)

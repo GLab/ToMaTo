@@ -21,7 +21,7 @@ import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections
 from OpenSSL import SSL
 
 #Bugfix: Python 2.6 will not call the needed shutdown_request function
-if not SocketServer.BaseServer.shutdown_request:
+if not hasattr(SocketServer.BaseServer, "shutdown_request"):
 	def _handle_request_noblock(self):
 		try:
 			request, client_address = self.get_request()

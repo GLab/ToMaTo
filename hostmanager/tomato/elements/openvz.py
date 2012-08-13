@@ -15,10 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os
+import os, sys
 from django.db import models
-from tomato import connections, elements, resources, config
-from tomato.lib import cmd
+from tomato import connections, elements, resources, config, host
 from tomato.lib.attributes import attribute
 
 class OpenVZ(elements.Element):
@@ -47,7 +46,7 @@ class OpenVZ(elements.Element):
 	CAP_CHILDREN = {
 		"openvz_interface": [ST_CREATED, ST_PREPARED],
 	}
-	CAP_PARENT = []
+	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256}
 	
 	class Meta:
@@ -127,10 +126,20 @@ class OpenVZ_Interface(elements.Element):
 		return info
 
 
-vzctlVersion = cmd.getDpkgVersion("vzctl")
+vzctlVersion = host.getDpkgVersion("vzctl")
+vnctermVersion = host.getDpkgVersion("vncterm")
 
-if [3] <= vzctlVersion < [4]:
+def register():
+	if not vzctlVersion:
+		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
+		return
+	if not ([3] <= vzctlVersion < [4]):
+		print >>sys.stderr, "Warning: OpenVZ not supported on vzctl version %s, disabled" % vzctlVersion
+		return
+	if not vnctermVersion:
+		print >>sys.stderr, "Warning: OpenVZ needs vncterm, disabled"
+		return
 	elements.TYPES[OpenVZ.TYPE] = OpenVZ
 	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
-else:
-	print "Warning: OpenVZ not supported on vzctl version %s" % vzctlVersion
+
+register()

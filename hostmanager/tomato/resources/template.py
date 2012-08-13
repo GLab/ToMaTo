@@ -21,6 +21,7 @@ from tomato import resources
 class Template(resources.Resource):
 	tech = models.CharField(max_length=20)
 	name = models.CharField(max_length=50)
+	preference = models.IntegerField(default=0)
 	
 	TYPE = "template"
 
@@ -35,6 +36,10 @@ class Template(resources.Resource):
 	def upcast(self):
 		return self
 	
+	def getPath(self):
+		#FIXME: path
+		return None
+	
 	def info(self):
 		info = resources.Resource.info(self)
 		info["attrs"]["name"] = self.name
@@ -46,3 +51,6 @@ def get(tech, name):
 		return Template.objects.get(tech=tech, name=name)
 	except:
 		return None
+	
+def getPreferred(tech):
+	return Template.objects.filter(tech=tech).order_by("preference")[0]

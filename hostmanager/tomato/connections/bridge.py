@@ -17,8 +17,7 @@
 
 import os
 from django.db import models
-from tomato import connections
-from tomato.lib import cmd 
+from tomato import connections, host
 from tomato.lib.attributes import attribute
 
 class Bridge(connections.Connection):
@@ -79,7 +78,7 @@ class Bridge(connections.Connection):
 		return info
 
 
-bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
+bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
 
 if bridgeUtilsVersion:
 	connections.TYPES[Bridge.TYPE] = Bridge

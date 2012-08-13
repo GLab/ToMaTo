@@ -47,18 +47,22 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			fault.check(parent.type in self.CAP_PARENT, "Parent type %s not allowed for type %s", (parent.type, self.type))
 			fault.check(self.type in parent.CAP_CHILDREN, "Parent type %s does not allow children of type %s", (parent.type, self.type))
 			fault.check(parent.state in parent.CAP_CHILDREN[self.type], "Parent type %s does not allow children of type %s in state %s", (parent.type, self.type, parent.state))
+		else:
+			fault.check(None in self.CAP_PARENT, "Type %s needs parent", self.type)
 		self.parent = parent
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
 		self.modify(attrs)
+		if self.parent:
+			self.parent.onChildAdded(self)
 		
 	def upcast(self):
 		try:
 			return getattr(self, self.type)
 		except:
 			pass
-		fault.raise_("Failed to cast element #%d to type %s" % (self.id, self.type))
+		fault.raise_("Failed to cast element #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
 
 	def hasParent(self):
 		return not self.parent is None
@@ -92,12 +96,14 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def setState(self, state, recursive=False):
 		if recursive:
 			for ch in self.getChildren():
-				ch.setState(self, state, True)
+				ch.setState(state, True)
 		self.state = state
 		self.save()
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
+		if self.parent:
+			self.parent.onChildRemoved(self)
 		for ch in self.getChildren():
 			ch.remove(recurse=True)
 		self.delete()
@@ -113,6 +119,18 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	
 	def onDisconnected(self):
 		pass
+			
+	def onChildAdded(self, child):
+		pass
+	
+	def onChildRemoved(self, child):
+		pass
+			
+	def getResource(self, type_):
+		return resources.take(type_, self)
+	
+	def returnResource(self, type_, num):
+		resources.give(type_, num, self)
 			
 	def info(self):
 		return {
@@ -139,6 +157,8 @@ def create(type_, parent=None, attrs={}):
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	el = TYPES[type_]()
 	el.init(parent, attrs)
+	el.save()
 	return el
 
-from tomato import fault, currentUser
+from tomato import fault, currentUser, resources
+		

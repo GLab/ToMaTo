@@ -17,8 +17,7 @@
 
 import os
 from django.db import models
-from tomato import connections, elements, resources, config
-from tomato.lib import cmd
+from tomato import connections, elements, resources, config, host
 from tomato.lib.attributes import attribute
 
 class LXC(elements.Element):
@@ -47,7 +46,7 @@ class LXC(elements.Element):
 	CAP_CHILDREN = {
 		"lxc_interface": [ST_CREATED, ST_PREPARED],
 	}
-	CAP_PARENT = []
+	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256}
 	
 	class Meta:
@@ -127,7 +126,7 @@ class LXC_Interface(elements.Element):
 		return info
 
 
-lxcVersion = cmd.getDpkgVersion("lxc")
+lxcVersion = host.getDpkgVersion("lxc")
 
 if [0, 7] <= lxcVersion < [0, 8]:
 	elements.TYPES[LXC.TYPE] = LXC
