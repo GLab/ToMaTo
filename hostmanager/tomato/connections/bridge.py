@@ -20,6 +20,10 @@ from django.db import models
 from tomato import connections, host
 from tomato.lib.attributes import attribute
 
+DOC="""
+	Description
+	"""
+
 class Bridge(connections.Connection):
 	bridge = attribute("bridge", str)
 

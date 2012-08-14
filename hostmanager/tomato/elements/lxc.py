@@ -20,6 +20,10 @@ from django.db import models
 from tomato import connections, elements, resources, config, host
 from tomato.lib.attributes import attribute
 
+DOC="""
+	Description
+	"""
+
 class LXC(elements.Element):
 	path = attribute("path", str)
 	ram = attribute("ram", int)

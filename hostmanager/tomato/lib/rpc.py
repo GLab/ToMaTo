@@ -182,7 +182,10 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 			return "Unknown method: %s" % method
 		import inspect
 		argspec = inspect.getargspec(func)
-		argstr = inspect.formatargspec(argspec.args[:-1], defaults=argspec.defaults[:-1])
+		if argspec.args:
+			argstr = inspect.formatargspec(argspec.args[:-1], defaults=argspec.defaults[:-1])
+		else:
+			argstr = "()"
 		return method + argstr
 
 	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
@@ -192,7 +195,7 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 		doc = func.__doc__
 		if not doc:
 			return "No documentation for: %s" % method
-		return doc	
+		return doc
 
 
 class ServerProxy(object):
