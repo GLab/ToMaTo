@@ -31,7 +31,7 @@ class CommandError(Exception):
     def __str__(self):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
-def spawn(cmd, shell=False):
+def spawn(cmd):
     if isinstance(cmd, list):
         cmd = " ".join(map(escape, cmd))
     pid = runShell(cmd + " >/dev/null 2>&1 & echo $!")
@@ -111,11 +111,30 @@ class Path:
     def entryNames(self):
         return os.listdir(self.path)
     def copyTo(self, path):
+        if isinstance(path, Path):
+            path = path.path
         shutil.copyfile(self.path, path)
     def basename(self):
         return os.path.basename(self.path)
     def readlink(self):
         return Path(os.readlink(self.path))
+    def createDir(self, parents=True):
+        if not parents:
+            os.mkdir(self.path)
+        else:
+            os.makedirs(self.path)
+    def remove(self, recursive=False):
+        if recursive:
+            shutil.rmtree(self.path)
+        else:
+            os.remove(self.path)
+    
+class Archive(Path):
+    # not using module tarfile as it is not safe
+    def extractTo(self, dst):
+        if isinstance(dst, Path):
+            dst = dst.path
+        run(["tar", "-axf", self.path, "-C", dst])
 
 class Interface:
     def __init__(self, name):

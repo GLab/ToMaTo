@@ -54,8 +54,6 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
 		self.modify(attrs)
-		if self.parent:
-			self.getParent().onChildAdded(self)
 		
 	def upcast(self):
 		try:
@@ -165,6 +163,8 @@ def create(type_, parent=None, attrs={}):
 	el = TYPES[type_]()
 	el.init(parent, attrs)
 	el.save()
+	if parent:
+		parent.onChildAdded(el)
 	return el
 
 from tomato import fault, currentUser, resources

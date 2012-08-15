@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources
+from tomato import resources, fault
 
 PATHS={
-	"kvmqm": "/var/lib/vz/template/qemu/%s.qcow2"
+	"kvmqm": "/var/lib/vz/template/qemu/%s.qcow2",
+	"openvz": "/var/lib/vz/template/cache/%s.tar.gz"
 }
 
 class Template(resources.Resource):
@@ -44,6 +45,7 @@ class Template(resources.Resource):
 		return PATHS[self.tech] % self.name
 	
 	def modify_tech(self, val):
+		fault.check(val in PATHS.keys(), "Unsupported template tech: %s", val)
 		self.tech = val
 	
 	def modify_name(self, val):
@@ -66,6 +68,8 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	return Template.objects.filter(tech=tech).order_by("preference")[0]
+	tmpls = Template.objects.filter(tech=tech).order_by("preference")
+	fault.check(tmpls, "No template of type %s registered", tech) 
+	return tmpls[0]
 
 resources.TYPES[Template.TYPE] = Template

@@ -111,7 +111,6 @@ Actions:
 
 
 class KVMQM(elements.Element):
-	path = attribute("path", str)
 	vmid = attribute("vmid", int)
 	vncport = attribute("vncport", int)
 	vncpid = attribute("vncpid", int)
@@ -154,9 +153,6 @@ class KVMQM(elements.Element):
 		self.type = self.TYPE
 		self.state = self.ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		self.path = os.path.join(config.DATA_DIR, "kvmqm", str(self.id))
-		if not os.path.exists(self.path):
-			os.makedirs(self.path)
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
 		self.vncpassword = host.randomPassword()
@@ -167,9 +163,6 @@ class KVMQM(elements.Element):
 				
 	def _vncPath(self):
 		return "/var/run/qemu-server/%d.vnc" % self.vmid
-
-	def _vncPidfile(self):
-		return os.path.join(self.path, "vnc.pid")
 
 	def _imagePathDir(self):
 		return "/var/lib/vz/images/%d" % self.vmid
@@ -231,59 +224,87 @@ class KVMQM(elements.Element):
 			num += 1
 		return num
 
+	def _addInterface(self, interface):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
+
+	def _removeInterface(self, interface):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-delete", "net%d" % interface.num])
+
+	def _setCpus(self):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-cores", self.cpus])
+
+	def _setRam(self):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-memory", self.ram])
+
+	def _setKblang(self):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-keyboard", self.kblang])
+
+	def _setUsbtablet(self):
+		assert self.state == self.ST_PREPARED
+		self._qm("set", ["-tablet", int(self.usbtablet)])
+
+	def _useImage(self, path):
+		img = host.Path(path)
+		img.copyTo(self._imagePath())
+
 	def onChildAdded(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
-			self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
+			self._addInterface(interface)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
-			self._qm("set", ["-delete", "net%d" % interface.num])
+			self._removeInterface(interface)
 
 	def modify_cpus(self, cpus):
 		self._checkState()
 		self.cpus = cpus
-		self._qm("set", ["-cores", self.cpus])
+		self._setCpus()
 
 	def modify_ram(self, ram):
 		self._checkState()
 		self.ram = ram
-		self._qm("set", ["-memory", self.ram])
+		self._setRam()
 		
 	def modify_kblang(self, kblang):
 		self._checkState()
 		self.kblang = kblang
-		self._qm("set", ["-keyboard", self.kblang])
+		self._setKblang()
 		
 	def modify_usbtablet(self, usbtablet):
 		self._checkState()
 		self.usbtablet = usbtablet
-		self._qm("set", ["-tablet", int(self.usbtablet)])
+		self._setUsbtablet()
 		
 	def modify_template(self, tmplName):
 		self._checkState()
 		self.template = resources.template.get(self.TYPE, tmplName)
-		tpl = self._template()
-		img = host.Path(tpl.getPath())
-		img.copyTo(self._imagePath())
+		self._useImage(self._template().getPath())
 
 	def action_prepare(self):
 		self._checkState()
-		self._qm("create", ["-cores", self.cpus, "-memory", self.ram, "-keyboard", self.kblang, "-tablet", int(self.usbtablet)])
+		self._qm("create")
 		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
 		self._qm("set", ["-args", "-vnc unix:%s,password" % self._vncPath()]) #disable vnc tls as most clients dont support that 
+		self.setState(self.ST_PREPARED, True)
+		self._setCpus()
+		self._setRam()
+		self._setKblang()
+		self._setUsbtablet()
 		# add all interfaces
 		for interface in self.getChildren():
-			self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
+			self._addInterface(interface)
 		# use template
 		if not os.path.exists(self._imagePathDir()):
 			os.mkdir(self._imagePathDir())
-		tpl = self._template()
-		img = host.Path(tpl.getPath())
-		img.copyTo(self._imagePath())
+		self._useImage(self._template().getPath())
 		self._qm("set", ["-ide0", "local:%d/disk.qcow2" % self.vmid])
-		self.setState(self.ST_PREPARED, True)
 		
 	def action_destroy(self):
 		self._checkState()
@@ -389,7 +410,6 @@ class KVMQM_Interface(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["num"] = self.num
 		return info
 
 
