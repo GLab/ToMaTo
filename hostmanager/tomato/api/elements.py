@@ -57,7 +57,7 @@ def element_modify(id, attrs):
     @param id: The id of the element
     @type id: int
      
-    @param attrs: Attributes to configure the new element with. The allowed
+    @param attrs: Attributes to configure the element with. The allowed
         attributes and their meanings depend on the element type.
     @type attrs: dict
     

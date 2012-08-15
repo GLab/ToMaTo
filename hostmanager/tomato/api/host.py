@@ -15,16 +15,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+
 def host_info():
+    """
+    Retrieves general information about the host. 
+    
+    @return: general Information about the host
+    @rtype: dict    
+    """
     return {
         "hostmanager": {
-            "version": 0.1,
+            "version": config.VERSION,
         },
-        "site": "ukl",
-        "coordinates": [0, 0],
+        "site": config.SITE,
+        "coordinates": config.COORDINATES,
     }
 
 def host_capabilities():
+    """
+    Retrieves the capabilities of the host. 
+    
+    @return: Information about the host capabilities
+    @rtype: dict
+    """
     element_types = {}
     for type_, class_ in tomato.elements.TYPES.iteritems():
         caps = {}
@@ -45,3 +58,4 @@ def host_capabilities():
 
 import tomato.elements
 import tomato.resources
+from tomato import config

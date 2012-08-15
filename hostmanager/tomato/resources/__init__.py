@@ -23,7 +23,7 @@ from tomato.elements import Element
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
 
-TYPES = ["template"]
+TYPES = {}
 
 class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES])
@@ -35,8 +35,9 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         pass
 
     def init(self, attrs={}):
-        self.attrs = attrs
+        self.attrs = {}
         self.save()
+        self.modify(attrs)
         
     def getInstanceRange(self):
         fault.check(self.numStart and self.numCount, "This resource can not have any instances", code=fault.INTERNAL_ERROR)
@@ -50,6 +51,23 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         except:
             pass
         fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+    
+    def modify(self, attrs):
+        for key, value in attrs.iteritems():
+            if hasattr(self, "modify_%s" % key):
+                getattr(self, "modify_%s" % key)(value)
+            else:
+                self.attrs[key] = value
+        self.save()
+    
+    def modify_num_start(self, val):
+        self.num_start = val
+    
+    def modify_num_count(self, val):
+        self.num_count = val
+
+    def remove(self):
+        self.delete()    
     
     def info(self):
         return {
@@ -115,12 +133,16 @@ def getAll(**kwargs):
     return (res.upcast() for res in Resource.objects.filter(**kwargs))
 
 def _addResourceRange(type_, start, count):
-    res = Resource(type=type_)
-    res.init()
-    res.numStart = start
-    res.numCount = count
+    return create(type_, {"num_start": start, "num_count": count})
+
+def create(type_, attrs={}):
+    if type_ in TYPES:
+        res = TYPES[type_]()
+    else:
+        res = Resource(type=type_)
+    res.init(attrs)
     res.save()
-    
+    return res
 
 def init():
     if not getByType("vmid"):

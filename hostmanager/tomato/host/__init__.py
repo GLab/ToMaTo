@@ -32,11 +32,16 @@ class CommandError(Exception):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
 def spawn(cmd, shell=False):
-    proc=subprocess.Popen(cmd, shell=shell, close_fds=True)
-    return proc.pid
+    if isinstance(cmd, list):
+        cmd = " ".join(map(escape, cmd))
+    pid = runShell(cmd + " >/dev/null 2>&1 & echo $!")
+    return int(pid)
 
 def kill(pid, force=None):
-    os.kill(pid, 9 if force else 15)
+    try:
+        os.kill(pid, 9 if force else 15)
+    except OSError:
+        pass
 
 def run(cmd):
     error, output = runUnchecked(cmd, False)
@@ -107,6 +112,10 @@ class Path:
         return os.listdir(self.path)
     def copyTo(self, path):
         shutil.copyfile(self.path, path)
+    def basename(self):
+        return os.path.basename(self.path)
+    def readlink(self):
+        return Path(os.readlink(self.path))
 
 class Interface:
     def __init__(self, name):
@@ -121,6 +130,11 @@ class Interface:
         self.linkConfig(["up"])
     def down(self):
         self.linkConfig(["down"])
+    def getBridge(self):
+        brlink = self._sysPath().subPath("brport/bridge")
+        if not brlink.exists():
+            return None
+        return Bridge(brlink.readlink().basename())
     
 class Bridge(Interface):
     def _brifPath(self):
@@ -129,9 +143,11 @@ class Bridge(Interface):
         return self._brifPath().exists()
     def create(self):
         run(["brctl", "addbr", self.name])
-    def interfaces(self):
+    def interfaceNames(self):
         assert self.exists()
-        return map(Interface, self._brifPath().entryNames())
+        return self._brifPath().entryNames()
+    def interfaces(self):
+        return map(Interface, self.interfaceNames())
     def remove(self):
         assert not self.interfaces()
         assert self.exists()
@@ -141,9 +157,9 @@ class Bridge(Interface):
         assert self.exists()
         assert isinstance(iface, Interface)
         assert iface.exists()
-        run(["brctl", "addif", iface])
+        run(["brctl", "addif", self.name, iface.name])
     def removeInterface(self, iface):
         assert self.exists()
         assert isinstance(iface, Interface)
         assert iface.exists()
-        run(["brctl", "delif", iface])
+        run(["brctl", "delif", self.name, iface.name])

@@ -18,19 +18,15 @@
 from django.db import models
 from tomato import resources
 
-PATHS={
-	"kvmqm": "/var/lib/vz/template/qemu/%s.qcow2"
-}
-
-class Template(resources.Resource):
-	tech = models.CharField(max_length=20)
-	name = models.CharField(max_length=50)
+class Network(resources.Resource):
+	kind = models.CharField(max_length=20)
+	bridge = models.CharField(max_length=20)
 	preference = models.IntegerField(default=0)
 	
-	TYPE = "template"
+	TYPE = "network"
 
 	class Meta:
-		db_table = "tomato_template"
+		db_table = "tomato_network"
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
@@ -40,32 +36,26 @@ class Template(resources.Resource):
 	def upcast(self):
 		return self
 	
-	def getPath(self):
-		return PATHS[self.tech] % self.name
+	def getBridge(self):
+		return self.bridge
 	
-	def modify_tech(self, val):
-		self.tech = val
+	def modify_kind(self, val):
+		self.kind = val
 	
-	def modify_name(self, val):
-		self.name = val
+	def modify_bridge(self, val):
+		self.bridge = val
 
 	def modify_preference(self, val):
 		self.preference = val
 
 	def info(self):
 		info = resources.Resource.info(self)
-		info["attrs"]["name"] = self.name
-		info["attrs"]["tech"] = self.tech
+		info["attrs"]["kind"] = self.kind
+		info["attrs"]["bridge"] = self.bridge
 		info["attrs"]["preference"] = self.preference
 		return info
 
-def get(tech, name):
-	try:
-		return Template.objects.get(tech=tech, name=name)
-	except:
-		return None
-	
-def getPreferred(tech):
-	return Template.objects.filter(tech=tech).order_by("preference")[0]
+def get(kind):
+	return Network.objects.filter(kind=kind).order_by("preference")[0]
 
-resources.TYPES[Template.TYPE] = Template
+resources.TYPES[Network.TYPE] = Network

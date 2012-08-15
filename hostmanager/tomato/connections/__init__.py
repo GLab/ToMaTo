@@ -45,8 +45,27 @@ Interface paradigm interface:
 	disconnectInterface(ifname)
 		Called to disconnect the interface ifname from the connection.
 		The interface must exist all the time until this call.
+- The element must provide the following methods:
+	interfaceName()
+		This method must return the interface name if the interface exists
+		and is ready for connection or None if not.
 """
 
+PARADIGM_BRIDGE = "bridge"
+"""
+Bridge paradigm interface:
+- The connection must provide two methods:
+	connectBridge(bridgename)
+		Called to connect the bridge bridgename to the connection.
+		The bridge must exist and be fully configured.
+	disconnectBridge(bridgename)
+		Called to disconnect the bridge bridgename from the connection.
+		The bridge must exist all the time until this call.
+- The element must provide the following methods:
+	bridgeName()
+		This method must return the bridge name if the bridge exists and is
+		ready for connection or None if not.
+"""
 
 
 class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
@@ -65,7 +84,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		pass
 
 	def init(self, el1, el2, attrs={}):
-		paradigm = self._determineParadigm(el1, el2)
+		paradigm = self.determineParadigm(el1, el2)
 		fault.check(paradigm, "No connection paradigm found to connect elements of type %s and %s with connection of type %s", (el1.type, el2.type, self.type))
 		p1, p2 = paradigm
 		self.owner = currentUser()
@@ -83,8 +102,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 			pass
 		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
 
-	def _determineParadigm(self, el1, el2):
-		for (p1, p2) in self.CAP_CON_PARADIGMS:
+	@classmethod
+	def determineParadigm(cls, el1, el2):
+		for (p1, p2) in cls.CAP_CON_PARADIGMS:
 			if p1 in el1.CAP_CON_PARADIGMS and p2 in el2.CAP_CON_PARADIGMS:
 				return (p1, p2)
 			if p2 in el1.CAP_CON_PARADIGMS and p1 in el2.CAP_CON_PARADIGMS:
@@ -154,12 +174,8 @@ def create(el1, el2, type_=None, attrs={}):
 		return con
 	else:
 		for type_ in TYPES:
-			try:
+			if TYPES[type_].determineParadigm(el1, el2):
 				return create(el1, el2, type_, attrs)
-			except:
-				import traceback
-				traceback.print_exc()
-				pass
 		fault.check(False, "Failed to find matching connection type for element types %s and %s", (el1.type, el2.type))
 
 from tomato import fault, currentUser

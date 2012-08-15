@@ -55,7 +55,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.save()
 		self.modify(attrs)
 		if self.parent:
-			self.parent.onChildAdded(self)
+			self.getParent().onChildAdded(self)
 		
 	def upcast(self):
 		try:
@@ -92,6 +92,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
+		if self.connection:
+			self.getConnection().checkRemove()
 
 	def setState(self, state, recursive=False):
 		if recursive:
@@ -103,10 +105,15 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
 		if self.parent:
-			self.parent.onChildRemoved(self)
+			self.getParent().onChildRemoved(self)
 		for ch in self.getChildren():
 			ch.remove(recurse=True)
+		if self.connection:
+			self.getConnection().remove()
 		self.delete()
+			
+	def getParent(self):
+		return self.parent.upcast() if self.parent else None
 			
 	def getChildren(self):
 		return [el.upcast() for el in self.children.all()]

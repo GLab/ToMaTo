@@ -18,6 +18,7 @@
 import os, sys, json
 from django.db import models
 from tomato import connections, elements, resources, config, host, fault
+from tomato.resources import template
 from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
 
@@ -119,7 +120,7 @@ class KVMQM(elements.Element):
 	kblang = attribute("kblang", str)
 	usbtablet = attribute("usbtablet", bool)
 	vncpassword = attribute("vncpassword", str)
-	template = models.ForeignKey(resources.Resource, null=True)
+	template = models.ForeignKey(template.Template, null=True)
 
 	ST_CREATED = "created"
 	ST_PREPARED = "prepared"
@@ -202,6 +203,13 @@ class KVMQM(elements.Element):
 			if err.errorCode == 2:
 				return self.ST_CREATED
 
+	def _checkState(self):
+		savedState = self.state
+		realState = self._getState()
+		if savedState != realState:
+			self.setState(realState, True)
+		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+
 	def _control(self, cmds, timeout=60):
 		assert self.state == self.ST_STARTED, "VM must be running"
 		controlPath = self._controlPath()
@@ -212,7 +220,7 @@ class KVMQM(elements.Element):
 	def _template(self):
 		if self.template:
 			return self.template
-		pref = resources.template.get(self.TYPE, resources.template.getPreferred(self.TYPE))
+		pref = resources.template.getPreferred(self.TYPE)
 		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
 		return pref
 				
@@ -224,40 +232,53 @@ class KVMQM(elements.Element):
 		return num
 
 	def onChildAdded(self, interface):
+		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
 
 	def onChildRemoved(self, interface):
+		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._qm("set", ["-delete", "net%d" % interface.num])
 
 	def modify_cpus(self, cpus):
+		self._checkState()
 		self.cpus = cpus
 		self._qm("set", ["-cores", self.cpus])
 
 	def modify_ram(self, ram):
+		self._checkState()
 		self.ram = ram
 		self._qm("set", ["-memory", self.ram])
 		
 	def modify_kblang(self, kblang):
+		self._checkState()
 		self.kblang = kblang
 		self._qm("set", ["-keyboard", self.kblang])
 		
 	def modify_usbtablet(self, usbtablet):
+		self._checkState()
 		self.usbtablet = usbtablet
 		self._qm("set", ["-tablet", int(self.usbtablet)])
 		
 	def modify_template(self, tmplName):
+		self._checkState()
 		self.template = resources.template.get(self.TYPE, tmplName)
-		#FIXME: use template
+		tpl = self._template()
+		img = host.Path(tpl.getPath())
+		img.copyTo(self._imagePath())
 
 	def action_prepare(self):
+		self._checkState()
 		self._qm("create", ["-cores", self.cpus, "-memory", self.ram, "-keyboard", self.kblang, "-tablet", int(self.usbtablet)])
-		self._qm("set", ["-args", "-vnc unix:%s,password" % self._vncPath()])
+		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
+		self._qm("set", ["-args", "-vnc unix:%s,password" % self._vncPath()]) #disable vnc tls as most clients dont support that 
 		# add all interfaces
 		for interface in self.getChildren():
 			self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
 		# use template
+		if not os.path.exists(self._imagePathDir()):
+			os.mkdir(self._imagePathDir())
 		tpl = self._template()
 		img = host.Path(tpl.getPath())
 		img.copyTo(self._imagePath())
@@ -265,10 +286,12 @@ class KVMQM(elements.Element):
 		self.setState(self.ST_PREPARED, True)
 		
 	def action_destroy(self):
+		self._checkState()
 		self._qm("destroy")
 		self.setState(self.ST_CREATED, True)
 
 	def action_start(self):
+		self._checkState()
 		self._qm("start")
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
@@ -282,6 +305,7 @@ class KVMQM(elements.Element):
 		self.vncpid = host.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
 
 	def action_stop(self):
+		self._checkState()
 		for interface in self.getChildren():
 			con = interface.getConnection()
 			if con:
@@ -351,8 +375,14 @@ class KVMQM_Interface(elements.Element):
 		self.type = self.TYPE
 		self.state = KVMQM.ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
-		assert isinstance(self.parent, KVMQM)
-		self.num = self.parent._nextIfaceNum()
+		assert isinstance(self.getParent(), KVMQM)
+		self.num = self.getParent()._nextIfaceNum()
+		
+	def interfaceName(self):
+		if self.state == KVMQM.ST_STARTED:
+			return self.getParent()._interfaceName(self.num)
+		else:
+			return None
 		
 	def upcast(self):
 		return self

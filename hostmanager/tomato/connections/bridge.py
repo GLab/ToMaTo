@@ -28,13 +28,10 @@ class Bridge(connections.Connection):
 	bridge = attribute("bridge", str)
 
 	ST_CREATED = "created"
-	ST_PREPARED = "prepared"
 	ST_STARTED = "started"
 	TYPE = "bridge"
 	CAP_ACTIONS = {
-		"prepare": [ST_CREATED],
-		"destroy": [ST_PREPARED],
-		"start": [ST_PREPARED],
+		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
 		"__remove__": [ST_CREATED],
 	}
@@ -52,27 +49,54 @@ class Bridge(connections.Connection):
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.bridge = "br%d" % self.id
 				
-	def action_prepare(self):
-		#FIXME: implement
-		self.setState(self.ST_PREPARED)
-		
-	def action_destroy(self):
-		#FIXME: implement
-		self.setState(self.ST_CREATED)
-
+	def _bridgeObj(self):
+		return host.Bridge(self.bridge)
+				
 	def action_start(self):
-		#FIXME: implement
+		br = self._bridgeObj()
+		br.create()
+		br.up()
 		self.setState(self.ST_STARTED)
+		for el in self.getElements():
+			ifname = el.interfaceName()
+			if ifname:
+				self.connectInterface(ifname)
 				
 	def action_stop(self):
-		#FIXME: implement
-		self.setState(self.ST_PREPARED)
+		br = self._bridgeObj()
+		for el in self.getElements():
+			ifname = el.interfaceName()
+			if ifname:
+				self.disconnectInterface(ifname)
+		if br.exists():
+			br.down()
+			br.remove()
+		self.setState(self.ST_CREATED)
 
 	def connectInterface(self, ifname):
-		pass
+		br = self._bridgeObj()
+		if ifname in br.interfaceNames():
+			return
+		iface = host.Interface(ifname)
+		if iface.getBridge():
+			iface.getBridge().removeInterface(iface)
+		br.addInterface(iface)
+		if len(br.interfaces()) == 2:
+			# now elements are connected
+			for el in self.getElements():
+				el.onConnected()
 	
-	def disconectInterface(self, ifname):
-		pass
+	def disconnectInterface(self, ifname):
+		br = self._bridgeObj()
+		if not br.exists():
+			return
+		if not ifname in br.interfaceNames():
+			return
+		if len(br.interfaces()) == 2:
+			# now elements are no longer connected
+			for el in self.getElements():
+				el.onDisconnected()
+		br.removeInterface(host.Interface(ifname))
 
 	def upcast(self):
 		return self
