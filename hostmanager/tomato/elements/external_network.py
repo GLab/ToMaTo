@@ -23,6 +23,34 @@ from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
 
 DOC="""
+Element type: external_network
+
+Description:
+	This element type provides access to external networks present at this 
+	host as a bridge.
+
+Possible parents: None
+
+Possible children: None
+
+Default state: default
+
+Removable in states: default
+
+Connection paradigms: bridge
+
+States:
+	default: This is the only possible state. In this state the bridge is 
+		present and ready.
+		
+Attributes:
+	network: str, changeable in all states
+		The kind of network to be chosen for this external network. A network
+		resource with a matching kind attribute is chosen as network for this
+		element. If no network with the given kind exists (esp. for 
+		network=None), a default network is chosen instead.
+
+Actions: None
 """
 
 
@@ -53,7 +81,14 @@ class External_Network(elements.Element):
 		#network: None, default network
 				
 	def modify_network(self, kind):
+		con = self.getConnection()
+		br = self.bridgeName()
+		if con and br:
+			con.disconnectBridge(br)
 		self.network = resources.network.get(kind)
+		br = self.bridgeName()
+		if con and br:
+			con.connectBridge(br)
 
 	def upcast(self):
 		return self

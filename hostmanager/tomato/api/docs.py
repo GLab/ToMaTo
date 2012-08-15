@@ -15,8 +15,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
+from tomato import elements, connections
+
+def DOC_ELEMENT_KVMQM():
+    return elements.kvmqm.DOC
+DOC_ELEMENT_KVMQM.__doc__ = elements.kvmqm.DOC
+
+def DOC_ELEMENT_KVMQM_INTERFACE():
+    return elements.kvmqm.DOC_IFACE
+DOC_ELEMENT_KVMQM_INTERFACE.__doc__ = elements.kvmqm.DOC_IFACE
+
+
+def DOC_ELEMENT_EXTERNAL_NETWORK():
+    return elements.external_network.DOC
+DOC_ELEMENT_EXTERNAL_NETWORK.__doc__ = elements.external_network.DOC
+
+
+def DOC_ELEMENT_OPENVZ():
+    return elements.openvz.DOC
+DOC_ELEMENT_OPENVZ.__doc__ = elements.openvz.DOC
+
+def DOC_ELEMENT_OPENVZ_INTERFACE():
+    return elements.openvz.DOC_IFACE
+DOC_ELEMENT_OPENVZ_INTERFACE.__doc__ = elements.openvz.DOC_IFACE
+
+
+def DOC_CONNECTION_BRIDGE():
+    return connections.bridge.DOC
+DOC_CONNECTION_BRIDGE.__doc__ = connections.bridge.DOC
+
+def DOC_CONNECTION_FIXED_BRIDGE():
+    return connections.fixed_bridge.DOC
+DOC_CONNECTION_FIXED_BRIDGE.__doc__ = connections.fixed_bridge.DOC

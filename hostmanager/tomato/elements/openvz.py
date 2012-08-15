@@ -107,7 +107,7 @@ Actions:
 	stop, callable in state started
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using the runlevel system.
-	"""
+"""
 
 class OpenVZ(elements.Element):
 	vmid = attribute("vmid", int)
