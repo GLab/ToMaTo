@@ -10,7 +10,7 @@ repy_orig:
 	svn co http://seattle.cs.washington.edu/svn/seattle/branches/repy_v2/repy repy_orig
 
 $(PACKAGE)/repy: repy_orig
-	rsync -a repy_orig/ $(PACKAGE)/repy/ --exclude *test*
+	rsync -a repy_orig/ $(PACKAGE)/repy/ --exclude *test* --exclude *.svn*
 	rsync -a custom_files/ $(PACKAGE)/repy/
 
 .PHONY: build

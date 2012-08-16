@@ -10,3 +10,5 @@ buildui/build
 *.lyx#
 *Thumbs.db*
 ~$*.pptx
+
+web/tomato/static/newui

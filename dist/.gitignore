@@ -4,6 +4,7 @@
 *.build
 *.changes
 *.orig.*
+*.svn
 backend/tomato-backend-*
 web/tomato-web-*
 meta/tomato-host/debian/files
@@ -11,7 +12,8 @@ meta/tomato-host/debian/tomato-host
 cli/tomato-cli-*
 repy/tomato-repy-*
 repy/tomato-repy/debian/tomato-repy
-repy/repy-svn
+repy/repy_orig
+repy/tomato-repy/repy
 hostserver/tomato-hostserver/debian/files
 hostserver/tomato-hostserver/debian/tomato-hostserver
 kernel/pve-kernel-*
