@@ -265,6 +265,9 @@ class KVMQM(elements.Element):
 		img = host.Path(path)
 		img.copyTo(self._imagePath())
 
+	def _checkImage(self, path):
+		host.run(["qemu-img", "info", "-f", "qcow2", path])
+
 	def onChildAdded(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
@@ -356,7 +359,7 @@ class KVMQM(elements.Element):
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
-		#FIXME: check image
+		self._checkImage(self._imagePath("uploaded.qcow2"))
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
 	def action_download_grant(self):

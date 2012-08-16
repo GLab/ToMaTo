@@ -106,6 +106,13 @@ class Repy(elements.Element):
 			for key, value in res.iteritems():
 				fp.write("resource %s %s\n" % (key, value))
 
+	def _checkImage(self, path):
+		res = host.run(["repy-check", path]).strip()
+		if res != "None":
+			import re
+			res = re.match("<(type|class) '([^']*)'> (.*)", res)
+			fault.check(False, "Repy script error: %s %s", (res.group(2), res.group(3)))
+
 	def modify_cpus(self, val):
 		self.cpus = val
 		self._setProfile()
@@ -156,7 +163,7 @@ class Repy(elements.Element):
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.repy")), "No file has been uploaded")
-		#FIXME: check image
+		self._checkImage(self.dataPath("uploaded.repy"))
 		os.rename(self.dataPath("uploaded.repy"), self.dataPath("program.repy"))
 		
 	def action_download_grant(self):

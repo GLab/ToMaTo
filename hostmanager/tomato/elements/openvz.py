@@ -266,6 +266,10 @@ class OpenVZ(elements.Element):
 		imgPath.createDir()
 		archive.extractTo(imgPath)
 
+	def _checkImage(self, path):
+		res = host.run(["tar", "-tzvf", path, "./sbin/init"])
+		fault.check("0/0" in res, "Image contents not owned by root")
+
 	def onChildAdded(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
@@ -360,7 +364,7 @@ class OpenVZ(elements.Element):
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
-		#FIXME: check image
+		self._checkImage(self.dataPath("uploaded.tar.gz"))
 		arch = host.Archive(self.dataPath("uploaded.tar.gz"))
 		imgDir = host.Path(self._imagePath())
 		imgDir.remove(recursive=True)
