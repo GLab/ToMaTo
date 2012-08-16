@@ -21,6 +21,11 @@ from tomato.connections import Connection
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
 
+# Socat:
+#socat tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=IFNAME udp-listen:PORT
+#socat tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=IFNAME udp-connect:IP:PORT
+
+
 TYPES = {}
 REMOVE_ACTION = "__remove__"
 

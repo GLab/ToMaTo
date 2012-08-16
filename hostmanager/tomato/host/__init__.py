@@ -17,9 +17,13 @@
 
 import subprocess, os, hashlib, shutil
 
-def runUnchecked(cmd, shell=False):
-    proc=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell, close_fds=True)
-    res=proc.communicate()
+DEVNULL = open("/dev/null", "w")
+
+def runUnchecked(cmd, shell=False, ignoreErr=False, input=None):
+    stderr = DEVNULL if ignoreErr else subprocess.STDOUT
+    stdin = subprocess.PIPE if input else None
+    proc=subprocess.Popen(cmd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell, close_fds=True)
+    res=proc.communicate(input)
     return (proc.returncode,res[0])
 
 class CommandError(Exception):
@@ -32,10 +36,16 @@ class CommandError(Exception):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
 def spawn(cmd):
-    if isinstance(cmd, list):
-        cmd = " ".join(map(escape, cmd))
-    pid = runShell(cmd + " >/dev/null 2>&1 & echo $!")
-    return int(pid)
+    #setsid is important, otherwise programs will be killed when the parent process closes
+    cmd = ["setsid"] + cmd
+    proc=subprocess.Popen(cmd, stdout=DEVNULL, stderr=subprocess.STDOUT, close_fds=True)
+    return proc.pid
+
+def spawnShell(cmd):
+    #setsid is important, otherwise programs will be killed when the parent process closes
+    cmd = "setsid " + cmd
+    proc=subprocess.Popen(cmd, stdout=DEVNULL, stderr=subprocess.STDOUT, shell=True, close_fds=True)
+    return proc.pid
 
 def kill(pid, force=None):
     try:
@@ -43,17 +53,14 @@ def kill(pid, force=None):
     except OSError:
         pass
 
-def run(cmd):
-    error, output = runUnchecked(cmd, False)
+def run(cmd, **kwargs):
+    error, output = runUnchecked(cmd, **kwargs)
     if error:
         raise CommandError(" ".join(cmd), error, output)
     return output
 
-def runShell(cmd):
-    error, output = runUnchecked([cmd], True)
-    if error:
-        raise CommandError(cmd, error, output)
-    return output
+def runShell(cmd, **kwargs):
+    return run(cmd, shell=True, **kwargs)
    
 
 def removeControlChars(s):

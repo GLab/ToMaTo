@@ -74,6 +74,8 @@ class Bridge(connections.Connection):
 		self.setState(self.ST_CREATED)
 
 	def connectInterface(self, ifname):
+		if self.state == self.ST_CREATED:
+			return
 		br = self._bridgeObj()
 		if ifname in br.interfaceNames():
 			return
@@ -87,6 +89,8 @@ class Bridge(connections.Connection):
 				el.onConnected()
 	
 	def disconnectInterface(self, ifname):
+		if self.state == self.ST_CREATED:
+			return
 		br = self._bridgeObj()
 		if not br.exists():
 			return

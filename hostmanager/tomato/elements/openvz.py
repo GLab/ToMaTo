@@ -319,17 +319,17 @@ class OpenVZ(elements.Element):
 	def action_start(self):
 		self._checkState()
 		self._vzctl("start") #not using --wait since this might hang
+		self.setState(self.ST_STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifObj = host.Interface(self._interfaceName(interface.name))
 			util.waitFor(ifObj.exists)
-			interface._configure()
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
+			interface._configure() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
-		self.vncpid = host.spawn("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
-		self.setState(self.ST_STARTED, True)
+		self.vncpid = host.spawn(["vncterm", "-timeout", "0", "-rfbport", str(self.vncport), "-passwd", self.vncpassword, "-c", "bash -c 'while true; do vzctl enter %d; done'" % self.vmid])
 				
 	def action_stop(self):
 		self._checkState()

@@ -26,11 +26,6 @@ def DOC_ELEMENT_KVMQM_INTERFACE():
 DOC_ELEMENT_KVMQM_INTERFACE.__doc__ = elements.kvmqm.DOC_IFACE
 
 
-def DOC_ELEMENT_EXTERNAL_NETWORK():
-    return elements.external_network.DOC
-DOC_ELEMENT_EXTERNAL_NETWORK.__doc__ = elements.external_network.DOC
-
-
 def DOC_ELEMENT_OPENVZ():
     return elements.openvz.DOC
 DOC_ELEMENT_OPENVZ.__doc__ = elements.openvz.DOC
@@ -38,6 +33,21 @@ DOC_ELEMENT_OPENVZ.__doc__ = elements.openvz.DOC
 def DOC_ELEMENT_OPENVZ_INTERFACE():
     return elements.openvz.DOC_IFACE
 DOC_ELEMENT_OPENVZ_INTERFACE.__doc__ = elements.openvz.DOC_IFACE
+
+
+def DOC_ELEMENT_EXTERNAL_NETWORK():
+    return elements.external_network.DOC
+DOC_ELEMENT_EXTERNAL_NETWORK.__doc__ = elements.external_network.DOC
+
+
+def DOC_ELEMENT_UDP_TUNNEL():
+    return elements.udp_tunnel.DOC
+DOC_ELEMENT_UDP_TUNNEL.__doc__ = elements.udp_tunnel.DOC
+
+
+def DOC_ELEMENT_TINC():
+    return elements.tinc.DOC
+DOC_ELEMENT_TINC.__doc__ = elements.tinc.DOC
 
 
 def DOC_CONNECTION_BRIDGE():

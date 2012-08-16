@@ -18,9 +18,11 @@
 
 from elements import Element #@UnusedImport
 from elements.kvmqm import KVMQM, KVMQM_Interface #@UnusedImport
-from elements.external_network import External_Network #@UnusedImport
 from elements.openvz import OpenVZ, OpenVZ_Interface #@UnusedImport
 from elements.lxc import LXC, LXC_Interface #@UnusedImport
+from elements.external_network import External_Network #@UnusedImport
+from elements.udp_tunnel import UDP_Tunnel #@UnusedImport
+from elements.tinc import Tinc #@UnusedImport
 from connections import Connection #@UnusedImport
 from connections.bridge import Bridge #@UnusedImport
 from connections.fixed_bridge import Fixed_Bridge #@UnusedImport

@@ -1,0 +1,196 @@
+# -*- coding: utf-8 -*-
+# ToMaTo (Topology management software) 
+# Copyright (C) 2010 Dennis Schwerdel, University of Kaiserslautern
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+import os, shutil, hashlib, base64
+from tomato import connections, elements, host, fault, config
+from tomato.lib import util
+from tomato.lib.attributes import attribute
+
+DOC="""
+Element type: tinc
+
+Description:
+	This element type represents one endpoint of a Tinc VPN network. The 
+	endpoint will connect to all configured peers and will form a peer-to-peer
+	VPN with them, forwarding the packets where they belong to.
+	Note: The unique name of each endpoint is determined by decoding the public
+	key (base64-encoded PEM format) and calculating the md5 sum of that value.
+	
+Possible parents: None
+
+Possible children: None
+
+Default state: created
+
+Removable in states: created
+
+Connection paradigms: interface
+
+States:
+	created: In this state, the endpoint is known but not active.
+	started: In this state, the endpoint is active and ready to 
+		send/receive packets. 
+		
+Attributes:
+	peers: list of dicts, changeable in state created, default: []
+		The list of peers to connect to/accept connections from. Each peer must
+		be a key/value map with the following attributes:
+			host (str): the hostname/ip address of the peer
+			port (int): the port of the peer
+			pubkey (str): the public key of the peer in PEM format  
+	mode: str, changeable in state created, default: switch 
+		The mode the endpoint operates in. This attribute can either be 
+		"switch" or "hub". In the switch mode the endpoint will learn MAC 
+		addresses and forward packets directly to the associated endpoint if 
+		possible. If a packet for an unknown MAC address is seen, it will be
+		broadcasted to all other endpoints. In the hub mode the endpoint will
+		broadcast all packets and not learn any MAC addreses.
+		Note: All endpoints in one VPN should operate in the same mode, 
+		otherwise strange behaviour can result.		
+	port: int, read-only
+		The port on this host on which the endpoint is listening in state 
+		started.
+	pubkey: str, read-only
+		The public key of this endpoint.
+		
+Actions:
+	start, callable in state created
+	 	Starts the endpoint so that it is ready to send/receive packets.
+	stop, callable in state started
+	 	Stops the endpoint.
+"""
+
+
+class Tinc(elements.Element):
+	port = attribute("port", int)
+	path = attribute("path", str)
+	mode = attribute("mode", str)
+	privkey = attribute("privkey", str)
+	pubkey = attribute("pubkey", str)
+	peers = attribute("peers", list)
+
+	ST_CREATED = "created"
+	ST_STARTED = "started"
+	TYPE = "tinc"
+	CAP_ACTIONS = {
+		"start": [ST_CREATED],
+		"stop": [ST_STARTED],
+		"__remove__": [ST_CREATED],
+	}
+	CAP_ATTRS = {
+		"mode": [ST_CREATED],
+		"peers": [ST_CREATED],
+	}
+	CAP_CHILDREN = {}
+	CAP_PARENT = [None]
+	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	DEFAULT_ATTRS = {"mode": "switch", "peers": []}
+	
+	class Meta:
+		db_table = "tomato_tinc"
+		app_label = 'tomato'
+	
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		self.state = self.ST_CREATED
+		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		self.port = self.getResource("port")
+		self.path = os.path.join(config.DATA_DIR, "tinc", str(self.id))
+		self.privkey = host.run(["openssl", "genrsa"], ignoreErr=True)
+		self.pubkey = host.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
+
+	def _interfaceName(self):
+		return "tinc%d" % self.id
+
+	def interfaceName(self):
+		return self._interfaceName() if self.state == self.ST_STARTED else None
+
+	def _name(self, pubkey):
+		# decode pubkey so two same keys are binary equivalent
+		pubkey = base64.b64decode("".join(map(lambda s: "" if "-----" in s else s.strip(), pubkey.splitlines())))
+		return hashlib.md5(pubkey).hexdigest()
+				
+	def modify_mode(self, val):
+		fault.check(val in ["switch", "hub"], "Tinc mode must either be hub or switch, was %s", val)
+		self.connect = val
+
+	def modify_peers(self, val):
+		for peer in val:
+			fault.check("host" in peer, "Peer does not contain host")
+			fault.check("port" in peer, "Peer does not contain port")
+			fault.check("pubkey" in peer, "Peer does not contain pubkey")
+		self.peers = val
+
+	def action_start(self):
+		# clean path 
+		if os.path.exists(self.path):
+			shutil.rmtree(self.path)
+		os.makedirs(self.path)
+		hostPath = os.path.join(self.path, "hosts")
+		os.mkdir(hostPath)
+		myName = self._name(self.pubkey)
+		with open(os.path.join(self.path, "rsa.priv"), "w") as fp:
+			# private key -> rsa.priv 
+			fp.write(self.privkey)
+		with open(os.path.join(self.path, "tinc.conf"), "w") as fp:
+			fp.write("Interface=%s\n" % self._interfaceName())
+			fp.write("DeviceType=tap\n")
+			fp.write("Mode=%s\n" % self.mode)
+			fp.write("Name=%s\n" % myName)
+			fp.write("PrivateKeyFile=%s\n" % os.path.join(self.path, "rsa.priv"))
+			for peer in self.peers:
+				fp.write("ConnectTo=%s\n" % self._name(peer["pubkey"]))
+		with open(os.path.join(hostPath, myName), "w") as fp:
+			# own host entry -> hosts/[myname]
+			fp.write("Port=%d\n" % self.port)
+			fp.write("Cipher=none\n")
+			fp.write("Digest=none\n")
+			# public key -> hosts/[myname]
+			fp.write(self.pubkey)
+		for peer in self.peers:
+			name = self._name(peer["pubkey"])
+			with open(os.path.join(hostPath, name), "w") as fp:
+				# peer host entry -> hosts/[name]
+				fp.write("Address=%s %d\n" % (peer["host"], peer["port"]))
+				fp.write("Cipher=none\n")
+				fp.write("Digest=none\n")
+				# peer public key -> hosts/[name]
+				fp.write(peer["pubkey"])
+		host.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
+		self.setState(self.ST_STARTED)
+		ifObj = host.Interface(self._interfaceName())
+		util.waitFor(ifObj.exists)
+		con = self.getConnection()
+		if con:
+			con.connectInterface(self._interfaceName())
+
+	def action_stop(self):
+		con = self.getConnection()
+		if con:
+			con.disconnectInterface(self._interfaceName())
+		host.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
+		self.setState(self.ST_CREATED)
+
+	def upcast(self):
+		return self
+
+	def info(self):
+		info = elements.Element.info(self)
+		del info["attrs"]["privkey"] #no need to expose this information
+		return info
+
+elements.TYPES[Tinc.TYPE] = Tinc
