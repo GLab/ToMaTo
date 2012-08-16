@@ -261,6 +261,7 @@ class KVMQM(elements.Element):
 		self._qm("set", ["-tablet", int(self.usbtablet)])
 
 	def _useImage(self, path):
+		assert self.state == self.ST_PREPARED
 		img = host.Path(path)
 		img.copyTo(self._imagePath())
 
@@ -297,7 +298,8 @@ class KVMQM(elements.Element):
 	def modify_template(self, tmplName):
 		self._checkState()
 		self.template = resources.template.get(self.TYPE, tmplName)
-		self._useImage(self._template().getPath())
+		if self.state == self.ST_PREPARED:
+			self._useImage(self._template().getPath())
 
 	def action_prepare(self):
 		self._checkState()

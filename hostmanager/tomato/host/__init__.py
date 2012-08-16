@@ -35,16 +35,16 @@ class CommandError(Exception):
     def __str__(self):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
-def spawn(cmd):
+def spawn(cmd, stdout=DEVNULL):
     #setsid is important, otherwise programs will be killed when the parent process closes
     cmd = ["setsid"] + cmd
-    proc=subprocess.Popen(cmd, stdout=DEVNULL, stderr=subprocess.STDOUT, close_fds=True)
+    proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True)
     return proc.pid
 
-def spawnShell(cmd):
+def spawnShell(cmd, stdout=DEVNULL):
     #setsid is important, otherwise programs will be killed when the parent process closes
     cmd = "setsid " + cmd
-    proc=subprocess.Popen(cmd, stdout=DEVNULL, stderr=subprocess.STDOUT, shell=True, close_fds=True)
+    proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True)
     return proc.pid
 
 def kill(pid, force=None):
@@ -52,6 +52,9 @@ def kill(pid, force=None):
         os.kill(pid, 9 if force else 15)
     except OSError:
         pass
+
+def processExists(pid):
+    return os.path.exists("/proc/%d" % pid)
 
 def run(cmd, **kwargs):
     error, output = runUnchecked(cmd, **kwargs)

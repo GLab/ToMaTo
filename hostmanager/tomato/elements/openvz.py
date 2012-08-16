@@ -176,9 +176,6 @@ class OpenVZ(elements.Element):
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
 
-	def _dataPath(self, filename):
-		return os.path.join(config.DATA_DIR, "openvz", str(self.id), filename)
-		
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode==9 and "Container already locked" in x.errorMessage)
 	def _vzctl(self, cmd, args=[], timeout=None):
 		cmd = ["vzctl", cmd, str(self.vmid)] + args
@@ -359,24 +356,22 @@ class OpenVZ(elements.Element):
 		self.setState(self.ST_PREPARED, True)
 
 	def action_upload_grant(self):
-		self.upload_grant = fileserver.addGrant(self._dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
+		self.upload_grant = fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		fault.check(os.path.exists(self._dataPath("uploaded.tar.gz")), "No file has been uploaded")
+		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
 		#FIXME: check image
-		arch = host.Archive(self._dataPath("uploaded.tar.gz"))
+		arch = host.Archive(self.dataPath("uploaded.tar.gz"))
 		imgDir = host.Path(self._imagePath())
 		imgDir.remove(recursive=True)
 		imgDir.createDir() 
 		arch.extractTo(imgDir)
 		
 	def action_download_grant(self):
-		if os.path.exists(self._dataPath("download.tar.gz")):
-			os.remove(self._dataPath("download.tar.gz"))
-		if not os.path.exists(self._dataPath("")):
-			os.makedirs(self._dataPath(""))
-		host.run(["tar", "--numeric-owner", "-czvf", self._dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
-		self.download_grant = fileserver.addGrant(self._dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+		if os.path.exists(self.dataPath("download.tar.gz")):
+			os.remove(self.dataPath("download.tar.gz"))
+		host.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
+		self.download_grant = fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def _relPath(self, file_):
 		assert self.path

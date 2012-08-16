@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import os, shutil
 from django.db import models
 from tomato.connections import Connection
 
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
+from tomato import config
 
 # Socat:
 #socat tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=IFNAME udp-listen:PORT
@@ -58,7 +60,12 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
+		if not os.path.exists(self.dataPath()):
+			os.makedirs(self.dataPath())
 		self.modify(attrs)
+
+	def dataPath(self, filename=""):
+		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)		
 		
 	def upcast(self):
 		try:
@@ -114,6 +121,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		if self.connection:
 			self.getConnection().remove()
 		self.delete()
+		if os.path.exists(self.dataPath()):
+			shutil.rmtree(self.dataPath())
 			
 	def getParent(self):
 		return self.parent.upcast() if self.parent else None

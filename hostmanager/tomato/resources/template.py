@@ -20,7 +20,8 @@ from tomato import resources, fault
 
 PATHS={
 	"kvmqm": "/var/lib/vz/template/qemu/%s.qcow2",
-	"openvz": "/var/lib/vz/template/cache/%s.tar.gz"
+	"openvz": "/var/lib/vz/template/cache/%s.tar.gz",
+	"repy": "/var/lib/vz/template/repy/%s.repy",
 }
 
 class Template(resources.Resource):
