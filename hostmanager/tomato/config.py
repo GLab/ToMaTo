@@ -27,6 +27,10 @@ AUTH = []
 
 PASSWORD_SALT = "tomato"
 
+TMP_DIR = "/tmp/tomato"
+LOG_DIR = "logs"
+DATA_DIR = "/var/lib/tomato"
+
 SERVER = [
 	{
 		"PORT": 8000,
@@ -45,9 +49,10 @@ DATABASES = {
     }
 }
 
-TMP_DIR = "/tmp/tomato"
-LOG_DIR = "logs"
-DATA_DIR = "/var/lib/tomato"
+FILESERVER = {
+	'port': 8888,
+	'path': os.path.join(DATA_DIR, "files"),
+}
 
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'

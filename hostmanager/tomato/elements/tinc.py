@@ -184,6 +184,8 @@ class Tinc(elements.Element):
 			con.disconnectInterface(self._interfaceName())
 		host.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(self.ST_CREATED)
+		if os.path.exists(self.path):
+			shutil.rmtree(self.path)
 
 	def upcast(self):
 		return self
@@ -193,10 +195,10 @@ class Tinc(elements.Element):
 		del info["attrs"]["privkey"] #no need to expose this information
 		return info
 
+
 tincVersion = host.getDpkgVersion("tinc")
 
 if [1, 0] <= tincVersion <= [2, 0]:
 	elements.TYPES[Tinc.TYPE] = Tinc
 else:
 	print "Warning: Tinc not supported for tinc version %s, disabled" % tincVersion
-

@@ -65,9 +65,13 @@ if not config.MAINTENANCE:
 
 import api
 
-from rpcserver import run as runRPCserver
+from tomato import lib, resources, host
 
-from tomato import lib, resources
+from rpcserver import start as startRPCserver
+from rpcserver import stop as stopRPCserver
+from host.fileserver import start as startFileserver
+from host.fileserver import stop as stopFileserver
+
 
 if not config.MAINTENANCE:
 	resources.init()

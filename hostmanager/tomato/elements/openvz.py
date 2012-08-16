@@ -20,6 +20,7 @@ from django.db import models
 from tomato import connections, elements, resources, config, host, fault
 from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
+from tomato.host import fileserver
 
 DOC="""
 Element type: openvz
@@ -107,6 +108,12 @@ Actions:
 	stop, callable in state started
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using the runlevel system.
+	upload_grant, callable in state prepared
+	 	...
+	upload_use, callable in state prepared
+	 	...
+	download_grant, callable in state prepared
+	 	...
 """
 
 class OpenVZ(elements.Element):
@@ -120,6 +127,8 @@ class OpenVZ(elements.Element):
 	hostname = attribute("hostname", str)	
 	gateway4 = attribute("gateway4", str)	
 	gateway6 = attribute("gateway6", str)	
+	upload_grant = attribute("upload_grant", str)
+	download_grant = attribute("download_grant", str)	
 	template = models.ForeignKey(resources.Resource, null=True)
 
 	ST_CREATED = "created"
@@ -131,6 +140,9 @@ class OpenVZ(elements.Element):
 		"destroy": [ST_PREPARED],
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
+		"upload_grant": [ST_PREPARED],
+		"upload_use": [ST_PREPARED],
+		"download_grant": [ST_PREPARED],
 		"__remove__": [ST_CREATED],
 	}
 	CAP_ATTRS = {
@@ -163,6 +175,9 @@ class OpenVZ(elements.Element):
 	
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
+
+	def _dataPath(self, filename):
+		return os.path.join(config.DATA_DIR, "openvz", str(self.id), filename)
 		
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode==9 and "Container already locked" in x.errorMessage)
 	def _vzctl(self, cmd, args=[], timeout=None):
@@ -342,6 +357,26 @@ class OpenVZ(elements.Element):
 			del self.vncpid
 		self._vzctl("stop")
 		self.setState(self.ST_PREPARED, True)
+
+	def action_upload_grant(self):
+		self.upload_grant = fileserver.addGrant(self._dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
+		
+	def action_upload_use(self):
+		fault.check(os.path.exists(self._dataPath("uploaded.tar.gz")), "No file has been uploaded")
+		#FIXME: check image
+		arch = host.Archive(self._dataPath("uploaded.tar.gz"))
+		imgDir = host.Path(self._imagePath())
+		imgDir.remove(recursive=True)
+		imgDir.createDir() 
+		arch.extractTo(imgDir)
+		
+	def action_download_grant(self):
+		if os.path.exists(self._dataPath("download.tar.gz")):
+			os.remove(self._dataPath("download.tar.gz"))
+		if not os.path.exists(self._dataPath("")):
+			os.makedirs(self._dataPath(""))
+		host.run(["tar", "--numeric-owner", "-czvf", self._dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
+		self.download_grant = fileserver.addGrant(self._dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def _relPath(self, file_):
 		assert self.path

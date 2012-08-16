@@ -18,25 +18,35 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
-import sys
-if len(sys.argv) == 1:
-	import tomato
-	tomato.runRPCserver()
-elif sys.argv[1] == "--coverage":
-	import coverage
-	cov = coverage.coverage()
-	cov.start()
-	import tomato
-	tomato.runRPCserver()
-	print "stop"
-	cov.stop()
-	sys.stdout = open("coverage.txt", "w")
-	cov.report()
-elif sys.argv[1] == "--profile":
-	import cProfile as profile
-	profile.run("import tomato; tomato.runRPCserver()", "profile")
-	import pstats
-	stat = pstats.Stats("profile")
-	stat.sort_stats("cum")
-	sys.stderr = open("profile.txt", "w")
-	stat.print_stats("tomato")
+def run():
+	import tomato, time
+	tomato.startFileserver()
+	tomato.startRPCserver()
+	try:
+		while True:
+			time.sleep(60)
+	except KeyboardInterrupt:
+		tomato.stopRPCserver()
+		tomato.stopFileserver()
+
+if __name__ == "__main__":
+	import sys
+	if len(sys.argv) == 1:
+		run()
+	elif sys.argv[1] == "--coverage":
+		import coverage
+		cov = coverage.coverage()
+		cov.start()
+		run()
+		print "stop"
+		cov.stop()
+		sys.stdout = open("coverage.txt", "w")
+		cov.report()
+	elif sys.argv[1] == "--profile":
+		import cProfile as profile
+		profile.run("run()", "profile")
+		import pstats
+		stat = pstats.Stats("profile")
+		stat.sort_stats("cum")
+		sys.stderr = open("profile.txt", "w")
+		stat.print_stats("tomato")

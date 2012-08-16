@@ -135,6 +135,7 @@ class UDP_Tunnel(elements.Element):
 		info = elements.Element.info(self)
 		return info
 
+
 socatVersion = host.getDpkgVersion("socat")
 
 if socatVersion:

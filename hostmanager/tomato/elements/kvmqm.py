@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, json
+import os, sys, json, shutil
 from django.db import models
 from tomato import connections, elements, resources, config, host, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
+from tomato.host import fileserver
 
 DOC="""
 Element type: kvmqm
@@ -107,6 +108,12 @@ Actions:
 	 	time, the VM is just stopped.
 	 	Note: Users should make sure their VMs shut down properly to decrease
 	 	stop time and to avoid data loss or damages in the virtual machine.
+	upload_grant, callable in state prepared
+	 	...
+	upload_use, callable in state prepared
+	 	...
+	download_grant, callable in state prepared
+	 	...
 """
 
 
@@ -119,6 +126,8 @@ class KVMQM(elements.Element):
 	kblang = attribute("kblang", str)
 	usbtablet = attribute("usbtablet", bool)
 	vncpassword = attribute("vncpassword", str)
+	upload_grant = attribute("upload_grant", str)
+	download_grant = attribute("download_grant", str)
 	template = models.ForeignKey(template.Template, null=True)
 
 	ST_CREATED = "created"
@@ -130,6 +139,9 @@ class KVMQM(elements.Element):
 		"destroy": [ST_PREPARED],
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
+		"upload_grant": [ST_PREPARED],
+		"upload_use": [ST_PREPARED],
+		"download_grant": [ST_PREPARED],
 		"__remove__": [ST_CREATED],
 	}
 	CAP_ATTRS = {
@@ -167,8 +179,8 @@ class KVMQM(elements.Element):
 	def _imagePathDir(self):
 		return "/var/lib/vz/images/%d" % self.vmid
 
-	def _imagePath(self):
-		return self._imagePathDir() + "/disk.qcow2"
+	def _imagePath(self, file="disk.qcow2"):
+		return os.path.join(self._imagePathDir(), file)
 
 	def _interfaceName(self, num):
 		if qmVersion == [1, 1, 22]:
@@ -336,6 +348,18 @@ class KVMQM(elements.Element):
 			del self.vncpid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
 		self.setState(self.ST_PREPARED, True)
+		
+	def action_upload_grant(self):
+		self.upload_grant = fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
+		
+	def action_upload_use(self):
+		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
+		#FIXME: check image
+		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
+		
+	def action_download_grant(self):
+		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
+		self.download_grant = fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 		
 	def upcast(self):
 		return self

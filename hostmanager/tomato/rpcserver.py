@@ -53,8 +53,9 @@ def runServer(server):
 	except KeyboardInterrupt:
 		pass
 
-def run():
-	servers = []
+servers = []
+
+def start():
 	print >>sys.stderr, "Starting RPC servers"
 	for settings in tomato.config.SERVER:
 		server_address = ('', settings["PORT"])
@@ -65,12 +66,8 @@ def run():
 		server.register(tomato.api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
-	try:
-		while True:
-			time.sleep(60)
-	except KeyboardInterrupt:
-		for server in servers:
-			server.shutdown()
+		servers.append(server)
 		
-if __name__ == "__main__":
-	run()
+def stop():
+	for server in servers:
+		server.shutdown()

@@ -27,6 +27,7 @@ def host_info():
         "hostmanager": {
             "version": config.VERSION,
         },
+        "fileserver_port": config.FILESERVER["port"],
         "site": config.SITE,
         "coordinates": config.COORDINATES,
     }
