@@ -193,4 +193,10 @@ class Tinc(elements.Element):
 		del info["attrs"]["privkey"] #no need to expose this information
 		return info
 
-elements.TYPES[Tinc.TYPE] = Tinc
+tincVersion = host.getDpkgVersion("tinc")
+
+if [1, 0] <= tincVersion <= [2, 0]:
+	elements.TYPES[Tinc.TYPE] = Tinc
+else:
+	print "Warning: Tinc not supported for tinc version %s, disabled" % tincVersion
+

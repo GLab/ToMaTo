@@ -135,4 +135,9 @@ class UDP_Tunnel(elements.Element):
 		info = elements.Element.info(self)
 		return info
 
-elements.TYPES[UDP_Tunnel.TYPE] = UDP_Tunnel
+socatVersion = host.getDpkgVersion("socat")
+
+if socatVersion:
+	elements.TYPES[UDP_Tunnel.TYPE] = UDP_Tunnel
+else:
+	print "Warning: UDP_Tunnel needs socat, disabled"
