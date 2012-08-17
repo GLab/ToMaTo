@@ -364,7 +364,7 @@ class OpenVZ(elements.Element):
 				con.connectInterface(self._interfaceName(interface.name))
 			interface._configure() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
-		self.vncpid = host.spawn(["vncterm", "-timeout", "0", "-rfbport", str(self.vncport), "-passwd", self.vncpassword, "-c", "bash -c 'while true; do vzctl enter %d; done'" % self.vmid])
+		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
 				
 	def action_stop(self):
 		self._checkState()

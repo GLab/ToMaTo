@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp
+import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl
 
 def parseArgs():
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
@@ -104,6 +104,9 @@ def getLocals(api):
 			locals[func] = getattr(api, func)
 	except xmlrpclib.ProtocolError, err:
 		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
+		sys.exit(-1)
+	except ssl.SSLError, exc:
+		print "SSL error: %s" % exc.strerror
 		sys.exit(-1)
 	return locals
 

@@ -147,7 +147,7 @@ class Repy(elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
-		self.vncpid = host.spawn(["vncterm", "-timeout", "0", "-rfbport", str(self.vncport), "-passwd", self.vncpassword, "-c", "bash -c 'while true; do -n +1 -f %s; done'" % self.dataPath("program.log")])
+		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
 
 	def action_stop(self):
 		for interface in self.getChildren():
@@ -226,6 +226,7 @@ class Repy_Interface(elements.Element):
 
 
 repyVersion = host.getDpkgVersion("tomato-repy")
+vnctermVersion = host.getDpkgVersion("vncterm")
 
 def register():
 	if not repyVersion:
@@ -233,6 +234,9 @@ def register():
 		return
 	if not ([0, 5] <= repyVersion):
 		print >>sys.stderr, "Warning: Repy not supported on tomato-repy version %s, disabled" % repyVersion
+		return
+	if not vnctermVersion:
+		print >>sys.stderr, "Warning: Repy needs vncterm, disabled"
 		return
 	elements.TYPES[Repy.TYPE] = Repy
 	elements.TYPES[Repy_Interface.TYPE] = Repy_Interface
