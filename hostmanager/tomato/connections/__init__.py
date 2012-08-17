@@ -168,6 +168,8 @@ def getAll(**kwargs):
 def create(el1, el2, type_=None, attrs={}):
 	if type_:
 		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
+		fault.check(not el1.connection, "Element #%d is already connect", el1.id)
+		fault.check(not el2.connection, "Element #%d is already connect", el2.id)
 		con = TYPES[type_]()
 		con.init(el1, el2, attrs)
 		con.save()

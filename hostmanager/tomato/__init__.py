@@ -22,7 +22,6 @@ os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: document repy
 #TODO: document upload/download actions on kvmqm and openvz
-#TODO: forbid duplicate connections
 #TODO: check folders in /var/lib/tomato
 #TODO: mandatory SSL
 #TODO: authorization, (SSL client certs?)
