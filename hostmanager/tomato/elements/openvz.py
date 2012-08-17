@@ -96,16 +96,16 @@ Attributes:
 		VNC. This password should be kept secret.
 
 Actions:
-	prepare, callable in state created
+	prepare, callable in state created, next state: prepared
 		Creates a vzctl configuration entry for this VM and uses a copy of
 		the	template as disk image.
-	destroy, callable in state prepared
+	destroy, callable in state prepared, next state: created
 	 	Removes the vzctl configuration entry and deletes the disk image.
-	start, callable in state prepared
+	start, callable in state prepared, next state: started
 	 	Starts the VM and initiates a boot of the contained OS. This action
 	 	also starts a VNC server for the VM and connects all the interfaces
 	 	of the device.
-	stop, callable in state started
+	stop, callable in state started, next state: prepared
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using the runlevel system.
 	upload_grant, callable in state prepared
@@ -145,6 +145,12 @@ class OpenVZ(elements.Element):
 		"download_grant": [ST_PREPARED],
 		"__remove__": [ST_CREATED],
 	}
+	CAP_NEXT_STATE = {
+		"prepare": ST_PREPARED,
+		"destroy": ST_CREATED,
+		"start": ST_STARTED,
+		"stop": ST_PREPARED,
+	}	
 	CAP_ATTRS = {
 		"ram": [ST_CREATED, ST_PREPARED, ST_STARTED],
 		"diskspace": [ST_CREATED, ST_PREPARED, ST_STARTED],
@@ -450,6 +456,7 @@ class OpenVZ_Interface(elements.Element):
 	CAP_ACTIONS = {
 		"__remove__": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED]
 	}
+	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
 		"ip4address": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED, OpenVZ.ST_STARTED],
 		"ip6address": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED, OpenVZ.ST_STARTED],

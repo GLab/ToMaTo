@@ -62,6 +62,7 @@ class External_Network(elements.Element):
 	CAP_ACTIONS = {
 		"__remove__": [ST_DEFAULT],
 	}
+	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
 		"network": [ST_DEFAULT],
 	}

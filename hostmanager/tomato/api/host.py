@@ -42,14 +42,14 @@ def host_capabilities():
     element_types = {}
     for type_, class_ in tomato.elements.TYPES.iteritems():
         caps = {}
-        for cap in ["cap_actions", "cap_attrs", "cap_children", "cap_parent", "cap_con_paradigms"]:
-            caps[cap] = getattr(class_, cap.upper())
+        for cap in ["actions", "next_state", "attrs", "children", "parent", "con_paradigms"]:
+            caps[cap] = getattr(class_, "CAP_"+cap.upper())
         element_types[type_] = caps
     connection_types = {}
     for type_, class_ in tomato.connections.TYPES.iteritems():
         caps = {}
-        for cap in ["cap_actions", "cap_attrs", "cap_con_paradigms"]:
-            caps[cap] = getattr(class_, cap.upper())
+        for cap in ["actions", "attrs", "con_paradigms"]:
+            caps[cap] = getattr(class_, "CAP_"+cap.upper())
         connection_types[type_] = caps
     return {
         "element_types": element_types,

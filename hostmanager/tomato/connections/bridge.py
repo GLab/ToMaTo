@@ -26,6 +26,8 @@ DOC="""
 
 class Bridge(connections.Connection):
 	bridge = attribute("bridge", str)
+	emulation = attribute("emulation", bool)
+	capturing = attribute("capturing", bool)
 
 	ST_CREATED = "created"
 	ST_STARTED = "started"
@@ -36,7 +38,13 @@ class Bridge(connections.Connection):
 		"__remove__": [ST_CREATED],
 	}
 	CAP_ATTRS = {}
-	DEFAULT_ATTRS = {}
+	CAP_ATTRS_EMUL = {
+		"emulation": [ST_CREATED, ST_STARTED],
+	}
+	CAP_ATTRS_CAPTURE = {
+		"capturing": [ST_CREATED, ST_STARTED],
+	}
+	DEFAULT_ATTRS = {"emulation": False, "capturing": False}
 	CAP_CON_PARADIGMS = [(connections.PARADIGM_INTERFACE, connections.PARADIGM_INTERFACE)]
 	
 	class Meta:
@@ -51,12 +59,32 @@ class Bridge(connections.Connection):
 				
 	def _bridgeObj(self):
 		return host.Bridge(self.bridge)
+			
+	def _startCapturing(self):
+		if not self.capturing:
+			return
 				
+	def _stopCapturing(self):
+		if not self.capturing:
+			return
+	
+	def _startEmulation(self):
+		if not self.emulation:
+			return
+	
+	def _stopEmulation(self):
+		if not self.emulation:
+			return
+	
+	def modify_emulation(self, val):
+		self.emulation = 
+	
 	def action_start(self):
 		br = self._bridgeObj()
 		br.create()
 		br.up()
 		self.setState(self.ST_STARTED)
+		self._startCapturing()
 		for el in self.getElements():
 			ifname = el.interfaceName()
 			if ifname:
@@ -68,6 +96,7 @@ class Bridge(connections.Connection):
 			ifname = el.interfaceName()
 			if ifname:
 				self.disconnectInterface(ifname)
+		self._stopCapturing()
 		if br.exists():
 			br.down()
 			br.remove()
@@ -84,6 +113,7 @@ class Bridge(connections.Connection):
 			iface.getBridge().removeInterface(iface)
 		br.addInterface(iface)
 		if len(br.interfaces()) == 2:
+			self._startEmulation()
 			# now elements are connected
 			for el in self.getElements():
 				el.onConnected()
@@ -100,6 +130,7 @@ class Bridge(connections.Connection):
 			# now elements are no longer connected
 			for el in self.getElements():
 				el.onDisconnected()
+			self._stopEmulation()
 		br.removeInterface(host.Interface(ifname))
 
 	def upcast(self):

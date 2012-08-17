@@ -20,6 +20,18 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
+#TODO: document repy
+#TODO: document upload/download actions on kvmqm and openvz
+#TODO: forbid duplicate connections
+#TODO: check folders in /var/lib/tomato
+#TODO: mandatory SSL
+#TODO: authorization, (SSL client certs?)
+#TODO: compatibility with 1.8
+#TODO: link emulation
+#TODO: packet capturing
+#TODO: import of existing elements
+#TODO: test suite 
+
 
 # This is the main tomato api file. All access to tomato must use the following 
 # methods. Direct import and usage of other classes of tomato is strongly 

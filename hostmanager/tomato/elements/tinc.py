@@ -68,9 +68,9 @@ Attributes:
 		The public key of this endpoint.
 		
 Actions:
-	start, callable in state created
+	start, callable in state created, next state: started
 	 	Starts the endpoint so that it is ready to send/receive packets.
-	stop, callable in state started
+	stop, callable in state started, next state: created
 	 	Stops the endpoint.
 """
 
@@ -91,6 +91,10 @@ class Tinc(elements.Element):
 		"stop": [ST_STARTED],
 		"__remove__": [ST_CREATED],
 	}
+	CAP_NEXT_STATE = {
+		"start": ST_STARTED,
+		"stop": ST_CREATED,
+	}	
 	CAP_ATTRS = {
 		"mode": [ST_CREATED],
 		"peers": [ST_CREATED],

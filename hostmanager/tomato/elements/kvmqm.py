@@ -92,16 +92,16 @@ Attributes:
 		VNC. This password should be kept secret.
 
 Actions:
-	prepare, callable in state created
+	prepare, callable in state created, next state: prepared
 		Creates a qm configuration entry for this VM and uses a copy of the
 		template as disk image.
-	destroy, callable in state prepared
+	destroy, callable in state prepared, next state: created
 	 	Removes the qm configuration entry and deletes the disk image.
-	start, callable in state prepared
+	start, callable in state prepared, next state: started
 	 	Starts the VM and initiates a boot of the contained OS. This action
 	 	also starts a VNC server for the VM and connects all the interfaces
 	 	of the device.
-	stop, callable in state started
+	stop, callable in state started, next state: prepared
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using an ACPI shutdown request. The
 	 	contained OS then has 10 seconds to shut down by itself. After this
@@ -143,6 +143,12 @@ class KVMQM(elements.Element):
 		"upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
 		"__remove__": [ST_CREATED],
+	}
+	CAP_NEXT_STATE = {
+		"prepare": ST_PREPARED,
+		"destroy": ST_CREATED,
+		"start": ST_STARTED,
+		"stop": ST_PREPARED,
 	}
 	CAP_ATTRS = {
 		"cpus": [ST_CREATED, ST_PREPARED],
@@ -411,6 +417,7 @@ class KVMQM_Interface(elements.Element):
 	CAP_ACTIONS = {
 		"__remove__": [KVMQM.ST_CREATED, KVMQM.ST_PREPARED]
 	}
+	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
 	}
 	CAP_CHILDREN = {}

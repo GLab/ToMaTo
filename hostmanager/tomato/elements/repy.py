@@ -51,6 +51,10 @@ class Repy(elements.Element):
 		"download_grant": [ST_CREATED],
 		"__remove__": [ST_CREATED],
 	}
+	CAP_NEXT_STATE = {
+		"start": ST_STARTED,
+		"stop": ST_CREATED,
+	}	
 	CAP_ATTRS = {
 		"template": [ST_CREATED],
 		"args": [ST_CREATED],
@@ -189,6 +193,7 @@ class Repy_Interface(elements.Element):
 	CAP_ACTIONS = {
 		"__remove__": [Repy.ST_CREATED]
 	}
+	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
 	}
 	CAP_CHILDREN = {}
