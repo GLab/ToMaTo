@@ -34,10 +34,11 @@ DATA_DIR = "/var/lib/tomato"
 SERVER = [
 	{
 		"PORT": 8000,
-		"SSL": False,
+		"SSL": True,
 		"SSL_OPTS": {
-			"private_key" : "",
-			"ca_key": ""
+			"cert_file" : "/var/lib/tomato/server.cert",
+			"key_file": "/var/lib/tomato/server.cert",
+			"client_certs": "/var/lib/tomato/client_certs",
 		}
 	}
 ]

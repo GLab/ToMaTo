@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, time, sys, traceback
+import xmlrpclib, time, sys, traceback, os
 
 import tomato.config
-from tomato import fault
+from tomato import fault, host
 from tomato.lib import db, util, rpc, log
 
 
@@ -61,7 +61,7 @@ def start():
 		server_address = ('', settings["PORT"])
 		sslOpts = None
 		if settings["SSL"]:
-			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["private_key"], certificate=settings["SSL_OPTS"]["ca_key"])
+			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=settings["SSL_OPTS"]["client_certs"])
 		server = rpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
 		server.register(tomato.api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))

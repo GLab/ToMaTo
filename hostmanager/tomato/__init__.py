@@ -22,9 +22,6 @@ os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: document repy
 #TODO: document upload/download actions on kvmqm and openvz
-#TODO: check folders in /var/lib/tomato
-#TODO: mandatory SSL
-#TODO: authorization, (SSL client certs?)
 #TODO: compatibility with 1.8
 #TODO: link emulation
 #TODO: packet capturing
@@ -64,9 +61,11 @@ def currentUser():
 def setCurrentUser(user):
 	_currentUser.user = user
 
-def login(user, password):
-	setCurrentUser(user)
-	return True
+def login(credentials, sslCert):
+	if not sslCert:
+		return False
+	setCurrentUser(sslCert.get_subject().commonName)
+	return bool(sslCert)
 
 
 from models import *

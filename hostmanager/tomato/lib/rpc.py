@@ -20,6 +20,20 @@
 import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections
 from OpenSSL import SSL
 
+"""
+SSL CLient certs:
+
+on client:
+- Create client certificate: openssl req -new -x509 -days 1000 -nodes -out client_key.pem -keyout client_cert.pem
+- Create an instance of ServerProx with transport=SafeTransportWithCerts("client_key.pem", "client_cert.pem")
+
+on server:
+- Put client certificate (client_cert.pem) in cert_path
+- run c_rehash cert_path
+- Create XMLRPCServer with sslOpts with client_certs=cert_path
+"""
+
+
 #Bugfix: Python 2.6 will not call the needed shutdown_request function
 if not hasattr(SocketServer.BaseServer, "shutdown_request"):
 	def _handle_request_noblock(self):
@@ -51,16 +65,22 @@ class SecureRequestHandler:
 			self.wfile = self.connection.makefile('wb', self.wbufsize)	
 
 
-SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate"])
+SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate", "client_certs"])
 
 
 class SecureServer():
+	def _verifyClientCert(self, connection, x509, errnum, errdepth, ok):
+		return ok
 	def __init__(self, sslOpts):
 		self.sslOpts = sslOpts
 		if sslOpts:
 			ctx = SSL.Context(SSL.SSLv23_METHOD)
 			ctx.use_privatekey_file(sslOpts.private_key)
 			ctx.use_certificate_file(sslOpts.certificate)
+			if sslOpts.client_certs:
+				ctx.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT | SSL.VERIFY_CLIENT_ONCE, self._verifyClientCert)
+				ctx.load_verify_locations(None, sslOpts.client_certs)
+				ctx.set_verify_depth(0)
 			self.plainSocket = self.socket
 			self.socket = SSL.Connection(ctx, self.plainSocket)
 			self.server_bind()
@@ -81,8 +101,9 @@ class SecureServer():
 
 class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_POST(self):
-		(username, password) = self.getCredentials()
-		if not self.server.checkAuth(username, password):
+		credentials = self.getCredentials()
+		sslCert = self.getSSLCertificate()
+		if not self.server.checkAuth(credentials, sslCert):
 			self.send_error(401)
 			return self.finish()
 		(method, args, kwargs) = self.getRpcRequest()
@@ -110,13 +131,17 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		if len(args) == 2 and isinstance(args[0], list) and isinstance(args[1], dict):
 			(args, kwargs) = (args[0], args[1])
 		return (method, args, kwargs)
+	def getSSLCertificate(self):
+		if not isinstance(self.connection, SSL.Connection):
+			return None
+		return self.connection.get_peer_certificate()
 	def getCredentials(self):
 		authstr = self.headers.get("Authorization", None)
 		if not authstr:
-			return (None, None)
+			return None
 		(authmeth, auth) = authstr.split(' ',1)
 		if 'basic' != authmeth.lower():
-			return (None, None)
+			return None
 		auth = auth.strip().decode('base64')
 		username, password = auth.split(':',1)
 		return (username, password)
@@ -157,10 +182,8 @@ class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTT
 			raise exc
 	def findMethod(self, method):
 		return self.functions.get(method, None)
-	def checkAuth(self, username, password):
-		if username:
-			return self.loginFunc(username, password)
-		return False
+	def checkAuth(self, credentials, sslCert):
+		return self.loginFunc(credentials, sslCert)
 
 
 class XMLRPCServerIntrospection(XMLRPCServer):
@@ -206,3 +229,12 @@ class ServerProxy(object):
 		def _call(*args, **kwargs):
 			return call_proxy(args, kwargs)
 		return _call
+	
+class SafeTransportWithCerts(xmlrpclib.SafeTransport):
+	def __init__(self, keyFile, certFile, *args, **kwargs):
+		xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
+		self.certFile = certFile
+		self.keyFile = keyFile
+	def make_connection(self,host):
+		host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
+		return xmlrpclib.SafeTransport.make_connection(self,host_with_cert)

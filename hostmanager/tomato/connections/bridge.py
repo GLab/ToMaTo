@@ -77,7 +77,7 @@ class Bridge(connections.Connection):
 			return
 	
 	def modify_emulation(self, val):
-		self.emulation = 
+		self.emulation = val 
 	
 	def action_start(self):
 		br = self._bridgeObj()
