@@ -69,7 +69,7 @@ Bridge paradigm interface:
 
 
 class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()])
+	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	owner = models.CharField(max_length=20, validators=[db.nameValidator])
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	attrs = db.JSONField()
@@ -86,7 +86,6 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 	def init(self, el1, el2, attrs={}):
 		paradigm = self.determineParadigm(el1, el2)
 		fault.check(paradigm, "No connection paradigm found to connect elements of type %s and %s with connection of type %s", (el1.type, el2.type, self.type))
-		p1, p2 = paradigm
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()

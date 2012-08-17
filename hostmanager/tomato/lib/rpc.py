@@ -115,7 +115,7 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))
 			self.send(err)
-	def log_message(self, format, *args):
+	def log_message(self, format, *args): #@ReservedAssignment
 		pass
 	def send(self, response):
 		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)

@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, json, shutil
+import os, sys
 from django.db import models
-from tomato import connections, elements, resources, config, host, fault
+from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute
-from tomato.lib import decorators, util
+from tomato.lib import util
 from tomato.host import fileserver
 
 DOC="""

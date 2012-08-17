@@ -81,7 +81,7 @@ class JSONField(models.TextField):
 		return super(JSONField, self).get_db_prep_save(value)
 	
 class ReloadMixin:
-	def reload(self):
+	def reload(self): #@ReservedAssignment
 		from_db = self.__class__.objects.get(pk=self.pk)
 		fields = self.__class__._meta.get_all_field_names()
 		for field in fields:

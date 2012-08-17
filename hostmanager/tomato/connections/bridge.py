@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os
-from django.db import models
 from tomato import connections, host
 from tomato.lib.attributes import attribute
 

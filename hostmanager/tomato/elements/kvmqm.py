@@ -17,7 +17,7 @@
 
 import os, sys, json, shutil
 from django.db import models
-from tomato import connections, elements, resources, config, host, fault
+from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
@@ -109,11 +109,24 @@ Actions:
 	 	Note: Users should make sure their VMs shut down properly to decrease
 	 	stop time and to avoid data loss or damages in the virtual machine.
 	upload_grant, callable in state prepared
-	 	...
+	 	Create/update a grant to upload an image for the VM. The created grant
+	 	will be available as an attribute called upload_grant. The grant allows
+	 	the user to upload a file for a certain time. The url where the file 
+	 	must be uploaded has the form http://server:port/grant/upload where
+	 	server is the address of this host, port is the fileserver port of this
+	 	server (can be requested via host_info) and grant is the grant.
+	 	The uploaded file can be used as the VM image with the upload_use 
+	 	action. 
 	upload_use, callable in state prepared
-	 	...
+		Uses a previously uploaded file as the image of the VM. 
 	download_grant, callable in state prepared
-	 	...
+	 	Create/update a grant to download the image for the VM. The created 
+	 	grant will be available as an attribute called download_grant. The
+	 	grant allows the user to download the VM image once for a certain time.
+	 	The url where the file can be downloaded from has the form 
+	 	http://server:port/grant/download where server is the address of this
+	 	host, port is the fileserver port of this server (can be requested via
+	 	host_info) and grant is the grant.
 """
 
 
@@ -185,7 +198,7 @@ class KVMQM(elements.Element):
 	def _imagePathDir(self):
 		return "/var/lib/vz/images/%d" % self.vmid
 
-	def _imagePath(self, file="disk.qcow2"):
+	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
 		return os.path.join(self._imagePathDir(), file)
 
 	def _interfaceName(self, num):

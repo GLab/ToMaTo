@@ -18,9 +18,9 @@
 
 import SocketServer, BaseHTTPServer, hashlib, cgi, urlparse, urllib, shutil, base64, time, os.path, datetime, sys
 try:    #python >=2.6
-    from urlparse import parse_qsl
+    from urlparse import parse_qsl #@UnusedImport
 except: #python <2.6
-    from cgi import parse_qsl
+    from cgi import parse_qsl #@Reimport
 
 from tomato.lib import util 
 from tomato import config, fault
@@ -87,7 +87,7 @@ class Grant:
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def process_request(self):
-        scheme, netloc, path, params, query, fragment = urlparse.urlparse(self.path)
+        _, _, path, _, query, _ = urlparse.urlparse(self.path)
         params = dict(parse_qsl(query))
         return (path, params)
     def error(self, code, message):
@@ -169,7 +169,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.html("success, redirecting...", redirect=base64.b64decode(redirect))
         else:
             self.html("upload successful")
-    def log_message(self, format, *args):
+    def log_message(self, format, *args): #@ReservedAssignment
         return
         
 class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):

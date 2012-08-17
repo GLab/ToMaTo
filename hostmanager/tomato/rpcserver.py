@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, time, sys, traceback, os
+import xmlrpclib, sys, traceback
 
 import tomato.config
-from tomato import fault, host
+from tomato import fault
 from tomato.lib import db, util, rpc, log
 
 

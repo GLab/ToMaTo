@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import subprocess, threading, thread, traceback, time
-from decorators import *
-import exceptions
+import threading, thread, traceback, time
+from decorators import xmlRpcSafe
 
 class RepeatedTimer(threading.Thread):
 	def __init__(self, timeout, func, *args, **kwargs):

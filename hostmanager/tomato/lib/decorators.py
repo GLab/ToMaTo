@@ -109,9 +109,9 @@ Example:
 """
 def profile(out, appendDate=False):
 	try:
-		import cProfile as profile
+		import cProfile as profile #@UnusedImport
 	except:
-		import profile
+		import profile #@Reimport
 	if appendDate:
 		import datetime
 	def wrap(fn):

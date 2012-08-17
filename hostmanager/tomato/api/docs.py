@@ -17,43 +17,52 @@
 
 from tomato import elements, connections
 
+def _docFn(docstr):
+    def wrapper(fn):
+        def call():
+            return docstr
+        call.__doc__ = docstr
+        call.__name__ = fn.__name__
+        return call
+    return wrapper
+
+@_docFn(elements.kvmqm.DOC)
 def DOC_ELEMENT_KVMQM():
-    return elements.kvmqm.DOC
-DOC_ELEMENT_KVMQM.__doc__ = elements.kvmqm.DOC
+    pass
 
+@_docFn(elements.kvmqm.DOC_IFACE)
 def DOC_ELEMENT_KVMQM_INTERFACE():
-    return elements.kvmqm.DOC_IFACE
-DOC_ELEMENT_KVMQM_INTERFACE.__doc__ = elements.kvmqm.DOC_IFACE
+    pass
 
 
+@_docFn(elements.openvz.DOC)
 def DOC_ELEMENT_OPENVZ():
-    return elements.openvz.DOC
-DOC_ELEMENT_OPENVZ.__doc__ = elements.openvz.DOC
+    pass
 
+@_docFn(elements.openvz.DOC_IFACE)
 def DOC_ELEMENT_OPENVZ_INTERFACE():
-    return elements.openvz.DOC_IFACE
-DOC_ELEMENT_OPENVZ_INTERFACE.__doc__ = elements.openvz.DOC_IFACE
+    pass
 
 
+@_docFn(elements.external_network.DOC)
 def DOC_ELEMENT_EXTERNAL_NETWORK():
-    return elements.external_network.DOC
-DOC_ELEMENT_EXTERNAL_NETWORK.__doc__ = elements.external_network.DOC
+    pass
 
 
+@_docFn(elements.udp_tunnel.DOC)
 def DOC_ELEMENT_UDP_TUNNEL():
-    return elements.udp_tunnel.DOC
-DOC_ELEMENT_UDP_TUNNEL.__doc__ = elements.udp_tunnel.DOC
+    pass
 
 
+@_docFn(elements.tinc.DOC)
 def DOC_ELEMENT_TINC():
-    return elements.tinc.DOC
-DOC_ELEMENT_TINC.__doc__ = elements.tinc.DOC
+    pass
 
 
+@_docFn(connections.bridge.DOC)
 def DOC_CONNECTION_BRIDGE():
-    return connections.bridge.DOC
-DOC_CONNECTION_BRIDGE.__doc__ = connections.bridge.DOC
+    pass
 
+@_docFn(connections.fixed_bridge.DOC)
 def DOC_CONNECTION_FIXED_BRIDGE():
-    return connections.fixed_bridge.DOC
-DOC_CONNECTION_FIXED_BRIDGE.__doc__ = connections.fixed_bridge.DOC
+    pass

@@ -430,7 +430,7 @@ class OpenVZDevice(common.RepairMixin, common.TemplateMixin, common.VMIDMixin, c
 	def downloadImageUri(self):
 		assert self.state == State.PREPARED, "Download not supported"
 		filename = "%s_%s.tar.gz" % (self.topology.name, self.name)
-		file = self.host.getHostServer().randomFilename()
+		file = self.host.getHostServer().randomFilename() #@ReservedAssignment
 		vzctl.copyImage(self.host, self.getVmid(), file, forceGzip=True)
 		return self.host.getHostServer().downloadGrant(file, filename)
 

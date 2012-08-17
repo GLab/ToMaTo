@@ -23,7 +23,7 @@ def _getResource(id_):
     fault.check(res, "No such resource: id=%d", id_)
     return res
 
-def resource_create(type, attrs={}):
+def resource_create(type, attrs={}): #@ReservedAssignment
     """
     Creates a resource of given type configuring it with the given attributes
     by the way.
@@ -45,7 +45,7 @@ def resource_create(type, attrs={}):
     res = resources.create(type, attrs)
     return res.info()
 
-def resource_modify(id, attrs):
+def resource_modify(id, attrs): #@ReservedAssignment
     """
     Modifies a resource, configuring it with the given attributes.
     
@@ -68,7 +68,7 @@ def resource_modify(id, attrs):
     res.modify(attrs)
     return res.info()
 
-def resource_remove(id):
+def resource_remove(id): #@ReservedAssignment
     """
     Removes a resource.
     
@@ -86,7 +86,7 @@ def resource_remove(id):
     res.remove()
     return {}
 
-def resource_info(id):
+def resource_info(id): #@ReservedAssignment
     """
     Retrieves information about a resource.
     

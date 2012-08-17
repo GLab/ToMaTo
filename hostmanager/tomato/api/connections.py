@@ -20,7 +20,7 @@ def _getConnection(id_):
     fault.check(con, "No such connection: id=%d", id_)
     return con
 
-def connection_create(element1, element2, type=None, attrs={}):
+def connection_create(element1, element2, type=None, attrs={}): #@ReservedAssignment
     """
     Connects the given elements using the given type of connection, configuring
     it with the given attributes by the way. The order of the elements does not
@@ -50,7 +50,7 @@ def connection_create(element1, element2, type=None, attrs={}):
     con = connections.create(el1, el2, type, attrs)
     return con.info()
 
-def connection_modify(id, attrs):
+def connection_modify(id, attrs): #@ReservedAssignment
     """
     Modifies a connection, configuring it with the given attributes.
     
@@ -72,7 +72,7 @@ def connection_modify(id, attrs):
     con.modify(attrs)
     return con.info()
 
-def connection_action(id, action, params={}):
+def connection_action(id, action, params={}): #@ReservedAssignment
     """
     Performs an action on the connection.
     
@@ -98,7 +98,7 @@ def connection_action(id, action, params={}):
     con.action(action, params)
     return con.info()
 
-def connection_remove(id):
+def connection_remove(id): #@ReservedAssignment
     """
     Removes a conection.
     
@@ -116,7 +116,7 @@ def connection_remove(id):
     con.remove()
     return {}
 
-def connection_info(id):
+def connection_info(id): #@ReservedAssignment
     """
     Retrieves information about a connection.
     

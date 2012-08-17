@@ -20,7 +20,7 @@ def _getElement(id_):
     fault.check(el, "No such element: id=%d", id_)
     return el
 
-def element_create(type, parent=None, attrs={}):
+def element_create(type, parent=None, attrs={}): #@ReservedAssignment
     """
     Creates an element of given type and with the given parent element, 
     configuring it with the given attributes by the way.
@@ -50,7 +50,7 @@ def element_create(type, parent=None, attrs={}):
     el = elements.create(type, parentEl, attrs)
     return el.info()
 
-def element_modify(id, attrs):
+def element_modify(id, attrs): #@ReservedAssignment
     """
     Modifies an element, configuring it with the given attributes.
     
@@ -72,7 +72,7 @@ def element_modify(id, attrs):
     el.modify(attrs)
     return el.info()
 
-def element_action(id, action, params={}):
+def element_action(id, action, params={}): #@ReservedAssignment
     """
     Performs an action on the element and possibly on its children too.
     
@@ -98,7 +98,7 @@ def element_action(id, action, params={}):
     el.action(action, params)
     return el.info()
 
-def element_remove(id, recurse=True):
+def element_remove(id, recurse=True): #@ReservedAssignment
     """
     Removes an element and possibly all its children too.
     
@@ -120,7 +120,7 @@ def element_remove(id, recurse=True):
     el.remove(recurse)
     return {}
 
-def element_info(id):
+def element_info(id): #@ReservedAssignment
     """
     Retrieves information about an element.
     

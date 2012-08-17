@@ -19,7 +19,7 @@ import subprocess, os, hashlib, shutil
 
 DEVNULL = open("/dev/null", "w")
 
-def runUnchecked(cmd, shell=False, ignoreErr=False, input=None):
+def runUnchecked(cmd, shell=False, ignoreErr=False, input=None): #@ReservedAssignment
     stderr = DEVNULL if ignoreErr else subprocess.STDOUT
     stdin = subprocess.PIPE if input else None
     proc=subprocess.Popen(cmd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell, close_fds=True)

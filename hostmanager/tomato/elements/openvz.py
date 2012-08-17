@@ -17,7 +17,7 @@
 
 import os, sys
 from django.db import models
-from tomato import connections, elements, resources, config, host, fault
+from tomato import connections, elements, resources, host, fault
 from tomato.lib.attributes import attribute
 from tomato.lib import decorators, util
 from tomato.host import fileserver
@@ -109,11 +109,24 @@ Actions:
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using the runlevel system.
 	upload_grant, callable in state prepared
-	 	...
+	 	Create/update a grant to upload an image for the VM. The created grant
+	 	will be available as an attribute called upload_grant. The grant allows
+	 	the user to upload a file for a certain time. The url where the file 
+	 	must be uploaded has the form http://server:port/grant/upload where
+	 	server is the address of this host, port is the fileserver port of this
+	 	server (can be requested via host_info) and grant is the grant.
+	 	The uploaded file can be used as the VM image with the upload_use 
+	 	action. 
 	upload_use, callable in state prepared
-	 	...
+		Uses a previously uploaded file as the image of the VM. 
 	download_grant, callable in state prepared
-	 	...
+	 	Create/update a grant to download the image for the VM. The created 
+	 	grant will be available as an attribute called download_grant. The
+	 	grant allows the user to download the VM image once for a certain time.
+	 	The url where the file can be downloaded from has the form 
+	 	http://server:port/grant/download where server is the address of this
+	 	host, port is the fileserver port of this server (can be requested via
+	 	host_info) and grant is the grant.
 """
 
 class OpenVZ(elements.Element):

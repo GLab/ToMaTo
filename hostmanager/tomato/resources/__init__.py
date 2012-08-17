@@ -26,7 +26,7 @@ from tomato.lib.decorators import *
 TYPES = {}
 
 class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
-    type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES])
+    type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     attrs = db.JSONField()
     numStart = attributes.attribute("num_start", int)
     numCount = attributes.attribute("num_count", int)
@@ -77,7 +77,7 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         }
     
 class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
-    type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES])
+    type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     num = models.IntegerField()
     owner = models.ForeignKey(Element, null=False)
     attrs = db.JSONField()
@@ -85,7 +85,7 @@ class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, mode
     class Meta:
         unique_together = (("num", "type"),)
 
-    def init(self, type, num, owner, attrs={}):
+    def init(self, type, num, owner, attrs={}): #@ReservedAssignment
         self.type = type
         self.num = num
         self.owner = owner
