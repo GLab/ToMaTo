@@ -21,7 +21,6 @@ import os, sys
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: document repy
-#TODO: document upload/download actions on kvmqm and openvz
 #TODO: compatibility with 1.8
 #TODO: link emulation
 #TODO: packet capturing

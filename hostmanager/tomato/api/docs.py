@@ -44,6 +44,15 @@ def DOC_ELEMENT_OPENVZ_INTERFACE():
     pass
 
 
+@_docFn(elements.repy.DOC)
+def DOC_ELEMENT_REPY():
+    pass
+
+@_docFn(elements.repy.DOC_IFACE)
+def DOC_ELEMENT_REPY_INTERFACE():
+    pass
+
+
 @_docFn(elements.external_network.DOC)
 def DOC_ELEMENT_EXTERNAL_NETWORK():
     pass

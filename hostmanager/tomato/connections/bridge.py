@@ -35,6 +35,10 @@ class Bridge(connections.Connection):
 		"stop": [ST_STARTED],
 		"__remove__": [ST_CREATED],
 	}
+	CAP_ACTIONS_EMUL = {
+	}
+	CAP_ACTIONS_CAPTURE = {
+	}
 	CAP_ATTRS = {}
 	CAP_ATTRS_EMUL = {
 		"emulation": [ST_CREATED, ST_STARTED],
@@ -140,8 +144,23 @@ class Bridge(connections.Connection):
 
 
 bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
+iprouteVersion = host.getDpkgVersion("iproute")
+tcpdumpVersion = host.getDpkgVersion("tcpdump")
 
 if bridgeUtilsVersion:
 	connections.TYPES[Bridge.TYPE] = Bridge
 else:
 	print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
+	
+if iprouteVersion:
+	#FIXME: create ifb devices
+	Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_EMUL)
+	Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_EMUL)
+else:
+	print "Warning: Bridge link emulation needs iproute, disabled"
+	
+if tcpdumpVersion:
+	Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_CAPTURE)
+	Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_CAPTURE)
+else:
+	print "Warning: Bridge packet capturing needs tcpdump, disabled"
