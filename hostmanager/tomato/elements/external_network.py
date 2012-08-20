@@ -34,7 +34,7 @@ Default state: default
 
 Removable in states: default
 
-Connection paradigms: bridge
+Connection concepts: bridge
 
 States:
 	default: This is the only possible state. In this state the bridge is 
@@ -65,8 +65,9 @@ class External_Network(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_BRIDGE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_BRIDGE]
 	DEFAULT_ATTRS = {}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_external_network"

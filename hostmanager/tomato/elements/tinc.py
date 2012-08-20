@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
-from tomato import connections, elements, host, fault, config
+from tomato import connections, elements, host, fault
 from tomato.lib import util
 from tomato.lib.attributes import attribute, oneOf
 
@@ -38,7 +38,7 @@ Default state: created
 
 Removable in states: created
 
-Connection paradigms: interface
+Connection concepts: interface
 
 States:
 	created: In this state, the endpoint is known but not active.
@@ -101,8 +101,9 @@ class Tinc(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {"mode": "switch"}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_tinc"
@@ -113,7 +114,7 @@ class Tinc(elements.Element):
 		self.state = self.ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
-		self.path = os.path.join(config.DATA_DIR, "tinc", str(self.id))
+		self.path = self.dataPath()
 		self.privkey = host.run(["openssl", "genrsa"], ignoreErr=True)
 		self.pubkey = host.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 

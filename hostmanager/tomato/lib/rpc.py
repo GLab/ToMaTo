@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.	If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections
+import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections, gzip
 from OpenSSL import SSL
 
 """
@@ -33,6 +33,25 @@ on server:
 - Create XMLRPCServer with sslOpts with client_certs=cert_path
 """
 
+try:
+	import cStringIO as StringIO
+except ImportError:
+	import StringIO
+
+def gzip_encode(data): #from xmlrpclib
+	"""data -> gzip encoded data
+	
+	Encode data using the gzip content encoding as described in RFC 1952
+	"""
+	if not gzip:
+		raise NotImplementedError
+	f = StringIO.StringIO()
+	gzf = gzip.GzipFile(mode="wb", fileobj=f, compresslevel=1)
+	gzf.write(data)
+	gzf.close()
+	encoded = f.getvalue()
+	f.close()
+	return encoded
 
 #Bugfix: Python 2.6 will not call the needed shutdown_request function
 if not hasattr(SocketServer.BaseServer, "shutdown_request"):
@@ -120,6 +139,9 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 	def send(self, response):
 		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
 		self.send_response(200)
+		if len(res) > 1024 and "gzip" in [s.strip() for s in self.headers.get("accept-encoding", "").split(",")]:
+			self.send_header("Content-Encoding", "gzip")
+			res = gzip_encode(res)
 		self.send_header("Content-Type", "text/xml")
 		self.end_headers()
 		self.wfile.write(res)

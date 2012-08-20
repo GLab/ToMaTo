@@ -36,9 +36,9 @@ General interface:
 """
 
 
-PARADIGM_INTERFACE = "interface"
+CONCEPT_INTERFACE = "interface"
 """
-Interface paradigm interface:
+Interface concept interface:
 - The connection must provide two methods:
 	connectInterface(ifname)
 		Called to connect the interface ifname to the connection.
@@ -52,9 +52,9 @@ Interface paradigm interface:
 		and is ready for connection or None if not.
 """
 
-PARADIGM_BRIDGE = "bridge"
+CONCEPT_BRIDGE = "bridge"
 """
-Bridge paradigm interface:
+Bridge concept interface:
 - The connection must provide two methods:
 	connectBridge(bridgename)
 		Called to connect the bridge bridgename to the connection.
@@ -78,15 +78,15 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 	
 	CAP_ACTIONS = {}
 	CAP_ATTRS = {}
-	CAP_CON_PARADIGMS = []
+	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
 	
 	class Meta:
 		pass
 
 	def init(self, el1, el2, attrs={}):
-		paradigm = self.determineParadigm(el1, el2)
-		fault.check(paradigm, "No connection paradigm found to connect elements of type %s and %s with connection of type %s", (el1.type, el2.type, self.type))
+		concept_ = self.determineConcept(el1, el2)
+		fault.check(concept_, "No connection concept found to connect elements of type %s and %s with connection of type %s", (el1.type, el2.type, self.type))
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
@@ -98,6 +98,15 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.modify(attrs)
 		
 	def upcast(self):
+		"""
+		This method returns an instance of this element with the highest order
+		class that it possesses. Due to a limitation of the database backend,
+		all loaded objects are of the type that has been used to load them.
+		In order to get to their actual type this method must be called.
+		
+		Classes inheriting from this class should overwrite this method to 
+		return self.
+		"""
 		try:
 			return getattr(self, self.type)
 		except:
@@ -105,33 +114,90 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
 
 	def dataPath(self, filename=""):
+		"""
+		This method can be used to create filenames relative to a directory
+		that is specific for this object. The base directory is created when 
+		this object is initialized and recursively removed when the object is
+		removed.
+		
+		All custom files should use paths relative to the base directory.
+		Note: If filename contains folder names the using class must take care
+			that they exist.
+		
+		@param filename: a filename relative to the data path
+		@type filename: str
+		"""
 		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)		
 
 	@classmethod
-	def determineParadigm(cls, el1, el2):
-		for (p1, p2) in cls.CAP_CON_PARADIGMS:
-			if p1 in el1.CAP_CON_PARADIGMS and p2 in el2.CAP_CON_PARADIGMS:
+	def determineConcept(cls, el1, el2):
+		for (p1, p2) in cls.CAP_CON_CONCEPTS:
+			if p1 in el1.CAP_CON_CONCEPTS and p2 in el2.CAP_CON_CONCEPTS:
 				return (p1, p2)
-			if p2 in el1.CAP_CON_PARADIGMS and p1 in el2.CAP_CON_PARADIGMS:
+			if p2 in el1.CAP_CON_CONCEPTS and p1 in el2.CAP_CON_CONCEPTS:
 				return (p2, p1)
 		return None
 
 	def checkModify(self, attrs):
+		"""
+		Checks whether the attribute change can succeed before changing the
+		attributes.
+		If checks whether the attributes are listen in CAP_ATTRS and if the
+		current object state is listed in CAP_ATTRS[NAME].
+		
+		@param attrs: Attributes to change
+		@type attrs: dict
+		"""
 		for key in attrs.keys():
 			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
 			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
 		
 	def modify(self, attrs):
+		"""
+		Sets the given attributes to their given values. This method first
+		checks if the change can be made using checkModify() and then executes
+		the attribute changes by calling modify_KEY(VALUE) for each key/value
+		pair in attrs. After calling all these modify_KEY methods, it will save
+		the object.
+		
+		Classes inheriting from this class should only implement the modify_KEY
+		methods and not touch this method.  
+		
+		@param attrs: Attributes to change
+		@type attrs: dict
+		"""		
 		self.checkModify(attrs)
 		for key, value in attrs.iteritems():
 			getattr(self, "modify_%s" % key)(value)
 		self.save()
 	
 	def checkAction(self, action):
+		"""
+		Checks if the action can be executed. This method checks if the action
+		is listed in CAP_ACTIONS and if the current state is listed in 
+		CAP_ACTIONS[action].
+		
+		@param action: Action to check
+		@type action: str
+		"""
 		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
 		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
 	def action(self, action, params):
+		"""
+		Executes the action with the given parameters. This method first
+		checks if the action is possible using checkAction() and then executes
+		the action by calling action_ACTION(**params). After calling the action
+		method, it will save the object.
+		
+		Classes inheriting from this class should only implement the 
+		action_ACTION method and not touch this method. 
+		
+		@param action: Name of the action
+		@type action: str
+		@param params: Parameters for the action
+		@type params: dict
+		"""
 		self.checkAction(action)
 		getattr(self, "action_%s" % action)(**params)
 		self.save()
@@ -192,7 +258,7 @@ def create(el1, el2, type_=None, attrs={}):
 		return con
 	else:
 		for type_ in TYPES:
-			if TYPES[type_].determineParadigm(el1, el2):
+			if TYPES[type_].determineConcept(el1, el2):
 				return create(el1, el2, type_, attrs)
 		fault.check(False, "Failed to find matching connection type for element types %s and %s", (el1.type, el2.type))
 

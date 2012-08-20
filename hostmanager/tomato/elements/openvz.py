@@ -39,7 +39,7 @@ Default state: created
 
 Removable in states: created
 
-Connection paradigms: None
+Connection concepts: None
 
 States:
 	created: In this state the VM is known of but vzctl does not know about it.
@@ -178,6 +178,7 @@ class OpenVZ(elements.Element):
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_openvz"
@@ -424,7 +425,7 @@ Default state: created
 
 Removable in states: created and prepared 
 
-Connection paradigms: interface
+Connection concepts: interface
 
 States:
 	created: In this state the interface is known of but vzctl does not know
@@ -477,7 +478,8 @@ class OpenVZ_Interface(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [OpenVZ.TYPE]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
+	DOC = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_openvz_interface"

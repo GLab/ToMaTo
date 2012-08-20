@@ -85,7 +85,8 @@ class Bridge(connections.Connection):
 		"capture_mode": [ST_CREATED, ST_STARTED],
 	}
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
-	CAP_CON_PARADIGMS = [(connections.PARADIGM_INTERFACE, connections.PARADIGM_INTERFACE)]
+	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_bridge"

@@ -40,7 +40,7 @@ Default state: created
 
 Removable in states: created
 
-Connection paradigms: None
+Connection concepts: None
 
 States:
 	created: In this state the VM is known of but qm does not know about it.
@@ -175,6 +175,7 @@ class KVMQM(elements.Element):
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_kvmqm"
@@ -409,7 +410,7 @@ Default state: created
 
 Removable in states: created and prepared 
 	
-Connection paradigms: interface
+Connection concepts: interface
 
 States:
 	created: In this state the interface is known of but qm does not know about
@@ -435,7 +436,8 @@ class KVMQM_Interface(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [KVMQM.TYPE]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
+	DOC = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_kvm_interface"

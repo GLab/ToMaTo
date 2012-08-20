@@ -32,7 +32,8 @@ class Fixed_Bridge(connections.Connection):
 	}
 	CAP_ATTRS = {}
 	DEFAULT_ATTRS = {}
-	CAP_CON_PARADIGMS = [(connections.PARADIGM_BRIDGE, connections.PARADIGM_INTERFACE)]
+	CAP_CON_CONCEPTS = [(connections.CONCEPT_BRIDGE, connections.CONCEPT_INTERFACE)]
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_fixed_bridge"
@@ -45,7 +46,7 @@ class Fixed_Bridge(connections.Connection):
 		
 	def _bridgeObj(self):
 		for el in self.getElements():
-			if connections.PARADIGM_BRIDGE in el.CAP_CON_PARADIGMS:
+			if connections.CONCEPT_BRIDGE in el.CAP_CON_CONCEPTS:
 				name = el.bridgeName()
 				if name:
 					return host.Bridge(name)
@@ -53,7 +54,7 @@ class Fixed_Bridge(connections.Connection):
 
 	def _ifaceObj(self):
 		for el in self.getElements():
-			if connections.PARADIGM_INTERFACE in el.CAP_CON_PARADIGMS:
+			if connections.CONCEPT_INTERFACE in el.CAP_CON_CONCEPT:
 				name = el.interfaceName()
 				if name:
 					return host.Interface(name)

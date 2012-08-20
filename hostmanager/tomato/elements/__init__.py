@@ -34,12 +34,13 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	attrs = db.JSONField()
 	
+	DOC = ""
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
-	CAP_CON_PARADIGMS = []
+	CAP_CON_CONCEPTS = []
 	DEFAULT_ATTRS = {}
 	
 	class Meta:
@@ -61,9 +62,31 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.modify(attrs)
 
 	def dataPath(self, filename=""):
+		"""
+		This method can be used to create filenames relative to a directory
+		that is specific for this object. The base directory is created when 
+		this object is initialized and recursively removed when the object is
+		removed.
+		
+		All custom files should use paths relative to the base directory.
+		Note: If filename contains folder names the using class must take care
+			that they exist.
+		
+		@param filename: a filename relative to the data path
+		@type filename: str
+		"""
 		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)		
 		
 	def upcast(self):
+		"""
+		This method returns an instance of this element with the highest order
+		class that it possesses. Due to a limitation of the database backend,
+		all loaded objects are of the type that has been used to load them.
+		In order to get to their actual type this method must be called.
+		
+		Classes inheriting from this class should overwrite this method to 
+		return self.
+		"""
 		try:
 			return getattr(self, self.type)
 		except:
@@ -74,21 +97,65 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		return not self.parent is None
 
 	def checkModify(self, attrs):
+		"""
+		Checks whether the attribute change can succeed before changing the
+		attributes.
+		If checks whether the attributes are listen in CAP_ATTRS and if the
+		current object state is listed in CAP_ATTRS[NAME].
+		
+		@param attrs: Attributes to change
+		@type attrs: dict
+		"""
 		for key in attrs.keys():
 			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
 			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
 		
 	def modify(self, attrs):
+		"""
+		Sets the given attributes to their given values. This method first
+		checks if the change can be made using checkModify() and then executes
+		the attribute changes by calling modify_KEY(VALUE) for each key/value
+		pair in attrs. After calling all these modify_KEY methods, it will save
+		the object.
+		
+		Classes inheriting from this class should only implement the modify_KEY
+		methods and not touch this method.  
+		
+		@param attrs: Attributes to change
+		@type attrs: dict
+		"""		
 		self.checkModify(attrs)
 		for key, value in attrs.iteritems():
 			getattr(self, "modify_%s" % key)(value)
 		self.save()
 	
 	def checkAction(self, action):
+		"""
+		Checks if the action can be executed. This method checks if the action
+		is listed in CAP_ACTIONS and if the current state is listed in 
+		CAP_ACTIONS[action].
+		
+		@param action: Action to check
+		@type action: str
+		"""
 		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
 		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
 	def action(self, action, params):
+		"""
+		Executes the action with the given parameters. This method first
+		checks if the action is possible using checkAction() and then executes
+		the action by calling action_ACTION(**params). After calling the action
+		method, it will save the object.
+		
+		Classes inheriting from this class should only implement the 
+		action_ACTION method and not touch this method. 
+		
+		@param action: Name of the action
+		@type action: str
+		@param params: Parameters for the action
+		@type params: dict
+		"""
 		self.checkAction(action)
 		getattr(self, "action_%s" % action)(**params)
 		self.save()

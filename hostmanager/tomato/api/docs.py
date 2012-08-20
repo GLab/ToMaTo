@@ -17,6 +17,12 @@
 
 from tomato import elements, connections
 
+def docs():
+    return {
+        "elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
+        "connections": dict([(name, cls.DOC) for name, cls in connections.TYPES.iteritems()]),
+    }
+
 def _docFn(docstr):
     def wrapper(fn):
         def call():
@@ -26,52 +32,52 @@ def _docFn(docstr):
         return call
     return wrapper
 
-@_docFn(elements.kvmqm.DOC)
+@_docFn(elements.kvmqm.KVMQM.DOC)
 def DOC_ELEMENT_KVMQM():
     pass
 
-@_docFn(elements.kvmqm.DOC_IFACE)
+@_docFn(elements.kvmqm.KVMQM_Interface.DOC)
 def DOC_ELEMENT_KVMQM_INTERFACE():
     pass
 
 
-@_docFn(elements.openvz.DOC)
+@_docFn(elements.openvz.OpenVZ.DOC)
 def DOC_ELEMENT_OPENVZ():
     pass
 
-@_docFn(elements.openvz.DOC_IFACE)
+@_docFn(elements.openvz.OpenVZ_Interface.DOC)
 def DOC_ELEMENT_OPENVZ_INTERFACE():
     pass
 
 
-@_docFn(elements.repy.DOC)
+@_docFn(elements.repy.Repy.DOC)
 def DOC_ELEMENT_REPY():
     pass
 
-@_docFn(elements.repy.DOC_IFACE)
+@_docFn(elements.repy.Repy_Interface.DOC)
 def DOC_ELEMENT_REPY_INTERFACE():
     pass
 
 
-@_docFn(elements.external_network.DOC)
+@_docFn(elements.external_network.External_Network.DOC)
 def DOC_ELEMENT_EXTERNAL_NETWORK():
     pass
 
 
-@_docFn(elements.udp_tunnel.DOC)
+@_docFn(elements.udp_tunnel.UDP_Tunnel.DOC)
 def DOC_ELEMENT_UDP_TUNNEL():
     pass
 
 
-@_docFn(elements.tinc.DOC)
+@_docFn(elements.tinc.Tinc.DOC)
 def DOC_ELEMENT_TINC():
     pass
 
 
-@_docFn(connections.bridge.DOC)
+@_docFn(connections.bridge.Bridge.DOC)
 def DOC_CONNECTION_BRIDGE():
     pass
 
-@_docFn(connections.fixed_bridge.DOC)
+@_docFn(connections.fixed_bridge.Fixed_Bridge.DOC)
 def DOC_CONNECTION_FIXED_BRIDGE():
     pass

@@ -40,7 +40,7 @@ Default state: created
 
 Removable in states: created
 
-Connection paradigms: None
+Connection concepts: None
 
 States:
 	created: In this state the program is known of and the script exists.
@@ -150,6 +150,7 @@ class Repy(elements.Element):
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_repy"
@@ -281,7 +282,7 @@ Default state: created
 
 Removable in states: created
 	
-Connection paradigms: interface
+Connection concepts: interface
 
 States:
 	created: In this state the interface is known of.
@@ -304,7 +305,8 @@ class Repy_Interface(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [Repy.TYPE]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
+	DOC = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_repy_interface"

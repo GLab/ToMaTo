@@ -39,7 +39,7 @@ Default state: created
 
 Removable in states: created
 
-Connection paradigms: interface
+Connection concepts: interface
 
 States:
 	created: In this state, the endpoint is known but not active.
@@ -87,8 +87,9 @@ class UDP_Tunnel(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
-	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
+	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {}
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_udp_tunnel"
