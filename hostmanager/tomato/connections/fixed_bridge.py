@@ -21,6 +21,9 @@ DOC="""
 	Description
 	"""
 
+#TODO: implement capturing
+#TODO: implement link emulation using ifbs
+
 class Fixed_Bridge(connections.Connection):
 	ST_DEFAULT = "default"
 	TYPE = "fixed_bridge"

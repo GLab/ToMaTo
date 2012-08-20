@@ -21,8 +21,6 @@ import os, sys
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: compatibility with 1.8
-#TODO: link emulation
-#TODO: packet capturing
 #TODO: import of existing elements
 #TODO: test suite
 
