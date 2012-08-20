@@ -68,7 +68,7 @@ Actions:
 class UDP_Tunnel(elements.Element):
 	pid = attribute("pid", int)
 	port = attribute("port", int)
-	connect = attribute("connect", str)
+	connect = attribute("connect", str, default=None)
 
 	ST_CREATED = "created"
 	ST_STARTED = "started"

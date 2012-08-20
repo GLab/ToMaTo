@@ -19,7 +19,7 @@ import os, sys
 from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute
+from tomato.lib.attributes import attribute, between
 from tomato.lib import util
 from tomato.host import fileserver
 
@@ -117,10 +117,10 @@ class Repy(elements.Element):
 	vncpassword = attribute("vncpassword", str)
 	upload_grant = attribute("upload_grant", str)
 	download_grant = attribute("download_grant", str)
-	args = attribute("args", list)
-	cpus = attribute("cpus", float)
-	ram = attribute("ram", int)
-	bandwidth = attribute("bandwidth", int)
+	args = attribute("args", list, default=[])
+	cpus = attribute("cpus", between(0.01, 4.0, faultType=fault.new_user), default=0.25)
+	ram = attribute("ram", between(10, 4096, faultType=fault.new_user), default=25)
+	bandwidth = attribute("bandwidth", between(1024, 10000000000, faultType=fault.new_user), default=1000000)
 	template = models.ForeignKey(template.Template, null=True)
 
 	ST_CREATED = "created"

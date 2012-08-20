@@ -151,7 +151,7 @@ def statistics(api, request):
 		'devs': devs, 'cons': cons, 'res': res 
 	})
 
-def help(request, page=""):
+def help(request, page=""): #@ReservedAssignment
 	return HttpResponseRedirect(settings.help_url % page)
 
 def ticket(request, page=""):

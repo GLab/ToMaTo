@@ -18,7 +18,7 @@
 import os, shutil, hashlib, base64
 from tomato import connections, elements, host, fault, config
 from tomato.lib import util
-from tomato.lib.attributes import attribute
+from tomato.lib.attributes import attribute, oneOf
 
 DOC="""
 Element type: tinc
@@ -78,10 +78,10 @@ Actions:
 class Tinc(elements.Element):
 	port = attribute("port", int)
 	path = attribute("path", str)
-	mode = attribute("mode", str)
+	mode = attribute("mode", oneOf(["hub", "switch"], faultType=fault.new_user), default="switch")
 	privkey = attribute("privkey", str)
 	pubkey = attribute("pubkey", str)
-	peers = attribute("peers", list)
+	peers = attribute("peers", list, default=[])
 
 	ST_CREATED = "created"
 	ST_STARTED = "started"
@@ -102,7 +102,7 @@ class Tinc(elements.Element):
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
 	CAP_CON_PARADIGMS = [connections.PARADIGM_INTERFACE]
-	DEFAULT_ATTRS = {"mode": "switch", "peers": []}
+	DEFAULT_ATTRS = {"mode": "switch"}
 	
 	class Meta:
 		db_table = "tomato_tinc"
@@ -129,7 +129,6 @@ class Tinc(elements.Element):
 		return hashlib.md5(pubkey).hexdigest()
 				
 	def modify_mode(self, val):
-		fault.check(val in ["switch", "hub"], "Tinc mode must either be hub or switch, was %s", val)
 		self.connect = val
 
 	def modify_peers(self, val):

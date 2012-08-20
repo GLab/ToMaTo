@@ -26,6 +26,9 @@ AUTHENTICATION_ERROR = 300
 USER_ERROR = 400
 INTERNAL_ERROR = 500
 
+def new_user(text):
+	raise new(text, code=USER_ERROR)
+
 def raise_(text, code=UNKNOWN_ERROR):
 	raise new(text, code)
 

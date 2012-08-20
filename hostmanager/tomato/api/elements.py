@@ -136,13 +136,18 @@ def element_info(id): #@ReservedAssignment
     el = _getElement(int(id))
     return el.info()
     
-def element_list():
+def element_list(type_filter=None):
     """
     Retrieves information about all elements of the user. 
+     
+    @param type_filter: If set, the method only returns elements with the given
+        type.
+    @type type_filter: str
      
     @return: Information about the elements
     @rtype: list of dicts    
     """
-    return [el.info() for el in elements.getAll(owner=currentUser())]
+    els = elements.getAll(owner=currentUser(), type=type_filter) if type_filter else elements.getAll(owner=currentUser())
+    return [el.info() for el in els]
 
 from tomato import fault, elements, currentUser

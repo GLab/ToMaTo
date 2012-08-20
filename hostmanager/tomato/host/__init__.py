@@ -109,6 +109,24 @@ def identifier(s, allowed="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ
 def randomPassword():
     return hashlib.md5(os.urandom(8)).hexdigest()
 
+def getIfbCount():
+    def _ifbExists(n):
+        return os.path.exists("/sys/class/net/ifb%d" % n)
+    #check if 0 exists
+    if not _ifbExists(0):
+        return 0
+    max_ = 1
+    while _ifbExists(max_):
+        max_ *= 2
+    min_ = max_/2
+    while max_ - min_ > 1: #binary search
+        n = (min_ + max_)/2
+        if _ifbExists(n):
+            min_ = n
+        else:
+            max_ = n
+    return min_ + 1 #min is the number, +1 is the count
+
 class Path:
     def __init__(self, path):
         self.path = path

@@ -197,3 +197,8 @@ def waitFor(conditionFn, maxWait=5, waitStep=0.1):
 		time.sleep(waitStep)
 		waited += waitStep
 	return waited < maxWait
+
+def filterDict(filter_, dict_):
+	if not callable(filter_):
+		filter_ = lambda (k, v): k in filter_
+	return dict(filter(filter_, dict_.iteritems()))

@@ -31,7 +31,7 @@ def _ownerTypeMap():
 	return {"D": m.Device, "C": m.Connector, "c": m.Connection, "i": m.Interface}
 	
 
-def lookupOwner(type, id):
+def lookupOwner(type, id): #@ReservedAssignment
 	try:
 		return _ownerTypeMap().get(type).objects.get(id=id)
 	except:

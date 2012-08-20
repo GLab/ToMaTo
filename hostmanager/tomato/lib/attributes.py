@@ -18,8 +18,24 @@
 from south.modelsinspector import add_introspection_rules
 add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
 
-def attribute(name, type_=lambda x: x):
-	return property ( lambda self_: self_.getAttribute(name),
+def between(min, max, faultType=Exception, faultStr="Value must be between %(min)s and %(max)s but was %(value)s"): #@ReservedAssignment
+	def validate(val):
+		if min <= val <= max:
+			return val
+		else:
+			raise faultType(faultStr % {"min": min, "max": max, "value": val})
+	return validate
+
+def oneOf(options, faultType=Exception, faultStr="Value must be one of %(options)s but was %(value)s"):
+	def validate(val):
+		if val in options:
+			return val
+		else:
+			raise faultType(faultStr % {"options": options, "value": val})
+	return validate
+
+def attribute(name, type_=lambda x: x, default=None):
+	return property ( lambda self_: self_.getAttribute(name, default),
 				      lambda self_,value: self_.setAttribute(name, type_(value)),
 				      lambda self_:self_.deleteAttribute(name) ) 
 

@@ -20,7 +20,6 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: document repy
 #TODO: compatibility with 1.8
 #TODO: link emulation
 #TODO: packet capturing

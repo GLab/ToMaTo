@@ -19,7 +19,7 @@ import os, sys, json, shutil
 from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute
+from tomato.lib.attributes import attribute, between
 from tomato.lib import decorators, util
 from tomato.host import fileserver
 
@@ -134,10 +134,10 @@ class KVMQM(elements.Element):
 	vmid = attribute("vmid", int)
 	vncport = attribute("vncport", int)
 	vncpid = attribute("vncpid", int)
-	cpus = attribute("cpus", int)
-	ram = attribute("ram", int)
-	kblang = attribute("kblang", str)
-	usbtablet = attribute("usbtablet", bool)
+	cpus = attribute("cpus", between(1, 4, faultType=fault.new_user), default=1)
+	ram = attribute("ram", between(64, 4096, faultType=fault.new_user), default=256)
+	kblang = attribute("kblang", str, default="de")
+	usbtablet = attribute("usbtablet", bool, default="True")
 	vncpassword = attribute("vncpassword", str)
 	upload_grant = attribute("upload_grant", str)
 	download_grant = attribute("download_grant", str)

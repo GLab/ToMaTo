@@ -30,6 +30,7 @@ def host_info():
         "fileserver_port": config.FILESERVER["port"],
         "site": config.SITE,
         "coordinates": config.COORDINATES,
+        "address": config.PUBLIC_ADDRESS,
     }
 
 def host_capabilities():

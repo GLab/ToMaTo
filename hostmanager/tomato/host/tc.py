@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import ifaceutil, exceptions, math, util
+from tomato import host
+import math
 
-def _tc_cmd(type, action, ref, params=""):
-	return "tc %s %s %s %s" % (type, action, ref, params)
+def _tc(type, action, params=[]): #@ReservedAssignment
+	return host.run(["tc", type, action]+params)
 	
-def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, loss=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
+def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, lossratio=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
 	netem = ["netem"]
 	if bandwidth:
 		"""
@@ -43,78 +44,71 @@ def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, di
 			Assumption: pktsize=512b 
 			""" 
 			limit = max(math.ceil(max(delay, jitter/2.0) * bandwidth / 2000.0), 10.0)
-		netem.append("limit %d" % limit)
+		netem += ["limit", str(limit)]
 	if delay or jitter or delay_correlation:
 		assert delay >= 0.0
 		assert jitter >= 0.0
 		assert 100.0 >= delay_correlation >= 0.0
-		netem.append("delay %fms %fms %f%%" % (delay, jitter, delay_correlation))
+		netem += ["delay", "%fms" % delay, "%fms" % jitter, "%f%%" % delay_correlation]
 	if delay and jitter and distribution:
 		assert distribution in ["uniform", "normal", "pareto", "paretonormal"]
-		netem.append("distribution %s" % distribution)
-	if loss or loss_correlation:
-		assert 100.0 >= loss >= 0.0
+		netem += ["distribution", str(distribution)]
+	if lossratio or loss_correlation:
+		assert 100.0 >= lossratio >= 0.0
 		assert 100.0 >= loss_correlation >= 0.0
-		netem.append("loss %f%% %f%%" % (loss, loss_correlation))
+		netem += ["loss", "%f%%" % lossratio,  "%f%%" % loss_correlation]
 	if duplicate:
 		assert 100.0 >= duplicate >= 0.0
-		netem.append("duplicate %f%%" % duplicate)
+		netem += ["duplicate", "%f%%" % duplicate]
 	if corrupt:
 		assert 100.0 >= corrupt >= 0.0
-		netem.append("corrupt %f%%" % corrupt)
-	return " ".join(netem)
+		netem += ["corrupt",  "%f%%" % corrupt]
+	return netem
 
 def _buildTbf(bandwidth):
 	assert bandwidth > 0.0
 	tbf = ["tbf"]
-	tbf.append("rate %fKbit" % bandwidth)
+	tbf += ["rate", "%fKbit" % bandwidth]
 	maxDuration = 25.0
 	mtu = 1540.0
-	tbf.append("latency %fms" % maxDuration)
+	tbf += ["latency", "%fms" % maxDuration]
 	bufferBytes = max(math.ceil(bandwidth / 8.0 * maxDuration), mtu)
-	tbf.append("buffer %d" % int(bufferBytes))
+	tbf += ["buffer", str(int(bufferBytes))]
 	#if mtu / 8.0 < bandwidth < 1000.0:
-		#no idea what mtu / 8.0 should mean but that is the boundy of tc
+		#no idea what mtu / 8.0 should mean but that is the boundary of tc
 	#	tbf.append("peakrate %fKbit" % bandwidth)
 	#	tbf.append("mtu %d" % int(mtu))
-	return " ".join(tbf)
+	return tbf
 
-def setLinkEmulation(host, dev, bandwidth=None, keepBandwidth=False, **kwargs):
-	assert ifaceutil.interfaceExists(host, dev)
-	netem_ref = "dev %s root handle 1:0" % util.escape(dev)
-	cmd = ""
+def setLinkEmulation(dev, bandwidth=None, keepBandwidth=False, **kwargs):
+	netem_ref = ["dev", dev, "root", "handle", "1:0"]
 	if not bandwidth is None:
-		netem_ref = "dev %s parent 1:1 handle 10:" % util.escape(dev)
+		netem_ref = ["dev", dev, "parent", "1:1", "handle", "10:"]
 		if not keepBandwidth:
-			cmd = _tc_cmd("qdisc", "replace", "dev %s root handle 1:" % util.escape(dev), _buildTbf(bandwidth))
-			cmd += ";"
-	cmd += _tc_cmd("qdisc", "replace", netem_ref, _buildNetem(bandwidth=bandwidth, **kwargs))
-	host.execute(cmd)
+			_tc("qdisc", "replace", ["dev", dev, "root", "handle", "1:"] + _buildTbf(bandwidth))
+	_tc("qdisc", "replace", netem_ref + _buildNetem(bandwidth=bandwidth, **kwargs))
 	
-def clearLinkEmulation(host, dev):
-	assert ifaceutil.interfaceExists(host, dev)
+def clearLinkEmulation(dev):
 	try:
-		host.execute(_tc_cmd("qdisc", "del", "root dev %s" % util.escape(dev)))
-	except exceptions.CommandError, exc:
+		_tc("qdisc", "del", ["root", "dev", dev])
+	except host.CommandError, exc:
 		if not "No such file or directory" in exc.errorMessage:
 			raise
 
-def setIncomingRedirect(host, srcDev, dstDev):
-	assert ifaceutil.interfaceExists(host, srcDev)
-	assert ifaceutil.interfaceExists(host, dstDev)
+def setIncomingRedirect(srcDev, dstDev):
 	try:
-		host.execute(_tc_cmd("qdisc", "del", "dev %s ingress" % util.escape(srcDev)))
+		_tc("qdisc", "del", ["dev", srcDev, "ingress"])
 	except:
 		pass
-	host.execute(_tc_cmd("qdisc", "add", "dev %s ingress" % util.escape(srcDev)))
+	_tc("qdisc", "add", ["dev", srcDev, "ingress"])
 	""" 
 	Protocol all would forward all traffic but that results
 	in ARP traffic being multiplied and causing lots of traffic
 	""" 
-	host.execute(_tc_cmd("filter", "replace", "dev %s parent ffff:" % util.escape(srcDev), \
-	 "protocol all prio 49152 u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev %s" % util.escape(dstDev)))
+	_tc("filter", "replace", ["dev", srcDev, "parent", "ffff:", 
+							 "protocol", "all", "prio", "49152", "u32", "match", "u32", "0", "0", "flowid", "1:1",
+							 "action", "mirred", "egress", "redirect", "dev", dstDev])
 		
 def clearIncomingRedirect(host, dev):
-	assert ifaceutil.interfaceExists(host, dev)
-	host.execute(_tc_cmd("qdisc", "del", "dev %s ingress" % util.escape(dev)))
-	host.execute(_tc_cmd("filter", "del", "dev %s parent ffff: prio 49152" % util.escape(dev)))
+	_tc("qdisc", "del", "dev", dev, "ingress")
+	_tc("filter", "del", "dev", dev, "parent", "ffff:", "prio", "49152")

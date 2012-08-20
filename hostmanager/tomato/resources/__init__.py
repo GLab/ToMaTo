@@ -18,12 +18,42 @@
 from django.db import models
 import random, sys
 
-from tomato import fault
-from tomato.elements import Element
+from tomato import fault, host
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
 
 TYPES = {}
+
+def give(type_, num, owner):
+    if isinstance(owner, Element):
+        instance = ResourceInstance.objects.get(type=type_, num=num, ownerElement=owner)
+    elif isinstance(owner, Connection):
+        instance = ResourceInstance.objects.get(type=type_, num=num, ownerConnection=owner)
+    else:
+        fault.raise_("Owner must either be Element or Connection, was %s" % owner.__class__.__name__, fault.INTERNAL_ERROR)
+    instance.delete()
+
+def take(type_, owner):
+    res = getByType(type_)
+    fault.check(res, "Multiple or none resources of type %s found", type_, fault.INTERNAL_ERROR)
+    range_ = res.getInstanceRange()
+    for try_ in xrange(0, 100): 
+        num = random.choice(range_)
+        try:
+            ResourceInstance.objects.get(type=type_, num=num)
+            continue
+        except ResourceInstance.DoesNotExist:
+            pass
+        try:
+            instance = ResourceInstance()
+            instance.init(type_, num, owner)
+            return num
+        except:
+            pass
+    fault.raise_("Failed to obtain resource of type %s after %d tries" % (type_, try_), code=fault.INTERNAL_ERROR)
+
+from tomato.elements import Element
+from tomato.connections import Connection
 
 class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
@@ -61,10 +91,10 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         self.save()
     
     def modify_num_start(self, val):
-        self.num_start = val
+        self.numStart = val
     
     def modify_num_count(self, val):
-        self.num_count = val
+        self.numCount = val
 
     def remove(self):
         self.delete()    
@@ -79,7 +109,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
 class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     num = models.IntegerField()
-    owner = models.ForeignKey(Element, null=False)
+    ownerElement = models.ForeignKey(Element, null=True)
+    ownerConnection = models.ForeignKey(Connection, null=True)
     attrs = db.JSONField()
     
     class Meta:
@@ -88,32 +119,15 @@ class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, mode
     def init(self, type, num, owner, attrs={}): #@ReservedAssignment
         self.type = type
         self.num = num
-        self.owner = owner
+        if isinstance(owner, Element):
+            self.ownerElement = owner
+        elif isinstance(owner, Connection):
+            self.ownerConnection = owner
+        else:
+            fault.raise_("Owner must either be Element or Connection, was %s" % owner.__class__.__name__, fault.INTERNAL_ERROR)
         self.attrs = attrs
         self.save()
 
-def take(type_, owner):
-    res = getByType(type_)
-    fault.check(res, "Multiple or none resources of type %s found", type_, fault.INTERNAL_ERROR)
-    range_ = res.getInstanceRange()
-    for try_ in xrange(0, 100): 
-        num = random.choice(range_)
-        try:
-            ResourceInstance.objects.get(type=type_, num=num)
-            continue
-        except ResourceInstance.DoesNotExist:
-            pass
-        try:
-            instance = ResourceInstance()
-            instance.init(type_, num, owner)
-            return num
-        except:
-            pass
-    fault.raise_("Failed to obtain resource of type %s after %d tries" % (type_, try_), code=fault.INTERNAL_ERROR)
-
-def give(type_, num, owner):
-    instance = ResourceInstance.objects.get(type=type_, num=num, owner=owner)
-    instance.delete()
 
 def get(id_, **kwargs):
     try:
@@ -151,3 +165,4 @@ def init():
     if not getByType("port"):
         print >>sys.stderr, "Adding default resource entry for port"
         _addResourceRange("port", 6000, 1000)
+    

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import os, shutil
 from django.db import models
 
 from tomato.lib import db, attributes, util
@@ -92,6 +93,8 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.elements.add(el1)
 		self.elements.add(el2)
 		self.save()
+		if not os.path.exists(self.dataPath()):
+			os.makedirs(self.dataPath())
 		self.modify(attrs)
 		
 	def upcast(self):
@@ -100,6 +103,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		except:
 			pass
 		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+
+	def dataPath(self, filename=""):
+		return os.path.join(config.DATA_DIR, self.TYPE, str(self.id), filename)		
 
 	@classmethod
 	def determineParadigm(cls, el1, el2):
@@ -141,6 +147,8 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.checkRemove()
 		self.elements.clear() #Important, otherwise elements will be deleted
 		self.delete()
+		if os.path.exists(self.dataPath()):
+			shutil.rmtree(self.dataPath())
 			
 	def getElements(self):
 		return [el.upcast() for el in self.elements.all()]
@@ -153,6 +161,15 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 			"attrs": self.attrs,
 			"elements": [el.id for el in self.getElements()],
 		}
+		
+	def getResource(self, type_):
+		from tomato import resources #needed to break import cycle
+		return resources.take(type_, self)
+	
+	def returnResource(self, type_, num):
+		from tomato import resources #needed to break import cycle
+		resources.give(type_, num, self)
+		
 		
 def get(id_, **kwargs):
 	try:
@@ -179,4 +196,4 @@ def create(el1, el2, type_=None, attrs={}):
 				return create(el1, el2, type_, attrs)
 		fault.check(False, "Failed to find matching connection type for element types %s and %s", (el1.type, el2.type))
 
-from tomato import fault, currentUser
+from tomato import fault, currentUser, config

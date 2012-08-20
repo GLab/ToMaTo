@@ -18,7 +18,7 @@
 import os, sys
 from django.db import models
 from tomato import connections, elements, resources, host, fault
-from tomato.lib.attributes import attribute
+from tomato.lib.attributes import attribute, between
 from tomato.lib import decorators, util
 from tomato.host import fileserver
 
@@ -134,9 +134,9 @@ class OpenVZ(elements.Element):
 	vncport = attribute("vncport", int)
 	vncpid = attribute("vncpid", int)
 	vncpassword = attribute("vncpassword", str)	
-	ram = attribute("ram", int)
-	diskspace = attribute("diskspace", int)
-	rootpassword = attribute("rootpassword", str)	
+	ram = attribute("ram", between(64, 4096, faultType=fault.new_user), default=256)
+	diskspace = attribute("diskspace", between(512, 102400, faultType=fault.new_user), default=10240)
+	rootpassword = attribute("rootpassword", str)
 	hostname = attribute("hostname", str)	
 	gateway4 = attribute("gateway4", str)	
 	gateway6 = attribute("gateway6", str)	
@@ -463,7 +463,7 @@ class OpenVZ_Interface(elements.Element):
 	name = attribute("name", str)
 	ip4address = attribute("ip4address", str)
 	ip6address = attribute("ip6address", str)
-	use_dhcp = attribute("use_dhcp", bool)
+	use_dhcp = attribute("use_dhcp", bool, default="False")
 
 	TYPE = "openvz_interface"
 	CAP_ACTIONS = {
