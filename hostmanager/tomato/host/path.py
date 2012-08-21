@@ -15,9 +15,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from accounting import *
+from tomato.host import run
+import os, shutil
+
+def exists(path):
+	return os.path.exists(path)
+
+def entries(path):
+	return os.listdir(path)
+
+def copy(src, dst):
+	shutil.copyfile(src, dst)
+	
+def basename(path):
+	return os.path.basename(path)
+
+def readlink(path):
+	return os.readlink(path)
+
+def createDir(path, parents=True):
+	if not parents:
+		os.mkdir(path)
+	else:
+		os.makedirs(path)
+		
+def remove(path, recursive=False):
+	if recursive:
+		shutil.rmtree(path)
+	else:
+		os.remove(path)
+	
+def extractArchive(src, dst):
+	run(["tar", "-axf", src, "-C", dst])
+
+def diskspace(path):
+	out = run(["du", "-sb", path])
+	return int(out.split()[0])

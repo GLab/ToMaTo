@@ -20,6 +20,7 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
+#TODO: capture download
 #TODO: compatibility with 1.8
 #TODO: import of existing elements
 #TODO: test suite
@@ -71,7 +72,7 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, host
+from tomato import lib, resources, host, accounting
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver
@@ -81,5 +82,4 @@ from host.fileserver import stop as stopFileserver
 
 if not config.MAINTENANCE:
 	resources.init()
-
-#RepeatedProcess(5*60, "task cleanup", Task("cleanup", lib.tasks.cleanup), schedule=not config.MAINTENANCE)
+	accounting.task.start()

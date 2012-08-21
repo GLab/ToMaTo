@@ -138,10 +138,13 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		pass
 	def send(self, response):
 		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
+		length = len(res)
 		self.send_response(200)
-		if len(res) > 1024 and "gzip" in [s.strip() for s in self.headers.get("accept-encoding", "").split(",")]:
+		if length > 1024 and "gzip" in [s.strip() for s in self.headers.get("accept-encoding", "").split(",")]:
 			self.send_header("Content-Encoding", "gzip")
 			res = gzip_encode(res)
+			length = len(res) #TODO: find out if length should be compressed or uncompressed length
+		self.send_header("Content-Length", length)
 		self.send_header("Content-Type", "text/xml")
 		self.end_headers()
 		self.wfile.write(res)

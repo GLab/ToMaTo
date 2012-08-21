@@ -17,7 +17,7 @@
 
 from tomato import connections, host, fault
 from tomato.lib.attributes import attribute, oneOf, between
-from tomato.host import tc
+from tomato.host import tc, net, process
 
 DOC="""
 	Description
@@ -100,9 +100,6 @@ class Bridge(connections.Connection):
 		self.capture_port = self.getResource("port")
 		self.ifb_num = self.getResource("ifb")
 				
-	def _bridgeObj(self):
-		return host.Bridge(self.bridge)
-			
 	def _startCapturing(self):
 		if not self.capturing or self.state == self.ST_CREATED:
 			return
@@ -117,7 +114,7 @@ class Bridge(connections.Connection):
 		if not self.capturing or self.state == self.ST_CREATED:
 			return
 		if self.capture_pid:
-			host.kill(self.capture_pid)
+			process.kill(self.capture_pid)
 			del self.capture_pid
 
 	def modify_capturing(self, val):
@@ -246,9 +243,8 @@ class Bridge(connections.Connection):
 		del self._captureRestart
 	
 	def action_start(self):
-		br = self._bridgeObj()
-		br.create()
-		br.up()
+		net.bridgeCreate(self.bridge)
+		net.ifUp(self.bridge)
 		self.setState(self.ST_STARTED)
 		self._startCapturing()
 		for el in self.getElements():
@@ -257,28 +253,26 @@ class Bridge(connections.Connection):
 				self.connectInterface(ifname)
 				
 	def action_stop(self):
-		br = self._bridgeObj()
 		for el in self.getElements():
 			ifname = el.interfaceName()
 			if ifname:
 				self.disconnectInterface(ifname)
 		self._stopCapturing()
-		if br.exists():
-			br.down()
-			br.remove()
+		if net.bridgeExists(self.bridge):
+			net.ifDown(self.bridge)
+			net.bridgeRemove(self.bridge)
 		self.setState(self.ST_CREATED)
 
 	def connectInterface(self, ifname):
 		if self.state == self.ST_CREATED:
 			return
-		br = self._bridgeObj()
-		if ifname in br.interfaceNames():
+		oldBridge = net.interfaceBridge(ifname)
+		if oldBridge == self.bridge:
 			return
-		iface = host.Interface(ifname)
-		if iface.getBridge():
-			iface.getBridge().removeInterface(iface)
-		br.addInterface(iface)
-		if len(br.interfaces()) == 2:
+		if oldBridge:
+			net.bridgeRemoveInterface(oldBridge, ifname)
+		net.bridgeAddInterface(self.bridge, ifname)
+		if len(net.bridgeInterfaces(self.bridge)) == 2:
 			self._startEmulation()
 			# now elements are connected
 			for el in self.getElements():
@@ -287,17 +281,16 @@ class Bridge(connections.Connection):
 	def disconnectInterface(self, ifname):
 		if self.state == self.ST_CREATED:
 			return
-		br = self._bridgeObj()
-		if not br.exists():
+		if not net.bridgeExists(self.bridge):
 			return
-		if not ifname in br.interfaceNames():
+		if not ifname in net.bridgeInterfaces(self.bridge):
 			return
-		if len(br.interfaces()) == 2:
+		if len(net.bridgeInterfaces(self.bridge)) == 2:
 			# now elements are no longer connected
 			for el in self.getElements():
 				el.onDisconnected()
 			self._stopEmulation()
-		br.removeInterface(host.Interface(ifname))
+		net.bridgeRemoveInterface(self.bridge, ifname)
 
 	def upcast(self):
 		return self
@@ -305,7 +298,16 @@ class Bridge(connections.Connection):
 	def info(self):
 		info = connections.Connection.info(self)
 		return info
-
+	
+	def updateUsage(self, usage, data):
+		if net.bridgeExists(self.bridge):
+			traffic = sum(net.trafficInfo(self.bridge))
+			usage.updateContinuous("traffic", traffic, data)
+		if self.capture_pid and process.exists(self.capture_pid):
+			cputime = process.cputime(self.capture_pid)
+			usage.updateContinuous("cputime", cputime, data)
+			usage.memory = process.memory(self.capture_pid)
+		usage.diskspace = host.path.diskspace(self.dataPath())
 
 bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
 iprouteVersion = host.getDpkgVersion("iproute")

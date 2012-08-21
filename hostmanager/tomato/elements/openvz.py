@@ -20,7 +20,7 @@ from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.lib.attributes import attribute, between
 from tomato.lib import decorators, util
-from tomato.host import fileserver
+from tomato.host import fileserver, process, net, path
 
 DOC="""
 Element type: openvz
@@ -278,16 +278,15 @@ class OpenVZ(elements.Element):
 		if self.gateway6:
 			self._execute("ip route add default via %s" % self.gateway6)
 
-	def _useImage(self, path):
+	def _useImage(self, path_):
 		assert self.state != self.ST_CREATED
-		imgPath = host.Path(self._imagePath())
-		archive = host.Archive(path)
-		imgPath.remove(recursive=True)
-		imgPath.createDir()
-		archive.extractTo(imgPath)
+		imgPath = self._imagePath()
+		path.remove(imgPath, recursive=True)
+		path.createDir(imgPath)
+		path.extractArchive(path_, imgPath)
 
-	def _checkImage(self, path):
-		res = host.run(["tar", "-tzvf", path, "./sbin/init"])
+	def _checkImage(self, path_):
+		res = host.run(["tar", "-tzvf", path_, "./sbin/init"])
 		fault.check("0/0" in res, "Image contents not owned by root")
 
 	def onChildAdded(self, interface):
@@ -358,8 +357,8 @@ class OpenVZ(elements.Element):
 		self.setState(self.ST_STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
-			ifObj = host.Interface(self._interfaceName(interface.name))
-			util.waitFor(ifObj.exists)
+			ifName = self._interfaceName(interface.name)
+			util.waitFor(lambda :net.ifaceExists(ifName))
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
@@ -374,7 +373,7 @@ class OpenVZ(elements.Element):
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
 		if self.vncpid:
-			host.kill(self.vncpid)
+			process.kill(self.vncpid)
 			del self.vncpid
 		self._vzctl("stop")
 		self.setState(self.ST_PREPARED, True)
@@ -385,11 +384,7 @@ class OpenVZ(elements.Element):
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.tar.gz"))
-		arch = host.Archive(self.dataPath("uploaded.tar.gz"))
-		imgDir = host.Path(self._imagePath())
-		imgDir.remove(recursive=True)
-		imgDir.createDir() 
-		arch.extractTo(imgDir)
+		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
@@ -408,6 +403,72 @@ class OpenVZ(elements.Element):
 		info = elements.Element.info(self)
 		info["attrs"]["template"] = self.template.name if self.template else None
 		return info
+
+	def _cputime(self):
+		if self.state != self.ST_STARTED:
+			return None
+		with open("/proc/vz/vestat") as fp:
+			for line in fp:
+				parts = line.split()
+				if len(parts) < 4:
+					continue
+				veid, user, _, system = line.strip().split()[:4]
+				if veid == str(self.vmid):
+					break
+		if veid == str(self.vmid):
+			cputime = (int(user) + int(system))/process.jiffiesPerSecond()
+		else:
+			return None
+		if self.vncpid and process.exists(self.vncpid):
+			cputime += process.cputime(self.vncpid)
+		return cputime
+		
+	def _memory(self):
+		if self.state != self.ST_STARTED:
+			return None
+		with open("/proc/user_beancounters") as fp:
+			for line in fp:
+				if line.strip().startswith(str(self.vmid)):
+					break
+			if not line.strip().startswith(str(self.vmid)):
+				return None
+			for line in fp:
+				key, val = line.split()[:2]
+				if key == "privvmpages":
+					memory = int(val) * 4096
+					break
+			if key != "privvmpages":
+				return None
+		if self.vncpid and process.exists(self.vncpid):
+			memory += process.memory(self.vncpid)
+		return memory
+		
+	def _diskspace(self):
+		if self.state == self.ST_STARTED:
+			with open("/proc/vz/vzquota") as fp:
+				while True:
+					line = fp.readline()
+					if line.startswith(str(self.vmid)):
+						break
+				if not line.startswith(str(self.vmid)):
+					return None
+				return int(fp.readline().split()[1]) * 1024
+		else:
+			path.diskspace(self._imagePath())
+		
+	def updateUsage(self, usage, data):
+		if self.state == self.ST_CREATED:
+			return
+		cputime = self._cputime()
+		if cputime:
+			usage.updateContinuous("cputime", cputime, data)
+		memory = self._memory()
+		if memory:
+			usage.memory = memory
+		diskspace = self._diskspace()
+		if diskspace:
+			usage.diskspace = diskspace
+			
 
 
 DOC_IFACE="""
@@ -550,6 +611,11 @@ class OpenVZ_Interface(elements.Element):
 		info = elements.Element.info(self)
 		return info
 
+	def updateUsage(self, usage, data):
+		ifname = self.interfaceName()
+		if net.ifaceExists(ifname):
+			traffic = sum(net.trafficInfo(ifname))
+			usage.updateContinuous("traffic", traffic, data)
 
 perlVersion = host.getDpkgVersion("perl")
 vzctlVersion = host.getDpkgVersion("vzctl")

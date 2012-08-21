@@ -15,9 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from accounting import *
+from tomato.host import run
+import os
+
+def exists(pid):
+	return os.path.exists("/proc/%d" % pid)
+
+def kill(pid, force=False):
+	run(["kill", str(pid), "-9" if force else "-15"])
+	
+def jiffiesPerSecond():
+	cpus = 0
+	with open("/proc/stat") as fp:
+		jiffies = sum(map(int, fp.readline().split()[1:]))
+		while fp.readline().startswith("cpu"):
+			cpus += 1
+	with open("/proc/uptime") as fp:
+		seconds = float(fp.readline().split()[0])
+	return jiffies / seconds / cpus
+	
+def cputime(pid):
+	with open("/proc/%d/stat" % pid) as fp:
+		jiffies = sum(map(int, fp.readline().split()[13:17]))
+	return jiffies/jiffiesPerSecond()
+
+def memory(pid):
+	with open("/proc/%d/stat" % pid) as fp:
+		return int(fp.readline().split()[23]) * 4096

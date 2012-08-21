@@ -18,6 +18,7 @@
 import os, shutil
 from django.db import models
 
+from tomato.accounting import UsageStatistics
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
 
@@ -73,6 +74,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	owner = models.CharField(max_length=20, validators=[db.nameValidator])
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
+	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='connection')
 	attrs = db.JSONField()
 	#elements: set of elements.Element
 	
@@ -93,6 +95,10 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.elements.add(el1)
 		self.elements.add(el2)
 		self.save()
+		stats = UsageStatistics()
+		stats.init()
+		stats.save()
+		self.usageStatistics = stats		
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
@@ -236,6 +242,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		from tomato import resources #needed to break import cycle
 		resources.give(type_, num, self)
 		
+	def updateUsage(self, usage, data):
+		pass
+
 		
 def get(id_, **kwargs):
 	try:
@@ -250,8 +259,8 @@ def getAll(**kwargs):
 def create(el1, el2, type_=None, attrs={}):
 	if type_:
 		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
-		fault.check(not el1.connection, "Element #%d is already connect", el1.id)
-		fault.check(not el2.connection, "Element #%d is already connect", el2.id)
+		fault.check(not el1.connection, "Element #%d is already connected", el1.id)
+		fault.check(not el2.connection, "Element #%d is already connected", el2.id)
 		con = TYPES[type_]()
 		con.init(el1, el2, attrs)
 		con.save()

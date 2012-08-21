@@ -19,6 +19,7 @@ import os, shutil, hashlib, base64
 from tomato import connections, elements, host, fault
 from tomato.lib import util
 from tomato.lib.attributes import attribute, oneOf
+from tomato.host import process, net, path
 
 DOC="""
 Element type: tinc
@@ -176,8 +177,8 @@ class Tinc(elements.Element):
 				fp.write(peer["pubkey"])
 		host.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(self.ST_STARTED)
-		ifObj = host.Interface(self._interfaceName())
-		util.waitFor(ifObj.exists)
+		ifName = self._interfaceName()
+		util.waitFor(lambda :net.ifaceExists(ifName))
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())
@@ -198,6 +199,26 @@ class Tinc(elements.Element):
 		info = elements.Element.info(self)
 		del info["attrs"]["privkey"] #no need to expose this information
 		return info
+
+	def _getPid(self):
+		pidFile = os.path.join(self.path, "tinc.pid")
+		if not os.path.exists(pidFile):
+			return None
+		with open(pidFile) as fp:
+			return int(fp.readline().strip())
+
+	def updateUsage(self, usage, data):
+		if path.exists(self.path):
+			usage.diskspace = path.diskspace(self.path)
+		if self.state == self.ST_STARTED:
+			return
+		pid = self._getPid()
+		if pid:
+			usage.memory = process.memory(pid)
+			cputime = process.cputime(pid)
+			usage.updateContinuous("cputime", cputime, data)
+			traffic = sum(net.trafficInfo(self.interfaceName()))
+			usage.updateContinuous("traffic", traffic, data)
 
 
 tincVersion = host.getDpkgVersion("tinc")

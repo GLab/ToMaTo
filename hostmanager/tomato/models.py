@@ -29,3 +29,4 @@ from connections.fixed_bridge import Fixed_Bridge #@UnusedImport
 from resources import Resource, ResourceInstance #@UnusedImport
 from resources.template import Template #@UnusedImport
 from resources.network import Network #@UnusedImport
+from accounting import UsageStatistics, UsageRecord #@UnusedImport

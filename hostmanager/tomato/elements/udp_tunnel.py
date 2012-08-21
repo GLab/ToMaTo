@@ -18,6 +18,7 @@
 from tomato import connections, elements, host
 from tomato.lib import util
 from tomato.lib.attributes import attribute
+from tomato.host import net, process
 
 DOC="""
 Element type: udp_tunnel
@@ -118,8 +119,8 @@ class UDP_Tunnel(elements.Element):
 			cmd.append("udp-listen:%d,fork" % self.port)
 		self.pid = host.spawn(cmd)
 		self.setState(self.ST_STARTED)
-		ifObj = host.Interface(self._interfaceName())
-		util.waitFor(ifObj.exists)
+		ifName = self._interfaceName()
+		util.waitFor(lambda :net.ifaceExists(ifName))
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())
@@ -129,7 +130,7 @@ class UDP_Tunnel(elements.Element):
 		if con:
 			con.disconnectInterface(self._interfaceName())
 		if self.pid:
-			host.kill(self.pid)
+			process.kill(self.pid)
 			del self.pid
 		self.setState(self.ST_CREATED)
 
@@ -139,6 +140,15 @@ class UDP_Tunnel(elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		return info
+
+	def updateUsage(self, usage, data):
+		if self.state == self.ST_STARTED:
+			return
+		usage.memory = process.memory(self.pid)
+		cputime = process.cputime(self.pid)
+		usage.updateContinuous("cputime", cputime, data)
+		traffic = sum(net.trafficInfo(self.interfaceName()))
+		usage.updateContinuous("traffic", traffic, data)
 
 
 socatVersion = host.getDpkgVersion("socat")

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato import connections, host
+from tomato.host import net
 
 DOC="""
 	Description
@@ -44,69 +45,67 @@ class Fixed_Bridge(connections.Connection):
 		self.state = self.ST_DEFAULT
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		
-	def _bridgeObj(self):
+	def _bridgeName(self):
 		for el in self.getElements():
 			if connections.CONCEPT_BRIDGE in el.CAP_CON_CONCEPTS:
 				name = el.bridgeName()
 				if name:
-					return host.Bridge(name)
+					return name
 		return None
 
-	def _ifaceObj(self):
+	def _ifaceName(self):
 		for el in self.getElements():
 			if connections.CONCEPT_INTERFACE in el.CAP_CON_CONCEPT:
 				name = el.interfaceName()
 				if name:
-					return host.Interface(name)
+					return name
 		return None
 
-	def _connect(self, iface, br):
-		if iface.getBridge():
-			iface.getBridge().removeInterface(iface)
-		br.addInterface(iface)
+	def _connect(self, ifname, brname):
+		oldBridge = net.interfaceBridge(ifname)
+		if oldBridge:
+			net.bridgeRemoveInterface(oldBridge, ifname)
+		net.bridgeAddInterface(brname, ifname)
 		# now elements are connected
 		for el in self.getElements():
 			el.onConnected()
 
 	def connectInterface(self, ifname):
-		iface = host.Interface(ifname)
-		br = self._bridgeObj()
-		if not br:
+		brname = self._bridgeName()
+		if not brname:
 			return
-		self._connect(iface, br)
+		self._connect(ifname, brname)
 		
 	
 	def disconnectInterface(self, ifname):
-		iface = host.Interface(ifname)
-		if iface.getBridge():
-			iface.getBridge().removeInterface(iface)
+		oldBridge = net.interfaceBridge(ifname)
+		if oldBridge:
+			net.bridgeRemoveInterface(oldBridge, ifname)
 		# now elements are connected
 		for el in self.getElements():
 			el.onConnected()
 
 	def connectBridge(self, brname):
-		iface = self._ifaceObj()
-		if not iface:
+		ifname = self._ifaceName()
+		if not ifname:
 			return
-		br = host.Bridge(brname)
-		self._connect(iface, br)
+		self._connect(ifname, brname)
 	
 	def disconnectBridge(self, brname):
-		iface = self._ifaceObj()
-		if not iface:
+		ifname = self._ifaceName()
+		if not ifname:
 			return
-		br = host.Bridge(brname)
-		br.removeInterface(iface)
+		net.bridgeRemoveInterface(brname, ifname)
 		# now elements are connected
 		for el in self.getElements():
 			el.onConnected()
 
 	def remove(self):
 		self.checkRemove()
-		iface = self._ifaceObj()
-		br = self._bridgeObj()
-		if iface and br:
-			br.removeInterface(iface)
+		ifname = self._ifaceName()
+		brname = self._bridgeName()
+		if ifname and brname:
+			net.bridgeRemoveInterface(brname, ifname)
 		connections.Connection.remove(self)
 
 	def upcast(self):
@@ -116,6 +115,11 @@ class Fixed_Bridge(connections.Connection):
 		info = connections.Connection.info(self)
 		return info
 
+	def updateUsage(self, usage, data):
+		ifname = self._ifaceName()
+		if ifname and net.ifaceExists(ifname):
+			traffic = sum(net.trafficInfo(ifname))
+			usage.updateContinuous("traffic", traffic, data)
 
 bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
 

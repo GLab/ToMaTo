@@ -17,8 +17,9 @@
 
 import os, shutil
 from django.db import models
-from tomato.connections import Connection
 
+from tomato.connections import Connection
+from tomato.accounting import UsageStatistics, Usage
 from tomato.lib import db, attributes, util
 from tomato.lib.decorators import *
 from tomato import config
@@ -31,6 +32,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	owner = models.CharField(max_length=20, validators=[db.nameValidator])
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
+	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	attrs = db.JSONField()
 	
@@ -57,6 +59,10 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
+		stats = UsageStatistics()
+		stats.init()
+		stats.save()
+		self.usageStatistics = stats
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
@@ -227,6 +233,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			"connection": self.connection.id if self.connection else None,
 		}
 		
+	def updateUsage(self, usage, data):
+		pass
+
 def get(id_, **kwargs):
 	try:
 		el = Element.objects.get(id=id_, **kwargs)

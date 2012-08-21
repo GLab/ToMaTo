@@ -15,9 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from accounting import *
+def accounting_statistics():
+    elSt = dict([(str(el.id), el.usageStatistics.info()) for el in elements.getAll(owner=currentUser())])
+    conSt = dict([(str(con.id), con.usageStatistics.info()) for con in connections.getAll(owner=currentUser())])
+    return {"elements": elSt, "connections": conSt}
+
+def accounting_element_statistics(id): #@ReservedAssignment
+    return _getElement(id).usageStatistics.info()
+    
+def accounting_connection_statistics(id): #@ReservedAssignment
+    return _getConnection(id).usageStatistics.info()
+
+from elements import _getElement
+from connections import _getConnection
+from tomato import currentUser, elements, connections

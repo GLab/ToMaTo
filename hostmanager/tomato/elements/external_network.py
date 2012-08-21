@@ -100,4 +100,8 @@ class External_Network(elements.Element):
 	def bridgeName(self):
 		return self.network.getBridge() if self.network else None
 
+	def updateUsage(self, usage, data):
+		pass
+
+
 elements.TYPES[External_Network.TYPE] = External_Network

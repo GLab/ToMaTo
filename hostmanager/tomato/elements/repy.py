@@ -21,7 +21,7 @@ from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute, between
 from tomato.lib import util
-from tomato.host import fileserver
+from tomato.host import fileserver, process, net, path
 
 DOC="""
 Element type: repy
@@ -183,9 +183,8 @@ class Repy(elements.Element):
 			num += 1
 		return "eth%d" % num
 
-	def _useImage(self, path):
-		img = host.Path(path)
-		img.copyTo(self.dataPath("program.repy"))
+	def _useImage(self, path_):
+		path.copy(path_, self.dataPath("program.repy"))
 
 	def _setProfile(self):
 		res = {"diskused": 1000000, "lograte": 10000, "events": 10000, "random": 10000}
@@ -226,8 +225,8 @@ class Repy(elements.Element):
 		self.pid = host.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + map(host.escape, self.args), stdout=stdout)
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
-			ifObj = host.Interface(self._interfaceName(interface.name))
-			util.waitFor(ifObj.exists)
+			ifName = self._interfaceName(interface.name)
+			util.waitFor(lambda :net.ifaceExists(ifName))
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
@@ -239,10 +238,10 @@ class Repy(elements.Element):
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
 		if self.vncpid:
-			host.kill(self.vncpid)
+			process.kill(self.vncpid)
 			del self.vncpid
 		if self.pid:
-			host.kill(self.pid)
+			process.kill(self.pid)
 			del self.pid
 		self.setState(self.ST_CREATED, True)
 		
@@ -265,6 +264,16 @@ class Repy(elements.Element):
 		info = elements.Element.info(self)
 		info["attrs"]["template"] = self.template.name if self.template else None
 		return info
+
+	def updateUsage(self, usage, data):
+		usage.diskspace = path.diskspace(self.dataPath())
+		if self.pid:
+			usage.memory = process.memory(self.pid)
+			cputime = process.cputime(self.pid)
+			if self.vncpid:
+				usage.memory += process.memory(self.vncpid)
+				cputime += process.cputime(self.vncpid)
+			usage.updateContinuous("cputime", cputime, data)
 
 
 DOC_IFACE="""
@@ -332,6 +341,11 @@ class Repy_Interface(elements.Element):
 		info = elements.Element.info(self)
 		return info
 
+	def updateUsage(self, usage, data):
+		ifname = self.interfaceName()
+		if net.ifaceExists(ifname):
+			traffic = sum(net.trafficInfo(ifname))
+			usage.updateContinuous("traffic", traffic, data)
 
 repyVersion = host.getDpkgVersion("tomato-repy")
 vnctermVersion = host.getDpkgVersion("vncterm")

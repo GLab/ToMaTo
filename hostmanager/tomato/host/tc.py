@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import host
+from tomato.host import run, CommandError
 import math
 
 def _tc(type, action, params=[]): #@ReservedAssignment
-	return host.run(["tc", type, action]+params)
+	return run(["tc", type, action]+params)
 	
 def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, distribution=None, lossratio=0.0, loss_correlation=0.0, duplicate=0.0, corrupt=0.0):
 	netem = ["netem"]
@@ -91,7 +91,7 @@ def setLinkEmulation(dev, bandwidth=None, keepBandwidth=False, **kwargs):
 def clearLinkEmulation(dev):
 	try:
 		_tc("qdisc", "del", ["root", "dev", dev])
-	except host.CommandError, exc:
+	except CommandError, exc:
 		if not "No such file or directory" in exc.errorMessage:
 			raise
 

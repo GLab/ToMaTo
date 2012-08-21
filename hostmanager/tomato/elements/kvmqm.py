@@ -21,7 +21,7 @@ from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute, between
 from tomato.lib import decorators, util
-from tomato.host import fileserver
+from tomato.host import fileserver, process, net, path
 
 DOC="""
 Element type: kvmqm
@@ -280,10 +280,9 @@ class KVMQM(elements.Element):
 		assert self.state == self.ST_PREPARED
 		self._qm("set", ["-tablet", int(self.usbtablet)])
 
-	def _useImage(self, path):
+	def _useImage(self, path_):
 		assert self.state == self.ST_PREPARED
-		img = host.Path(path)
-		img.copyTo(self._imagePath())
+		path.copy(path_, self._imagePath())
 
 	def _checkImage(self, path):
 		host.run(["qemu-img", "info", "-f", "qcow2", path])
@@ -353,8 +352,8 @@ class KVMQM(elements.Element):
 		self._qm("start")
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
-			ifObj = host.Interface(self._interfaceName(interface.num))
-			util.waitFor(ifObj.exists)
+			ifName = self._interfaceName(interface.num)
+			util.waitFor(lambda :net.ifaceExists(ifName))
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
@@ -369,7 +368,7 @@ class KVMQM(elements.Element):
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.num))
 		if self.vncpid:
-			host.kill(self.vncpid)
+			process.kill(self.vncpid)
 			del self.vncpid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
 		self.setState(self.ST_PREPARED, True)
@@ -394,6 +393,23 @@ class KVMQM(elements.Element):
 		info["attrs"]["template"] = self.template.name if self.template else None
 		return info
 
+	def updateUsage(self, usage, data):
+		if self.state == self.ST_CREATED:
+			return
+		if self.state == self.ST_STARTED:
+			with open("/var/run/qemu-server/%d.pid" % self.vmid) as fp:
+				qmPid = int(fp.readline().strip())
+			memory = 0
+			cputime = 0
+			if process.exists(qmPid):
+				memory += process.memory(qmPid)
+				cputime += process.cputime(qmPid)
+			if self.vncpid and process.exists(self.vncpid):
+				memory += process.memory(self.vncpid)
+				cputime += process.cputime(self.vncpid)
+			usage.memory = memory
+			usage.updateContinuous("cputime", cputime, data)
+		usage.diskspace = path.diskspace(self._imagePathDir())
 
 DOC_IFACE="""
 Element type: kvmqm_interface
@@ -462,6 +478,12 @@ class KVMQM_Interface(elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		return info
+
+	def updateUsage(self, usage, data):
+		ifname = self.interfaceName()
+		if net.ifaceExists(ifname):
+			traffic = sum(net.trafficInfo(ifname))
+			usage.updateContinuous("traffic", traffic, data)
 
 
 tcpserverVersion = host.getDpkgVersion("ucspi-tcp")
