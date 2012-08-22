@@ -67,6 +67,13 @@ def trafficInfo(ifname):
 		rx = int(fp.readline().strip())
 	return (rx, tx)
 
+def tcpPortUsed(port):
+	try:
+		run(["lsof", "-t", "-i", "TCP:%d" % port])
+		return True
+	except:
+		return False
+
 def _brifPath(brname):
 	return os.path.join(_ifacePath(brname), "brif")
 

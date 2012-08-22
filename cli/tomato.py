@@ -36,10 +36,7 @@ class ServerProxy(object):
 	def __getattr__(self, name):
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
 		def _call(*args, **kwargs):
-			try:
-				return call_proxy(args, kwargs)
-			except xmlrpclib.Fault, exc:
-				print exc
+			return call_proxy(args, kwargs)
 		return _call
 
 def getConnection(hostname, port, ssl, username=None, password=None, sslCert=None):
@@ -67,11 +64,12 @@ def runSource(locals, source):
 	interpreter = code.InteractiveInterpreter(locals)
 	interpreter.runsource(source)
 
-def runFile(locals, file):
+def runFile(locals, file, options):
 	sys.path.insert(0, os.path.dirname(file))
 	def shell():
 		runInteractive(locals)
 	locals["shell"] = shell
+	locals["__hostname__"] = options.hostname
 	__builtins__.__dict__.update(locals)
 	locals["__name__"]="__main__"
 	locals["__file__"]=file
@@ -117,7 +115,7 @@ def run():
 	if options.arguments:
 		runSource(locals, "\n".join(options.arguments))
 	elif options.file:
-		runFile(locals, options.file)
+		runFile(locals, options.file, options)
 	else:
 		runInteractive(locals)
 	

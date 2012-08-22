@@ -205,8 +205,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		@type params: dict
 		"""
 		self.checkAction(action)
-		getattr(self, "action_%s" % action)(**params)
+		res = getattr(self, "action_%s" % action)(**params)
 		self.save()
+		return res
 
 	def setState(self, state, dummy=None):
 		self.state = state

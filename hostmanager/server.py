@@ -35,13 +35,13 @@ if __name__ == "__main__":
 		run()
 	elif sys.argv[1] == "--coverage":
 		import coverage
-		cov = coverage.coverage()
-		cov.start()
+		if hasattr(coverage, "the_coverage"):
+			cov = coverage #2.x
+		else:
+			cov = coverage.coverage() #3.x
+		coverage.start()
 		run()
-		print "stop"
-		cov.stop()
-		sys.stdout = open("coverage.txt", "w")
-		cov.report()
+		coverage.stop()
 	elif sys.argv[1] == "--profile":
 		import cProfile as profile
 		profile.run("run()", "profile")

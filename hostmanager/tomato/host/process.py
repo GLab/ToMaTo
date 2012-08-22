@@ -15,16 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.host import run
+from tomato.host import run, CommandError
 import os
 
 def exists(pid):
 	return os.path.exists("/proc/%d" % pid)
 
 def kill(pid, force=False):
-	run(["kill", str(pid), "-9" if force else "-15"])
+	try:
+		run(["kill", str(pid), "-9" if force else "-15"])
+	except CommandError:
+		pass
 	
+_jiffiesPerSecond = None 	
 def jiffiesPerSecond():
+	global _jiffiesPerSecond
+	if _jiffiesPerSecond:
+		return _jiffiesPerSecond
 	cpus = 0
 	with open("/proc/stat") as fp:
 		jiffies = sum(map(int, fp.readline().split()[1:]))
@@ -32,6 +39,7 @@ def jiffiesPerSecond():
 			cpus += 1
 	with open("/proc/uptime") as fp:
 		seconds = float(fp.readline().split()[0])
+	_jiffiesPerSecond = jiffies / seconds / cpus 
 	return jiffies / seconds / cpus
 	
 def cputime(pid):

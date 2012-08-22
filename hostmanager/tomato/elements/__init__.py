@@ -163,10 +163,11 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@type params: dict
 		"""
 		self.checkAction(action)
-		getattr(self, "action_%s" % action)(**params)
+		res = getattr(self, "action_%s" % action)(**params)
 		self.save()
 		if action in self.CAP_NEXT_STATE:
 			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)
+		return res
 
 	def checkRemove(self, recurse=True):
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")

@@ -87,16 +87,15 @@ def connection_action(id, action, params={}): #@ReservedAssignment
         depend on the connection type.
     @type params: dict
     
-    @return: Information about the connection
-    @rtype: dict    
+    @return: Return value of the action
     
     @raise No such connection: if the connection id does not exist or belongs
         to another owner
     @raise various other errors: depending on the type
     """
     con = _getConnection(int(id))
-    con.action(action, params)
-    return con.info()
+    res = con.action(action, params)
+    return {} if res is None else res 
 
 def connection_remove(id): #@ReservedAssignment
     """

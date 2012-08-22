@@ -87,16 +87,15 @@ def element_action(id, action, params={}): #@ReservedAssignment
         depend on the element type.
     @type params: dict
     
-    @return: Information about the element
-    @rtype: dict    
+    @return: Return value of the action
     
     @raise No such element: if the element id does not exist or belongs to
         another owner
     @raise various other errors: depending on the type
     """
     el = _getElement(int(id))
-    el.action(action, params)
-    return el.info()
+    res = el.action(action, params)
+    return {} if res is None else res 
 
 def element_remove(id, recurse=True): #@ReservedAssignment
     """

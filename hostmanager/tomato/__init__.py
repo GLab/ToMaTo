@@ -20,18 +20,11 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: capture download
 #TODO: compatibility with 1.8
 #TODO: import of existing elements
 #TODO: test suite
+#TODO: debian package
 
-
-# This is the main tomato api file. All access to tomato must use the following 
-# methods. Direct import and usage of other classes of tomato is strongly 
-# discouraged as it is likely to break tomato.
-#
-# Note: since xml-rpc does not support None values all methods must return 
-# something and all return values must not contain None.
 
 def db_migrate():
 	"""

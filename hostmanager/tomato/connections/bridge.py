@@ -17,7 +17,9 @@
 
 from tomato import connections, host, fault
 from tomato.lib.attributes import attribute, oneOf, between
-from tomato.host import tc, net, process
+from tomato.host import tc, net, process, path, fileserver
+
+import os
 
 DOC="""
 	Description
@@ -60,6 +62,7 @@ class Bridge(connections.Connection):
 	CAP_ACTIONS_EMUL = {
 	}
 	CAP_ACTIONS_CAPTURE = {
+		"download_grant": [ST_CREATED, ST_STARTED],
 	}
 	CAP_ATTRS = {}
 	CAP_ATTRS_EMUL = {
@@ -292,6 +295,12 @@ class Bridge(connections.Connection):
 			self._stopEmulation()
 		net.bridgeRemoveInterface(self.bridge, ifname)
 
+	def action_download_grant(self):
+		entries = [os.path.join(self.dataPath("capture"), f) for f in path.entries(self.dataPath("capture"))]
+		fault.check(entries, "Nothing captured so far")
+		host.run(["tcpslice", "-w", self.dataPath("capture.pcap")] + entries)
+		return fileserver.addGrant(self.dataPath("capture.pcap"), fileserver.ACTION_DOWNLOAD, repeated=True)
+		
 	def upcast(self):
 		return self
 

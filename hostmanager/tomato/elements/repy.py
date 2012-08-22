@@ -115,8 +115,6 @@ class Repy(elements.Element):
 	vncport = attribute("vncport", int)
 	vncpid = attribute("vncpid", int)
 	vncpassword = attribute("vncpassword", str)
-	upload_grant = attribute("upload_grant", str)
-	download_grant = attribute("download_grant", str)
 	args = attribute("args", list, default=[])
 	cpus = attribute("cpus", between(0.01, 4.0, faultType=fault.new_user), default=0.25)
 	ram = attribute("ram", between(10, 4096, faultType=fault.new_user), default=25)
@@ -246,7 +244,7 @@ class Repy(elements.Element):
 		self.setState(self.ST_CREATED, True)
 		
 	def action_upload_grant(self):
-		self.upload_grant = fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
+		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.repy")), "No file has been uploaded")
@@ -255,7 +253,7 @@ class Repy(elements.Element):
 		
 	def action_download_grant(self):
 		#no need to copy file first
-		self.download_grant = fileserver.addGrant(self.dataPath("program.repy"), fileserver.ACTION_DOWNLOAD)
+		return fileserver.addGrant(self.dataPath("program.repy"), fileserver.ACTION_DOWNLOAD)
 		
 	def upcast(self):
 		return self
@@ -350,7 +348,7 @@ class Repy_Interface(elements.Element):
 repyVersion = host.getDpkgVersion("tomato-repy")
 vnctermVersion = host.getDpkgVersion("vncterm")
 
-def register():
+def register(): #pragma: no cover
 	if not repyVersion:
 		print >>sys.stderr, "Warning: Repy needs tomato-repy, disabled"
 		return

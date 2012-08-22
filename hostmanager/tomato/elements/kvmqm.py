@@ -19,7 +19,7 @@ import os, sys, json, shutil
 from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute, between
+from tomato.lib.attributes import attribute, between, oneOf
 from tomato.lib import decorators, util
 from tomato.host import fileserver, process, net, path
 
@@ -136,11 +136,12 @@ class KVMQM(elements.Element):
 	vncpid = attribute("vncpid", int)
 	cpus = attribute("cpus", between(1, 4, faultType=fault.new_user), default=1)
 	ram = attribute("ram", between(64, 4096, faultType=fault.new_user), default=256)
-	kblang = attribute("kblang", str, default="de")
+	kblang = attribute("kblang", oneOf(["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br",
+									 "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be",
+									 "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"], faultType=fault.new_user)
+									 , default="en-us")
 	usbtablet = attribute("usbtablet", bool, default="True")
 	vncpassword = attribute("vncpassword", str)
-	upload_grant = attribute("upload_grant", str)
-	download_grant = attribute("download_grant", str)
 	template = models.ForeignKey(template.Template, null=True)
 
 	ST_CREATED = "created"
@@ -374,7 +375,7 @@ class KVMQM(elements.Element):
 		self.setState(self.ST_PREPARED, True)
 		
 	def action_upload_grant(self):
-		self.upload_grant = fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
+		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
@@ -383,7 +384,7 @@ class KVMQM(elements.Element):
 		
 	def action_download_grant(self):
 		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
-		self.download_grant = fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 		
 	def upcast(self):
 		return self
@@ -490,7 +491,7 @@ tcpserverVersion = host.getDpkgVersion("ucspi-tcp")
 socatVersion = host.getDpkgVersion("socat")
 qmVersion = host.getDpkgVersion("pve-qemu-kvm")
 
-def register():
+def register(): #pragma: no cover
 	if not qmVersion:
 		print >>sys.stderr, "Warning: KVMQM needs a Proxmox VE host, disabled"
 		return

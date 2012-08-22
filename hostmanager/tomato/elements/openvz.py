@@ -140,8 +140,6 @@ class OpenVZ(elements.Element):
 	hostname = attribute("hostname", str)	
 	gateway4 = attribute("gateway4", str)	
 	gateway6 = attribute("gateway6", str)	
-	upload_grant = attribute("upload_grant", str)
-	download_grant = attribute("download_grant", str)	
 	template = models.ForeignKey(resources.Resource, null=True)
 
 	ST_CREATED = "created"
@@ -156,6 +154,7 @@ class OpenVZ(elements.Element):
 		"upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
+		"execute": [ST_STARTED],
 		"__remove__": [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -200,12 +199,14 @@ class OpenVZ(elements.Element):
 	def _vzctl(self, cmd, args=[], timeout=None):
 		cmd = ["vzctl", cmd, str(self.vmid)] + args
 		if timeout:
-			cmd = ["perl", "-e", "'alarm %d; exec @ARGV'" % timeout] + cmd
-		return host.run(cmd)
+			cmd = ["perl", "-e", "alarm %d; $|=1; exec @ARGV" % timeout] + cmd
+		out = host.run(cmd)
+		return out
 			
 	def _execute(self, cmd, timeout=60):
 		assert self.state == self.ST_STARTED
-		self._vzctl("exec", [cmd], timeout=timeout)
+		out = self._vzctl("exec", [cmd], timeout=timeout)
+		return out
 			
 	def _getState(self):
 		res = self._vzctl("status")
@@ -215,13 +216,13 @@ class OpenVZ(elements.Element):
 			return self.ST_PREPARED
 		if "deleted" in res:
 			return self.ST_CREATED
-		fault.raise_("Unable to determine openvz state", fault.INTERNAL_ERROR)
+		fault.raise_("Unable to determine openvz state", fault.INTERNAL_ERROR) #pragma: no cover
 
 	def _checkState(self):
 		savedState = self.state
 		realState = self._getState()
 		if savedState != realState:
-			self.setState(realState, True)
+			self.setState(realState, True) #pragma: no cover
 		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
 
 	def _template(self):
@@ -272,11 +273,20 @@ class OpenVZ(elements.Element):
 
 	def _setGateways(self):
 		assert self.state == self.ST_STARTED
-		self._execute("ip route del default")
 		if self.gateway4:
-			self._execute("ip route add default via %s" % self.gateway4)
+			try:
+				while True:
+					self._execute("ip -4 route del default")
+			except host.CommandError:
+				pass
+			self._execute("ip -4 route replace default via %s" % self.gateway4)
 		if self.gateway6:
-			self._execute("ip route add default via %s" % self.gateway6)
+			try:
+				while True:
+					self._execute("ip -6 route del default")
+			except host.CommandError:
+				pass
+			self._execute("ip -6 route replace default via %s" % self.gateway6)
 
 	def _useImage(self, path_):
 		assert self.state != self.ST_CREATED
@@ -358,13 +368,14 @@ class OpenVZ(elements.Element):
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			util.waitFor(lambda :net.ifaceExists(ifName))
+			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
 			interface._configure() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
 		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
+		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 				
 	def action_stop(self):
 		self._checkState()
@@ -379,7 +390,7 @@ class OpenVZ(elements.Element):
 		self.setState(self.ST_PREPARED, True)
 
 	def action_upload_grant(self):
-		self.upload_grant = fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
+		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
@@ -390,11 +401,10 @@ class OpenVZ(elements.Element):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
 		host.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
-		self.download_grant = fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
-	def _relPath(self, file_):
-		assert self.path
-		return os.path.join(self.path, file_)
+	def action_execute(self, cmd):
+		return self._execute(cmd)
 
 	def upcast(self):
 		return self
@@ -417,7 +427,7 @@ class OpenVZ(elements.Element):
 					break
 		if veid == str(self.vmid):
 			cputime = (int(user) + int(system))/process.jiffiesPerSecond()
-		else:
+		else: #pragma: no cover
 			return None
 		if self.vncpid and process.exists(self.vncpid):
 			cputime += process.cputime(self.vncpid)
@@ -430,14 +440,14 @@ class OpenVZ(elements.Element):
 			for line in fp:
 				if line.strip().startswith(str(self.vmid)):
 					break
-			if not line.strip().startswith(str(self.vmid)):
+			if not line.strip().startswith(str(self.vmid)): #pragma: no cover
 				return None
 			for line in fp:
 				key, val = line.split()[:2]
 				if key == "privvmpages":
 					memory = int(val) * 4096
 					break
-			if key != "privvmpages":
+			if key != "privvmpages": #pragma: no cover
 				return None
 		if self.vncpid and process.exists(self.vncpid):
 			memory += process.memory(self.vncpid)
@@ -450,7 +460,7 @@ class OpenVZ(elements.Element):
 					line = fp.readline()
 					if line.startswith(str(self.vmid)):
 						break
-				if not line.startswith(str(self.vmid)):
+				if not line.startswith(str(self.vmid)): #pragma: no cover
 					return None
 				return int(fp.readline().split()[1]) * 1024
 		else:
@@ -621,7 +631,7 @@ perlVersion = host.getDpkgVersion("perl")
 vzctlVersion = host.getDpkgVersion("vzctl")
 vnctermVersion = host.getDpkgVersion("vncterm")
 
-def register():
+def register(): #pragma: no cover
 	if not vzctlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
 		return

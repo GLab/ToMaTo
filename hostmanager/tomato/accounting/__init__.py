@@ -29,9 +29,9 @@ from tomato.lib.decorators import *
 # <100 records per object
 # -> <10 kb per object
 
-TYPES = ["minute", "5minutes", "hour", "day", "month", "year"]
+TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {
-    "minute": 15,
+    "single": 15,
     "5minutes": 12,
     "hour": 24,
     "day": 30,
@@ -43,7 +43,7 @@ def _avg(data, weightSum):
     return sum([k * v for (k, v) in data]) / weightSum
         
 def _sum(data, weightSum):
-    return _avg(data, weightSum) * len(data)
+    return sum(v for (v, _) in  data)
 
 def _timediff(begin, end):
     td = (end-begin)
@@ -51,10 +51,7 @@ def _timediff(begin, end):
     return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
     
 def _lastRange(type_):
-    if type_ == "minute":
-        end = datetime.now().replace(second=0, microsecond=0)
-        begin = end - timedelta(minutes=1)
-    elif type_ == "5minutes":
+    if type_ == "5minutes":
         end = datetime.now().replace(second=0, microsecond=0)
         end = end.replace(minute=(end.minute / 5)*5)
         begin = end - timedelta(minutes=5)
@@ -74,17 +71,16 @@ def _lastRange(type_):
     
 def _combine(begin, end, records):
     #calculate coverage
-    coveredDuration = sum([_timediff(r.begin, r.end) * r.coverage for r in records])
-    coverage = coveredDuration / _timediff(begin, end)
+    measurements = sum([r.measurements for r in records])
     #combine attributes
     combined = Usage()
-    if not coveredDuration:
-        return (combined, 0.0)
-    combined.cputime = _sum([(r.cputime, _timediff(r.begin, r.end) * r.coverage) for r in records], coveredDuration)
-    combined.diskspace = _avg([(r.diskspace, _timediff(r.begin, r.end) * r.coverage) for r in records], coveredDuration)
-    combined.memory = _avg([(r.memory, _timediff(r.begin, r.end) * r.coverage) for r in records], coveredDuration)
-    combined.traffic = _sum([(r.traffic, _timediff(r.begin, r.end) * r.coverage) for r in records], coveredDuration)
-    return (combined, coverage)
+    if not measurements:
+        return (combined, 0)
+    combined.cputime = _sum([(r.cputime, r.measurements) for r in records], measurements)
+    combined.diskspace = _avg([(r.diskspace, r.measurements) for r in records], measurements)
+    combined.memory = _avg([(r.memory, r.measurements) for r in records], measurements)
+    combined.traffic = _sum([(r.traffic, r.measurements) for r in records], measurements)
+    return (combined, measurements)
 
 class Usage:
     def __init__(self):
@@ -121,14 +117,16 @@ class UsageStatistics(attributes.Mixin, models.Model):
     def getRecords(self, type_):
         return self.records.filter(type=type_)
        
-    def createRecord(self, type_, begin, end, coverage, usage):
+    def createRecord(self, type_, begin, end, measurements, usage):
         record = UsageRecord()
-        record.init(self, type_, begin, end, coverage, usage)
+        record.init(self, type_, begin, end, measurements, usage)
         record.save()
         self.records.add(record)
        
+    @db.commit_after
     def update(self):
         usage = Usage()
+        begin = datetime.now()
         try:
             self.element.upcast().updateUsage(usage, self.attrs)
         except exceptions.ObjectDoesNotExist:
@@ -137,8 +135,8 @@ class UsageStatistics(attributes.Mixin, models.Model):
             self.connection.upcast().updateUsage(usage, self.attrs)
         except exceptions.ObjectDoesNotExist:
             pass
-        begin, end = _lastRange("minute")
-        self.createRecord("minute", begin, end, 1.0, usage)
+        end = datetime.now()
+        self.createRecord("single", begin, end, 1, usage)
         self._combine()
         self._removeOld()
         self.save()
@@ -164,7 +162,7 @@ class UsageRecord(models.Model):
     type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     begin = models.DateTimeField()
     end = models.DateTimeField()
-    coverage = models.FloatField()
+    measurements = models.IntegerField()
     #using fields to save space
     memory = models.FloatField() #unit: bytes
     diskspace = models.FloatField() #unit: bytes
@@ -174,12 +172,12 @@ class UsageRecord(models.Model):
     class Meta:
         pass
 
-    def init(self, statistics, type, begin, end, coverage, usage): #@ReservedAssignment
+    def init(self, statistics, type, begin, end, measurements, usage): #@ReservedAssignment
         self.statistics = statistics
         self.type = type
         self.begin = begin
         self.end = end
-        self.coverage = coverage
+        self.measurements = measurements
         self.cputime = usage.cputime
         self.memory = usage.memory
         self.diskspace = usage.diskspace
@@ -191,7 +189,7 @@ class UsageRecord(models.Model):
             "type": self.type,
             "begin": self.begin,
             "end": self.end,
-            "coverage": self.coverage,
+            "measurements": self.measurements,
             "usage": {"cputime": self.cputime, "diskspace": self.diskspace, "memory": self.memory, "traffic": self.traffic},
         }
         
