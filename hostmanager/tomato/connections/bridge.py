@@ -29,7 +29,6 @@ class Bridge(connections.Connection):
 	bridge = attribute("bridge", str)
 	
 	emulation = attribute("emulation", bool, default=False)
-	ifb_num = attribute("ifb_num", int)
 	bandwidth_to = attribute("bandwidth_to", between(0, 1000000, faultType=fault.new_user), default=0)
 	bandwidth_from = attribute("bandwidth_from", between(0, 1000000, faultType=fault.new_user), default=0)
 	lossratio_to = attribute("lossratio_to", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
@@ -57,7 +56,11 @@ class Bridge(connections.Connection):
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
-		"__remove__": [ST_CREATED],
+		connections.REMOVE_ACTION: [ST_CREATED],
+	}
+	CAP_NEXT_STATE = {
+		"start": ST_STARTED,
+		"stop": ST_CREATED,
 	}
 	CAP_ACTIONS_EMUL = {
 	}
@@ -101,13 +104,14 @@ class Bridge(connections.Connection):
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.bridge = "br%d" % self.id
 		self.capture_port = self.getResource("port")
-		self.ifb_num = self.getResource("ifb")
 				
 	def _startCapturing(self):
 		if not self.capturing or self.state == self.ST_CREATED:
 			return
 		if self.capture_mode == "file":
-			self.capture_pid = host.spawn(["tcpdump", "-i", self.bridge, "-n", "-C", "10", "-w", self.dataPath("capture"), "-U", "-W", "5", "-s0", self.capture_filter])
+			if not os.path.exists(self.dataPath("capture")):
+				os.mkdir(self.dataPath("capture"))
+			self.capture_pid = host.spawn(["tcpdump", "-i", self.bridge, "-n", "-C", "10", "-w", self.dataPath("capture/"), "-U", "-W", "5", "-s0", self.capture_filter])
 		elif self.capture_mode == "net":
 			self.capture_pid = host.spawn(["tcpserver", "-qHRl", "0", "0", str(self.capture_port), "tcpdump", "-i", self.bridge, "-s0" "-nUw", "-", self.capture_filter])
 		else:
@@ -130,11 +134,11 @@ class Bridge(connections.Connection):
 			self._stopCapturing()
 	
 	def modify_capture_mode(self, val):
-		self._captureRestart |= self.capture_mode == val
+		self._captureRestart |= self.capture_mode != val
 		self.capture_mode = val
 	
 	def modify_capture_filter(self, val):
-		self._captureRestart |= self.capture_filter == val
+		self._captureRestart |= self.capture_filter != val
 		self.capture_filter = val
 	
 	def _startEmulation(self):
@@ -143,12 +147,13 @@ class Bridge(connections.Connection):
 		els = self.getElements()
 		if len(els) != 2:
 			return
-		ifA, ifB = [el.interfaceName() for el in els]
+		elA, elB = [el for el in els]
+		if elA.id > elB.id:
+			#force ordering on connected elements, so from and to have defined meanings
+			elA, elB = elB, elA
+		ifA, ifB = elA.interfaceName(), elB.interfaceName()
 		if not ifA or not ifB:
 			return
-		if ifA.id > ifB.id:
-			#force ordering on connected elements, so from and to have defined meanings
-			ifA, ifB = ifB, ifA
 		attrsA = dict([(k.replace("_from", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_from")])
 		attrsB = dict([(k.replace("_to", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_to")])
 		#FIXME: check if directions are correct
@@ -176,11 +181,11 @@ class Bridge(connections.Connection):
 		if not self.emulation:
 			self._stopEmulation()
 
-	def modify_bandwith_to(self, val):
+	def modify_bandwidth_to(self, val):
 		self._emulRestart |= self.bandwidth_to != val
 		self.bandwidth_to = val
 
-	def modify_bandwith_from(self, val):
+	def modify_bandwidth_from(self, val):
 		self._emulRestart |= self.bandwidth_from != val
 		self.bandwidth_from = val
 

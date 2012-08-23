@@ -156,7 +156,7 @@ class KVMQM(elements.Element):
 		"upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
-		"__remove__": [ST_CREATED],
+		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
 		"prepare": ST_PREPARED,
@@ -354,7 +354,7 @@ class KVMQM(elements.Element):
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.num)
-			util.waitFor(lambda :net.ifaceExists(ifName))
+			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
@@ -446,7 +446,7 @@ class KVMQM_Interface(elements.Element):
 
 	TYPE = "kvmqm_interface"
 	CAP_ACTIONS = {
-		"__remove__": [KVMQM.ST_CREATED, KVMQM.ST_PREPARED]
+		elements.REMOVE_ACTION: [KVMQM.ST_CREATED, KVMQM.ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {

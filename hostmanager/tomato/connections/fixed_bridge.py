@@ -29,7 +29,7 @@ class Fixed_Bridge(connections.Connection):
 	ST_DEFAULT = "default"
 	TYPE = "fixed_bridge"
 	CAP_ACTIONS = {
-		"__remove__": [ST_DEFAULT],
+		connections.REMOVE_ACTION: [ST_DEFAULT],
 	}
 	CAP_ATTRS = {}
 	DEFAULT_ATTRS = {}
@@ -55,7 +55,7 @@ class Fixed_Bridge(connections.Connection):
 
 	def _ifaceName(self):
 		for el in self.getElements():
-			if connections.CONCEPT_INTERFACE in el.CAP_CON_CONCEPT:
+			if connections.CONCEPT_INTERFACE in el.CAP_CON_CONCEPTS:
 				name = el.interfaceName()
 				if name:
 					return name

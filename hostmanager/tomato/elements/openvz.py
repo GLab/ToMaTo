@@ -155,7 +155,7 @@ class OpenVZ(elements.Element):
 		"upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
 		"execute": [ST_STARTED],
-		"__remove__": [ST_CREATED],
+		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
 		"prepare": ST_PREPARED,
@@ -195,11 +195,13 @@ class OpenVZ(elements.Element):
 	def _imagePath(self):
 		return "/var/lib/vz/private/%d" % self.vmid
 
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode==9 and "Container already locked" in x.errorMessage)
+	# 9: locked
+	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
+	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode in [9, 51])
 	def _vzctl(self, cmd, args=[], timeout=None):
 		cmd = ["vzctl", cmd, str(self.vmid)] + args
 		if timeout:
-			cmd = ["perl", "-e", "alarm %d; $|=1; exec @ARGV" % timeout] + cmd
+			cmd = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd
 		out = host.run(cmd)
 		return out
 			
@@ -358,7 +360,14 @@ class OpenVZ(elements.Element):
 		
 	def action_destroy(self):
 		self._checkState()
-		self._vzctl("destroy")
+		try:
+			self._vzctl("destroy")
+		except host.CommandError, exc:
+			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
+				self._vzctl("umount")
+				self._vzctl("destroy")
+			else:
+				raise
 		self.setState(self.ST_CREATED, True)
 
 	def action_start(self):
@@ -539,7 +548,7 @@ class OpenVZ_Interface(elements.Element):
 
 	TYPE = "openvz_interface"
 	CAP_ACTIONS = {
-		"__remove__": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED]
+		elements.REMOVE_ACTION: [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
@@ -607,6 +616,7 @@ class OpenVZ_Interface(elements.Element):
 		self._setIp4Address()
 		self._setIp6Address()
 		self._setUseDhcp()
+		self._execute("ip link set up %s" % self.name)			
 	
 	def interfaceName(self):
 		if self.state == OpenVZ.ST_STARTED:

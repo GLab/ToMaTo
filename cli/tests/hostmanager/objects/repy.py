@@ -46,7 +46,7 @@ def check(indent="", shellError=False):
 		
 		id2 = checkCreateInterface(id, indent=indent)
 
-		print indent + "checking attribute changes in state prepared..."
+		print indent + "checking attribute changes in state created..."
 		element_modify(id, {"cpus": 0.5, "ram": 128, "bandwidth": 1000000, "args": ["id=1000"], "template": None})
 		
 		checkAction(id, "start", assertState="started", indent=indent)

@@ -49,7 +49,7 @@ def host_capabilities():
     connection_types = {}
     for type_, class_ in tomato.connections.TYPES.iteritems():
         caps = {}
-        for cap in ["actions", "attrs", "con_concepts"]:
+        for cap in ["actions", "next_state", "attrs", "con_concepts"]:
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
         connection_types[type_] = caps
     return {

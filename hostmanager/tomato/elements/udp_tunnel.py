@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, elements, host
+from tomato import connections, elements, host, fault
 from tomato.lib import util
 from tomato.lib.attributes import attribute
 from tomato.host import net, process
@@ -77,7 +77,7 @@ class UDP_Tunnel(elements.Element):
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
-		"__remove__": [ST_CREATED],
+		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
 		"start": ST_STARTED,
@@ -114,13 +114,13 @@ class UDP_Tunnel(elements.Element):
 	def action_start(self):
 		cmd = ["socat", "tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=%s" % self._interfaceName()]
 		if self.connect:
-			cmd.append("udp-connect:%s,fork,sourceport=%d" % (host.escape(self.connect), self.port))
+			cmd.append("udp-connect:%s,sourceport=%d" % (self.connect, self.port))
 		else:
-			cmd.append("udp-listen:%d,fork" % self.port)
+			cmd.append("udp-listen:%d" % self.port)
 		self.pid = host.spawn(cmd)
 		self.setState(self.ST_STARTED)
 		ifName = self._interfaceName()
-		util.waitFor(lambda :net.ifaceExists(ifName))
+		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())

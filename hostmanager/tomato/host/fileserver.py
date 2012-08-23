@@ -41,7 +41,6 @@ def _code(path):
 
 def addGrant(path, *args, **kwargs):
     code = _code(path)
-    fault.check(not code in _grants, "duplicate grant for file %s", path, fault.INTERNAL_ERROR)
     _grants[code] = Grant(path, *args, **kwargs)
     return code
 

@@ -25,7 +25,8 @@ from tomato.lib.decorators import *
 from tomato import config
 
 TYPES = {}
-REMOVE_ACTION = "__remove__"
+REMOVE_ACTION = "(remove)"
+BUSY_STATE = "(busy)"
 
 class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
@@ -67,6 +68,12 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
 
+	def isBusy(self):
+		return hasattr(self, "_busy") and self._busy
+	
+	def setBusy(self, busy):
+		self._busy = busy
+		
 	def dataPath(self, filename=""):
 		"""
 		This method can be used to create filenames relative to a directory
@@ -112,6 +119,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
+		fault.check(not self.isBusy(), "Object is busy")
 		for key in attrs.keys():
 			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
 			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
@@ -131,8 +139,12 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
-		for key, value in attrs.iteritems():
-			getattr(self, "modify_%s" % key)(value)
+		self.setBusy(True)
+		try:
+			for key, value in attrs.iteritems():
+				getattr(self, "modify_%s" % key)(value)
+		finally:
+			self.setBusy(False)				
 		self.save()
 	
 	def checkAction(self, action):
@@ -144,6 +156,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@param action: Action to check
 		@type action: str
 		"""
+		fault.check(not self.isBusy(), "Object is busy")
 		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
 		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
@@ -163,13 +176,18 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@type params: dict
 		"""
 		self.checkAction(action)
-		res = getattr(self, "action_%s" % action)(**params)
+		self.setBusy(True)
+		try:
+			res = getattr(self, "action_%s" % action)(**params)
+		finally:
+			self.setBusy(False)
 		self.save()
 		if action in self.CAP_NEXT_STATE:
 			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)
 		return res
 
 	def checkRemove(self, recurse=True):
+		fault.check(not self.isBusy(), "Object is busy")
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
 		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
 		for ch in self.getChildren():

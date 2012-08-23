@@ -90,7 +90,7 @@ class Tinc(elements.Element):
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
-		"__remove__": [ST_CREATED],
+		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
 		"start": ST_STARTED,
@@ -178,7 +178,8 @@ class Tinc(elements.Element):
 		host.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(self.ST_STARTED)
 		ifName = self._interfaceName()
-		util.waitFor(lambda :net.ifaceExists(ifName))
+		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+		net.ifUp(ifName)
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())

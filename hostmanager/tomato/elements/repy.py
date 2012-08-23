@@ -130,7 +130,7 @@ class Repy(elements.Element):
 		"upload_grant": [ST_CREATED],
 		"upload_use": [ST_CREATED],
 		"download_grant": [ST_CREATED],
-		"__remove__": [ST_CREATED],
+		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
 		"start": ST_STARTED,
@@ -224,11 +224,12 @@ class Repy(elements.Element):
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			util.waitFor(lambda :net.ifaceExists(ifName))
+			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
 		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
+		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 
 	def action_stop(self):
 		for interface in self.getChildren():
@@ -305,7 +306,7 @@ class Repy_Interface(elements.Element):
 
 	TYPE = "repy_interface"
 	CAP_ACTIONS = {
-		"__remove__": [Repy.ST_CREATED]
+		elements.REMOVE_ACTION: [Repy.ST_CREATED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
