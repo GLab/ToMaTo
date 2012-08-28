@@ -20,7 +20,7 @@ def _checkAdmin():
 
 def _getResource(id_):
     res = resources.get(id_)
-    fault.check(res, "No such resource: id=%d", id_)
+    fault.check(res, "No such resource: id=%d", id_, code=fault.UNKNOWN_OBJECT)
     return res
 
 def resource_create(type, attrs={}): #@ReservedAssignment

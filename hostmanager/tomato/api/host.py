@@ -28,8 +28,6 @@ def host_info():
             "version": config.VERSION,
         },
         "fileserver_port": config.FILESERVER["port"],
-        "site": config.SITE,
-        "coordinates": config.COORDINATES,
         "address": config.PUBLIC_ADDRESS,
     }
 
@@ -53,9 +51,9 @@ def host_capabilities():
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
         connection_types[type_] = caps
     return {
-        "element_types": element_types,
-        "connection_types": connection_types,
-        "resource_types": dict([(type_, {}) for type_ in tomato.resources.TYPES]),
+        "elements": element_types,
+        "connections": connection_types,
+        "resources": dict([(type_, {}) for type_ in tomato.resources.TYPES]),
     }
 
 import tomato.elements

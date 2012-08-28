@@ -18,8 +18,8 @@
 import os, sys
 from django.db import models
 from tomato import connections, elements, resources, host, fault
-from tomato.lib.attributes import attribute, between
-from tomato.lib import decorators, util
+from tomato.lib.attributes import attribute, between #@UnresolvedImport
+from tomato.lib import decorators, util #@UnresolvedImport
 from tomato.host import fileserver, process, net, path
 
 DOC="""
@@ -305,11 +305,13 @@ class OpenVZ(elements.Element):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._addInterface(interface)
+		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._removeInterface(interface)
+		interface.setState(self.state)
 
 	def modify_ram(self, val):
 		self.ram = val
@@ -343,7 +345,8 @@ class OpenVZ(elements.Element):
 	
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
-		self._useImage(self._template().getPath())
+		if self.state == self.ST_PREPARED:
+			self._useImage(self._template().getPath())
 
 	def action_prepare(self):
 		self._checkState()

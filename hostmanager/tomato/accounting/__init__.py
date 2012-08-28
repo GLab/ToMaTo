@@ -21,7 +21,7 @@ import sys, time, traceback
 from datetime import datetime, timedelta
 
 from tomato import fault, host
-from tomato.lib import db, attributes, util
+from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 
 # storage needs:

@@ -23,7 +23,14 @@ class Fault(xmlrpclib.Fault):
 
 UNKNOWN_ERROR = -1
 AUTHENTICATION_ERROR = 300
+
 USER_ERROR = 400
+INVALID_STATE = 401
+UNKNOWN_OBJECT = 402
+UNSUPPORTED_ATTRIBUTE = 403
+UNSUPPORTED_ACTION = 403
+OBJECT_BUSY = 404
+
 INTERNAL_ERROR = 500
 
 def new_user(text):
@@ -36,7 +43,7 @@ def new(text, code=UNKNOWN_ERROR):
 	return Fault(code, text)
 
 def errors_add(error, trace):
-	if isinstance(error, Fault) and error.faultCode == USER_ERROR:
+	if isinstance(error, Fault) and UNKNOWN_ERROR < error.faultCode < INTERNAL_ERROR:
 		return
 	print trace
 

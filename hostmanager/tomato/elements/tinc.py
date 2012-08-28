@@ -17,8 +17,8 @@
 
 import os, shutil, hashlib, base64
 from tomato import connections, elements, host, fault
-from tomato.lib import util
-from tomato.lib.attributes import attribute, oneOf
+from tomato.lib import util #@UnresolvedImport
+from tomato.lib.attributes import attribute, oneOf #@UnresolvedImport
 from tomato.host import process, net, path
 
 DOC="""

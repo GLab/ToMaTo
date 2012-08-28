@@ -19,8 +19,8 @@ import os, sys, json, shutil
 from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute, between, oneOf
-from tomato.lib import decorators, util
+from tomato.lib.attributes import attribute, between, oneOf #@UnresolvedImport
+from tomato.lib import decorators, util #@UnresolvedImport
 from tomato.host import fileserver, process, net, path
 
 DOC="""
@@ -292,11 +292,13 @@ class KVMQM(elements.Element):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._addInterface(interface)
+		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
 		if self.state == self.ST_PREPARED:
 			self._removeInterface(interface)
+		interface.setState(self.state)
 
 	def modify_cpus(self, cpus):
 		self._checkState()

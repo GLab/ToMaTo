@@ -21,7 +21,7 @@ import xmlrpclib, sys, traceback
 
 import tomato.config
 from tomato import fault
-from tomato.lib import db, util, rpc, log
+from tomato.lib import db, util, rpc, log #@UnresolvedImport
 
 
 logger = log.Logger(tomato.config.LOG_DIR + "/api.log")

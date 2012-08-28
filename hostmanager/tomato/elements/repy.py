@@ -19,8 +19,8 @@ import os, sys
 from django.db import models
 from tomato import connections, elements, resources, host, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute, between
-from tomato.lib import util
+from tomato.lib.attributes import attribute, between #@UnresolvedImport
+from tomato.lib import util #@UnresolvedImport
 from tomato.host import fileserver, process, net, path
 
 DOC="""
@@ -215,7 +215,8 @@ class Repy(elements.Element):
 
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
-		self._useImage(self._template().getPath())
+		if self.state != self.ST_CREATED:
+			self._useImage(self._template().getPath())
 
 	def action_start(self):
 		iargs = sum((["-i", "%s,alias=%s" % (self._interfaceName(iface.name), iface.name)] for iface in self.getChildren()), [])

@@ -20,7 +20,7 @@ from django.db import models
 
 from tomato.connections import Connection
 from tomato.accounting import UsageStatistics, Usage
-from tomato.lib import db, attributes, util
+from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 from tomato import config
 
@@ -67,6 +67,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
+
+	def _saveAttributes(self):
+		pass #disable automatic attribute saving
 
 	def isBusy(self):
 		return hasattr(self, "_busy") and self._busy
@@ -119,10 +122,10 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
-		fault.check(not self.isBusy(), "Object is busy")
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
 		for key in attrs.keys():
-			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
-			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
+			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key), code=fault.UNSUPPORTED_ATTRIBUTE)
+			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state), code=fault.INVALID_STATE)
 		
 	def modify(self, attrs):
 		"""
@@ -156,9 +159,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@param action: Action to check
 		@type action: str
 		"""
-		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
-		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
+		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action), code=fault.UNSUPPORTED_ACTION)
+		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state), code=fault.INVALID_STATE)
 	
 	def action(self, action, params):
 		"""
@@ -187,9 +190,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		return res
 
 	def checkRemove(self, recurse=True):
-		fault.check(not self.isBusy(), "Object is busy")
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
-		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
+		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state), code=fault.INVALID_STATE)
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
@@ -245,7 +248,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		return {
 			"id": self.id,
 			"type": self.type,
-			"parent_id": self.parent.id if self.hasParent() else None,
+			"parent": self.parent.id if self.hasParent() else None,
 			"state": self.state,
 			"attrs": self.attrs,
 			"children": [ch.id for ch in self.getChildren()],

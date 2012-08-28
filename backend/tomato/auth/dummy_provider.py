@@ -18,14 +18,11 @@
 from tomato.auth import User
 
 class Provider:
-	def __init__(self, guest_user="guest", admin_user="admin"):
-		self.guest_user = guest_user
+	def __init__(self, admin_user="admin"):
 		self.admin_user = admin_user
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
-		if username==self.guest_user:
-			return User(name=username, is_user=False)
-		elif username==self.admin_user:
+		if username==self.admin_user:
 			return User(name=username, is_admin=True)
 		else:
 			return User(name=username)

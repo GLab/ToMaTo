@@ -17,46 +17,41 @@
 
 import os
 
-AUTH = []
+VERSION = 0.1
 
-SSH_KEY = os.path.expanduser('~/.ssh/id_rsa')
+CERTIFICATE = "../cli/dswd.pem"
 
-PASSWORD_SALT = "tomato"
+AUTH = [
+	{
+		"NAME": "test",
+		"PROVIDER": "dummy",
+		"OPTIONS": {}
+	},
+]
 
-TIMEOUTS = {
-	"STOP": 4,
-	"DESTROY": 12,
-	"REMOVE": 24,
-}
-
-TIMEOUT_WARNING = 7 #days
-
-LOGIN_TIMEOUT = 1
+LOG_DIR = "logs"
 
 SERVER = [
 	{
 		"PORT": 8000,
 		"SSL": False,
 		"SSL_OPTS": {
-			"private_key" : "",
-			"ca_key": ""
+			"cert_file" : "/etc/tomato/server.cert",
+			"key_file": "/etc/tomato/server.cert",
 		}
 	}
 ]
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite'
-    }
+	'default': {
+		'ENGINE': 'django.db.backends.sqlite3',
+		'NAME': 'db.sqlite'
+	}
 }
 
-TEMPLATE_HOSTSERVER = None
+LOGIN_TIMEOUT = 12
 
-LOCAL_TMP_DIR = "/tmp/tomato"
-LOG_DIR = "logs"
-
-REMOTE_DIR = "/root/tomato"
+MAIL = {}
 
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
@@ -65,26 +60,13 @@ INSTALLED_APPS = ('tomato', 'south')
 
 DISABLE_TRANSACTION_MANAGEMENT = True
 
-MAX_WORKERS = 20
-MAX_WORKERS_PROCESS = 5
-
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 ERROR_NOTIFY = []
 
-MAIL = {
-	'SUBJECT_PREFIX': "[ToMaTo] ",
-	'SUBJECT_SUFFIX': "",
-	'BODY_PREFIX': "Dear %s,\n\n",
-	'BODY_SUFFIX': "\n\nSincerely,\n   your ToMaTo backend\n\n[This mail has been created automatically, please do not reply]",
-	'SENDER_NAME': "ToMaTo Backend",
-	'SENDER_MAIL': "support@german-lab.de",
-	'SERVER': "localhost",
-}
-
 try:
 	import sys
-	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
+	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/bakcend.conf"), "backend.conf"]):
 		try:
 			execfile(path)
 			print >>sys.stderr, "Loaded config from %s" % path

@@ -19,10 +19,6 @@ import os, socket
 
 VERSION = 0.1
 
-COORDINATES = []
-
-SITE = ""
-
 AUTH = []
 
 PASSWORD_SALT = "tomato"

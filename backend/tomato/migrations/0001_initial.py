@@ -1,433 +1,362 @@
 # encoding: utf-8
-#@PydevCodeAnalysisIgnore, pylint: disable-all
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
 class Migration(SchemaMigration):
-    
+
     def forwards(self, orm):
         
-        # Adding model 'Error'
-        db.create_table('tomato_error', (
-            ('date', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('message', self.gf('django.db.models.fields.TextField')(blank=True)),
+        # Adding model 'User'
+        db.create_table('tomato_user', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('origin', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
-        db.send_create_signal('tomato', ['Error'])
+        db.send_create_signal('tomato', ['User'])
 
-        # Adding model 'HostGroup'
-        db.create_table('tomato_hostgroup', (
+        # Adding model 'Permissions'
+        db.create_table('tomato_permissions', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=10)),
         ))
-        db.send_create_signal('tomato', ['HostGroup'])
+        db.send_create_signal('tomato', ['Permissions'])
 
-        # Adding model 'Host'
-        db.create_table('tomato_host', (
-            ('bridge_range_count', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=1000)),
-            ('group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.HostGroup'])),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=50)),
-            ('enabled', self.gf('django.db.models.fields.BooleanField')(default=True, blank=True)),
-            ('bridge_range_start', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=1000)),
-            ('port_range_start', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=7000)),
-            ('vmid_range_count', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=200)),
-            ('port_range_count', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=1000)),
+        # Adding model 'PermissionEntry'
+        db.create_table('tomato_permissionentry', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('vmid_range_start', self.gf('django.db.models.fields.PositiveSmallIntegerField')(default=1000)),
+            ('set', self.gf('django.db.models.fields.related.ForeignKey')(related_name='entries', to=orm['tomato.Permissions'])),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.User'])),
+            ('role', self.gf('django.db.models.fields.CharField')(max_length=20)),
         ))
-        db.send_create_signal('tomato', ['Host'])
+        db.send_create_signal('tomato', ['PermissionEntry'])
 
-        # Adding model 'Template'
-        db.create_table('tomato_template', (
-            ('default', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-            ('type', self.gf('django.db.models.fields.CharField')(max_length=12)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('download_url', self.gf('django.db.models.fields.CharField')(default='', max_length=255)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=100)),
-        ))
-        db.send_create_signal('tomato', ['Template'])
-
-        # Adding model 'PhysicalLink'
-        db.create_table('tomato_physicallink', (
-            ('loss', self.gf('django.db.models.fields.FloatField')()),
-            ('dst_group', self.gf('django.db.models.fields.related.ForeignKey')(related_name='reverselink', to=orm['tomato.HostGroup'])),
-            ('src_group', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.HostGroup'])),
-            ('delay_avg', self.gf('django.db.models.fields.FloatField')()),
-            ('delay_stddev', self.gf('django.db.models.fields.FloatField')()),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-        ))
-        db.send_create_signal('tomato', ['PhysicalLink'])
-
-        # Adding model 'SpecialFeature'
-        db.create_table('tomato_specialfeature', (
-            ('bridge', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('host', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Host'])),
-            ('feature_group', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('feature_type', self.gf('django.db.models.fields.CharField')(max_length=50)),
-        ))
-        db.send_create_signal('tomato', ['SpecialFeature'])
-
-        # Adding model 'Resources'
-        db.create_table('tomato_resources', (
-            ('ports', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('disk', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('special', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('memory', self.gf('django.db.models.fields.IntegerField')(default=0)),
-        ))
-        db.send_create_signal('tomato', ['Resources'])
+        # Adding unique constraint on 'PermissionEntry', fields ['user', 'set']
+        db.create_unique('tomato_permissionentry', ['user_id', 'set_id'])
 
         # Adding model 'Topology'
         db.create_table('tomato_topology', (
-            ('task', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=30, blank=True)),
-            ('date_usage', self.gf('django.db.models.fields.DateTimeField')()),
-            ('date_modified', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('owner', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('date_created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('resources', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resources'], null=True)),
+            ('permissions', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Permissions'])),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
         db.send_create_signal('tomato', ['Topology'])
 
-        # Adding model 'Permission'
-        db.create_table('tomato_permission', (
-            ('user', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('role', self.gf('django.db.models.fields.CharField')(max_length=10)),
+        # Adding model 'Site'
+        db.create_table('tomato_site', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('topology', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Topology'])),
+            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=10)),
+            ('description', self.gf('django.db.models.fields.CharField')(max_length=255)),
         ))
-        db.send_create_signal('tomato', ['Permission'])
+        db.send_create_signal('tomato', ['Site'])
 
-        # Adding model 'Device'
-        db.create_table('tomato_device', (
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=20)),
-            ('pos', self.gf('django.db.models.fields.CharField')(max_length=10, null=True)),
-            ('hostgroup', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.HostGroup'], null=True)),
-            ('state', self.gf('django.db.models.fields.CharField')(default='created', max_length=10)),
-            ('host', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Host'], null=True)),
+        # Adding model 'Host'
+        db.create_table('tomato_host', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('address', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255)),
+            ('site', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['tomato.Site'])),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
+        ))
+        db.send_create_signal('tomato', ['Host'])
+
+        # Adding model 'HostElement'
+        db.create_table('tomato_hostelement', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='elements', to=orm['tomato.Host'])),
+            ('num', self.gf('django.db.models.fields.IntegerField')()),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
+        ))
+        db.send_create_signal('tomato', ['HostElement'])
+
+        # Adding unique constraint on 'HostElement', fields ['host', 'num']
+        db.create_unique('tomato_hostelement', ['host_id', 'num'])
+
+        # Adding model 'HostConnection'
+        db.create_table('tomato_hostconnection', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='connections', to=orm['tomato.Host'])),
+            ('num', self.gf('django.db.models.fields.IntegerField')()),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
+        ))
+        db.send_create_signal('tomato', ['HostConnection'])
+
+        # Adding unique constraint on 'HostConnection', fields ['host', 'num']
+        db.create_unique('tomato_hostconnection', ['host_id', 'num'])
+
+        # Adding model 'UsageStatistics'
+        db.create_table('tomato_usagestatistics', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
+        ))
+        db.send_create_signal('tomato', ['UsageStatistics'])
+
+        # Adding model 'UsageRecord'
+        db.create_table('tomato_usagerecord', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('statistics', self.gf('django.db.models.fields.related.ForeignKey')(related_name='records', to=orm['tomato.UsageStatistics'])),
             ('type', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('resources', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resources'], null=True)),
-            ('topology', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Topology'])),
+            ('begin', self.gf('django.db.models.fields.DateTimeField')()),
+            ('end', self.gf('django.db.models.fields.DateTimeField')()),
+            ('measurements', self.gf('django.db.models.fields.IntegerField')()),
+            ('memory', self.gf('django.db.models.fields.FloatField')()),
+            ('diskspace', self.gf('django.db.models.fields.FloatField')()),
+            ('traffic', self.gf('django.db.models.fields.FloatField')()),
+            ('cputime', self.gf('django.db.models.fields.FloatField')()),
         ))
-        db.send_create_signal('tomato', ['Device'])
-
-        # Adding model 'Interface'
-        db.create_table('tomato_interface', (
-            ('device', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Device'])),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=5)),
-        ))
-        db.send_create_signal('tomato', ['Interface'])
-
-        # Adding model 'Connector'
-        db.create_table('tomato_connector', (
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=20)),
-            ('pos', self.gf('django.db.models.fields.CharField')(max_length=10, null=True)),
-            ('state', self.gf('django.db.models.fields.CharField')(default='created', max_length=10)),
-            ('type', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('resources', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Resources'], null=True)),
-            ('topology', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Topology'])),
-        ))
-        db.send_create_signal('tomato', ['Connector'])
+        db.send_create_signal('tomato', ['UsageRecord'])
 
         # Adding model 'Connection'
         db.create_table('tomato_connection', (
-            ('connector', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Connector'])),
-            ('interface', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Interface'], unique=True)),
-            ('bridge_id', self.gf('django.db.models.fields.IntegerField')(null=True)),
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('topology', self.gf('django.db.models.fields.related.ForeignKey')(related_name='connections', to=orm['tomato.Topology'])),
+            ('type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('state', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('permissions', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Permissions'])),
+            ('usageStatistics', self.gf('django.db.models.fields.related.OneToOneField')(related_name='connection', unique=True, null=True, to=orm['tomato.UsageStatistics'])),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
         db.send_create_signal('tomato', ['Connection'])
 
-        # Adding model 'EmulatedConnection'
-        db.create_table('tomato_emulatedconnection', (
-            ('delay', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('capture', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-            ('bandwidth', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('connection_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Connection'], unique=True, primary_key=True)),
-            ('lossratio', self.gf('django.db.models.fields.FloatField')(null=True)),
+        # Adding model 'Element'
+        db.create_table('tomato_element', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('topology', self.gf('django.db.models.fields.related.ForeignKey')(related_name='elements', to=orm['tomato.Topology'])),
+            ('type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('state', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('parent', self.gf('django.db.models.fields.related.ForeignKey')(related_name='children', null=True, to=orm['tomato.Element'])),
+            ('connection', self.gf('django.db.models.fields.related.ForeignKey')(related_name='elements', null=True, to=orm['tomato.Connection'])),
+            ('permissions', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Permissions'])),
+            ('usageStatistics', self.gf('django.db.models.fields.related.OneToOneField')(related_name='element', unique=True, null=True, to=orm['tomato.UsageStatistics'])),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
-        db.send_create_signal('tomato', ['EmulatedConnection'])
+        db.send_create_signal('tomato', ['Element'])
 
-        # Adding model 'KVMDevice'
-        db.create_table('tomato_kvmdevice', (
-            ('device_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Device'], unique=True, primary_key=True)),
-            ('template', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('kvm_id', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('vnc_port', self.gf('django.db.models.fields.IntegerField')(null=True)),
+        # Adding model 'Resource'
+        db.create_table('tomato_resource', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
-        db.send_create_signal('tomato', ['KVMDevice'])
+        db.send_create_signal('tomato', ['Resource'])
 
-        # Adding model 'OpenVZDevice'
-        db.create_table('tomato_openvzdevice', (
-            ('device_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Device'], unique=True, primary_key=True)),
-            ('vnc_port', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('openvz_id', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('root_password', self.gf('django.db.models.fields.CharField')(max_length=50, null=True)),
-            ('template', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('gateway', self.gf('django.db.models.fields.CharField')(max_length=15, null=True)),
+        # Adding model 'ResourceInstance'
+        db.create_table('tomato_resourceinstance', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('num', self.gf('django.db.models.fields.IntegerField')()),
+            ('ownerElement', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Element'], null=True)),
+            ('ownerConnection', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Connection'], null=True)),
+            ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
-        db.send_create_signal('tomato', ['OpenVZDevice'])
+        db.send_create_signal('tomato', ['ResourceInstance'])
 
-        # Adding model 'ConfiguredInterface'
-        db.create_table('tomato_configuredinterface', (
-            ('use_dhcp', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-            ('ip4address', self.gf('django.db.models.fields.CharField')(max_length=18, null=True)),
-            ('interface_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Interface'], unique=True, primary_key=True)),
-        ))
-        db.send_create_signal('tomato', ['ConfiguredInterface'])
+        # Adding unique constraint on 'ResourceInstance', fields ['num', 'type']
+        db.create_unique('tomato_resourceinstance', ['num', 'type'])
 
-        # Adding model 'TincConnector'
-        db.create_table('tomato_tincconnector', (
-            ('connector_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Connector'], unique=True, primary_key=True)),
+        # Adding model 'Template'
+        db.create_table('tomato_template', (
+            ('resource_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Resource'], unique=True, primary_key=True)),
+            ('tech', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('preference', self.gf('django.db.models.fields.IntegerField')(default=0)),
         ))
-        db.send_create_signal('tomato', ['TincConnector'])
+        db.send_create_signal('tomato', ['Template'])
 
-        # Adding model 'TincConnection'
-        db.create_table('tomato_tincconnection', (
-            ('tinc_port', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('emulatedconnection_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.EmulatedConnection'], unique=True, primary_key=True)),
-            ('gateway', self.gf('django.db.models.fields.CharField')(max_length=18, null=True)),
+        # Adding model 'Network'
+        db.create_table('tomato_network', (
+            ('resource_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Resource'], unique=True, primary_key=True)),
+            ('kind', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('bridge', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('preference', self.gf('django.db.models.fields.IntegerField')(default=0)),
         ))
-        db.send_create_signal('tomato', ['TincConnection'])
+        db.send_create_signal('tomato', ['Network'])
 
-        # Adding model 'SpecialFeatureConnector'
-        db.create_table('tomato_specialfeatureconnector', (
-            ('feature_group', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
-            ('feature_type', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('connector_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Connector'], unique=True, primary_key=True)),
-        ))
-        db.send_create_signal('tomato', ['SpecialFeatureConnector'])
-    
-    
+
     def backwards(self, orm):
         
-        # Deleting model 'Error'
-        db.delete_table('tomato_error')
+        # Removing unique constraint on 'ResourceInstance', fields ['num', 'type']
+        db.delete_unique('tomato_resourceinstance', ['num', 'type'])
 
-        # Deleting model 'HostGroup'
-        db.delete_table('tomato_hostgroup')
+        # Removing unique constraint on 'HostConnection', fields ['host', 'num']
+        db.delete_unique('tomato_hostconnection', ['host_id', 'num'])
 
-        # Deleting model 'Host'
-        db.delete_table('tomato_host')
+        # Removing unique constraint on 'HostElement', fields ['host', 'num']
+        db.delete_unique('tomato_hostelement', ['host_id', 'num'])
 
-        # Deleting model 'Template'
-        db.delete_table('tomato_template')
+        # Removing unique constraint on 'PermissionEntry', fields ['user', 'set']
+        db.delete_unique('tomato_permissionentry', ['user_id', 'set_id'])
 
-        # Deleting model 'PhysicalLink'
-        db.delete_table('tomato_physicallink')
+        # Deleting model 'User'
+        db.delete_table('tomato_user')
 
-        # Deleting model 'SpecialFeature'
-        db.delete_table('tomato_specialfeature')
+        # Deleting model 'Permissions'
+        db.delete_table('tomato_permissions')
 
-        # Deleting model 'Resources'
-        db.delete_table('tomato_resources')
+        # Deleting model 'PermissionEntry'
+        db.delete_table('tomato_permissionentry')
 
         # Deleting model 'Topology'
         db.delete_table('tomato_topology')
 
-        # Deleting model 'Permission'
-        db.delete_table('tomato_permission')
+        # Deleting model 'Site'
+        db.delete_table('tomato_site')
 
-        # Deleting model 'Device'
-        db.delete_table('tomato_device')
+        # Deleting model 'Host'
+        db.delete_table('tomato_host')
 
-        # Deleting model 'Interface'
-        db.delete_table('tomato_interface')
+        # Deleting model 'HostElement'
+        db.delete_table('tomato_hostelement')
 
-        # Deleting model 'Connector'
-        db.delete_table('tomato_connector')
+        # Deleting model 'HostConnection'
+        db.delete_table('tomato_hostconnection')
+
+        # Deleting model 'UsageStatistics'
+        db.delete_table('tomato_usagestatistics')
+
+        # Deleting model 'UsageRecord'
+        db.delete_table('tomato_usagerecord')
 
         # Deleting model 'Connection'
         db.delete_table('tomato_connection')
 
-        # Deleting model 'EmulatedConnection'
-        db.delete_table('tomato_emulatedconnection')
+        # Deleting model 'Element'
+        db.delete_table('tomato_element')
 
-        # Deleting model 'KVMDevice'
-        db.delete_table('tomato_kvmdevice')
+        # Deleting model 'Resource'
+        db.delete_table('tomato_resource')
 
-        # Deleting model 'OpenVZDevice'
-        db.delete_table('tomato_openvzdevice')
+        # Deleting model 'ResourceInstance'
+        db.delete_table('tomato_resourceinstance')
 
-        # Deleting model 'ConfiguredInterface'
-        db.delete_table('tomato_configuredinterface')
+        # Deleting model 'Template'
+        db.delete_table('tomato_template')
 
-        # Deleting model 'TincConnector'
-        db.delete_table('tomato_tincconnector')
+        # Deleting model 'Network'
+        db.delete_table('tomato_network')
 
-        # Deleting model 'TincConnection'
-        db.delete_table('tomato_tincconnection')
 
-        # Deleting model 'SpecialFeatureConnector'
-        db.delete_table('tomato_specialfeatureconnector')
-    
-    
     models = {
-        'tomato.configuredinterface': {
-            'Meta': {'object_name': 'ConfiguredInterface', '_ormbases': ['tomato.Interface']},
-            'interface_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True', 'primary_key': 'True'}),
-            'ip4address': ('django.db.models.fields.CharField', [], {'max_length': '18', 'null': 'True'}),
-            'use_dhcp': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
-        },
         'tomato.connection': {
             'Meta': {'object_name': 'Connection'},
-            'bridge_id': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'connector': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Connector']"}),
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'interface': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Interface']", 'unique': 'True'})
+            'permissions': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Permissions']"}),
+            'state': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'topology': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'connections'", 'to': "orm['tomato.Topology']"}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'usageStatistics': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'connection'", 'unique': 'True', 'null': 'True', 'to': "orm['tomato.UsageStatistics']"})
         },
-        'tomato.connector': {
-            'Meta': {'object_name': 'Connector'},
+        'tomato.element': {
+            'Meta': {'object_name': 'Element'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'connection': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'elements'", 'null': 'True', 'to': "orm['tomato.Connection']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
-            'pos': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'}),
-            'resources': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resources']", 'null': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'default': "'created'", 'max_length': '10'}),
-            'topology': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Topology']"}),
-            'type': ('django.db.models.fields.CharField', [], {'max_length': '10'})
-        },
-        'tomato.device': {
-            'Meta': {'object_name': 'Device'},
-            'host': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Host']", 'null': 'True'}),
-            'hostgroup': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.HostGroup']", 'null': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
-            'pos': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'}),
-            'resources': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resources']", 'null': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'default': "'created'", 'max_length': '10'}),
-            'topology': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Topology']"}),
-            'type': ('django.db.models.fields.CharField', [], {'max_length': '10'})
-        },
-        'tomato.emulatedconnection': {
-            'Meta': {'object_name': 'EmulatedConnection', '_ormbases': ['tomato.Connection']},
-            'bandwidth': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'capture': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'connection_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Connection']", 'unique': 'True', 'primary_key': 'True'}),
-            'delay': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'lossratio': ('django.db.models.fields.FloatField', [], {'null': 'True'})
-        },
-        'tomato.error': {
-            'Meta': {'object_name': 'Error'},
-            'date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'message': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'parent': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'children'", 'null': 'True', 'to': "orm['tomato.Element']"}),
+            'permissions': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Permissions']"}),
+            'state': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'topology': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'elements'", 'to': "orm['tomato.Topology']"}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'usageStatistics': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'element'", 'unique': 'True', 'null': 'True', 'to': "orm['tomato.UsageStatistics']"})
         },
         'tomato.host': {
             'Meta': {'object_name': 'Host'},
-            'bridge_range_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1000'}),
-            'bridge_range_start': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1000'}),
-            'enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.HostGroup']"}),
+            'address': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'}),
-            'port_range_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1000'}),
-            'port_range_start': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '7000'}),
-            'vmid_range_count': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '200'}),
-            'vmid_range_start': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '1000'})
+            'site': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': "orm['tomato.Site']"})
         },
-        'tomato.hostgroup': {
-            'Meta': {'object_name': 'HostGroup'},
+        'tomato.hostconnection': {
+            'Meta': {'unique_together': "(('host', 'num'),)", 'object_name': 'HostConnection'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'connections'", 'to': "orm['tomato.Host']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '10'})
+            'num': ('django.db.models.fields.IntegerField', [], {})
         },
-        'tomato.interface': {
-            'Meta': {'object_name': 'Interface'},
-            'device': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Device']"}),
+        'tomato.hostelement': {
+            'Meta': {'unique_together': "(('host', 'num'),)", 'object_name': 'HostElement'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'elements'", 'to': "orm['tomato.Host']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '5'})
+            'num': ('django.db.models.fields.IntegerField', [], {})
         },
-        'tomato.kvmdevice': {
-            'Meta': {'object_name': 'KVMDevice', '_ormbases': ['tomato.Device']},
-            'device_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Device']", 'unique': 'True', 'primary_key': 'True'}),
-            'kvm_id': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'template': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'vnc_port': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
+        'tomato.network': {
+            'Meta': {'object_name': 'Network', '_ormbases': ['tomato.Resource']},
+            'bridge': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'kind': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'preference': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'resource_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Resource']", 'unique': 'True', 'primary_key': 'True'})
         },
-        'tomato.openvzdevice': {
-            'Meta': {'object_name': 'OpenVZDevice', '_ormbases': ['tomato.Device']},
-            'device_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Device']", 'unique': 'True', 'primary_key': 'True'}),
-            'gateway': ('django.db.models.fields.CharField', [], {'max_length': '15', 'null': 'True'}),
-            'openvz_id': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'root_password': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True'}),
-            'template': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'vnc_port': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
-        },
-        'tomato.permission': {
-            'Meta': {'object_name': 'Permission'},
+        'tomato.permissionentry': {
+            'Meta': {'unique_together': "(('user', 'set'),)", 'object_name': 'PermissionEntry'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'role': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            'topology': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Topology']"}),
-            'user': ('django.db.models.fields.CharField', [], {'max_length': '30'})
+            'role': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'set': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'entries'", 'to': "orm['tomato.Permissions']"}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.User']"})
         },
-        'tomato.physicallink': {
-            'Meta': {'object_name': 'PhysicalLink'},
-            'delay_avg': ('django.db.models.fields.FloatField', [], {}),
-            'delay_stddev': ('django.db.models.fields.FloatField', [], {}),
-            'dst_group': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'reverselink'", 'to': "orm['tomato.HostGroup']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'loss': ('django.db.models.fields.FloatField', [], {}),
-            'src_group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.HostGroup']"})
-        },
-        'tomato.resources': {
-            'Meta': {'object_name': 'Resources'},
-            'disk': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'memory': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'ports': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'special': ('django.db.models.fields.IntegerField', [], {'default': '0'})
-        },
-        'tomato.specialfeature': {
-            'Meta': {'object_name': 'SpecialFeature'},
-            'bridge': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            'feature_group': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'feature_type': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'host': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Host']"}),
+        'tomato.permissions': {
+            'Meta': {'object_name': 'Permissions'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
-        'tomato.specialfeatureconnector': {
-            'Meta': {'object_name': 'SpecialFeatureConnector', '_ormbases': ['tomato.Connector']},
-            'connector_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Connector']", 'unique': 'True', 'primary_key': 'True'}),
-            'feature_group': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'feature_type': ('django.db.models.fields.CharField', [], {'max_length': '50'})
+        'tomato.resource': {
+            'Meta': {'object_name': 'Resource'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '20'})
+        },
+        'tomato.resourceinstance': {
+            'Meta': {'unique_together': "(('num', 'type'),)", 'object_name': 'ResourceInstance'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'num': ('django.db.models.fields.IntegerField', [], {}),
+            'ownerConnection': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Connection']", 'null': 'True'}),
+            'ownerElement': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Element']", 'null': 'True'}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '20'})
+        },
+        'tomato.site': {
+            'Meta': {'object_name': 'Site'},
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '10'})
         },
         'tomato.template': {
-            'Meta': {'object_name': 'Template'},
-            'default': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'download_url': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'type': ('django.db.models.fields.CharField', [], {'max_length': '12'})
-        },
-        'tomato.tincconnection': {
-            'Meta': {'object_name': 'TincConnection', '_ormbases': ['tomato.EmulatedConnection']},
-            'emulatedconnection_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.EmulatedConnection']", 'unique': 'True', 'primary_key': 'True'}),
-            'gateway': ('django.db.models.fields.CharField', [], {'max_length': '18', 'null': 'True'}),
-            'tinc_port': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
-        },
-        'tomato.tincconnector': {
-            'Meta': {'object_name': 'TincConnector', '_ormbases': ['tomato.Connector']},
-            'connector_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Connector']", 'unique': 'True', 'primary_key': 'True'})
+            'Meta': {'object_name': 'Template', '_ormbases': ['tomato.Resource']},
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'preference': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'resource_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Resource']", 'unique': 'True', 'primary_key': 'True'}),
+            'tech': ('django.db.models.fields.CharField', [], {'max_length': '20'})
         },
         'tomato.topology': {
             'Meta': {'object_name': 'Topology'},
-            'date_created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'date_modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'date_usage': ('django.db.models.fields.DateTimeField', [], {}),
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'owner': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'resources': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Resources']", 'null': 'True'}),
-            'task': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'})
+            'permissions': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Permissions']"})
+        },
+        'tomato.usagerecord': {
+            'Meta': {'object_name': 'UsageRecord'},
+            'begin': ('django.db.models.fields.DateTimeField', [], {}),
+            'cputime': ('django.db.models.fields.FloatField', [], {}),
+            'diskspace': ('django.db.models.fields.FloatField', [], {}),
+            'end': ('django.db.models.fields.DateTimeField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'measurements': ('django.db.models.fields.IntegerField', [], {}),
+            'memory': ('django.db.models.fields.FloatField', [], {}),
+            'statistics': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'records'", 'to': "orm['tomato.UsageStatistics']"}),
+            'traffic': ('django.db.models.fields.FloatField', [], {}),
+            'type': ('django.db.models.fields.CharField', [], {'max_length': '10'})
+        },
+        'tomato.usagestatistics': {
+            'Meta': {'object_name': 'UsageStatistics'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+        },
+        'tomato.user': {
+            'Meta': {'object_name': 'User'},
+            'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'origin': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         }
     }
-    
+
     complete_apps = ['tomato']

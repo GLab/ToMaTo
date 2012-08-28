@@ -1,4 +1,4 @@
-# ToMaTo backend config file 
+# ToMaTo hostmanager config file 
 
 # Authentication plugins
 #  A list of authentication plugins that should be tried to login users.
@@ -188,14 +188,14 @@ SERVER = {
 
 # See the django database manual for help
 DATABASES = {
-	'default': {
-		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-		'NAME': 'tomato'
-	}
-#    	'default': {
-#    		'ENGINE': 'django.db.backends.sqlite3',
-#    		'NAME': '/var/lib/tomato/tomato.sqlite'
-#    	}
+#	'default': {
+#		'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#		'NAME': 'tomato'
+#	}
+   	'default': {
+   		'ENGINE': 'django.db.backends.sqlite3',
+   		'NAME': '/var/lib/tomato/tomato.sqlite'
+   	}
 }
 
 # Use a hostserver to host templates

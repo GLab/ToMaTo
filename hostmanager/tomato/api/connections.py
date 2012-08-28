@@ -17,7 +17,7 @@
 
 def _getConnection(id_):
     con = connections.get(id_, owner=currentUser())
-    fault.check(con, "No such connection: id=%d" % id_)
+    fault.check(con, "No such connection: id=%d" % id_, code=fault.UNKNOWN_OBJECT)
     return con
 
 def connection_create(element1, element2, type=None, attrs={}): #@ReservedAssignment

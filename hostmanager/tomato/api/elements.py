@@ -17,7 +17,7 @@
 
 def _getElement(id_):
     el = elements.get(id_, owner=currentUser())
-    fault.check(el, "No such element: id=%d", id_)
+    fault.check(el, "No such element: id=%d", id_, code=fault.UNKNOWN_OBJECT)
     return el
 
 def element_create(type, parent=None, attrs={}): #@ReservedAssignment

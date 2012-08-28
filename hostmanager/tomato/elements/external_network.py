@@ -52,7 +52,7 @@ Actions: None
 
 
 class External_Network(elements.Element):
-	network = models.ForeignKey(network.Network, null=True)
+	network = models.ForeignKey(network.Network, null=True, related_name="instances")
 
 	ST_DEFAULT = "default"
 	TYPE = "external_network"

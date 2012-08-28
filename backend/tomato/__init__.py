@@ -20,13 +20,11 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
+#TODO: permission management
+#TODO: host resource management
+#TODO: template distribution
+#TODO: debian package
 
-# This is the main tomato api file. All access to tomato must use the following 
-# methods. Direct import and usage of other classes of tomato is strongly 
-# discouraged as it is likely to break tomato.
-#
-# Note: since xml-rpc does not support None values all methods must return 
-# something and all return values must not contain None.
 
 def db_migrate():
 	"""
@@ -39,26 +37,40 @@ def db_migrate():
 	from south.management.commands import migrate
 	cmd = migrate.Command()
 	cmd.handle(app="tomato", verbosity=1)
-	
+
+
 import config
+
+	
+import threading
+_currentUser = threading.local()
+
+def currentUser():
+	return _currentUser.user if hasattr(_currentUser, "user") else None
+	
+def setCurrentUser(user):
+	_currentUser.user = user
+
+def login(credentials, sslCert):
+	user = authenticate(*credentials)
+	setCurrentUser(user)
+	return user
+
+
 from models import *
 	
 if not config.MAINTENANCE:
 	db_migrate()
 
-from auth import login #@UnresolvedImport, pylint: disable-msg=E0611
-
 import api
 
-from rpcserver import run as runRPCserver
+from tomato import lib, resources, host, accounting
+from tomato.auth import login as authenticate
 
-from lib.tasks import RepeatedProcess, Task
-from tomato import lib, hosts, topology, auth
+from rpcserver import start as startRPCserver
+from rpcserver import stop as stopRPCserver
 
-RepeatedProcess(5*60, "task cleanup", Task("cleanup", lib.tasks.cleanup), schedule=not config.MAINTENANCE)
-RepeatedProcess(5*60, "topology timeout", Task("check_timeout", topology.checkTimeout), schedule=not config.MAINTENANCE)
-RepeatedProcess(60*60, "update_resource_usage",	Task("update_resource_usage", topology.updateResourceUsage), schedule=not config.MAINTENANCE)
-RepeatedProcess(60*60, "link_measurement", Task("measure_links", hosts.physical_links.measureRun), schedule=not config.MAINTENANCE)
-RepeatedProcess(5*60*60, "host_check", Task("check_all", hosts.checkAll), schedule=not config.MAINTENANCE)
-RepeatedProcess(5*60*60, "repair_topologies", Task("repair", topology.repairAll), schedule=not config.MAINTENANCE)
-RepeatedProcess(5*60, "auth_cleanup", Task("cleanup", auth.cleanup), schedule=not config.MAINTENANCE)
+
+if not config.MAINTENANCE:
+	resources.init()
+	accounting.task.start() #@UndefinedVariable

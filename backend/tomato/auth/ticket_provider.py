@@ -40,12 +40,12 @@ class Provider:
 		user_secret: The secret key to use for user login, default to None
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def __init__(self, user_secret=None, admin_secret=None, hash="sha1"):
+	def __init__(self, user_secret=None, admin_secret=None, hash="sha1"): #@ReservedAssignment
 		self.hash = hash
 		self.user_secret = user_secret
 		self.admin_secret = admin_secret
 	
-	def _hash(self, hash, data):
+	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
 		h.update(data)
 		return h.hexdigest()

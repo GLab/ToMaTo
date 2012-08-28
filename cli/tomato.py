@@ -99,7 +99,7 @@ def getLocals(api):
 	locals.update(api=api, help=help, load=load)
 	try:
 		for func in api._listMethods():
-			locals[func] = getattr(api, func)
+			locals[func.replace(".", "_")] = getattr(api, func)
 	except xmlrpclib.ProtocolError, err:
 		print "Protocol Error %s: %s" % (err.errcode, err.errmsg)
 		sys.exit(-1)

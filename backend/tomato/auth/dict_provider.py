@@ -39,12 +39,12 @@ class Provider:
 		       defaults to {}
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def __init__(self, users={}, admins={}, hash=None):
+	def __init__(self, users={}, admins={}, hash=None): #@ReservedAssignment
 		self.users = users
 		self.admins = admins
 		self.hash = hash
 	
-	def _hash(self, hash, data):
+	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
 		h.update(data)
 		return h.hexdigest()

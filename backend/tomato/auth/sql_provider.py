@@ -45,13 +45,13 @@ class Provider:
 		          in DATABASES, defaults to "default"
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def __init__(self, user_query, admin_query, database="default", hash="sha1"):
+	def __init__(self, user_query, admin_query, database="default", hash="sha1"): #@ReservedAssignment
 		self.hash = hash
 		self.database = database
 		self.user_query = user_query
 		self.admin_query = admin_query
 	
-	def _hash(self, hash, data):
+	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
 		h.update(data)
 		return h.hexdigest()

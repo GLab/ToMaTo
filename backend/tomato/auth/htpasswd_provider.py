@@ -35,7 +35,7 @@ class Provider:
 		file: The path of the .htpasswd file
 		admin_user: The username of the admin user, defaults to None
 	"""
-	def __init__(self, file, admin_user=None):
+	def __init__(self, file, admin_user=None): #@ReservedAssignment
 		self.file = file
 		self.admin_user = admin_user
 	

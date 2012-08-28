@@ -19,7 +19,7 @@ import os, shutil
 from django.db import models
 
 from tomato.accounting import UsageStatistics
-from tomato.lib import db, attributes, util
+from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 
 TYPES = {}
@@ -105,6 +105,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
 		
+	def _saveAttributes(self):
+		pass #disable automatic attribute saving		
+		
 	def isBusy(self):
 		return hasattr(self, "_busy") and self._busy
 	
@@ -162,10 +165,10 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
-		fault.check(not self.isBusy(), "Object is busy")
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
 		for key in attrs.keys():
-			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
-			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
+			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key), code=fault.UNSUPPORTED_ATTRIBUTE)
+			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state), code=fault.INVALID_STATE)
 		
 	def modify(self, attrs):
 		"""
@@ -199,9 +202,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		@param action: Action to check
 		@type action: str
 		"""
-		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
-		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
+		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action), code=fault.UNSUPPORTED_ACTION)
+		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state), code=fault.INVALID_STATE)
 	
 	def action(self, action, params):
 		"""
@@ -234,8 +237,8 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.save()
 
 	def checkRemove(self):
-		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Connector type %s can not be removed in its state %s", (self.type, self.state))
+		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
+		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Connector type %s can not be removed in its state %s", (self.type, self.state), code=fault.INVALID_STATE)
 
 	def remove(self):
 		self.checkRemove()
