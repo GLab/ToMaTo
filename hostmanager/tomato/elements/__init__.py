@@ -26,7 +26,6 @@ from tomato import config
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
-BUSY_STATE = "(busy)"
 
 class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment

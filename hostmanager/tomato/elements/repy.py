@@ -17,11 +17,11 @@
 
 import os, sys
 from django.db import models
-from tomato import connections, elements, resources, host, fault
+from tomato import connections, elements, resources, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute, between #@UnresolvedImport
-from tomato.lib import util #@UnresolvedImport
-from tomato.host import fileserver, process, net, path
+from tomato.lib import util, cmd #@UnresolvedImport
+from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: repy
@@ -36,14 +36,14 @@ Possible parents: None
 Possible children:
 	repy_interface (can be added in state created)
 
-Default state: created
+Default state: prepared
 
-Removable in states: created
+Removable in states: prepared
 
 Connection concepts: None
 
 States:
-	created: In this state the program is known of and the script exists.
+	prepared: In this state the program is known of and the script exists.
 		Only the script is stored and no othe resources are consumed in this
 		state.
 	started: In this state the program is running and can be accessed by the
@@ -121,30 +121,30 @@ class Repy(elements.Element):
 	bandwidth = attribute("bandwidth", between(1024, 10000000000, faultType=fault.new_user), default=1000000)
 	template = models.ForeignKey(template.Template, null=True)
 
-	ST_CREATED = "created"
+	ST_PREPARED = "prepared"
 	ST_STARTED = "started"
 	TYPE = "repy"
 	CAP_ACTIONS = {
-		"start": [ST_CREATED],
+		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
-		"upload_grant": [ST_CREATED],
-		"upload_use": [ST_CREATED],
-		"download_grant": [ST_CREATED],
-		elements.REMOVE_ACTION: [ST_CREATED],
+		"upload_grant": [ST_PREPARED],
+		"upload_use": [ST_PREPARED],
+		"download_grant": [ST_PREPARED],
+		elements.REMOVE_ACTION: [ST_PREPARED],
 	}
 	CAP_NEXT_STATE = {
 		"start": ST_STARTED,
-		"stop": ST_CREATED,
+		"stop": ST_PREPARED,
 	}	
 	CAP_ATTRS = {
-		"template": [ST_CREATED],
-		"args": [ST_CREATED],
-		"cpus": [ST_CREATED],
-		"ram": [ST_CREATED],
-		"bandwidth": [ST_CREATED],
+		"template": [ST_PREPARED],
+		"args": [ST_PREPARED],
+		"cpus": [ST_PREPARED],
+		"ram": [ST_PREPARED],
+		"bandwidth": [ST_PREPARED],
 	}
 	CAP_CHILDREN = {
-		"repy_interface": [ST_CREATED],
+		"repy_interface": [ST_PREPARED],
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
@@ -156,11 +156,11 @@ class Repy(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = self.ST_PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
-		self.vncpassword = host.randomPassword()
+		self.vncpassword = cmd.randomPassword()
 		self.modify_template("") #use default template
 		self._setProfile()
 
@@ -192,7 +192,7 @@ class Repy(elements.Element):
 				fp.write("resource %s %s\n" % (key, value))
 
 	def _checkImage(self, path):
-		res = host.run(["repy-check", path]).strip()
+		res = cmd.run(["repy-check", path]).strip()
 		if res != "None":
 			import re
 			res = re.match("<(type|class) '([^']*)'> (.*)", res)
@@ -215,13 +215,12 @@ class Repy(elements.Element):
 
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
-		if self.state != self.ST_CREATED:
-			self._useImage(self._template().getPath())
+		self._useImage(self._template().getPath())
 
 	def action_start(self):
 		iargs = sum((["-i", "%s,alias=%s" % (self._interfaceName(iface.name), iface.name)] for iface in self.getChildren()), [])
 		stdout = open(self.dataPath("program.log"), "w")
-		self.pid = host.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + map(host.escape, self.args), stdout=stdout)
+		self.pid = cmd.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + self.args, stdout=stdout)
 		self.setState(self.ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
@@ -229,7 +228,7 @@ class Repy(elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
-		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
+		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 
 	def action_stop(self):
@@ -243,7 +242,7 @@ class Repy(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
-		self.setState(self.ST_CREATED, True)
+		self.setState(self.ST_PREPARED, True)
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
@@ -287,14 +286,14 @@ Possible parents: repy
 
 Possible children: None
 
-Default state: created
+Default state: prepared
 
-Removable in states: created
+Removable in states: prepared
 	
 Connection concepts: interface
 
 States:
-	created: In this state the interface is known of.
+	prepared: In this state the interface is known of.
 	started: In this state the interface is running.
 		
 Attributes: None
@@ -307,7 +306,7 @@ class Repy_Interface(elements.Element):
 
 	TYPE = "repy_interface"
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [Repy.ST_CREATED]
+		elements.REMOVE_ACTION: [Repy.ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
@@ -323,7 +322,7 @@ class Repy_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = Repy.ST_CREATED
+		self.state = Repy.ST_PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)
 		self.name = self.getParent()._nextIfaceName()
@@ -347,8 +346,8 @@ class Repy_Interface(elements.Element):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-repyVersion = host.getDpkgVersion("tomato-repy")
-vnctermVersion = host.getDpkgVersion("vncterm")
+repyVersion = cmd.getDpkgVersion("tomato-repy")
+vnctermVersion = cmd.getDpkgVersion("vncterm")
 
 def register(): #pragma: no cover
 	if not repyVersion:

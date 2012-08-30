@@ -35,15 +35,17 @@ class CommandError(Exception):
     def __str__(self):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
-def spawn(cmd, stdout=DEVNULL):
-    #setsid is important, otherwise programs will be killed when the parent process closes
-    cmd = ["setsid"] + cmd
+def spawn(cmd, stdout=DEVNULL, daemon=True):
+    if daemon:
+        #setsid is important, otherwise programs will be killed when the parent process closes
+        cmd = ["setsid"] + cmd
     proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True)
     return proc.pid
 
-def spawnShell(cmd, stdout=DEVNULL):
-    #setsid is important, otherwise programs will be killed when the parent process closes
-    cmd = "setsid " + cmd
+def spawnShell(cmd, stdout=DEVNULL, daemon=True):
+    if daemon:
+        #setsid is important, otherwise programs will be killed when the parent process closes
+        cmd = "setsid " + cmd
     proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True)
     return proc.pid
 

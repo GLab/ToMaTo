@@ -20,6 +20,10 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
+#TODO: connections
+#TODO: tinc
+#TODO: external networks
+#TODO: stitching elements
 #TODO: permission management
 #TODO: host resource management
 #TODO: template distribution

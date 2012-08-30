@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, elements, host, fault
-from tomato.lib import util
-from tomato.lib.attributes import attribute
-from tomato.host import net, process
+from tomato import connections, elements, fault
+from tomato.lib import util, cmd #@UnresolvedImport
+from tomato.lib.attributes import attribute #@UnresolvedImport
+from tomato.lib.cmd import net, process #@UnresolvedImport
 
 DOC="""
 Element type: udp_tunnel
@@ -112,12 +112,12 @@ class UDP_Tunnel(elements.Element):
 		self.connect = val
 
 	def action_start(self):
-		cmd = ["socat", "tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=%s" % self._interfaceName()]
+		cmd_ = ["socat", "tun:127.0.0.1/32,tun-type=tap,iff-up,tun-name=%s" % self._interfaceName()]
 		if self.connect:
-			cmd.append("udp-connect:%s,sourceport=%d" % (self.connect, self.port))
+			cmd_.append("udp-connect:%s,sourceport=%d" % (self.connect, self.port))
 		else:
-			cmd.append("udp-listen:%d" % self.port)
-		self.pid = host.spawn(cmd)
+			cmd_.append("udp-listen:%d" % self.port)
+		self.pid = cmd.spawn(cmd_)
 		self.setState(self.ST_STARTED)
 		ifName = self._interfaceName()
 		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
@@ -151,7 +151,7 @@ class UDP_Tunnel(elements.Element):
 		usage.updateContinuous("traffic", traffic, data)
 
 
-socatVersion = host.getDpkgVersion("socat")
+socatVersion = cmd.getDpkgVersion("socat")
 
 if socatVersion:
 	elements.TYPES[UDP_Tunnel.TYPE] = UDP_Tunnel

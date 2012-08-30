@@ -17,11 +17,11 @@
 
 import os, sys, json, shutil
 from django.db import models
-from tomato import connections, elements, resources, host, fault
+from tomato import connections, elements, resources, fault
 from tomato.resources import template
 from tomato.lib.attributes import attribute, between, oneOf #@UnresolvedImport
-from tomato.lib import decorators, util #@UnresolvedImport
-from tomato.host import fileserver, process, net, path
+from tomato.lib import decorators, util, cmd #@UnresolvedImport
+from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: kvmqm
@@ -188,7 +188,7 @@ class KVMQM(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
-		self.vncpassword = host.randomPassword()
+		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 				
 	def _controlPath(self):
@@ -210,9 +210,9 @@ class KVMQM(elements.Element):
 			return "vmtab%di%dd0" % (self.vmid, num)
 		return "tap%di%d" % (self.vmid, num)
 
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
+	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
 	def _qm(self, cmd, params=[]):
-		return host.run(["qm", cmd, str(self.vmid)] + map(str, params))
+		return cmd.run(["qm", cmd, str(self.vmid)] + map(str, params))
 		#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
 	def _getState(self):
@@ -225,7 +225,7 @@ class KVMQM(elements.Element):
 			if "unknown" in res:
 				return self.ST_CREATED
 			fault.raise_("Unable to determine kvm state", fault.INTERNAL_ERROR)
-		except host.CommandError, err:
+		except cmd.CommandError, err:
 			if err.errorCode == 2:
 				return self.ST_CREATED
 
@@ -240,8 +240,8 @@ class KVMQM(elements.Element):
 		assert self.state == self.ST_STARTED, "VM must be running"
 		controlPath = self._controlPath()
 		fault.check(os.path.exists(controlPath), "Control path does not exist")
-		cmd = "".join([host.escape(json.dumps(cmd))+"'\n'" for cmd in cmds])
-		return host.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd, "monitor": controlPath, "timeout": timeout})
+		cmd_ = "".join([cmd.escape(json.dumps(cmd))+"'\n'" for cmd in cmds])
+		return cmd.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd_, "monitor": controlPath, "timeout": timeout})
 			
 	def _template(self):
 		if self.template:
@@ -286,7 +286,7 @@ class KVMQM(elements.Element):
 		path.copy(path_, self._imagePath())
 
 	def _checkImage(self, path):
-		host.run(["qemu-img", "info", "-f", "qcow2", path])
+		cmd.run(["qemu-img", "info", "-f", "qcow2", path])
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -362,7 +362,7 @@ class KVMQM(elements.Element):
 				con.connectInterface(self._interfaceName(interface.num))
 		util.waitFor(lambda :os.path.exists(self._controlPath()))
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
-		self.vncpid = host.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
+		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
 
 	def action_stop(self):
 		self._checkState()
@@ -489,9 +489,9 @@ class KVMQM_Interface(elements.Element):
 			usage.updateContinuous("traffic", traffic, data)
 
 
-tcpserverVersion = host.getDpkgVersion("ucspi-tcp")
-socatVersion = host.getDpkgVersion("socat")
-qmVersion = host.getDpkgVersion("pve-qemu-kvm")
+tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
+socatVersion = cmd.getDpkgVersion("socat")
+qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
 
 def register(): #pragma: no cover
 	if not qmVersion:

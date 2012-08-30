@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, host, fault
-from tomato.lib.attributes import attribute, oneOf, between
-from tomato.host import tc, net, process, path, fileserver
+from tomato import connections, fault
+from tomato.lib import cmd #@UnresolvedImport
+from tomato.lib.attributes import attribute, oneOf, between #@UnresolvedImport
+from tomato.lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 
 import os
 
@@ -111,9 +112,9 @@ class Bridge(connections.Connection):
 		if self.capture_mode == "file":
 			if not os.path.exists(self.dataPath("capture")):
 				os.mkdir(self.dataPath("capture"))
-			self.capture_pid = host.spawn(["tcpdump", "-i", self.bridge, "-n", "-C", "10", "-w", self.dataPath("capture/"), "-U", "-W", "5", "-s0", self.capture_filter])
+			self.capture_pid = cmd.spawn(["tcpdump", "-i", self.bridge, "-n", "-C", "10", "-w", self.dataPath("capture/"), "-U", "-W", "5", "-s0", self.capture_filter])
 		elif self.capture_mode == "net":
-			self.capture_pid = host.spawn(["tcpserver", "-qHRl", "0", "0", str(self.capture_port), "tcpdump", "-i", self.bridge, "-s0" "-nUw", "-", self.capture_filter])
+			self.capture_pid = cmd.spawn(["tcpserver", "-qHRl", "0", "0", str(self.capture_port), "tcpdump", "-i", self.bridge, "-s0" "-nUw", "-", self.capture_filter])
 		else:
 			fault.raise_("Capture mode must be either file or net")
 				
@@ -303,7 +304,7 @@ class Bridge(connections.Connection):
 	def action_download_grant(self):
 		entries = [os.path.join(self.dataPath("capture"), f) for f in path.entries(self.dataPath("capture"))]
 		fault.check(entries, "Nothing captured so far")
-		host.run(["tcpslice", "-w", self.dataPath("capture.pcap")] + entries)
+		cmd.run(["tcpslice", "-w", self.dataPath("capture.pcap")] + entries)
 		return fileserver.addGrant(self.dataPath("capture.pcap"), fileserver.ACTION_DOWNLOAD, repeated=True)
 		
 	def upcast(self):
@@ -321,11 +322,11 @@ class Bridge(connections.Connection):
 			cputime = process.cputime(self.capture_pid)
 			usage.updateContinuous("cputime", cputime, data)
 			usage.memory = process.memory(self.capture_pid)
-		usage.diskspace = host.path.diskspace(self.dataPath())
+		usage.diskspace = path.diskspace(self.dataPath())
 
-bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
-iprouteVersion = host.getDpkgVersion("iproute")
-tcpdumpVersion = host.getDpkgVersion("tcpdump")
+bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
+iprouteVersion = cmd.getDpkgVersion("iproute")
+tcpdumpVersion = cmd.getDpkgVersion("tcpdump")
 
 if bridgeUtilsVersion:
 	connections.TYPES[Bridge.TYPE] = Bridge

@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
-from tomato import connections, elements, host, fault
-from tomato.lib import util #@UnresolvedImport
+from tomato import connections, elements, fault
+from tomato.lib import util, cmd #@UnresolvedImport
 from tomato.lib.attributes import attribute, oneOf #@UnresolvedImport
-from tomato.host import process, net, path
+from tomato.lib.cmd import process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: tinc
@@ -116,8 +116,8 @@ class Tinc(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 		self.path = self.dataPath()
-		self.privkey = host.run(["openssl", "genrsa"], ignoreErr=True)
-		self.pubkey = host.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
+		self.privkey = cmd.run(["openssl", "genrsa"], ignoreErr=True)
+		self.pubkey = cmd.run(["openssl", "rsa", "-pubout"], ignoreErr=True, input=self.privkey)
 
 	def _interfaceName(self):
 		return "tinc%d" % self.id
@@ -175,7 +175,7 @@ class Tinc(elements.Element):
 				fp.write("Digest=none\n")
 				# peer public key -> hosts/[name]
 				fp.write(peer["pubkey"])
-		host.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
+		cmd.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(self.ST_STARTED)
 		ifName = self._interfaceName()
 		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
@@ -188,7 +188,7 @@ class Tinc(elements.Element):
 		con = self.getConnection()
 		if con:
 			con.disconnectInterface(self._interfaceName())
-		host.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
+		cmd.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(self.ST_CREATED)
 		if os.path.exists(self.path):
 			shutil.rmtree(self.path)
@@ -222,7 +222,7 @@ class Tinc(elements.Element):
 			usage.updateContinuous("traffic", traffic, data)
 
 
-tincVersion = host.getDpkgVersion("tinc")
+tincVersion = cmd.getDpkgVersion("tinc")
 
 if [1, 0] <= tincVersion <= [2, 0]:
 	elements.TYPES[Tinc.TYPE] = Tinc

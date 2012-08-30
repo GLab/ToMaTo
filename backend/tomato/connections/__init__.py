@@ -26,7 +26,6 @@ from tomato.lib.decorators import *
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
-BUSY_STATE = "(busy)"
 
 class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
@@ -187,10 +186,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return [el.upcast() for el in self.elements.all()]
 			
 	def getHostElements(self):
-		return {}
+		return []
 			
 	def getHostConnections(self):
-		return {}			
+		return []			
 
 	def onError(self, exc):
 		pass

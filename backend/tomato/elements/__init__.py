@@ -28,7 +28,6 @@ from tomato import config
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
-BUSY_STATE = "(busy)"
 
 class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
@@ -40,10 +39,15 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
 	attrs = db.JSONField()
 	
+	DIRECT_ACTIONS = True
+	DIRECT_ACTIONS_EXCLUDE = []
+	CUSTOM_ACTIONS = {}
+	
+	DIRECT_ATTRS = True
+	DIRECT_ATTRS_EXCLUDE = []
+	CUSTOM_ATTRS = {}
+	
 	DOC = ""
-	CAP_ACTIONS = {}
-	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
 	CAP_CONNECTABLE = False
@@ -99,6 +103,17 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def hasParent(self):
 		return not self.parent is None
 
+	def mainElement(self):
+		return None
+
+	def _remoteAttrs(self):
+		allowed = host.getElementCapabilities(self.type)["attrs"].keys()
+		attrs = {}
+		for key, value in self.attrs:
+			if key in allowed:
+				attrs[key] = value
+		return attrs
+
 	def checkModify(self, attrs):
 		"""
 		Checks whether the attribute change can succeed before changing the
@@ -111,9 +126,18 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		"""
 		fault.check(not self.isBusy(), "Object is busy")
 		self.checkPermission(Role.manager)
+		mel = self.mainElement()
+		direct = []
+		if self.DIRECT_ATTRS:
+			if mel:
+				direct = mel.getAllowedAttributes()
+			else:
+				direct = host.getElementCapabilities(self.type)["attrs"].keys()
 		for key in attrs.keys():
-			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
-			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
+			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
+				continue
+			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
+			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
 		
 	def modify(self, attrs):
 		"""
@@ -132,8 +156,17 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.checkModify(attrs)
 		self.setBusy(True)
 		try:
+			directAttrs = {}
 			for key, value in attrs.iteritems():
-				getattr(self, "modify_%s" % key)(value)
+				if key in self.CUSTOM_ATTRS:
+					getattr(self, "modify_%s" % key)(value)
+				else:
+					directAttrs[key] = value
+			if directAttrs:
+				mel = self.mainElement()
+				if mel:
+					mel.modify(directAttrs)
+				self.setAttributes(directAttrs)					
 		except Exception, exc:
 			self.onError(exc)
 			raise
@@ -152,8 +185,12 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		"""
 		fault.check(not self.isBusy(), "Object is busy")
 		self.checkPermission(Role.manager)
-		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
-		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
+		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
+			mel = self.mainElement()
+			if mel and action in mel.getAllowedActions():
+				return
+		fault.check(action in self.CUSTOM_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
+		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
 	def action(self, action, params):
 		"""
@@ -173,22 +210,26 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.checkAction(action)
 		self.setBusy(True)
 		try:
-			res = getattr(self, "action_%s" % action)(**params)
+			if action in self.CUSTOM_ACTIONS:
+				res = getattr(self, "action_%s" % action)(**params)
+			else:
+				mel = self.mainElement()
+				assert mel
+				res = mel.action(action, params)
+				self.setState(mel.state, True)
 		except Exception, exc:
 			self.onError(exc)
 			raise
 		finally:
 			self.setBusy(False)
 		self.save()
-		if action in self.CAP_NEXT_STATE:
-			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)
 		return res
 
 	def checkRemove(self, recurse=True):
 		fault.check(not self.isBusy(), "Object is busy")
 		self.checkPermission(Role.owner)
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
-		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
+		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
@@ -233,7 +274,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		resources.give(type_, num, self)
 		
 	def getHostElements(self):
-		return []
+		mel = self.mainElement()
+		return [mel] if mel else [] 
 			
 	def getHostConnections(self):
 		return []
@@ -246,7 +288,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			
 	def info(self):
 		self.checkPermission(Role.user)
-		return {
+		info = {
 			"id": self.id,
 			"type": self.type,
 			"topology": self.topology.id,
@@ -256,6 +298,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 		}
+		mel = self.mainElement()
+		if mel:
+			info["attrs"].update(mel.attrs)
+		return info
 		
 	def updateUsage(self, usage, data):
 		pass
@@ -279,5 +325,5 @@ def create(top, type_, parent=None, attrs={}):
 		parent.onChildAdded(el)
 	return el
 
-from tomato import fault, currentUser, resources
+from tomato import fault, currentUser, resources, host
 		

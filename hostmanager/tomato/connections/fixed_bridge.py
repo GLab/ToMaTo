@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, host
-from tomato.host import net
+from tomato import connections
+from tomato.lib import cmd #@UnresolvedImport
+from tomato.lib.cmd import net #@UnresolvedImport
 
 DOC="""
 	Description
@@ -121,7 +122,7 @@ class Fixed_Bridge(connections.Connection):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-bridgeUtilsVersion = host.getDpkgVersion("bridge-utils")
+bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
 
 if bridgeUtilsVersion:
 	connections.TYPES[Fixed_Bridge.TYPE] = Fixed_Bridge

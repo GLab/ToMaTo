@@ -17,7 +17,7 @@
 
 from django.db import models
 from tomato import config
-from tomato.lib import attributes, db, rpc #@UnresolvedImport
+from tomato.lib import attributes, db, rpc
 
 
 class Site(attributes.Mixin, models.Model):
@@ -89,6 +89,12 @@ class Host(attributes.Mixin, models.Model):
     def _info(self):
         return self.getProxy().host_info()
         
+    def getElementCapabilities(self, type_):
+        return self.elementTypes.get(type_)
+        
+    def getConnectionCapabilities(self, type_):
+        return self.connectionTypes.get(type_)
+
     def createElement(self, type_, parent=None, attrs={}):
         assert not parent or parent.host == self
         el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
@@ -131,6 +137,7 @@ class HostElement(attributes.Mixin, models.Model):
     attrs = db.JSONField()
     connection = attributes.attribute("connection", int)
     state = attributes.attribute("state", str)
+    type = attributes.attribute("type", str) #@ReservedAssignment
         
     class Meta:
         unique_together = (("host", "num"),)
@@ -143,7 +150,9 @@ class HostElement(attributes.Mixin, models.Model):
         self.save()
             
     def action(self, action, params={}):
-        return self.host.getProxy().element_action(self.num, action, params)
+        res = self.host.getProxy().element_action(self.num, action, params)
+        self.updateInfo()
+        return res
             
     def remove(self):
         try:
@@ -166,6 +175,21 @@ class HostElement(attributes.Mixin, models.Model):
     def getAttrs(self):
         return self.attrs["attrs"]
 
+    def getAllowedActions(self):
+        caps = self.host.getElementCapabilities(self.type)["actions"]
+        res = []
+        for key, states in caps.iteritems():
+            if self.state in states:
+                res.append(key)
+        return res
+
+    def getAllowedAttributes(self):
+        caps = self.host.getElementCapabilities(self.type)["attrs"]
+        res = []
+        for key, states in caps.iteritems():
+            if self.state in states:
+                res.append(key)
+        return res
         
 class HostConnection(attributes.Mixin, models.Model):
     host = models.ForeignKey(Host, null=False, related_name="connections")
@@ -173,6 +197,7 @@ class HostConnection(attributes.Mixin, models.Model):
     attrs = db.JSONField()
     elements = attributes.attribute("elements", list)
     state = attributes.attribute("state", str)
+    type = attributes.attribute("type", str) #@ReservedAssignment
     
     class Meta:
         unique_together = (("host", "num"),)
@@ -182,7 +207,9 @@ class HostConnection(attributes.Mixin, models.Model):
         self.save()
             
     def action(self, action, params={}):
-        return self.host.getProxy().connection_action(self.num, action, params)
+        res = self.host.getProxy().connection_action(self.num, action, params)
+        self.updateInfo()
+        return res
             
     def remove(self):
         try:
@@ -205,6 +232,21 @@ class HostConnection(attributes.Mixin, models.Model):
     def getAttrs(self):
         return self.attrs["attrs"]
   
+    def getAllowedActions(self):
+        caps = self.host.getConnectionCapabilities(self.type)["actions"]
+        res = []
+        for key, states in caps.iteritems():
+            if self.state in states:
+                res.append(key)
+        return res
+
+    def getAllowedAttributes(self):
+        caps = self.host.getConnectionCapabilities(self.type)["attrs"]
+        res = []
+        for key, states in caps.iteritems():
+            if self.state in states:
+                res.append(key)
+        return res
   
 def get(id_, **kwargs):
     try:
@@ -229,5 +271,35 @@ def select(site=None, elementTypes=[], connectionTypes=[]):
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
         return host
+
+def getElementTypes():
+    types = set()
+    for h in getAll():
+        types += set(h.elementTypes.keys())
+    return types
+
+def getElementCapabilities(type_):
+    #FIXME: merge capabilities
+    caps = {}
+    for h in getAll():
+        hcaps = h.getElementCapabilities(type_)
+        if len(repr(hcaps)) > len(repr(caps)):
+            caps = hcaps
+    return caps
     
+def getConnectionTypes():
+    types = set()
+    for h in getAll():
+        types += set(h.connectionTypes.keys())
+    return types
+
+def getConnectionCapabilities(type_):
+    #FIXME: merge capabilities
+    caps = {}
+    for h in getAll():
+        hcaps = h.getConnectionCapabilities(type_)
+        if len(repr(hcaps)) > len(repr(caps)):
+            caps = hcaps
+    return caps
+
 from tomato import fault

@@ -18,24 +18,24 @@
 from tomato import elements
 import generic
 
-class KVMQM(generic.VMElement):
-	TYPE = "kvmqm"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus"]
+class Repy(generic.VMElement):
+	TYPE = "repy"
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "bandwidth"]
 	CAP_CHILDREN = {
-		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
+		"repy_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
 	
 	class Meta:
-		db_table = "tomato_kvmqm"
+		db_table = "tomato_repy"
 		app_label = 'tomato'
 	
-class KVMQM_Interface(generic.VMInterface):
-	TYPE = "kvmqm_interface"
-	CAP_PARENT = [KVMQM.TYPE]
+class Repy_Interface(generic.VMInterface):
+	TYPE = "repy_interface"
+	CAP_PARENT = [Repy.TYPE]
 	
 	class Meta:
-		db_table = "tomato_kvmqm_interface"
+		db_table = "tomato_repy_interface"
 		app_label = 'tomato'
 	
-elements.TYPES[KVMQM.TYPE] = KVMQM
-elements.TYPES[KVMQM_Interface.TYPE] = KVMQM_Interface
+elements.TYPES[Repy.TYPE] = Repy
+elements.TYPES[Repy_Interface.TYPE] = Repy_Interface

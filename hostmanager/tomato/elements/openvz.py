@@ -17,10 +17,10 @@
 
 import os, sys
 from django.db import models
-from tomato import connections, elements, resources, host, fault
+from tomato import connections, elements, resources, fault
 from tomato.lib.attributes import attribute, between #@UnresolvedImport
-from tomato.lib import decorators, util #@UnresolvedImport
-from tomato.host import fileserver, process, net, path
+from tomato.lib import decorators, util, cmd #@UnresolvedImport
+from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: openvz
@@ -189,7 +189,7 @@ class OpenVZ(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
-		self.vncpassword = host.randomPassword()
+		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 	
 	def _imagePath(self):
@@ -197,17 +197,17 @@ class OpenVZ(elements.Element):
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, host.CommandError) and x.errorCode in [9, 51])
-	def _vzctl(self, cmd, args=[], timeout=None):
-		cmd = ["vzctl", cmd, str(self.vmid)] + args
+	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode in [9, 51])
+	def _vzctl(self, cmd_, args=[], timeout=None):
+		cmd_ = ["vzctl", cmd_, str(self.vmid)] + args
 		if timeout:
-			cmd = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd
-		out = host.run(cmd)
+			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
+		out = cmd.run(cmd_)
 		return out
 			
-	def _execute(self, cmd, timeout=60):
+	def _execute(self, cmd_, timeout=60):
 		assert self.state == self.ST_STARTED
-		out = self._vzctl("exec", [cmd], timeout=timeout)
+		out = self._vzctl("exec", [cmd_], timeout=timeout)
 		return out
 			
 	def _getState(self):
@@ -279,14 +279,14 @@ class OpenVZ(elements.Element):
 			try:
 				while True:
 					self._execute("ip -4 route del default")
-			except host.CommandError:
+			except cmd.CommandError:
 				pass
 			self._execute("ip -4 route replace default via %s" % self.gateway4)
 		if self.gateway6:
 			try:
 				while True:
 					self._execute("ip -6 route del default")
-			except host.CommandError:
+			except cmd.CommandError:
 				pass
 			self._execute("ip -6 route replace default via %s" % self.gateway6)
 
@@ -298,7 +298,7 @@ class OpenVZ(elements.Element):
 		path.extractArchive(path_, imgPath)
 
 	def _checkImage(self, path_):
-		res = host.run(["tar", "-tzvf", path_, "./sbin/init"])
+		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
 		fault.check("0/0" in res, "Image contents not owned by root")
 
 	def onChildAdded(self, interface):
@@ -365,7 +365,7 @@ class OpenVZ(elements.Element):
 		self._checkState()
 		try:
 			self._vzctl("destroy")
-		except host.CommandError, exc:
+		except cmd.CommandError, exc:
 			if exc.errorCode == 41: # [41] Container is currently mounted (umount first)
 				self._vzctl("umount")
 				self._vzctl("destroy")
@@ -386,7 +386,7 @@ class OpenVZ(elements.Element):
 				con.connectInterface(self._interfaceName(interface.name))
 			interface._configure() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
-		self.vncpid = host.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
+		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 				
 	def action_stop(self):
@@ -412,7 +412,7 @@ class OpenVZ(elements.Element):
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
-		host.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
+		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
@@ -593,10 +593,10 @@ class OpenVZ_Interface(elements.Element):
 		assert self.state == OpenVZ.ST_STARTED
 		if not self.use_dhcp:
 			return
-		for cmd in ["/sbin/dhclient", "/sbin/dhcpcd"]:
+		for cmd_ in ["/sbin/dhclient", "/sbin/dhcpcd"]:
 			try:
-				return self._execute("[ -e %s ] && %s %s" % (cmd, cmd, self.name))
-			except host.CommandError, err:
+				return self._execute("[ -e %s ] && %s %s" % (cmd_, cmd_, self.name))
+			except cmd.CommandError, err:
 				if err.errorCode != 8:
 					return
 
@@ -640,9 +640,9 @@ class OpenVZ_Interface(elements.Element):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-perlVersion = host.getDpkgVersion("perl")
-vzctlVersion = host.getDpkgVersion("vzctl")
-vnctermVersion = host.getDpkgVersion("vncterm")
+perlVersion = cmd.getDpkgVersion("perl")
+vzctlVersion = cmd.getDpkgVersion("vzctl")
+vnctermVersion = cmd.getDpkgVersion("vncterm")
 
 def register(): #pragma: no cover
 	if not vzctlVersion:

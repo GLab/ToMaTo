@@ -24,7 +24,6 @@ from tomato.lib.decorators import *
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
-BUSY_STATE = "(busy)"
 
 """
 General interface:
