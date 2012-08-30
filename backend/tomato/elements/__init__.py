@@ -19,7 +19,6 @@ import os, shutil
 from django.db import models
 
 from tomato.connections import Connection
-from tomato.accounting import UsageStatistics, Usage
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
 from tomato.topology import Topology
 from tomato.lib import db, attributes, util #@UnresolvedImport
@@ -36,7 +35,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
 	attrs = db.JSONField()
 	
 	DIRECT_ACTIONS = True
@@ -69,10 +67,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.parent = parent
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
-		stats = UsageStatistics()
-		stats.init()
-		stats.save()
-		self.usageStatistics = stats
 		self.modify(attrs)
 
 	def _saveAttributes(self):
@@ -302,9 +296,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		if mel:
 			info["attrs"].update(mel.attrs)
 		return info
-		
-	def updateUsage(self, usage, data):
-		pass
 
 def get(id_, **kwargs):
 	try:

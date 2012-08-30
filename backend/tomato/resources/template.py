@@ -16,18 +16,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources, fault
+from tomato import resources, fault, config
+from tomato.lib import attributes #@UnresolvedImport
+import os.path, base64
 
-PATHS={
-	"kvmqm": "/var/lib/vz/template/qemu/%s.qcow2",
-	"openvz": "/var/lib/vz/template/cache/%s.tar.gz",
-	"repy": "/var/lib/vz/template/repy/%s.repy",
+PATTERNS = {
+	"kvmqm": "%s.qcow2",
+	"openvz": "%s.tar.gz",
+	"repy": "%s.repy",
 }
 
 class Template(resources.Resource):
 	tech = models.CharField(max_length=20)
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
+	torrent_data = attributes.attribute("torrent_data", str)
 	
 	TYPE = "template"
 
@@ -37,16 +40,23 @@ class Template(resources.Resource):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
+		attrs = args[0]
+		for attr in ["name", "tech", "torrent_data"]:
+			fault.check(attr in attrs, "Template needs attribute %s", attr) 
 		resources.Resource.init(self, *args, **kwargs)
+		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
 	def upcast(self):
 		return self
 	
 	def getPath(self):
-		return PATHS[self.tech] % self.name
+		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
 	
+	def getTorrentPath(self):
+		return self.getPath() + ".torrent"
+
 	def modify_tech(self, val):
-		fault.check(val in PATHS.keys(), "Unsupported template tech: %s", val)
+		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
 		self.tech = val
 	
 	def modify_name(self, val):
@@ -55,11 +65,25 @@ class Template(resources.Resource):
 	def modify_preference(self, val):
 		self.preference = val
 
+	def modify_torrent_data(self, val):
+		self.torrent_data = val
+		if self.name and self.tech:
+			with open(self.getTorrentPath(), "w") as fp:
+				fp.write(base64.b64decode(val))
+
+	def remove(self):
+		if os.path.exists(self.getTorrentPath()):
+			os.remove(self.getTorrentPath())
+		if os.path.exists(self.getPath()):
+			os.remove(self.getPath())
+		resources.Resource.remove(self)
+
 	def info(self):
 		info = resources.Resource.info(self)
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
+		info["attrs"]["torrent_data"] = bool(self.torrent_data) 
 		return info
 
 def get(tech, name):

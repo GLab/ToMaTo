@@ -20,7 +20,7 @@ from django.core import exceptions
 import sys, time, traceback
 from datetime import datetime, timedelta
 
-from tomato import fault, host
+from tomato import fault
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 

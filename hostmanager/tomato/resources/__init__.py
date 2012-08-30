@@ -18,7 +18,7 @@
 from django.db import models
 import random, sys
 
-from tomato import fault, host
+from tomato import fault
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 

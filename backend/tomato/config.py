@@ -15,11 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os
+import os, socket
 
 VERSION = 0.1
 
-CERTIFICATE = "../cli/dswd.pem"
+CERTIFICATE = "../cli/admin.pem"
+
+TEMPLATE_PATH = "templates"
+TRACKER_PORT = 8001
 
 AUTH = [
 	{
@@ -63,6 +66,11 @@ DISABLE_TRANSACTION_MANAGEMENT = True
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 ERROR_NOTIFY = []
+
+_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+_socket.connect(("8.8.8.8",80))
+PUBLIC_ADDRESS = _socket.getsockname()[0]
+_socket.close()
 
 try:
 	import sys

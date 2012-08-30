@@ -50,7 +50,7 @@ class VMElement(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
@@ -92,7 +92,7 @@ class VMElement(elements.Element):
 		if self.element:
 			self.element.updateInfo()
 			self.setState(self.element.state, True)
-			if self.state == self.ST_CREATED:
+			if self.state == ST_CREATED:
 				if self.element:
 					self.element.remove()
 				for iface in self.getChildren():
@@ -112,7 +112,7 @@ class VMElement(elements.Element):
 		for iface in self.getChildren():
 			iface._create()
 		self.element.action("prepare")
-		self.setState(self.ST_PREPARED, True)
+		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):
 		if self.element:
@@ -121,7 +121,7 @@ class VMElement(elements.Element):
 				iface._remove()
 			self.element.remove()
 			self.element = None
-		self.setState(self.ST_CREATED, True)
+		self.setState(ST_CREATED, True)
 
 	def upcast(self):
 		return self

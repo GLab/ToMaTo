@@ -68,8 +68,9 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, host, accounting
+from tomato import lib, resources, host #@UnresolvedImport
 from tomato.auth import login as authenticate
+from tomato.lib.cmd import bittorrent #@UnresolvedImport
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver
@@ -77,4 +78,6 @@ from rpcserver import stop as stopRPCserver
 
 if not config.MAINTENANCE:
 	resources.init()
-	accounting.task.start() #@UndefinedVariable
+	host.task.start() #@UndefinedVariable
+	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
+	bittorrent.startClient(config.TEMPLATE_PATH)

@@ -27,6 +27,8 @@ TMP_DIR = "/tmp/tomato"
 LOG_DIR = "logs"
 DATA_DIR = "/var/lib/tomato"
 
+TEMPLATE_DIR = os.path.join(DATA_DIR, "templates")
+
 SERVER = [
 	{
 		"PORT": 8000,

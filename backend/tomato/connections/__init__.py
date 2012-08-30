@@ -19,7 +19,6 @@ import os, shutil
 from django.db import models
 
 from tomato.topology import Topology
-from tomato.accounting import UsageStatistics
 from tomato.auth.permissions import Permissions, PermissionMixin
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
@@ -32,7 +31,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='connection')
 	attrs = db.JSONField()
 	#elements: set of elements.Element
 	
@@ -50,11 +48,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.save()
 		self.elements.add(el1)
 		self.elements.add(el2)
-		self.save()
-		stats = UsageStatistics()
-		stats.init()
-		stats.save()
-		self.usageStatistics = stats		
+		self.save()	
 		self.modify(attrs)
 		
 	def _saveAttributes(self):
@@ -210,9 +204,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def returnResource(self, type_, num):
 		from tomato import resources #needed to break import cycle
 		resources.give(type_, num, self)
-		
-	def updateUsage(self, usage, data):
-		pass
 
 		
 def get(id_, **kwargs):

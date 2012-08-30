@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, os.path, sys
 from django.db import models
-from tomato import connections, elements, resources, fault
+from tomato import connections, elements, resources, fault, config
 from tomato.lib.attributes import attribute, between #@UnresolvedImport
 from tomato.lib import decorators, util, cmd #@UnresolvedImport
 from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
@@ -350,7 +350,9 @@ class OpenVZ(elements.Element):
 
 	def action_prepare(self):
 		self._checkState()
-		self._vzctl("create", ["--ostemplate", self._template().name, "--config", "default"])
+		tplPath = os.path.join(config.TEMPLATE_DIR, self._template().name)
+		tplPath = os.path.relpath(tplPath, "/var/lib/vz/template/cache") #calculate relative path to trick openvz
+		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
 		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
 		self.setState(self.ST_PREPARED, True) #must be here or the set commands fail
 		self._setRam()

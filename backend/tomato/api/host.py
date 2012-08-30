@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+def server_info():
+    return {
+        "TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
+    }
+
 def _getSite(name):
     s = host.getSite(name)
     fault.check(s, "Site with name %s does not exist", name)
@@ -38,4 +43,4 @@ def host_list(site_filter=None):
     hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
     return [h.info() for h in hosts]
 
-from tomato import host, fault
+from tomato import host, fault, config

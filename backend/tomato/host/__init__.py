@@ -17,8 +17,8 @@
 
 from django.db import models
 from tomato import config
-from tomato.lib import attributes, db, rpc
-
+from tomato.lib import attributes, db, rpc, util #@UnresolvedImport
+import xmlrpclib, base64
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
@@ -120,6 +120,25 @@ class Host(attributes.Mixin, models.Model):
     def grantUrl(self, grant, action):
         return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
     
+    def synchronizeResources(self):
+        #TODO: implement for other resources
+        from tomato import resources
+        hostTpls = {}
+        for tpl in self.getProxy().resource_list("template"):
+            hostTpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
+        for tpl in resources.getAll(type="template"):
+            key = (tpl.tech, tpl.name)
+            attrs = tpl.attrs.copy()
+            attrs["name"] = tpl.name
+            attrs["tech"] = tpl.tech
+            if not key in hostTpls:
+                #create resource
+                self.getProxy().resource_create("template", attrs)
+            else:
+                hTpl = hostTpls[key]
+                #update resource
+                self.getProxy().resource_modify(hTpl["id"], attrs)
+    
     def info(self):
         return {
             "id": self.id,
@@ -157,8 +176,8 @@ class HostElement(attributes.Mixin, models.Model):
     def remove(self):
         try:
             self.host.getProxy().element_remove(self.num)
-        except fault.Fault, f:
-            if f.errorCode != fault.UNKNOWN_OBJECT:
+        except xmlrpclib.Fault, f:
+            if f.faultCode != fault.UNKNOWN_OBJECT:
                 raise
         self.delete()
 
@@ -214,8 +233,8 @@ class HostConnection(attributes.Mixin, models.Model):
     def remove(self):
         try:
             self.host.getProxy().connection_remove(self.num)
-        except fault.Fault, f:
-            if f.errorCode != fault.UNKNOWN_OBJECT:
+        except xmlrpclib.Fault, f:
+            if f.faultCode != fault.UNKNOWN_OBJECT:
                 raise
         self.delete()
         
@@ -301,5 +320,15 @@ def getConnectionCapabilities(type_):
         if len(repr(hcaps)) > len(repr(caps)):
             caps = hcaps
     return caps
+
+def synchronize():
+    #TODO: implement more than resource sync
+    for host in getAll():
+        try:
+            host.synchronizeResources()
+        except:
+            pass #needs admin permissions that might lack 
+
+task = util.RepeatedTimer(1800, synchronize) #every 30 mins
 
 from tomato import fault

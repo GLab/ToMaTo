@@ -65,14 +65,16 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, host, accounting
+from tomato import lib, resources, accounting #@UnresolvedImport
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver
-from host.fileserver import start as startFileserver
-from host.fileserver import stop as stopFileserver
-
+from lib.cmd.fileserver import start as startFileserver #@UnresolvedImport
+from lib.cmd.fileserver import stop as stopFileserver #@UnresolvedImport
+from lib.cmd import bittorrent #@UnresolvedImport
 
 if not config.MAINTENANCE:
 	resources.init()
-	accounting.task.start()
+	accounting.task.start() #@UndefinedVariable
+	bittorrent.startClient(config.TEMPLATE_DIR)
+	
