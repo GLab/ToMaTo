@@ -211,8 +211,8 @@ class KVMQM(elements.Element):
 		return "tap%di%d" % (self.vmid, num)
 
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
-	def _qm(self, cmd, params=[]):
-		return cmd.run(["qm", cmd, str(self.vmid)] + map(str, params))
+	def _qm(self, cmd_, params=[]):
+		return cmd.run(["qm", cmd_, str(self.vmid)] + map(str, params))
 		#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
 	def _getState(self):
@@ -240,7 +240,7 @@ class KVMQM(elements.Element):
 		assert self.state == self.ST_STARTED, "VM must be running"
 		controlPath = self._controlPath()
 		fault.check(os.path.exists(controlPath), "Control path does not exist")
-		cmd_ = "".join([cmd.escape(json.dumps(cmd))+"'\n'" for cmd in cmds])
+		cmd_ = "".join([cmd.escape(json.dumps(cmd_))+"'\n'" for cmd_ in cmds])
 		return cmd.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd_, "monitor": controlPath, "timeout": timeout})
 			
 	def _template(self):
