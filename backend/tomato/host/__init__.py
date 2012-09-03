@@ -164,6 +164,9 @@ class HostElement(attributes.Mixin, models.Model):
     def createChild(self, type_, attrs={}):
         return self.host.createElement(type_, self, attrs)
 
+    def connectWith(self, hel, type_=None, attrs={}):
+        return self.host.createConnection(self, hel, type_, attrs)
+
     def modify(self, attrs):
         self.attrs = self.host.getProxy().element_modify(self.num, attrs)
         self.save()

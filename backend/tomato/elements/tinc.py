@@ -83,7 +83,6 @@ class Tinc_VPN(elements.Element):
 		for ch in self.getChildren():
 			assert ch.element
 			info = ch.info()
-			print info
 			peers.append({
 				"host": ch.element.host.address,
 				"port": info["attrs"]["port"],

@@ -19,24 +19,35 @@ import os, shutil
 from django.db import models
 
 from tomato.topology import Topology
-from tomato.auth.permissions import Permissions, PermissionMixin
+from tomato.auth.permissions import Permissions, PermissionMixin, Role
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
+from tomato import host
 
-TYPES = {}
 REMOVE_ACTION = "(remove)"
+
+ST_CREATED = "created"
+ST_STARTED = "started"
 
 class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
 	attrs = db.JSONField()
 	#elements: set of elements.Element
+	connection1 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
+	connection2 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
+	connectionElement1 = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
+	connectionElement2 = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
 	
-	CAP_ACTIONS = {}
-	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {}
+	DIRECT_ACTIONS = True
+	DIRECT_ACTIONS_EXCLUDE = []
+	CUSTOM_ACTIONS = {"start": [ST_CREATED], "stop": [ST_STARTED]}
+	
+	DIRECT_ATTRS = True
+	DIRECT_ATTRS_EXCLUDE = []
+	CUSTOM_ATTRS = {}
+	
 	DEFAULT_ATTRS = {}
 	
 	class Meta:
@@ -56,7 +67,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		
 	@classmethod
 	def canConnect(cls, el1, el2):
-		return False
+		return el1.CAP_CONNECTABLE and el2.CAP_CONNECTABLE
 		
 	def isBusy(self):
 		return hasattr(self, "_busy") and self._busy
@@ -65,20 +76,22 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self._busy = busy
 		
 	def upcast(self):
-		"""
-		This method returns an instance of this element with the highest order
-		class that it possesses. Due to a limitation of the database backend,
-		all loaded objects are of the type that has been used to load them.
-		In order to get to their actual type this method must be called.
-		
-		Classes inheriting from this class should overwrite this method to 
-		return self.
-		"""
-		try:
-			return getattr(self, self.type)
-		except:
-			pass
-		fault.raise_("Failed to cast connection #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+		return self
+	
+	def mainConnection(self):
+		return self.connection1
+
+	def remoteType(self):
+		return "bridge"
+
+	def _remoteAttrs(self):
+		caps = host.getConnectionCapabilities(self.remoteType())
+		allowed = caps["attrs"].keys() if caps else []
+		attrs = {}
+		for key, value in self.attrs.iteritems():
+			if key in allowed:
+				attrs[key] = value
+		return attrs
 
 	def checkModify(self, attrs):
 		"""
@@ -91,9 +104,20 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type attrs: dict
 		"""
 		fault.check(not self.isBusy(), "Object is busy")
+		self.checkPermission(Role.manager)
+		mcon = self.mainConnection()
+		direct = []
+		if self.DIRECT_ATTRS:
+			if mcon:
+				direct = mcon.getAllowedAttributes()
+			else:
+				caps = host.getConnectionCapabilities(self.remoteType())
+				direct = caps["attrs"].keys() if caps else []
 		for key in attrs.keys():
-			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
-			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
+			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
+				continue
+			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for: %s", key)
+			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s can not be changed in state %s", (key, self.state))
 		
 	def modify(self, attrs):
 		"""
@@ -112,8 +136,17 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.checkModify(attrs)
 		self.setBusy(True)
 		try:
+			directAttrs = {}
 			for key, value in attrs.iteritems():
-				getattr(self, "modify_%s" % key)(value)
+				if key in self.CUSTOM_ATTRS:
+					getattr(self, "modify_%s" % key)(value)
+				else:
+					directAttrs[key] = value
+			if directAttrs:
+				mcon = self.mainConnection()
+				if mcon:
+					mcon.modify(directAttrs)
+				self.setAttributes(directAttrs)					
 		except Exception, exc:
 			self.onError(exc)
 			raise
@@ -131,8 +164,13 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type action: str
 		"""
 		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
-		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
+		self.checkPermission(Role.manager)
+		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
+			mcon = self.mainConnection()
+			if mcon and action in mcon.getAllowedActions():
+				return
+		fault.check(action in self.CUSTOM_ACTIONS, "Unsuported action: %s", action)
+		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s can not be executed in state %s", (action, self.state))
 	
 	def action(self, action, params):
 		"""
@@ -152,15 +190,19 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.checkAction(action)
 		self.setBusy(True)
 		try:
-			res = getattr(self, "action_%s" % action)(**params)
+			if action in self.CUSTOM_ACTIONS:
+				res = getattr(self, "action_%s" % action)(**params)
+			else:
+				mcon = self.mainElement()
+				assert mcon
+				res = mcon.action(action, params)
+				self.setState(mcon.state, True)
 		except Exception, exc:
 			self.onError(exc)
 			raise
 		finally:
 			self.setBusy(False)
 		self.save()
-		if action in self.CAP_NEXT_STATE:
-			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)		
 		return res
 
 	def setState(self, state, dummy=None):
@@ -169,7 +211,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 
 	def checkRemove(self):
 		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Connector type %s can not be removed in its state %s", (self.type, self.state))
+		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Connection can not be removed in its state %s", self.state)
 
 	def remove(self):
 		self.checkRemove()
@@ -180,31 +222,72 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return [el.upcast() for el in self.elements.all()]
 			
 	def getHostElements(self):
-		return []
+		return filter(bool, [self.connectionElement1, self.connectionElement2])
 			
 	def getHostConnections(self):
-		return []			
+		return filter(bool, [self.connection1, self.connection2])
 
 	def onError(self, exc):
 		pass
+
+	def action_start(self):
+		el1, el2 = self.getElements()
+		el1, el2 = el1.mainElement(), el2.mainElement()
+		fault.check(el1 and el2, "Can not connect unprepared element")
+		if el1.host == el2.host:
+			# simple case: both elements are on same host
+			self.connection1 = el1.connectWith(el2, attrs=self._remoteAttrs())
+			if self.connection1.state == ST_CREATED:
+				self.connection1.action("start")
+		else:
+			# complex case: helper elements needed to connect elements on different hosts
+			self.connectionElement1 = el1.host.createElement("udp_tunnel")
+			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
+				"connect": "%s:%d" % (el1.host.address, el1.attrs["attrs"]["port"])
+			})
+			self.connection1 = el1.connectWith(self.connectionElement1, attrs=self._remoteAttrs())
+			self.connection2 = el2.connectWith(self.connectionElement2)
+			self.save()
+			self.connectionElement1.action("start")
+			self.connectionElement2.action("start")
+			self.connection1.action("start")
+			self.connection2.action("start")
 			
+	def action_stop(self):
+		if self.connection1:
+			if self.connection1.state == ST_STARTED:
+				self.connection1.action("stop")
+			self.connection1.remove()
+			self.connection1 = None
+			self.save()
+		if self.connection2:
+			if self.connection2.state == ST_STARTED:
+				self.connection2.action("stop")
+			self.connection2.remove()
+			self.connection2 = None
+			self.save()
+		if self.connectionElement1:
+			if self.connectionElement1.state == ST_STARTED:
+				self.connectionElement1.action("stop")
+			self.connectionElement1.remove()
+			self.connectionElement1 = None
+			self.save()
+		if self.connectionElement2:
+			if self.connectionElement2.state == ST_STARTED:
+				self.connectionElement2.action("stop")
+			self.connectionElement2.remove()
+			self.connectionElement2 = None
+			self.save()
+		self.setState(ST_CREATED)
+		
 	def info(self):
 		return {
 			"id": self.id,
-			"type": self.type,
 			"state": self.state,
 			"attrs": self.attrs,
 			"elements": [el.id for el in self.getElements()],
 		}
 		
-	def getResource(self, type_):
-		from tomato import resources #needed to break import cycle
-		return resources.take(type_, self)
-	
-	def returnResource(self, type_, num):
-		from tomato import resources #needed to break import cycle
-		resources.give(type_, num, self)
-
 		
 def get(id_, **kwargs):
 	try:
@@ -216,19 +299,12 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
-def create(el1, el2, type_=None, attrs={}):
-	if type_:
-		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
-		fault.check(not el1.connection, "Element #%d is already connected", el1.id)
-		fault.check(not el2.connection, "Element #%d is already connected", el2.id)
-		con = TYPES[type_]()
-		con.init(el1, el2, attrs)
-		con.save()
-		return con
-	else:
-		for type_ in TYPES:
-			if TYPES[type_].canConect(el1, el2):
-				return create(el1, el2, type_, attrs)
-		fault.check(False, "Failed to find matching connection type for element types %s and %s", (el1.type, el2.type))
+def create(el1, el2, attrs={}):
+	fault.check(not el1.connection, "Element #%d is already connected", el1.id)
+	fault.check(not el2.connection, "Element #%d is already connected", el2.id)
+	con = Connection()
+	con.init(el1, el2, attrs)
+	con.save()
+	return con
 
 from tomato import fault, currentUser, config
