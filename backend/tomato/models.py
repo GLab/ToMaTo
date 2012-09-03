@@ -22,6 +22,7 @@ from elements import Element #@UnusedImport
 from elements.openvz import OpenVZ, OpenVZ_Interface #@UnusedImport
 from elements.kvmqm import KVMQM, KVMQM_Interface #@UnusedImport
 from elements.repy import Repy, Repy_Interface #@UnusedImport
+from elements.tinc import Tinc_VPN, Tinc_Endpoint #@UnusedImport
 from connections import Connection #@UnusedImport
 from resources import Resource, ResourceInstance #@UnusedImport
 from resources.template import Template #@UnusedImport

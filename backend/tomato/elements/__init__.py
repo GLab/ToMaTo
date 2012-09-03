@@ -100,10 +100,14 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def mainElement(self):
 		return None
 
+	def remoteType(self):
+		return self.type
+
 	def _remoteAttrs(self):
-		allowed = host.getElementCapabilities(self.type)["attrs"].keys()
+		caps = host.getElementCapabilities(self.remoteType())
+		allowed = caps["attrs"].keys() if caps else []
 		attrs = {}
-		for key, value in self.attrs:
+		for key, value in self.attrs.iteritems():
 			if key in allowed:
 				attrs[key] = value
 		return attrs
@@ -126,7 +130,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			if mel:
 				direct = mel.getAllowedAttributes()
 			else:
-				direct = host.getElementCapabilities(self.type)["attrs"].keys()
+				caps = host.getElementCapabilities(self.remoteType())
+				direct = caps["attrs"].keys() if caps else []
 		for key in attrs.keys():
 			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
 				continue
@@ -294,7 +299,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		}
 		mel = self.mainElement()
 		if mel:
-			info["attrs"].update(mel.attrs)
+			info["attrs"].update(mel.attrs["attrs"])
 		return info
 
 def get(id_, **kwargs):
