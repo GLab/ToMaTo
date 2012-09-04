@@ -45,6 +45,7 @@ def getAllSites(**kwargs):
     return list(Site.objects.filter(**kwargs))
     
 def createSite(name, description=""):
+    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
     return Site.objects.create(name=name, description=description)
 
 
@@ -281,6 +282,7 @@ def getAll(**kwargs):
     return list(Host.objects.filter(**kwargs))
     
 def create(address, site, attrs={}):
+    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
     host = Host(address=address, site=site)
     host.init(attrs)
     host.save()

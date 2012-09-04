@@ -22,6 +22,7 @@ from tomato import config, fault, currentUser
 
 class Flags:
     Admin = "admin" # Can modify all accounts
+    HostsManager = "hosts_manager" # Can manage all hosts and sites
     GlobalOwner = "global_owner" # Owner for every topology
     GlobalManager = "global_manager" # Manager for every topology
     GlobalUser = "global_user" # User for every topology    
@@ -52,7 +53,7 @@ class User(attributes.Mixin, models.Model):
         user = User(name=name)
         user.attrs = kwargs
         if admin:
-            user.flags = [Flags.Admin, Flags.GlobalUser]
+            user.flags = [Flags.Admin, Flags.HostsAdmin, Flags.GlobalUser]
         return user
     
     def _saveAttributes(self):

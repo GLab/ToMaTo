@@ -22,6 +22,7 @@ def _getAccount(name):
         fault.check(acc.hasFlag(Flags.Admin), "No permissions")
         acc = getUser(name)
     fault.check(acc, "No such user")
+    return acc
 
 def account_info(name=None):
     acc = _getAccount(name)

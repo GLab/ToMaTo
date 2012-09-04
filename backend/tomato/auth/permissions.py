@@ -78,7 +78,7 @@ class PermissionMixin:
         globalRole = _globalRole(user)
         try:
             role = self.permissions.entries.get(user=user).role
-            return role if Role.RANKING.index(globalRole) <= Role.RANKING.index(role) else globalRole
+            return role if Role.RANKING.index(globalRole) >= Role.RANKING.index(role) else globalRole
         except PermissionEntry.DoesNotExist:
             return globalRole
     

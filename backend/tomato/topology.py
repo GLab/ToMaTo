@@ -139,6 +139,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
     def remove(self, recurse=True):
         self.checkRemove(recurse)
+        self.permissions.delete()
         self.delete()
 
     def getElements(self):
@@ -153,7 +154,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
     def setRole(self, user, role):
         fault.check(role in Role.RANKING, "Role must be one of %s", Role.RANKING)
         self.checkRole(Role.owner)
-        self.flags.set(user, role)
+        self.permissions.set(user, role)
             
     def info(self, full=False):
         self.checkRole(Role.user)
