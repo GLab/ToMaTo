@@ -28,6 +28,7 @@ encoding//tomato/elements/kvmqm.py=utf-8
 encoding//tomato/elements/openvz.py=utf-8
 encoding//tomato/elements/repy.py=utf-8
 encoding//tomato/elements/tinc.py=utf-8
+encoding//tomato/elements/udp.py=utf-8
 encoding//tomato/fault.py=utf-8
 encoding//tomato/host.py=utf-8
 encoding//tomato/host/__init__.py=utf-8

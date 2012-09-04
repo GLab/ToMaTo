@@ -83,6 +83,7 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
     
     def modify(self, attrs):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")        
         for key, value in attrs.iteritems():
             if hasattr(self, "modify_%s" % key):
                 getattr(self, "modify_%s" % key)(value)
@@ -97,6 +98,7 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         self.numCount = val
 
     def remove(self):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")
         self.delete()    
     
     def info(self):
@@ -150,6 +152,7 @@ def _addResourceRange(type_, start, count):
     return create(type_, {"num_start": start, "num_count": count})
 
 def create(type_, attrs={}):
+    fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")    
     if type_ in TYPES:
         res = TYPES[type_]()
     else:
@@ -160,3 +163,6 @@ def create(type_, attrs={}):
 
 def init():
     pass    
+
+from tomato import currentUser
+from tomato.auth import Flags

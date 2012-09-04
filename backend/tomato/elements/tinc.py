@@ -221,6 +221,15 @@ class Tinc_Endpoint(elements.Element):
 	def upcast(self):
 		return self
 
+	def after_start(self):
+		self.triggerConnectionStart()
+		
+	def after_stop(self):
+		self.triggerConnectionStop()
+
+	def readyToConnect(self):
+		return self.state == ST_STARTED
+
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["mode"] = self.mode

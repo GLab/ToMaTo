@@ -127,6 +127,14 @@ class VMElement(elements.Element):
 			self.element = None
 		self.setState(ST_CREATED, True)
 
+	def after_stop(self):
+		for ch in self.getChildren():
+			ch.triggerConnectionStop()
+	
+	def after_start(self):
+		for ch in self.getChildren():
+			ch.triggerConnectionStart()
+
 	def upcast(self):
 		return self
 
@@ -168,6 +176,9 @@ class VMInterface(elements.Element):
 			self.element.remove()
 			self.element = None
 			self.save()
+
+	def readyToConnect(self):
+		return self.state == ST_STARTED
 
 	def upcast(self):
 		return self

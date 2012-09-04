@@ -114,6 +114,7 @@ class Host(attributes.Mixin, models.Model):
         con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
         hcon = HostConnection(host=self, num=con["id"])
         hcon.attrs = con
+        hcon.save()
         return hcon
 
     def getConnection(self, num):

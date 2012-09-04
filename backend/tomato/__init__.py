@@ -21,12 +21,9 @@ import os, sys
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: collect accounting info
-#TODO: automatic start/stop for connections
 #TODO: stitching elements
 #TODO: smart host selection
-#TODO: permission management
 #TODO: host resource management
-#TODO: template distribution
 #TODO: debian package
 
 

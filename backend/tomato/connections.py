@@ -40,8 +40,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	connectionElement2 = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
 	
 	DIRECT_ACTIONS = True
-	DIRECT_ACTIONS_EXCLUDE = []
-	CUSTOM_ACTIONS = {"start": [ST_CREATED], "stop": [ST_STARTED], REMOVE_ACTION: [ST_CREATED]}
+	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy"]
+	CUSTOM_ACTIONS = {REMOVE_ACTION: [ST_CREATED]}
 	
 	DIRECT_ATTRS = True
 	DIRECT_ATTRS_EXCLUDE = []
@@ -215,10 +215,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def checkRemove(self):
 		self.checkRole(Role.manager)
 		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Connection can not be removed in its state %s", self.state)
 
 	def remove(self):
 		self.checkRemove()
+		self.triggerStop()
 		self.elements.clear() #Important, otherwise elements will be deleted
 		self.delete()
 			
@@ -256,6 +256,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			self.connectionElement2.action("start")
 			self.connection1.action("start")
 			self.connection2.action("start")
+		self.setState(ST_STARTED)
 			
 	def action_stop(self):
 		if self.connection1:
@@ -283,6 +284,15 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			self.connectionElement2 = None
 			self.save()
 		self.setState(ST_CREATED)
+
+	def triggerStart(self):
+		for el in self.getElements():
+			if not el.readyToConnect():
+				return
+		self.action_start()
+		
+	def triggerStop(self):
+		self.action_stop()
 		
 	def info(self):
 		return {
@@ -314,6 +324,7 @@ def create(el1, el2, attrs={}):
 	con = Connection()
 	con.init(el1.topology, el1, el2, attrs)
 	con.save()
+	con.triggerStart()
 	return con
 
 from tomato import fault

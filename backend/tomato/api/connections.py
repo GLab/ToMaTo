@@ -20,7 +20,7 @@ from elements import _getElement
 
 def _getConnection(id_):
     con = connections.get(id_)
-    fault.check(con, "Element with id #%d does not exist", id_)
+    fault.check(con, "Connection with id #%d does not exist", id_)
     return con
 
 def connection_create(el1, el2, attrs={}): #@ReservedAssignment

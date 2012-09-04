@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-def _checkAdmin():
-    #FIXME: implement proper admin check
-    fault.check(currentUser(), "Method only allowed for admin users")
-
 def _getResource(id_):
     res = resources.get(id_)
     fault.check(res, "No such resource: id=%d", id_, code=fault.UNKNOWN_OBJECT)
@@ -41,7 +37,6 @@ def resource_create(type, attrs={}): #@ReservedAssignment
     
     @raise various other errors: depending on the type
     """
-    _checkAdmin()
     attrs = dict(attrs)
     res = resources.create(type, attrs)
     return res.info()
@@ -64,7 +59,6 @@ def resource_modify(id, attrs): #@ReservedAssignment
         another owner
     @raise various other errors: depending on the type
     """
-    _checkAdmin()
     res = _getResource(int(id))
     res.modify(attrs)
     return res.info()
@@ -82,7 +76,6 @@ def resource_remove(id): #@ReservedAssignment
     @raise No such resource: if the resource id does not exist
     @raise various other errors: depending on the type
     """
-    _checkAdmin()
     res = _getResource(int(id))
     res.remove()
     return {}
@@ -116,4 +109,4 @@ def resource_list(type_filter=None):
     res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
     return [r.info() for r in res]
 
-from tomato import fault, resources, currentUser, config
+from tomato import fault, resources

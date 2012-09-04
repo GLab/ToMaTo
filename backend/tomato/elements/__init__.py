@@ -217,8 +217,12 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			else:
 				mel = self.mainElement()
 				assert mel
+				if hasattr(self, "before_%s" % action):
+					getattr(self, "before_%s" % action)(**params)
 				res = mel.action(action, params)
 				self.setState(mel.state, True)
+				if hasattr(self, "after_%s" % action):
+					getattr(self, "after_%s" % action)(**params)
 		except Exception, exc:
 			self.onError(exc)
 			raise
@@ -285,6 +289,16 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def getConnectableElement(self):
 		return None
 			
+	def triggerConnectionStart(self):
+		con = self.getConnection()
+		if con:
+			con.triggerStart()
+			
+	def triggerConnectionStop(self):
+		con = self.getConnection()
+		if con:
+			con.triggerStop()
+
 	def onError(self, exc):
 		pass
 			

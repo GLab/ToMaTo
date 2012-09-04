@@ -18,36 +18,35 @@
 from django.db import models
 from tomato import elements, host, fault
 from tomato.lib.attributes import attribute #@UnresolvedImport
+from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
-ST_CREATED = "created"
-ST_STARTED = "started"
-
-class External_Network(elements.Element):
+class UDP_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	site = models.ForeignKey(host.Site, null=True, on_delete=models.SET_NULL)
 	name = attribute("name", str)
-
-	TYPE = "external_network"
-	CAP_CHILDREN = {}
+	connect = attribute("connect", str, default="")
 	
 	CUSTOM_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
+		"prepare": [ST_CREATED],
+		"destroy": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"site": [ST_CREATED],
-		"name": [ST_CREATED, ST_STARTED],
+		"name": [ST_CREATED, ST_PREPARED, ST_STARTED],
+		"connect": [ST_CREATED, ST_PREPARED],
 	}
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
-	CAP_CONNECTABLE = True
 
-	class Meta:
-		db_table = "tomato_external_network"
-		app_label = 'tomato'
+	TYPE = "udp_endpoint"
+	DIRECT_ATTRS_EXCLUDE = []
+	CAP_CHILDREN = {}
+	CAP_CONNECTABLE = True
 	
+	class Meta:
+		db_table = "tomato_udp_endpoint"
+		app_label = 'tomato'
+			
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		self.state = ST_CREATED
@@ -56,14 +55,19 @@ class External_Network(elements.Element):
 			self.name = self.TYPE + str(self.id)
 		self.save()
 	
+	def remoteType(self):
+		return "udp_tunnel"
+	
 	def mainElement(self):
 		return self.element
 	
 	def modify_name(self, val):
 		self.name = val
 
-	def modify_site(self, val):
-		self.site = host.getSite(val)
+	def modify_connect(self, val):
+		self.connect = val
+		if self.element:
+			self.element.modify({"connect": val})
 
 	def onError(self, exc):
 		if self.element:
@@ -81,30 +85,38 @@ class External_Network(elements.Element):
 				self.element = None
 			self.save()
 
-	def action_start(self):
-		_host = host.select(site=self.site, elementTypes=[self.TYPE])
+	def action_prepare(self):
+		_host = host.select(elementTypes=[self.remoteType()])
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs)
-		self.setState(ST_STARTED)
-		self.triggerConnectionStart()
+		attrs.update({
+			"connect": self.connect,
+		})
+		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs)
+		self.save()
+		self.setState(ST_PREPARED, True)
 		
 	def action_destroy(self):
-		self.triggerConnectionStop()
 		if self.element:
 			self.element.remove()
 			self.element = None
 		self.setState(ST_CREATED, True)
 
-	def readyToConnect(self):
-		return bool(self.element)
-
 	def upcast(self):
 		return self
 
+	def after_start(self):
+		self.triggerConnectionStart()
+		
+	def after_stop(self):
+		self.triggerConnectionStop()
+
+	def readyToConnect(self):
+		return self.state == ST_STARTED
+
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["site"] = self.site.name if self.site else None
+		info["attrs"]["connect"] = self.connect
 		return info
 	
-elements.TYPES[External_Network.TYPE] = External_Network
+elements.TYPES[UDP_Endpoint.TYPE] = UDP_Endpoint
