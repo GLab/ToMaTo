@@ -17,10 +17,9 @@
 
 from django.db import models
 from django.core import exceptions
-import sys, time, traceback
+import traceback
 from datetime import datetime, timedelta
 
-from tomato import fault
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 

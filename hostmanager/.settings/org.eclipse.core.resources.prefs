@@ -1,6 +1,6 @@
 eclipse.preferences.version=1
 encoding//tomato/__init__.py=utf-8
-encoding//tomato/accounting/__init__.py=utf-8
+encoding//tomato/accounting.py=utf-8
 encoding//tomato/api/__init__.py=utf-8
 encoding//tomato/api/accounting.py=utf-8
 encoding//tomato/api/connections.py=utf-8

@@ -18,7 +18,7 @@
 from django.db import models
 from tomato import config
 from tomato.lib import attributes, db, rpc, util #@UnresolvedImport
-import xmlrpclib, base64
+import xmlrpclib
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)

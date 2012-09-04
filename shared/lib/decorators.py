@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import util
-
 """
 Synchronization decorator
   This decorator can be used to synchronize method calls. Synchronization is relative to 
@@ -197,3 +195,5 @@ def retryOnError(errorFilter=None, maxRetries=5, waitBetween=0.5, waitIncrease=2
 		call.__dict__.update(fn.__dict__)
 		return call
 	return wrap
+
+import util

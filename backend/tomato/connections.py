@@ -15,12 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil
 from django.db import models
 
 from tomato.topology import Topology
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes #@UnresolvedImport
 from tomato.lib.decorators import *
 from tomato import host
 
@@ -313,4 +312,4 @@ def create(el1, el2, attrs={}):
 	con.save()
 	return con
 
-from tomato import fault, currentUser, config
+from tomato import fault
