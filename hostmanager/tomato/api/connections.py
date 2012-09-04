@@ -95,7 +95,7 @@ def connection_action(id, action, params={}): #@ReservedAssignment
     """
     con = _getConnection(int(id))
     res = con.action(action, params)
-    return {} if res is None else res 
+    return res
 
 def connection_remove(id): #@ReservedAssignment
     """
@@ -113,7 +113,6 @@ def connection_remove(id): #@ReservedAssignment
     """
     con = _getConnection(int(id))
     con.remove()
-    return {}
 
 def connection_info(id): #@ReservedAssignment
     """

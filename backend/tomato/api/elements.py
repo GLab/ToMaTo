@@ -39,7 +39,6 @@ def element_action(id, action, params={}): #@ReservedAssignment
 def element_remove(id): #@ReservedAssignment
     el = _getElement(id)
     el.remove()
-    return {}
 
 def element_info(id): #@ReservedAssignment
     el = _getElement(id)

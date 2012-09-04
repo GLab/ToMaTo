@@ -49,6 +49,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	
 	DEFAULT_ATTRS = {}
 	
+	DOC=""
+	
 	class Meta:
 		pass
 
@@ -104,8 +106,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
+		self.checkRole(Role.manager)
 		fault.check(not self.isBusy(), "Object is busy")
-		self.checkPermission(Role.manager)
 		mcon = self.mainConnection()
 		direct = []
 		if self.DIRECT_ATTRS:
@@ -164,8 +166,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@param action: Action to check
 		@type action: str
 		"""
+		self.checkRole(Role.manager)
 		fault.check(not self.isBusy(), "Object is busy")
-		self.checkPermission(Role.manager)
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mcon = self.mainConnection()
 			if mcon and action in mcon.getAllowedActions():
@@ -211,6 +213,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.save()
 
 	def checkRemove(self):
+		self.checkRole(Role.manager)
 		fault.check(not self.isBusy(), "Object is busy")
 		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Connection can not be removed in its state %s", self.state)
 
@@ -307,6 +310,7 @@ def create(el1, el2, attrs={}):
 	fault.check(el1.CAP_CONNECTABLE, "Element #%d can not be connected", el1.id)
 	fault.check(el2.CAP_CONNECTABLE, "Element #%d can not be connected", el2.id)
 	fault.check(el1.topology == el2.topology, "Can only connect elements from same topology")
+	el1.topology.checkRole(Role.manager)	
 	con = Connection()
 	con.init(el1.topology, el1, el2, attrs)
 	con.save()

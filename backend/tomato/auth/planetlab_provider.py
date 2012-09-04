@@ -55,7 +55,9 @@ class Provider:
 					if not (set(self.site_filter) & set(sites)):
 						return False
 				roles = persons[0]["roles"]
-				return User(name = username, is_user = "user" in roles, is_admin = self.accept_admin and "admin" in roles)
+				if not "user" in roles:
+					return None
+				return User.create(name=username, admin=self.accept_admin and "admin" in roles)
 			except Exception, errormessage:
 				return False
 		except Exception, errormessage:

@@ -15,10 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from account import *
-from topology import *
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
+
+def _getAccount(name):
+    acc = currentUser()
+    if name:
+        fault.check(acc.hasFlag(Flags.Admin), "No permissions")
+        acc = getUser(name)
+    fault.check(acc, "No such user")
+
+def account_info(name=None):
+    acc = _getAccount(name)
+    return acc.info()
+
+def account_list():
+    return [acc.info() for acc in getAllUsers()]
+
+def account_modify(name=None, attrs={}):
+    acc = _getAccount(name)
+    acc.modify(attrs)
+        
+from tomato import fault, currentUser
+from tomato.auth import getUser, getAllUsers, Flags

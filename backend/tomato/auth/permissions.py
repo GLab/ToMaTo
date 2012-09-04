@@ -17,7 +17,7 @@
 
 from django.db import models
 
-from tomato.auth import User
+from tomato.auth import User, Flags
 from tomato import currentUser, fault
 
 class Role:
@@ -56,21 +56,35 @@ class PermissionEntry(models.Model):
         app_label = 'tomato'
         unique_together = (("user", "set"),)
     
+    
+    
+def _globalRole(user):
+    if user.hasFlag(Flags.GlobalOwner):
+        return Role.owner
+    if user.hasFlag(Flags.GlobalManager):
+        return Role.manager
+    if user.hasFlag(Flags.GlobalUser):
+        return Role.user
+    return Role.external
+    
+    
 
 class PermissionMixin:
     #permissions: Permissions
     
-    def getRole(self, username=None):
-        if not username:
-            username = currentUser()
+    def getRole(self, user=None):
+        if not user:
+            user = currentUser()
+        globalRole = _globalRole(user)
         try:
-            return self.permissions.entries.get(user=username).role 
+            role = self.permissions.entries.get(user=user).role
+            return role if Role.RANKING.index(globalRole) <= Role.RANKING.index(role) else globalRole
         except PermissionEntry.DoesNotExist:
-            return Role.external
+            return globalRole
     
-    def hasPermission(self, role=Role.user, *args, **kwargs):
+    def hasRole(self, role=Role.user, *args, **kwargs):
         r = self.getRole(*args, **kwargs)
         return Role.RANKING.index(r) <= Role.RANKING.index(role)        
     
-    def checkPermission(self, *args, **kwargs):
-        fault.check(self.hasPermission(*args, **kwargs), "Not enough permissions")
+    def checkRole(self, *args, **kwargs):
+        fault.check(self.hasRole(*args, **kwargs), "Not enough permissions")

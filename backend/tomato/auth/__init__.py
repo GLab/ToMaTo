@@ -18,7 +18,17 @@
 import time, atexit, datetime, crypt, string, random, sys, threading
 from django.db import models
 from tomato.lib import attributes, db #@UnresolvedImport
-from tomato import config
+from tomato import config, fault, currentUser
+
+class Flags:
+    Admin = "admin" # Can modify all accounts
+    GlobalOwner = "global_owner" # Owner for every topology
+    GlobalManager = "global_manager" # Manager for every topology
+    GlobalUser = "global_user" # User for every topology    
+    NoTopologyCreate = "no_topology_create" # Restriction on topology_create
+    OverQuota = "over_quota" # Restriction on actions start, prepare and upload_grant
+
+RESTRICTED_ATTRS = ["flags"]
 
 class User(attributes.Mixin, models.Model):
     name = models.CharField(max_length=255)
@@ -29,13 +39,21 @@ class User(attributes.Mixin, models.Model):
     
     realname = attributes.attribute("realname", str)
     email = attributes.attribute("email", str)
-    restrictions = attributes.attribute("restrictions", list, [])
+    flags = attributes.attribute("flags", list, [])
 
     class Meta:
         db_table = "tomato_user"
         app_label = 'tomato'
         unique_together = (("name", "origin"),)
         ordering=["name", "origin"]
+
+    @classmethod    
+    def create(cls, name, admin=False, **kwargs):
+        user = User(name=name)
+        user.attrs = kwargs
+        if admin:
+            user.flags = [Flags.Admin, Flags.GlobalUser]
+        return user
     
     def _saveAttributes(self):
         pass #disable automatic attribute saving
@@ -51,20 +69,34 @@ class User(attributes.Mixin, models.Model):
         self.password_time = datetime.datetime.now()
         self.save()
     
-    def hasRestriction(self, restriction):
-        return restriction in self.restrictions
+    def hasFlag(self, flag):
+        return flag in self.flags
     
-    def addRestriction(self, restriction):
-        if self.hasRestriction(restriction):
+    def addFlag(self, flag):
+        if self.hasFlag(flag):
             return
-        self.restrictions.append(restriction)
+        self.flags.append(flag)
         self.save()
         
-    def removeRestriction(self, restriction):
-        if not self.hasRestriction(restriction):
+    def removeFlag(self, flag):
+        if not self.hasFlag(flag):
             return
-        self.restrictions.remove(restriction)
+        self.flags.remove(flag)
         self.save()
+
+    def modify(self, attrs):
+        for key, value in attrs.iteritems():
+            fault.check(not key in RESTRICTED_ATTRS or currentUser().hasFlag(Flags.Admin), "No permission to change attribute %s", key)
+            self.attrs[key] = value
+        self.save()
+
+    def info(self):
+        info = {
+            "name": self.name,
+            "origin": self.origin,
+        }
+        info.update(self.attrs)
+        return info
         
     def __str__(self):
         return self.__unicode__()
@@ -86,6 +118,9 @@ def getUser(name):
             return User.objects.get(name=name)
     except User.DoesNotExist:
         return None
+
+def getAllUsers():
+    return User.objects.all()
 
 def cleanup():
     #FIXME: delete users that have timed out and are unreferenced

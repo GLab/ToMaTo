@@ -75,8 +75,10 @@ class Provider:
 		if not self._check_credentials(username, userdn, password):
 			return False
 		isUser = self._is_user(username, userdn)
+		if not isUser:
+			return None
 		isAdmin = self._is_admin(username, userdn)
-		return User(name = username, is_user = isUser, is_admin = isAdmin, email=email)
+		return User.create(name=username, is_user = isUser, is_admin = isAdmin, email=email)
 		
 	def _get_user(self, user):
 		"""

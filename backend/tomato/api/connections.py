@@ -24,10 +24,8 @@ def _getConnection(id_):
     return con
 
 def connection_create(el1, el2, attrs={}): #@ReservedAssignment
-    fault.check(el1 != el2, "Cannot connect element with itself")
     el1 = _getElement(el1)
     el2 = _getElement(el2)
-    fault.check(el1.topology == el2.topology, "Can only connect elements from same topology")
     con = connections.create(el1, el2, attrs)
     return con.info()
 
@@ -43,7 +41,6 @@ def connection_action(id, action, params={}): #@ReservedAssignment
 def connection_remove(id): #@ReservedAssignment
     con = _getConnection(id)
     con.remove()
-    return {}
 
 def connection_info(id): #@ReservedAssignment
     con = _getConnection(id)

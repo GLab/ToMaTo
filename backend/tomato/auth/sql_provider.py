@@ -62,10 +62,10 @@ class Provider:
 		cursor = connections[self.database].cursor()
 		cursor.execute(self.admin_query, {"username":username, "password":password})
 		if cursor.fetchone():
-			return User(name=username, is_admin=True)
+			return User.create(name=username, admin=True)
 		cursor.execute(self.user_query, {"username":username, "password":password})
 		if cursor.fetchone():
-			return User(name=username)
+			return User.create(name=username)
 		return False
 
 def init(**kwargs):

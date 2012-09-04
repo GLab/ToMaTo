@@ -19,6 +19,7 @@ import os, shutil
 from django.db import models
 
 from tomato.connections import Connection
+from tomato.auth import Flags
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
 from tomato.topology import Topology
 from tomato.lib import db, attributes, util #@UnresolvedImport
@@ -55,7 +56,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		pass
 
 	def init(self, topology, parent=None, attrs={}):
-		topology.checkPermission(Role.manager)
+		topology.checkRole(Role.manager)
 		if parent:
 			fault.check(parent.type in self.CAP_PARENT, "Parent type %s not allowed for type %s", (parent.type, self.type))
 			fault.check(self.type in parent.CAP_CHILDREN, "Parent type %s does not allow children of type %s", (parent.type, self.type))
@@ -122,8 +123,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
+		self.checkRole(Role.manager)
 		fault.check(not self.isBusy(), "Object is busy")
-		self.checkPermission(Role.manager)
 		mel = self.mainElement()
 		direct = []
 		if self.DIRECT_ATTRS:
@@ -182,8 +183,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@param action: Action to check
 		@type action: str
 		"""
+		self.checkRole(Role.manager)
+		if action in ["prepare", "start", "upload_grant"]:
+			fault.check(not currentUser().hasFlag(Flags.OverQuota), "Over quota")
 		fault.check(not self.isBusy(), "Object is busy")
-		self.checkPermission(Role.manager)
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
@@ -226,7 +229,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 
 	def checkRemove(self, recurse=True):
 		fault.check(not self.isBusy(), "Object is busy")
-		self.checkPermission(Role.owner)
+		self.checkRole(Role.manager)
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
 		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
 		for ch in self.getChildren():
@@ -286,7 +289,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		pass
 			
 	def info(self):
-		self.checkPermission(Role.user)
+		self.checkRole(Role.user)
 		info = {
 			"id": self.id,
 			"type": self.type,
@@ -313,6 +316,7 @@ def getAll(**kwargs):
 	return (el.upcast() for el in Element.objects.filter(**kwargs))
 
 def create(top, type_, parent=None, attrs={}):
+	top.topology.checkRole(Role.manager)	
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	el = TYPES[type_]()
 	el.init(top, parent, attrs)

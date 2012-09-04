@@ -20,7 +20,7 @@ from tomato import elements, connections
 def docs():
     return {
         "elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
-        "connections": dict([(name, cls.DOC) for name, cls in connections.TYPES.iteritems()]),
+        "connections": {"default": connections.Connection.DOC},
     }
 
 def _docFn(docstr):

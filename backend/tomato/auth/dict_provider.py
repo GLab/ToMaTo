@@ -53,9 +53,9 @@ class Provider:
 		if self.hash:
 			password = self._hash(self.hash, password)
 		if username in self.users and self.users[username] == password:
-			return User(name=username, is_admin=True)
+			return User.create(name=username, admin=True)
 		if username in self.admins and self.admins[username] == password:
-			return User(name=username)
+			return User.create(name=username)
 		return False
 
 def init(**kwargs):

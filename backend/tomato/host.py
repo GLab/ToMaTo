@@ -16,8 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import config
+from tomato import config, currentUser
 from tomato.lib import attributes, db, rpc, util #@UnresolvedImport
+from tomato.auth import Flags
 import xmlrpclib
 
 class Site(attributes.Mixin, models.Model):

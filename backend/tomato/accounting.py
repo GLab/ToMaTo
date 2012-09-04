@@ -23,10 +23,8 @@ from datetime import datetime, timedelta
 from tomato.lib import db, attributes, util #@UnresolvedImport
 from tomato.lib.decorators import *
 
-# storage needs:
-# <100 bytes per record
-# <100 records per object
-# -> <10 kb per object
+# TODO: fetch usage records from hosts and store them in hostelements/hostconnections
+# TODO: aggregate usage records for each object, topology and each user
 
 TYPES = ["single", "5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {
@@ -111,16 +109,11 @@ class UsageStatistics(attributes.Mixin, models.Model):
     def remove(self):
         self.delete()    
     
-    def info(self, after=None, before=None):
-        return dict([(t, [r.info() for r in self.getRecords(t, after, before)]) for t in TYPES])
+    def info(self):
+        return dict([(t, [r.info() for r in self.getRecords(t)]) for t in TYPES])
        
-    def getRecords(self, type_, after=None, before=None):
-        all_ = self.records.filter(type=type_)
-        if after:
-            all_ = all_.filter(end__gte=after)
-        if before:
-            all_ = all_.filter(begin__lte=before)
-        return all_
+    def getRecords(self, type_):
+        return self.records.filter(type=type_)
        
     def createRecord(self, type_, begin, end, measurements, usage):
         record = UsageRecord()

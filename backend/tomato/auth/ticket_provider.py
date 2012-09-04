@@ -52,9 +52,9 @@ class Provider:
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		if self.admin_secret and self._hash(self.hash, username + self.admin_secret) == password:
-			return User(name=username, is_admin=True)
+			return User.create(name=username, admin=True)
 		if self.user_secret and self._hash(self.hash, username + self.user_secret) == password:
-			return User(name=username)
+			return User.create(name=username)
 		return False
 
 def init(**kwargs):

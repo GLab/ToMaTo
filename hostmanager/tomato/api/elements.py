@@ -95,7 +95,7 @@ def element_action(id, action, params={}): #@ReservedAssignment
     """
     el = _getElement(int(id))
     res = el.action(action, params)
-    return {} if res is None else res 
+    return res 
 
 def element_remove(id, recurse=True): #@ReservedAssignment
     """
@@ -117,7 +117,6 @@ def element_remove(id, recurse=True): #@ReservedAssignment
     """
     el = _getElement(int(id))
     el.remove(recurse)
-    return {}
 
 def element_info(id): #@ReservedAssignment
     """

@@ -47,7 +47,7 @@ class Provider:
 		hashedPassword = lines[0][1]
 		if not hashedPassword == crypt.crypt(password, hashedPassword[:2]):
 			return None
-		return User(name = username, is_admin = (self.admin_user != None and username == self.admin_user))
+		return User.create(name=username, admin=(self.admin_user != None and username == self.admin_user))
 	
 def init(**kwargs):
 	return Provider(**kwargs)

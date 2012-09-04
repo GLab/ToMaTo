@@ -23,9 +23,9 @@ class Provider:
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		if username==self.admin_user:
-			return User(name=username, is_admin=True)
+			return User.create(name=username, admin=True)
 		else:
-			return User(name=username)
+			return User.create(name=username)
 
 def init(**kwargs):
 	return Provider(**kwargs)

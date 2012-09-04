@@ -21,35 +21,32 @@ def _getTopology(id_):
     return top
 
 def topology_create():
-    #TODO: check permissions
     return topology.create().info()
 
 def topology_remove(id): #@ReservedAssignment
     top = _getTopology(id)
-    #TODO: check permissions
     top.remove()
-    return {}
 
 def topology_modify(id, attrs): #@ReservedAssignment
     top = _getTopology(id)
-    #TODO: check permissions
     top.modify(attrs)
     return top.info()
 
 def topology_action(id, action, params={}): #@ReservedAssignment
     top = _getTopology(id)
-    #TODO: check permissions
     return top.action(action, params)
 
 def topology_info(id, full=False): #@ReservedAssignment
     top = _getTopology(id)
-    #TODO: check permissions
     return top.info(full)
 
 def topology_list(full=False): #@ReservedAssignment
     tops = topology.getAll()
-    #TODO: check permissions
-    return [top.info(full) for top in tops]
+    return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
+def topology_permission(id, user, role): #@ReservedAssignment
+    top = _getTopology(id)
+    top.setRole(user, role)
+    
 
 from tomato import fault, topology

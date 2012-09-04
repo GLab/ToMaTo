@@ -17,8 +17,8 @@
 
 from django.db import models
 from tomato.lib import attributes, db #@UnresolvedImport
-
-from tomato.auth.permissions import Permissions, PermissionMixin
+from tomato.auth import Flags
+from tomato.auth.permissions import Permissions, PermissionMixin, Role
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
     permissions = models.ForeignKey(Permissions, null=False)
@@ -62,6 +62,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         @param attrs: Attributes to change
         @type attrs: dict
         """
+        self.checkRole(Role.manager)
         fault.check(not self.isBusy(), "Object is busy")
         for key in attrs.keys():
             fault.check(key in self.CAP_ATTRS, "Unsupported attribute for topology: %s", key)
@@ -98,6 +99,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         @param action: Action to check
         @type action: str
         """
+        self.checkRole(Role.manager)
         fault.check(not self.isBusy(), "Object is busy")
         fault.check(action in self.CAP_ACTIONS, "Unsupported action for topology: %s", action)
     
@@ -126,6 +128,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         return res
 
     def checkRemove(self, recurse=True):
+        self.checkRole(Role.owner)
         fault.check(not self.isBusy(), "Object is busy")
         fault.check(recurse or self.elements.exists(), "Cannot remove topology with elements")
         fault.check(recurse or self.connections.exists(), "Cannot remove topology with connections")
@@ -147,7 +150,13 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
     def modify_name(self, val):
         self.name = val
             
+    def setRole(self, user, role):
+        fault.check(role in Role.RANKING, "Role must be one of %s", Role.RANKING)
+        self.checkRole(Role.owner)
+        self.flags.set(user, role)
+            
     def info(self, full=False):
+        self.checkRole(Role.user)
         if full:
             elements = [el.info() for el in self.getElements()]
             connections = [con.info() for con in self.getConnections()]
@@ -157,6 +166,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         return {
             "id": self.id,
             "attrs": self.attrs,
+            "permissions": dict([(p.user.name, p.role) for p in self.permissions.entries.all()]),
             "elements": elements,
             "connections": connections,
         }
@@ -171,6 +181,7 @@ def getAll(**kwargs):
     return list(Topology.objects.filter(**kwargs))
 
 def create(attrs={}):
+    fault.check(not currentUser().hasFlag(Flags.NoTopologyCreate), "User can not create new topologies")
     top = Topology()
     top.init(owner=currentUser())
     return top
