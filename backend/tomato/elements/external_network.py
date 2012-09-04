@@ -42,6 +42,7 @@ class External_Network(elements.Element):
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
+	CAP_CONNECTABLE = True
 
 	class Meta:
 		db_table = "tomato_external_network"
@@ -66,7 +67,11 @@ class External_Network(elements.Element):
 
 	def onError(self, exc):
 		if self.element:
-			self.element.updateInfo()
+			try:
+				self.element.updateInfo()
+			except fault.XMLRPCError, exc:
+				if exc.faultCode == fault.UNKNOWN_OBJECT:
+					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
 				if self.element:

@@ -90,7 +90,11 @@ class VMElement(elements.Element):
 
 	def onError(self, exc):
 		if self.element:
-			self.element.updateInfo()
+			try:
+				self.element.updateInfo()
+			except fault.XMLRPCError, exc:
+				if exc.faultCode == fault.UNKNOWN_OBJECT:
+					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
 				if self.element:
@@ -140,6 +144,7 @@ class VMInterface(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
 	}
 	CAP_CHILDREN = {}
+	CAP_CONNECTABLE = True
 	
 	class Meta:
 		abstract = True

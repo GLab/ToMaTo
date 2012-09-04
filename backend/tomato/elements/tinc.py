@@ -114,7 +114,7 @@ class Tinc_VPN(elements.Element):
 
 	def action_start(self):
 		for ch in self.getChildren():
-			if ch.state == ST_STARTED:
+			if ch.state == ST_PREPARED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
@@ -151,6 +151,7 @@ class Tinc_Endpoint(elements.Element):
 	TYPE = "tinc_endpoint"
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_CHILDREN = {}
+	CAP_CONNECTABLE = True
 	
 	class Meta:
 		db_table = "tomato_tinc_endpoint"
@@ -185,7 +186,11 @@ class Tinc_Endpoint(elements.Element):
 
 	def onError(self, exc):
 		if self.element:
-			self.element.updateInfo()
+			try:
+				self.element.updateInfo()
+			except fault.XMLRPCError, exc:
+				if exc.faultCode == fault.UNKNOWN_OBJECT:
+					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
 				if self.element:

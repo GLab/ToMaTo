@@ -20,9 +20,6 @@ import os, sys
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: compatibility with 1.8
-#TODO: import of existing elements
-#TODO: test suite
 #TODO: debian package
 
 

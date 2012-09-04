@@ -17,6 +17,8 @@
 
 import xmlrpclib
 
+XMLRPCError = xmlrpclib.Error
+
 class Fault(xmlrpclib.Fault):
 	def __str__ (self):
 		return "Error %s: %s" % (self.faultCode, self.faultString)

@@ -98,6 +98,7 @@ class Usage:
         data[lastName] = value
     
 class UsageStatistics(attributes.Mixin, models.Model):
+    begin = models.DateTimeField(auto_now_add=True)
     #records: [UsageRecord]
     attrs = db.JSONField()
     
@@ -145,6 +146,10 @@ class UsageStatistics(attributes.Mixin, models.Model):
         lastType = TYPES[0]
         for type_ in TYPES[1:]:
             begin, end = _lastRange(type_)
+            if self.begin > begin:
+                begin = self.begin
+            if self.begin > end:
+                break
             if self.records.filter(type=type_, begin=begin, end=end).exists():
                 break
             records = self.records.filter(type=lastType, begin__gte=begin, end__lte=end)

@@ -42,7 +42,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = []
-	CUSTOM_ACTIONS = {"start": [ST_CREATED], "stop": [ST_STARTED]}
+	CUSTOM_ACTIONS = {"start": [ST_CREATED], "stop": [ST_STARTED], REMOVE_ACTION: [ST_CREATED]}
 	
 	DIRECT_ATTRS = True
 	DIRECT_ATTRS_EXCLUDE = []
@@ -53,9 +53,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	class Meta:
 		pass
 
-	def init(self, el1, el2, attrs={}):
-		fault.check(self.canConnect(el1, el2))
+	def init(self, topology, el1, el2, attrs={}):
+		self.topology = topology
+		self.permissions = topology.permissions
 		self.attrs = dict(self.DEFAULT_ATTRS)
+		self.state = ST_CREATED
 		self.save()
 		self.elements.add(el1)
 		self.elements.add(el2)
@@ -300,10 +302,14 @@ def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
 def create(el1, el2, attrs={}):
+	fault.check(el1 != el2, "Cannot connect element with itself")	
 	fault.check(not el1.connection, "Element #%d is already connected", el1.id)
 	fault.check(not el2.connection, "Element #%d is already connected", el2.id)
+	fault.check(el1.CAP_CONNECTABLE, "Element #%d can not be connected", el1.id)
+	fault.check(el2.CAP_CONNECTABLE, "Element #%d can not be connected", el2.id)
+	fault.check(el1.topology == el2.topology, "Can only connect elements from same topology")
 	con = Connection()
-	con.init(el1, el2, attrs)
+	con.init(el1.topology, el1, el2, attrs)
 	con.save()
 	return con
 
