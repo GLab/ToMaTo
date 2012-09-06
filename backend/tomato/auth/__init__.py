@@ -17,11 +17,12 @@
 
 import time, atexit, datetime, crypt, string, random, sys, threading
 from django.db import models
-from tomato.lib import attributes, db #@UnresolvedImport
+from tomato.lib import attributes, db, logging #@UnresolvedImport
 from tomato import config, fault, currentUser
 
 class Flags:
     Admin = "admin" # Can modify all accounts
+    Debug = "debug" # Can see everything
     HostsManager = "hosts_manager" # Can manage all hosts and sites
     GlobalOwner = "global_owner" # Owner for every topology
     GlobalManager = "global_manager" # Manager for every topology
@@ -75,17 +76,20 @@ class User(attributes.Mixin, models.Model):
     
     def addFlag(self, flag):
         if self.hasFlag(flag):
-            return
+            return        
+        logging.logMessage("add_flag", category="user", name=self.name, origin=self.origin, flag=flag)    
         self.flags.append(flag)
         self.save()
         
     def removeFlag(self, flag):
         if not self.hasFlag(flag):
             return
+        logging.logMessage("remove_flag", category="user", name=self.name, origin=self.origin, flag=flag)    
         self.flags.remove(flag)
         self.save()
 
     def modify(self, attrs):
+        logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)    
         for key, value in attrs.iteritems():
             fault.check(not key in RESTRICTED_ATTRS or currentUser().hasFlag(Flags.Admin), "No permission to change attribute %s", key)
             self.attrs[key] = value
@@ -126,6 +130,7 @@ def getAllUsers():
 def cleanup():
     #FIXME: delete users that have timed out and are unreferenced
     for user in User.objects.filter(password_time__lte = datetime.datetime.now() - timeout):
+        logging.logMessage("password cache timeout", category="auth", user=user.name)
         user.password = None
         user.password_time = None
         user.save()
@@ -135,9 +140,9 @@ def provider_login(username, password):
         user = prov.login(username, password)
         if user:
             user.origin = prov.name
-            print "Successfull login: %s" % user
+            logging.logMessage("successful login", category="auth", user=user.name, origin=user.origin)
             return user
-    print "Failed login: %s" % username
+    logging.logMessage("failed login", category="auth", user=username)
     return None
 
 def login(username, password):

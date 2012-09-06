@@ -19,12 +19,13 @@ from django.db import models
 import random, sys
 
 from tomato import fault
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 
 TYPES = {}
 
 def give(type_, num, owner):
+    logging.logMessage("instance_return", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
     if isinstance(owner, Element):
         instance = ResourceInstance.objects.get(type=type_, num=num, ownerElement=owner)
     elif isinstance(owner, Connection):
@@ -47,6 +48,7 @@ def take(type_, owner):
         try:
             instance = ResourceInstance()
             instance.init(type_, num, owner)
+            logging.logMessage("instance_take", category="resource", type=type_, num=num, owner=(owner.__class__.__name__.lower(), owner.id))
             return num
         except:
             pass
@@ -83,11 +85,13 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
     
     def modify(self, attrs):
+        logging.logMessage("modify", category="resource", type=self.type, id=self.id, attrs=attrs)
         for key, value in attrs.iteritems():
             if hasattr(self, "modify_%s" % key):
                 getattr(self, "modify_%s" % key)(value)
             else:
                 self.attrs[key] = value
+        logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
         self.save()
     
     def modify_num_start(self, val):
@@ -97,6 +101,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         self.numCount = val
 
     def remove(self):
+        logging.logMessage("info", category="resource", type=self.type, id=self.id, info=self.info())
+        logging.logMessage("remove", category="resource", type=self.type, id=self.id)
         self.delete()    
     
     def info(self):
@@ -156,6 +162,8 @@ def create(type_, attrs={}):
         res = Resource(type=type_)
     res.init(attrs)
     res.save()
+    logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
+    logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())
     return res
 
 def init():

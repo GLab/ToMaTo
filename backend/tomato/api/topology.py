@@ -49,5 +49,9 @@ def topology_permission(id, user, role): #@ReservedAssignment
     user = _getAccount(user)
     top.setRole(user, role)
     
+def topology_usage(id): #@ReservedAssignment
+    top = _getTopology(id)
+    return top.totalUsage.info()    
+    
 from account import _getAccount
 from tomato import fault, topology

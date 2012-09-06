@@ -16,17 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato.lib import attributes, db #@UnresolvedImport
+from tomato.lib import attributes, db, logging #@UnresolvedImport
+from tomato.accounting import UsageStatistics
 from tomato.auth import Flags
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
     permissions = models.ForeignKey(Permissions, null=False)
+    totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+    oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
     attrs = db.JSONField()
     name = attributes.attribute("name", str)
     
     DOC = ""
-    CAP_ACTIONS = []
+    CAP_ACTIONS = ["prepare", "destroy", "start", "stop"]
     CAP_ATTRS = ["name"]
     
     class Meta:
@@ -36,6 +39,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         self.attrs = {}
         self.permissions = Permissions.objects.create()
         self.permissions.set(owner, "owner")
+        self.oldUsage = UsageStatistics.objects.create()
+        self.totalUsage = UsageStatistics.objects.create()
         self.save()
         self.name = "Topology #%d" % self.id
         self.modify(attrs)
@@ -82,6 +87,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         @type attrs: dict
         """        
         self.checkModify(attrs)
+        logging.logMessage("modify", category="topology", id=self.id, attrs=attrs)
         self.setBusy(True)
         try:
             for key, value in attrs.iteritems():
@@ -89,6 +95,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         finally:
             self.setBusy(False)
         self.save()
+        logging.logMessage("info", category="topology", id=self.id, info=self.info())            
+        
     
     def checkAction(self, action):
         """
@@ -119,13 +127,52 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         @type params: dict
         """
         self.checkAction(action)
+        logging.logMessage("action start", category="topology", id=self.id, action=action, params=params)
         self.setBusy(True)
         try:
             res = getattr(self, "action_%s" % action)(**params)
         finally:
             self.setBusy(False)
         self.save()
+        logging.logMessage("action end", category="topology", id=self.id, action=action, params=params, res=res)
+        logging.logMessage("info", category="topology", id=self.id, info=self.info())            
         return res
+
+    def action_prepare(self):
+        self._compoundAction(action="prepare", stateFilter=lambda state: state=="created", 
+                             typeOrder=["external_network", "kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint"],
+                             typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+    
+    def action_destroy(self):
+        self.action_stop()
+        self._compoundAction(action="destroy", stateFilter=lambda state: state=="prepared",
+                             typeOrder=["tinc_vpn", "udp_endpoint", "external_network", "kvmqm", "openvz", "repy"],
+                             typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+    
+    def action_start(self):
+        self.action_prepare()
+        self._compoundAction(action="start", stateFilter=lambda state: state!="started",
+                             typeOrder=["tinc_vpn", "udp_endpoint", "external_network", "kvmqm", "openvz", "repy"],
+                             typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+        
+    
+    def action_stop(self):
+        self._compoundAction(action="stop", stateFilter=lambda state: state=="started", 
+                             typeOrder=["kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
+                             typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
+
+    def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
+        # execute action in order
+        for type_ in typeOrder:
+            for el in self.getElements():
+                if el.type != type_ or not stateFilter(el.state) or el.type in typesExclude:
+                    continue
+                el.action(action)
+        # execute action on rest
+        for el in self.getElements():
+            if not stateFilter(el.state) or el.type in typesExclude:
+                continue
+            el.action(action)
 
     def checkRemove(self, recurse=True):
         self.checkRole(Role.owner)
@@ -139,7 +186,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
     def remove(self, recurse=True):
         self.checkRemove(recurse)
+        logging.logMessage("info", category="topology", id=self.id, info=self.info())
+        logging.logMessage("remove", category="topology", id=self.id)
         self.permissions.delete()
+        self.totalUsage.delete()
+        self.oldUsage.delete()
         self.delete()
 
     def getElements(self):
@@ -154,10 +205,12 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
     def setRole(self, user, role):
         fault.check(role in Role.RANKING, "Role must be one of %s", Role.RANKING)
         self.checkRole(Role.owner)
+        logging.logMessage("permission", category="topology", id=self.id, user=user.name, role=role)
         self.permissions.set(user, role)
             
     def info(self, full=False):
-        self.checkRole(Role.user)
+        if not currentUser().hasFlag(Flags.Debug):
+            self.checkRole(Role.user)
         if full:
             elements = [el.info() for el in self.getElements()]
             connections = [con.info() for con in self.getConnections()]
@@ -172,6 +225,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
             "connections": connections,
         }
         
+    def updateUsage(self, now):
+        self.totalUsage.updateFrom(now, [el.totalUsage for el in self.getElements()]
+                                 + [con.totalUsage for con in self.getConnections()])
+
+
 def get(id_, **kwargs):
     try:
         return Topology.objects.get(id=id_, **kwargs)
@@ -185,6 +243,8 @@ def create(attrs={}):
     fault.check(not currentUser().hasFlag(Flags.NoTopologyCreate), "User can not create new topologies")
     top = Topology()
     top.init(owner=currentUser())
+    logging.logMessage("create", category="topology", id=top.id)    
+    logging.logMessage("info", category="topology", id=top.id, info=top.info())    
     return top
 
 from tomato import fault, currentUser

@@ -15,13 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, sys, atexit
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
 #TODO: collect accounting info
-#TODO: stitching elements
 #TODO: smart host selection
 #TODO: host resource management
 #TODO: debian package
@@ -57,7 +56,6 @@ def login(credentials, sslCert):
 	setCurrentUser(user)
 	return user
 
-
 from models import *
 	
 if not config.MAINTENANCE:
@@ -65,16 +63,20 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, host #@UnresolvedImport
+from tomato import lib, resources, host, accounting #@UnresolvedImport
 from tomato.auth import login as authenticate
 from tomato.lib.cmd import bittorrent #@UnresolvedImport
+from tomato.lib import logging #@UnresolvedImport
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver
 
 
 if not config.MAINTENANCE:
+	logging.openDefault(config.LOG_DIR)
+	atexit.register(logging.closeDefault)
 	resources.init()
 	host.task.start() #@UndefinedVariable
+	accounting.task.start() #@UndefinedVariable
 	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	bittorrent.startClient(config.TEMPLATE_PATH)

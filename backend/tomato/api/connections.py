@@ -46,3 +46,6 @@ def connection_info(id): #@ReservedAssignment
     con = _getConnection(id)
     return con.info()
     
+def connection_usage(id): #@ReservedAssignment
+    con = _getConnection(id)
+    return con.totalUsage.info()

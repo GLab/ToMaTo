@@ -30,7 +30,6 @@ encoding//tomato/lib/cmd/tc.py=utf-8
 encoding//tomato/lib/db.py=utf-8
 encoding//tomato/lib/decorators.py=utf-8
 encoding//tomato/lib/ipfw.py=utf-8
-encoding//tomato/lib/log.py=utf-8
 encoding//tomato/lib/rpc.py=utf-8
 encoding//tomato/lib/util.py=utf-8
 encoding//tomato/log.py=utf-8

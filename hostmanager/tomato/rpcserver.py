@@ -20,17 +20,11 @@
 import xmlrpclib, sys, traceback
 
 import tomato.config
-from tomato import fault
-from tomato.lib import db, util, rpc, log #@UnresolvedImport
-
-
-logger = log.Logger(tomato.config.LOG_DIR + "/api.log")
+from tomato import fault, currentUser
+from tomato.lib import db, util, rpc, logging #@UnresolvedImport
 
 def logCall(function, args, kwargs):
-	if len(str(args)) < 50:
-		logger.log("%s%s" %(function.__name__, args))
-	else:
-		logger.log(function.__name__, bigmessage=str(args)+"\n")
+	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser())
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
@@ -40,7 +34,7 @@ def handleError(error, function, args, kwargs):
 		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
 			# not a wrong API call
 			fault.errors_add(error, traceback.format_exc())
-			logger.log("Exception: %s" % error)
+		logging.logException()
 		return fault.wrap(error)
 
 @db.commit_after

@@ -17,9 +17,10 @@
 
 from django.db import models
 from tomato import config, currentUser
-from tomato.lib import attributes, db, rpc, util #@UnresolvedImport
+from accounting import UsageStatistics
+from tomato.lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from tomato.auth import Flags
-import xmlrpclib
+import xmlrpclib, time
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
@@ -46,6 +47,7 @@ def getAllSites(**kwargs):
     
 def createSite(name, description=""):
     fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+    logging.logMessage("create", category="site", name=name, description=description)        
     return Site.objects.create(name=name, description=description)
 
 
@@ -62,6 +64,7 @@ class Host(attributes.Mixin, models.Model):
     elementTypes = attributes.attribute("element_types", dict, {})
     connectionTypes = attributes.attribute("connection_types", dict, {})
     hostInfo = attributes.attribute("info", dict, {})
+    accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
     
     class Meta:
         pass
@@ -101,6 +104,7 @@ class Host(attributes.Mixin, models.Model):
         assert not parent or parent.host == self
         el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
         hel = HostElement(host=self, num=el["id"])
+        hel.usageStatistics = UsageStatistics.objects.create()
         hel.attrs = el
         hel.save()
         return hel
@@ -113,6 +117,7 @@ class Host(attributes.Mixin, models.Model):
         assert hel2.host == self
         con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
         hcon = HostConnection(host=self, num=con["id"])
+        hcon.usageStatistics = UsageStatistics.objects.create()
         hcon.attrs = con
         hcon.save()
         return hcon
@@ -124,6 +129,7 @@ class Host(attributes.Mixin, models.Model):
         return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
     
     def synchronizeResources(self):
+        logging.logMessage("resource_sync begin", category="host", address=self.address)        
         #TODO: implement for other resources
         from tomato import resources
         hostTpls = {}
@@ -141,6 +147,30 @@ class Host(attributes.Mixin, models.Model):
                 hTpl = hostTpls[key]
                 #update resource
                 self.getProxy().resource_modify(hTpl["id"], attrs)
+        logging.logMessage("resource_sync end", category="host", address=self.address)        
+
+    def updateAccountingData(self, now):
+        logging.logMessage("accounting_sync begin", category="host", address=self.address)        
+        data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp-900)
+        for el in self.elements.all():
+            if not el.usageStatistics:
+                el.usageStatistics = UsageStatistics.objects.create()
+                el.save()
+            if not str(el.num) in data["elements"]:
+                print "Missing accounting data for element #%d on host %s" % (el.num, self.address)
+                continue
+            el.updateAccountingData(data["elements"][str(el.num)])
+        for con in self.connections.all():
+            if not con.usageStatistics:
+                con.usageStatistics = UsageStatistics.objects.create()
+                con.save()
+            if not str(con.num) in data["connections"]:
+                print "Missing accounting data for connection #%d on host %s" % (con.num, self.address)
+                continue
+            con.updateAccountingData(data["connections"][str(con.num)])
+        self.accountingTimestamp=now
+        self.save()
+        logging.logMessage("accounting_sync end", category="host", address=self.address)        
     
     def info(self):
         return {
@@ -156,6 +186,7 @@ class Host(attributes.Mixin, models.Model):
 class HostElement(attributes.Mixin, models.Model):
     host = models.ForeignKey(Host, null=False, related_name="elements")
     num = models.IntegerField(null=False) #not id, since this is reserved
+    usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
     attrs = db.JSONField()
     connection = attributes.attribute("connection", int)
     state = attributes.attribute("state", str)
@@ -185,6 +216,7 @@ class HostElement(attributes.Mixin, models.Model):
         except xmlrpclib.Fault, f:
             if f.faultCode != fault.UNKNOWN_OBJECT:
                 raise
+        self.usageStatistics.delete()
         self.delete()
 
     def getConnection(self):
@@ -215,10 +247,26 @@ class HostElement(attributes.Mixin, models.Model):
             if self.state in states:
                 res.append(key)
         return res
+    
+    def updateAccountingData(self, data):
+        self.usageStatistics.importRecords(data)
+        self.usageStatistics.removeOld()
+        
+    def getOwner(self):
+        from tomato import elements, connections
+        for el in elements.getAll():
+            if self in el.getHostElements():
+                return ("element", el.id)
+        for con in connections.getAll():
+            if self in el.getHostElements():
+                return ("connection", con.id)
+        return (None, None)
+
         
 class HostConnection(attributes.Mixin, models.Model):
     host = models.ForeignKey(Host, null=False, related_name="connections")
     num = models.IntegerField(null=False) #not id, since this is reserved
+    usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
     attrs = db.JSONField()
     elements = attributes.attribute("elements", list)
     state = attributes.attribute("state", str)
@@ -242,6 +290,7 @@ class HostConnection(attributes.Mixin, models.Model):
         except xmlrpclib.Fault, f:
             if f.faultCode != fault.UNKNOWN_OBJECT:
                 raise
+        self.usageStatistics.delete()
         self.delete()
         
     def getElements(self):
@@ -273,9 +322,24 @@ class HostConnection(attributes.Mixin, models.Model):
                 res.append(key)
         return res
   
-def get(id_, **kwargs):
+    def updateAccountingData(self, data):
+        self.usageStatistics.importRecords(data)
+        self.usageStatistics.removeOld()
+
+    def getOwner(self):
+        from tomato import elements, connections
+        for el in elements.getAll():
+            if self in el.getHostConnections():
+                return ("element", el.id)
+        for con in connections.getAll():
+            if self in el.getHostConnections():
+                return ("connection", con.id)
+        return (None, None)
+
+
+def get(**kwargs):
     try:
-        return Host.objects.get(id=id_, **kwargs)
+        return Host.objects.get(**kwargs)
     except Host.DoesNotExist:
         return None
 
@@ -287,6 +351,7 @@ def create(address, site, attrs={}):
     host = Host(address=address, site=site)
     host.init(attrs)
     host.save()
+    logging.logMessage("create", category="host", info=host.info())        
     return host
 
 def select(site=None, elementTypes=[], connectionTypes=[]):
@@ -334,8 +399,10 @@ def synchronize():
         try:
             host.synchronizeResources()
         except:
+            import traceback
+            traceback.print_exc()
             pass #needs admin permissions that might lack 
 
-task = util.RepeatedTimer(1800, synchronize) #every 30 mins
+task = util.RepeatedTimer(600, synchronize) #every 10 mins
 
 from tomato import fault

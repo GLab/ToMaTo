@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, sys, atexit
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
@@ -69,8 +69,11 @@ from rpcserver import stop as stopRPCserver
 from lib.cmd.fileserver import start as startFileserver #@UnresolvedImport
 from lib.cmd.fileserver import stop as stopFileserver #@UnresolvedImport
 from lib.cmd import bittorrent #@UnresolvedImport
+from lib import logging #@UnresolvedImport
 
 if not config.MAINTENANCE:
+	logging.openDefault(config.LOG_DIR)
+	atexit.register(logging.closeDefault)
 	resources.init()
 	accounting.task.start() #@UndefinedVariable
 	bittorrent.startClient(config.TEMPLATE_DIR)

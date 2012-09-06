@@ -19,7 +19,7 @@ import os, shutil
 from django.db import models
 
 from tomato.accounting import UsageStatistics
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 
 TYPES = {}
@@ -184,6 +184,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
+		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)
 		self.setBusy(True)
 		try:
 			for key, value in attrs.iteritems():
@@ -191,6 +192,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		finally:
 			self.setBusy(False)				
 		self.save()
+		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 	
 	def checkAction(self, action):
 		"""
@@ -221,6 +223,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		@type params: dict
 		"""
 		self.checkAction(action)
+		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
 		self.setBusy(True)
 		try:
 			res = getattr(self, "action_%s" % action)(**params)
@@ -229,6 +232,8 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.save()
 		if action in self.CAP_NEXT_STATE:
 			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)		
+		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
+		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 		return res
 
 	def setState(self, state, dummy=None):
@@ -241,6 +246,8 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 
 	def remove(self):
 		self.checkRemove()
+		logging.logMessage("info", category="connection", id=self.id, info=self.info())
+		logging.logMessage("remove", category="connection", id=self.id)
 		self.elements.clear() #Important, otherwise elements will be deleted
 		self.delete()
 		if os.path.exists(self.dataPath()):
@@ -281,13 +288,16 @@ def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
 def create(el1, el2, type_=None, attrs={}):
+	fault.check(not el1.connection, "Element #%d is already connected", el1.id)
+	fault.check(not el2.connection, "Element #%d is already connected", el2.id)
+	fault.check(el1.owner == el2.owner == currentUser(), "Element belongs to different user")
 	if type_:
 		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
-		fault.check(not el1.connection, "Element #%d is already connected", el1.id)
-		fault.check(not el2.connection, "Element #%d is already connected", el2.id)
 		con = TYPES[type_]()
 		con.init(el1, el2, attrs)
 		con.save()
+		logging.logMessage("create", category="connection", id=con.id)	
+		logging.logMessage("info", category="connection", id=con.id, info=con.info())	
 		return con
 	else:
 		for type_ in TYPES:

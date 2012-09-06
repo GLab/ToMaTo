@@ -25,6 +25,11 @@ def _getSite(name):
     fault.check(s, "Site with name %s does not exist", name)
     return s
 
+def _getHost(address):
+    h = host.get(address=address)
+    fault.check(h, "Host with address %s does not exist", address)
+    return h
+
 def site_create(name, description=""):
     #TODO: check permissions
     s = host.createSite(name, description)
@@ -42,5 +47,21 @@ def host_create(address, site, attrs={}):
 def host_list(site_filter=None):
     hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
     return [h.info() for h in hosts]
+
+def host_element_owner(hostname, num):
+    h = _getHost(hostname)
+    try:
+        hel = h.getElement(num)
+    except host.HostElement.DoesNotExist:
+        fault.raise_("Host element %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
+    return hel.getOwner()
+
+def host_connection_owner(hostname, num):
+    h = _getHost(hostname)
+    try:
+        hcon = h.getConnection(num)
+    except host.HostConnection.DoesNotExist:
+        fault.raise_("Host connection %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
+    return hcon.getOwner()
 
 from tomato import host, fault, config

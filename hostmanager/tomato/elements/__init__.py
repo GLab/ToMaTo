@@ -20,7 +20,7 @@ from django.db import models
 
 from tomato.connections import Connection
 from tomato.accounting import UsageStatistics, Usage
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 from tomato import config
 
@@ -141,6 +141,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
+		logging.logMessage("modify", category="element", id=self.id, attrs=attrs)
 		self.setBusy(True)
 		try:
 			for key, value in attrs.iteritems():
@@ -148,6 +149,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		finally:
 			self.setBusy(False)				
 		self.save()
+		logging.logMessage("info", category="element", id=self.id, info=self.info())			
 	
 	def checkAction(self, action):
 		"""
@@ -178,6 +180,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		@type params: dict
 		"""
 		self.checkAction(action)
+		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
 		self.setBusy(True)
 		try:
 			res = getattr(self, "action_%s" % action)(**params)
@@ -186,6 +189,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.save()
 		if action in self.CAP_NEXT_STATE:
 			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)
+		logging.logMessage("action end", category="element", id=self.id, action=action, params=params, res=res)
+		logging.logMessage("info", category="element", id=self.id, info=self.info())			
 		return res
 
 	def checkRemove(self, recurse=True):
@@ -206,6 +211,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
+		logging.logMessage("info", category="element", id=self.id, info=self.info())
+		logging.logMessage("remove", category="element", id=self.id)
 		if self.parent:
 			self.getParent().onChildRemoved(self)
 		for ch in self.getChildren():
@@ -269,11 +276,14 @@ def getAll(**kwargs):
 
 def create(type_, parent=None, attrs={}):
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
+	fault.check(not parent or parent.owner == currentUser(), "Parent element belongs to different user")
 	el = TYPES[type_]()
 	el.init(parent, attrs)
 	el.save()
 	if parent:
 		parent.onChildAdded(el)
+	logging.logMessage("create", category="element", id=el.id)	
+	logging.logMessage("info", category="element", id=el.id, info=el.info())	
 	return el
 
 from tomato import fault, currentUser, resources

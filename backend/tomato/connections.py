@@ -18,8 +18,10 @@
 from django.db import models
 
 from tomato.topology import Topology
+from tomato.auth import Flags
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
-from tomato.lib import db, attributes #@UnresolvedImport
+from tomato.lib import db, attributes, logging #@UnresolvedImport
+from tomato.accounting import UsageStatistics
 from tomato.lib.decorators import *
 from tomato import host
 
@@ -32,6 +34,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	#elements: set of elements.Element
 	connection1 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
@@ -59,6 +63,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.permissions = topology.permissions
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.state = ST_CREATED
+		self.oldUsage = UsageStatistics.objects.create()
+		self.totalUsage = UsageStatistics.objects.create()
 		self.save()
 		self.elements.add(el1)
 		self.elements.add(el2)
@@ -137,6 +143,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
+		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)		
 		self.setBusy(True)
 		try:
 			directAttrs = {}
@@ -156,6 +163,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		finally:
 			self.setBusy(False)
 		self.save()
+		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 	
 	def checkAction(self, action):
 		"""
@@ -191,6 +199,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type params: dict
 		"""
 		self.checkAction(action)
+		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
 		self.setBusy(True)
 		try:
 			if action in self.CUSTOM_ACTIONS:
@@ -206,6 +215,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		finally:
 			self.setBusy(False)
 		self.save()
+		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
+		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 		return res
 
 	def setState(self, state, dummy=None):
@@ -218,8 +229,13 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 
 	def remove(self):
 		self.checkRemove()
+		logging.logMessage("info", category="topology", id=self.id, info=self.info())
+		logging.logMessage("remove", category="topology", id=self.id)		
 		self.triggerStop()
 		self.elements.clear() #Important, otherwise elements will be deleted
+		self.totalUsage.delete()
+		self.oldUsage.delete()
+		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
 	def getElements(self):
@@ -234,7 +250,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def onError(self, exc):
 		pass
 
-	def action_start(self):
+	def _start(self):
 		el1, el2 = self.getElements()
 		el1, el2 = el1.mainElement(), el2.mainElement()
 		fault.check(el1 and el2, "Can not connect unprepared element")
@@ -258,7 +274,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			self.connection2.action("start")
 		self.setState(ST_STARTED)
 			
-	def action_stop(self):
+	def _stop(self):
 		if self.connection1:
 			if self.connection1.state == ST_STARTED:
 				self.connection1.action("stop")
@@ -289,18 +305,24 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		for el in self.getElements():
 			if not el.readyToConnect():
 				return
-		self.action_start()
+		self._start()
 		
 	def triggerStop(self):
-		self.action_stop()
+		self._stop()
 		
 	def info(self):
+		if not currentUser().hasFlag(Flags.Debug):
+			self.checkRole(Role.user)
 		return {
 			"id": self.id,
 			"state": self.state,
 			"attrs": self.attrs,
 			"elements": [el.id for el in self.getElements()],
 		}
+		
+	def updateUsage(self, now):
+		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+								 + [con.usageStatistics for con in self.getHostConnections()])
 		
 		
 def get(id_, **kwargs):
@@ -325,6 +347,8 @@ def create(el1, el2, attrs={}):
 	con.init(el1.topology, el1, el2, attrs)
 	con.save()
 	con.triggerStart()
+	logging.logMessage("create", category="connection", id=con.id)	
+	logging.logMessage("info", category="connection", id=con.id, info=con.info())
 	return con
 
-from tomato import fault
+from tomato import fault, currentUser

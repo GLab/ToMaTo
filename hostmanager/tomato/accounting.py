@@ -18,9 +18,10 @@
 from django.db import models
 from django.core import exceptions
 import traceback
+import time
 from datetime import datetime, timedelta
 
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 
 # storage needs:
@@ -44,29 +45,24 @@ def _avg(data, weightSum):
 def _sum(data, weightSum):
     return sum(v for (v, _) in  data)
 
-def _timediff(begin, end):
-    td = (end-begin)
-    #python 2.6 has no total_seconds()
-    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
-    
 def _lastRange(type_):
     if type_ == "5minutes":
-        end = datetime.now().replace(second=0, microsecond=0)
+        end = datetime.utcnow().replace(second=0, microsecond=0)
         end = end.replace(minute=(end.minute / 5)*5)
         begin = end - timedelta(minutes=5)
     elif type_ == "hour":
-        end = datetime.now().replace(second=0, microsecond=0, minute=0)
+        end = datetime.utcnow().replace(second=0, microsecond=0, minute=0)
         begin = end - timedelta(hours=1)
     elif type_ == "day":
-        end = datetime.now().replace(second=0, microsecond=0, minute=0, hour=0)
+        end = datetime.utcnow().replace(second=0, microsecond=0, minute=0, hour=0)
         begin = end - timedelta(days=1)
     elif type_ == "month":
-        end = datetime.now().replace(second=0, microsecond=0, minute=0, hour=0, day=1)
-        begin = datetime(end.year if end.month > 1 else end.year, end.month -1 if end.month > 1 else 12, 1)
+        end = datetime.utcnow().replace(second=0, microsecond=0, minute=0, hour=0, day=1)
+        begin = datetime(end.year if end.month > 1 else end.year -1, end.month -1 if end.month > 1 else 12, 1)
     elif type_ == "year":
-        end = datetime.now().replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
+        end = datetime.utcnow().replace(second=0, microsecond=0, minute=0, hour=0, day=1, month=1)
         begin = datetime(end.year - 1, 1, 1)
-    return (begin, end)        
+    return (util.utcDatetimeToTimestamp(begin), util.utcDatetimeToTimestamp(end))        
     
 def _combine(begin, end, records):
     #calculate coverage
@@ -95,9 +91,11 @@ class Usage:
                 diff_ = value
             setattr(self, name, diff_)
         data[lastName] = value
+    def info(self):
+        return {"cputime": self.cputime, "memory": self.memory, "diskspace": self.diskspace, "traffic": self.traffic}
     
 class UsageStatistics(attributes.Mixin, models.Model):
-    begin = models.DateTimeField(auto_now_add=True)
+    begin = models.FloatField() #unix timestamp
     #records: [UsageRecord]
     attrs = db.JSONField()
     
@@ -106,13 +104,18 @@ class UsageStatistics(attributes.Mixin, models.Model):
 
     def init(self, attrs={}):
         self.attrs = {}
+        self.begin = time.time()
         self.save()
         
     def remove(self):
         self.delete()    
     
-    def info(self, after=None, before=None):
-        return dict([(t, [r.info() for r in self.getRecords(t, after, before)]) for t in TYPES])
+    def info(self, type=None, after=None, before=None): #@ReservedAssignment
+        if type:
+            return [r.info() for r in self.getRecords(type, after, before)]
+        else:
+            return dict([(t, [r.info() for r in self.getRecords(t, after, before)]) for t in TYPES])
+        
        
     def getRecords(self, type_, after=None, before=None):
         all_ = self.records.filter(type=type_)
@@ -127,20 +130,25 @@ class UsageStatistics(attributes.Mixin, models.Model):
         record.init(self, type_, begin, end, measurements, usage)
         record.save()
         self.records.add(record)
+        obj = self._object()
+        logging.logMessage("record", category="accounting", type=type_, begin=begin, end=end, measurements=measurements, object=(obj.__class__.__name__.lower(), obj.id), usage=usage.info())
+       
+    def _object(self):
+        try:
+            return self.element
+        except exceptions.ObjectDoesNotExist:
+            pass
+        try:
+            return self.connection
+        except exceptions.ObjectDoesNotExist:
+            pass
        
     @db.commit_after
     def update(self):
         usage = Usage()
-        begin = datetime.now()
-        try:
-            self.element.upcast().updateUsage(usage, self.attrs)
-        except exceptions.ObjectDoesNotExist:
-            pass
-        try:
-            self.connection.upcast().updateUsage(usage, self.attrs)
-        except exceptions.ObjectDoesNotExist:
-            pass
-        end = datetime.now()
+        begin = time.time()
+        self._object().upcast().updateUsage(usage, self.attrs)
+        end = time.time()
         self.createRecord("single", begin, end, 1, usage)
         self._combine()
         self._removeOld()
@@ -169,8 +177,8 @@ class UsageStatistics(attributes.Mixin, models.Model):
 class UsageRecord(models.Model):
     statistics = models.ForeignKey(UsageStatistics, related_name="records")
     type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-    begin = models.DateTimeField()
-    end = models.DateTimeField()
+    begin = models.FloatField() #unix timestamp
+    end = models.FloatField() #unix timestamp
     measurements = models.IntegerField()
     #using fields to save space
     memory = models.FloatField() #unit: bytes

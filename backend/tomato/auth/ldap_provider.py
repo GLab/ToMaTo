@@ -78,7 +78,7 @@ class Provider:
 		if not isUser:
 			return None
 		isAdmin = self._is_admin(username, userdn)
-		return User.create(name=username, is_user = isUser, is_admin = isAdmin, email=email)
+		return User.create(name=username, admin=isAdmin, email=email)
 		
 	def _get_user(self, user):
 		"""

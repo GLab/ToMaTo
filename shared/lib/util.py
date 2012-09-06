@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import threading, thread, traceback, time
+import threading, thread, traceback, time, xmlrpclib, datetime
 from decorators import xmlRpcSafe
 
 class RepeatedTimer(threading.Thread):
@@ -202,3 +202,7 @@ def filterDict(filter_, dict_):
 	if not callable(filter_):
 		filter_ = lambda (k, v): k in filter_
 	return dict(filter(filter_, dict_.iteritems()))
+
+def utcDatetimeToTimestamp(date):
+	td = date - datetime.datetime(1970, 1, 1)
+	return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6

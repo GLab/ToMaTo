@@ -22,7 +22,8 @@ from tomato.connections import Connection
 from tomato.auth import Flags
 from tomato.auth.permissions import Permissions, PermissionMixin, Role
 from tomato.topology import Topology
-from tomato.lib import db, attributes, util #@UnresolvedImport
+from tomato.lib import db, attributes, util, logging #@UnresolvedImport
+from tomato.accounting import UsageStatistics
 from tomato.lib.decorators import *
 from tomato import config
 
@@ -36,6 +37,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	
 	DIRECT_ACTIONS = True
@@ -67,6 +70,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.permissions = topology.permissions
 		self.parent = parent
 		self.attrs = dict(self.DEFAULT_ATTRS)
+		self.oldUsage = UsageStatistics.objects.create()
+		self.totalUsage = UsageStatistics.objects.create()
 		self.save()
 		self.modify(attrs)
 
@@ -154,6 +159,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@type attrs: dict
 		"""		
 		self.checkModify(attrs)
+		logging.logMessage("modify", category="element", id=self.id, attrs=attrs)
 		self.setBusy(True)
 		try:
 			directAttrs = {}
@@ -173,6 +179,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		finally:
 			self.setBusy(False)
 		self.save()
+		logging.logMessage("info", category="element", id=self.id, info=self.info())			
 	
 	def checkAction(self, action):
 		"""
@@ -210,6 +217,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@type params: dict
 		"""
 		self.checkAction(action)
+		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
 		self.setBusy(True)
 		try:
 			if action in self.CUSTOM_ACTIONS:
@@ -229,6 +237,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		finally:
 			self.setBusy(False)
 		self.save()
+		logging.logMessage("action end", category="element", id=self.id, action=action, params=params, result=res)
+		logging.logMessage("info", category="element", id=self.id, info=self.info())					
 		return res
 
 	def checkRemove(self, recurse=True):
@@ -250,12 +260,17 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 
 	def remove(self, recurse=True):
 		self.checkRemove(recurse)
+		logging.logMessage("info", category="topology", id=self.id, info=self.info())
+		logging.logMessage("remove", category="topology", id=self.id)
 		if self.parent:
 			self.getParent().onChildRemoved(self)
 		for ch in self.getChildren():
 			ch.remove(recurse=True)
 		if self.connection:
 			self.getConnection().remove()
+		self.totalUsage.delete()
+		self.oldUsage.delete()
+		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
 	def getParent(self):
@@ -303,7 +318,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		pass
 			
 	def info(self):
-		self.checkRole(Role.user)
+		if not currentUser().hasFlag(Flags.Debug):
+			self.checkRole(Role.user)
 		info = {
 			"id": self.id,
 			"type": self.type,
@@ -319,6 +335,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			info["attrs"].update(mel.attrs["attrs"])
 		return info
 
+	def updateUsage(self, now):
+		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+								 + [con.usageStatistics for con in self.getHostConnections()])
+
 def get(id_, **kwargs):
 	try:
 		el = Element.objects.get(id=id_, **kwargs)
@@ -330,6 +350,8 @@ def getAll(**kwargs):
 	return (el.upcast() for el in Element.objects.filter(**kwargs))
 
 def create(top, type_, parent=None, attrs={}):
+	if parent:
+		fault.check(parent.topology == top, "Parent must be from same topology")
 	top.topology.checkRole(Role.manager)	
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	el = TYPES[type_]()
@@ -337,6 +359,8 @@ def create(top, type_, parent=None, attrs={}):
 	el.save()
 	if parent:
 		parent.onChildAdded(el)
+	logging.logMessage("create", category="element", id=el.id)	
+	logging.logMessage("info", category="element", id=el.id, info=el.info())		
 	return el
 
 from tomato import fault, currentUser, resources, host
