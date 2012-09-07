@@ -20,7 +20,7 @@ from tomato import config, currentUser
 from accounting import UsageStatistics
 from tomato.lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from tomato.auth import Flags
-import xmlrpclib, time
+import xmlrpclib
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
@@ -87,6 +87,8 @@ class Host(attributes.Mixin, models.Model):
         self.elementTypes = caps["elements"]
         self.connectionTypes = caps["connections"]
         self.save()
+        logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)        
+        logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)        
         
     def _capabilities(self):
         return self.getProxy().host_capabilities()
@@ -100,19 +102,20 @@ class Host(attributes.Mixin, models.Model):
     def getConnectionCapabilities(self, type_):
         return self.connectionTypes.get(type_)
 
-    def createElement(self, type_, parent=None, attrs={}):
+    def createElement(self, type_, parent=None, attrs={}, owner=None):
         assert not parent or parent.host == self
         el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
         hel = HostElement(host=self, num=el["id"])
         hel.usageStatistics = UsageStatistics.objects.create()
         hel.attrs = el
         hel.save()
+        logging.logMessage("element_create", category="host", host=self.address, element=el, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)        
         return hel
 
     def getElement(self, num):
         return self.elements.get(num=num)
 
-    def createConnection(self, hel1, hel2, type_=None, attrs={}):
+    def createConnection(self, hel1, hel2, type_=None, attrs={}, owner=None):
         assert hel1.host == self
         assert hel2.host == self
         con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
@@ -120,6 +123,7 @@ class Host(attributes.Mixin, models.Model):
         hcon.usageStatistics = UsageStatistics.objects.create()
         hcon.attrs = con
         hcon.save()
+        logging.logMessage("connection_create", category="host", host=self.address, element=con, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)        
         return hcon
 
     def getConnection(self, num):
@@ -143,10 +147,13 @@ class Host(attributes.Mixin, models.Model):
             if not key in hostTpls:
                 #create resource
                 self.getProxy().resource_create("template", attrs)
+                logging.logMessage("template create", category="host", address=self.address, template=attrs)        
             else:
                 hTpl = hostTpls[key]
-                #update resource
-                self.getProxy().resource_modify(hTpl["id"], attrs)
+                if hTpl["attrs"] != tpl.info()["attrs"]:
+                    #update resource
+                    self.getProxy().resource_modify(hTpl["id"], attrs)
+                    logging.logMessage("template update", category="host", address=self.address, template=attrs)        
         logging.logMessage("resource_sync end", category="host", address=self.address)        
 
     def updateAccountingData(self, now):
@@ -159,6 +166,7 @@ class Host(attributes.Mixin, models.Model):
             if not str(el.num) in data["elements"]:
                 print "Missing accounting data for element #%d on host %s" % (el.num, self.address)
                 continue
+            logging.logMessage("host_records", category="accounting", host=self.address, records=data["elements"][str(el.num)], object=("element", el.id))        
             el.updateAccountingData(data["elements"][str(el.num)])
         for con in self.connections.all():
             if not con.usageStatistics:
@@ -167,6 +175,7 @@ class Host(attributes.Mixin, models.Model):
             if not str(con.num) in data["connections"]:
                 print "Missing accounting data for connection #%d on host %s" % (con.num, self.address)
                 continue
+            logging.logMessage("host_records", category="accounting", host=self.address, records=data["connections"][str(con.num)], object=("connection", con.id))        
             con.updateAccountingData(data["connections"][str(con.num)])
         self.accountingTimestamp=now
         self.save()
@@ -195,23 +204,28 @@ class HostElement(attributes.Mixin, models.Model):
     class Meta:
         unique_together = (("host", "num"),)
 
-    def createChild(self, type_, attrs={}):
-        return self.host.createElement(type_, self, attrs)
+    def createChild(self, type_, attrs={}, owner=None):
+        return self.host.createElement(type_, self, attrs, owner=owner)
 
-    def connectWith(self, hel, type_=None, attrs={}):
-        return self.host.createConnection(self, hel, type_, attrs)
+    def connectWith(self, hel, type_=None, attrs={}, owner=None):
+        return self.host.createConnection(self, hel, type_, attrs, owner=owner)
 
     def modify(self, attrs):
+        logging.logMessage("element_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)        
         self.attrs = self.host.getProxy().element_modify(self.num, attrs)
+        logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
             
     def action(self, action, params={}):
+        logging.logMessage("element_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)        
         res = self.host.getProxy().element_action(self.num, action, params)
+        logging.logMessage("element_action end", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)        
         self.updateInfo()
         return res
             
     def remove(self):
         try:
+            logging.logMessage("element_remove", category="host", host=self.host.address, id=self.num)        
             self.host.getProxy().element_remove(self.num)
         except xmlrpclib.Fault, f:
             if f.faultCode != fault.UNKNOWN_OBJECT:
@@ -224,6 +238,7 @@ class HostElement(attributes.Mixin, models.Model):
 
     def updateInfo(self):
         self.attrs = self.host.getProxy().element_info(self.num)
+        logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
     def info(self):
@@ -276,16 +291,21 @@ class HostConnection(attributes.Mixin, models.Model):
         unique_together = (("host", "num"),)
 
     def modify(self, attrs):
+        logging.logMessage("connection_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)        
         self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
+        logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
             
     def action(self, action, params={}):
+        logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)        
         res = self.host.getProxy().connection_action(self.num, action, params)
+        logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)        
         self.updateInfo()
         return res
             
     def remove(self):
         try:
+            logging.logMessage("connection_remove", category="host", host=self.host.address, id=self.num)        
             self.host.getProxy().connection_remove(self.num)
         except xmlrpclib.Fault, f:
             if f.faultCode != fault.UNKNOWN_OBJECT:
@@ -298,6 +318,7 @@ class HostConnection(attributes.Mixin, models.Model):
 
     def updateInfo(self):
         self.attrs = self.host.getProxy().connection_info(self.num)
+        logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
     def info(self):
@@ -361,7 +382,9 @@ def select(site=None, elementTypes=[], connectionTypes=[]):
             continue
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
+        logging.logMessage("select", category="host", result=host.address, site=site, element_types=elementTypes, connection_types=connectionTypes)
         return host
+    logging.logMessage("select", category="host", result=None, site=site, element_types=elementTypes, connection_types=connectionTypes)
 
 def getElementTypes():
     types = set()

@@ -27,8 +27,7 @@ class JSONLogger:
     self._fp = None
   def _write(self, data):
     data = json.dumps(data)
-    self._fp.write(data)
-    self._fp.write("\n")
+    self._fp.write(data+"\n")
     self._written += len(data) + 1
     if self._written >= self.maxSize or self._opened + self.maxAge < time.time():
       self.close()

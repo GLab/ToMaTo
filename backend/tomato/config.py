@@ -36,7 +36,7 @@ LOG_DIR = "logs"
 
 SERVER = [
 	{
-		"PORT": 8000,
+		"PORT": 8001,
 		"SSL": False,
 		"SSL_OPTS": {
 			"cert_file" : "/etc/tomato/server.cert",

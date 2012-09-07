@@ -24,7 +24,6 @@ from tomato.auth.permissions import Permissions, PermissionMixin, Role
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
     permissions = models.ForeignKey(Permissions, null=False)
     totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
-    oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
     attrs = db.JSONField()
     name = attributes.attribute("name", str)
     
@@ -39,7 +38,6 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         self.attrs = {}
         self.permissions = Permissions.objects.create()
         self.permissions.set(owner, "owner")
-        self.oldUsage = UsageStatistics.objects.create()
         self.totalUsage = UsageStatistics.objects.create()
         self.save()
         self.name = "Topology #%d" % self.id
@@ -190,7 +188,6 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         logging.logMessage("remove", category="topology", id=self.id)
         self.permissions.delete()
         self.totalUsage.delete()
-        self.oldUsage.delete()
         self.delete()
 
     def getElements(self):

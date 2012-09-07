@@ -35,7 +35,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
-	oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	#elements: set of elements.Element
 	connection1 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
@@ -63,7 +62,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.permissions = topology.permissions
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.state = ST_CREATED
-		self.oldUsage = UsageStatistics.objects.create()
 		self.totalUsage = UsageStatistics.objects.create()
 		self.save()
 		self.elements.add(el1)
@@ -234,7 +232,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.triggerStop()
 		self.elements.clear() #Important, otherwise elements will be deleted
 		self.totalUsage.delete()
-		self.oldUsage.delete()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
@@ -256,17 +253,17 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		fault.check(el1 and el2, "Can not connect unprepared element")
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
-			self.connection1 = el1.connectWith(el2, attrs=self._remoteAttrs())
+			self.connection1 = el1.connectWith(el2, attrs=self._remoteAttrs(), owner=self)
 			if self.connection1.state == ST_CREATED:
 				self.connection1.action("start")
 		else:
 			# complex case: helper elements needed to connect elements on different hosts
-			self.connectionElement1 = el1.host.createElement("udp_tunnel")
+			self.connectionElement1 = el1.host.createElement("udp_tunnel", owner=self)
 			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
 				"connect": "%s:%d" % (el1.host.address, el1.attrs["attrs"]["port"])
-			})
-			self.connection1 = el1.connectWith(self.connectionElement1, attrs=self._remoteAttrs())
-			self.connection2 = el2.connectWith(self.connectionElement2)
+			}, owner=self)
+			self.connection1 = el1.connectWith(self.connectionElement1, attrs=self._remoteAttrs(), owner=self)
+			self.connection2 = el2.connectWith(self.connectionElement2, owner=self)
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")

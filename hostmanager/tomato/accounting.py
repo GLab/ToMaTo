@@ -135,11 +135,13 @@ class UsageStatistics(attributes.Mixin, models.Model):
        
     def _object(self):
         try:
-            return self.element
+            if self.element:
+                return self.element
         except exceptions.ObjectDoesNotExist:
             pass
         try:
-            return self.connection
+            if self.connection:
+                return self.connection
         except exceptions.ObjectDoesNotExist:
             pass
        

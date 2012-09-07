@@ -31,7 +31,6 @@ def _getHost(address):
     return h
 
 def site_create(name, description=""):
-    #TODO: check permissions
     s = host.createSite(name, description)
     return s.info()
 
@@ -39,7 +38,6 @@ def site_list():
     return [s.info() for s in host.getAllSites()]
 
 def host_create(address, site, attrs={}):
-    #TODO: check permissions
     site = _getSite(site)
     h = host.create(address, site, attrs)
     return h.info()

@@ -20,9 +20,9 @@ import os, sys, atexit
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: collect accounting info
 #TODO: smart host selection
 #TODO: host resource management
+#TODO: capabilities
 #TODO: debian package
 
 

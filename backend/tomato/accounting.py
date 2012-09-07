@@ -22,8 +22,8 @@ from tomato.lib.decorators import *
 from datetime import datetime, timedelta
 import time
 
-# TODO: fetch usage records from hosts and store them in hostelements/hostconnections
-# TODO: aggregate usage records for each object, topology and each user
+#TODO: aggregate per user
+#TODO: fetch and save current records of to-be-deleted objects
 
 TYPES = ["5minutes", "hour", "day", "month", "year"]
 KEEP_RECORDS = {

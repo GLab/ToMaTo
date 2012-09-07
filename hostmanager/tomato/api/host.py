@@ -29,6 +29,16 @@ def host_info():
         },
         "fileserver_port": config.FILESERVER["port"],
         "address": config.PUBLIC_ADDRESS,
+        "resources": {
+            "cpus_present": hostinfo.cpuinfo(),
+            "memory": hostinfo.meminfo(),
+            "loadavg": hostinfo.loadavg(),
+            "diskspace": {
+                "root": hostinfo.diskinfo("/"),
+                "data": hostinfo.diskinfo(config.DATA_DIR),
+            },
+            "uptime": hostinfo.uptime(),
+        },
     }
 
 def host_capabilities():
@@ -59,3 +69,4 @@ def host_capabilities():
 import tomato.elements
 import tomato.resources
 from tomato import config
+from tomato.lib.cmd import hostinfo #@UnresolvedImport

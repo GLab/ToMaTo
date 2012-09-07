@@ -18,7 +18,7 @@
 from django.db import models
 from tomato import resources, fault, config
 from tomato.lib import attributes #@UnresolvedImport
-import os, base64
+import os, base64, hashlib
 
 PATTERNS = {
 	"kvmqm": "%s.qcow2",
@@ -80,10 +80,12 @@ class Template(resources.Resource):
 
 	def info(self):
 		info = resources.Resource.info(self)
+		if self.torrent_data:
+			del info["attrs"]["torrent_data"]
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
-		info["attrs"]["torrent_data"] = bool(self.torrent_data) 
+		info["attrs"]["torrent_data_hash"] = hashlib.md5(str(self.torrent_data)).hexdigest() if self.torrent_data else None
 		return info
 
 def get(tech, name):

@@ -38,7 +38,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
-	oldUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	
 	DIRECT_ACTIONS = True
@@ -70,7 +69,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.permissions = topology.permissions
 		self.parent = parent
 		self.attrs = dict(self.DEFAULT_ATTRS)
-		self.oldUsage = UsageStatistics.objects.create()
 		self.totalUsage = UsageStatistics.objects.create()
 		self.save()
 		self.modify(attrs)
@@ -269,7 +267,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		if self.connection:
 			self.getConnection().remove()
 		self.totalUsage.delete()
-		self.oldUsage.delete()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			

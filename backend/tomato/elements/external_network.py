@@ -85,7 +85,7 @@ class External_Network(elements.Element):
 		_host = host.select(site=self.site, elementTypes=[self.TYPE])
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs)
+		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
 		self.setState(ST_STARTED)
 		self.triggerConnectionStart()
 		
