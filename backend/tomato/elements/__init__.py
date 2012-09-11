@@ -32,7 +32,7 @@ REMOVE_ACTION = "(remove)"
 
 class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
+	type = models.CharField(max_length=30, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')

@@ -37,8 +37,9 @@ def host_info():
                 "root": hostinfo.diskinfo("/"),
                 "data": hostinfo.diskinfo(config.DATA_DIR),
             },
-            "uptime": hostinfo.uptime(),
         },
+        "uptime": hostinfo.uptime(),
+        "time": time.time(),
     }
 
 def host_capabilities():
@@ -70,3 +71,4 @@ import tomato.elements
 import tomato.resources
 from tomato import config
 from tomato.lib.cmd import hostinfo #@UnresolvedImport
+import time

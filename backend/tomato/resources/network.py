@@ -16,11 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources
+from tomato import resources, fault, host
 
 class Network(resources.Resource):
-	kind = models.CharField(max_length=20)
-	bridge = models.CharField(max_length=20)
+	kind = models.CharField(max_length=50, unique=True)
 	preference = models.IntegerField(default=0)
 	
 	TYPE = "network"
@@ -31,6 +30,8 @@ class Network(resources.Resource):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
+		attrs = args[0]
+		fault.check("kind" in attrs, "Network needs attribute kind") 
 		resources.Resource.init(self, *args, **kwargs)
 				
 	def upcast(self):
@@ -42,20 +43,68 @@ class Network(resources.Resource):
 	def modify_kind(self, val):
 		self.kind = val
 	
-	def modify_bridge(self, val):
-		self.bridge = val
-
 	def modify_preference(self, val):
 		self.preference = val
 
 	def info(self):
 		info = resources.Resource.info(self)
 		info["attrs"]["kind"] = self.kind
-		info["attrs"]["bridge"] = self.bridge
 		info["attrs"]["preference"] = self.preference
 		return info
 
+
+class NetworkInstance(resources.Resource):
+	network = models.ForeignKey(Network, null=False, related_name="instances")
+	host = models.ForeignKey(host.Host, null=False, related_name="networks")
+	bridge = models.CharField(max_length=20)
+	
+	TYPE = "network_instance"
+
+	class Meta:
+		db_table = "tomato_network_instance"
+		app_label = 'tomato'
+		unique_together = (("host", "bridge"),)
+	
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		attrs = args[0]
+		for attr in ["network", "host", "bridge"]:
+			fault.check("kind" in attrs, "Network_Instance needs attribute %s", attr) 
+		resources.Resource.init(self, *args, **kwargs)
+				
+	def upcast(self):
+		return self
+	
+	def getBridge(self):
+		return self.bridge
+	
+	def getKind(self):
+		return self.network.kind
+	
+	def modify_bridge(self, val):
+		self.bridge = val
+	
+	def modify_network(self, val):
+		net = get(val)
+		fault.check(net, "No such network: %s", val)
+		self.network = net
+	
+	def modify_host(self, val):
+		host = host.get(val)
+		fault.check(host, "No such host: %s", val)
+		self.host = host
+	
+	def info(self):
+		info = resources.Resource.info(self)
+		info["attrs"]["network"] = self.network.kind
+		info["attrs"]["host"] = self.host.address
+		info["attrs"]["bridge"] = self.bridge
+		return info
+
 def get(kind):
-	return Network.objects.filter(kind=kind).order_by("preference")[0]
+	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("preference")[0]
+
+def getInstance(host, kind):
+	return NetworkInstance.objects.filter(models.Q(host=host)&(models.Q(network__kind=kind)|models.Q(network__kind__startswith=kind+"/"))).order_by("network__preference")[0]
 
 resources.TYPES[Network.TYPE] = Network

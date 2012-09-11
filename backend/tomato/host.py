@@ -20,7 +20,7 @@ from tomato import config, currentUser
 from accounting import UsageStatistics
 from tomato.lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from tomato.auth import Flags
-import xmlrpclib
+import xmlrpclib, time
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
@@ -64,6 +64,7 @@ class Host(attributes.Mixin, models.Model):
     elementTypes = attributes.attribute("element_types", dict, {})
     connectionTypes = attributes.attribute("connection_types", dict, {})
     hostInfo = attributes.attribute("info", dict, {})
+    hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
     
     class Meta:
@@ -82,7 +83,12 @@ class Host(attributes.Mixin, models.Model):
         return self._proxy
         
     def update(self):
+        before = time.time()
         self.hostInfo = self._info()
+        after = time.time()
+        self.hostInfoTimestamp = (before+after)/2.0
+        self.hostInfo["query_time"] = after - before
+        self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
         caps = self._capabilities()
         self.elementTypes = caps["elements"]
         self.connectionTypes = caps["connections"]
@@ -136,6 +142,25 @@ class Host(attributes.Mixin, models.Model):
         logging.logMessage("resource_sync begin", category="host", address=self.address)        
         #TODO: implement for other resources
         from tomato import resources
+        hostNets = {}
+        for net in self.getProxy().resource_list("network"):
+            hostNets[(net["attrs"]["kind"], net["attrs"]["bridge"])] = net
+        for net in self.networks.all():
+            key = (net.getKind(), net.bridge)
+            attrs = net.attrs.copy()
+            attrs["bridge"] = net.bridge
+            attrs["kind"] = net.getKind()
+            attrs["preference"] = net.network.preference
+            if not key in hostNets:
+                #create resource
+                self.getProxy().resource_create("network", attrs)
+                logging.logMessage("network create", category="host", address=self.address, network=attrs)        
+            else:
+                hNet = hostNets[key]
+                if hNet["attrs"] != attrs:
+                    #update resource
+                    self.getProxy().resource_modify(hNet["id"], attrs)
+                    logging.logMessage("network update", category="host", address=self.address, network=attrs)                
         hostTpls = {}
         for tpl in self.getProxy().resource_list("template"):
             hostTpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
@@ -181,14 +206,17 @@ class Host(attributes.Mixin, models.Model):
         self.save()
         logging.logMessage("accounting_sync end", category="host", address=self.address)        
     
+    def getNetworkKinds(self):
+        return [net.getKind() for net in self.networks.all()]
+    
     def info(self):
         return {
-            "id": self.id,
             "address": self.address,
             "site": self.site.name,
             "element_types": self.elementTypes.keys(),
             "connection_types": self.connectionTypes.keys(),
-            "host_info": self.hostInfo
+            "host_info": self.hostInfo,
+            "host_info_timestamp": self.hostInfoTimestamp,
         }
 
 
@@ -375,13 +403,15 @@ def create(address, site, attrs={}):
     logging.logMessage("create", category="host", info=host.info())        
     return host
 
-def select(site=None, elementTypes=[], connectionTypes=[]):
+def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[]):
     all_ = getAll(site=site) if site else getAll()
     for host in all_:
         if set(elementTypes) - set(host.elementTypes.keys()):
             continue
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
+        if set(networkKinds) - set(host.getNetworkKinds()):
+            continue #FIXME: allow general networks
         logging.logMessage("select", category="host", result=host.address, site=site, element_types=elementTypes, connection_types=connectionTypes)
         return host
     logging.logMessage("select", category="host", result=None, site=site, element_types=elementTypes, connection_types=connectionTypes)
@@ -420,6 +450,7 @@ def synchronize():
     #TODO: implement more than resource sync
     for host in getAll():
         try:
+            host.update()
             host.synchronizeResources()
         except:
             import traceback

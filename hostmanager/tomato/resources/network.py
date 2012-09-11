@@ -19,8 +19,8 @@ from django.db import models
 from tomato import resources
 
 class Network(resources.Resource):
-	kind = models.CharField(max_length=20)
-	bridge = models.CharField(max_length=20)
+	kind = models.CharField(max_length=50)
+	bridge = models.CharField(max_length=20, unique=True)
 	preference = models.IntegerField(default=0)
 	
 	TYPE = "network"
@@ -56,6 +56,6 @@ class Network(resources.Resource):
 		return info
 
 def get(kind):
-	return Network.objects.filter(kind=kind).order_by("preference")[0]
+	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("preference")[0]
 
 resources.TYPES[Network.TYPE] = Network

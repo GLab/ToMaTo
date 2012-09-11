@@ -17,17 +17,91 @@
 
 from django.db import models
 from tomato import elements, host, fault
+from tomato.resources import network
 from tomato.lib.attributes import attribute #@UnresolvedImport
-
-ST_CREATED = "created"
-ST_STARTED = "started"
+from generic import ST_CREATED, ST_STARTED
 
 class External_Network(elements.Element):
-	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	site = models.ForeignKey(host.Site, null=True, on_delete=models.SET_NULL)
 	name = attribute("name", str)
+	samenet = attribute("samenet", bool, default=False)
+	kind = attribute("kind", str)
+	network = models.ForeignKey(network.Network, null=True)
+	
+	CUSTOM_ACTIONS = {
+		"start": [ST_CREATED],
+		"stop": [ST_STARTED],
+		elements.REMOVE_ACTION: [ST_CREATED],
+	}
+	CUSTOM_ATTRS = {
+		"name": [ST_CREATED, ST_STARTED],
+		"samenet": [ST_CREATED],
+		"kind": [ST_CREATED],
+	}
+
+	DIRECT_ATTRS_EXCLUDE = []
+	CAP_PARENT = [None]
+	DEFAULT_ATTRS = {}
 
 	TYPE = "external_network"
+	DIRECT_ATTRS_EXCLUDE = []
+	CAP_CHILDREN = {"external_network_endpoint": [ST_CREATED]}
+	
+	class Meta:
+		db_table = "external_network"
+		app_label = 'tomato'
+
+	def init(self, *args, **kwargs):
+		self.type = self.TYPE
+		self.state = ST_CREATED
+		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		if not self.name:
+			self.name = self.TYPE + str(self.id)
+		self.save()
+	
+	def mainElement(self):
+		return None
+	
+	def modify_name(self, val):
+		self.name = val
+
+	def modify_samenet(self, val):
+		self.samenet = val
+
+	def modify_kind(self, val):
+		self.kind = val
+		for ch in self.getChildren():
+			ch.modify({"kind": val})
+
+	def action_stop(self):
+		for ch in self.getChildren():
+			if ch.state == ST_STARTED:
+				ch.action("stop", {})
+		self.setState(ST_CREATED)
+
+	def action_start(self):
+		if self.samenet:
+			self.network = network.get(self.kind)
+		for ch in self.getChildren():
+			if ch.state == ST_CREATED:
+				ch.action("start", {})
+		self.setState(ST_STARTED)
+
+	def upcast(self):
+		return self
+
+	def info(self):
+		info = elements.Element.info(self)
+		info["attrs"]["samenet"] = self.samenet
+		return info
+
+
+class External_Network_Endpoint(elements.Element):
+	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
+	name = attribute("name", str)
+	kind = attribute("kind", str)
+	network = models.ForeignKey(network.NetworkInstance, null=True)
+
+	TYPE = "external_network_ep"
 	CAP_CHILDREN = {}
 	
 	CUSTOM_ACTIONS = {
@@ -38,14 +112,15 @@ class External_Network(elements.Element):
 	CUSTOM_ATTRS = {
 		"site": [ST_CREATED],
 		"name": [ST_CREATED, ST_STARTED],
+		"kind": [ST_CREATED],
 	}
 	DIRECT_ATTRS_EXCLUDE = []
-	CAP_PARENT = [None]
+	CAP_PARENT = [None, External_Network.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
 
 	class Meta:
-		db_table = "tomato_external_network"
+		db_table = "tomato_external_network_endpoint"
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
@@ -56,14 +131,17 @@ class External_Network(elements.Element):
 			self.name = self.TYPE + str(self.id)
 		self.save()
 	
+	def remoteType(self):
+		return "external_network"	
+	
 	def mainElement(self):
 		return self.element
 	
 	def modify_name(self, val):
 		self.name = val
 
-	def modify_site(self, val):
-		self.site = host.getSite(val)
+	def modify_kind(self, val):
+		self.kind = self.parent.kind if self.parent else val
 
 	def onError(self, exc):
 		if self.element:
@@ -84,7 +162,11 @@ class External_Network(elements.Element):
 	def action_start(self):
 		_host = host.select(site=self.site, elementTypes=[self.TYPE])
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
-		attrs = self._remoteAttrs()
+		if self.parent and self.samenet:
+			self.network = network.getInstance(_host, self.parent.network.kind)
+		else:
+			self.network = network.getInstance(_host, self.kind)			
+		attrs = {"kind": self.network.network.kind}
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
 		self.setState(ST_STARTED)
 		self.triggerConnectionStart()
@@ -104,7 +186,7 @@ class External_Network(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["site"] = self.site.name if self.site else None
 		return info
-	
-elements.TYPES[External_Network.TYPE] = External_Network
+
+elements.TYPES[External_Network.TYPE] = External_Network	
+elements.TYPES[External_Network_Endpoint.TYPE] = External_Network_Endpoint
