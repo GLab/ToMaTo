@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block menu_top %}
+<ul>
+	<li class="active"><a href="{%url topology.index%}">Topologies</a></li>
+	<li><a href="{%url host.index%}">Admin</a></li>
+	<li><a href="{%url main.project%}" target="_help">Project</a></li>
+	<li><a href="{%url main.help%}" target="_help">Help</a></li>
+	<li><a href="{%url main.ticket%}" target="_ticket">Create Ticket</a></li>
+	<li><a href="{%url main.logout%}" target="_logout" onclick="alert('Please cancel the following dialog and close the new page.'); return true">Logout</a></li>
+</ul>
+{% endblock %}
+
+{% block left %}
+<div id="sidemenu">
+	<h2>Topologies</h2>
+	<ul>
+		<li><a href="{%url topology.create%}">create new topology</a></li>
+		<li><a href="{%url topology.index%}">list of all topologies</a></li>
+		<li><a href="{%url topology.import_form%}">import topology</a></li>
+	</ul>
+</div>
+
+{% if top_id %}
+<div id="sidemenu">
+	<h2>Topology {{top_id}}</h2>
+	<ul>
+		<li><a href="{%url topology.show top_id%}">show</a></li>
+		<li><a href="{%url topology.export top_id%}">export</a></li>
+	</ul>
+</div>
+{% endif %}
+{% endblock %}

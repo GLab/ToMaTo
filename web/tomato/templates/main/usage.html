@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block header %}
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript">
+var chart;
+var setRange;
+$(function () {
+    var data = {{usage|safe}};
+    $(document).ready(function() {
+        var traffic = {};
+        var memory = {};
+        var cputime = {};
+        var diskspace = {};
+        for (var range in data) {
+            traffic[range] = [];
+            memory[range] = [];
+            diskspace[range] = [];
+            cputime[range] = [];
+            for (var i=0; i<data[range].length; i++) {
+                var rec = data[range][i];
+                traffic[range].push([rec.end * 1000, rec.usage.traffic]);
+                memory[range].push([rec.end * 1000, rec.usage.memory]);
+                cputime[range].push([rec.end * 1000, rec.usage.cputime]);
+                diskspace[range].push([rec.end * 1000, rec.usage.diskspace]);
+            }        
+        }
+        var formatSize = function(value) {
+            suffix = 0;
+            while (value > 1000) {
+                value /= 1000.0;
+                suffix++;
+            }
+            return Math.round(value*100)/100 + " " + ["Bytes", "KB", "MB", "GB", "TB"][suffix];
+        };
+        var formatTime = function(value) {
+            suffix = 0;
+            if (value >= 60) {
+                value /= 60.0;
+                suffix++;
+            }
+            if (value >= 60) {
+                value /= 60.0;
+                suffix++;
+            }
+            return Math.round(value*100)/100 + " " + ["s", "min", "h"][suffix];
+        };
+        var colors = Highcharts.getOptions().colors;
+        var symbols = Highcharts.getOptions().symbols;
+        setRange = function(range) {
+            chart.series[0].remove(true);
+            chart.series[0].remove(true);
+            chart.series[0].remove(true);
+            chart.series[0].remove(true);
+            chart.addSeries({ name: 'Memory', data: memory[range], yAxis: 0, color: colors[0], marker:{symbol: symbols[0]} });
+            chart.addSeries({ name: 'Diskspace', data: diskspace[range], yAxis: 0, color: colors[1], marker:{symbol: symbols[1]} });
+            chart.addSeries({ name: 'Traffic', data: traffic[range], yAxis: 0, color: colors[2], marker:{symbol: symbols[2]} });
+            chart.addSeries({ name: 'CPU Time', data: cputime[range], yAxis: 1, color: colors[3], marker:{symbol: symbols[3]} });
+        }
+        chart = new Highcharts.Chart({
+            chart: { renderTo: 'container', type: 'spline' },
+            title: { text: 'Resource Usage' },
+            subtitle: { text: '{{name}}' },
+            xAxis: { type: 'datetime' },
+            yAxis: [{
+                labels: {
+                    formatter: function() {
+                        return formatSize(this.value);
+                    }
+                },
+                title: { text: 'Memory / Diskspace / Traffic' },
+                min: 0
+            }, {
+                labels: {
+                    formatter: function() {
+                        return formatTime(this.value);
+                    }
+                },
+                title: { text: 'CPU Time' },
+                min: 0,
+                opposite: true
+            }],
+            tooltip: {
+                formatter: function() {
+                        return '<b>'+ this.series.name +'</b><br/>'+
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatTime][this.series.yAxis.options.index](this.y) + '</b>';
+                }
+            },
+            
+            series: [{ name: 'Memory', data: memory["5minutes"], yAxis: 0 },
+                     { name: 'Diskspace', data: diskspace["5minutes"], yAxis: 0 }, 
+                     { name: 'Traffic', data: traffic["5minutes"], yAxis: 0 },
+                     { name: 'CPU-Time', data: cputime["5minutes"], yAxis: 1 }]
+        });
+    });
+    
+});
+</script>
+{% endblock %}
+
+{% block page %}
+<script src="/js/highcharts.js"></script>
+<script src="/js/modules/exporting.js"></script>
+
+<div style="min-width: 400px; margin: auto auto; text-align:right">
+	<b>Interval: </b>
+	<select onchange="setRange(this.options[this.selectedIndex].value);">
+  		<option value="year">Years</option>
+  		<option value="month">Months</option>
+  		<option value="day">Days</option>
+  		<option value="hour">Hours</option>
+  		<option value="5minutes" selected>5 Minutes</option>
+	</select>
+</div>
+<div id="container" style="min-width: 400px; height: 400px; margin: auto auto"/>
+{% endblock %}

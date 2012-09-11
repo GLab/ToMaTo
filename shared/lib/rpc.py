@@ -127,6 +127,9 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 			return self.finish()
 		(method, args, kwargs) = self.getRpcRequest()
 		func = self.server.findMethod(method)
+		if not func:
+			self.send(xmlrpclib.Fault(26, "No such method!"))
+			return
 		try:
 			ret = self.server.execute(func, args, kwargs)
 			self.send((ret,))

@@ -18,7 +18,7 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
-import xmlrpclib, json, urllib
+import xmlrpclib, json, urllib, socket
 from settings import *
 
 def getauth(request):
@@ -48,17 +48,9 @@ def getapi(request):
 	(username, password) = auth
 	username = urllib.quote_plus(username)
 	password = urllib.quote_plus(password)
-	try:
-		api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
-		api.account()
-		return api
-	except Exception, exc:
-		import socket
-		if isinstance(exc, socket.error):
-			import os
-			raise xmlrpclib.Fault(exc.errno, os.strerror(exc.errno))
-		return None
-	return True
+	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
+	api.account_info()
+	return api
 
 class HttpResponseNotAuthorized(HttpResponse):
 	status_code = 401
@@ -74,12 +66,28 @@ class wrap_rpc:
 			api = getapi(request)
 			if api is None:
 				return HttpResponseNotAuthorized()
-			return self.fun(api, request, *args, **kwargs) 
-		except xmlrpclib.ProtocolError, e:
-			f={"faultCode": e.errcode, "faultString": e.errmsg}
-			return render_to_response("main/error.html", {'error': f})
-		except xmlrpclib.Fault, f:
-			return render_to_response("main/error.html", {'error': f})
+			return self.fun(api, request, *args, **kwargs)
+		except Exception, e:
+			if isinstance(e, socket.error):
+				import os
+				etype = "Socket error"
+				ecode = e.errno
+				etext = os.strerror(exc.errno)
+			elif isinstance(e, xmlrpclib.ProtocolError):
+				etype = "RPC protocol error"
+				ecode = e.errcode
+				etext = e.errmsg
+				if ecode == 401:
+					return HttpResponseNotAuthorized()
+			elif isinstance(e, xmlrpclib.Fault):
+				etype = "RPC call error"
+				ecode = e.faultCode
+				etext = e.faultString
+			else:
+				etype = e.__class__.__name__
+				ecode = ""
+				etext = e.message
+			return render_to_response("main/error.html", {'type': etype, 'code': ecode, 'text': etext})
 		
 class wrap_json:
 	def __init__(self, fun):

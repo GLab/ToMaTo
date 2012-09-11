@@ -54,7 +54,7 @@ class User(attributes.Mixin, models.Model):
         user = User(name=name)
         user.attrs = kwargs
         if admin:
-            user.flags = [Flags.Admin, Flags.HostsAdmin, Flags.GlobalUser]
+            user.flags = [Flags.Admin, Flags.HostsManager, Flags.GlobalUser]
         return user
     
     def _saveAttributes(self):
@@ -154,8 +154,6 @@ def login(username, password):
         return None
     try:
         stored = User.objects.get(name=user.name, origin=user.origin)
-        stored.is_admin = user.is_admin
-        stored.save()
     except User.DoesNotExist:
         user.save()
         stored = user

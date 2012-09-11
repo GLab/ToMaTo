@@ -8,18 +8,22 @@
 <title>G-Lab ToMaTo</title> 
 <meta name="DESCRIPTION" content="German Lab Webpage" /> 
  
-<link href="/static/style/style.css" rel="stylesheet" type="text/css" /> 
+<link href="/style/style.css" rel="stylesheet" type="text/css" /> 
 <link rel="shortcut icon" type="image/x-icon" href="http://www.german-lab.de/favicon.ico" /> 
+
+{% block header %}
+{% endblock %}
 </head>
 <body>
 
+{% block page %}
 <div id="nonfooter">
 <div id="border_top"></div> 
 <div id="page"> 
 	<div id="header"> 
 		<div id="minimenu_top" class="smallmenu"></div> 
 		<div id="logo">
-			<a href="http://www.german-lab.de"><img border="0" src="/static/style/glablogo.jpg" alt="glablogo" /></a>
+			<a href="http://www.german-lab.de"><img border="0" src="/style/glablogo.jpg" alt="glablogo" /></a>
 		</div> 
 		<div id="logo-text">
 			<h1>ToMaTo</h1>
@@ -48,5 +52,6 @@
     	</div> 
     </div>
 </center>
+{% endblock %}
 </body> 
 </html>
