@@ -1,4 +1,199 @@
 {% extends "topology/base.html" %}
 
+{% block header %}
+<link type="text/css" href="/style/ui.all.css" rel="stylesheet" />
+<link type="text/css" href="/style/ui.tabs.css" rel="stylesheet" />
+<link type="text/css" href="/style/ui.button.css" rel="stylesheet" />
+<link type="text/css" href="/style/ui.ribbon.css" rel="stylesheet" />
+<link type="text/css" href="/style/ui.orbButton.css" rel="stylesheet" />
+<link type="text/css" href="/style/menu.css" rel="stylesheet" />
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/ui.core.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/ui.tabs.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/ui.ribbon.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/ui.button.js"></script>
+<script language="JavaScript" type="text/javascript">
+(function ($) {
+	var $prev_focused = null;
+	var focus_orig = $.fn.focus;
+	$.fn.focus = function () {
+		if (!arguments.length) {
+			if ($prev_focused) $prev_focused.blur();
+			$prev_focused = this;
+		}
+		else {
+			focus_orig.apply(this, function () { $prev_focused = $(this); });
+		}
+		return focus_orig.apply(this, arguments);
+	};
+	$(document).click(function () {
+		if ($prev_focused) $prev_focused.blur();
+		$prev_focused = null;
+		
+		$(document).find('.ui-state-focus').blur();
+	});
+})(jQuery);
+</script>
+{% endblock %}
+
 {% block content %}
+<div id="menu" style="width:800px;">
+	<ul>
+		<li><a href="#menuTabHome"><span><label>Home</label></span></a></li>
+		<li><a href="#menuTabDevices"><span><label>Devices</label></span></a></li>
+		<li><a href="#menuTabNetwork"><span><label>Network</label></span></a></li>
+		<li><a href="#menuTabOptions"><span><label>Options</label></span></a></li>
+	</ul>
+	<div id="menuTabHome">
+		<ul>
+			<li id="menuTabHomeGroupModes">
+				<div>
+					<button id="menuBtnSelect" class="ui-button-toggle" title="Select"><span class="ui-icon icon-32x32 icon-select"></span><span>Select</span></button>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button id="menuBtnMove" class="ui-button-toggle" title="Move"><span class="ui-icon icon-16x16 icon-move"></span><span>Move</span></button></li>
+						<li><button id="menuBtnConnect" class="ui-button-toggle" title="Connect"><span class="ui-icon icon-16x16 icon-connect"></span><span>Connect</span></button></li>
+						<li><button id="menuBtnDelete" class="ui-button-toggle" title="Delete"><span class="ui-icon icon-16x16 icon-eraser"></span><span>Delete</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Modes</span></h3>
+			</li>
+			<li id="menuTabHomeGroupTopologyControl">
+				<div>
+					<button id="menuBtnStart" title="Start"><span class="ui-icon icon-32x32 icon-start"></span><span>Start</span></button>
+					<button id="menuBtnStop" title="Stop"><span class="ui-icon icon-32x32 icon-stop"></span><span>Stop</span></button>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button id="menuBtnPrepare" title="Prepare"><span class="ui-icon icon-16x16 icon-prepare"></span><span>Prepare</span></button></li>
+						<li><button id="menuBtnDestroy" title="Destroy"><span class="ui-icon icon-16x16 icon-destroy"></span><span>Destroy</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Topology control</span></h3>
+			</li>
+			<li id="menuTabHomeGroupTopology">
+				<div>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button title="Notes"><span class="ui-icon icon-16x16 icon-edit"></span><span>Notes</span></button></li>
+						<li><button id="menuBtnUsage" title="Usage"><span class="ui-icon icon-16x16 icon-usage"></span><span>Usage</span></button></li>
+						<li><button title="Export"><span class="ui-icon icon-16x16 icon-export"></span><span>Export</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Topology</span></h3>
+			</li>
+			<li id="menuTabHomeGroupCommonElements">
+				<div>
+					<button title="Debian 6.0 (OpenVZ)"><span class="ui-icon icon-32x32 icon-openvz-linux"></span><span>Debian 6.0 (OpenVZ)</span></button>
+					<button title="Debian 6.0 (KVM)"><span class="ui-icon icon-32x32 icon-kvm-linux"></span><span>Debian 6.0 (KVM)</span></button>
+					<button title="Switch"><span class="ui-icon icon-32x32 icon-switch"></span><span>Switch</span></button>
+					<button title="Internet"><span class="ui-icon icon-32x32 icon-internet"></span><span>Internet</span></button>
+				</div>
+				<h3><span>Common elements</span></h3>
+			</li>
+		</ul>
+	</div>
+	<div id="menuTabDevices">
+		<ul>
+			<li id="menuTabDevicesGroupLinuxOpenVZ">
+				<div>
+					<button title="Debian 6.0"><span class="ui-icon icon-32x32 icon-openvz-linux"></span><span>Debian 6.0</span></button>
+					<button title="Ubuntu 10.04"><span class="ui-icon icon-32x32 icon-openvz-linux"></span><span>Ubuntu 10.04</span></button>
+					<button title="Ubuntu 12.04"><span class="ui-icon icon-32x32 icon-openvz-linux"></span><span>Ubuntu 12.04</span></button>
+				</div>
+				<h3><span>Linux (OpenVZ)</span></h3>
+			</li>
+			<li id="menuTabDevicesGroupLinuxKVM">
+				<div>
+					<button title="Debian 6.0"><span class="ui-icon icon-32x32 icon-kvm-linux"></span><span>Debian 6.0</span></button>
+					<button title="Ubuntu 10.04"><span class="ui-icon icon-32x32 icon-kvm-linux"></span><span>Ubuntu 10.04</span></button>
+					<button title="Ubuntu 12.04"><span class="ui-icon icon-32x32 icon-kvm-linux"></span><span>Ubuntu 12.04</span></button>
+					<button title="TinyCore"><span class="ui-icon icon-32x32 icon-kvm-linux"></span><span>TincCore</span></button>
+				</div>
+				<h3><span>Linux (KVM)</span></h3>
+			</li>
+			<li id="menuTabDevicesGroupScripts">
+				<div>
+					<button title="Pingable node"><span class="ui-icon icon-32x32 icon-repy"></span><span>Pingable node</span></button>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button title="DHCP Server"><span class="ui-icon icon-16x16 icon-repy"></span><span>DHCP Server</span></button></li>
+						<li><button title="Fake DNS Server"><span class="ui-icon icon-16x16 icon-repy"></span><span>Fake DNS Server</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Scripts (Repy)</span></h3>
+			</li>
+			<li id="menuTabDevicesGroupUpload">
+				<div>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button title="KVM image"><span class="ui-icon icon-16x16 icon-kvm"></span><span>KVM image</span></button></li>
+						<li><button title="OpenVZ image"><span class="ui-icon icon-16x16 icon-openvz"></span><span>OpenVZ image</span></button></li>
+						<li><button title="Repy script"><span class="ui-icon icon-16x16 icon-repy"></span><span>Repy script</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Upload images</span></h3>
+			</li>
+			<li id="menuTabDevicesGroupOther">
+				<div>
+					<button title="Android"><span class="ui-icon icon-32x32 icon-kvm"></span><span>Android</span></button>
+					<button title="ReactOS"><span class="ui-icon icon-32x32 icon-kvm"></span><span>ReactOS</span></button>
+				</div>
+				<h3><span>Other (KVM)</span></h3>
+			</li>
+		</ul>
+	</div>
+	<div id="menuTabNetwork">
+		<ul>
+			<li id="menuTabNetworkGroupVPNElements">
+				<div>
+					<button title="Switch"><span class="ui-icon icon-32x32 icon-switch"></span><span>Switch</span></button>
+					<button title="Hub"><span class="ui-icon icon-32x32 icon-hub"></span><span>Hub</span></button>
+					<button title="Router"><span class="ui-icon icon-32x32 icon-router"></span><span>Router</span></button>
+				</div>
+				<h3><span>VPN Elements</span></h3>
+			</li>
+			<li id="menuTabNetworkGroupScripts">
+				<div>
+					<button title="Custom script"><span class="ui-icon icon-32x32 icon-repy"></span><span>Custom script</span></button>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><button title="Switch"><span class="ui-icon icon-16x16 icon-repy"></span><span>Switch</span></button></li>
+						<li><button title="NAT gateway"><span class="ui-icon icon-16x16 icon-repy"></span><span>NAT gateway</span></button></li>
+					</ul>
+				</div>
+				<h3><span>Scripts (Repy)</span></h3>
+			</li>
+			<li id="menuTabNetworkGroupExternal">
+				<div>
+					<button title="Internet"><span class="ui-icon icon-32x32 icon-internet"></span><span>Internet</span></button>
+				</div>
+				<h3><span>External</span></h3>
+			</li>
+			<li id="menuTabNetworkGroupOther">
+				<div>
+					<button title="OpenFlow"><span class="ui-icon icon-32x32 icon-openflow"></span><span>OpenFlow</span></button>
+				</div>
+				<h3><span>Other</span></h3>
+			</li>
+		</ul>
+	</div>
+	<div id="menuTabOptions">
+		<ul>
+			<li id="menuTabOptionsGroupTopology">
+				<div>
+					<button title="Users &amp; Permissions"><span class="ui-icon icon-32x32 icon-user"></span><span>Users &amp; Permissions</span></button>
+				</div>
+				<h3><span>Topology</span></h3>
+			</li>
+			<li id="menuTabOptionsGroupEditor">
+				<div>
+					<ul class="ui-ribbon-element ui-ribbon-list">
+						<li><input type="checkbox" title="Beginner mode"><span>Beginner mode</span></input></li>
+						<li><input type="checkbox" title="Safe mode"><span>Safe mode</span></input></li>
+						<li><input type="checkbox" title="Snap to grid"><span>Snap to grid</span></input></li>
+					</ul>
+				</div>
+				<h3><span>Editor</span></h3>
+			</li>
+		</ul>
+	</div>
+</div>
+<script language="JavaScript" type="text/javascript">
+  var top_id = {{top.id}};
+</script>
+<script language="JavaScript" type="text/javascript" src="/js/editor/menu.js"></script>
 {% endblock %}

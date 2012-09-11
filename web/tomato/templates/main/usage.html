@@ -86,7 +86,6 @@ $(function () {
                         Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatTime][this.series.yAxis.options.index](this.y) + '</b>';
                 }
             },
-            
             series: [{ name: 'Memory', data: memory["5minutes"], yAxis: 0 },
                      { name: 'Diskspace', data: diskspace["5minutes"], yAxis: 0 }, 
                      { name: 'Traffic', data: traffic["5minutes"], yAxis: 0 },
@@ -112,5 +111,6 @@ $(function () {
   		<option value="5minutes" selected>5 Minutes</option>
 	</select>
 </div>
-<div id="container" style="min-width: 400px; height: 400px; margin: auto auto"/>
+<div id="container" style="min-width: 400px; height: 400px; margin: auto auto"></div>
+<div style="min-width: 400px; margin: auto auto; text-align:center">All times in UTC</div>
 {% endblock %}
