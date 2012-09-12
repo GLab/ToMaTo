@@ -20,6 +20,7 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 import xmlrpclib, json, urllib, socket
 from settings import *
+import tags
 
 def getauth(request):
 	if not request.META.has_key("HTTP_AUTHORIZATION"):

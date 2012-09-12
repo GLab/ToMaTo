@@ -28,12 +28,14 @@ def index(api, request):
 	return render_to_response("topology/index.html", {'top_list': toplist})
 
 def _display(api, info):
-	return render_to_response("topology/info.html", {'top': info})	
+	if info["elements"] and isinstance(info["elements"][0], int):
+		info = api.topology_info(id, full=True)
+	return render_to_response("topology/info.html", {'top': info, 'top_json': json.dumps(info)})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
-	info=api.topology_info(id)
-	return _display(api, info)
+	info=api.topology_info(id, full=True)
+	return _display(api, info);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment

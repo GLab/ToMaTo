@@ -8,6 +8,7 @@ var setRange;
 $(function () {
     var data = {{usage|safe}};
     $(document).ready(function() {
+    	var offset = new Date().getTimezoneOffset()*60000;
         var traffic = {};
         var memory = {};
         var cputime = {};
@@ -19,10 +20,10 @@ $(function () {
             cputime[range] = [];
             for (var i=0; i<data[range].length; i++) {
                 var rec = data[range][i];
-                traffic[range].push([rec.end * 1000, rec.usage.traffic]);
-                memory[range].push([rec.end * 1000, rec.usage.memory]);
-                cputime[range].push([rec.end * 1000, rec.usage.cputime]);
-                diskspace[range].push([rec.end * 1000, rec.usage.diskspace]);
+                traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic]);
+                memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
+                cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime]);
+                diskspace[range].push([rec.end * 1000 - offset, rec.usage.diskspace]);
             }        
         }
         var formatSize = function(value) {
@@ -112,5 +113,4 @@ $(function () {
 	</select>
 </div>
 <div id="container" style="min-width: 400px; height: 400px; margin: auto auto"></div>
-<div style="min-width: 400px; margin: auto auto; text-align:center">All times in UTC</div>
 {% endblock %}

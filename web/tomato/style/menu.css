@@ -53,8 +53,11 @@
 .icon-16x16.icon-connect {
 	background-image: url("/img/connect16.png") !important;
 }
-.icon-16x16.icon-edit {
-	background-image: url("/img/edit16.png") !important;
+.icon-16x16.icon-notes {
+	background-image: url("/img/notes16.png") !important;
+}
+.icon-32x32.icon-notes {
+	background-image: url("/img/notes32.png") !important;
 }
 .icon-16x16.icon-export {
 	background-image: url("/img/export16.png") !important;
@@ -64,6 +67,9 @@
 }
 .icon-16x16.icon-usage {
 	background-image: url("/img/chart_bar.png") !important;
+}
+.icon-16x16.icon-rename {
+	background-image: url("/img/rename.png") !important;
 }
 .icon-16x16.icon-prepare {
 	background-image: url("/img/prepare16.png") !important;

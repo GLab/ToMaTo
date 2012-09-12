@@ -2,7 +2,7 @@
 
 {% block menu_top %}
 <ul>
-	<li><a href="{%url top.index%}">Topologies</a></li>
+	<li><a href="{%url topology.index%}">Topologies</a></li>
 	<li class="active"><a href="{%url host.index%}">Admin</a></li>
 	<li><a href="{%url main.project%}" target="_help">Project</a></li>
 	<li><a href="{%url main.help%}" target="_help">Help</a></li>
@@ -16,25 +16,17 @@
 	<h2>Resources</h2>
 	<ul>
 		<li><a href="{%url host.index%}">Hosts</a></li>
-		<li><a href="{%url template.index%}">Templates</a></li>
-		<li><a href="{%url device_profile.index%}">Device profiles</a></li>
-		<li><a href="{%url external_networks.index%}">External networks</a></li>
+		<li><a href="{.%url template.index%}">Templates</a></li>
+		<li><a href="{.%url device_profile.index%}">Device profiles</a></li>
+		<li><a href="{.%url external_networks.index%}">External networks</a></li>
 	</ul>
 </div>
 
 <div id="sidemenu">
 	<h2>Statistics</h2>
 	<ul>
-		<li><a href="{%url main.physical_links%}">Physical links</a></li>
-		<li><a href="{%url main.resource_usage_by_user%}">Resource usage</a></li>
-	</ul>
-</div>
-
-<div id="sidemenu">
-	<h2>Debug</h2>
-	<ul>
-		<li><a href="{%url main.task_list%}">Tasks</a></li>
-		<li><a href="{%url main.error_list%}">Errors</a></li>
+		<li><a href="{.%url main.physical_links%}">Physical links</a></li>
+		<li><a href="{.%url main.resource_usage_by_user%}">Resource usage</a></li>
 	</ul>
 </div>
 {% endblock %}

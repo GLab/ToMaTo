@@ -303,22 +303,26 @@ class KVMQM(elements.Element):
 	def modify_cpus(self, cpus):
 		self._checkState()
 		self.cpus = cpus
-		self._setCpus()
+		if self.state == self.ST_PREPARED:
+			self._setCpus()
 
 	def modify_ram(self, ram):
 		self._checkState()
 		self.ram = ram
-		self._setRam()
+		if self.state == self.ST_PREPARED:
+			self._setRam()
 		
 	def modify_kblang(self, kblang):
 		self._checkState()
 		self.kblang = kblang
-		self._setKblang()
+		if self.state == self.ST_PREPARED:
+			self._setKblang()
 		
 	def modify_usbtablet(self, usbtablet):
 		self._checkState()
 		self.usbtablet = usbtablet
-		self._setUsbtablet()
+		if self.state == self.ST_PREPARED:
+			self._setUsbtablet()
 		
 	def modify_template(self, tmplName):
 		self._checkState()

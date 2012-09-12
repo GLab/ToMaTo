@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of hosts</h1>
+
+{% if host_list %}
+<script src="/js/enhancetable.js"></script>
+<table class="sortable,filterable">
+  <tr>
+    <th colspan="2"></th>
+    <th colspan="4">Timing</th>
+    <th colspan="3">Processor</th>
+    <th colspan="3">Disk</th>
+    <th colspan="2">Memory</th>
+  </tr>
+  <tr>
+    <th>Address</th>
+    <th>Site</th>
+    <th>Info age</th>
+    <th>Uptime</th>
+    <th>Time diff</th>
+    <th>Query time</th>
+    <th>CPUs</th>
+    <th>Bogomips</th>
+    <th>Load</th>
+    <th>Space</th>
+    <th>Usage root</th>
+    <th>Usage data</th>
+    <th>Space</th>
+    <th>Usage</th>
+  </tr>
+{% for host in host_list %}
+  <tr>
+    <td>{{host.address}}</td>
+    <td>{{host.site}}</td>
+    <td>{{host.host_info_timestamp|age|toduration}}</td>
+    <td>{{host.host_info.uptime|toduration}}</td>
+    <td>{{host.host_info.time_diff|floatformat}} s</td>
+    <td>{{host.host_info.query_time|mult:1000|floatformat}} ms</td>
+    <td>{{host.host_info.resources.cpus_present.count}}</td>
+    <td>{{host.host_info.resources.cpus_present.bogomips_avg}}</td>
+    <td>{{host.host_info.resources.loadavg|slice:"1:2"|first}}</td>
+    <td>{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</td>
+    <td>{{host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}</td>
+    <td>{{host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}</td>
+    <td>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
+    <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
+  </tr>
+{% endfor %}
+</table>
+{% else %}
+No hosts
+{% endif %}
+{% endblock %}

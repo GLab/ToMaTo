@@ -93,6 +93,27 @@ throw new SyntaxError("Error parsing JSON, source is not valid.");};$.quoteStrin
 {var c=_meta[a];if(typeof c==='string')return c;c=a.charCodeAt();return'\\u00'+Math.floor(c/16).toString(16)+(c%16).toString(16);})+'"';}
 return'"'+string+'"';};var _escapeable=/["\\\x00-\x1f\x7f-\x9f]/g;var _meta={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'};})(jQuery);
 
+(function ($) {
+	var $prev_focused = null;
+	var focus_orig = $.fn.focus;
+	$.fn.focus = function () {
+		if (!arguments.length) {
+			if ($prev_focused) $prev_focused.blur();
+			$prev_focused = this;
+		}
+		else {
+			focus_orig.apply(this, function () { $prev_focused = $(this); });
+		}
+		return focus_orig.apply(this, arguments);
+	};
+	$(document).click(function () {
+		if ($prev_focused) $prev_focused.blur();
+		$prev_focused = null;
+		
+		$(document).find('.ui-state-focus').blur();
+	});
+})(jQuery);
+
 compoundBBox = function (list) {
   var minX = -1;
   var maxX = -1;
