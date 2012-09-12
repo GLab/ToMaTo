@@ -70,8 +70,8 @@ class Provider:
 
 	def md5Validation(self, username, password, hashedPassword):
 		salt = hashedPassword.split('$')[2]
-		command = 'openssl passwd -apr1 -salt %s %s' % (salt, password)
-		generated = subprocess.check_output(command, shell = True).rstrip()
+		command = ['openssl', 'passwd', '-apr1', '-salt', salt, password]
+		generated = subprocess.check_output(command).rstrip()
 
 		if hashedPassword == generated:
 			return True
