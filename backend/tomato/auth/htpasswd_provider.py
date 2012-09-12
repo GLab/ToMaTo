@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.auth import User
-import crypt
+import crypt, base64, hashlib
+import subprocess
 
 class Provider:
 	"""
@@ -45,9 +46,46 @@ class Provider:
 		if not lines:
 			return None
 		hashedPassword = lines[0][1]
-		if not hashedPassword == crypt.crypt(password, hashedPassword[:2]):
+
+		result = False
+		if hashedPassword[:6] == '$apr1$':
+			result = self.md5Validation(username, password, hashedPassword)
+		elif hashedPassword[:5] == '{SHA}':
+			result = self.sha1Validation(username, password, hashedPassword)
+		elif len(hashedPassword) == 13:
+			result = self.cryptValidation(username, password, hashedPassword)
+
+		if result:
+			return User(name = username, 
+					is_admin = (self.admin_user != None and 
+								username == self.admin_user))
+		else:
 			return None
-		return User(name = username, is_admin = (self.admin_user != None and username == self.admin_user))
+
+	def cryptValidation(self, username, password, hashedPassword):
+		if hashedPassword == crypt.crypt(password, hashedPassword[:2]):
+			return True
+		else:
+			return False
+
+	def md5Validation(self, username, password, hashedPassword):
+		salt = hashedPassword.split('$')[2]
+		command = 'openssl passwd -apr1 -salt %s %s' % (salt, password)
+		generated = subprocess.check_output(command, shell = True).rstrip()
+
+		if hashedPassword == generated:
+			return True
+		else:
+			return False
+
+	def sha1Validation(self, username, password, hashedPassword):
+		generated = base64.encodestring( 
+							hashlib.sha1(password).digest() ).rstrip()
+		if hashedPassword[5:] == generated:
+			return True
+		else:
+			return False
+
 	
 def init(**kwargs):
 	return Provider(**kwargs)
