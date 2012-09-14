@@ -47,3 +47,19 @@
 	height: 32px !important;
 	background-position: left top !important;
 }
+
+.context-menu-list .context-menu-item.not-selectable:first-child {
+    background: #DDD;
+    padding: 5px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.context-menu-item.icon-start { background-image: url(../img/started.png); }
+.context-menu-item.icon-stop { background-image: url(../img/prepared.png); }
+.context-menu-item.icon-prepare { background-image: url(../img/prepare16.png); }
+.context-menu-item.icon-destroy { background-image: url(../img/destroy16.png); }
+.context-menu-item.icon-configure { background-image: url(../img/configure.png); }
+.context-menu-item.icon-remove { background-image: url(../img/eraser16.png); }
+.context-menu-item.icon-connect { background-image: url(../img/connect16.png); }
+.context-menu-item.icon-control { background-image: url(../img/control.png); }
