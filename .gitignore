@@ -10,3 +10,4 @@ buildui/build
 *.lyx#
 *Thumbs.db*
 ~$*.pptx
+.*
