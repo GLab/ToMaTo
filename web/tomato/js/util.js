@@ -247,4 +247,18 @@ pattern = {
 	ip6net: /^([0-9A-Fa-f]{1,4}:){0,7}([0-9A-Fa-f]{1,4})?(:[0-9A-Fa-f]{1,4}){0,7}\/\d+$/
 };
 
+copy = function(orig, deep) {
+	switch (typeof(orig)) {
+		case "object":
+			if (orig.slice != null) return orig.map(function(el) {
+				return deep ? copy(el, deep) : el;
+			});
+			var c = {};
+			for (var name in orig) c[name] = deep ? copy(orig[name], deep) : orig[name];
+			return c;
+		default:
+			return orig;
+	}
+}
+
 isIE = /MSIE (\d+\.\d+);/.test(navigator.userAgent);

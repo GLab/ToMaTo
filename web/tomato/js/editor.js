@@ -146,88 +146,158 @@ var Workspace = Class.extend({
     		return {x: (pos.x - fs) / (c.width-2*fs), y: (pos.y - fs) / (c.height-2*fs)};
     	}
     	this.beginnerHelp = this.canvas.text(c.width/2, c.height/4, "Beginner help").attr({"font-size": 25, "fill": "#999999"});
-		if (this.editor.options.beginner_mode && this.editor.topology.isEmpty()) this.beginnerHelp.show();
+		if (this.editor.options.beginner_mode && this.editor.options.new_topology) this.beginnerHelp.show();
 		else this.beginnerHelp.hide();
+		var t = this;
+		this.container.click(function(evt){
+			t.onClicked(evt);
+		});
+	},
+	onClicked: function(evt) {
+		switch (this.editor.mode) {
+			case Mode.position:
+				var pos = this.canvas.relPos({x: evt.offsetX, y: evt.offsetY});
+				this.editor.positionElement(pos);
+				break;
+			default:
+				break;
+		}
 	},
 	onOptionChanged: function(name) {
 		if (this.editor.options.beginner_mode && this.editor.topology.isEmpty()) this.beginnerHelp.show();
 		else this.beginnerHelp.hide();
+	},
+	onModeChanged: function(mode) {
+		switch(mode) {
+			default:
+			case Mode.select:
+				this.container.css("cursor", "default");
+				break;
+			case Mode.position:
+				this.container.css("cursor", "crosshair");
+				break;
+		}
 	}
 });
 
 var Topology = Class.extend({
-	init: function(editor, data) {
+	init: function(editor) {
 		this.editor = editor;
 		this.elements = {};
 		this.connections = {};
-		if (data) this.load(data);
+	},
+	_getCanvas: function() {
+		return this.editor.workspace.canvas;
+	},
+	loadElement: function(el) {
+		var elObj;
+		switch (el.type) {
+			case "kvm":
+			case "kvmqm":
+			case "openvz":
+			case "repy":
+				elObj = new VMElement(this.editor, el, this._getCanvas());
+				break;
+			case "kvm_interface":
+			case "kvmqm_interface":
+			case "openvz_interface":
+			case "repy_interface":
+				elObj = new VMInterfaceElement(this.editor, el, this._getCanvas());
+				break;
+			case "external_network":
+				elObj = new ExternalNetworkElement(this.editor, el, this._getCanvas());
+				break;
+			case "tinc_endpoint":
+				//hide external network endpoints with external_network parent but show endpoints without parent 
+				elObj = el.parent ? new HiddenChildElement(this.editor, el, this._getCanvas()) : new ExternalNetworkElement(this.editor, el, this._getCanvas()) ;
+				break;
+			case "tinc_vpn":
+				elObj = new VPNElement(this.editor, el, this._getCanvas());
+				break;
+			case "tinc_endpoint":
+				//hide tinc endpoints with tinc_vpn parent but show endpoints without parent 
+				elObj = el.parent ? new HiddenChildElement(this.editor, el, this._getCanvas()) : new VPNElement(this.editor, el, this._getCanvas()) ;
+				break;
+			default:
+				elObj = new UnknownElement(this.editor, el, this._getCanvas());
+				break;
+		}
+		if (el.id) this.elements[el.id] = elObj;
+		else {
+			if (this.editor.options.demo) this.elements[el.attrs.name] = elObj;
+			//TODO: else do ajax call
+		}
+		if (el.parent) {
+			//parent id is less and thus objects exists
+			elObj.parent = this.elements[el.parent];
+			this.elements[el.parent].children.push(elObj);
+		}
+		elObj.paint();
+		return elObj;
+	},
+	loadConnection: function(con) {
+		var conObj = new Connection(this.editor, con, this._getCanvas());
+		this.connections[con.id] = conObj;
+		for (var j=0; j<con.elements.length; j++) {
+			this.elements[con.elements[j]].connection = conObj;
+			conObj.elements.push(this.elements[con.elements[j]]);
+		}
+		conObj.paint();
+		return conObj;
 	},
 	load: function(data) {
 		this.data = data;
 		this.id = data.id;
 		this.elements = {};
-		for (var i=0; i<data.elements.length; i++) {
-			var el = data.elements[i];
-			var elObj;
-			switch (el.type) {
-				case "kvmqm":
-				case "openvz":
-				case "repy":
-					elObj = new VMElement(this.editor, el);
-					break;
-				case "kvmqm_interface":
-				case "openvz_interface":
-				case "repy_interface":
-					elObj = new VMInterfaceElement(this.editor, el);
-					break;
-				case "tinc_vpn":
-					elObj = new VPNElement(this.editor, el);
-					break;
-				case "tinc_endpoint":
-					//hide tinc endpoints with tinc_vpn parents but show endpoints without parent 
-					elObj = el.parent ? new HiddenChildElement(this.editor, el) : new VPNElement(this.editor, el) ;
-					break;
-				default:
-					elObj = new UnknownElement(this.editor, el);
-					break;
-			}
-			this.elements[el.id] = elObj;
-			if (el.parent) {
-				//parent id is less and thus objects exists
-				elObj.parent = this.elements[el.parent];
-				this.elements[el.parent].children.push(elObj);
-			}
-		}
+		for (var i=0; i<data.elements.length; i++) this.loadElement(data.elements[i]);
 		this.connections = {};
-		for (var i=0; i<data.connections.length; i++) {
-			var con = data.connections[i];
-			var conObj = new Connection(this.editor, con);
-			this.connections[con.id] = conObj;
-			for (var j=0; j<con.elements.length; j++) {
-				this.elements[con.elements[j]].connection = conObj;
-				conObj.elements.push(this.elements[con.elements[j]]);
-			}
-		}
+		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 	},
 	isEmpty: function() {
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;
 		return true;
 		//no connections without elements
 	},
-	paint: function(canvas) {
-		for (var id in this.elements) this.elements[id].setCanvas(canvas);
-		for (var id in this.connections) this.connections[id].setCanvas(canvas);
-		for (var id in this.elements) this.elements[id].paint();
-		for (var id in this.connections) this.connections[id].paint();
+	nextElementName: function(data) {
+		var names = [];
+		for (var id in this.elements) names.push(this.elements[id].data.attrs.name);
+		var base;
+		switch (data.type) {
+			case "external_network":
+				base = data.attrs.kind || "internet";
+				break;
+			case "external_network_endpoint":
+				base = (data.attrs.kind || "internet") + "_endpoint";
+				break;		
+			case "tinc_vpn":
+				base = data.attrs.mode || "switch";
+				break;
+			case "tinc_endpoint":
+				base = "tinc";
+				break;		
+			default:
+				base = data.type;
+		}
+		var num = 1;
+		while (names.indexOf(base+num) != -1) num++;
+		return base+num;
 	},
-	getContextMenu: function() {
-		var cmenu = new ContextMenu();
-		cmenu.addItem($('<b>Topology</b>'));
-		cmenu.addItem($('<a href="#">Start</a>'), true);
-		cmenu.addItem($('<a href="#">Stop</a>'));
-		cmenu.addItem($('<a href="#">Prepare</a>'));
-		cmenu.addItem($('<a href="#">Destroy</a>'));
-		return cmenu;
+	createElement: function(data) {
+		data.attrs = data.attrs || {};
+		data.attrs.name = data.attrs.name || this.nextElementName(data);
+		if (self.editor.options.demo) data.id = data.attrs.name;
+		return this.loadElement(data);
+	},
+	createConnection: function(el1, el2, data) {
+		if (el1 == el2) return;
+		if (! el1.isConnectable()) return;
+		if (! el2.isConnectable()) return;
+		el1 = el1.getConnectTarget();
+		el2 = el2.getConnectTarget();
+		data = data || {};
+		data.attrs = data.attrs || {};
+		data.elements = [el1.id, el2.id];
+		return this.loadConnection(data);
 	},
 	action: function(action, params) {
 		log("Topology action: "+action);
@@ -273,9 +343,10 @@ $.contextMenu({
 });
 
 var Connection = Class.extend({
-	init: function(editor, data) {
+	init: function(editor, data, canvas) {
 		this.editor = editor;
 		this.data = data;
+		this.canvas = canvas;
 		this.id = data.id;
 		this.elements = [];
 	},
@@ -305,9 +376,6 @@ var Connection = Class.extend({
 		var pos2 = this.elements[1].getAbsPos();
 		return Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
 	},
-	setCanvas: function(canvas) {
-		this.canvas = canvas;
-	},
 	paint: function() {
 		this.path = this.canvas.path(this.getPath());
 		this.path.toBack();
@@ -315,6 +383,7 @@ var Connection = Class.extend({
 		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
 		$(this.handle.node).attr("class", "tomato connection");
 		this.handle.node.obj = this;
+		for (var i=0; i<this.elements.length; i++) this.elements[i].paintUpdate();
 	},
 	paintUpdate: function(){
 		this.path.attr({path: this.getPath()});
@@ -357,17 +426,29 @@ $.contextMenu({
 
 
 var Element = Class.extend({
-	init: function(editor, data) {
+	init: function(editor, data, canvas) {
 		this.editor = editor;
 		this.data = data;
+		this.canvas = canvas;
 		this.id = data.id;
 		this.children = [];
 		this.connection = null;
 	},
 	onDragged: function() {
 	},
+	onClicked: function() {
+		this.editor.onElementSelected(this);
+	},
 	isMovable: function() {
 		return !this.editor.options.fixed_pos;
+	},
+	isConnectable: function() {
+		return false;
+	},
+	enableClick: function(obj) {
+		obj.click(function() {
+			this.onClicked();
+		}, this);
 	},
 	enableDragging: function(obj) {
 		obj.drag(function(dx, dy, x, y) { //move
@@ -378,6 +459,9 @@ var Element = Class.extend({
 		}, function() { //stop
 			this.onDragged();
 		}, this, this, this);
+	},
+	getConnectTarget: function() {
+		return this;
 	},
 	getPos: function() {
 		if (! this.data.attrs._pos) this.data.attrs._pos = {x: Math.random(), y: Math.random()};
@@ -404,9 +488,6 @@ var Element = Class.extend({
 		if (this.editor.options.snap_to_grid) pos = {x: Math.round(pos.x/grid)*grid, y: Math.round(pos.y/grid)*grid};
 		this.setPos(this.canvas.relPos(pos));
 	},
-	setCanvas: function(canvas) {
-		this.canvas = canvas;
-	},
 	paint: function() {
 	},
 	paintUpdate: function() {
@@ -427,6 +508,7 @@ var Element = Class.extend({
 		this.action("destroy");
 	},
 	remove: function() {
+		log("Remove");
 	}
 });
 
@@ -438,7 +520,7 @@ $.contextMenu({
 			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
-				"connect": {name:'Connect', icon:'connect'},
+				"connect": {name:'Connect', icon:'connect', callback: function(){obj.editor.onElementConnectTo(obj);}},
 				"sep1": "---",
 				"control": {
 					"name": "Control",
@@ -468,6 +550,8 @@ var UnknownElement = Element.extend({
 		this.text = this.canvas.text(pos.x, pos.y+22, this.data.type + ": " + this.data.attrs.name);
 		this.enableDragging(this.circle);
 		this.enableDragging(this.innerText);
+		this.enableClick(this.circle);
+		this.enableClick(this.innerText);
 	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
@@ -481,8 +565,8 @@ var UnknownElement = Element.extend({
 });
 
 var IconElement = Element.extend({
-	init: function(editor, data) {
-		this._super(editor, data);
+	init: function(editor, data, canvas) {
+		this._super(editor, data, canvas);
 		this.iconUrl = "img/" + this.data.type + "32.png";
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
@@ -518,6 +602,7 @@ var IconElement = Element.extend({
 		//hide icon below rect to disable special image actions on some browsers
 		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2+5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
 		this.enableDragging(this.rect);
+		this.enableClick(this.rect);
 		$(this.rect.node).attr("class", "tomato element");
 		this.rect.node.obj = this;
 	},
@@ -537,20 +622,46 @@ var IconElement = Element.extend({
 });
 
 var VPNElement = IconElement.extend({
-	init: function(editor, data) {
-		this._super(editor, data);
+	init: function(editor, data, canvas) {
+		this._super(editor, data, canvas);
 		this.iconUrl = "img/" + this.data.attrs.mode + "32.png";
 		this.iconSize = {x: 32, y:16};
+	},
+	isConnectable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function() {
+		return editor.topology.createElement({type: "tinc_endpoint", parent: this.data.id});
+	}
+});
+
+var ExternalNetworkElement = IconElement.extend({
+	init: function(editor, data, canvas) {
+		this._super(editor, data, canvas);
+		this.iconUrl = "img/" + this.data.attrs.kind + "32.png";
+		this.iconSize = {x: 32, y:32};
+	},
+	isConnectable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function() {
+		return editor.topology.createElement({type: "external_network_endpoint", parent: this.data.id});
 	}
 });
 
 var VMElement = IconElement.extend({
+	isConnectable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function() {
+		return editor.topology.createElement({type: this.data.type + "_interface", parent: this.data.id});
+	}
 });
 
 var VMInterfaceElement = Element.extend({
 	getHandlePos: function() {
 		var ppos = this.parent.getAbsPos();
-		var cpos = this.connection.getCenter();
+		var cpos = this.connection ? this.connection.getCenter() : {x:0, y:0};
 		var xd = cpos.x - ppos.x;
 		var yd = cpos.y - ppos.y;
 		var magSquared = (xd * xd + yd * yd);
@@ -565,6 +676,7 @@ var VMInterfaceElement = Element.extend({
 		this.circle = this.canvas.circle(pos.x, pos.y, 7).attr({fill: "#CDCDB3"});
 		$(this.circle.node).attr("class", "tomato element");
 		this.circle.node.obj = this;
+		this.enableClick(this.circle);
 	},
 	paintUpdate: function() {
 		var pos = this.getHandlePos();
@@ -588,14 +700,15 @@ var Template = Class.extend({
 		this.name = options.name;
 		this.label = options.label || options.name;
 	},
-	menuButton: function(toggleGroup, small) {
+	menuButton: function(options) {
 		return Menu.button({
-			name: this.type + "-" + this.name,
-			label: this.label || (this.type + "-" + this.name),
-			icon: "img/"+this.type+((this.subtype&&!small)?("_"+this.subtype):"")+(small?16:32)+".png",
+			name: options.name || (this.type + "-" + this.name),
+			label: options.label || this.label || (this.type + "-" + this.name),
+			icon: "img/"+this.type+((this.subtype&&!options.small)?("_"+this.subtype):"")+(options.small?16:32)+".png",
 			toggle: true,
-			toggleGroup: toggleGroup,
-			small: small
+			toggleGroup: options.toggleGroup,
+			small: options.small,
+			func: options.func
 		});
 	}
 });
@@ -614,20 +727,33 @@ var TemplateStore = Class.extend({
 		var tmpls = [];
 		for (var name in this.types[type]) tmpls.push(this.types[type][name]);
 		return tmpls;
+	},
+	get: function(type, name) {
+		if (! this.types[type]) return null;
+		return this.types[type][name];
 	}
 });
+
+var Mode = {
+	select: "select",
+	connect: "connect",
+	connectOnce: "connect_once",
+	remove: "remove",
+	position: "position"
+}
 
 var Editor = Class.extend({
 	init: function(options) {
 		this.options = options;
 		this.options.grid_size = this.options.grid_size || 25;
 		this.options.frame_size = this.options.frame_size || this.options.grid_size;
-		this.topology = new Topology(this, options.topology);
 		this.menu = new Menu(this.options.menu_container);
+		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.templates = new TemplateStore(this.options.templates);
+		this.mode = Mode.select;
 		this.buildMenu();
-		this.topology.paint(this.workspace.canvas);
+		this.topology.load(options.topology);
 	},
 	onOptionChanged: function(name) {
 		this.workspace.onOptionChanged(name);
@@ -643,6 +769,64 @@ var Editor = Class.extend({
 			checked: this.options[options.name]
 		});
 	},
+	onElementConnectTo: function(el) {
+		this.setMode(Mode.connectOnce);
+		this.connectElement = el;
+	},
+	onElementSelected: function(el) {
+		switch (this.mode) {
+			case Mode.connectOnce:
+				this.topology.createConnection(el, this.connectElement);
+				this.setMode(Mode.select);
+				break;
+			case Mode.connect:
+				if (this.connectElement) {
+					this.topology.createConnection(el, this.connectElement);
+					this.connectElement = null;
+				} else this.connectElement = el;
+				break;
+			case Mode.remove:
+				el.remove();
+				break;
+			default:
+				break;
+		}
+	},
+	setMode: function(mode) {
+		this.mode = mode;
+		this.workspace.onModeChanged(mode);
+		if (mode != Mode.position) this.positionElement = null;
+		if (mode != Mode.connect && mode != Mode.connectOnce) this.connectElement = null;
+	},
+	setPositionElement: function(el) {
+		this.positionElement = el;
+		this.setMode(Mode.position);
+		
+	},
+	createPositionElementFunc: function(el) {
+		var t = this;
+		return function() {
+			t.setPositionElement(el);
+		}
+	},
+	createModeFunc: function(mode) {
+		var t = this;
+		return function() {
+			t.setMode(mode);
+		}
+	},
+	createElementFunc: function(el) {
+		var t = this;
+		return function(pos) {
+			var data = copy(el, true);
+			data.attrs._pos = pos;
+			t.topology.createElement(data);
+			t.selectBtn.click();
+		}
+	},
+	createTemplateFunc: function(tmpl) {
+		return this.createElementFunc({type: tmpl.type, template: tmpl.name, attrs: {}});
+	},
 	buildMenu: function() {
 		var t = this;
 	
@@ -651,96 +835,340 @@ var Editor = Class.extend({
 		var tab = this.menu.addTab("Home");
 
 		var group = tab.addGroup("Modes");
-		group.addElement(Menu.button({label: "Select & Move", icon: "img/select32.png", toggle: true, toggleGroup: toggleGroup, small: false, checked: true}));
+		this.selectBtn = Menu.button({
+			label: "Select & Move",
+			icon: "img/select32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			checked: true,
+			func: this.createModeFunc(Mode.select)
+		});
+		group.addElement(this.selectBtn);
 		group.addStackedElements([
-			Menu.button({label: "Connect", icon: "img/connect16.png", toggle: true, toggleGroup: toggleGroup, small: true}),
-			Menu.button({label: "Delete", name: "mode-remove", icon: "img/eraser16.png", toggle: true, toggleGroup: toggleGroup, small: true})
+			Menu.button({
+				label: "Connect",
+				icon: "img/connect16.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: true,
+				func: this.createModeFunc(Mode.connect)
+			}),
+			Menu.button({
+				label: "Delete",
+				name: "mode-remove",
+				icon: "img/eraser16.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: true,
+				func: this.createModeFunc(Mode.remove)
+			})
 		]);
 
 		var group = tab.addGroup("Topology control");
-		group.addElement(Menu.button({label: "Start", icon: "img/start32.png", toggle: false, small: false, func: function() {t.topology.action_start();}}));
-		group.addElement(Menu.button({label: "Stop", icon: "img/stop32.png", toggle: false, small: false, func: function() {t.topology.action_start();}}));
+		group.addElement(Menu.button({
+			label: "Start",
+			icon: "img/start32.png",
+			toggle: false,
+			small: false,
+			func: function() {
+				t.topology.action_start();
+			}
+		}));
+		group.addElement(Menu.button({
+			label: "Stop",
+			icon: "img/stop32.png",
+			toggle: false,
+			small: false,
+			func: function() {
+				t.topology.action_start();
+			}
+		}));
 		group.addStackedElements([
-			Menu.button({label: "Prepare", icon: "img/prepare16.png", toggle: false, small: true, func: function() {t.topology.action_prepare();}}),
-			Menu.button({label: "Destroy", icon: "img/destroy16.png", toggle: false, small: true, func: function() {t.topology.action_destroy();}}),
-			Menu.button({label: "Delete", name: "topology-remove", icon: "img/eraser16.png", toggle: false, small: true, func: function() {t.topology.remove();}})
+			Menu.button({
+				label: "Prepare",
+				icon: "img/prepare16.png",
+				toggle: false,
+				small: true,
+				func: function() {
+					t.topology.action_prepare();
+				}
+			}),
+			Menu.button({
+				label: "Destroy",
+				icon: "img/destroy16.png",
+				toggle: false,
+				small: true,
+				func: function() {
+					t.topology.action_destroy();
+				}
+			}),
+			Menu.button({
+				label: "Delete",
+				name: "topology-remove",
+				icon: "img/eraser16.png",
+				toggle: false,
+				small: true,
+				func: function() {
+					t.topology.remove();
+				}
+			})
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		group.addElement(Menu.button({label: "Debian 6.0 (OpenVZ)", name: "openvz-debian-6", icon: "img/openvz_linux32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
-		group.addElement(Menu.button({label: "Debian 6.0 (KVM)", name: "kvm-debian-6", icon: "img/kvm_linux32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
-		group.addElement(Menu.button({label: "Switch", name: "vpn-switch", icon: "img/switch32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
-		group.addElement(Menu.button({label: "Internet", name: "net-internet", icon: "img/internet32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
+		var tmpl = t.templates.get("openvz", "debian-6");
+		if (tmpl)
+		 group.addElement(tmpl.menuButton({
+			label: "Debian 6.0 (OpenVZ)",
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
+		}));
+		var tmpl = t.templates.get("kvm", "debian-6");
+		if (tmpl)
+		 group.addElement(tmpl.menuButton({
+			label: "Debian 6.0 (KVM)",
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
+		}));
+		group.addElement(Menu.button({
+			label: "Switch",
+			name: "vpn-switch",
+			icon: "img/switch32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "tinc_vpn",
+				attrs: {mode: "switch"}
+			}))
+		}));
+		group.addElement(Menu.button({
+			label: "Internet",
+			name: "net-internet",
+			icon: "img/internet32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "external_network",
+				attrs: {kind: "internet"}
+			}))
+		}));
 
 
 		var tab = this.menu.addTab("Devices");
 
 		var group = tab.addGroup("Linux (OpenVZ)");
 		var tmpls = t.templates.getAll("openvz");
-		for (var i=0; i<tmpls.length; i++) group.addElement(tmpls[i].menuButton(toggleGroup)); 
+		for (var i=0; i<tmpls.length; i++)
+		 group.addElement(tmpls[i].menuButton({
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+		})); 
 
 		var group = tab.addGroup("Linux (KVM)");
 		var tmpls = t.templates.getAll("kvm", "linux");
-		for (var i=0; i<tmpls.length; i++) if(tmpls[i].subtype == "linux") group.addElement(tmpls[i].menuButton(toggleGroup)); 
+		for (var i=0; i<tmpls.length; i++)
+		 if(tmpls[i].subtype == "linux")
+		  group.addElement(tmpls[i].menuButton({
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+		})); 
 
 		var group = tab.addGroup("Other (KVM)");
 		var tmpls = t.templates.getAll("kvm");
-		for (var i=0; i<tmpls.length; i++) if(tmpls[i].subtype != "linux") group.addElement(tmpls[i].menuButton(toggleGroup)); 
+		for (var i=0; i<tmpls.length; i++)
+		 if(tmpls[i].subtype != "linux")
+		  group.addElement(tmpls[i].menuButton({
+		  	toggleGroup: toggleGroup,
+		  	small: false,
+		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+		})); 
 
 		var group = tab.addGroup("Scripts (Repy)");
 		var tmpls = t.templates.getAll("repy");
 		var btns = [];
-		for (var i=0; i<tmpls.length; i++) if(tmpls[i].subtype == "device") btns.push(tmpls[i].menuButton(toggleGroup, true)); 
+		for (var i=0; i<tmpls.length; i++)
+		 if(tmpls[i].subtype == "device")
+		  btns.push(tmpls[i].menuButton({
+		  	toggleGroup: toggleGroup,
+		  	small: true,
+		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+		})); 
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Upload own images");
 		group.addStackedElements([
-			Menu.button({label: "KVM image", name: "kvm-custom", icon: "img/kvm16.png", toggle: true, toggleGroup: toggleGroup, small: true}),
-			Menu.button({label: "OpenVZ image", name: "openvz-custom", icon: "img/openvz16.png", toggle: true, toggleGroup: toggleGroup, small: true}),
-			Menu.button({label: "Repy script", name: "repy-custom", icon: "img/repy16.png", toggle: true, toggleGroup: toggleGroup, small: true})
+			Menu.button({
+				label: "KVM image",
+				name: "kvm-custom",
+				icon: "img/kvm16.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: true
+			}),
+			Menu.button({
+				label: "OpenVZ image",
+				name: "openvz-custom",
+				icon: "img/openvz16.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: true
+			}),
+			Menu.button({
+				label: "Repy script",
+				name: "repy-custom",
+				icon: "img/repy16.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: true
+			})
 		]);
 
 
 		var tab = this.menu.addTab("Network");
 
 		var group = tab.addGroup("VPN Elements");
-		group.addElement(Menu.button({label: "Switch", name: "vpn-switch", icon: "img/switch32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
-		group.addElement(Menu.button({label: "Hub", name: "vpn-hub", icon: "img/hub32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
+		group.addElement(Menu.button({
+			label: "Switch",
+			name: "vpn-switch",
+			icon: "img/switch32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "tinc_vpn",
+				attrs: {mode: "switch"}
+			}))
+		}));
+		group.addElement(Menu.button({
+			label: "Hub",
+			name: "vpn-hub",
+			icon: "img/hub32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "tinc_vpn",
+				attrs: {mode: "hub"}
+			}))
+		}));
 
 		var group = tab.addGroup("Scripts (Repy)");
-		group.addElement(Menu.button({label: "Custom script", name: "repy-custom", icon: "img/repy32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
+		group.addElement(Menu.button({
+			label: "Custom script",
+			name: "repy-custom",
+			icon: "img/repy32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false
+		}));
 		var tmpls = t.templates.getAll("repy");
 		var btns = [];
-		for (var i=0; i<tmpls.length; i++) if(tmpls[i].subtype != "device") btns.push(tmpls[i].menuButton(toggleGroup, true)); 
+		for (var i=0; i<tmpls.length; i++)
+		 if(tmpls[i].subtype != "device")
+		  btns.push(tmpls[i].menuButton({
+		  	toggleGroup: toggleGroup,
+		  	small: true,
+		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+		})); 
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Networks");
-		group.addElement(Menu.button({label: "Internet", name: "net-internet", icon: "img/internet32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
-		group.addElement(Menu.button({label: "OpenFlow", name: "net-openflow", icon: "img/openflow32.png", toggle: true, toggleGroup: toggleGroup, small: false}));
+		group.addElement(Menu.button({
+			label: "Internet",
+			name: "net-internet",
+			icon: "img/internet32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "external_network",
+				attrs: {kind: "internet"}
+			}))
+		}));
+		group.addElement(Menu.button({
+			label: "OpenFlow",
+			name: "net-openflow",
+			icon: "img/openflow32.png",
+			toggle: true,
+			toggleGroup: toggleGroup,
+			small: false,
+			func: this.createPositionElementFunc(this.createElementFunc({
+				type: "external_network",
+				attrs: {kind: "openflow"}
+			}))
+		}));
 
 
 		var tab = this.menu.addTab("Topology");
 
 		var group = tab.addGroup("");
-		group.addElement(Menu.button({label: "Notes", icon: "img/notes32.png", toggle: false, small: false}));
+		group.addElement(Menu.button({
+			label: "Notes",
+			icon: "img/notes32.png",
+			toggle: false,
+			small: false
+		}));
 		group.addStackedElements([
-			Menu.button({label: "Usage", icon: "img/chart_bar.png", toggle: false, small: true, func: function(){
-			  	window.open('/topology/'+t.topology.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');			
-			}}),
-			Menu.button({label: "Rename", icon: "img/rename.png", toggle: false, small: true}),
-			Menu.button({label: "Export", icon: "img/export16.png", toggle: false, small: true})
+			Menu.button({
+				label: "Usage",
+				icon: "img/chart_bar.png",
+				toggle: false,
+				small: true,
+				func: function(){
+			  		window.open('/topology/'+t.topology.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+				}
+			}),
+			Menu.button({
+				label: "Rename",
+				icon: "img/rename.png",
+				toggle: false,
+				small: true
+			}),
+			Menu.button({
+				label: "Export",
+				icon: "img/export16.png",
+				toggle: false,
+				small: true
+			})
 		]);
-		group.addElement(Menu.button({label: "Users & Permissions", icon: "img/user32.png", toggle: false, small: false}));
+		group.addElement(Menu.button({
+			label: "Users & Permissions",
+			icon: "img/user32.png",
+			toggle: false,
+			small: false
+		}));
 
 
 		var tab = this.menu.addTab("Options");
 
 		var group = tab.addGroup("Editor");		
 		group.addStackedElements([
-			this.optionMenuItem({name:"safe_mode", label:"Safe mode", tooltip:"Asks before all destructive actions"}),
-			this.optionMenuItem({name:"snap_to_grid", label:"Snap to grid", tooltip:"All elements snap to an invisible "+this.options.grid_size+" pixel grid"}),
-			this.optionMenuItem({name:"fixed_pos", label:"Fixed positions", tooltip:"Elements can not be moved"}), 
-			this.optionMenuItem({name:"beginner_mode", label:"Beginner mode", tooltip:"Displays help messages for all elements"})
+			this.optionMenuItem({
+				name:"safe_mode",
+				label:"Safe mode",
+				tooltip:"Asks before all destructive actions"
+			}),
+			this.optionMenuItem({
+				name:"snap_to_grid",
+				label:"Snap to grid",
+				tooltip:"All elements snap to an invisible "+this.options.grid_size+" pixel grid"
+			}),
+			this.optionMenuItem({
+				name:"fixed_pos",
+				label:"Fixed positions",
+				tooltip:"Elements can not be moved"
+			}), 
+			this.optionMenuItem({
+				name:"beginner_mode",
+				label:"Beginner mode",
+				tooltip:"Displays help messages for all elements"
+			})
 		]);
 
 		this.menu.paint();
