@@ -253,19 +253,17 @@ $.contextMenu({
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
 		return {
-			callback: function(key, options) {
-				alert("Clicked " + key);
-			},
+			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Topology</span>', type:"html"},
 				"control": {
 					"name": "Control",
 					"icon": "control",
 					"items": {
-						"start": {name:'Start', icon:'start'},
-						"stop": {name:"Stop", icon:"stop"},
-						"prepare": {name:"Prepare", icon:"prepare"},
-						"destroy": {name:"Destroy", icon:"destroy"},
+						"start": {name:'Start', icon:'start', callback:function(){obj.action_start();}},
+						"stop": {name:"Stop", icon:"stop", callback:function(){obj.action_stop();}},
+						"prepare": {name:"Prepare", icon:"prepare", callback:function(){obj.action_prepare();}},
+						"destroy": {name:"Destroy", icon:"destroy", callback:function(){obj.action_destroy();}},
 					}
 				},
 				"remove": {name:'Delete', icon:'remove'},
@@ -319,8 +317,8 @@ var Connection = Class.extend({
 		this.handle.node.obj = this;
 	},
 	paintUpdate: function(){
-		var pos = this.getAbsPos();
 		this.path.attr({path: this.getPath()});
+		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
 	},
 	action: function(action, params) {
@@ -347,9 +345,7 @@ $.contextMenu({
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
 		return {
-			callback: function(key, options) {
-				alert("Clicked " + key);
-			},
+			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
 				"configure": {name:'Configure', icon:'configure'},
@@ -439,9 +435,7 @@ $.contextMenu({
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
 		return {
-			callback: function(key, options) {
-				alert("Clicked " + key);
-			},
+			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
 				"connect": {name:'Connect', icon:'connect'},
@@ -456,8 +450,10 @@ $.contextMenu({
 						"destroy": {name:"Destroy", icon:"destroy", callback: function(){obj.action_destroy();}},
 					}
 				},
-				"configure": {name:'Configure', icon:'configure'},
+				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
 				"sep2": "---",
+				"configure": {name:'Configure', icon:'configure'},
+				"sep3": "---",
 				"remove": {name:'Delete', icon:'remove'},
 			}
 		}
