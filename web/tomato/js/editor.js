@@ -176,6 +176,13 @@ var Workspace = Class.extend({
 			case Mode.position:
 				this.container.css("cursor", "crosshair");
 				break;
+			case Mode.remove:
+				this.container.css("cursor", "url(../img/cursor_remove.png)");
+				break;
+			case Mode.connect:
+			case Mode.connectOnce:
+				this.container.css("cursor", "url(../img/cursor_connect.png)");
+				break;
 		}
 	}
 });
@@ -488,6 +495,9 @@ var Element = Class.extend({
 		if (this.editor.options.snap_to_grid) pos = {x: Math.round(pos.x/grid)*grid, y: Math.round(pos.y/grid)*grid};
 		this.setPos(this.canvas.relPos(pos));
 	},
+	showUsage: function() {
+  		window.open('/element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+	},
 	paint: function() {
 	},
 	paintUpdate: function() {
@@ -533,6 +543,7 @@ $.contextMenu({
 					}
 				},
 				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
+				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep2": "---",
 				"configure": {name:'Configure', icon:'configure'},
 				"sep3": "---",
@@ -695,7 +706,7 @@ var HiddenChildElement = Element.extend({
 
 var Template = Class.extend({
 	init: function(options) {
-		this.type = options.type;
+		this.type = options.tech;
 		this.subtype = options.subtype;
 		this.name = options.name;
 		this.label = options.label || options.name;
@@ -715,8 +726,17 @@ var Template = Class.extend({
 
 var TemplateStore = Class.extend({
 	init: function(data) {
+		data.sort(function(t1, t2){
+			var t = t1.attrs.preference - t2.attrs.preference;
+			if (t) return t;
+			if (t1.attrs.name < t2.attrs.name) return -1;
+			if (t2.attrs.name < t1.attrs.name) return 1;
+			return 0;
+		});
 		this.types = {};
-		for (var i=0; i<data.length; i++) this.add(new Template(data[i]));
+		for (var i=0; i<data.length; i++)
+		 if (data[i].type == "template")
+		  this.add(new Template(data[i].attrs));
 	},
 	add: function(tmpl) {
 		if (! this.types[tmpl.type]) this.types[tmpl.type] = {};
@@ -750,7 +770,7 @@ var Editor = Class.extend({
 		this.menu = new Menu(this.options.menu_container);
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
-		this.templates = new TemplateStore(this.options.templates);
+		this.templates = new TemplateStore(this.options.resources);
 		this.mode = Mode.select;
 		this.buildMenu();
 		this.topology.load(options.topology);
@@ -916,7 +936,7 @@ var Editor = Class.extend({
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		var tmpl = t.templates.get("openvz", "debian-6");
+		var tmpl = t.templates.get("openvz", "debian-6.0_x86");
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
 			label: "Debian 6.0 (OpenVZ)",
@@ -924,7 +944,7 @@ var Editor = Class.extend({
 			small: false,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
 		}));
-		var tmpl = t.templates.get("kvm", "debian-6");
+		var tmpl = t.templates.get("kvmqm", "debian-6.0_x86");
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
 			label: "Debian 6.0 (KVM)",
@@ -962,32 +982,38 @@ var Editor = Class.extend({
 
 		var group = tab.addGroup("Linux (OpenVZ)");
 		var tmpls = t.templates.getAll("openvz");
+		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
-		 group.addElement(tmpls[i].menuButton({
+		 btns.push(tmpls[i].menuButton({
 			toggleGroup: toggleGroup,
-			small: false,
+			small: true,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
+		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Linux (KVM)");
-		var tmpls = t.templates.getAll("kvm", "linux");
+		var tmpls = t.templates.getAll("kvmqm", "linux");
+		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "linux")
-		  group.addElement(tmpls[i].menuButton({
+		  btns.push(tmpls[i].menuButton({
 			toggleGroup: toggleGroup,
-			small: false,
+			small: true,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
+		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Other (KVM)");
-		var tmpls = t.templates.getAll("kvm");
+		var tmpls = t.templates.getAll("kvmqm");
+		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "linux")
-		  group.addElement(tmpls[i].menuButton({
+		  btns.push(tmpls[i].menuButton({
 		  	toggleGroup: toggleGroup,
-		  	small: false,
+			small: true,
 		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
+		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Scripts (Repy)");
 		var tmpls = t.templates.getAll("repy");

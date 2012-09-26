@@ -18,13 +18,16 @@ $(function () {
             memory[range] = [];
             diskspace[range] = [];
             cputime[range] = [];
+		    data[range].sort(function(a, b) {
+    			return a.end - b.end;
+    		});
             for (var i=0; i<data[range].length; i++) {
                 var rec = data[range][i];
                 traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
                 cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime]);
                 diskspace[range].push([rec.end * 1000 - offset, rec.usage.diskspace]);
-            }        
+            }
         }
         var formatSize = function(value) {
             suffix = 0;

@@ -28,7 +28,9 @@ PATTERNS = {
 
 class Template(resources.Resource):
 	tech = models.CharField(max_length=20)
+	subtype = models.CharField(max_length=50)
 	name = models.CharField(max_length=50)
+	label = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
 	torrent_data = attributes.attribute("torrent_data", str)
 	
@@ -59,12 +61,6 @@ class Template(resources.Resource):
 		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
 		self.tech = val
 	
-	def modify_name(self, val):
-		self.name = val
-
-	def modify_preference(self, val):
-		self.preference = val
-
 	def modify_torrent_data(self, val):
 		self.torrent_data = val
 		if self.name and self.tech:

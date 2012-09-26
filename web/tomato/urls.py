@@ -38,5 +38,6 @@ urlpatterns = patterns('',
 	(r'^topology/(?P<id>\d+)/usage$', 'tomato.topology.usage'),
 	(r'^topology/create$', 'tomato.topology.create'),
 	(r'^topology/import$', 'tomato.topology.import_form'),
+	(r'^element/(?P<id>\d+)/usage$', 'tomato.element.usage'),
 	(r'^host/$', 'tomato.host.index'),
 )

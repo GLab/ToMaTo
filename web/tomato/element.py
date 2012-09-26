@@ -23,31 +23,6 @@ import json
 from lib import wrap_rpc
 
 @wrap_rpc
-def index(api, request):
-	toplist=api.topology_list()
-	return render_to_response("topology/index.html", {'top_list': toplist})
-
-def _display(api, info):
-	if info["elements"] and isinstance(info["elements"][0], int):
-		info = api.topology_info(id, full=True)
-	res = api.resource_list()
-	return render_to_response("topology/info.html", {'top': info, 'top_json': json.dumps(info), 'res_json': json.dumps(res)})	
-
-@wrap_rpc
-def info(api, request, id): #@ReservedAssignment
-	info=api.topology_info(id, full=True)
-	return _display(api, info);
-
-@wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
-	usage=api.topology_usage(id)
-	return render_to_response("main/usage.html", {'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
-
-@wrap_rpc
-def create(api, request):
-	info=api.topology_create()
-	return _display(api, info)
-
-@wrap_rpc
-def import_form(api, request):
-	return index(request)
+	usage=api.element_usage(id)
+	return render_to_response("main/usage.html", {'usage': json.dumps(usage), 'name': 'Element #%d' % int(id)})

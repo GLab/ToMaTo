@@ -74,7 +74,7 @@ _socket.close()
 
 try:
 	import sys
-	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/bakcend.conf"), "backend.conf"]):
+	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
 		try:
 			execfile(path)
 			print >>sys.stderr, "Loaded config from %s" % path
