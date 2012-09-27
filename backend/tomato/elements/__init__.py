@@ -139,6 +139,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		for key in attrs.keys():
 			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
 				continue
+			if key.startswith("_"):
+				continue
 			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
 			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
 		
@@ -165,7 +167,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 				if key in self.CUSTOM_ATTRS:
 					getattr(self, "modify_%s" % key)(value)
 				else:
-					directAttrs[key] = value
+					if key.startswith("_"):
+						self.setAttribute(key, value)
+					else:
+						directAttrs[key] = value
 			if directAttrs:
 				mel = self.mainElement()
 				if mel:

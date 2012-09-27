@@ -1,0 +1,34 @@
+<html>
+  <head>
+    <title>{{top.attrs.name}} - {{info.attrs.name}}</title>
+    <script src="/js/jquery.js"></script>
+    <script language="javascript"><!--
+function wresize() {
+	try {
+		var ps = document.vncapp.getPreferredSize();
+		if (ps.width > 100 && ps.height > 100) {
+			document.vncapp.width = ps.width;
+			document.vncapp.height = ps.height;
+			var applet = $(document.vncapp);
+			var height = applet.outerHeight();
+			var width = applet.outerWidth();
+			height += window.outerHeight - window.innerHeight;
+			width += window.outerWidth - window.innerWidth;
+			window.resizeTo(width, height);
+		}
+	} finally {
+		setTimeout ("wresize()", 1000);
+	}
+}
+setTimeout ("wresize()", 1000);
+--></script>
+  </head>
+  <body style="margin:0px;overflow='hidden'">
+    <applet name="vncapp" code="VncViewer.class" archive="/static/VncViewer.jar" width="745" height="400">
+	  <param name="HOST" value="{{info.attrs.host}}">
+	  <param name="PORT" value="{{info.attrs.vncport}}">
+	  <param name="PASSWORD" value="{{info.attrs.vncpassword}}">
+	  <param name="Show Controls" value="Yes">
+    </applet>
+  </body>
+</html>

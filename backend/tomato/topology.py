@@ -68,6 +68,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         self.checkRole(Role.manager)
         fault.check(not self.isBusy(), "Object is busy")
         for key in attrs.keys():
+            if key.startswith("_"):
+                continue
             fault.check(key in self.CAP_ATTRS, "Unsupported attribute for topology: %s", key)
         
     def modify(self, attrs):
@@ -89,7 +91,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         self.setBusy(True)
         try:
             for key, value in attrs.iteritems():
-                getattr(self, "modify_%s" % key)(value)
+                if key.startswith("_"):
+                    self.setAttribute(key, value)
+                else:
+                    getattr(self, "modify_%s" % key)(value)
         finally:
             self.setBusy(False)
         self.save()

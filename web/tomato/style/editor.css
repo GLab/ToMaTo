@@ -55,6 +55,22 @@
     font-weight: bold;
 }
 
+.tomato.workspace.mode_position {
+	cursor: crosshair;
+}
+
+.tomato.workspace.mode_select .tomato.selectable {
+	cursor: hand;
+}
+
+.tomato.workspace.mode_connect .tomato.connectable, .tomato.workspace.mode_connect_once .tomato.connectable {
+	cursor: url(../img/cursor_connect.png);
+}
+
+.tomato.workspace.mode_remove .tomato.workspace.removable {
+	cursor: url(../img/cursor_connect.png);
+}
+
 .context-menu-item.icon-start { background-image: url(../img/started.png); }
 .context-menu-item.icon-stop { background-image: url(../img/prepared.png); }
 .context-menu-item.icon-prepare { background-image: url(../img/prepare16.png); }

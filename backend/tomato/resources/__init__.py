@@ -79,7 +79,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         try:
             return getattr(self, self.type)
         except:
-            pass
+            import traceback
+            traceback.print_exc()
         fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
     
     def modify(self, attrs):

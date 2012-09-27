@@ -123,6 +123,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		for key in attrs.keys():
 			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
 				continue
+			if key.startswith("_"):
+				continue
 			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for: %s", key)
 			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s can not be changed in state %s", (key, self.state))
 		
@@ -149,7 +151,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 				if key in self.CUSTOM_ATTRS:
 					getattr(self, "modify_%s" % key)(value)
 				else:
-					directAttrs[key] = value
+					if key.startswith("_"):
+						self.setAttribute(key, value)
+					else:
+						directAttrs[key] = value
 			if directAttrs:
 				mcon = self.mainConnection()
 				if mcon:

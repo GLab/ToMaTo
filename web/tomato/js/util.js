@@ -181,6 +181,16 @@ if (!Array.prototype.forEach) {
   };
 }
 
+if (Raphael && !Raphael.el.conditionalClass) {
+  Raphael.el.conditionalClass = function(cls, value) {
+	var classes = this.node.getAttribute("class").split(" ");
+	if ((classes.indexOf(cls) > -1) == value) return;
+	if (value) classes.push(cls);
+	else classes.remove(cls);
+	this.node.setAttribute("class", classes.join(" "));
+  };
+}
+
 Boolean.parse = function (str) {
   if (str == true || str == false) return str;
   switch (str.toLowerCase ()) {

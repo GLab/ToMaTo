@@ -28,10 +28,10 @@ PATTERNS = {
 
 class Template(resources.Resource):
 	tech = models.CharField(max_length=20)
-	subtype = models.CharField(max_length=50)
 	name = models.CharField(max_length=50)
-	label = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
+	label = attributes.attribute("label", str)
+	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
 	
 	TYPE = "template"

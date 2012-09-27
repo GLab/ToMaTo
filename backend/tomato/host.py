@@ -177,6 +177,9 @@ class Host(attributes.Mixin, models.Model):
                 hTpl = hostTpls[key]
                 if hTpl["attrs"] != tpl.info()["attrs"]:
                     #update resource
+                    if hTpl["attrs"]["torrent_data_hash"] == tpl.info()["attrs"]["torrent_data_hash"]:
+                        #only send torrent data when needed
+                        del attrs["torrent_data"]
                     self.getProxy().resource_modify(hTpl["id"], attrs)
                     logging.logMessage("template update", category="host", address=self.address, template=attrs)        
         logging.logMessage("resource_sync end", category="host", address=self.address)        

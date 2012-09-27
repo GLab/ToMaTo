@@ -98,14 +98,16 @@ class wrap_json:
 			api = getapi(request)
 			if api is None:
 				return HttpResponseNotAuthorized()
+			data = json.loads(request.REQUEST["data"]) if request.REQUEST.has_key("data") else {}
+			data.update(kwargs)
 			try:
-				res = self.fun(api, request, *args, **kwargs)
+				res = self.fun(api, *args, **data)
 				return HttpResponse(json.dumps({"success": True, "output": res}))
 			except xmlrpclib.Fault, f:
-				return HttpResponse(json.dumps({"success": False, "output": f.faultString}))
+				return HttpResponse(json.dumps({"success": False, "error": f.faultString}))
 			except Exception, exc:
-				return HttpResponse(json.dumps({"success": False, "output": '%s:%s' % (exc.__class__.__name__, exc)}))				
+				return HttpResponse(json.dumps({"success": False, "error": '%s:%s' % (exc.__class__.__name__, exc)}))				
 		except xmlrpclib.ProtocolError, e:
-			return HttpResponse(json.dumps({"success": False, "output": 'Error %s: %s' % (e.errcode, e.errmsg)}))				
+			return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}))				
 		except xmlrpclib.Fault, f:
-			return HttpResponse(json.dumps({"success": False, "output": 'Error %s' % f}))
+			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))

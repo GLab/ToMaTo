@@ -1,3 +1,19 @@
+var ajax = function(options) {
+	var t = this;
+	$.ajax({
+		type: "POST",
+	 	async: true,
+	 	url: options.url,
+	 	data: {data: $.toJSON(options.data || {})},
+	 	complete: function(res) {
+	 		if (res.status != 200) return options.errorFn ? options.errorFn(res.statusText) : null;
+	 		var msg = $.parseJSON(res.responseText);
+	 		if (! msg.success) return options.errorFn ? options.errorFn(msg.error) : null;
+	 		return options.successFn ? options.successFn(msg.result) : null;
+	 	}
+	});
+};
+
 var MenuGroup = Class.extend({
 	init: function(name) {
 		this.name = name;
@@ -168,22 +184,8 @@ var Workspace = Class.extend({
 		else this.beginnerHelp.hide();
 	},
 	onModeChanged: function(mode) {
-		switch(mode) {
-			default:
-			case Mode.select:
-				this.container.css("cursor", "default");
-				break;
-			case Mode.position:
-				this.container.css("cursor", "crosshair");
-				break;
-			case Mode.remove:
-				this.container.css("cursor", "url(../img/cursor_remove.png)");
-				break;
-			case Mode.connect:
-			case Mode.connectOnce:
-				this.container.css("cursor", "url(../img/cursor_connect.png)");
-				break;
-		}
+		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
+		this.container.addClass("mode_" + mode);
 	}
 });
 
@@ -442,15 +444,26 @@ var Element = Class.extend({
 		this.connection = null;
 	},
 	onDragged: function() {
+		this.modify_value("_pos", this.getPos());
 	},
 	onClicked: function() {
 		this.editor.onElementSelected(this);
+	},
+	setBusy: function(busy) {
+		this.busy = busy;
 	},
 	isMovable: function() {
 		return !this.editor.options.fixed_pos;
 	},
 	isConnectable: function() {
 		return false;
+	},
+	isRemovable: function() {
+		return false;
+	},
+	update: function(data) {
+		if (data) this.data = data;
+		this.paintUpdate();
 	},
 	enableClick: function(obj) {
 		obj.click(function() {
@@ -496,13 +509,38 @@ var Element = Class.extend({
 		this.setPos(this.canvas.relPos(pos));
 	},
 	showUsage: function() {
-  		window.open('/element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+  		window.open('../element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+	},
+	openConsole: function() {
+	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 	},
 	paint: function() {
 	},
 	paintUpdate: function() {
 	},
+	modify: function(attrs) {
+		this.setBusy(true);
+		var t = this;
+		ajax({
+			url: '../ajax/element/'+this.id+'/modify',
+		 	data: {attrs: attrs},
+		 	successFn: function(result) {
+		 		t.update(result);
+		 		t.setBusy(false);
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 		t.setBusy(false);
+		 	}
+		});
+	},
+	modify_value: function(name, value) {
+		var attrs = {};
+		attrs[name] = value;
+		this.modify(attrs);
+	},
 	action: function(action, params) {
+		this.setBusy(true);
 		log("Element action: "+action);
 	},
 	action_start: function() {
@@ -543,9 +581,9 @@ $.contextMenu({
 					}
 				},
 				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
-				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep2": "---",
 				"configure": {name:'Configure', icon:'configure'},
+				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep3": "---",
 				"remove": {name:'Delete', icon:'remove'},
 			}
@@ -562,6 +600,7 @@ var UnknownElement = Element.extend({
 		this.enableDragging(this.circle);
 		this.enableDragging(this.innerText);
 		this.enableClick(this.circle);
+		$(this.circle.node).attr("class", "tomato element selectable");
 		this.enableClick(this.innerText);
 	},
 	paintUpdate: function() {
@@ -570,7 +609,6 @@ var UnknownElement = Element.extend({
 		this.innerText.attr({x: pos.x, y:pos.y});
 		this.text.attr({x: pos.x, y: pos.y+22});
 		this.enableDragging(this.circle);
-		$(this.circle.node).attr("class", "tomato element");
 		this.circle.node.obj = this;
 	}
 });
@@ -584,6 +622,10 @@ var IconElement = Element.extend({
 	},
 	isMovable: function() {
 		return this._super() && !this.busy;
+	},
+	setBusy: function(busy) {
+		this._super(busy);
+		this.updateStateIcon();
 	},
 	updateStateIcon: function() {
 		if (this.busy) {
@@ -611,11 +653,13 @@ var IconElement = Element.extend({
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
 		//hide icon below rect to disable special image actions on some browsers
-		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2+5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
+		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
 		this.enableDragging(this.rect);
 		this.enableClick(this.rect);
-		$(this.rect.node).attr("class", "tomato element");
+		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.node.obj = this;
+		this.rect.conditionalClass("connectable", this.isConnectable());
+		this.rect.conditionalClass("removable", this.isRemovable());
 	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
@@ -624,11 +668,8 @@ var IconElement = Element.extend({
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2+5});
 		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2+5});
 		this.updateStateIcon();
-	},
-	action: function(action, params) {
-		this.busy = true;
-		this.updateStateIcon();
-		this._super(action, params);
+		this.rect.conditionalClass("connectable", this.isConnectable());
+		this.rect.conditionalClass("removable", this.isRemovable());
 	}
 });
 
@@ -771,7 +812,7 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.templates = new TemplateStore(this.options.resources);
-		this.mode = Mode.select;
+		this.setMode(Mode.select);
 		this.buildMenu();
 		this.topology.load(options.topology);
 	},

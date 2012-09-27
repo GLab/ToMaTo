@@ -142,6 +142,7 @@ class VMElement(elements.Element):
 		info = elements.Element.info(self)
 		info["attrs"]["template"] = self.template.name if self.template else None
 		info["attrs"]["site"] = self.site.name if self.site else None
+		info["attrs"]["host"] = self.element.host.address if self.element else None
 		return info
 
 
