@@ -102,7 +102,7 @@ class wrap_json:
 			data.update(kwargs)
 			try:
 				res = self.fun(api, *args, **data)
-				return HttpResponse(json.dumps({"success": True, "output": res}))
+				return HttpResponse(json.dumps({"success": True, "result": res}))
 			except xmlrpclib.Fault, f:
 				return HttpResponse(json.dumps({"success": False, "error": f.faultString}))
 			except Exception, exc:

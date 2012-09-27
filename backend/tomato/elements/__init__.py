@@ -271,7 +271,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			ch.remove(recurse=True)
 		if self.connection:
 			self.getConnection().remove()
-		self.totalUsage.delete()
+		#self.totalUsage will be deleted automatically
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
@@ -354,7 +354,7 @@ def getAll(**kwargs):
 def create(top, type_, parent=None, attrs={}):
 	if parent:
 		fault.check(parent.topology == top, "Parent must be from same topology")
-	top.topology.checkRole(Role.manager)	
+	top.checkRole(Role.manager)	
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	el = TYPES[type_]()
 	el.init(top, parent, attrs)

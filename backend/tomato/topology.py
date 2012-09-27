@@ -192,7 +192,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         logging.logMessage("info", category="topology", id=self.id, info=self.info())
         logging.logMessage("remove", category="topology", id=self.id)
         self.permissions.delete()
-        self.totalUsage.delete()
+        #self.totalUsage will be deleted automatically
         self.delete()
 
     def getElements(self):

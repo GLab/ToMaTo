@@ -67,8 +67,8 @@
 	cursor: url(../img/cursor_connect.png);
 }
 
-.tomato.workspace.mode_remove .tomato.workspace.removable {
-	cursor: url(../img/cursor_connect.png);
+.tomato.workspace.mode_remove .tomato.removable {
+	cursor: url(../img/cursor_remove.png);
 }
 
 .context-menu-item.icon-start { background-image: url(../img/started.png); }

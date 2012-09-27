@@ -3,7 +3,7 @@ var ajax = function(options) {
 	$.ajax({
 		type: "POST",
 	 	async: true,
-	 	url: options.url,
+	 	url: "../ajax/" + options.url,
 	 	data: {data: $.toJSON(options.data || {})},
 	 	complete: function(res) {
 	 		if (res.status != 200) return options.errorFn ? options.errorFn(res.statusText) : null;
@@ -205,37 +205,33 @@ var Topology = Class.extend({
 			case "kvmqm":
 			case "openvz":
 			case "repy":
-				elObj = new VMElement(this.editor, el, this._getCanvas());
+				elObj = new VMElement(this, el, this._getCanvas());
 				break;
 			case "kvm_interface":
 			case "kvmqm_interface":
 			case "openvz_interface":
 			case "repy_interface":
-				elObj = new VMInterfaceElement(this.editor, el, this._getCanvas());
+				elObj = new VMInterfaceElement(this, el, this._getCanvas());
 				break;
 			case "external_network":
-				elObj = new ExternalNetworkElement(this.editor, el, this._getCanvas());
+				elObj = new ExternalNetworkElement(this, el, this._getCanvas());
 				break;
 			case "tinc_endpoint":
 				//hide external network endpoints with external_network parent but show endpoints without parent 
-				elObj = el.parent ? new HiddenChildElement(this.editor, el, this._getCanvas()) : new ExternalNetworkElement(this.editor, el, this._getCanvas()) ;
+				elObj = el.parent ? new HiddenChildElement(this, el, this._getCanvas()) : new ExternalNetworkElement(this, el, this._getCanvas()) ;
 				break;
 			case "tinc_vpn":
-				elObj = new VPNElement(this.editor, el, this._getCanvas());
+				elObj = new VPNElement(this, el, this._getCanvas());
 				break;
 			case "tinc_endpoint":
 				//hide tinc endpoints with tinc_vpn parent but show endpoints without parent 
-				elObj = el.parent ? new HiddenChildElement(this.editor, el, this._getCanvas()) : new VPNElement(this.editor, el, this._getCanvas()) ;
+				elObj = el.parent ? new HiddenChildElement(this, el, this._getCanvas()) : new VPNElement(this, el, this._getCanvas()) ;
 				break;
 			default:
-				elObj = new UnknownElement(this.editor, el, this._getCanvas());
+				elObj = new UnknownElement(this, el, this._getCanvas());
 				break;
 		}
 		if (el.id) this.elements[el.id] = elObj;
-		else {
-			if (this.editor.options.demo) this.elements[el.attrs.name] = elObj;
-			//TODO: else do ajax call
-		}
 		if (el.parent) {
 			//parent id is less and thus objects exists
 			elObj.parent = this.elements[el.parent];
@@ -244,12 +240,19 @@ var Topology = Class.extend({
 		elObj.paint();
 		return elObj;
 	},
-	loadConnection: function(con) {
-		var conObj = new Connection(this.editor, con, this._getCanvas());
+	loadConnection: function(con, elements) {
+		var conObj = new Connection(this, con, this._getCanvas());
 		this.connections[con.id] = conObj;
-		for (var j=0; j<con.elements.length; j++) {
-			this.elements[con.elements[j]].connection = conObj;
-			conObj.elements.push(this.elements[con.elements[j]]);
+		if (con.elements) { //elements are given by id
+			for (var j=0; j<con.elements.length; j++) {
+				this.elements[con.elements[j]].connection = conObj;
+				conObj.elements.push(this.elements[con.elements[j]]);
+			}
+		} else { //elements are given by object reference 
+			for (var j=0; j<elements.length; j++) {
+				elements[j].connection = conObj;
+				conObj.elements.push(elements[j]);
+			}
 		}
 		conObj.paint();
 		return conObj;
@@ -258,6 +261,8 @@ var Topology = Class.extend({
 		this.data = data;
 		this.id = data.id;
 		this.elements = {};
+		//sort elements by id so parents get loaded before children
+		data.elements.sort(function(a, b){return a.id - b.id;});
 		for (var i=0; i<data.elements.length; i++) this.loadElement(data.elements[i]);
 		this.connections = {};
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
@@ -291,22 +296,60 @@ var Topology = Class.extend({
 		while (names.indexOf(base+num) != -1) num++;
 		return base+num;
 	},
-	createElement: function(data) {
+	createElement: function(data, callback) {
+		log("Create element");
+		log(data);
 		data.attrs = data.attrs || {};
-		data.attrs.name = data.attrs.name || this.nextElementName(data);
-		if (self.editor.options.demo) data.id = data.attrs.name;
-		return this.loadElement(data);
+		if (!data.parent) data.attrs.name = data.attrs.name || this.nextElementName(data);
+		var obj = this.loadElement(data);
+		obj.setBusy(true);
+		var t = this;
+		ajax({
+			url: "topology/" + this.id + "/create_element",
+			data: data,
+			successFn: function(data) {
+				obj.setBusy(false);
+				obj.updateData(data);
+				t.elements[data.id] = obj;
+				if (callback) callback(obj);
+			},
+			errorFn: function(error) {
+				alert(error);
+				obj.paintRemove();
+			}
+		});
+		return obj;
 	},
 	createConnection: function(el1, el2, data) {
 		if (el1 == el2) return;
 		if (! el1.isConnectable()) return;
 		if (! el2.isConnectable()) return;
-		el1 = el1.getConnectTarget();
-		el2 = el2.getConnectTarget();
+		var ids = 0;
+		var t = this;
+		var obj;
+		var callback = function(ready) {
+			ids++;
+			if (ids < 2) return;
+			data.elements = [el1.id, el2.id];
+			ajax({
+				url: "connection/create",
+				data: data,
+				successFn: function(data) {
+					obj.updateData(data);
+					t.connections[data.id] = obj;
+				},
+				errorFn: function(error) {
+					alert(error);
+					obj.paintRemove();
+				}
+			});
+		};
+		el1 = el1.getConnectTarget(callback);
+		el2 = el2.getConnectTarget(callback);
 		data = data || {};
 		data.attrs = data.attrs || {};
-		data.elements = [el1.id, el2.id];
-		return this.loadConnection(data);
+		obj = this.loadConnection(data, [el1, el2]);
+		return obj;
 	},
 	action: function(action, params) {
 		log("Topology action: "+action);
@@ -347,20 +390,27 @@ $.contextMenu({
 				},
 				"remove": {name:'Delete', icon:'remove'},
 			}
-		}
+		};
 	}
 });
 
 var Connection = Class.extend({
-	init: function(editor, data, canvas) {
-		this.editor = editor;
+	init: function(topology, data, canvas) {
+		this.topology = topology;
+		this.editor = topology.editor;
 		this.data = data;
 		this.canvas = canvas;
 		this.id = data.id;
 		this.elements = [];
 	},
+	setBusy: function(busy) {
+		this.busy = busy;
+	},
 	otherElement: function(me) {
 		for (var i=0; i<this.elements.length; i++) if (this.elements[i].id != me.id) return this.elements[i];
+	},
+	onClicked: function() {
+		this.editor.onConnectionSelected(this);
 	},
 	getCenter: function() {
 		if (this.path) return this.path.getPointAtLength(this.path.getTotalLength()/2);
@@ -369,6 +419,11 @@ var Connection = Class.extend({
 			var pos2 = this.elements[1].getAbsPos();
 			return {x: (pos1.x + pos2.x)/2, y: (pos1.y + pos2.y)/2}; 
 		}
+	},
+	updateData: function(data) {
+		if (data) this.data = data;
+		this.id = this.data.id;
+		this.paintUpdate();
 	},
 	getPath: function() {
 		var pos1 = this.elements[0].getAbsPos();
@@ -390,9 +445,17 @@ var Connection = Class.extend({
 		this.path.toBack();
 		var pos = this.getAbsPos();
 		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
-		$(this.handle.node).attr("class", "tomato connection");
+		$(this.handle.node).attr("class", "tomato connection removable");
 		this.handle.node.obj = this;
+		var t = this;
+		$(this.handle.node).click(function() {
+			t.onClicked();
+		})
 		for (var i=0; i<this.elements.length; i++) this.elements[i].paintUpdate();
+	},
+	paintRemove: function(){
+		this.path.remove();
+		this.handle.remove();
 	},
 	paintUpdate: function(){
 		this.path.attr({path: this.getPath()});
@@ -414,7 +477,25 @@ var Connection = Class.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
-	remove: function() {
+	remove: function(callback) {
+		if (this.busy) return;
+		this.setBusy(true);
+		var t = this;
+		ajax({
+			url: 'connection/'+this.id+'/remove',
+		 	successFn: function(result) {
+		 		t.paintRemove();
+		 		delete t.topology.connections[t.id];
+		 		for (var i=0; i<t.elements.length; i++) delete t.elements[i].connection;
+		 		t.setBusy(false);
+		 		if (callback) callback(t);
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 		t.setBusy(false);
+		 	}
+		});
+		for (var i=0; i<t.elements.length; i++) t.elements[i].remove();
 	}
 });
 
@@ -427,7 +508,7 @@ $.contextMenu({
 			items: {
 				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
 				"configure": {name:'Configure', icon:'configure'},
-				"remove": {name:'Delete', icon:'remove'},
+				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove();}},
 			}
 		}
 	}
@@ -435,15 +516,17 @@ $.contextMenu({
 
 
 var Element = Class.extend({
-	init: function(editor, data, canvas) {
-		this.editor = editor;
+	init: function(topology, data, canvas) {
+		this.topology = topology;
+		this.editor = topology.editor;
 		this.data = data;
-		this.canvas = canvas;
 		this.id = data.id;
+		this.canvas = canvas;
 		this.children = [];
 		this.connection = null;
 	},
 	onDragged: function() {
+		if (!this.isMovable()) return;
 		this.modify_value("_pos", this.getPos());
 	},
 	onClicked: function() {
@@ -453,7 +536,7 @@ var Element = Class.extend({
 		this.busy = busy;
 	},
 	isMovable: function() {
-		return !this.editor.options.fixed_pos;
+		return !this.editor.options.fixed_pos && this.editor.mode == Mode.select;
 	},
 	isConnectable: function() {
 		return false;
@@ -461,8 +544,9 @@ var Element = Class.extend({
 	isRemovable: function() {
 		return false;
 	},
-	update: function(data) {
+	updateData: function(data) {
 		if (data) this.data = data;
+		this.id = this.data.id;
 		this.paintUpdate();
 	},
 	enableClick: function(obj) {
@@ -475,6 +559,7 @@ var Element = Class.extend({
 			if (!this.isMovable()) return;
 			this.setAbsPos({x: this.opos.x + dx, y: this.opos.y + dy});
 		}, function() { //start
+			if (!this.isMovable()) return false;
 			this.opos = this.getAbsPos();
 		}, function() { //stop
 			this.onDragged();
@@ -518,14 +603,18 @@ var Element = Class.extend({
 	},
 	paintUpdate: function() {
 	},
+	paintRemove: function() {
+	},
 	modify: function(attrs) {
 		this.setBusy(true);
+		log("Modify element #"+this.id);
+		log(attrs);
 		var t = this;
 		ajax({
-			url: '../ajax/element/'+this.id+'/modify',
+			url: 'element/'+this.id+'/modify',
 		 	data: {attrs: attrs},
 		 	successFn: function(result) {
-		 		t.update(result);
+		 		t.updateData(result);
 		 		t.setBusy(false);
 		 	},
 		 	errorFn: function(error) {
@@ -541,7 +630,7 @@ var Element = Class.extend({
 	},
 	action: function(action, params) {
 		this.setBusy(true);
-		log("Element action: "+action);
+		log("Element action #"+this.id+": "+action);
 	},
 	action_start: function() {
 		this.action("start");
@@ -555,8 +644,39 @@ var Element = Class.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
-	remove: function() {
-		log("Remove");
+	removeChild: function(ch) {
+		for (var i = 0; i < this.children.length; i++)
+	     if (this.children[i].id == ch.id)
+	      this.children.splice(i, 1);
+	},
+	remove: function(callback) {
+		if (this.busy) return;
+		this.setBusy(true);
+		var t = this;
+		var removed = false;
+		var waiter = function(obj) {
+			t.removeChild(obj);
+			if (t.children.length) return;
+			if (removed) return;
+			removed = true;
+			ajax({
+				url: 'element/'+t.id+'/remove',
+			 	successFn: function(result) {
+			 		t.paintRemove();
+			 		delete t.topology.elements[t.id];
+			 		if (t.parent) t.parent.removeChild(t);
+			 		t.setBusy(false);
+			 		if (callback) callback(t);
+			 	},
+			 	errorFn: function(error) {
+			 		alert(error);
+			 		t.setBusy(false);
+			 	}
+			});			
+		}
+		for (var i=0; i<this.children.length; i++) this.children[i].remove(waiter);
+		if (this.connection) this.connection.remove();
+		waiter(this);
 	}
 });
 
@@ -585,7 +705,7 @@ $.contextMenu({
 				"configure": {name:'Configure', icon:'configure'},
 				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep3": "---",
-				"remove": {name:'Delete', icon:'remove'},
+				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove();}},
 			}
 		}
 	}
@@ -603,6 +723,11 @@ var UnknownElement = Element.extend({
 		$(this.circle.node).attr("class", "tomato element selectable");
 		this.enableClick(this.innerText);
 	},
+	paintRemove: function(){
+		this.circle.remove();
+		this.innerText.remove();
+		this.text.remove();
+	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
 		this.circle.attr({cx: pos.x, cy:pos.y});
@@ -614,8 +739,8 @@ var UnknownElement = Element.extend({
 });
 
 var IconElement = Element.extend({
-	init: function(editor, data, canvas) {
-		this._super(editor, data, canvas);
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
 		this.iconUrl = "img/" + this.data.type + "32.png";
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
@@ -661,6 +786,12 @@ var IconElement = Element.extend({
 		this.rect.conditionalClass("connectable", this.isConnectable());
 		this.rect.conditionalClass("removable", this.isRemovable());
 	},
+	paintRemove: function(){
+		this.icon.remove();
+		this.text.remove();
+		this.stateIcon.remove();
+		this.rect.remove();
+	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
 		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2});
@@ -674,30 +805,36 @@ var IconElement = Element.extend({
 });
 
 var VPNElement = IconElement.extend({
-	init: function(editor, data, canvas) {
-		this._super(editor, data, canvas);
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
 		this.iconUrl = "img/" + this.data.attrs.mode + "32.png";
 		this.iconSize = {x: 32, y:16};
 	},
 	isConnectable: function() {
 		return !this.busy;
 	},
-	getConnectTarget: function() {
-		return editor.topology.createElement({type: "tinc_endpoint", parent: this.data.id});
+	isRemovable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function(callback) {
+		return this.topology.createElement({type: "tinc_endpoint", parent: this.data.id}, callback);
 	}
 });
 
 var ExternalNetworkElement = IconElement.extend({
-	init: function(editor, data, canvas) {
-		this._super(editor, data, canvas);
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
 		this.iconUrl = "img/" + this.data.attrs.kind + "32.png";
 		this.iconSize = {x: 32, y:32};
 	},
 	isConnectable: function() {
 		return !this.busy;
 	},
-	getConnectTarget: function() {
-		return editor.topology.createElement({type: "external_network_endpoint", parent: this.data.id});
+	isRemovable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function(callback) {
+		return this.topology.createElement({type: "external_network_endpoint", parent: this.data.id}, callback);
 	}
 });
 
@@ -705,8 +842,11 @@ var VMElement = IconElement.extend({
 	isConnectable: function() {
 		return !this.busy;
 	},
-	getConnectTarget: function() {
-		return editor.topology.createElement({type: this.data.type + "_interface", parent: this.data.id});
+	isRemovable: function() {
+		return !this.busy;
+	},
+	getConnectTarget: function(callback) {
+		return this.topology.createElement({type: this.data.type + "_interface", parent: this.data.id}, callback);
 	}
 });
 
@@ -723,12 +863,18 @@ var VMInterfaceElement = Element.extend({
 	getAbsPos: function() {
 		return this.parent.getAbsPos();
 	},
+	isRemovable: function() {
+		return !this.busy;
+	},
 	paint: function() {
 		var pos = this.getHandlePos();
 		this.circle = this.canvas.circle(pos.x, pos.y, 7).attr({fill: "#CDCDB3"});
 		$(this.circle.node).attr("class", "tomato element");
 		this.circle.node.obj = this;
 		this.enableClick(this.circle);
+	},
+	paintRemove: function(){
+		this.circle.remove();
 	},
 	paintUpdate: function() {
 		var pos = this.getHandlePos();
@@ -853,6 +999,15 @@ var Editor = Class.extend({
 				break;
 		}
 	},
+	onConnectionSelected: function(con) {
+		switch (this.mode) {
+			case Mode.remove:
+				con.remove();
+				break;
+			default:
+				break;
+		}
+	},
 	setMode: function(mode) {
 		this.mode = mode;
 		this.workspace.onModeChanged(mode);
@@ -886,7 +1041,7 @@ var Editor = Class.extend({
 		}
 	},
 	createTemplateFunc: function(tmpl) {
-		return this.createElementFunc({type: tmpl.type, template: tmpl.name, attrs: {}});
+		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
 	},
 	buildMenu: function() {
 		var t = this;

@@ -76,7 +76,7 @@ class VMElement(elements.Element):
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.element:
-			self.element.modify({"template": self.template.name if self.template else None})
+			self.element.modify({"template": self.template.upcast().name if self.template else None})
 
 	def onChildAdded(self, iface):
 		if self.element:
@@ -109,7 +109,7 @@ class VMElement(elements.Element):
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
 		attrs.update({
-			"template": self.template.name if self.template else None,
+			"template": self.template.upcast().name if self.template else None,
 		})
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
 		self.save()
@@ -140,7 +140,7 @@ class VMElement(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["template"] = self.template.name if self.template else None
+		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
 		return info

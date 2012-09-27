@@ -236,7 +236,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		logging.logMessage("remove", category="topology", id=self.id)		
 		self.triggerStop()
 		self.elements.clear() #Important, otherwise elements will be deleted
-		self.totalUsage.delete()
+		#self.totalUsage will be deleted automatically
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
@@ -338,7 +338,7 @@ def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
 def create(el1, el2, attrs={}):
-	fault.check(el1 != el2, "Cannot connect element with itself")	
+	fault.check(el1 != el2, "Cannot connect element with itself")
 	fault.check(not el1.connection, "Element #%d is already connected", el1.id)
 	fault.check(not el2.connection, "Element #%d is already connected", el2.id)
 	fault.check(el1.CAP_CONNECTABLE, "Element #%d can not be connected", el1.id)

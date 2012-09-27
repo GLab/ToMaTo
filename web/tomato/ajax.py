@@ -63,12 +63,14 @@ def element_action(api, id, action, params={}): #@ReservedAssignment
 @wrap_json
 def element_remove(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
+	print id
+	print api.element_info(id)
 	res = api.element_remove(id)
 	return res
 
 @wrap_json
-def connection_create(api, el1, el2, attrs={}):
-	info = api.connection_create(el1, el2, attrs)
+def connection_create(api, elements, attrs={}):
+	info = api.connection_create(elements[0], elements[1], attrs)
 	return info
 
 @wrap_json
