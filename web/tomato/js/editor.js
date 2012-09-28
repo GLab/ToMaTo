@@ -165,9 +165,23 @@ var Workspace = Class.extend({
 		if (this.editor.options.beginner_mode && this.editor.options.new_topology) this.beginnerHelp.show();
 		else this.beginnerHelp.hide();
 		var t = this;
+		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
 		this.container.click(function(evt){
 			t.onClicked(evt);
 		});
+		this.container.mousemove(function(evt){
+			t.onMouseMove(evt);
+		});
+	},
+	onMouseMove: function(evt) {
+		if (! this.editor.connectElement) {
+			this.connectPath.hide();
+			return;
+		}
+		this.connectPath.show();
+		var pos = this.editor.connectElement.getAbsPos();
+		var mousePos = {x: evt.pageX - this.container.offset().left, y: evt.pageY - this.container.offset().top};
+		this.connectPath.attr({path: "M"+pos.x+" "+pos.y+"L"+mousePos.x+" "+mousePos.y});
 	},
 	onClicked: function(evt) {
 		switch (this.editor.mode) {
@@ -378,16 +392,11 @@ $.contextMenu({
 			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Topology</span>', type:"html"},
-				"control": {
-					"name": "Control",
-					"icon": "control",
-					"items": {
-						"start": {name:'Start', icon:'start', callback:function(){obj.action_start();}},
-						"stop": {name:"Stop", icon:"stop", callback:function(){obj.action_stop();}},
-						"prepare": {name:"Prepare", icon:"prepare", callback:function(){obj.action_prepare();}},
-						"destroy": {name:"Destroy", icon:"destroy", callback:function(){obj.action_destroy();}},
-					}
-				},
+				"start": {name:'Start', icon:'start', callback:function(){obj.action_start();}},
+				"stop": {name:"Stop", icon:"stop", callback:function(){obj.action_stop();}},
+				"prepare": {name:"Prepare", icon:"prepare", callback:function(){obj.action_prepare();}},
+				"destroy": {name:"Destroy", icon:"destroy", callback:function(){obj.action_destroy();}},
+				"sep1": "---",
 				"remove": {name:'Delete', icon:'remove'},
 			}
 		};
@@ -477,8 +486,9 @@ var Connection = Class.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
-	remove: function(callback) {
+	remove: function(callback, ask) {
 		if (this.busy) return;
+		if (ask && this.editor.options.safe_mode && ! confirm("Do you want to delete this connection?")) return;
 		this.setBusy(true);
 		var t = this;
 		ajax({
@@ -508,7 +518,7 @@ $.contextMenu({
 			items: {
 				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
 				"configure": {name:'Configure', icon:'configure'},
-				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove();}},
+				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove(null, true);}},
 			}
 		}
 	}
@@ -649,8 +659,9 @@ var Element = Class.extend({
 	     if (this.children[i].id == ch.id)
 	      this.children.splice(i, 1);
 	},
-	remove: function(callback) {
+	remove: function(callback, ask) {
 		if (this.busy) return;
+		if (ask && this.editor.options.safe_mode && ! confirm("Do you want to delete this element?")) return;
 		this.setBusy(true);
 		var t = this;
 		var removed = false;
@@ -690,22 +701,17 @@ $.contextMenu({
 				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
 				"connect": {name:'Connect', icon:'connect', callback: function(){obj.editor.onElementConnectTo(obj);}},
 				"sep1": "---",
-				"control": {
-					"name": "Control",
-					"icon": "control",
-					"items": {
-						"start": {name:'Start', icon:'start', callback: function(){obj.action_start();}},
-						"stop": {name:"Stop", icon:"stop", callback: function(){obj.action_stop();}},
-						"prepare": {name:"Prepare", icon:"prepare", callback: function(){obj.action_prepare();}},
-						"destroy": {name:"Destroy", icon:"destroy", callback: function(){obj.action_destroy();}},
-					}
-				},
-				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
+				"start": {name:'Start', icon:'start', callback: function(){obj.action_start();}},
+				"stop": {name:"Stop", icon:"stop", callback: function(){obj.action_stop();}},
+				"prepare": {name:"Prepare", icon:"prepare", callback: function(){obj.action_prepare();}},
+				"destroy": {name:"Destroy", icon:"destroy", callback: function(){obj.action_destroy();}},
 				"sep2": "---",
-				"configure": {name:'Configure', icon:'configure'},
+				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
 				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep3": "---",
-				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove();}},
+				"configure": {name:'Configure', icon:'configure'},
+				"sep4": "---",
+				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove(null, true);}},
 			}
 		}
 	}
