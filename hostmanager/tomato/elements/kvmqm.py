@@ -245,7 +245,7 @@ class KVMQM(elements.Element):
 			
 	def _template(self):
 		if self.template:
-			return self.template
+			return self.template.upcast()
 		pref = resources.template.getPreferred(self.TYPE)
 		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
 		return pref
@@ -397,7 +397,7 @@ class KVMQM(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["template"] = self.template.name if self.template else None
+		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		return info
 
 	def updateUsage(self, usage, data):

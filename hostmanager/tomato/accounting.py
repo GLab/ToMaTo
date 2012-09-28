@@ -149,7 +149,11 @@ class UsageStatistics(attributes.Mixin, models.Model):
     def update(self):
         usage = Usage()
         begin = time.time()
-        self._object().upcast().updateUsage(usage, self.attrs)
+        obj = self._object()
+        if not obj:
+            self.remove()
+            return
+        obj.upcast().updateUsage(usage, self.attrs)
         end = time.time()
         self.createRecord("single", begin, end, 1, usage)
         self._combine()

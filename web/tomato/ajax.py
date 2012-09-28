@@ -34,7 +34,8 @@ def topology_modify(api, id, attrs={}): #@ReservedAssignment
 def topology_action(api, id, action, params={}): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
 	res = api.topology_action(id, action, params)
-	return res
+	info = api.topology_info(id)
+	return (res, info)
 
 @wrap_json
 def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignment
@@ -58,7 +59,8 @@ def element_modify(api, id, attrs={}): #@ReservedAssignment
 def element_action(api, id, action, params={}): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
 	res = api.element_action(id, action, params)
-	return res
+	info = api.element_info(id)
+	return (res, info)
 
 @wrap_json
 def element_remove(api, id): #@ReservedAssignment
@@ -89,7 +91,8 @@ def connection_modify(api, id, attrs={}): #@ReservedAssignment
 def connection_action(api, id, action, params={}): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
 	res = api.connection_action(id, action, params)
-	return res
+	info = api.connection_info(id)
+	return (res, info)
 
 @wrap_json
 def connection_remove(api, id): #@ReservedAssignment

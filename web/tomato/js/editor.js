@@ -1,3 +1,5 @@
+// http://marijnhaverbeke.nl/uglifyjs
+
 var ajax = function(options) {
 	var t = this;
 	$.ajax({
@@ -161,9 +163,8 @@ var Workspace = Class.extend({
     	this.canvas.relPos = function(pos) {
     		return {x: (pos.x - fs) / (c.width-2*fs), y: (pos.y - fs) / (c.height-2*fs)};
     	}
-    	this.beginnerHelp = this.canvas.text(c.width/2, c.height/4, "Beginner help").attr({"font-size": 25, "fill": "#999999"});
-		if (this.editor.options.beginner_mode && this.editor.options.new_topology) this.beginnerHelp.show();
-		else this.beginnerHelp.hide();
+    	this.beginnerHelp = this.canvas.text(c.width/2, c.height/4, "").attr({"font-size": 25, "fill": "#999999"});
+    	this.updateBeginnerHelp();
 		var t = this;
 		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
 		this.container.click(function(evt){
@@ -172,6 +173,26 @@ var Workspace = Class.extend({
 		this.container.mousemove(function(evt){
 			t.onMouseMove(evt);
 		});
+	},
+	updateBeginnerHelp: function() {
+		if (! this.editor.options.beginner_mode) {
+			this.beginnerHelp.hide();
+			return;
+		}
+		var text = "";
+		if (this.editor.topology.elementCount() == 0) { 
+			text = "Select an element from the palette\nand click into the workspace to\nadd it to the topology.";
+		} else if (this.editor.topology.elementCount() < 3) { 
+			text = "Add some other elements to the topology\nso you can create connections.";
+		} else if (this.editor.topology.connectionCount() == 0) {
+ 			text = "Right-click on an element, select connect\nand click on another element to\nconnect these elements.";
+		} else if (this.editor.topology.connectionCount() < 2) { 
+			text = "Add another connection so your\ntopology is fully connected.";
+		}
+		this.beginnerHelp.attr({text: text});
+		if (text) this.beginnerHelp.show();
+		else this.beginnerHelp.hide();
+		window.setTimeout("editor.workspace.updateBeginnerHelp();", 1000);
 	},
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {
@@ -194,8 +215,7 @@ var Workspace = Class.extend({
 		}
 	},
 	onOptionChanged: function(name) {
-		if (this.editor.options.beginner_mode && this.editor.topology.isEmpty()) this.beginnerHelp.show();
-		else this.beginnerHelp.hide();
+    	this.updateBeginnerHelp();
 	},
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
@@ -256,7 +276,7 @@ var Topology = Class.extend({
 	},
 	loadConnection: function(con, elements) {
 		var conObj = new Connection(this, con, this._getCanvas());
-		this.connections[con.id] = conObj;
+		if (con.id) this.connections[con.id] = conObj;
 		if (con.elements) { //elements are given by id
 			for (var j=0; j<con.elements.length; j++) {
 				this.elements[con.elements[j]].connection = conObj;
@@ -285,6 +305,16 @@ var Topology = Class.extend({
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;
 		return true;
 		//no connections without elements
+	},
+	elementCount: function() {
+		var count = 0;
+		for (var id in this.elements) count++;
+		return count;
+	},
+	connectionCount: function() {
+		var count = 0;
+		for (var id in this.connections) count++;
+		return count;
 	},
 	nextElementName: function(data) {
 		var names = [];
@@ -397,7 +427,7 @@ $.contextMenu({
 				"prepare": {name:"Prepare", icon:"prepare", callback:function(){obj.action_prepare();}},
 				"destroy": {name:"Destroy", icon:"destroy", callback:function(){obj.action_destroy();}},
 				"sep1": "---",
-				"remove": {name:'Delete', icon:'remove'},
+				"remove": {name:'Delete', icon:'remove'}
 			}
 		};
 	}
@@ -518,7 +548,7 @@ $.contextMenu({
 			items: {
 				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
 				"configure": {name:'Configure', icon:'configure'},
-				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove(null, true);}},
+				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove(null, true);}}
 			}
 		}
 	}
@@ -609,6 +639,9 @@ var Element = Class.extend({
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 	},
+	consoleAvailable: function() {
+		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
+	},
 	paint: function() {
 	},
 	paintUpdate: function() {
@@ -641,6 +674,20 @@ var Element = Class.extend({
 	action: function(action, params) {
 		this.setBusy(true);
 		log("Element action #"+this.id+": "+action);
+		log(params);
+		var t = this;
+		ajax({
+			url: 'element/'+this.id+'/action',
+		 	data: {action: action, params: params},
+		 	successFn: function(result) {
+		 		t.updateData(result[1]);
+		 		t.setBusy(false);
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 		t.setBusy(false);
+		 	}
+		});
 	},
 	action_start: function() {
 		this.action("start");
@@ -706,12 +753,19 @@ $.contextMenu({
 				"prepare": {name:"Prepare", icon:"prepare", callback: function(){obj.action_prepare();}},
 				"destroy": {name:"Destroy", icon:"destroy", callback: function(){obj.action_destroy();}},
 				"sep2": "---",
-				"console": {name:"Console", icon:"console", callback: function(){obj.openConsole();}},
+				"console": {
+					name:"Console",
+					icon:"console",
+					callback: function(){
+						obj.openConsole();
+					},
+					disabled: !obj.consoleAvailable()
+				},
 				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep3": "---",
 				"configure": {name:'Configure', icon:'configure'},
 				"sep4": "---",
-				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove(null, true);}},
+				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove(null, true);}}
 			}
 		}
 	}
@@ -964,9 +1018,9 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.templates = new TemplateStore(this.options.resources);
-		this.setMode(Mode.select);
 		this.buildMenu();
 		this.topology.load(options.topology);
+		this.setMode(Mode.select);
 	},
 	onOptionChanged: function(name) {
 		this.workspace.onOptionChanged(name);
