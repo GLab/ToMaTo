@@ -58,7 +58,7 @@ $(function () {
             chart.series[0].remove(true);
             chart.addSeries({ name: 'Memory', data: memory[range], yAxis: 0, color: colors[0], marker:{symbol: symbols[0]} });
             chart.addSeries({ name: 'Diskspace', data: diskspace[range], yAxis: 0, color: colors[1], marker:{symbol: symbols[1]} });
-            chart.addSeries({ name: 'Traffic', data: traffic[range], yAxis: 0, color: colors[2], marker:{symbol: symbols[2]} });
+            chart.addSeries({ name: 'Traffic', data: traffic[range], yAxis: 2, color: colors[2], marker:{symbol: symbols[2]} });
             chart.addSeries({ name: 'CPU Time', data: cputime[range], yAxis: 1, color: colors[3], marker:{symbol: symbols[3]} });
         }
         chart = new Highcharts.Chart({
@@ -72,7 +72,7 @@ $(function () {
                         return formatSize(this.value);
                     }
                 },
-                title: { text: 'Memory / Diskspace / Traffic' },
+                title: { text: 'Memory / Diskspace' },
                 min: 0
             }, {
                 labels: {
@@ -81,6 +81,15 @@ $(function () {
                     }
                 },
                 title: { text: 'CPU Time' },
+                min: 0,
+                opposite: true
+            }, {
+                labels: {
+                    formatter: function() {
+                        return formatSize(this.value);
+                    }
+                },
+                title: { text: 'Traffic' },
                 min: 0,
                 opposite: true
             }],
@@ -92,7 +101,7 @@ $(function () {
             },
             series: [{ name: 'Memory', data: memory["5minutes"], yAxis: 0 },
                      { name: 'Diskspace', data: diskspace["5minutes"], yAxis: 0 }, 
-                     { name: 'Traffic', data: traffic["5minutes"], yAxis: 0 },
+                     { name: 'Traffic', data: traffic["5minutes"], yAxis: 2 },
                      { name: 'CPU-Time', data: cputime["5minutes"], yAxis: 1 }]
         });
     });

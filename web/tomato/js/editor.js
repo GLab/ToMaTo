@@ -146,6 +146,165 @@ var ToggleGroup = Class.extend({
 	}
 });
 
+var FormElement = Class.extend({
+	init: function(options) {
+		this.options = options;
+		this.name = options.name || options.label;
+		this.label = options.label || options.name;
+		if (options.callback) this.callback = options.callback;
+		this.element = null;
+	},
+	getElement: function() {
+		return this.element;
+	},
+	getLabel: function() {
+		return this.label;
+	},
+	getName: function() {
+		return this.name;
+	},
+	onChanged: function(value) {
+		if (this.isValid(value)) {
+			this.element.removeClass("invalid");
+			this.element.addClass("valid");
+		} else {
+			this.element.removeClass("valid");
+			this.element.addClass("invalid");
+		}
+		if (this.callback) this.callback(this, value);
+	},
+	isValid: function(value) {
+		return true;
+	}
+});
+
+var TextElement = FormElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.pattern = options.pattern || /^.*$/;
+		this.element = $('<input class="form-element" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
+		if (options.disabled) this.element.attr({disabled: true});
+		var t = this;
+		this.element.change(function() {
+			t.onChanged(this.value);
+		});
+		if (options.value) this.setValue(options.value);
+	},
+	getValue: function() {
+		return this.element[0].value;
+	},
+	setValue: function(value) {
+		this.element[0].value = value;
+	},
+	isValid: function(value) {
+		var val = value || this.getValue();
+		return this.pattern.test(val);
+	}
+});
+
+var CheckboxElement = FormElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.element = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		if (options.disabled) this.element.attr({disabled: true});
+		var t = this;
+		this.element.change(function() {
+			t.onChanged(this.value);
+		});
+		if (options.value) this.setValue(value);
+	},
+	getValue: function() {
+		return this.element[0].checked;
+	},
+	setValue: function(value) {
+		this.element[0].checked = value;
+	}
+});
+
+var ChoiceElement = FormElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.element = $('<select class="form-element" name="'+this.name+'"/>');
+		if (options.disabled) this.element.attr({disabled: true});
+		var t = this;
+		this.element.change(function() {
+			t.onChanged(this.value);
+		});
+		this.choices = options.choices || {};
+		this.setChoices(this.choices);
+		if (options.value) this.setValue(options.value);
+	},
+	setChoices: function(choices) {
+		this.element.find("option").remove();
+		for (var name in choices) this.element.append($('<option value="'+name+'">'+choices[name]+'</option>'));
+		this.setValue(this.getValue());
+	},
+	getValue: function() {
+		return this.element[0].value;
+	},
+	setValue: function(value) {
+		var options = this.element.find("option");
+		for (var i=0; i < options.length; i++) options[i].attr({selected: option.name == value});
+	}
+});
+
+var Window = Class.extend({
+	init: function(options) {
+		this.options = options;
+		this.div = $('<div/>').dialog({
+			autoOpen: false,
+			draggable: false,
+			resizable: false,
+			height:"auto",
+			width:"auto",
+			title: options.title,
+			show: "slide",
+			hide: "slide",
+			minHeight:50,
+		});
+		this.setPosition(options.position);
+	},
+	setTitle: function(title) {
+		this.div.dialog("option", "title", title);
+	},
+	setPosition: function(position) {
+		this.div.dialog("option", "position", position);
+	},
+	show: function() {
+		this.setPosition(this.position);
+		this.div.dialog("open");
+	},
+	hide: function() {
+		this.div.dialog("close");
+	},
+	toggle: function() {
+		if (this.div.dialog("isOpen")) this.hide();
+		else this.show();
+	},
+	add: function(div) {
+		this.div.append(div);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
+var AttributeWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		this.table = $('<table/>');
+		this.div.append(this.table);
+		this.elements = [];
+	},
+	add: function(element) {
+		this.elements.push(element);
+		var tr = $("<tr/>");
+		tr.append($("<td/>").append(element.getLabel()));
+		tr.append($("<td/>").append(element.getElement()));
+		this.table.append(tr);
+	}
+});
+
 var Workspace = Class.extend({
 	init: function(container, editor) {
 		this.container = container;
@@ -547,7 +706,7 @@ $.contextMenu({
 			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
-				"configure": {name:'Configure', icon:'configure'},
+				"configure": {name:'Configure', icon:'configure', callback:function(){obj.showConfigWindow();}},
 				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove(null, true);}}
 			}
 		}
@@ -634,7 +793,23 @@ var Element = Class.extend({
 		this.setPos(this.canvas.relPos(pos));
 	},
 	showUsage: function() {
-  		window.open('../element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+  		window.open('../element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+	},
+	showConfigWindow: function() {
+		var absPos = this.getAbsPos();
+		var wsPos = this.editor.workspace.container.position();
+		var pos = [absPos.x + wsPos.left - $("body").scrollLeft(), absPos.y + wsPos.top - $("body").scrollTop()];
+		this.configWindow = new AttributeWindow({
+			title: "Test window",
+			position: pos
+		});
+		this.configWindow.add(new TextElement({
+			label: "Name",
+			name: "name",
+			value: "myname",
+			pattern: /^[a-z]*$/
+		}));
+		this.configWindow.show();
 	},
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
@@ -672,6 +847,7 @@ var Element = Class.extend({
 		this.modify(attrs);
 	},
 	action: function(action, params) {
+		if ((action=="destroy"||action=="stop") && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this element?")) return;
 		this.setBusy(true);
 		log("Element action #"+this.id+": "+action);
 		log(params);
@@ -763,7 +939,7 @@ $.contextMenu({
 				},
 				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
 				"sep3": "---",
-				"configure": {name:'Configure', icon:'configure'},
+				"configure": {name:'Configure', icon:'configure', callback:function(){obj.showConfigWindow();}},
 				"sep4": "---",
 				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove(null, true);}}
 			}
@@ -1403,7 +1579,7 @@ var Editor = Class.extend({
 				toggle: false,
 				small: true,
 				func: function(){
-			  		window.open('/topology/'+t.topology.id+'/usage', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+			  		window.open('/topology/'+t.topology.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
 				}
 			}),
 			Menu.button({

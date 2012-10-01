@@ -71,6 +71,10 @@
 	cursor: url(../img/cursor_remove.png);
 }
 
+.form-element.invalid {
+	color: red;
+}
+
 .context-menu-item.icon-start { background-image: url(../img/started.png); }
 .context-menu-item.icon-stop { background-image: url(../img/prepared.png); }
 .context-menu-item.icon-prepare { background-image: url(../img/prepare16.png); }
