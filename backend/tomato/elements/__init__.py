@@ -141,7 +141,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 				continue
 			if key.startswith("_"):
 				continue
-			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for %s: %s", (self.type, key))
+			fault.check(key in self.CUSTOM_ATTRS, "Unsupported attribute for %s: %s", (self.type, key))
 			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
 		
 	def modify(self, attrs):
@@ -201,7 +201,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
 				return
-		fault.check(action in self.CUSTOM_ACTIONS, "Unsuported action for %s: %s", (self.type, action))
+		fault.check(action in self.CUSTOM_ACTIONS, "Unsupported action for %s: %s", (self.type, action))
 		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
 	def action(self, action, params):
@@ -319,6 +319,16 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def onError(self, exc):
 		pass
 			
+	def capActions(self):
+		actions = set()
+		for action, states in self.CUSTOM_ACTIONS.iteritems():
+			if self.state in states:
+				actions.add(action)
+		mel = self.mainElement()
+		if self.DIRECT_ACTIONS and mel:
+			actions |= set(mel.getAllowedActions()) - set(self.DIRECT_ACTIONS_EXCLUDE)
+		return list(actions) 
+			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
@@ -331,6 +341,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"attrs": self.attrs,
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
+			"cap_actions": self.capActions()
 		}
 		mel = self.mainElement()
 		if mel:

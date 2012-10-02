@@ -409,7 +409,7 @@ var Topology = Class.extend({
 			case "external_network":
 				elObj = new ExternalNetworkElement(this, el, this._getCanvas());
 				break;
-			case "tinc_endpoint":
+			case "external_network_endpoint":
 				//hide external network endpoints with external_network parent but show endpoints without parent 
 				elObj = el.parent ? new HiddenChildElement(this, el, this._getCanvas()) : new ExternalNetworkElement(this, el, this._getCanvas()) ;
 				break;
@@ -554,11 +554,35 @@ var Topology = Class.extend({
 		obj = this.loadConnection(data, [el1, el2]);
 		return obj;
 	},
-	action: function(action, params) {
-		log("Topology action: "+action);
+	action: function(action, options) {
+		var options = options || {};
+		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this topology?")) return;
+		var ids = 0;
+		var cb = function() {
+			ids--;
+			if (ids <= 0 && options.callback) options.callback();
+		}
+		for (var id in this.elements) {
+			var el = this.elements[id];
+			if (el.busy) continue;
+			if (el.parent) continue;
+			if (el.actionAvailable(action)) {
+				el.action(action, {
+					noask: true,
+					callback: cb
+				});
+				ids++;
+			}
+		}
+		if (ids <= 0 && options.callback) options.callback();
 	},
 	action_start: function() {
-		this.action("start");
+		var t = this;
+		this.action("prepare", {
+			callback: function(){
+				t.action("start", {});
+			}
+		});
 	},
 	action_stop: function() {
 		this.action("stop");
@@ -567,7 +591,12 @@ var Topology = Class.extend({
 		this.action("prepare");
 	},
 	action_destroy: function() {
-		this.action("destroy");
+		var t = this;
+		this.action("stop", {
+			callback: function(){
+				t.action("destroy", {});
+			}
+		});
 	},
 	remove: function() {
 	}
@@ -738,10 +767,13 @@ var Element = Class.extend({
 		return !this.editor.options.fixed_pos && this.editor.mode == Mode.select;
 	},
 	isConnectable: function() {
-		return false;
+		return true;
 	},
 	isRemovable: function() {
-		return false;
+		return this.actionAvailable("(remove)");
+	},
+	actionAvailable: function(action) {
+		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
 	},
 	updateData: function(data) {
 		if (data) this.data = data;
@@ -761,6 +793,9 @@ var Element = Class.extend({
 			if (!this.isMovable()) return false;
 			this.opos = this.getAbsPos();
 		}, function() { //stop
+			var pos = this.getAbsPos();
+			if (! this.opos) return;
+			if (pos.x == this.opos.x && pos.y == this.opos.y) return;
 			this.onDragged();
 		}, this, this, this);
 	},
@@ -846,9 +881,11 @@ var Element = Class.extend({
 		attrs[name] = value;
 		this.modify(attrs);
 	},
-	action: function(action, params) {
-		if ((action=="destroy"||action=="stop") && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this element?")) return;
+	action: function(action, options) {
+		var options = options || {};
+		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this element?")) return;
 		this.setBusy(true);
+		var params = options.params || {};
 		log("Element action #"+this.id+": "+action);
 		log(params);
 		var t = this;
@@ -858,6 +895,7 @@ var Element = Class.extend({
 		 	successFn: function(result) {
 		 		t.updateData(result[1]);
 		 		t.setBusy(false);
+		 		if (options.callback) options.callback(t, result[1]);
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -922,12 +960,47 @@ $.contextMenu({
 			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
-				"connect": {name:'Connect', icon:'connect', callback: function(){obj.editor.onElementConnectTo(obj);}},
+				"connect": {
+					name:'Connect',
+					icon:'connect',
+					callback: function(){
+						obj.editor.onElementConnectTo(obj);
+					},
+					disabled: !obj.isConnectable()
+				},
 				"sep1": "---",
-				"start": {name:'Start', icon:'start', callback: function(){obj.action_start();}},
-				"stop": {name:"Stop", icon:"stop", callback: function(){obj.action_stop();}},
-				"prepare": {name:"Prepare", icon:"prepare", callback: function(){obj.action_prepare();}},
-				"destroy": {name:"Destroy", icon:"destroy", callback: function(){obj.action_destroy();}},
+				"start": {
+					name:'Start',
+					icon:'start',
+					callback: function(){
+						obj.action_start();
+					},
+					disabled: !obj.actionAvailable("start")
+				},
+				"stop": {
+					name:"Stop",
+					icon:"stop",
+					callback: function(){
+						obj.action_stop();
+					},
+					disabled: !obj.actionAvailable("stop")
+				},
+				"prepare": {
+					name:"Prepare",
+					icon:"prepare",
+					callback: function(){
+						obj.action_prepare();
+					},
+					disabled: !obj.actionAvailable("prepare")
+				},
+				"destroy": {
+					name:"Destroy",
+					icon:"destroy",
+					callback: function(){
+						obj.action_destroy();
+					},
+					disabled: !obj.actionAvailable("destroy")
+				},
 				"sep2": "---",
 				"console": {
 					name:"Console",
@@ -937,11 +1010,30 @@ $.contextMenu({
 					},
 					disabled: !obj.consoleAvailable()
 				},
-				"usage": {name:"Usage", icon:"usage", callback: function(){obj.showUsage();}},
+				"usage": {
+					name:"Usage",
+					icon:"usage",
+					callback: function(){
+						obj.showUsage();
+					}
+				},
 				"sep3": "---",
-				"configure": {name:'Configure', icon:'configure', callback:function(){obj.showConfigWindow();}},
+				"configure": {
+					name:'Configure',
+					icon:'configure',
+					callback:function(){
+						obj.showConfigWindow();
+					}
+				},
 				"sep4": "---",
-				"remove": {name:'Delete', icon:'remove', callback: function(){obj.remove(null, true);}}
+				"remove": {
+					name:'Delete',
+					icon:'remove',
+					callback: function(){
+						obj.remove(null, true);
+					},
+					disabled: !obj.isRemovable()
+				}
 			}
 		}
 	}
@@ -1047,10 +1139,10 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	isConnectable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	isRemovable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: "tinc_endpoint", parent: this.data.id}, callback);
@@ -1064,10 +1156,10 @@ var ExternalNetworkElement = IconElement.extend({
 		this.iconSize = {x: 32, y:32};
 	},
 	isConnectable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	isRemovable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: "external_network_endpoint", parent: this.data.id}, callback);
@@ -1076,10 +1168,10 @@ var ExternalNetworkElement = IconElement.extend({
 
 var VMElement = IconElement.extend({
 	isConnectable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	isRemovable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: this.data.type + "_interface", parent: this.data.id}, callback);
@@ -1100,7 +1192,7 @@ var VMInterfaceElement = Element.extend({
 		return this.parent.getAbsPos();
 	},
 	isRemovable: function() {
-		return !this.busy;
+		return this._super() && !this.busy;
 	},
 	paint: function() {
 		var pos = this.getHandlePos();
@@ -1333,7 +1425,7 @@ var Editor = Class.extend({
 			toggle: false,
 			small: false,
 			func: function() {
-				t.topology.action_start();
+				t.topology.action_stop();
 			}
 		}));
 		group.addStackedElements([

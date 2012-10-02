@@ -198,7 +198,8 @@ class Tinc(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		del info["attrs"]["privkey"] #no need to expose this information
+		if "privkey" in info["attrs"]:
+			del info["attrs"]["privkey"] #no need to expose this information
 		return info
 
 	def _getPid(self):

@@ -101,7 +101,7 @@ class External_Network_Endpoint(elements.Element):
 	kind = attribute("kind", str)
 	network = models.ForeignKey(network.NetworkInstance, null=True)
 
-	TYPE = "external_network_ep"
+	TYPE = "external_network_endpoint"
 	CAP_CHILDREN = {}
 	
 	CUSTOM_ACTIONS = {
