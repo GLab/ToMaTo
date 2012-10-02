@@ -459,6 +459,32 @@ var Topology = Class.extend({
 		for (var i=0; i<data.elements.length; i++) this.loadElement(data.elements[i]);
 		this.connections = {};
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
+		
+		this.settingOptions = true;
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode"];
+		for (var i = 0; i < opts.length; i++) {
+			this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
+		}
+		this.settingOptions = false;
+	},
+	setBusy: function(busy) {
+		this.busy = busy;
+	},
+	modify: function(attrs) {
+		this.setBusy(true);
+		log("Modify topology #"+this.id);
+		log(attrs);
+		var t = this;
+		//TODO: success and error callbacks
+		ajax({
+			url: 'topology/'+this.id+'/modify',
+		 	data: {attrs: attrs},
+		});
+	},
+	modify_value: function(name, value) {
+		var attrs = {};
+		attrs[name] = value;
+		this.modify(attrs);
 	},
 	isEmpty: function() {
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;
@@ -553,6 +579,10 @@ var Topology = Class.extend({
 		data.attrs = data.attrs || {};
 		obj = this.loadConnection(data, [el1, el2]);
 		return obj;
+	},
+	onOptionChanged: function(name) {
+		if (this.settingOptions) return;
+		this.modify_value("_" + name, this.editor.options[name]);
 	},
 	action: function(action, options) {
 		var options = options || {};
@@ -764,7 +794,7 @@ var Element = Class.extend({
 		this.busy = busy;
 	},
 	isMovable: function() {
-		return !this.editor.options.fixed_pos && this.editor.mode == Mode.select;
+		return (!this.editor.options.fixed_pos) && this.editor.mode == Mode.select;
 	},
 	isConnectable: function() {
 		return true;
@@ -1290,7 +1320,13 @@ var Editor = Class.extend({
 		this.topology.load(options.topology);
 		this.setMode(Mode.select);
 	},
+	setOption: function(name, value) {
+		this.options[name] = value;
+		this.optionCheckboxes[name].setChecked(value);
+		this.onOptionChanged(name);
+	},
 	onOptionChanged: function(name) {
+		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
 	},
 	optionMenuItem: function(options) {
@@ -1298,7 +1334,7 @@ var Editor = Class.extend({
 		return Menu.checkbox({
 			name: options.name, label: options.label, tooltip: options.tooltip,
 			func: function(value){
-				t.options[options.name]=value;
+				t.options[options.name]=value != null;
 			  t.onOptionChanged(options.name);
 			},
 			checked: this.options[options.name]
@@ -1697,29 +1733,30 @@ var Editor = Class.extend({
 
 		var tab = this.menu.addTab("Options");
 
-		var group = tab.addGroup("Editor");		
-		group.addStackedElements([
-			this.optionMenuItem({
+		var group = tab.addGroup("Editor");
+		this.optionCheckboxes = {
+			safe_mode: this.optionMenuItem({
 				name:"safe_mode",
-				label:"Safe mode",
-				tooltip:"Asks before all destructive actions"
-			}),
-			this.optionMenuItem({
-				name:"snap_to_grid",
-				label:"Snap to grid",
-				tooltip:"All elements snap to an invisible "+this.options.grid_size+" pixel grid"
-			}),
-			this.optionMenuItem({
-				name:"fixed_pos",
-				label:"Fixed positions",
-				tooltip:"Elements can not be moved"
-			}), 
-			this.optionMenuItem({
-				name:"beginner_mode",
-				label:"Beginner mode",
-				tooltip:"Displays help messages for all elements"
-			})
-		]);
+   				label:"Safe mode",
+   				tooltip:"Asks before all destructive actions"
+   			}),
+   			snap_to_grid: this.optionMenuItem({
+   				name:"snap_to_grid",
+   				label:"Snap to grid",
+   				tooltip:"All elements snap to an invisible "+this.options.grid_size+" pixel grid"
+   			}),
+   			fixed_pos: this.optionMenuItem({
+		        name:"fixed_pos",
+		        label:"Fixed positions",
+		        tooltip:"Elements can not be moved"
+		    }),
+		    beginner_mode: this.optionMenuItem({
+		        name:"beginner_mode",
+		        label:"Beginner mode",
+		        tooltip:"Displays help messages for all elements"
+		    })
+		};
+		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode]);
 
 		this.menu.paint();
 	}
