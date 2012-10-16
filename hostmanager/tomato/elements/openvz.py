@@ -18,7 +18,7 @@
 import os.path, sys
 from django.db import models
 from tomato import connections, elements, resources, fault, config
-from tomato.lib.attributes import attribute, between #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib import decorators, util, cmd #@UnresolvedImport
 from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
@@ -129,22 +129,34 @@ Actions:
 	 	host_info) and grant is the grant.
 """
 
+ST_CREATED = "created"
+ST_PREPARED = "prepared"
+ST_STARTED = "started"
+
 class OpenVZ(elements.Element):
-	vmid = attribute("vmid", int)
-	vncport = attribute("vncport", int)
-	vncpid = attribute("vncpid", int)
-	vncpassword = attribute("vncpassword", str)	
-	ram = attribute("ram", between(64, 4096, faultType=fault.new_user), default=256)
-	diskspace = attribute("diskspace", between(512, 102400, faultType=fault.new_user), default=10240)
-	rootpassword = attribute("rootpassword", str)
-	hostname = attribute("hostname", str)	
-	gateway4 = attribute("gateway4", str)	
-	gateway6 = attribute("gateway6", str)	
+	vmid_attr = Attr("pid", type="int")
+	vmid = vmid_attr.attribute()
+	vncport_attr = Attr("vncport", type="int")
+	vncport = vncport_attr.attribute()
+	vncpid_attr = Attr("vncpid", type="int")
+	vncpid = vncpid_attr.attribute()
+	vncpassword_attr = Attr("vncpassword", type="str")
+	vncpassword = vncpassword_attr.attribute()
+	ram_attr = Attr("ram", type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram = ram_attr.attribute()
+	diskspace_attr = Attr("diskspace", type="int", minValue=512, maxValue=102400, faultType=fault.new_user, default=10240)
+	diskspace = diskspace_attr.attribute()
+	rootpassword_attr = Attr("rootpassword", type="str")
+	rootpassword = rootpassword_attr.attribute()
+	hostname_attr = Attr("hostname", type="str")
+	hostname = hostname_attr.attribute()
+	gateway4_attr = Attr("gateway4", type="str")
+	gateway4 = gateway4_attr.attribute()	
+	gateway6_attr = Attr("gateway6", type="str")
+	gateway6 = gateway6_attr.attribute()		
+	template_attr = Attr("template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(resources.Resource, null=True)
 
-	ST_CREATED = "created"
-	ST_PREPARED = "prepared"
-	ST_STARTED = "started"
 	TYPE = "openvz"
 	CAP_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -164,13 +176,13 @@ class OpenVZ(elements.Element):
 		"stop": ST_PREPARED,
 	}	
 	CAP_ATTRS = {
-		"ram": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"diskspace": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"rootpassword": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"hostname": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"gateway4": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"gateway6": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"template": [ST_CREATED, ST_PREPARED],
+		"ram": ram_attr,
+		"diskspace": diskspace_attr,
+		"rootpassword": rootpassword_attr,
+		"hostname": hostname_attr,
+		"gateway4": gateway4_attr,
+		"gateway6": gateway6_attr,
+		"template": template_attr,
 	}
 	CAP_CHILDREN = {
 		"openvz_interface": [ST_CREATED, ST_PREPARED],
@@ -185,7 +197,7 @@ class OpenVZ(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -206,18 +218,18 @@ class OpenVZ(elements.Element):
 		return out
 			
 	def _execute(self, cmd_, timeout=60):
-		assert self.state == self.ST_STARTED
+		assert self.state == ST_STARTED
 		out = self._vzctl("exec", [cmd_], timeout=timeout)
 		return out
 			
 	def _getState(self):
 		res = self._vzctl("status")
 		if "exist" in res and "running" in res:
-			return self.ST_STARTED
+			return ST_STARTED
 		if "exist" in res and "down" in res:
-			return self.ST_PREPARED
+			return ST_PREPARED
 		if "deleted" in res:
-			return self.ST_CREATED
+			return ST_CREATED
 		fault.raise_("Unable to determine openvz state", fault.INTERNAL_ERROR) #pragma: no cover
 
 	def _checkState(self):
@@ -245,36 +257,36 @@ class OpenVZ(elements.Element):
 		return "veth%s.%s" % (self.vmid, ifname)
 	
 	def _addInterface(self, interface):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_add", interface.name, "--save"])
 		self._vzctl("set", ["--ifname", interface.name, "--host_ifname", self._interfaceName(interface.name), "--save"])
 		
 	def _removeInterface(self, interface):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_del", interface.name, "--save"])
 		
 	def _setRam(self):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		val = "%dM" % int(self.ram)
 		self._vzctl("set", ["--vmguarpages", val, "--privvmpages", val, "--save"])
 	
 	def _setDiskspace(self):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		val = "%dM" % int(self.ram)
 		self._vzctl("set", ["--diskspace", val, "--save"])
 
 	def _setRootpassword(self):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		if self.rootpassword:
 			self._vzctl("set", ["--userpasswd", "root:%s" % self.rootpassword, "--save"])
 
 	def _setHostname(self):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		if self.hostname:
 			self._vzctl("set", ["--hostname", self.hostname, "--save"])
 
 	def _setGateways(self):
-		assert self.state == self.ST_STARTED
+		assert self.state == ST_STARTED
 		if self.gateway4:
 			try:
 				while True:
@@ -291,7 +303,7 @@ class OpenVZ(elements.Element):
 			self._execute("ip -6 route replace default via %s" % self.gateway6)
 
 	def _useImage(self, path_):
-		assert self.state != self.ST_CREATED
+		assert self.state != ST_CREATED
 		imgPath = self._imagePath()
 		path.remove(imgPath, recursive=True)
 		path.createDir(imgPath)
@@ -303,49 +315,49 @@ class OpenVZ(elements.Element):
 
 	def onChildAdded(self, interface):
 		self._checkState()
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._addInterface(interface)
 		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._removeInterface(interface)
 		interface.setState(self.state)
 
 	def modify_ram(self, val):
 		self.ram = val
-		if self.state != self.ST_CREATED:
+		if self.state != ST_CREATED:
 			self._setRam()
 		
 	def modify_diskspace(self, val):
 		self.diskspace = val
-		if self.state != self.ST_CREATED:
+		if self.state != ST_CREATED:
 			self._setDiskspace()
 
 	def modify_rootpassword(self, val):
 		self.rootpassword = val
-		if self.state != self.ST_CREATED:
+		if self.state != ST_CREATED:
 			self._setRootpassword()
 	
 	def modify_hostname(self, val):
 		self.hostname = val
-		if self.state != self.ST_CREATED:
+		if self.state != ST_CREATED:
 			self._setHostname()
 
 	def modify_gateway4(self, val):
 		self.gateway4 = val
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			self._setGateways()
 
 	def modify_gateway6(self, val):
 		self.gateway6 = val
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			self._setGateways()
 	
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._useImage(self._template().getPath())
 
 	def action_prepare(self):
@@ -354,7 +366,7 @@ class OpenVZ(elements.Element):
 		tplPath = os.path.relpath(tplPath, "/var/lib/vz/template/cache") #calculate relative path to trick openvz
 		self._vzctl("create", ["--ostemplate", tplPath, "--config", "default"])
 		self._vzctl("set", ["--devices", "c:10:200:rw", "--capability", "net_admin:on", "--save"])
-		self.setState(self.ST_PREPARED, True) #must be here or the set commands fail
+		self.setState(ST_PREPARED, True) #must be here or the set commands fail
 		self._setRam()
 		self._setDiskspace()
 		self._setRootpassword()
@@ -373,12 +385,12 @@ class OpenVZ(elements.Element):
 				self._vzctl("destroy")
 			else:
 				raise
-		self.setState(self.ST_CREATED, True)
+		self.setState(ST_CREATED, True)
 
 	def action_start(self):
 		self._checkState()
 		self._vzctl("start") #not using --wait since this might hang
-		self.setState(self.ST_STARTED, True)
+		self.setState(ST_STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
@@ -401,7 +413,7 @@ class OpenVZ(elements.Element):
 			process.kill(self.vncpid)
 			del self.vncpid
 		self._vzctl("stop")
-		self.setState(self.ST_PREPARED, True)
+		self.setState(ST_PREPARED, True)
 
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
@@ -429,7 +441,7 @@ class OpenVZ(elements.Element):
 		return info
 
 	def _cputime(self):
-		if self.state != self.ST_STARTED:
+		if self.state != ST_STARTED:
 			return None
 		with open("/proc/vz/vestat") as fp:
 			for line in fp:
@@ -448,7 +460,7 @@ class OpenVZ(elements.Element):
 		return cputime
 		
 	def _memory(self):
-		if self.state != self.ST_STARTED:
+		if self.state != ST_STARTED:
 			return None
 		with open("/proc/user_beancounters") as fp:
 			for line in fp:
@@ -468,7 +480,7 @@ class OpenVZ(elements.Element):
 		return memory
 		
 	def _diskspace(self):
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			with open("/proc/vz/vzquota") as fp:
 				while True:
 					line = fp.readline()
@@ -481,7 +493,7 @@ class OpenVZ(elements.Element):
 			path.diskspace(self._imagePath())
 		
 	def updateUsage(self, usage, data):
-		if self.state == self.ST_CREATED:
+		if self.state == ST_CREATED:
 			return
 		cputime = self._cputime()
 		if cputime:
@@ -546,20 +558,24 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name = attribute("name", str)
-	ip4address = attribute("ip4address", str)
-	ip6address = attribute("ip6address", str)
-	use_dhcp = attribute("use_dhcp", bool, default="False")
+	name_attr = Attr("name", type="str", regExp="^eth[0-9]+$")
+	name = name_attr.attribute()
+	ip4address_attr = Attr("ip4address", type="str")
+	ip4address = ip4address_attr.attribute()	
+	ip6address_attr = Attr("ip6address", type="str")
+	ip6address = ip6address_attr.attribute()		
+	use_dhcp_attr = Attr("use_dhcp", type="bool", default=False)
+	use_dhcp = use_dhcp_attr.attribute()		
 
 	TYPE = "openvz_interface"
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED]
+		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
-		"ip4address": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED, OpenVZ.ST_STARTED],
-		"ip6address": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED, OpenVZ.ST_STARTED],
-		"use_dhcp": [OpenVZ.ST_CREATED, OpenVZ.ST_PREPARED, OpenVZ.ST_STARTED],
+		"ip4address": ip4address_attr,
+		"ip6address": ip6address_attr,
+		"use_dhcp": use_dhcp_attr,
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [OpenVZ.TYPE]
@@ -572,7 +588,7 @@ class OpenVZ_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = OpenVZ.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), OpenVZ)
 		if not self.name:
@@ -582,17 +598,17 @@ class OpenVZ_Interface(elements.Element):
 		return self.getParent()._execute(cmd)
 		
 	def _setIp4Address(self):
-		assert self.state == OpenVZ.ST_STARTED
+		assert self.state == ST_STARTED
 		if self.ip4address:
 			self._execute("ip addr add %s dev %s" % (self.ip4address, self.name))
 		
 	def _setIp6Address(self):
-		assert self.state == OpenVZ.ST_STARTED
+		assert self.state == ST_STARTED
 		if self.ip6address:
 			self._execute("ip addr add %s dev %s" % (self.ip6address, self.name))
 
 	def _setUseDhcp(self):
-		assert self.state == OpenVZ.ST_STARTED
+		assert self.state == ST_STARTED
 		if not self.use_dhcp:
 			return
 		for cmd_ in ["/sbin/dhclient", "/sbin/dhcpcd"]:
@@ -604,17 +620,17 @@ class OpenVZ_Interface(elements.Element):
 
 	def modify_ip4address(self, val):
 		self.ip4address = val
-		if self.state == OpenVZ.ST_STARTED:
+		if self.state == ST_STARTED:
 			self._setIp4Address()
 
 	def modify_ip6address(self, val):
 		self.ip6address = val
-		if self.state == OpenVZ.ST_STARTED:
+		if self.state == ST_STARTED:
 			self._setIp6Address()
 
 	def modify_use_dhcp(self, val):
 		self.use_dhcp = val
-		if self.state == OpenVZ.ST_STARTED:
+		if self.state == ST_STARTED:
 			self._setUseDhcp()
 	
 	def _configure(self):
@@ -624,7 +640,7 @@ class OpenVZ_Interface(elements.Element):
 		self._execute("ip link set up %s" % self.name)			
 	
 	def interfaceName(self):
-		if self.state == OpenVZ.ST_STARTED:
+		if self.state == ST_STARTED:
 			return self.getParent()._interfaceName(self.name)
 		else:
 			return None		

@@ -124,7 +124,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
 		for key in attrs.keys():
 			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key), code=fault.UNSUPPORTED_ATTRIBUTE)
-			fault.check(self.state in self.CAP_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state), code=fault.INVALID_STATE)
+			self.CAP_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
 		"""
@@ -249,7 +249,11 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	
 	def returnResource(self, type_, num):
 		resources.give(type_, num, self)
-			
+		
+	@classmethod	
+	def cap_attrs(cls):
+		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
+					
 	def info(self):
 		return {
 			"id": self.id,

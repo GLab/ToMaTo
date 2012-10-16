@@ -26,8 +26,9 @@ DOC="""
 #TODO: implement capturing
 #TODO: implement link emulation using ifbs
 
+ST_DEFAULT = "default"
+
 class Fixed_Bridge(connections.Connection):
-	ST_DEFAULT = "default"
 	TYPE = "fixed_bridge"
 	CAP_ACTIONS = {
 		connections.REMOVE_ACTION: [ST_DEFAULT],
@@ -43,7 +44,7 @@ class Fixed_Bridge(connections.Connection):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_DEFAULT
+		self.state = ST_DEFAULT
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		
 	def _bridgeName(self):

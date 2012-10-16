@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from tomato.lib.decorators import xmlRpcSanitize #@UnresolvedImport
 
 def host_info():
     """
@@ -42,6 +43,7 @@ def host_info():
         "time": time.time(),
     }
 
+@xmlRpcSanitize
 def host_capabilities():
     """
     Retrieves the capabilities of the host. 
@@ -52,14 +54,16 @@ def host_capabilities():
     element_types = {}
     for type_, class_ in tomato.elements.TYPES.iteritems():
         caps = {}
-        for cap in ["actions", "next_state", "attrs", "children", "parent", "con_concepts"]:
+        for cap in ["actions", "next_state", "children", "parent", "con_concepts"]:
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
+        caps["attrs"] = class_.cap_attrs()
         element_types[type_] = caps
     connection_types = {}
     for type_, class_ in tomato.connections.TYPES.iteritems():
         caps = {}
-        for cap in ["actions", "next_state", "attrs", "con_concepts"]:
+        for cap in ["actions", "next_state", "con_concepts"]:
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
+        caps["attrs"] = class_.cap_attrs()
         connection_types[type_] = caps
     return {
         "elements": element_types,

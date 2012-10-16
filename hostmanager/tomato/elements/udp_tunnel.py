@@ -17,7 +17,7 @@
 
 from tomato import connections, elements, fault
 from tomato.lib import util, cmd #@UnresolvedImport
-from tomato.lib.attributes import attribute #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib.cmd import net, process #@UnresolvedImport
 
 DOC="""
@@ -65,14 +65,17 @@ Actions:
 	 	Stops the endpoint.
 """
 
+ST_CREATED = "created"
+ST_STARTED = "started"
 
 class UDP_Tunnel(elements.Element):
-	pid = attribute("pid", int)
-	port = attribute("port", int)
-	connect = attribute("connect", str, default=None)
+	pid_attr = Attr("pid", type="int")
+	pid = pid_attr.attribute()
+	port_attr = Attr("port", type="int")
+	port = port_attr.attribute()
+	connect_attr = Attr("connect", states=[ST_CREATED], type="str", null=True, default=None)
+	connect = connect_attr.attribute()
 
-	ST_CREATED = "created"
-	ST_STARTED = "started"
 	TYPE = "udp_tunnel"
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
@@ -84,7 +87,7 @@ class UDP_Tunnel(elements.Element):
 		"stop": ST_CREATED,
 	}		
 	CAP_ATTRS = {
-		"connect": [ST_CREATED],
+		"connect": connect_attr,
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -98,7 +101,7 @@ class UDP_Tunnel(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
@@ -106,7 +109,7 @@ class UDP_Tunnel(elements.Element):
 		return "stap%d" % self.id
 
 	def interfaceName(self):
-		return self._interfaceName() if self.state == self.ST_STARTED else None
+		return self._interfaceName() if self.state == ST_STARTED else None
 				
 	def modify_connect(self, val):
 		self.connect = val
@@ -118,7 +121,7 @@ class UDP_Tunnel(elements.Element):
 		else:
 			cmd_.append("udp-listen:%d" % self.port)
 		self.pid = cmd.spawn(cmd_)
-		self.setState(self.ST_STARTED)
+		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
 		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 		con = self.getConnection()
@@ -132,7 +135,7 @@ class UDP_Tunnel(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
-		self.setState(self.ST_CREATED)
+		self.setState(ST_CREATED)
 
 	def upcast(self):
 		return self
@@ -142,7 +145,7 @@ class UDP_Tunnel(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			return
 		usage.memory = process.memory(self.pid)
 		cputime = process.cputime(self.pid)

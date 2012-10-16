@@ -19,7 +19,7 @@ import os, sys, json, shutil
 from django.db import models
 from tomato import connections, elements, resources, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute, between, oneOf #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib import decorators, util, cmd #@UnresolvedImport
 from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
@@ -129,24 +129,32 @@ Actions:
 	 	host_info) and grant is the grant.
 """
 
+ST_CREATED = "created"
+ST_PREPARED = "prepared"
+ST_STARTED = "started"
 
 class KVMQM(elements.Element):
-	vmid = attribute("vmid", int)
-	vncport = attribute("vncport", int)
-	vncpid = attribute("vncpid", int)
-	cpus = attribute("cpus", between(1, 4, faultType=fault.new_user), default=1)
-	ram = attribute("ram", between(64, 4096, faultType=fault.new_user), default=256)
-	kblang = attribute("kblang", oneOf(["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br",
-									 "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be",
-									 "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"], faultType=fault.new_user)
-									 , default="en-us")
-	usbtablet = attribute("usbtablet", bool, default="True")
-	vncpassword = attribute("vncpassword", str)
+	vmid_attr = Attr("vmid", type="int")
+	vmid = vmid_attr.attribute()
+	vncport_attr = Attr("vncport", type="int")
+	vncport = vncport_attr.attribute()
+	vncpid_attr = Attr("vncpid", type="int")
+	vncpid = vncpid_attr.attribute()
+	vncpassword_attr = Attr("vncpassword", type="str")
+	vncpassword = vncpassword_attr.attribute()
+	cpus_attr = Attr("cpus", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, faultType=fault.new_user, default=1)
+	cpus = cpus_attr.attribute()
+	ram_attr = Attr("ram", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram = ram_attr.attribute()
+	kblang_attr = Attr("kblang", states=[ST_CREATED, ST_PREPARED], type="str", options=["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br",
+									 "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"],
+									  faultType=fault.new_user, default="en-us")
+	kblang = kblang_attr.attribute()
+	usbtablet_attr = Attr("usbtablet", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
+	usbtablet = usbtablet_attr.attribute()
+	template_attr = Attr("template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	ST_CREATED = "created"
-	ST_PREPARED = "prepared"
-	ST_STARTED = "started"
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -165,11 +173,11 @@ class KVMQM(elements.Element):
 		"stop": ST_PREPARED,
 	}
 	CAP_ATTRS = {
-		"cpus": [ST_CREATED, ST_PREPARED],
-		"ram": [ST_CREATED, ST_PREPARED],
-		"kblang": [ST_CREATED, ST_PREPARED],
-		"usbtablet": [ST_CREATED, ST_PREPARED],
-		"template": [ST_CREATED, ST_PREPARED],
+		"cpus": cpus_attr,
+		"ram": ram_attr,
+		"kblang": kblang_attr,
+		"usbtablet": usbtablet_attr,
+		"template": template_attr,
 	}
 	CAP_CHILDREN = {
 		"kvmqm_interface": [ST_CREATED, ST_PREPARED],
@@ -184,7 +192,7 @@ class KVMQM(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -219,15 +227,15 @@ class KVMQM(elements.Element):
 		try:
 			res = self._qm("status")
 			if "running" in res:
-				return self.ST_STARTED
+				return ST_STARTED
 			if "stopped" in res:
-				return self.ST_PREPARED
+				return ST_PREPARED
 			if "unknown" in res:
-				return self.ST_CREATED
+				return ST_CREATED
 			fault.raise_("Unable to determine kvm state", fault.INTERNAL_ERROR)
 		except cmd.CommandError, err:
 			if err.errorCode == 2:
-				return self.ST_CREATED
+				return ST_CREATED
 
 	def _checkState(self):
 		savedState = self.state
@@ -237,7 +245,7 @@ class KVMQM(elements.Element):
 		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
 
 	def _control(self, cmds, timeout=60):
-		assert self.state == self.ST_STARTED, "VM must be running"
+		assert self.state == ST_STARTED, "VM must be running"
 		controlPath = self._controlPath()
 		fault.check(os.path.exists(controlPath), "Control path does not exist")
 		cmd_ = "".join([cmd.escape(json.dumps(cmd_))+"'\n'" for cmd_ in cmds])
@@ -258,31 +266,31 @@ class KVMQM(elements.Element):
 		return num
 
 	def _addInterface(self, interface):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
 
 	def _removeInterface(self, interface):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-delete", "net%d" % interface.num])
 
 	def _setCpus(self):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-cores", self.cpus])
 
 	def _setRam(self):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-memory", self.ram])
 
 	def _setKblang(self):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-keyboard", self.kblang])
 
 	def _setUsbtablet(self):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		self._qm("set", ["-tablet", int(self.usbtablet)])
 
 	def _useImage(self, path_):
-		assert self.state == self.ST_PREPARED
+		assert self.state == ST_PREPARED
 		path.copy(path_, self._imagePath())
 
 	def _checkImage(self, path):
@@ -290,44 +298,44 @@ class KVMQM(elements.Element):
 
 	def onChildAdded(self, interface):
 		self._checkState()
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._addInterface(interface)
 		interface.setState(self.state)
 
 	def onChildRemoved(self, interface):
 		self._checkState()
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._removeInterface(interface)
 		interface.setState(self.state)
 
 	def modify_cpus(self, cpus):
 		self._checkState()
 		self.cpus = cpus
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._setCpus()
 
 	def modify_ram(self, ram):
 		self._checkState()
 		self.ram = ram
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._setRam()
 		
 	def modify_kblang(self, kblang):
 		self._checkState()
 		self.kblang = kblang
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._setKblang()
 		
 	def modify_usbtablet(self, usbtablet):
 		self._checkState()
 		self.usbtablet = usbtablet
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._setUsbtablet()
 		
 	def modify_template(self, tmplName):
 		self._checkState()
 		self.template = resources.template.get(self.TYPE, tmplName)
-		if self.state == self.ST_PREPARED:
+		if self.state == ST_PREPARED:
 			self._useImage(self._template().getPath())
 
 	def action_prepare(self):
@@ -335,7 +343,7 @@ class KVMQM(elements.Element):
 		self._qm("create")
 		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
 		self._qm("set", ["-args", "-vnc unix:%s,password" % self._vncPath()]) #disable vnc tls as most clients dont support that 
-		self.setState(self.ST_PREPARED, True)
+		self.setState(ST_PREPARED, True)
 		self._setCpus()
 		self._setRam()
 		self._setKblang()
@@ -352,12 +360,12 @@ class KVMQM(elements.Element):
 	def action_destroy(self):
 		self._checkState()
 		self._qm("destroy")
-		self.setState(self.ST_CREATED, True)
+		self.setState(ST_CREATED, True)
 
 	def action_start(self):
 		self._checkState()
 		self._qm("start")
-		self.setState(self.ST_STARTED, True)
+		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.num)
 			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
@@ -378,7 +386,7 @@ class KVMQM(elements.Element):
 			process.kill(self.vncpid)
 			del self.vncpid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
-		self.setState(self.ST_PREPARED, True)
+		self.setState(ST_PREPARED, True)
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
@@ -401,9 +409,9 @@ class KVMQM(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		if self.state == self.ST_CREATED:
+		if self.state == ST_CREATED:
 			return
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			with open("/var/run/qemu-server/%d.pid" % self.vmid) as fp:
 				qmPid = int(fp.readline().strip())
 			memory = 0
@@ -448,11 +456,12 @@ Actions: None
 """
 
 class KVMQM_Interface(elements.Element):
-	num = attribute("num", int)
+	num_attr = Attr("num", type="int")
+	num = num_attr.attribute()
 
 	TYPE = "kvmqm_interface"
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [KVMQM.ST_CREATED, KVMQM.ST_PREPARED]
+		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
@@ -468,13 +477,13 @@ class KVMQM_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = KVMQM.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), KVMQM)
 		self.num = self.getParent()._nextIfaceNum()
 		
 	def interfaceName(self):
-		if self.state == KVMQM.ST_STARTED:
+		if self.state == ST_STARTED:
 			return self.getParent()._interfaceName(self.num)
 		else:
 			return None

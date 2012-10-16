@@ -18,7 +18,7 @@
 import os, shutil, hashlib, base64
 from tomato import connections, elements, fault
 from tomato.lib import util, cmd #@UnresolvedImport
-from tomato.lib.attributes import attribute, oneOf #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib.cmd import process, net, path #@UnresolvedImport
 
 DOC="""
@@ -76,16 +76,23 @@ Actions:
 """
 
 
-class Tinc(elements.Element):
-	port = attribute("port", int)
-	path = attribute("path", str)
-	mode = attribute("mode", oneOf(["hub", "switch"], faultType=fault.new_user), default="switch")
-	privkey = attribute("privkey", str)
-	pubkey = attribute("pubkey", str)
-	peers = attribute("peers", list, default=[])
+ST_CREATED = "created"
+ST_STARTED = "started"
 
-	ST_CREATED = "created"
-	ST_STARTED = "started"
+class Tinc(elements.Element):
+	port_attr = Attr("port", type="int")
+	port = port_attr.attribute()
+	path_attr = Attr("path")
+	path = path_attr.attribute()
+	mode_attr = Attr("mode", states=[ST_CREATED], options=["hub", "switch"], faultType=fault.new_user, default="switch")
+	mode = mode_attr.attribute()
+	privkey_attr = Attr("privkey")
+	privkey = privkey_attr.attribute()
+	pubkey_attr = Attr("pubkey")
+	pubkey = pubkey_attr.attribute()
+	peers_attr = Attr("peers", states=[ST_CREATED], default=[])
+	peers = peers_attr.attribute()
+
 	TYPE = "tinc"
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
@@ -97,8 +104,8 @@ class Tinc(elements.Element):
 		"stop": ST_CREATED,
 	}	
 	CAP_ATTRS = {
-		"mode": [ST_CREATED],
-		"peers": [ST_CREATED],
+		"mode": mode_attr,
+		"peers": peers_attr,
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -112,7 +119,7 @@ class Tinc(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 		self.path = self.dataPath()
@@ -123,7 +130,7 @@ class Tinc(elements.Element):
 		return "tinc%d" % self.id
 
 	def interfaceName(self):
-		return self._interfaceName() if self.state == self.ST_STARTED else None
+		return self._interfaceName() if self.state == ST_STARTED else None
 
 	def _name(self, pubkey):
 		# decode pubkey so two same keys are binary equivalent
@@ -176,7 +183,7 @@ class Tinc(elements.Element):
 				# peer public key -> hosts/[name]
 				fp.write(peer["pubkey"])
 		cmd.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
-		self.setState(self.ST_STARTED)
+		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
 		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
 		net.ifUp(ifName)
@@ -189,7 +196,7 @@ class Tinc(elements.Element):
 		if con:
 			con.disconnectInterface(self._interfaceName())
 		cmd.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
-		self.setState(self.ST_CREATED)
+		self.setState(ST_CREATED)
 		if os.path.exists(self.path):
 			shutil.rmtree(self.path)
 
@@ -212,7 +219,7 @@ class Tinc(elements.Element):
 	def updateUsage(self, usage, data):
 		if path.exists(self.path):
 			usage.diskspace = path.diskspace(self.path)
-		if self.state == self.ST_STARTED:
+		if self.state == ST_STARTED:
 			return
 		pid = self._getPid()
 		if pid:

@@ -17,7 +17,7 @@
 
 from tomato import connections, fault
 from tomato.lib import cmd #@UnresolvedImport
-from tomato.lib.attributes import attribute, oneOf, between #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 
 import os
@@ -26,33 +26,63 @@ DOC="""
 	Description
 	"""
 
-class Bridge(connections.Connection):
-	bridge = attribute("bridge", str)
-	
-	emulation = attribute("emulation", bool, default=False)
-	bandwidth_to = attribute("bandwidth_to", between(0, 1000000, faultType=fault.new_user), default=0)
-	bandwidth_from = attribute("bandwidth_from", between(0, 1000000, faultType=fault.new_user), default=0)
-	lossratio_to = attribute("lossratio_to", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	lossratio_from = attribute("lossratio_from", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	duplicate_to = attribute("duplicate_to", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	duplicate_from = attribute("duplicate_from", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	corrupt_to = attribute("corrupt_to", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	corrupt_from = attribute("corrupt_from", between(0.0, 100.0, faultType=fault.new_user), default=0.0)
-	delay_to = attribute("delay_to", between(0.0, 60000.0, faultType=fault.new_user), default=0.0)
-	delay_from = attribute("delay_from", between(0.0, 60000.0, faultType=fault.new_user), default=0.0)
-	jitter_to = attribute("jitter_to", between(0.0, 60000.0, faultType=fault.new_user), default=0.0)
-	jitter_from = attribute("jitter_from", between(0.0, 60000.0, faultType=fault.new_user), default=0.0)
-	distribution_to = attribute("distribution_to", str)
-	distribution_from = attribute("distribution_from", str)
-	
-	capturing = attribute("capturing", bool, default=False)
-	capture_filter = attribute("capture_filter", str, default="")
-	capture_port = attribute("capture_port", int)
-	capture_mode = attribute("capture_mode", oneOf(["net", "file"], faultType=fault.new_user), default="file")
-	capture_pid = attribute("capture_pid", int)
+ST_CREATED = "created"
+ST_STARTED = "started"
 
-	ST_CREATED = "created"
-	ST_STARTED = "started"
+class Bridge(connections.Connection):
+	bridge_attr = Attr("bridge", type="str")
+	bridge = bridge_attr.attribute()
+	
+	emulation_attr = Attr("emulation", type="bool", default=False)
+	emulation = emulation_attr.attribute()
+
+	bandwidth_to_attr = Attr("bandwidth_to", type="float", minValue=0, maxValue=1000000, faultType=fault.new_user, default=10000)
+	bandwidth_to = bandwidth_to_attr.attribute()
+	bandwidth_from_attr = Attr("bandwidth_from", type="float", minValue=0, maxValue=1000000, faultType=fault.new_user, default=10000)
+	bandwidth_from = bandwidth_from_attr.attribute()
+
+	lossratio_to_attr = Attr("lossratio_to", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	lossratio_to = lossratio_to_attr.attribute()
+	lossratio_from_attr = Attr("lossratio_from", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	lossratio_from = lossratio_from_attr.attribute()
+	
+	duplicate_to_attr = Attr("duplicate_to", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	duplicate_to = duplicate_to_attr.attribute()
+	duplicate_from_attr = Attr("duplicate_from", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	duplicate_from = duplicate_from_attr.attribute()
+
+	corrupt_to_attr = Attr("corrupt_to", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	corrupt_to = corrupt_to_attr.attribute()
+	corrupt_from_attr = Attr("corrupt_from", type="float", minValue=0.0, maxValue=100.0, faultType=fault.new_user, default=0.0)
+	corrupt_from = corrupt_from_attr.attribute()
+
+	delay_to_attr = Attr("delay_to", type="float", minValue=0.0, faultType=fault.new_user, default=0.0)
+	delay_to = delay_to_attr.attribute()
+	delay_from_attr = Attr("delay_from", type="float", minValue=0.0, faultType=fault.new_user, default=0.0)
+	delay_from = delay_from_attr.attribute()
+
+	jitter_to_attr = Attr("jitter_to", type="float", minValue=0.0, faultType=fault.new_user, default=0.0)
+	jitter_to = jitter_to_attr.attribute()
+	jitter_from_attr = Attr("jitter_from", type="float", minValue=0.0, faultType=fault.new_user, default=0.0)
+	jitter_from = jitter_from_attr.attribute()
+
+	distribution_to_attr = Attr("distribution_to", type="str", options=["uniform", "normal", "pareto", "paretonormal"], faultType=fault.new_user, default="uniform")
+	distribution_to = distribution_to_attr.attribute()
+	distribution_from_attr = Attr("distribution_from", type="str", options=["uniform", "normal", "pareto", "paretonormal"], faultType=fault.new_user, default="uniform")
+	distribution_from = distribution_from_attr.attribute()
+	
+
+	capturing_attr = Attr("capturing", type="bool", default=False)
+	capturing = capturing_attr.attribute()
+	capture_filter_attr = Attr("capture_filter", type="str", default="")
+	capture_filter = capture_filter_attr.attribute()
+	capture_port_attr = Attr("capture_port", type="int")
+	capture_port = capture_port_attr.attribute()
+	capture_mode_attr = Attr("capture_mode", type="str", options=["net", "file"], faultType=fault.new_user, default="file")
+	capture_mode = capture_mode_attr.attribute()
+	capture_pid_attr = Attr("capture_pid", type="int")
+	capture_pid = capture_pid_attr.attribute()
+
 	TYPE = "bridge"
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
@@ -70,26 +100,26 @@ class Bridge(connections.Connection):
 	}
 	CAP_ATTRS = {}
 	CAP_ATTRS_EMUL = {
-		"emulation": [ST_CREATED, ST_STARTED],
-		"delay_to": [ST_CREATED, ST_STARTED],
-		"delay_from": [ST_CREATED, ST_STARTED],
-		"jitter_to": [ST_CREATED, ST_STARTED],
-		"jitter_from": [ST_CREATED, ST_STARTED],
-		"distribution_to": [ST_CREATED, ST_STARTED],
-		"distribution_from": [ST_CREATED, ST_STARTED],
-		"bandwidth_to": [ST_CREATED, ST_STARTED],
-		"bandwidth_from": [ST_CREATED, ST_STARTED],
-		"lossratio_to": [ST_CREATED, ST_STARTED],
-		"lossratio_from": [ST_CREATED, ST_STARTED],
-		"duplicate_to": [ST_CREATED, ST_STARTED],
-		"duplicate_from": [ST_CREATED, ST_STARTED],
-		"corrupt_to": [ST_CREATED, ST_STARTED],
-		"corrupt_from": [ST_CREATED, ST_STARTED],
+		"emulation": emulation_attr,
+		"delay_to": delay_to_attr,
+		"delay_from": delay_from_attr,
+		"jitter_to": jitter_to_attr,
+		"jitter_from": jitter_from_attr,
+		"distribution_to": distribution_to_attr,
+		"distribution_from": distribution_from_attr,
+		"bandwidth_to": bandwidth_to_attr,
+		"bandwidth_from": bandwidth_from_attr,
+		"lossratio_to": lossratio_to_attr,
+		"lossratio_from": lossratio_from_attr,
+		"duplicate_to": duplicate_to_attr,
+		"duplicate_from": duplicate_from_attr,
+		"corrupt_to": corrupt_to_attr,
+		"corrupt_from": corrupt_from_attr,
 	}
 	CAP_ATTRS_CAPTURE = {
-		"capturing": [ST_CREATED, ST_STARTED],
-		"capture_filter": [ST_CREATED, ST_STARTED],
-		"capture_mode": [ST_CREATED, ST_STARTED],
+		"capturing": capturing_attr,
+		"capture_filter": capture_filter_attr,
+		"capture_mode": capture_mode_attr,
 	}
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
@@ -101,13 +131,13 @@ class Bridge(connections.Connection):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_CREATED
+		self.state = ST_CREATED
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.bridge = "br%d" % self.id
 		self.capture_port = self.getResource("port")
 				
 	def _startCapturing(self):
-		if not self.capturing or self.state == self.ST_CREATED:
+		if not self.capturing or self.state == ST_CREATED:
 			return
 		if self.capture_mode == "file":
 			if not os.path.exists(self.dataPath("capture")):
@@ -119,7 +149,7 @@ class Bridge(connections.Connection):
 			fault.raise_("Capture mode must be either file or net")
 				
 	def _stopCapturing(self):
-		if not self.capturing or self.state == self.ST_CREATED:
+		if not self.capturing or self.state == ST_CREATED:
 			return
 		if self.capture_pid:
 			process.kill(self.capture_pid)
@@ -254,7 +284,7 @@ class Bridge(connections.Connection):
 	def action_start(self):
 		net.bridgeCreate(self.bridge)
 		net.ifUp(self.bridge)
-		self.setState(self.ST_STARTED)
+		self.setState(ST_STARTED)
 		self._startCapturing()
 		for el in self.getElements():
 			ifname = el.interfaceName()
@@ -270,10 +300,10 @@ class Bridge(connections.Connection):
 		if net.bridgeExists(self.bridge):
 			net.ifDown(self.bridge)
 			net.bridgeRemove(self.bridge)
-		self.setState(self.ST_CREATED)
+		self.setState(ST_CREATED)
 
 	def connectInterface(self, ifname):
-		if self.state == self.ST_CREATED:
+		if self.state == ST_CREATED:
 			return
 		oldBridge = net.interfaceBridge(ifname)
 		if oldBridge == self.bridge:
@@ -288,7 +318,7 @@ class Bridge(connections.Connection):
 				el.onConnected()
 	
 	def disconnectInterface(self, ifname):
-		if self.state == self.ST_CREATED:
+		if self.state == ST_CREATED:
 			return
 		if not net.bridgeExists(self.bridge):
 			return

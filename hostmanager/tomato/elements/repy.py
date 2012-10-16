@@ -19,7 +19,7 @@ import os, sys
 from django.db import models
 from tomato import connections, elements, resources, fault
 from tomato.resources import template
-from tomato.lib.attributes import attribute, between #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.lib import util, cmd #@UnresolvedImport
 from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
@@ -109,20 +109,29 @@ Actions:
 	 	host_info) and grant is the grant.
 """
 
+ST_PREPARED = "prepared"
+ST_STARTED = "started"
 
 class Repy(elements.Element):
-	pid = attribute("pid", int)
-	vncport = attribute("vncport", int)
-	vncpid = attribute("vncpid", int)
-	vncpassword = attribute("vncpassword", str)
-	args = attribute("args", list, default=[])
-	cpus = attribute("cpus", between(0.01, 4.0, faultType=fault.new_user), default=0.25)
-	ram = attribute("ram", between(10, 4096, faultType=fault.new_user), default=25)
-	bandwidth = attribute("bandwidth", between(1024, 10000000000, faultType=fault.new_user), default=1000000)
+	pid_attr = Attr("pid", type="int")
+	pid = pid_attr.attribute()
+	vncport_attr = Attr("vncport", type="int")
+	vncport = vncport_attr.attribute()
+	vncpid_attr = Attr("vncpid", type="int")
+	vncpid = vncpid_attr.attribute()
+	vncpassword_attr = Attr("vncpassword", type="str")
+	vncpassword = vncpassword_attr.attribute()
+	args_attr = Attr("args", states=[ST_PREPARED], default=[])
+	args = args_attr.attribute()
+	cpus_attr = Attr("cpus", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, faultType=fault.new_user, default=0.25)
+	cpus = cpus_attr.attribute()
+	ram_attr = Attr("ram", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, faultType=fault.new_user, default=25)
+	ram = ram_attr.attribute()
+	bandwidth_attr = Attr("bandwidth", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, faultType=fault.new_user, default=1000000)
+	bandwidth = bandwidth_attr.attribute()
+	template_attr = Attr("template", states=[ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
-	ST_PREPARED = "prepared"
-	ST_STARTED = "started"
 	TYPE = "repy"
 	CAP_ACTIONS = {
 		"start": [ST_PREPARED],
@@ -137,11 +146,11 @@ class Repy(elements.Element):
 		"stop": ST_PREPARED,
 	}	
 	CAP_ATTRS = {
-		"template": [ST_PREPARED],
-		"args": [ST_PREPARED],
-		"cpus": [ST_PREPARED],
-		"ram": [ST_PREPARED],
-		"bandwidth": [ST_PREPARED],
+		"template": template_attr,
+		"args": args_attr,
+		"cpus": cpus_attr,
+		"ram": ram_attr,
+		"bandwidth": bandwidth_attr,
 	}
 	CAP_CHILDREN = {
 		"repy_interface": [ST_PREPARED],
@@ -156,7 +165,7 @@ class Repy(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = self.ST_PREPARED
+		self.state = ST_PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
@@ -221,7 +230,7 @@ class Repy(elements.Element):
 		iargs = sum((["-i", "%s,alias=%s" % (self._interfaceName(iface.name), iface.name)] for iface in self.getChildren()), [])
 		stdout = open(self.dataPath("program.log"), "w")
 		self.pid = cmd.spawn(["tomato-repy", "-p", self.dataPath("program.repy"), "-r", self.dataPath("resources"), "-v"] + iargs + self.args, stdout=stdout)
-		self.setState(self.ST_STARTED, True)
+		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
 			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
@@ -242,7 +251,7 @@ class Repy(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
-		self.setState(self.ST_PREPARED, True)
+		self.setState(ST_PREPARED, True)
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
@@ -302,11 +311,12 @@ Actions: None
 """
 
 class Repy_Interface(elements.Element):
-	name = attribute("name", str)
+	name_attr = Attr("name", type="str", regExp="^eth[0-9]+$")
+	name = name_attr.attribute()
 
 	TYPE = "repy_interface"
 	CAP_ACTIONS = {
-		elements.REMOVE_ACTION: [Repy.ST_PREPARED]
+		elements.REMOVE_ACTION: [ST_PREPARED]
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
@@ -322,13 +332,13 @@ class Repy_Interface(elements.Element):
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
-		self.state = Repy.ST_PREPARED
+		self.state = ST_PREPARED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), Repy)
 		self.name = self.getParent()._nextIfaceName()
 		
 	def interfaceName(self):
-		if self.state == Repy.ST_STARTED:
+		if self.state == ST_STARTED:
 			return self.getParent()._interfaceName(self.name)
 		else:
 			return None

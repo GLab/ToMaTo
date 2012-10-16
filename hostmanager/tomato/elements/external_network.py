@@ -17,6 +17,7 @@
 
 from django.db import models
 from tomato import connections, elements, resources
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from tomato.resources import network
 
 DOC="""
@@ -52,6 +53,7 @@ Actions: None
 
 
 class External_Network(elements.Element):
+	network_attr = Attr("network", null=True)
 	network = models.ForeignKey(network.Network, null=True, related_name="instances")
 
 	ST_DEFAULT = "default"
@@ -61,7 +63,7 @@ class External_Network(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
-		"network": [ST_DEFAULT],
+		"network": network_attr,
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
