@@ -17,12 +17,14 @@
 
 from django.db import models
 from tomato import elements, host, fault
-from tomato.lib.attributes import attribute, oneOf #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class Tinc_VPN(elements.Element):
-	name = attribute("name", str)
-	mode = attribute("mode", oneOf(["switch", "hub"]), default="switch")
+	name_attr = Attr("name", type="str")
+	name = name_attr.attribute()
+	mode_attr = Attr("mode", options=["switch", "hub"], default="switch", states=[ST_CREATED, ST_PREPARED])
+	mode = mode_attr.attribute()
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -32,8 +34,8 @@ class Tinc_VPN(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"name": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"mode": [ST_CREATED, ST_PREPARED],
+		"name": name_attr,
+		"mode": mode_attr,
 	}
 
 	DIRECT_ATTRS_EXCLUDE = []
@@ -130,9 +132,12 @@ class Tinc_VPN(elements.Element):
 
 class Tinc_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name = attribute("name", str)
-	mode = attribute("mode", oneOf(["switch", "hub"]), default="switch")
-	peers = attribute("peers", list, default=[])
+	name_attr = Attr("name", type="str")
+	name = name_attr.attribute()
+	mode_attr = Attr("mode", options=["switch", "hub"], default="switch", states=[ST_CREATED, ST_PREPARED])
+	mode = mode_attr.attribute()
+	peers_attr = Attr("peers", default=[], states=[ST_CREATED, ST_PREPARED])
+	peers = peers_attr.attribute()
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -140,9 +145,9 @@ class Tinc_Endpoint(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"name": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"mode": [ST_CREATED, ST_PREPARED],
-		"peers": [ST_CREATED, ST_PREPARED],
+		"name": name_attr,
+		"mode": mode_attr,
+		"peers": peers_attr,
 	}
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None, Tinc_VPN.TYPE]

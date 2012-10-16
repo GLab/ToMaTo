@@ -132,7 +132,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		direct = []
 		if self.DIRECT_ATTRS:
 			if mel:
-				direct = mel.getAllowedAttributes()
+				direct = mel.getAllowedAttributes().keys()
 			else:
 				caps = host.getElementCapabilities(self.remoteType())
 				direct = caps["attrs"].keys() if caps else []
@@ -142,7 +142,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			if key.startswith("_"):
 				continue
 			fault.check(key in self.CUSTOM_ATTRS, "Unsupported attribute for %s: %s", (self.type, key))
-			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s of %s can not be changed in state %s", (key, self.type, self.state))
+			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
 		"""
@@ -318,6 +318,21 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 
 	def onError(self, exc):
 		pass
+		
+	def capAttrs(self):
+		attrs = {}
+		if self.DIRECT_ATTRS:
+			mel = self.mainElement()
+			if mel:
+				caps = mel.getAllowedAttributes()
+				for name in self.DIRECT_ATTRS_EXCLUDE:
+					if name in caps:
+						del caps[name]
+				attrs.update(caps)
+		for name, attr in self.CUSTOM_ATTRS.iteritems():
+			if not attr.states or self.state in attr.states:
+				attrs[name] = attr.info()
+		return attrs
 			
 	def capActions(self):
 		actions = set()
@@ -341,7 +356,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"attrs": self.attrs,
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
-			"cap_actions": self.capActions()
+			"cap_actions": self.capActions(),
+			"cap_attrs": self.capAttrs()
 		}
 		mel = self.mainElement()
 		if mel:

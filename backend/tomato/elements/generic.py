@@ -17,7 +17,7 @@
 
 from django.db import models
 from tomato import elements, resources, host, fault
-from tomato.lib.attributes import attribute #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -25,9 +25,13 @@ ST_STARTED = "started"
 
 class VMElement(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
+	site_attr = Attr("site", type="str", null=True, states=[ST_CREATED])
 	site = models.ForeignKey(host.Site, null=True, on_delete=models.SET_NULL)
-	name = attribute("name", str)
-	profile = attribute("profile", str)
+	name_attr = Attr("name", type="str")
+	name = name_attr.attribute()
+	profile_attr = Attr("profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
+	profile = profile_attr.attribute()
+	template_attr = Attr("template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(resources.Resource, null=True)
 	
 	CUSTOM_ACTIONS = {
@@ -36,10 +40,10 @@ class VMElement(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"site": [ST_CREATED],
-		"name": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"profile": [ST_CREATED, ST_PREPARED],
-		"template": [ST_CREATED, ST_PREPARED],
+		"site": site_attr,
+		"name": name_attr,
+		"profile": profile_attr,
+		"template": template_attr,
 	}
 	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus"]
 	CAP_PARENT = [None]

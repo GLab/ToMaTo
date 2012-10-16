@@ -17,13 +17,15 @@
 
 from django.db import models
 from tomato import elements, host, fault
-from tomato.lib.attributes import attribute #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class UDP_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name = attribute("name", str)
-	connect = attribute("connect", str, default="")
+	name_attr = Attr("name", type="str")
+	name = name_attr.attribute()
+	connect_attr = Attr("connect", type="str", default="", states=[ST_CREATED, ST_PREPARED])
+	connect = connect_attr.attribute()
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -31,8 +33,8 @@ class UDP_Endpoint(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"name": [ST_CREATED, ST_PREPARED, ST_STARTED],
-		"connect": [ST_CREATED, ST_PREPARED],
+		"name": name_attr,
+		"connect": connect_attr,
 	}
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]

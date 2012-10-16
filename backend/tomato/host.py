@@ -288,11 +288,7 @@ class HostElement(attributes.Mixin, models.Model):
 
     def getAllowedAttributes(self):
         caps = self.host.getElementCapabilities(self.type)["attrs"]
-        res = []
-        for key, states in caps.iteritems():
-            if self.state in states:
-                res.append(key)
-        return res
+        return dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
     
     def updateAccountingData(self, data):
         self.usageStatistics.importRecords(data)
@@ -368,11 +364,7 @@ class HostConnection(attributes.Mixin, models.Model):
 
     def getAllowedAttributes(self):
         caps = self.host.getConnectionCapabilities(self.type)["attrs"]
-        res = []
-        for key, states in caps.iteritems():
-            if self.state in states:
-                res.append(key)
-        return res
+        return dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
   
     def updateAccountingData(self, data):
         self.usageStatistics.importRecords(data)

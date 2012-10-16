@@ -116,7 +116,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		direct = []
 		if self.DIRECT_ATTRS:
 			if mcon:
-				direct = mcon.getAllowedAttributes()
+				direct = mcon.getAllowedAttributes().keys()
 			else:
 				caps = host.getConnectionCapabilities(self.remoteType())
 				direct = caps["attrs"].keys() if caps else []
@@ -126,7 +126,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if key.startswith("_"):
 				continue
 			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for: %s", key)
-			fault.check(self.state in self.CUSTOM_ATTRS[key], "Attribute %s can not be changed in state %s", (key, self.state))
+			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
 		"""
