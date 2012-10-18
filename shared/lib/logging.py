@@ -53,8 +53,9 @@ class JSONLogger:
   def logMessage(self, message, category=None, **kwargs):
     self.log(message=message, category=category, **kwargs)
   def logException(self, **kwargs):
-    trace = traceback.extract_tb(sys.exc_traceback) if sys.exc_traceback else None
-    self.log(category="exception", trace=trace, caller=False, exception=(sys.exc_type.__name__, str(sys.exc_value)), **kwargs)
+    (type, value, trace) = sys.exc_info()
+    trace = traceback.extract_tb(trace) if trace else None
+    self.log(category="exception", trace=trace, caller=False, exception=(type.__name__, str(value)), **kwargs)
     
 _default = None
     

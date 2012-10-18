@@ -502,7 +502,7 @@ var Topology = Class.extend({
 		this.settingOptions = true;
 		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode"];
 		for (var i = 0; i < opts.length; i++) {
-			this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
+			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
 		this.settingOptions = false;		
 	},
@@ -669,6 +669,7 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
+		alert("Not implemented yet.");
 	},
 	showUsage: function() {
   		window.open('/topology/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
@@ -1069,9 +1070,23 @@ $.contextMenu({
 		return {
 			callback: function(key, options) {},
 			items: {
-				"header": {html:'<span>Connection '+obj.id+'</span>', type:"html"},
-				"configure": {name:'Configure', icon:'configure', callback:function(){obj.showConfigWindow();}},
-				"remove": {name:'Delete', icon:'remove', callback:function(){obj.remove(null, true);}}
+				"header": {
+					html:'<span>Connection '+obj.id+'</span>', type:"html"
+				},
+				"configure": {
+					name:'Configure',
+					icon:'configure',
+					callback: function(){
+						obj.showConfigWindow();
+					}
+				},
+				"remove": {
+					name:'Delete',
+					icon:'remove',
+					callback: function(){
+						obj.remove(null, true);
+					}
+				}
 			}
 		}
 	}
@@ -1852,7 +1867,10 @@ var Editor = Class.extend({
 				icon: "img/kvm16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: true
+				small: true,
+				func: function() {
+					alert("Not implemented yet.");
+				}
 			}),
 			Menu.button({
 				label: "OpenVZ image",
@@ -1860,7 +1878,10 @@ var Editor = Class.extend({
 				icon: "img/openvz16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: true
+				small: true,
+				func: function() {
+					alert("Not implemented yet.");
+				}
 			}),
 			Menu.button({
 				label: "Repy script",
@@ -1868,7 +1889,10 @@ var Editor = Class.extend({
 				icon: "img/repy16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: true
+				small: true,
+				func: function() {
+					alert("Not implemented yet.");
+				}
 			})
 		]);
 
@@ -1908,7 +1932,10 @@ var Editor = Class.extend({
 			icon: "img/repy32.png",
 			toggle: true,
 			toggleGroup: toggleGroup,
-			small: false
+			small: false,
+			func: function() {
+				alert("Not implemented yet.");
+			}
 		}));
 		var tmpls = t.templates.getAll("repy");
 		var btns = [];
@@ -1983,14 +2010,20 @@ var Editor = Class.extend({
 				label: "Export",
 				icon: "img/export16.png",
 				toggle: false,
-				small: true
+				small: true,
+				func: function() {
+					alert("Not implemented yet.");
+				}
 			})
 		]);
 		group.addElement(Menu.button({
 			label: "Users & Permissions",
 			icon: "img/user32.png",
 			toggle: false,
-			small: false
+			small: false,
+			func: function() {
+				alert("Not implemented yet.");
+			}
 		}));
 
 

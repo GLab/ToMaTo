@@ -19,42 +19,32 @@ import os, socket
 
 VERSION = 0.1
 
-AUTH = []
-
-PASSWORD_SALT = "tomato"
-
-TMP_DIR = "/tmp/tomato"
-LOG_DIR = "logs"
+LOG_DIR = "/var/log/tomato"
 DATA_DIR = "/var/lib/tomato"
-
 TEMPLATE_DIR = os.path.join(DATA_DIR, "templates")
 
-SERVER = [
-	{
-		"PORT": 8000,
-		"SSL": True,
-		"SSL_OPTS": {
-			"cert_file" : "/var/lib/tomato/server.cert",
-			"key_file": "/var/lib/tomato/server.cert",
-			"client_certs": "/var/lib/tomato/client_certs",
-		}
+SERVER = {
+	"PORT": 8000,
+	"SSL": True,
+	"SSL_OPTS": {
+		"cert_file" : "/etc/tomato/server.cert",
+		"key_file": "/etc/tomato/server.cert",
+		"client_certs": "/etc/tomato/client_certs",
 	}
-]
+}
 
-ADMIN_USERS = [
-	"admin"
-]
+ADMIN_USERS = ["admin"]
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite'
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'tomato'
     }
 }
 
 FILESERVER = {
-	'port': 8888,
-	'path': os.path.join(DATA_DIR, "files"),
+	'PORT': 8888,
+	'PATH': os.path.join(DATA_DIR, "files"),
 }
 
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

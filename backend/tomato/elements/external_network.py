@@ -165,7 +165,7 @@ class External_Network_Endpoint(elements.Element):
 			self.save()
 
 	def action_start(self):
-		_host = host.select(site=self.site, elementTypes=[self.TYPE])
+		_host = host.select(elementTypes=[self.TYPE])
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		if self.parent and self.samenet:
 			self.network = network.getInstance(_host, self.parent.network.kind)

@@ -28,7 +28,7 @@ def host_info():
         "hostmanager": {
             "version": config.VERSION,
         },
-        "fileserver_port": config.FILESERVER["port"],
+        "fileserver_port": config.FILESERVER["PORT"],
         "address": config.PUBLIC_ADDRESS,
         "resources": {
             "cpus_present": hostinfo.cpuinfo(),

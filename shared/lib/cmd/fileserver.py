@@ -175,9 +175,9 @@ class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer)
     """Handle requests in a separate thread."""
     
 def start():
-    print >>sys.stderr, "Starting fileserver on port %d" % config.FILESERVER["port"]
+    print >>sys.stderr, "Starting fileserver on port %d" % config.FILESERVER["PORT"]
     global _httpd
-    _httpd = ThreadedHTTPServer(('', config.FILESERVER["port"]), RequestHandler)
+    _httpd = ThreadedHTTPServer(('', config.FILESERVER["PORT"]), RequestHandler)
     util.start_thread(_httpd.serve_forever)
 
 def stop():

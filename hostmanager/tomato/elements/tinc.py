@@ -217,6 +217,8 @@ class Tinc(elements.Element):
 			return int(fp.readline().strip())
 
 	def updateUsage(self, usage, data):
+		if not self.path:
+			return
 		if path.exists(self.path):
 			usage.diskspace = path.diskspace(self.path)
 		if self.state == ST_STARTED:
