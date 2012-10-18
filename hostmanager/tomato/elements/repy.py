@@ -121,15 +121,15 @@ class Repy(elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	args_attr = Attr("args", states=[ST_PREPARED], default=[])
+	args_attr = Attr("args", desc="Arguments", states=[ST_PREPARED], default=[])
 	args = args_attr.attribute()
-	cpus_attr = Attr("cpus", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, faultType=fault.new_user, default=0.25)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, faultType=fault.new_user, default=0.25)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, faultType=fault.new_user, default=25)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, faultType=fault.new_user, default=25)
 	ram = ram_attr.attribute()
-	bandwidth_attr = Attr("bandwidth", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, faultType=fault.new_user, default=1000000)
+	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, faultType=fault.new_user, default=1000000)
 	bandwidth = bandwidth_attr.attribute()
-	template_attr = Attr("template", states=[ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
 	TYPE = "repy"
@@ -311,7 +311,7 @@ Actions: None
 """
 
 class Repy_Interface(elements.Element):
-	name_attr = Attr("name", type="str", regExp="^eth[0-9]+$")
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
 	name = name_attr.attribute()
 
 	TYPE = "repy_interface"

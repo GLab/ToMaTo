@@ -22,9 +22,9 @@ from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class UDP_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name_attr = Attr("name", type="str")
+	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
-	connect_attr = Attr("connect", type="str", default="", states=[ST_CREATED, ST_PREPARED])
+	connect_attr = Attr("connect", desc="Connect to", type="str", default="", states=[ST_CREATED, ST_PREPARED])
 	connect = connect_attr.attribute()
 	
 	CUSTOM_ACTIONS = {

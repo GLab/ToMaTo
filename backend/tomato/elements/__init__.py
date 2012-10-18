@@ -322,16 +322,20 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def capAttrs(self):
 		attrs = {}
 		if self.DIRECT_ATTRS:
-			mel = self.mainElement()
-			if mel:
-				caps = mel.getAllowedAttributes()
+			caps = host.getElementCapabilities(self.remoteType())
+			if caps:
+				caps = caps["attrs"]
+			if caps:
 				for name in self.DIRECT_ATTRS_EXCLUDE:
 					if name in caps:
 						del caps[name]
 				attrs.update(caps)
 		for name, attr in self.CUSTOM_ATTRS.iteritems():
-			if not attr.states or self.state in attr.states:
-				attrs[name] = attr.info()
+			attrs[name] = attr.info()
+		for name, attr in attrs.iteritems():
+			attrs[name]["enabled"] = not "states" in attr or self.state in attr["states"]
+			if "states" in attrs[name]:
+				del attrs[name]["states"]	
 		return attrs
 			
 	def capActions(self):

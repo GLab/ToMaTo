@@ -25,13 +25,13 @@ ST_STARTED = "started"
 
 class VMElement(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	site_attr = Attr("site", type="str", null=True, states=[ST_CREATED])
+	site_attr = Attr("site", desc="Site", type="str", null=True, states=[ST_CREATED])
 	site = models.ForeignKey(host.Site, null=True, on_delete=models.SET_NULL)
-	name_attr = Attr("name", type="str")
+	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
-	profile_attr = Attr("profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
+	profile_attr = Attr("profile", desc="Profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	profile = profile_attr.attribute()
-	template_attr = Attr("template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
+	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(resources.Resource, null=True)
 	
 	CUSTOM_ACTIONS = {
@@ -75,6 +75,9 @@ class VMElement(elements.Element):
 		self.name = val
 
 	def modify_site(self, val):
+		self.site = host.getSite(val)
+
+	def modify_profile(self, val):
 		self.site = host.getSite(val)
 
 	def modify_template(self, tmplName):

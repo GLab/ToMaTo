@@ -21,9 +21,9 @@ from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class Tinc_VPN(elements.Element):
-	name_attr = Attr("name", type="str")
+	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
-	mode_attr = Attr("mode", options=["switch", "hub"], default="switch", states=[ST_CREATED, ST_PREPARED])
+	mode_attr = Attr("mode", desc="Mode", options={"switch": "Switch (learning)", "hub": "Hub (broadcast)"}, default="switch", states=[ST_CREATED, ST_PREPARED])
 	mode = mode_attr.attribute()
 	
 	CUSTOM_ACTIONS = {
@@ -132,11 +132,11 @@ class Tinc_VPN(elements.Element):
 
 class Tinc_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name_attr = Attr("name", type="str")
+	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
-	mode_attr = Attr("mode", options=["switch", "hub"], default="switch", states=[ST_CREATED, ST_PREPARED])
+	mode_attr = Attr("mode", desc="Mode", options={"switch": "Switch (learning)", "hub": "Hub (broadcast)"}, default="switch", states=[ST_CREATED, ST_PREPARED])
 	mode = mode_attr.attribute()
-	peers_attr = Attr("peers", default=[], states=[ST_CREATED, ST_PREPARED])
+	peers_attr = Attr("peers", desc="Peers", default=[], states=[ST_CREATED, ST_PREPARED])
 	peers = peers_attr.attribute()
 	
 	CUSTOM_ACTIONS = {

@@ -182,7 +182,7 @@ var TextElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.pattern = options.pattern || /^.*$/;
-		this.element = $('<input class="form-element" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
+		this.element = $('<input class="form-element" size=10 type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
 		this.element.change(function() {
@@ -211,7 +211,7 @@ var CheckboxElement = FormElement.extend({
 		this.element.change(function() {
 			t.onChanged(this.value);
 		});
-		if (options.value) this.setValue(value);
+		if (options.value) this.setValue(options.value);
 	},
 	getValue: function() {
 		return this.element[0].checked;
@@ -244,7 +244,9 @@ var ChoiceElement = FormElement.extend({
 	},
 	setValue: function(value) {
 		var options = this.element.find("option");
-		for (var i=0; i < options.length; i++) options[i].attr({selected: option.name == value});
+		for (var i=0; i < options.length; i++) {
+			$(options[i]).attr({selected: options[i].value == value});
+		}
 	}
 });
 
@@ -261,6 +263,8 @@ var Window = Class.extend({
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
+			modal: true,
+			buttons: options.buttons || {}
 		});
 		this.setPosition(options.position);
 	},
@@ -302,6 +306,41 @@ var AttributeWindow = Window.extend({
 		tr.append($("<td/>").append(element.getLabel()));
 		tr.append($("<td/>").append(element.getElement()));
 		this.table.append(tr);
+	},
+	autoElement: function(info, value) {
+		var el;
+		if (info.options) {
+			el = new ChoiceElement({
+				label: info.desc || info.name,
+				name: info.name,
+				choices: info.options,
+				value: value || info["default"],
+				disabled: !info.enabled
+			});
+		} else if (info.type == "bool") {
+			el = new CheckboxElement({
+				label: info.desc || info.name,
+				name: info.name,
+				value: value || info["default"],
+				disabled: !info.enabled
+			});
+		} else {
+			el = new TextElement({
+				label: info.desc || info.name,
+				name: info.name,
+				value: value || info["default"],
+				disabled: !info.enabled
+			});
+		}
+		return el;
+	},
+	autoAdd: function(info, value) {
+		this.add(this.autoElement(info, value));
+	},
+	getValues: function() {
+		var values = {};
+		for (var i=0; i < this.elements.length; i++) values[this.elements[i].name] = this.elements[i].getValue();
+		return values;
 	}
 });
 
@@ -411,14 +450,14 @@ var Topology = Class.extend({
 				break;
 			case "external_network_endpoint":
 				//hide external network endpoints with external_network parent but show endpoints without parent 
-				elObj = el.parent ? new HiddenChildElement(this, el, this._getCanvas()) : new ExternalNetworkElement(this, el, this._getCanvas()) ;
+				elObj = el.parent ? new SwitchPortElement(this, el, this._getCanvas()) : new ExternalNetworkElement(this, el, this._getCanvas()) ;
 				break;
 			case "tinc_vpn":
 				elObj = new VPNElement(this, el, this._getCanvas());
 				break;
 			case "tinc_endpoint":
 				//hide tinc endpoints with tinc_vpn parent but show endpoints without parent 
-				elObj = el.parent ? new HiddenChildElement(this, el, this._getCanvas()) : new VPNElement(this, el, this._getCanvas()) ;
+				elObj = el.parent ? new SwitchPortElement(this, el, this._getCanvas()) : new VPNElement(this, el, this._getCanvas()) ;
 				break;
 			default:
 				elObj = new UnknownElement(this, el, this._getCanvas());
@@ -465,7 +504,7 @@ var Topology = Class.extend({
 		for (var i = 0; i < opts.length; i++) {
 			this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
-		this.settingOptions = false;
+		this.settingOptions = false;		
 	},
 	setBusy: function(busy) {
 		this.busy = busy;
@@ -485,6 +524,7 @@ var Topology = Class.extend({
 		var attrs = {};
 		attrs[name] = value;
 		this.modify(attrs);
+		this.data.attrs[name] = value;
 	},
 	isEmpty: function() {
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;
@@ -629,6 +669,43 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
+	},
+	showUsage: function() {
+  		window.open('/topology/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+	},
+	notesDialog: function() {
+		var dialog = $("<div/>");
+		var ta = $('<textarea cols=60 rows=20 class="notes"></textarea>');
+		ta.text(this.data.attrs._notes || "");
+		dialog.append(ta);
+		var t = this;
+		dialog.dialog({
+			autoOpen: true,
+			draggable: false,
+			resizable: true,
+			height: "auto",
+			width: "auto",
+			title: "Notes for Topology",
+			show: "slide",
+			hide: "slide",
+			modal: true,
+			buttons: {
+				Save: function() {
+		        	dialog.dialog("close");
+			      	t.modify_value("_notes", ta.val());
+			    },
+		        Close: function() {
+		        	dialog.dialog("close");
+		        }				
+			}
+		});
+	},
+	renameDialog: function() {
+		var name = prompt("Topology name:", this.data.attrs.name);
+		if (name) {
+			this.modify_value("name", name);
+			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
+		}
 	}
 });
 
@@ -639,29 +716,240 @@ $.contextMenu({
 		return {
 			callback: function(key, options) {},
 			items: {
-				"header": {html:'<span>Topology</span>', type:"html"},
-				"start": {name:'Start', icon:'start', callback:function(){obj.action_start();}},
-				"stop": {name:"Stop", icon:"stop", callback:function(){obj.action_stop();}},
-				"prepare": {name:"Prepare", icon:"prepare", callback:function(){obj.action_prepare();}},
-				"destroy": {name:"Destroy", icon:"destroy", callback:function(){obj.action_destroy();}},
+				"header": {
+					html:'<span>Topology</span>',
+					type:"html"
+				},
+				"start": {
+					name:'Start',
+					icon:'start',
+					callback: function(){
+						obj.action_start();
+					}
+				},
+				"stop": {
+					name:"Stop",
+					icon:"stop",
+					callback: function(){
+						obj.action_stop();
+					}
+				},
+				"prepare": {
+					name:"Prepare",
+					icon:"prepare",
+					callback: function(){
+						obj.action_prepare();
+					}
+				},
+				"destroy": {
+					name:"Destroy",
+					icon:"destroy",
+					callback:function(){
+						obj.action_destroy();
+					}
+				},
 				"sep1": "---",
+				"notes": {
+					name:"Notes",
+					icon:"notes",
+					callback: function(){
+						obj.notesDialog();
+					}
+				},
+				"usage": {
+					name:"Usage",
+					icon:"usage",
+					callback: function(){
+						obj.showUsage();
+					}
+				},
+				"sep2": "---",
 				"remove": {name:'Delete', icon:'remove'}
 			}
 		};
 	}
 });
 
-var Connection = Class.extend({
+var Component = Class.extend({
 	init: function(topology, data, canvas) {
 		this.topology = topology;
 		this.editor = topology.editor;
 		this.data = data;
 		this.canvas = canvas;
 		this.id = data.id;
-		this.elements = [];
+	},	
+	paint: function() {
+	},
+	paintUpdate: function() {
+	},
+	paintRemove: function() {
 	},
 	setBusy: function(busy) {
 		this.busy = busy;
+	},
+	updateData: function(data) {
+		if (data) this.data = data;
+		this.id = this.data.id;
+		this.paintUpdate();
+	},
+	configWindowSettings: function() {
+		return {
+			order: ["name"],
+			ignore: [],
+			unknown: true,
+			special: {}
+		} 
+	},
+	showConfigWindow: function() {
+		var absPos = this.getAbsPos();
+		var wsPos = this.editor.workspace.container.position();
+		var t = this;
+		this.configWindow = new AttributeWindow({
+			title: "Attributes",
+			buttons: {
+				Save: function() {
+					t.configWindow.hide();
+					var values = t.configWindow.getValues();
+					for (var name in values) if (values[name] == t.data.attrs[name]) delete values[name];
+					t.modify(values);					
+					t.configWindow = null;
+				},
+				Cancel: function() {
+					t.configWindow.hide();
+					t.configWindow = null;
+				} 
+			}
+		});
+		var settings = this.configWindowSettings();
+		for (var i=0; i<settings.order.length; i++) {
+			var name = settings.order[i];
+			if (settings.special[name]) this.configWindow.add(settings.special[name]);
+			else if (this.data.cap_attrs[name]) this.configWindow.autoAdd(this.data.cap_attrs[name], this.data.attrs[name]);
+		}
+		if (settings.unknown) {
+			for (var name in this.data.cap_attrs) {
+				if (settings.order.indexOf(name) >= 0) continue; //do not repeat ordered fields
+				if (settings.ignore.indexOf(name) >= 0) continue;
+				if (settings.special[name]) this.configWindow.add(settings.special[name]);
+				else if (this.data.cap_attrs[name]) this.configWindow.autoAdd(this.data.cap_attrs[name], this.data.attrs[name]);
+			}
+		}
+		this.configWindow.show();
+	},
+	modify: function(attrs) {
+		this.setBusy(true);
+		log("Modify "+this.component_type+" #"+this.id);
+		log(attrs);
+		var t = this;
+		ajax({
+			url: this.component_type+'/'+this.id+'/modify',
+		 	data: {attrs: attrs},
+		 	successFn: function(result) {
+		 		t.updateData(result);
+		 		t.setBusy(false);
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 		t.setBusy(false);
+		 	}
+		});
+	},
+	modify_value: function(name, value) {
+		var attrs = {};
+		attrs[name] = value;
+		this.modify(attrs);
+	},
+	action: function(action, options) {
+		var options = options || {};
+		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this "+this.component_type+"?")) return;
+		this.setBusy(true);
+		var params = options.params || {};
+		log(this.component_type+" action #"+this.id+": "+action);
+		log(params);
+		var t = this;
+		ajax({
+			url: this.component_type+'/'+this.id+'/action',
+		 	data: {action: action, params: params},
+		 	successFn: function(result) {
+		 		t.updateData(result[1]);
+		 		t.setBusy(false);
+		 		if (options.callback) options.callback(t, result[1]);
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 		t.setBusy(false);
+		 	}
+		});
+	}
+});
+
+var ConnectionAttributeWindow = AttributeWindow.extend({
+	init: function(options, con) {
+		this._super(options);
+		this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
+		var el = new CheckboxElement({
+			name: "emulation",
+			value: con.data.attrs.emulation
+		});
+		this.elements.push(el);
+		this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+		//direction arrows
+		var size = 30;
+		var _div = '<div style="width: '+size+'px; height: '+size+'px;"/>';
+		var dir1 = $(_div); var dir2 = $(_div);
+    	var canvas1 = Raphael(dir1[0], size, size);
+    	var canvas2 = Raphael(dir2[0], size, size);
+    	var _path1 = "M 0.1 0.5 L 0.9 0.5";
+    	var _path2 = "M 0.7 0.5 L 0.4 0.3 M 0.7 0.5 L 0.4 0.7";
+    	var _transform1 = "R"+con.getAngle()+",0.5,0.5S"+size+","+size+",0,0";
+    	var _transform2 = "R"+(con.getAngle()+180)+",0.5,0.5S"+size+","+size+",0,0";
+    	var _attrs = {"stroke-width": 2, stroke: "red", "stroke-linecap": "round", "stroke-linejoin": "round"};
+    	canvas1.path(_path1).transform(_transform1);
+    	canvas1.path(_path2).transform(_transform1).attr(_attrs);
+    	canvas2.path(_path1).transform(_transform2);
+    	canvas2.path(_path2).transform(_transform2).attr(_attrs);
+		this.table.append($('<tr/>')
+				.append($("<th>Direction</th>"))
+				.append($('<td align="middle"/>').append(dir1))
+				.append($('<td align="middle"/>').append(dir2))
+				.append($('<td>&nbsp;</td>'))
+		);
+		//simple fields
+		var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
+		for (var i = 0; i < order.length; i++) {
+			var name = order[i];
+			var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
+			this.elements.push(el_to);
+			var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
+			this.elements.push(el_from);
+			this.table.append($("<tr/>")
+					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].desc))
+					.append($("<td/>").append(el_to.getElement()))
+					.append($("<td/>").append(el_from.getElement()))
+					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].unit))
+			);
+		}
+		this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));		
+		this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
+		var order = ["capturing", "capture_mode", "capture_filter"];
+		for (var i = 0; i < order.length; i++) {
+			var name = order[i];
+			var el = this.autoElement(con.data.cap_attrs[name], con.data.attrs[name])
+			this.elements.push(el);
+			this.table.append($("<tr/>")
+					.append($("<td/>").append(con.data.cap_attrs[name].desc))
+					.append($("<td colspan=3/>").append(el.getElement()))
+			);
+		}
+	}
+});
+
+
+var Connection = Component.extend({
+	init: function(topology, data, canvas) {
+		this._super(topology, data, canvas);
+		this.elements = [];
+		this.component_type = "connection";
 	},
 	otherElement: function(me) {
 		for (var i=0; i<this.elements.length; i++) if (this.elements[i].id != me.id) return this.elements[i];
@@ -676,11 +964,6 @@ var Connection = Class.extend({
 			var pos2 = this.elements[1].getAbsPos();
 			return {x: (pos1.x + pos2.x)/2, y: (pos1.y + pos2.y)/2}; 
 		}
-	},
-	updateData: function(data) {
-		if (data) this.data = data;
-		this.id = this.data.id;
-		this.paintUpdate();
 	},
 	getPath: function() {
 		var pos1 = this.elements[0].getAbsPos();
@@ -734,6 +1017,28 @@ var Connection = Class.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
+	showConfigWindow: function() {
+		var absPos = this.getAbsPos();
+		var wsPos = this.editor.workspace.container.position();
+		var t = this;
+		this.configWindow = new ConnectionAttributeWindow({
+			title: "Attributes",
+			buttons: {
+				Save: function() {
+					t.configWindow.hide();
+					var values = t.configWindow.getValues();
+					for (var name in values) if (values[name] == t.data.attrs[name]) delete values[name];
+					t.modify(values);					
+					t.configWindow = null;
+				},
+				Cancel: function() {
+					t.configWindow.hide();
+					t.configWindow = null;
+				} 
+			}
+		}, this);
+		this.configWindow.show();
+	},
 	remove: function(callback, ask) {
 		if (this.busy) return;
 		if (ask && this.editor.options.safe_mode && ! confirm("Do you want to delete this connection?")) return;
@@ -773,15 +1078,12 @@ $.contextMenu({
 });
 
 
-var Element = Class.extend({
+var Element = Component.extend({
 	init: function(topology, data, canvas) {
-		this.topology = topology;
-		this.editor = topology.editor;
-		this.data = data;
-		this.id = data.id;
-		this.canvas = canvas;
+		this._super(topology, data, canvas);
 		this.children = [];
 		this.connection = null;
+		this.component_type = "element";
 	},
 	onDragged: function() {
 		if (!this.isMovable()) return;
@@ -789,9 +1091,6 @@ var Element = Class.extend({
 	},
 	onClicked: function() {
 		this.editor.onElementSelected(this);
-	},
-	setBusy: function(busy) {
-		this.busy = busy;
 	},
 	isMovable: function() {
 		return (!this.editor.options.fixed_pos) && this.editor.mode == Mode.select;
@@ -804,11 +1103,6 @@ var Element = Class.extend({
 	},
 	actionAvailable: function(action) {
 		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
-	},
-	updateData: function(data) {
-		if (data) this.data = data;
-		this.id = this.data.id;
-		this.paintUpdate();
 	},
 	enableClick: function(obj) {
 		obj.click(function() {
@@ -860,78 +1154,11 @@ var Element = Class.extend({
 	showUsage: function() {
   		window.open('../element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
 	},
-	showConfigWindow: function() {
-		var absPos = this.getAbsPos();
-		var wsPos = this.editor.workspace.container.position();
-		var pos = [absPos.x + wsPos.left - $("body").scrollLeft(), absPos.y + wsPos.top - $("body").scrollTop()];
-		this.configWindow = new AttributeWindow({
-			title: "Test window",
-			position: pos
-		});
-		this.configWindow.add(new TextElement({
-			label: "Name",
-			name: "name",
-			value: "myname",
-			pattern: /^[a-z]*$/
-		}));
-		this.configWindow.show();
-	},
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 	},
 	consoleAvailable: function() {
 		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
-	},
-	paint: function() {
-	},
-	paintUpdate: function() {
-	},
-	paintRemove: function() {
-	},
-	modify: function(attrs) {
-		this.setBusy(true);
-		log("Modify element #"+this.id);
-		log(attrs);
-		var t = this;
-		ajax({
-			url: 'element/'+this.id+'/modify',
-		 	data: {attrs: attrs},
-		 	successFn: function(result) {
-		 		t.updateData(result);
-		 		t.setBusy(false);
-		 	},
-		 	errorFn: function(error) {
-		 		alert(error);
-		 		t.setBusy(false);
-		 	}
-		});
-	},
-	modify_value: function(name, value) {
-		var attrs = {};
-		attrs[name] = value;
-		this.modify(attrs);
-	},
-	action: function(action, options) {
-		var options = options || {};
-		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this element?")) return;
-		this.setBusy(true);
-		var params = options.params || {};
-		log("Element action #"+this.id+": "+action);
-		log(params);
-		var t = this;
-		ajax({
-			url: 'element/'+this.id+'/action',
-		 	data: {action: action, params: params},
-		 	successFn: function(result) {
-		 		t.updateData(result[1]);
-		 		t.setBusy(false);
-		 		if (options.callback) options.callback(t, result[1]);
-		 	},
-		 	errorFn: function(error) {
-		 		alert(error);
-		 		t.setBusy(false);
-		 	}
-		});
 	},
 	action_start: function() {
 		this.action("start");
@@ -1128,6 +1355,9 @@ var IconElement = Element.extend({
 				break;
 		}
 	},
+	getRectObj: function() {
+		return this.rect[0];
+	},
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
 		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2, this.iconSize.x, this.iconSize.y);
@@ -1203,12 +1433,27 @@ var VMElement = IconElement.extend({
 	isRemovable: function() {
 		return this._super() && !this.busy;
 	},
+	configWindowSettings: function() {
+		var config = this._super();
+		config.order = ["name", "site", "profile", "template"];
+		var tmpls = this.editor.templates.getAll(this.data.type);
+		var choices = {};
+		for (var i = 0; i < tmpls.length; i++) choices[tmpls[i].name] = tmpls[i].label;
+		config.special.template = new ChoiceElement({
+			label: "Template",
+			name: "template",
+			choices: choices,
+			value: this.data.attrs.template || this.data.cap_attrs.template["default"],
+			disabled: !this.data.cap_attrs.template.enabled
+		});
+		return config;
+	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: this.data.type + "_interface", parent: this.data.id}, callback);
 	}
 });
 
-var VMInterfaceElement = Element.extend({
+var ChildElement = Element.extend({
 	getHandlePos: function() {
 		var ppos = this.parent.getAbsPos();
 		var cpos = this.connection ? this.connection.getCenter() : {x:0, y:0};
@@ -1238,6 +1483,18 @@ var VMInterfaceElement = Element.extend({
 		var pos = this.getHandlePos();
 		this.circle.attr({cx: pos.x, cy: pos.y});
 	}
+});
+
+var VMInterfaceElement = ChildElement.extend({
+	
+});
+
+var SwitchPortElement = ChildElement.extend({
+	configWindowSettings: function() {
+		var config = this._super();
+		config.ignore = ["peers"];
+		return config;
+	}	
 });
 
 var HiddenChildElement = Element.extend({
@@ -1698,7 +1955,10 @@ var Editor = Class.extend({
 			label: "Notes",
 			icon: "img/notes32.png",
 			toggle: false,
-			small: false
+			small: false,
+			func: function(){
+				t.topology.notesDialog();
+			}
 		}));
 		group.addStackedElements([
 			Menu.button({
@@ -1707,14 +1967,17 @@ var Editor = Class.extend({
 				toggle: false,
 				small: true,
 				func: function(){
-			  		window.open('/topology/'+t.topology.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+					t.topology.showUsage();
 				}
 			}),
 			Menu.button({
 				label: "Rename",
 				icon: "img/rename.png",
 				toggle: false,
-				small: true
+				small: true,
+				func: function(){
+					t.topology.renameDialog();
+				}
 			}),
 			Menu.button({
 				label: "Export",

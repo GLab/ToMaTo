@@ -312,6 +312,25 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def triggerStop(self):
 		self._stop()
 		
+	def capAttrs(self):
+		attrs = {}
+		if self.DIRECT_ATTRS:
+			caps = host.getConnectionCapabilities(self.remoteType())
+			if caps:
+				caps = caps["attrs"]
+			if caps:
+				for name in self.DIRECT_ATTRS_EXCLUDE:
+					if name in caps:
+						del caps[name]
+				attrs.update(caps)
+		for name, attr in self.CUSTOM_ATTRS.iteritems():
+			attrs[name] = attr.info()
+		for name, attr in attrs.iteritems():
+			attrs[name]["enabled"] = not "states" in attr or self.state in attr["states"]
+			if "states" in attrs[name]:
+				del attrs[name]["states"]	
+		return attrs
+		
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
@@ -320,6 +339,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			"state": self.state,
 			"attrs": self.attrs,
 			"elements": [el.id for el in self.getElements()],
+			"cap_attrs": self.capAttrs()
 		}
 		
 	def updateUsage(self, now):

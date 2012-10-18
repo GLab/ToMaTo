@@ -73,7 +73,7 @@ class UDP_Tunnel(elements.Element):
 	pid = pid_attr.attribute()
 	port_attr = Attr("port", type="int")
 	port = port_attr.attribute()
-	connect_attr = Attr("connect", states=[ST_CREATED], type="str", null=True, default=None)
+	connect_attr = Attr("connect", desc="Connect to", states=[ST_CREATED], type="str", null=True, default=None)
 	connect = connect_attr.attribute()
 
 	TYPE = "udp_tunnel"

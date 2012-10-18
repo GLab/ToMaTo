@@ -142,17 +142,16 @@ class KVMQM(elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	cpus_attr = Attr("cpus", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, faultType=fault.new_user, default=1)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, faultType=fault.new_user, default=1)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
 	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", states=[ST_CREATED, ST_PREPARED], type="str", options=["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br",
-									 "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"],
-									  faultType=fault.new_user, default="en-us")
+	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options={"en-us": "English (US)", "en-gb": "English (GB)", "de": "German", "fr": "French", "ja": "Japanese"}, faultType=fault.new_user, default="en-us")
+	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
 	kblang = kblang_attr.attribute()
-	usbtablet_attr = Attr("usbtablet", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
+	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
 	usbtablet = usbtablet_attr.attribute()
-	template_attr = Attr("template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 
 	TYPE = "kvmqm"

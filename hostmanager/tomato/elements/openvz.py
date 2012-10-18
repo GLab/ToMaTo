@@ -134,7 +134,7 @@ ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
 class OpenVZ(elements.Element):
-	vmid_attr = Attr("pid", type="int")
+	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	vncport_attr = Attr("vncport", type="int")
 	vncport = vncport_attr.attribute()
@@ -142,19 +142,19 @@ class OpenVZ(elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	ram_attr = Attr("ram", type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
 	ram = ram_attr.attribute()
-	diskspace_attr = Attr("diskspace", type="int", minValue=512, maxValue=102400, faultType=fault.new_user, default=10240)
+	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, faultType=fault.new_user, default=10240)
 	diskspace = diskspace_attr.attribute()
-	rootpassword_attr = Attr("rootpassword", type="str")
+	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
 	rootpassword = rootpassword_attr.attribute()
-	hostname_attr = Attr("hostname", type="str")
+	hostname_attr = Attr("hostname", desc="Hostname", type="str")
 	hostname = hostname_attr.attribute()
-	gateway4_attr = Attr("gateway4", type="str")
+	gateway4_attr = Attr("gateway4", desc="IPv4 gateway", type="str")
 	gateway4 = gateway4_attr.attribute()	
-	gateway6_attr = Attr("gateway6", type="str")
+	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
 	gateway6 = gateway6_attr.attribute()		
-	template_attr = Attr("template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
+	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(resources.Resource, null=True)
 
 	TYPE = "openvz"
@@ -558,13 +558,13 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", type="str", regExp="^eth[0-9]+$")
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
 	name = name_attr.attribute()
-	ip4address_attr = Attr("ip4address", type="str")
+	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
 	ip4address = ip4address_attr.attribute()	
-	ip6address_attr = Attr("ip6address", type="str")
+	ip6address_attr = Attr("ip6address", desc="IPv6 address", type="str")
 	ip6address = ip6address_attr.attribute()		
-	use_dhcp_attr = Attr("use_dhcp", type="bool", default=False)
+	use_dhcp_attr = Attr("use_dhcp", desc="Use DHCP", type="bool", default=False)
 	use_dhcp = use_dhcp_attr.attribute()		
 
 	TYPE = "openvz_interface"

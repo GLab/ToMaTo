@@ -21,7 +21,7 @@ add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
 import re
 
 class Attr:
-	def __init__(self, name, desc="", states=None, default=None, null=False, type=None, options=None, regExp=None, minValue=None, maxValue=None, faultType=Exception):
+	def __init__(self, name, desc="", unit=None, states=None, default=None, null=False, type=None, options=None, regExp=None, minValue=None, maxValue=None, faultType=Exception):
 		self.name = name
 		self.desc = desc
 		self.states = states
@@ -29,6 +29,7 @@ class Attr:
 		self.null = null
 		self.type = type
 		self.options = options
+		self.unit = unit
 		self.regExp = regExp
 		self.minValue = minValue
 		self.maxValue = maxValue
@@ -53,8 +54,8 @@ class Attr:
 				value = bool(value)
 		except:
 			raise self.faultType("Invalid value for %s: %r, failed to convert to %s" % (self.name, value, self.type))
-		if self.options and not value in self.options:
-			raise self.faultType("Invalid value for %s: %r, must be one of %r" % (self.name, value, self.options))
+		if self.options and not value in self.options.keys():
+			raise self.faultType("Invalid value for %s: %r, must be one of %r" % (self.name, value, self.options.keys()))
 		if not self.minValue is None and value < self.minValue:
 			raise self.faultType("Invalid value for %s: %r, must be greater than %r" % (self.name, value, self.minValue))
 		if not self.maxValue is None and value > self.maxValue:
@@ -72,10 +73,10 @@ class Attr:
 	def delete(self, obj):
 		obj.deleteAttribute(self.name)
 	def attribute(self):
-		return property ( lambda obj: self.get(obj), lambda obj, val: self.set(obj, value), lambda obj: self.delete(obj) )
+		return property ( lambda obj: self.get(obj), lambda obj, val: self.set(obj, val), lambda obj: self.delete(obj) )
 	def info(self):
 		d = {}
-		for name in ["name", "states", "default", "null", "desc", "type", "options", "regExp", "minValue", "maxValue"]:
+		for name in ["name", "unit", "states", "default", "null", "desc", "type", "options", "regExp", "minValue", "maxValue"]:
 			value = getattr(self, name)
 			name = name.lower()
 			if not value is None:

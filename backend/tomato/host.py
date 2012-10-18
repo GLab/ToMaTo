@@ -288,7 +288,8 @@ class HostElement(attributes.Mixin, models.Model):
 
     def getAllowedAttributes(self):
         caps = self.host.getElementCapabilities(self.type)["attrs"]
-        return dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
+        ret = dict(filter(lambda attr: not "states" in attr[1] or self.state in attr[1]["states"], caps.iteritems()))
+        return ret
     
     def updateAccountingData(self, data):
         self.usageStatistics.importRecords(data)

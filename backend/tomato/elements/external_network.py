@@ -18,13 +18,17 @@
 from django.db import models
 from tomato import elements, host, fault
 from tomato.resources import network
-from tomato.lib.attributes import attribute #@UnresolvedImport
+from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
 
 class External_Network(elements.Element):
-	name = attribute("name", str)
-	samenet = attribute("samenet", bool, default=False)
-	kind = attribute("kind", str)
+	name_attr = Attr("name", desc="Name")
+	name = name_attr.attribute()
+	samenet_attr = Attr("samenet", desc="Single network segment", states=[ST_CREATED], type="bool", default=False)
+	samenet = samenet_attr.attribute()
+	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
+	kind = kind_attr.attribute()
+	network_attr = Attr("network", type="str")
 	network = models.ForeignKey(network.Network, null=True)
 	
 	CUSTOM_ACTIONS = {
@@ -33,9 +37,9 @@ class External_Network(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"name": [ST_CREATED, ST_STARTED],
-		"samenet": [ST_CREATED],
-		"kind": [ST_CREATED],
+		"name": name_attr,
+		"samenet": samenet_attr,
+		"kind": kind_attr,
 	}
 
 	DIRECT_ATTRS_EXCLUDE = []
@@ -97,8 +101,10 @@ class External_Network(elements.Element):
 
 class External_Network_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
-	name = attribute("name", str)
-	kind = attribute("kind", str)
+	name_attr = Attr("name", desc="Name")
+	name = name_attr.attribute()
+	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
+	kind = kind_attr.attribute()
 	network = models.ForeignKey(network.NetworkInstance, null=True)
 
 	TYPE = "external_network_endpoint"
@@ -110,9 +116,8 @@ class External_Network_Endpoint(elements.Element):
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
-		"site": [ST_CREATED],
-		"name": [ST_CREATED, ST_STARTED],
-		"kind": [ST_CREATED],
+		"name": name_attr,
+		"kind": kind_attr,
 	}
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None, External_Network.TYPE]

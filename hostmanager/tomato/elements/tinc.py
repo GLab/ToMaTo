@@ -84,13 +84,13 @@ class Tinc(elements.Element):
 	port = port_attr.attribute()
 	path_attr = Attr("path")
 	path = path_attr.attribute()
-	mode_attr = Attr("mode", states=[ST_CREATED], options=["hub", "switch"], faultType=fault.new_user, default="switch")
+	mode_attr = Attr("mode", desc="Mode", states=[ST_CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, faultType=fault.new_user, default="switch")
 	mode = mode_attr.attribute()
-	privkey_attr = Attr("privkey")
+	privkey_attr = Attr("privkey", desc="Private key")
 	privkey = privkey_attr.attribute()
-	pubkey_attr = Attr("pubkey")
+	pubkey_attr = Attr("pubkey", desc="Public key")
 	pubkey = pubkey_attr.attribute()
-	peers_attr = Attr("peers", states=[ST_CREATED], default=[])
+	peers_attr = Attr("peers", desc="Peers", states=[ST_CREATED], default=[])
 	peers = peers_attr.attribute()
 
 	TYPE = "tinc"

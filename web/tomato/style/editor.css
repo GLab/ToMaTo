@@ -75,6 +75,15 @@
 	color: red;
 }
 
+.ui-dialog table {
+	font-size: 11px;
+}
+
+.ui-dialog .notes {
+	font-family: monospace;
+	font-size: 1.3em;
+}
+
 .context-menu-item.icon-start { background-image: url(../img/started.png); }
 .context-menu-item.icon-stop { background-image: url(../img/prepared.png); }
 .context-menu-item.icon-prepare { background-image: url(../img/prepare16.png); }
@@ -85,3 +94,4 @@
 .context-menu-item.icon-control { background-image: url(../img/control.png); }
 .context-menu-item.icon-console { background-image: url(../img/console.png); }
 .context-menu-item.icon-usage { background-image: url(../img/chart_bar.png); }
+.context-menu-item.icon-notes { background-image: url(../img/notes16.png); }
