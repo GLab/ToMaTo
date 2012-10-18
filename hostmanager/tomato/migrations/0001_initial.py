@@ -11,6 +11,7 @@ class Migration(SchemaMigration):
         # Adding model 'UsageStatistics'
         db.create_table('tomato_usagestatistics', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('begin', self.gf('django.db.models.fields.FloatField')()),
             ('attrs', self.gf('tomato.lib.db.JSONField')()),
         ))
         db.send_create_signal('tomato', ['UsageStatistics'])
@@ -20,8 +21,8 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('statistics', self.gf('django.db.models.fields.related.ForeignKey')(related_name='records', to=orm['tomato.UsageStatistics'])),
             ('type', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('begin', self.gf('django.db.models.fields.DateTimeField')()),
-            ('end', self.gf('django.db.models.fields.DateTimeField')()),
+            ('begin', self.gf('django.db.models.fields.FloatField')()),
+            ('end', self.gf('django.db.models.fields.FloatField')()),
             ('measurements', self.gf('django.db.models.fields.IntegerField')()),
             ('memory', self.gf('django.db.models.fields.FloatField')()),
             ('diskspace', self.gf('django.db.models.fields.FloatField')()),
@@ -127,8 +128,8 @@ class Migration(SchemaMigration):
         # Adding model 'Network'
         db.create_table('tomato_network', (
             ('resource_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Resource'], unique=True, primary_key=True)),
-            ('kind', self.gf('django.db.models.fields.CharField')(max_length=20)),
-            ('bridge', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('kind', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('bridge', self.gf('django.db.models.fields.CharField')(unique=True, max_length=20)),
             ('preference', self.gf('django.db.models.fields.IntegerField')(default=0)),
         ))
         db.send_create_signal('tomato', ['Network'])
@@ -136,7 +137,7 @@ class Migration(SchemaMigration):
         # Adding model 'External_Network'
         db.create_table('tomato_external_network', (
             ('element_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['tomato.Element'], unique=True, primary_key=True)),
-            ('network', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Network'], null=True)),
+            ('network', self.gf('django.db.models.fields.related.ForeignKey')(related_name='instances', null=True, to=orm['tomato.Network'])),
         ))
         db.send_create_signal('tomato', ['External_Network'])
 
@@ -256,7 +257,7 @@ class Migration(SchemaMigration):
         'tomato.external_network': {
             'Meta': {'object_name': 'External_Network', '_ormbases': ['tomato.Element']},
             'element_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Element']", 'unique': 'True', 'primary_key': 'True'}),
-            'network': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Network']", 'null': 'True'})
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'instances'", 'null': 'True', 'to': "orm['tomato.Network']"})
         },
         'tomato.fixed_bridge': {
             'Meta': {'object_name': 'Fixed_Bridge', '_ormbases': ['tomato.Connection']},
@@ -273,8 +274,8 @@ class Migration(SchemaMigration):
         },
         'tomato.network': {
             'Meta': {'object_name': 'Network', '_ormbases': ['tomato.Resource']},
-            'bridge': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
-            'kind': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'bridge': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '20'}),
+            'kind': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'preference': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'resource_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['tomato.Resource']", 'unique': 'True', 'primary_key': 'True'})
         },
@@ -328,10 +329,10 @@ class Migration(SchemaMigration):
         },
         'tomato.usagerecord': {
             'Meta': {'object_name': 'UsageRecord'},
-            'begin': ('django.db.models.fields.DateTimeField', [], {}),
+            'begin': ('django.db.models.fields.FloatField', [], {}),
             'cputime': ('django.db.models.fields.FloatField', [], {}),
             'diskspace': ('django.db.models.fields.FloatField', [], {}),
-            'end': ('django.db.models.fields.DateTimeField', [], {}),
+            'end': ('django.db.models.fields.FloatField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'measurements': ('django.db.models.fields.IntegerField', [], {}),
             'memory': ('django.db.models.fields.FloatField', [], {}),
@@ -342,6 +343,7 @@ class Migration(SchemaMigration):
         'tomato.usagestatistics': {
             'Meta': {'object_name': 'UsageStatistics'},
             'attrs': ('tomato.lib.db.JSONField', [], {}),
+            'begin': ('django.db.models.fields.FloatField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         }
     }

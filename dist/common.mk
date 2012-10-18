@@ -22,6 +22,7 @@ pack: deb-pack
 
 deb-pack:
 	(cd $(DIR); debuild clean; cd ..)
+	dpkg-source --format="3.0 (quilt)" --commit $(DIR)
 	dpkg-source --format="3.0 (quilt)" --compression=gzip -b $(DIR)
 	mv $(DEBNAME).$(CHANGES) $(CHANGES)
 	rm $(DEBNAME).dsc

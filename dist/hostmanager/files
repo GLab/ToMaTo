@@ -1,6 +1,6 @@
 - logs
 - .*
 + */
-+ backend.conf.example
++ hostmanager.conf.example
 + *.py
 - *

@@ -1,15 +1,12 @@
-PACKAGE=tomato-host
-DEPENDENCIES=devscripts debhelper
-
 .PHONY: default
 default: build
 
 .PHONY: build
-build: $(PACKAGE)_*.deb
-$(PACKAGE)_*.deb:
-	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
+build: tomato-host-proxmox_*.deb
+tomato-host-proxmox_*.deb:
+	(cd tomato-host-proxmox; debuild -b -us -uc; cd ..)
 
 .PHONY: clean
 clean:
-	(cd $(PACKAGE); debuild clean; cd ..)
-	rm -rf $(PACKAGE)_*
+	(cd tomato-host-proxmox; debuild clean; cd ..)
+	rm -rf tomato-host-proxmox_*

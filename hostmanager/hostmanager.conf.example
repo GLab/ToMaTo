@@ -14,8 +14,8 @@ SERVER = {
   "PORT": 8000,
   "SSL": True,
   "SSL_OPTS": {
-    "cert_file" : "/etc/tomato/server.cert",
-    "key_file": "/etc/tomato/server.cert",
+    "cert_file" : "/etc/tomato/server.pem",
+    "key_file": "/etc/tomato/server.pem",
     "client_certs": "/etc/tomato/client_certs",
   }
 }

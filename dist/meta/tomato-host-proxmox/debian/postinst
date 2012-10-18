@@ -17,17 +17,11 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-
 case "$1" in
     configure)
-        secret_key=$(dd if=/dev/urandom count=1 2> /dev/null | sha256sum | awk '{print $1}')
-        sed -ri "s/^secret_key=HACKME_UNCONFIGURED$/secret_key=$secret_key/" /etc/tomato-hostserver.conf
-
-        getent passwd tomato > /dev/null || adduser --quiet --system --home /var/lib/vz/hostserver \
-            --no-create-home --gecos 'ToMaTo' --group tomato
-        chown root:tomato /etc/tomato-hostserver.conf
-				chmod 640 /etc/tomato-hostserver.conf
-				chown tomato:tomato /var/lib/vz/hostserver
+        dpkg-divert --add --rename --divert /var/lib/tomato /var/lib/tomato.orig
+        mkdir -p /var/lib/vz/tomato
+        ln -s /var/lib/vz/tomato /var/lib/tomato
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

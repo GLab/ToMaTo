@@ -1,0 +1,14 @@
+Source: tomato-host-proxmox
+Section: misc
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+
+Package: tomato-host-proxmox
+Architecture: all
+Depends: ${misc:Depends}, tomato-hostmanager, pve-qemu-kvm, vzctl, vzdump,
+ bridge-utils, iproute, tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm,
+ tcpslice, tomato-repy (>=0.5), vtun
+Description: Meta package to install tomato on proxmox hosts
+ Meta package to install tomato on proxmox hosts
