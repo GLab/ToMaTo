@@ -8,6 +8,26 @@ h1 {font-size:1.5em;color:#000000;margin-bottom:5mm;}
 h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
 
+table {
+	background-color: #CDCDCD;
+	font-size: 1.0em;
+	text-align: left;
+	border-spacing: 0px;
+}
+table thead tr th, table tfoot tr th {
+	background-color: #e6EEEE;
+	border: 1px solid #FFF;
+	padding: 1mm;
+	margin: 0px;
+}
+table tbody td {
+	color: #3D3D3D;
+	padding: 1mm;
+	background-color: #FFF;
+	vertical-align: top;
+	margin: 0px;
+}
+
 code {font-size:0.9px;color:#0000ff;}
 pre {
   font-size:14px;
