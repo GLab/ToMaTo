@@ -7,6 +7,15 @@
 
 {% if host_list %}
 <script src="/js/enhancetable.js"></script>
+<script>
+	function deleteSite(name) {
+		if(confirm("Really delete the site " + name + "?"))
+			window.location = "/host/remove?name=" + name;
+	}
+</script>
+
+<input type="button" onClick="window.location='/host/add'" value="Add host" />
+
 <table class="sortable,filterable">
   <tr>
     <th colspan="2"></th>
@@ -14,6 +23,9 @@
     <th colspan="3">Processor</th>
     <th colspan="3">Disk</th>
     <th colspan="2">Memory</th>
+    {% if showRemove %}
+    <th />
+    {% endif %}
   </tr>
   <tr>
     <th>Address</th>
@@ -30,6 +42,9 @@
     <th>Usage data</th>
     <th>Space</th>
     <th>Usage</th>
+    {% if showRemove %}
+    <th />
+    {% endif %}
   </tr>
 {% for host in host_list %}
   <tr>
@@ -47,10 +62,14 @@
     <td>{{host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}</td>
     <td>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
+    {% if showRemove %}
+    <td><small><a href="" onClick="deleteSite('{{host.name}}')">remove</a></td>
+    {% endif %}
   </tr>
 {% endfor %}
 </table>
 {% else %}
 No hosts
 {% endif %}
+<input type="button" onClick="window.location='/host/add'" value="Add host" />
 {% endblock %}

@@ -25,6 +25,50 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
+class AddSiteForm(forms.Form):
+    name = forms.CharField(max_length=50)
+    description = forms.CharField(max_length=255)
+
+
 @wrap_rpc
 def index(api, request):
-    return render_to_response("admin/site/index.html", {'site_list': api.site_list()})
+    #
+    #
+    # DUMMY
+    # showRemove: check for remove privileges
+    #
+    #
+    showRemove = True
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'showRemove': showRemove})
+
+@wrap_rpc
+def add(api, request):
+    #
+    # NOT FULLY IMPLEMENTED
+    # check for duplicates
+    # length of form fields (AddSiteForm)
+    #
+    if request.method == 'POST':
+        form = AddSiteForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            if formData["name"]: #At this point: check if trying to add a duplicate.
+                api.site_create(formData["name"],formData["description"])
+                return render_to_response("admin/site/add_success.html", {'name': formData["name"]})
+            else:
+                return render_to_response("admin/site/add_form.html", {'form': form, 'action':request.path})
+        else:
+            return render_to_response("admin/site/add_form.html", {'form': form, 'action':request.path})
+    else:
+        form = AddSiteForm
+        return render_to_response("admin/site/add_form.html", {'form': form, 'action':request.path})
+    
+@wrap_rpc
+def remove(api, request):
+    #
+    #
+    #   DUMMY
+    #
+    #
+    showRemove = True
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'showRemove': showRemove})

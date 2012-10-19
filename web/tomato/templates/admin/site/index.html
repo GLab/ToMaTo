@@ -7,19 +7,37 @@
 
 {% if site_list %}
 <script src="/js/enhancetable.js"></script>
+<script>
+	function deleteSite(name) {
+		if(confirm("Really delete the site " + name + "?"))
+			window.location = "/site/remove?name=" + name;
+	}
+</script>
+
+<input type="button" onClick="window.location='/site/add'" value="Add site" />
+
 <table class="sortable,filterable">
   <tr>
     <th>Name</th>
     <th>Description</th>
+    {% if showRemove %}
+    <th />
+    {% endif %}
   </tr>
 {% for site in site_list %}
   <tr>
     <td>{{site.name}}</td>
     <td>{{site.description}}</td>
+    {% if showRemove %}
+    <td><small><a href="" onClick="deleteSite('{{site.name}}')">remove</a></td>
+    {% endif %}
   </tr>
 {% endfor %}
 </table>
 {% else %}
 No sites
 {% endif %}
+
+<input type="button" onClick="window.location='/site/add'" value="Add site" />
+
 {% endblock %}

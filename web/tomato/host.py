@@ -27,4 +27,25 @@ import xmlrpclib
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list()})
+	showRemove = True
+	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'showRemove': showRemove})
+
+@wrap_rpc
+def add(api, request):
+    #
+    #
+    #   DUMMY
+    #
+    #
+	showRemove = True
+	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'showRemove': showRemove})
+   
+@wrap_rpc
+def remove(api, request):
+    #
+    #
+    #   DUMMY
+    #
+    #
+	showRemove = True
+	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'showRemove': showRemove})
