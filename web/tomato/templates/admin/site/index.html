@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of hosts</h1>
+
+{% if site_list %}
+<script src="/js/enhancetable.js"></script>
+<table class="sortable,filterable">
+  <tr>
+    <th>Name</th>
+    <th>Description</th>
+  </tr>
+{% for site in site_list %}
+  <tr>
+    <td>{{site.name}}</td>
+    <td>{{site.description}}</td>
+  </tr>
+{% endfor %}
+</table>
+{% else %}
+No sites
+{% endif %}
+{% endblock %}
