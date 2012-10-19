@@ -221,7 +221,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
             connections = [con.id for con in self.connections.all()]
         return {
             "id": self.id,
-            "attrs": self.attrs,
+            "attrs": self.attrs.copy(),
             "permissions": dict([(p.user.name, p.role) for p in self.permissions.entries.all()]),
             "elements": elements,
             "connections": connections,

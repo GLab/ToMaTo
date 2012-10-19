@@ -357,7 +357,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"topology": self.topology.id,
 			"parent": self.parent.id if self.hasParent() else None,
 			"state": self.state,
-			"attrs": self.attrs,
+			"attrs": self.attrs.copy(),
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 			"cap_actions": self.capActions(),

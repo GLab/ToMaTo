@@ -337,7 +337,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return {
 			"id": self.id,
 			"state": self.state,
-			"attrs": self.attrs,
+			"attrs": self.attrs.copy(),
 			"elements": [el.id for el in self.getElements()],
 			"cap_attrs": self.capAttrs()
 		}

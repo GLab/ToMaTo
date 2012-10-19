@@ -218,7 +218,7 @@ class Host(attributes.Mixin, models.Model):
             "site": self.site.name,
             "element_types": self.elementTypes.keys(),
             "connection_types": self.connectionTypes.keys(),
-            "host_info": self.hostInfo,
+            "host_info": self.hostInfo.copy() if self.hostInfo else None,
             "host_info_timestamp": self.hostInfoTimestamp,
         }
 

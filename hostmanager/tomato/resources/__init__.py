@@ -110,7 +110,7 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         return {
             "id": self.id,
             "type": self.type,
-            "attrs": self.attrs,
+            "attrs": self.attrs.copy(),
         }
     
 class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):

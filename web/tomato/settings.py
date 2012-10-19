@@ -82,7 +82,7 @@ INSTALLED_APPS = (
 
 server_protocol = "http"
 server_host = "localhost"
-server_port = "8001"
+server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
 project_url="http://dswd.github.com/ToMaTo/%s"
 help_url="http://github.com/dswd/ToMaTo/wiki/%s"

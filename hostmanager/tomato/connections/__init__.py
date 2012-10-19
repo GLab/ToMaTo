@@ -265,7 +265,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 			"id": self.id,
 			"type": self.type,
 			"state": self.state,
-			"attrs": self.attrs,
+			"attrs": self.attrs.copy(),
 			"elements": [el.id for el in self.getElements()],
 		}
 		

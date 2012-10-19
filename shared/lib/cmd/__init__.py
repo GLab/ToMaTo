@@ -19,10 +19,10 @@ import subprocess, os, hashlib, shutil
 
 DEVNULL = open("/dev/null", "w")
 
-def runUnchecked(cmd, shell=False, ignoreErr=False, input=None): #@ReservedAssignment
+def runUnchecked(cmd, shell=False, ignoreErr=False, input=None, cwd=None): #@ReservedAssignment
     stderr = DEVNULL if ignoreErr else subprocess.STDOUT
     stdin = subprocess.PIPE if input else None
-    proc=subprocess.Popen(cmd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell, close_fds=True)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell, close_fds=True)
     res=proc.communicate(input)
     return (proc.returncode,res[0])
 
@@ -35,18 +35,18 @@ class CommandError(Exception):
     def __str__(self):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
-def spawn(cmd, stdout=DEVNULL, daemon=True):
+def spawn(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     if daemon:
         #setsid is important, otherwise programs will be killed when the parent process closes
         cmd = ["setsid"] + cmd
-    proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=False)
     return proc.pid
 
-def spawnShell(cmd, stdout=DEVNULL, daemon=True):
+def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     if daemon:
         #setsid is important, otherwise programs will be killed when the parent process closes
         cmd = "setsid " + cmd
-    proc=subprocess.Popen(cmd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=False)
     return proc.pid
 
 def run(cmd, **kwargs):
