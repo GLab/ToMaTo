@@ -18,4 +18,4 @@ repy/tomato-repy/repy
 hostserver/tomato-hostserver/debian/files
 hostserver/tomato-hostserver/debian/tomato-hostserver
 kernel/pve-kernel-*
-dummynet/ipfw3
+dist/meta/tomato-host-proxmox/debian/tomato-host
