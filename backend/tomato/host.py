@@ -68,7 +68,7 @@ class Host(attributes.Mixin, models.Model):
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
     
     class Meta:
-        pass
+        ordering = ['site', 'address']
 
     def init(self, attrs={}):
         self.attrs = attrs

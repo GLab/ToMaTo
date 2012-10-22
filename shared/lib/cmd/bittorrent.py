@@ -30,6 +30,7 @@ def startTracker(port, path):
 	atexit.register(lambda :process.kill(pid))
 
 def startClient(path, bwlimit=10000):
+	#TODO: bittorrent seems to be unstable, restart every few hours
 	assert os.path.exists(path)
 	pid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit)], cwd=path, daemon=False)
 	atexit.register(lambda :process.kill(pid))
