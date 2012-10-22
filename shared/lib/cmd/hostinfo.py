@@ -33,8 +33,14 @@ def cached(fn):
 @cached
 def cpuinfo():
 	with open("/proc/cpuinfo", "r") as fp:
-		cpus = map(lambda l: float(l.split()[2]), filter(lambda l: l.startswith("bogomips"), fp))
-		return {"count": len(cpus), "bogomips_avg": sum(cpus)/len(cpus)}
+		bogomips = []
+		models = []
+		for line in fp:
+			if line.startswith("bogomips"):
+				bogomips.append(float(line.split()[2]))
+			if line.startswith("model name"):
+				models.append(line.split(":")[1].strip())
+	return {"count": len(models), "bogomips_avg": sum(bogomips)/len(bogomips), "model": models[0]}
 
 def meminfo():
 	with open("/proc/meminfo", "r") as fp:
