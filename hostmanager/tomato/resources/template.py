@@ -18,6 +18,7 @@
 from django.db import models
 from tomato import resources, fault, config
 from tomato.lib import attributes #@UnresolvedImport
+from tomato.lib.cmd import bittorrent #@UnresolvedImport
 import os, base64, hashlib
 
 PATTERNS = {
@@ -78,10 +79,19 @@ class Template(resources.Resource):
 			os.remove(self.getPath())
 		resources.Resource.remove(self)
 
+	def isReady(self):
+		try:
+			path = self.getPath()
+			size = os.path.getsize(path)
+			return size == bittorrent.fileSize(base64.b64decode(self.torrent_data))
+		except:
+			return False
+
 	def info(self):
 		info = resources.Resource.info(self)
 		if self.torrent_data:
 			del info["attrs"]["torrent_data"]
+		info["attrs"]["ready"] = self.isReady()
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference

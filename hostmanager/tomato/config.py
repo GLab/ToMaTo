@@ -17,8 +17,6 @@
 
 import os, socket
 
-VERSION = 0.1
-
 LOG_DIR = "/var/log/tomato"
 DATA_DIR = "/var/lib/tomato"
 TEMPLATE_DIR = os.path.join(DATA_DIR, "templates")

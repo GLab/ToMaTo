@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.lib.cmd import run, CommandError
+import platform
 
 _cache = {}
 def cached(fn):
@@ -57,6 +58,14 @@ def loadavg():
 def uptime():
 	with open("/proc/uptime", "r") as fp:
 		return float(fp.readline().split()[0])
+
+def system():
+	return {
+		"kernel": platform.release(),
+		"distribution": platform.dist(),
+		"python": platform.python_version(),
+		"processor": platform.machine()
+	}
 
 def diskinfo(path):
 	out = run(["df", path])

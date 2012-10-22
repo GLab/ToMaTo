@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from tomato.lib.decorators import xmlRpcSanitize #@UnresolvedImport
+from tomato.lib.cmd import getDpkgVersionStr #@UnresolvedImport
 
 def host_info():
     """
@@ -26,7 +27,7 @@ def host_info():
     """
     return {
         "hostmanager": {
-            "version": config.VERSION,
+            "version": getDpkgVersionStr("tomato-hostmanager"),
         },
         "fileserver_port": config.FILESERVER["PORT"],
         "address": config.PUBLIC_ADDRESS,
@@ -41,6 +42,7 @@ def host_info():
         },
         "uptime": hostinfo.uptime(),
         "time": time.time(),
+        "system": hostinfo.system()
     }
 
 @xmlRpcSanitize

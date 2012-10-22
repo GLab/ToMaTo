@@ -29,6 +29,22 @@ def startTracker(port, path):
 	pid = spawn(args)
 	atexit.register(lambda :process.kill(pid))
 
+def fileSize(torrentData):
+	from BitTorrent.bencode import bdecode
+	info = bdecode(torrentData)["info"]
+	if info.has_key('length'):
+		return info["length"]
+	file_length = 0
+	for file in info['files']:
+		path = ''
+		for item in file['path']:
+			if (path != ''):
+				path = path + "/"
+			path = path + item
+		file_length += file['length']
+	return file_length
+	
+
 def startClient(path, bwlimit=10000):
 	#TODO: bittorrent seems to be unstable, restart every few hours
 	assert os.path.exists(path)

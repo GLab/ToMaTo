@@ -64,7 +64,7 @@ def removeControlChars(s):
     controlChars = "".join(map(chr, range(0,9)+range(11,13)+range(14,32)))
     return s.translate(None, controlChars)
 
-def getDpkgVersion(package):
+def getDpkgVersionStr(package):
     fields = {}
     error, output = runUnchecked(["dpkg-query", "-s", package])
     if error:
@@ -75,7 +75,9 @@ def getDpkgVersion(package):
             fields[name.lower()] = value
     if not "installed" in fields["status"]:
         return None
-    verStr = fields["version"]
+    return fields["version"]
+
+def splitVersion(verStr):
     version = []
     numStr = ""
     for ch in verStr:
@@ -86,6 +88,11 @@ def getDpkgVersion(package):
             numStr = ""
     version.append(int(numStr))
     return version
+    
+
+def getDpkgVersion(package, verStr=None):
+    verStr = getDpkgVersionStr(package)
+    return splitVersion(verStr)
 
 def escape(s):
     return repr(unicode(s).encode("utf-8"))
