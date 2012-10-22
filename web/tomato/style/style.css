@@ -27,6 +27,9 @@ table tbody td {
 	vertical-align: top;
 	margin: 0px;
 }
+table tr:nth-child(even) td {
+	background-color: #ebF2F2;
+}
 
 code {font-size:0.9px;color:#0000ff;}
 pre {
