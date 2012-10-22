@@ -71,6 +71,8 @@ class Host(attributes.Mixin, models.Model):
     hostInfo = attributes.attribute("info", dict, {})
     hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
+    # connections: [HostConnection]
+    # elements: [HostElement]
     
     class Meta:
         ordering = ['site', 'address']
@@ -403,6 +405,13 @@ def create(address, site, attrs={}):
     host.save()
     logging.logMessage("create", category="host", info=host.info())        
     return host
+
+def remove(host):
+    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+    fault.check(not host.elements.all(), "Host still has active elements")
+    fault.check(not host.connections.all(), "Host still has active connections")
+    logging.logMessage("remove", category="host", name=host.address)
+    host.delete()
 
 def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[]):
     all_ = getAll(site=site) if site else getAll()

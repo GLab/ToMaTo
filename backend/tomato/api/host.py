@@ -50,6 +50,10 @@ def host_list(site_filter=None):
     hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
     return [h.info() for h in hosts]
 
+def host_remove(address):
+    h = _getHost(address)
+    host.remove(h)
+
 def host_element_owner(hostname, num):
     h = _getHost(hostname)
     try:
