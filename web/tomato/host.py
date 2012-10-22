@@ -28,11 +28,13 @@ import xmlrpclib
 class AddHostForm(forms.Form):
     address = forms.CharField(max_length=50)
     site = forms.CharField(max_length=255)
+    
+def is_hostManager(account_info)
+	return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):
-	hostManager = True
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})
+	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def add(api, request):

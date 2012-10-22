@@ -30,18 +30,13 @@ import xmlrpclib
 class AddSiteForm(forms.Form):
     name = forms.CharField(max_length=50)
     description = forms.CharField(max_length=255)
-
+    
+def is_hostManager(account_info)
+	return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):
-    #
-    #
-    # DUMMY
-    # hostManager: check for remove privileges
-    #
-    #
-    hostManager = True
-    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': hostManager})
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def add(api, request):
