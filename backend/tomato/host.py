@@ -251,17 +251,20 @@ class Host(attributes.Mixin, models.Model):
             problems.append("Node clock is out of sync")             
         if hi["query_time"] > 0.5:
             problems.append("Last query took very long")             
-        if not hi["resources"]["cpus_present"]["count"]:
+        res = hi["resources"]
+        cpus = res["cpus_present"]
+        if not cpus["count"]:
             problems.append("No CPUS ?!?")
-        if hi["resources"]["cpus_present"]["bogomips_avg"] < 1000:
+        if cpus["bogomips_avg"] < 1000:
             problems.append("Slow CPUs")
-        if hi["resources"]["loadavg"][1] > hi["resources"]["cpus_present"]["count"]:
+        if res["loadavg"][1] > cpus["count"]:
             problems.append("High load")
-        if int(hi["resources"]["diskspace"]["root"]["total"]) - int(hi["resources"]["diskspace"]["root"]["used"]) < 1e6:
+        disks = res["diskspace"]
+        if int(disks["root"]["total"]) - int(disks["root"]["used"]) < 1e6:
             problems.append("Root disk full") 
-        if int(hi["resources"]["diskspace"]["data"]["total"]) - int(hi["resources"]["diskspace"]["data"]["used"]) < 10e6:
+        if int(disks["data"]["total"]) - int(disks["data"]["used"]) < 10e6:
             problems.append("Data disk full") 
-        if int(hi["resources"]["memory"]["total"]) - int(hi["resources"]["memory"]["used"]) < 1e6:
+        if int(res["memory"]["total"]) - int(res["memory"]["used"]) < 1e6:
             problems.append("Memory full") 
         return problems
         
