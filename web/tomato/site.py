@@ -37,11 +37,11 @@ def index(api, request):
     #
     #
     # DUMMY
-    # showRemove: check for remove privileges
+    # hostManager: check for remove privileges
     #
     #
-    showRemove = True
-    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'showRemove': showRemove})
+    hostManager = True
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': hostManager})
 
 @wrap_rpc
 def add(api, request):
@@ -72,5 +72,5 @@ def remove(api, request):
     #   DUMMY
     #
     #
-    showRemove = True
-    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'showRemove': showRemove})
+    hostManager = True
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': hostManager})

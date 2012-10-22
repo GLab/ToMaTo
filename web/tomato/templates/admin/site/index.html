@@ -14,13 +14,15 @@
 	}
 </script>
 
+{% if hostManager %}
 <input type="button" onClick="window.location='/site/add'" value="Add site" />
+{% endif %}
 
 <table class="sortable,filterable">
   <tr>
     <th>Name</th>
     <th>Description</th>
-    {% if showRemove %}
+    {% if hostManager %}
     <th />
     {% endif %}
   </tr>
@@ -28,7 +30,7 @@
   <tr>
     <td>{{site.name}}</td>
     <td>{{site.description}}</td>
-    {% if showRemove %}
+    {% if hostManager %}
     <td><small><a href="" onClick="deleteSite('{{site.name}}')">remove</a></td>
     {% endif %}
   </tr>
@@ -38,6 +40,8 @@
 No sites
 {% endif %}
 
+{% if hostManager %}
 <input type="button" onClick="window.location='/site/add'" value="Add site" />
+{% endif %}
 
 {% endblock %}
