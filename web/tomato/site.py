@@ -54,7 +54,7 @@ def add(api, request):
         form = AddSiteForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            if formData["name"]: #At this point, check if trying to add a duplicate.
+            if formData["name"]: #At this point, check if trying to add a duplicate. (This is a dummy!)
                 api.site_create(formData["name"],formData["description"])
                 return render_to_response("admin/site/add_success.html", {'name': formData["name"]})
             else:
