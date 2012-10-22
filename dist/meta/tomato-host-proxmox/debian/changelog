@@ -1,3 +1,9 @@
+tomato-host-proxmox (0.1.1) stable; urgency=low
+
+  * Fixed packet
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 22 Oct 2012 09:35:35 +0200
+
 tomato-host-proxmox (0.1) stable; urgency=low
 
   * Initial release.

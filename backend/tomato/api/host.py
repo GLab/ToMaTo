@@ -34,17 +34,38 @@ def site_create(name, description=""):
     s = host.createSite(name, description)
     return s.info()
 
+def site_info(name):
+    site = _getSite(name)
+    return site.info()
+
 def site_list():
     return [s.info() for s in host.getAllSites()]
+
+def site_remove(name):
+    site = _getSite(name)
+    site.remove()
 
 def host_create(address, site, attrs={}):
     site = _getSite(site)
     h = host.create(address, site, attrs)
     return h.info()
 
+def host_info(address):
+    h = _getHost(address)
+    return h.info()
+
 def host_list(site_filter=None):
     hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
     return [h.info() for h in hosts]
+
+def host_modify(address, attrs):
+    h = _getHost(address)
+    h.modify(attrs)
+    return h.info()
+
+def host_remove(address):
+    h = _getHost(address)
+    h.remove()
 
 def host_element_owner(hostname, num):
     h = _getHost(hostname)

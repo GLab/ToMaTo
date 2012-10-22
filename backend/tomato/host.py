@@ -30,6 +30,12 @@ class Site(attributes.Mixin, models.Model):
     class Meta:
         pass
 
+    def remove(self):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        fault.check(not self.hosts.all(), "Site still has hosts")
+        logging.logMessage("remove", category="site", name=self.name)
+        self.delete()
+
     def info(self):
         return {
             "name": self.name,
@@ -50,7 +56,6 @@ def createSite(name, description=""):
     logging.logMessage("create", category="site", name=name, description=description)        
     return Site.objects.create(name=name, description=description)
 
-
 def _connect(address, port):
     transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
     return rpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
@@ -66,12 +71,16 @@ class Host(attributes.Mixin, models.Model):
     hostInfo = attributes.attribute("info", dict, {})
     hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
+    enabled = attributes.attribute("enabled", bool, True)
+    # connections: [HostConnection]
+    # elements: [HostElement]
     
     class Meta:
-        pass
+        ordering = ['site', 'address']
 
     def init(self, attrs={}):
-        self.attrs = attrs
+        self.attrs = {}
+        self.modify(attrs)
         self.update()
 
     def _saveAttributes(self):
@@ -212,10 +221,28 @@ class Host(attributes.Mixin, models.Model):
     def getNetworkKinds(self):
         return [net.getKind() for net in self.networks.all()]
     
+    def remove(self):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        fault.check(not self.elements.all(), "Host still has active elements")
+        fault.check(not self.connections.all(), "Host still has active connections")
+        logging.logMessage("remove", category="host", name=self.address)
+        self.delete()
+
+    def modify(self, attrs):
+        for key, value in attrs.iteritems():
+            if key == "site":
+                self.site = getSite(value)
+            elif key == "enabled":
+                self.enabled = value
+            else:
+                fault.raise_("Unknown host attribute: %s" % key, fault.USER_ERROR)
+        self.save()
+
     def info(self):
         return {
             "address": self.address,
             "site": self.site.name,
+            "enabled": self.enabled,
             "element_types": self.elementTypes.keys(),
             "connection_types": self.connectionTypes.keys(),
             "host_info": self.hostInfo.copy() if self.hostInfo else None,

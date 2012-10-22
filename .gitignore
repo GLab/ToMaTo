@@ -11,4 +11,12 @@ buildui/build
 *Thumbs.db*
 ~$*.pptx
 
+*.pem
+*.torrent
+*.tar.gz
+*.qcow2
+
+web-old
+backend-old
+
 web/tomato/static/newui

@@ -21,17 +21,16 @@ import os, atexit
 def startTracker(port, path):
 	assert os.path.exists(path)
 	usage = run(["bttrack"])
-	args = ["bttrack", "--port", str(port), "--dfile", os.path.join(path, "tracker.cache"), "--logfile", os.path.join(path, "tracker.log")]
-	#args = ["bttrack", "--port", str(port), "--dfile", os.path.join(path, "tracker.cache"), "--allowed_dir", path, "--logfile", os.path.join(path, "tracker.log")]
-	#if "--parse_allowed_interval" in usage: #bittorrent
-	#	args += ["--parse_allowed_interval", "1"] #minutes
-	#elif "--parse_dir_interval" in usage: #bittornado
-	#	args += ["--parse_dir_interval", "60"] #seconds
+	args = ["bttrack", "--port", str(port), "--dfile", os.path.join(path, "tracker.cache"), "--allowed_dir", path, "--logfile", os.path.join(path, "tracker.log")]
+	if "--parse_allowed_interval" in usage: #bittorrent
+		args += ["--parse_allowed_interval", "1"] #minutes
+	elif "--parse_dir_interval" in usage: #bittornado
+		args += ["--parse_dir_interval", "60"] #seconds
 	pid = spawn(args)
 	atexit.register(lambda :process.kill(pid))
 
 def startClient(path, bwlimit=10000):
-	print path
+	#TODO: bittorrent seems to be unstable, restart every few hours
 	assert os.path.exists(path)
 	pid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit)], cwd=path, daemon=False)
 	atexit.register(lambda :process.kill(pid))

@@ -14,16 +14,9 @@
 
 <table class="sortable,filterable">
   <tr>
-    <th colspan="2"></th>
-    <th colspan="4">Timing</th>
-    <th colspan="3">Processor</th>
-    <th colspan="3">Disk</th>
-    <th colspan="2">Memory</th>
     {% if hostManager %}
     <th />
     {% endif %}
-  </tr>
-  <tr>
     <th>Address</th>
     <th>Site</th>
     <th>Info age</th>
@@ -33,10 +26,10 @@
     <th>CPUs</th>
     <th>Bogomips</th>
     <th>Load</th>
-    <th>Space</th>
+    <th>Disk</th>
     <th>Usage root</th>
     <th>Usage data</th>
-    <th>Space</th>
+    <th>RAM</th>
     <th>Usage</th>
     {% if hostManager %}
     <th />
@@ -46,17 +39,17 @@
   <tr>
     <td>{{host.address}}</td>
     <td>{{host.site}}</td>
-    <td>{{host.host_info_timestamp|age|toduration}}</td>
-    <td>{{host.host_info.uptime|toduration}}</td>
-    <td>{{host.host_info.time_diff|floatformat}} s</td>
-    <td>{{host.host_info.query_time|mult:1000|floatformat}} ms</td>
+    <td enhancetable_customkey="{{host.host_info_timestamp}}">{{host.host_info_timestamp|age|toduration}}</td>
+    <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>
+    <td enhancetable_customkey="{{host.host_info.time_diff}}">{{host.host_info.time_diff|floatformat:2}} s</td>
+    <td enhancetable_customkey="{{host.host_info.query_time}}">{{host.host_info.query_time|mult:1000|floatformat:0}} ms</td>
     <td>{{host.host_info.resources.cpus_present.count}}</td>
-    <td>{{host.host_info.resources.cpus_present.bogomips_avg}}</td>
+    <td>{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
     <td>{{host.host_info.resources.loadavg|slice:"1:2"|first}}</td>
-    <td>{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</td>
+    <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total}}">{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}</td>
     <td>{{host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}</td>
-    <td>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
+    <td enhancetable_customkey="{{host.host_info.resources.memory.total}}">{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
     {% if hostManager %}
     <td><small><a href="/host/remove?address={{host.address}}">remove</a></td>
