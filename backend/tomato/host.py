@@ -50,6 +50,11 @@ def createSite(name, description=""):
     logging.logMessage("create", category="site", name=name, description=description)        
     return Site.objects.create(name=name, description=description)
 
+def removeSite(site):
+    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+    fault.check(not site.hosts.all(), "Site still has hosts")
+    logging.logMessage("remove", category="site", name=site.name)
+    site.delete()
 
 def _connect(address, port):
     transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)

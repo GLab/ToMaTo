@@ -37,6 +37,10 @@ def site_create(name, description=""):
 def site_list():
     return [s.info() for s in host.getAllSites()]
 
+def site_remove(name):
+    site = _getSite(name)
+    host.removeSite(site)
+
 def host_create(address, site, attrs={}):
     site = _getSite(site)
     h = host.create(address, site, attrs)
