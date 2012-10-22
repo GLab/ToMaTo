@@ -14,7 +14,7 @@ def checkCreate(e1, e2, indent=""):
 def checkRemove(id, indent=""):
 	print indent + "removing bridge connection..."
 	res = connection_remove(id)
-	assert res == {}
+	assert not res
 
 def checkAction(id, action, params={}, assertState=None, indent=""):
 	print indent + "executing action %s on bridge connection..." % action

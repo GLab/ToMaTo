@@ -39,14 +39,14 @@ def spawn(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     if daemon:
         #setsid is important, otherwise programs will be killed when the parent process closes
         cmd = ["setsid"] + cmd
-    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=False)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True)
     return proc.pid
 
 def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     if daemon:
         #setsid is important, otherwise programs will be killed when the parent process closes
         cmd = "setsid " + cmd
-    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=False)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True)
     return proc.pid
 
 def run(cmd, **kwargs):

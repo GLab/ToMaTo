@@ -57,6 +57,9 @@ class Template(resources.Resource):
 	def getTorrentPath(self):
 		return self.getPath() + ".torrent"
 
+	def modify_name(self, val):
+		self.name = val
+
 	def modify_tech(self, val):
 		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
 		self.tech = val

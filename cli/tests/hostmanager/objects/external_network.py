@@ -14,7 +14,7 @@ def checkCreate(indent=""):
 def checkRemove(id, indent=""):
 	print indent + "removing external_network element..."
 	res = element_remove(id)
-	assert res == {}
+	assert not res
 
 def tearDown(id, indent=""):
 	try:

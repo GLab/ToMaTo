@@ -17,7 +17,7 @@ def checkCreateInterface(id, indent=""):
 def checkRemove(id, indent=""):
 	print indent + "removing element..."
 	res = element_remove(id)
-	assert res == {}
+	assert not res
 
 def checkAction(id, action, params={}, assertState=None, indent=""):
 	print indent + "executing action %s on element..." % action

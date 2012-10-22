@@ -17,7 +17,7 @@ def checkCreateInterface(id, indent=""):
 def checkRemove(id, indent=""):
 	print indent + "removing element..."
 	res = element_remove(id)
-	assert res == {}
+	assert not res
 
 def checkAction(id, action, params={}, assertState=None, indent=""):
 	print indent + "executing action %s on element..." % action
@@ -56,7 +56,7 @@ def check(indent="", shellError=False):
 		assert "attrs" in info and "vncport" in info["attrs"]
 		assert lib.tcpPortOpen(__hostname__, info["attrs"]["vncport"]), "VNC Port not open"
 		
-		checkAction(id, "stop", assertState="created", indent=indent)
+		checkAction(id, "stop", assertState="prepared", indent=indent)
 		
 		print indent + "checking disk download and upload..."
 		fileserver_port = host_info()["fileserver_port"]

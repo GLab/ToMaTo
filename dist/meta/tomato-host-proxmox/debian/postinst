@@ -1,0 +1,25 @@
+#!/bin/sh
+# postinst script for #PACKAGE#
+#
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+    configure)
+        #manually copy file there because install tries and fails to set ownership
+        cp /usr/share/tomato-host-proxmox/ve-default.conf-sample /etc/pve/openvz/ve-default.conf-sample
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

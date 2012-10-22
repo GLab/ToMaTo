@@ -36,6 +36,7 @@ encoding//tomato/host/__init__.py=utf-8
 encoding//tomato/lib/attributes.py=utf-8
 encoding//tomato/lib/cmd/__init__.py=utf-8
 encoding//tomato/lib/cmd/bittorrent.py=utf-8
+encoding//tomato/lib/cmd/hostinfo.py=utf-8
 encoding//tomato/lib/cmd/path.py=utf-8
 encoding//tomato/lib/db.py=utf-8
 encoding//tomato/lib/decorators.py=utf-8

@@ -14,7 +14,7 @@ def checkCreate(indent=""):
 def checkRemove(id, indent=""):
 	print indent + "removing udp_tunnel element..."
 	res = element_remove(id)
-	assert res == {}
+	assert not res
 
 def checkAction(id, action, params={}, assertState=None, indent=""):
 	print indent + "executing action %s on udp_tunnel element..." % action

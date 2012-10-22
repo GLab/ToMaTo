@@ -145,7 +145,7 @@ class UDP_Tunnel(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
-		if self.state == ST_STARTED:
+		if self.state == ST_CREATED:
 			return
 		usage.memory = process.memory(self.pid)
 		cputime = process.cputime(self.pid)

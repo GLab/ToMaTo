@@ -341,7 +341,10 @@ class KVMQM(elements.Element):
 		self._checkState()
 		self._qm("create")
 		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
-		self._qm("set", ["-args", "-vnc unix:%s,password" % self._vncPath()]) #disable vnc tls as most clients dont support that 
+		args = "-vnc unix:%s,password" % self._vncPath() #disable vnc tls as most clients dont support that
+		if qmVersion < [1, 1]:
+			args += " -chardev socket,id=qmp,path=%s,server,nowait -mon chardev=qmp,mode=control" % self._controlPath()
+		self._qm("set", ["-args", args])  
 		self.setState(ST_PREPARED, True)
 		self._setCpus()
 		self._setRam()
@@ -363,6 +366,9 @@ class KVMQM(elements.Element):
 
 	def action_start(self):
 		self._checkState()
+		if not net.bridgeExists("dummy"):
+			net.bridgeCreate("dummy")
+		net.ifUp("dummy")
 		self._qm("start")
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():

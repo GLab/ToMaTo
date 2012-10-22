@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.lib.cmd import run, CommandError
+from tomato.lib.cmd import run, CommandError, getDpkgVersionStr 
 import platform
 
 _cache = {}
@@ -59,6 +59,11 @@ def uptime():
 	with open("/proc/uptime", "r") as fp:
 		return float(fp.readline().split()[0])
 
+@cached
+def hostmanagerVersion():
+	return getDpkgVersionStr("tomato-hostmanager")
+
+@cached
 def system():
 	return {
 		"kernel": platform.release(),

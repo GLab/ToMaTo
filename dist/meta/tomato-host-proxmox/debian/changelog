@@ -1,3 +1,9 @@
+tomato-host-proxmox (0.1.2-1) stable; urgency=low
+
+  * Fix
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 22 Oct 2012 14:16:06 +0200
+
 tomato-host-proxmox (0.1.2) stable; urgency=low
 
   * Added ve-default.conf-sample to packet
