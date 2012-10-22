@@ -26,11 +26,19 @@ from lib import *
 import xmlrpclib
 
 class AddHostForm(forms.Form):
-    address = forms.CharField(max_length=50)
-    site = forms.CharField(max_length=255)
+    address = forms.CharField(max_length=255)
+    site = forms.CharField(max_length=50)
     
 def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
+    
+def site_name_list(api):
+    l = api.site_list()
+    res = []
+    for site in l:
+        res.append(object)(site["name"])
+    res,sort()
+    return res
 
 @wrap_rpc
 def index(api, request):
@@ -51,12 +59,12 @@ def add(api, request):
                 api.host_create(formData["address"],formData["site"])
                 return render_to_response("admin/host/add_success.html", {'address': formData["site"]})
             else:
-                return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path})
+                return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
         else:
-            return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path})
+            return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
     else:
         form = AddHostForm
-        return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path})
+        return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
    
 @wrap_rpc
 def remove(api, request):
