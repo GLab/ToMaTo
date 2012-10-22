@@ -27,7 +27,7 @@ import xmlrpclib
 
 class AddHostForm(forms.Form):
     address = forms.CharField(max_length=255)
-    site = forms.CharField(max_length=50)
+    #site = forms.CharField(max_length=50)
     
 def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
@@ -36,8 +36,8 @@ def site_name_list(api):
     l = api.site_list()
     res = []
     for site in l:
-        res.append(object)(site["name"])
-    res,sort()
+        res.append(site["name"])
+    res.sort()
     return res
 
 @wrap_rpc
@@ -63,7 +63,7 @@ def add(api, request):
         else:
             return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
     else:
-        form = AddHostForm
+        form = AddHostForm()
         return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
    
 @wrap_rpc
