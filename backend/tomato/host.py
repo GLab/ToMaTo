@@ -30,6 +30,12 @@ class Site(attributes.Mixin, models.Model):
     class Meta:
         pass
 
+    def remove(self):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        fault.check(not self.hosts.all(), "Site still has hosts")
+        logging.logMessage("remove", category="site", name=self.name)
+        self.delete()
+
     def info(self):
         return {
             "name": self.name,
@@ -49,12 +55,6 @@ def createSite(name, description=""):
     fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
     logging.logMessage("create", category="site", name=name, description=description)        
     return Site.objects.create(name=name, description=description)
-
-def removeSite(site):
-    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
-    fault.check(not site.hosts.all(), "Site still has hosts")
-    logging.logMessage("remove", category="site", name=site.name)
-    site.delete()
 
 def _connect(address, port):
     transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
@@ -219,6 +219,13 @@ class Host(attributes.Mixin, models.Model):
     def getNetworkKinds(self):
         return [net.getKind() for net in self.networks.all()]
     
+    def remove(self):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        fault.check(not self.elements.all(), "Host still has active elements")
+        fault.check(not self.connections.all(), "Host still has active connections")
+        logging.logMessage("remove", category="host", name=self.address)
+        self.delete()
+
     def info(self):
         return {
             "address": self.address,
@@ -405,13 +412,6 @@ def create(address, site, attrs={}):
     host.save()
     logging.logMessage("create", category="host", info=host.info())        
     return host
-
-def remove(host):
-    fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
-    fault.check(not host.elements.all(), "Host still has active elements")
-    fault.check(not host.connections.all(), "Host still has active connections")
-    logging.logMessage("remove", category="host", name=host.address)
-    host.delete()
 
 def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[]):
     all_ = getAll(site=site) if site else getAll()

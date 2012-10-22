@@ -39,7 +39,7 @@ def site_list():
 
 def site_remove(name):
     site = _getSite(name)
-    host.removeSite(site)
+    site.remove()
 
 def host_create(address, site, attrs={}):
     site = _getSite(site)
@@ -52,7 +52,7 @@ def host_list(site_filter=None):
 
 def host_remove(address):
     h = _getHost(address)
-    host.remove(h)
+    h.remove()
 
 def host_element_owner(hostname, num):
     h = _getHost(hostname)
