@@ -14,9 +14,6 @@
 
 <table class="sortable,filterable">
   <tr>
-    {% if hostManager %}
-    <th />
-    {% endif %}
     <th>Address</th>
     <th>Site</th>
     <th>Info age</th>
@@ -52,7 +49,7 @@
     <td enhancetable_customkey="{{host.host_info.resources.memory.total}}">{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
     {% if hostManager %}
-    <td><small><a href="/host/remove?address={{host.address}}">remove</a></td>
+    <td><small><a href="/host/edit?address={{host.address}}">edit</a> &nbsp; <a href="/host/remove?address={{host.address}}">remove</a></small></td>
     {% endif %}
   </tr>
 {% endfor %}

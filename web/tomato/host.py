@@ -29,7 +29,7 @@ class AddHostForm(forms.Form):
     address = forms.CharField(max_length=50)
     site = forms.CharField(max_length=255)
     
-def is_hostManager(account_info)
+def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
@@ -49,7 +49,7 @@ def add(api, request):
             formData = form.cleaned_data
             if formData["address"]: #At this point, check if trying to add a duplicate. (This is a dummy!)
                 api.host_create(formData["address"],formData["site"])
-                return render_to_response("admin/host/add_success.html", {'address': formData["name"]})
+                return render_to_response("admin/host/add_success.html", {'address': formData["site"]})
             else:
                 return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path})
         else:
@@ -65,5 +65,15 @@ def remove(api, request):
     #   DUMMY
     #
     #
-	hostManager = True
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})
+    hostManager = True
+    return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})
+
+@wrap_rpc
+def edit(api, request):
+    #
+    #
+    #   DUMMY
+    #
+    #
+    hostManager = True
+    return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})

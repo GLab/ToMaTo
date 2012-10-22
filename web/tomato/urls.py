@@ -42,10 +42,12 @@ urlpatterns = patterns('',
 	(r'^element/(?P<id>\d+)/console$', 'tomato.element.console'),
 	(r'^host/$', 'tomato.host.index'),
 	(r'^host/add$', 'tomato.host.add'), #adapt path in input (buttons) in templates/admin/host/index.html
-	(r'^host/remove$', 'tomato.host.remove'), #adapt path in templates/admin/host/index.html
+	(r'^host/edit*$', 'tomato.host.edit'), #adapt path in templates/admin/host/index.html
+	(r'^host/remove*$', 'tomato.host.remove'), #adapt path in templates/admin/host/index.html
 	(r'^site/$', 'tomato.site.index'),
 	(r'^site/add$', 'tomato.site.add'), #adapt path in input (buttons) in templates/admin/site/index.html
-	(r'^site/remove$', 'tomato.site.remove'), #adapt path in templates/admin/site/index.html
+	(r'^site/edit*$', 'tomato.site.edit'), #adapt path templates/admin/site/index.html
+	(r'^site/remove*$', 'tomato.site.remove'), #adapt path in templates/admin/site/index.html
 	(r'^ajax/topology/(?P<id>\d+)/info$', 'tomato.ajax.topology_info'),
 	(r'^ajax/topology/(?P<id>\d+)/action$', 'tomato.ajax.topology_action'),
 	(r'^ajax/topology/(?P<id>\d+)/modify$', 'tomato.ajax.topology_modify'),

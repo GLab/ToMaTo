@@ -31,7 +31,7 @@ class AddSiteForm(forms.Form):
     name = forms.CharField(max_length=50)
     description = forms.CharField(max_length=255)
     
-def is_hostManager(account_info)
+def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
@@ -62,6 +62,16 @@ def add(api, request):
     
 @wrap_rpc
 def remove(api, request):
+    #
+    #
+    #   DUMMY
+    #
+    #
+    hostManager = True
+    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': hostManager})
+    
+@wrap_rpc
+def edit(api, request):
     #
     #
     #   DUMMY
