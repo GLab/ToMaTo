@@ -7,12 +7,6 @@
 
 {% if site_list %}
 <script src="/js/enhancetable.js"></script>
-<script>
-	function deleteSite(name) {
-		if(confirm("Really delete the site " + name + "?"))
-			window.location = "/site/remove?name=" + name;
-	}
-</script>
 
 {% if hostManager %}
 <input type="button" onClick="window.location='/site/add'" value="Add site" />
@@ -31,7 +25,7 @@
     <td>{{site.name}}</td>
     <td>{{site.description}}</td>
     {% if hostManager %}
-    <td><small><a href="" onClick="deleteSite('{{site.name}}')">remove</a></td>
+    <td><small><a href="/site/remove?address={{site.name}}">remove</a></td>
     {% endif %}
   </tr>
 {% endfor %}

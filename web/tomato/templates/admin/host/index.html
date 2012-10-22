@@ -7,12 +7,6 @@
 
 {% if host_list %}
 <script src="/js/enhancetable.js"></script>
-<script>
-	function deleteSite(name) {
-		if(confirm("Really delete the site " + name + "?"))
-			window.location = "/host/remove?name=" + name;
-	}
-</script>
 
 {% if hostManager %}
 <input type="button" onClick="window.location='/host/add'" value="Add host" />
@@ -65,7 +59,7 @@
     <td>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
     {% if hostManager %}
-    <td><small><a href="" onClick="deleteSite('{{host.name}}')">remove</a></td>
+    <td><small><a href="/host/remove?address={{host.address}}">remove</a></td>
     {% endif %}
   </tr>
 {% endfor %}
