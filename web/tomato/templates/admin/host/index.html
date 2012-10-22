@@ -9,6 +9,7 @@
 <script src="/js/enhancetable.js"></script>
 <table class="sortable,filterable">
   <tr>
+  	<th>&nbsp;</th>
     <th>Address</th>
     <th>Site</th>
     <th>Info age</th>
@@ -26,15 +27,20 @@
   </tr>
 {% for host in host_list %}
   <tr>
+{% if host.problems %}
+  	<td title="{{host.problems}}"><img src="/img/warning16.png"></td>
+{% else %}
+  	<td title="No problems"><img src="/img/tick.png"></td>
+{% endif %}
     <td>{{host.address}}</td>
     <td>{{host.site}}</td>
     <td enhancetable_customkey="{{host.host_info_timestamp}}">{{host.host_info_timestamp|age|toduration}}</td>
     <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>
     <td enhancetable_customkey="{{host.host_info.time_diff}}">{{host.host_info.time_diff|floatformat:2}} s</td>
     <td enhancetable_customkey="{{host.host_info.query_time}}">{{host.host_info.query_time|mult:1000|floatformat:0}} ms</td>
-    <td>{{host.host_info.resources.cpus_present.count}}</td>
-    <td>{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
-    <td>{{host.host_info.resources.loadavg|slice:"1:2"|first}}</td>
+    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.count}}</td>
+    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
+    <td title="{{host.host_info.resources.loadavg}}">{{host.host_info.resources.loadavg|slice:"1:2"|first}}</td>
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total}}">{{host.host_info.resources.diskspace.root.total|add:host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}</td>
     <td>{{host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}</td>

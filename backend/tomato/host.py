@@ -238,11 +238,39 @@ class Host(attributes.Mixin, models.Model):
                 fault.raise_("Unknown host attribute: %s" % key, fault.USER_ERROR)
         self.save()
 
+    def problems(self):
+        problems = []
+        if not self.enabled:
+            problems.append("Manually disabled")
+        hi = self.hostInfo
+        if time.time() - self.hostInfoTimestamp > 30 * 60:
+            problems.append("Old info age, host unreachable?")
+        if hi["uptime"] < 10 * 60:
+            problems.append("Node just booted")
+        if hi["time_diff"] > 5 * 60:
+            problems.append("Node clock is out of sync")             
+        if hi["query_time"] > 0.5:
+            problems.append("Last query took very long")             
+        if not hi["resources"]["cpus_present"]["count"]:
+            problems.append("No CPUS ?!?")
+        if hi["resources"]["cpus_present"]["bogomips_avg"] < 1000:
+            problems.append("Slow CPUs")
+        if hi["resources"]["loadavg"][1] > hi["resources"]["cpus_present"]["count"]:
+            problems.append("High load")
+        if int(hi["resources"]["diskspace"]["root"]["total"]) - int(hi["resources"]["diskspace"]["root"]["used"]) < 1e6:
+            problems.append("Root disk full") 
+        if int(hi["resources"]["diskspace"]["data"]["total"]) - int(hi["resources"]["diskspace"]["data"]["used"]) < 10e6:
+            problems.append("Data disk full") 
+        if int(hi["resources"]["memory"]["total"]) - int(hi["resources"]["memory"]["used"]) < 1e6:
+            problems.append("Memory full") 
+        return problems
+        
     def info(self):
         return {
             "address": self.address,
             "site": self.site.name,
             "enabled": self.enabled,
+            "problems": self.problems(),
             "element_types": self.elementTypes.keys(),
             "connection_types": self.connectionTypes.keys(),
             "host_info": self.hostInfo.copy() if self.hostInfo else None,
