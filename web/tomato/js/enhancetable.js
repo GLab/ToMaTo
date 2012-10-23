@@ -38,6 +38,9 @@ enhancetable = {
       if (table.className.search(/\bfilterable\b/) != -1 && table.rows.length>10) {
         enhancetable.makeFilterable(table);
       }
+      if (table.className.search(/\bstddevcolor\b/) != -1) {
+        enhancetable.stddevColor(table);
+      }
     });
     
   },
@@ -71,6 +74,63 @@ enhancetable = {
       }
       table.rows[r].style.display = displayStyle;
     }
+  },
+  
+  stddevColor: function(table) {
+	var threshold = parseFloat(table.getAttribute("stddev_threshold")) || 1.0;
+    var rows = table.getElementsByTagName('tr');
+    var headers = rows[0].getElementsByTagName("th");
+	var colCount = rows[rows.length-1].getElementsByTagName('td').length;
+	for (var col=0; col < colCount; col++) {
+      var avg = 0.0;
+      var count = 0;
+      for (var i=0; i < rows.length; i++) {
+    	var cols = rows[i].getElementsByTagName('td');
+    	if (cols.length <= col) continue;
+        var val = this.getNumericValue(cols[col]);
+        if (isNaN(val)) continue;
+        avg += val;
+        count += 1;
+      }
+      if (count == 0) continue;
+      avg /= count;
+      var stddev = 0.0;
+      for (var i=0; i < rows.length; i++) {
+      	var cols = rows[i].getElementsByTagName('td');
+      	if (cols.length <= col) continue;
+        var val = this.getNumericValue(cols[col]);
+        if (isNaN(val)) continue;
+        stddev += Math.pow(val - avg, 2.0);
+      }
+      stddev = Math.sqrt((1.0/(count-1))*stddev)
+      for (var i=0; i < rows.length; i++) {
+        var cols = rows[i].getElementsByTagName('td');
+        if (cols.length <= col) continue;
+        var val = this.getNumericValue(cols[col]);
+        if (isNaN(val)) continue;
+        var f = (val - avg)/stddev;
+        var cls = headers.length > col ? headers[col].getAttribute("stddev_column_class") : null;
+        if (cls) this.toggleClass(cols[col], cls, true);
+        this.toggleClass(cols[col], "stddev_high", f >= threshold); 
+        this.toggleClass(cols[col], "stddev_low", f <= -threshold); 
+        this.toggleClass(cols[col], "stddev_normal", -threshold <= f <= -threshold); 
+      }      
+	}
+  },
+  
+  toggleClass: function(node, cls, flag) {
+    var classes = (node.getAttribute("class") || "").split(" ");
+    if (classes.indexOf(cls) >= 0) {
+      classes[classes.indexOf(cls)] = classes[classes.length-1];
+      classes.pop();
+    }
+    if (flag) classes.push(cls);
+    node.setAttribute("class", classes.join(" "));
+  },
+  
+  getNumericValue: function(node) {
+	  var val = this.getInnerText(node);
+	  return parseFloat(val.replace(/[^0-9.-]/g,''));
   },
   
   makeSortable: function(table) {

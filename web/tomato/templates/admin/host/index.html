@@ -8,31 +8,46 @@
 {% if host_list %}
 <script src="/js/enhancetable.js"></script>
 <b>Show details:</b>
+<input type="checkbox" id="important" onChange="reShow()" checked/><label for="important">Most important</label>
+<input type="checkbox" id="versions" onChange="reShow()"/><label for="versions">Versions</label>
 <input type="checkbox" id="timing" onChange="reShow()"/><label for="timing">Timing</label>
 <input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label>
 <input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label>
 <input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label>
 
-<table id="table" class="sortable,filterable">
+<style>
+table td.stddev_high.good_low, table td.stddev_low.good_high {
+	color: red !important;
+}
+table td.stddev_high.good_high, table td.stddev_low.good_low {
+	color: green;
+}
+</style>
+
+<table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
   <tr>
   	<th>&nbsp;</th>
     <th>Address</th>
     <th>Site</th>
-    <th>Version</th>
-    <th>Load</th>
-    <th>Info age</th>
-    <th>Uptime</th>
-    <th>Time diff</th>
-    <th>Query time</th>
-    <th>CPUs</th>
-    <th>Bogomips</th>
-    <th>CPU Load</th>
-    <th>Total RAM</th>
-    <th>Free RAM</th>
-    <th>Total [root]</th>
-    <th>Free [root]</th>
-    <th>Total [data]</th>
-    <th>Free [data]</th>
+    <th stddev_column_class="good_low">Load</th>
+    <th>Hostmanager</th>
+    <th>Distribution</th>
+    <th>Python</th>
+    <th>Kernel</th>
+    <th stddev_column_class="good_low">Info age</th>
+    <th stddev_column_class="good_high">Uptime</th>
+    <th stddev_column_class="good_low good_high">Time diff</th>
+    <th stddev_column_class="good_low">Query time</th>
+    <th stddev_column_class="good_high">CPUs</th>
+    <th>Arch</th>
+    <th stddev_column_class="good_high">Bogomips</th>
+    <th stddev_column_class="good_low">CPU Load</th>
+    <th stddev_column_class="good_high">Total RAM</th>
+    <th stddev_column_class="good_high">Free RAM</th>
+    <th stddev_column_class="good_high">Total [root]</th>
+    <th stddev_column_class="good_high">Free [root]</th>
+    <th stddev_column_class="good_high">Total [data]</th>
+    <th stddev_column_class="good_high">Free [data]</th>
   </tr>
 {% for host in host_list %}
   <tr>
@@ -43,48 +58,60 @@
 {% endif %}
     <td>{{host.address}}</td>
     <td title="{{sites|get:host.site}}">{{host.site}}</td>
-    <td>{{host.host_info.hostmanager.version}}</td>
     <td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 
+    <td>{{host.host_info.hostmanager.version}}</td>
+	<td>{{host.host_info.system.distribution|join:" "}}</td>
+	<td>{{host.host_info.system.python}}</td>
+	<td>{{host.host_info.system.kernel}}</td>
+    
     <td enhancetable_customkey="{{host.host_info_timestamp}}"><nobr>{{host.host_info_timestamp|age|toduration}}</nobr></td>
     <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>
     <td enhancetable_customkey="{{host.host_info.time_diff}}"><nobr>{{host.host_info.time_diff|floatformat:2}} s</nobr></td>
     <td enhancetable_customkey="{{host.host_info.query_time}}"><nobr>{{host.host_info.query_time|mult:1000|floatformat:0}} ms</nobr></td>
 
     <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.count}}</td>
+    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.system.processor}}</td>
     <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
     <td title="{{host.host_info.resources.loadavg}}">{{host.host_info.resources.loadavg|slice:"1:2"|first}}</td>
 
     <td enhancetable_customkey="{{host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</nobr></td>
-    <td enhancetable_customkey="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used}}"><nobr>{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|mult:1024|filesizeformat}}</nobr> <nobr>({{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}})</nobr></td>
+    <td enhancetable_customkey="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used}}" title="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|mult:1024|filesizeformat}}</nobr></td>
     
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total}}"><nobr>{{host.host_info.resources.diskspace.root.total|mult:1024|filesizeformat}}</nobr></td>
-    <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used}}"><nobr>{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|mult:1024|filesizeformat}}</nobr> <nobr>({{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}})</nobr></td>
+    <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used}}" title="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}"><nobr>{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|mult:1024|filesizeformat}}</nobr></td>
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</nobr></td>
-    <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used}}"><nobr>{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|mult:1024|filesizeformat}}</nobr> <nobr>({{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}})</nobr></td>
+    <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used}}" title="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|mult:1024|filesizeformat}}</nobr></td>
   </tr>
 {% endfor %}
 </table>
 <script>
   function reShow() {
   	var table = document.getElementById('table');
-  	var col = 5;
+  	var important = document.getElementById('important').checked;
+  	var col = 4;
+  	columnShow(table, col+0, document.getElementById('versions').checked || important);
+  	columnShow(table, col+1, document.getElementById('versions').checked);
+  	columnShow(table, col+2, document.getElementById('versions').checked);
+  	columnShow(table, col+3, document.getElementById('versions').checked);
+  	col += 4;
   	columnShow(table, col+0, document.getElementById('timing').checked);
   	columnShow(table, col+1, document.getElementById('timing').checked);
-  	columnShow(table, col+2, document.getElementById('timing').checked);
+  	columnShow(table, col+2, document.getElementById('timing').checked || important);
   	columnShow(table, col+3, document.getElementById('timing').checked);
   	col += 4;
-  	columnShow(table, col+0, document.getElementById('cpu').checked);
+  	columnShow(table, col+0, document.getElementById('cpu').checked || important);
   	columnShow(table, col+1, document.getElementById('cpu').checked);
   	columnShow(table, col+2, document.getElementById('cpu').checked);
-  	col += 3;
+  	columnShow(table, col+3, document.getElementById('cpu').checked || important);
+  	col += 4;
   	columnShow(table, col+0, document.getElementById('ram').checked);
-  	columnShow(table, col+1, document.getElementById('ram').checked);
+  	columnShow(table, col+1, document.getElementById('ram').checked || important);
   	col += 2;
   	columnShow(table, col+0, document.getElementById('disk').checked);
   	columnShow(table, col+1, document.getElementById('disk').checked);
   	columnShow(table, col+2, document.getElementById('disk').checked);
-  	columnShow(table, col+3, document.getElementById('disk').checked);
+  	columnShow(table, col+3, document.getElementById('disk').checked || important);
   }
   function columnShow(table, col, show) {
     var rows = table.getElementsByTagName('tr');
