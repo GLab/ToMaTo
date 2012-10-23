@@ -43,6 +43,7 @@ def spawn(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     return proc.pid
 
 def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None):
+    cmd = "exec " + cmd #important, so proc.pid matches the process and not only the shell
     if daemon:
         #setsid is important, otherwise programs will be killed when the parent process closes
         cmd = "setsid " + cmd
