@@ -1,6 +1,6 @@
 # ToMaTo hostmanager config file 
 
-LOG_DIR = "/var/log/tomato"
+LOG_FILE = "/var/log/tomato/main.json.log"
 
 DATA_DIR = "/var/lib/tomato"
 

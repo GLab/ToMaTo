@@ -72,7 +72,7 @@ from lib.cmd import bittorrent #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
 if not config.MAINTENANCE:
-	logging.openDefault(config.LOG_DIR)
+	logging.openDefault(config.LOG_FILE)
 	atexit.register(logging.closeDefault)
 	resources.init()
 	accounting.task.start() #@UndefinedVariable

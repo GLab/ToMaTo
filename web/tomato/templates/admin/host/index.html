@@ -29,7 +29,7 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
   	<th>&nbsp;</th>
     <th>Address</th>
     <th>Site</th>
-    <th stddev_column_class="good_low">Load</th>
+    <th stddev_column_class="good_low" title="Combination of CPU, memory and disk">Load</th>
     <th>Hostmanager</th>
     <th>Distribution</th>
     <th>Python</th>
@@ -54,16 +54,16 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
 {% if host.problems %}
   	<td title="{{host.problems}}"><img src="/img/warning16.png"></td>
 {% else %}
-  	<td title="No problems"><img src="/img/tick.png"></td>
+    <td title="No problems"><img src="/img/tick.png"></td>
 {% endif %}
     <td>{{host.address}}</td>
     <td title="{{sites|get:host.site}}">{{host.site}}</td>
     <td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 
     <td>{{host.host_info.hostmanager.version}}</td>
-	<td>{{host.host_info.system.distribution|join:" "}}</td>
-	<td>{{host.host_info.system.python}}</td>
-	<td>{{host.host_info.system.kernel}}</td>
+    <td>{{host.host_info.system.distribution|join:" "}}</td>
+    <td>{{host.host_info.system.python}}</td>
+    <td>{{host.host_info.system.kernel}}</td>
     
     <td enhancetable_customkey="{{host.host_info_timestamp}}"><nobr>{{host.host_info_timestamp|age|toduration}}</nobr></td>
     <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>

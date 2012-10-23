@@ -17,7 +17,7 @@
 
 import os, socket
 
-LOG_DIR = "/var/log/tomato"
+LOG_FILE = "/var/log/tomato/main.json.log"
 DATA_DIR = "/var/lib/tomato"
 TEMPLATE_DIR = os.path.join(DATA_DIR, "templates")
 

@@ -219,10 +219,12 @@ class KVMQM(elements.Element):
 
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
 	def _qm(self, cmd_, params=[]):
-		return cmd.run(["qm", cmd_, str(self.vmid)] + map(str, params))
+		return cmd.run(["qm", cmd_, "%d" % self.vmid] + map(str, params))
 		#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
 	def _getState(self):
+		if not self.vmid:
+			return ST_CREATED
 		try:
 			res = self._qm("status")
 			if "running" in res:
@@ -235,6 +237,7 @@ class KVMQM(elements.Element):
 		except cmd.CommandError, err:
 			if err.errorCode == 2:
 				return ST_CREATED
+			raise
 
 	def _checkState(self):
 		savedState = self.state

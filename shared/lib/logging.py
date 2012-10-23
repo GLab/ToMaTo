@@ -2,22 +2,11 @@ from datetime import datetime
 import sys, os, gzip, bz2, time, json, traceback
 
 class JSONLogger:
-  def __init__(self, path, maxSize=1e7, maxAge=24*60*60, compress="gzip"):
+  def __init__(self, path):
     self.path = path
-    self.maxSize = maxSize
-    self.maxAge = maxAge
-    self.compress = compress
     self.open()
   def open(self):
-    now = datetime.strftime(datetime.now(), "%Y-%m-%d__%H-%M-%S")
-    if self.compress == "gzip":
-      self._fp = gzip.open(os.path.join(self.path, "%s.json.gz" % now), "w")
-    elif self.compress == "bzip2":
-      self._fp = bz2.BZ2File(os.path.join(self.path, "%s.json.bz2" % now), "w")
-    else:
-      self._fp = open(os.path.join(self.path, "%s.json" % now), "w")
-    self._written = 0
-    self._opened = time.time()
+    self._fp = open(os.path.join(self.path, "%s.json" % now), "w")
   def __enter__(self):
     return self
   def __exit__(self, *args):
@@ -28,10 +17,6 @@ class JSONLogger:
   def _write(self, data):
     data = json.dumps(data)
     self._fp.write(data+"\n")
-    self._written += len(data) + 1
-    if self._written >= self.maxSize or self._opened + self.maxAge < time.time():
-      self.close()
-      self.open()
   def _caller(self):
     caller = None
     for t in traceback.extract_stack():

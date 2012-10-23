@@ -94,6 +94,7 @@ class Host(attributes.Mixin, models.Model):
     hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
     enabled = attributes.attribute("enabled", bool, True)
+    componentErrors = attributes.attribute("componentErrors", int, 0)
     # connections: [HostConnection]
     # elements: [HostElement]
     
@@ -113,6 +114,12 @@ class Host(attributes.Mixin, models.Model):
             self._proxy = _connect(self.address, self.port)
         return self._proxy
         
+    def incrementErrors(self):
+        # count all component errors {element|connection}_{create|action|modify}
+        # this value is reset on every sync
+        self.componentErrors +=1
+        self.save()
+        
     def update(self):
         before = time.time()
         self.hostInfo = self._info()
@@ -123,6 +130,7 @@ class Host(attributes.Mixin, models.Model):
         caps = self._capabilities()
         self.elementTypes = caps["elements"]
         self.connectionTypes = caps["connections"]
+        self.componentErrors = 0
         self.save()
         logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)        
         logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)        
@@ -141,7 +149,11 @@ class Host(attributes.Mixin, models.Model):
 
     def createElement(self, type_, parent=None, attrs={}, owner=None):
         assert not parent or parent.host == self
-        el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
+        try:
+            el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
+        except:
+            self.incrementErrors()
+            raise
         hel = HostElement(host=self, num=el["id"])
         hel.usageStatistics = UsageStatistics.objects.create()
         hel.attrs = el
@@ -155,7 +167,11 @@ class Host(attributes.Mixin, models.Model):
     def createConnection(self, hel1, hel2, type_=None, attrs={}, owner=None):
         assert hel1.host == self
         assert hel2.host == self
-        con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
+        try:
+            con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
+        except:
+            self.incrementErrors()
+            raise
         hcon = HostConnection(host=self, num=con["id"])
         hcon.usageStatistics = UsageStatistics.objects.create()
         hcon.attrs = con
@@ -290,6 +306,8 @@ class Host(attributes.Mixin, models.Model):
             problems.append("Data disk full") 
         if int(res["memory"]["total"]) - int(res["memory"]["used"]) < 1e6:
             problems.append("Memory full") 
+        if self.componentErrors > 2:
+            problems.append("Multiple component errors")
         return problems
         
     def getLoad(self):
@@ -341,14 +359,22 @@ class HostElement(attributes.Mixin, models.Model):
         return self.host.createConnection(self, hel, type_, attrs, owner=owner)
 
     def modify(self, attrs):
-        logging.logMessage("element_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)        
-        self.attrs = self.host.getProxy().element_modify(self.num, attrs)
+        logging.logMessage("element_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)
+        try:        
+            self.attrs = self.host.getProxy().element_modify(self.num, attrs)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
             
     def action(self, action, params={}):
         logging.logMessage("element_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)        
-        res = self.host.getProxy().element_action(self.num, action, params)
+        try:
+            res = self.host.getProxy().element_action(self.num, action, params)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("element_action end", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)        
         self.updateInfo()
         return res
@@ -367,7 +393,11 @@ class HostElement(attributes.Mixin, models.Model):
         return self.host.getConnection(self.connection) if self.connection else None
 
     def updateInfo(self):
-        self.attrs = self.host.getProxy().element_info(self.num)
+        try:
+            self.attrs = self.host.getProxy().element_info(self.num)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
@@ -418,14 +448,22 @@ class HostConnection(attributes.Mixin, models.Model):
         unique_together = (("host", "num"),)
 
     def modify(self, attrs):
-        logging.logMessage("connection_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)        
-        self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
+        logging.logMessage("connection_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)
+        try:        
+            self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
             
     def action(self, action, params={}):
-        logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)        
-        res = self.host.getProxy().connection_action(self.num, action, params)
+        logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)
+        try:        
+            res = self.host.getProxy().connection_action(self.num, action, params)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)        
         self.updateInfo()
         return res
@@ -444,7 +482,11 @@ class HostConnection(attributes.Mixin, models.Model):
         return [self.host.getElement(el) for el in self.elements]
 
     def updateInfo(self):
-        self.attrs = self.host.getProxy().connection_info(self.num)
+        try:
+            self.attrs = self.host.getProxy().connection_info(self.num)
+        except:
+            self.host.incrementErrors()
+            raise
         logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
@@ -518,15 +560,16 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
     els = 0.0
     cons = 0.0
     for h in hosts:
+        prefs[h] -= h.componentErrors * 25 #discourage hosts with previous errors
         prefs[h] -= h.getLoad() * 100 #up to -100 points for load
-        els += len(h.elements)
-        cons += len(h.connections)
+        els += h.elements.count()
+        cons += h.connections.count()
     avgEls = els/len(hosts)
     avgCons = cons/len(hosts)
     for h in hosts:
         #between -30 and +30 points for element/connection over-/under-population
-        prefs[h] -= max(-20.0, min(10.0*(len(h.elements) - avgEls)/avgEls, 20.0))
-        prefs[h] -= max(-10.0, min(10.0*(len(h.connections) - avgCons)/avgCons, 10.0))
+        prefs[h] -= max(-20.0, min(10.0*(h.elements.count() - avgEls)/avgEls, 20.0))
+        prefs[h] -= max(-10.0, min(10.0*(h.connections.count() - avgCons)/avgCons, 10.0))
     #STEP 3: calculate preferences based on host location
     for h in hosts:
         if h in hostPrefs:
@@ -534,8 +577,10 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
         if h.site in sitePrefs:
             prefs[h] += sitePrefs[h.site]
     #STEP 4: select the best host
-    hosts.sort(key=lambda h: prefs[h])
-    logging.logMessage("select", category="host", result=hosts[0].address, prefs=prefs, site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds, host_prefs=hostPrefs, site_prefs=sitePrefs)
+    hosts.sort(key=lambda h: prefs[h], reverse=True)
+    print prefs
+    print hosts[0]
+    logging.logMessage("select", category="host", result=hosts[0].address, prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds, host_prefs=hostPrefs, site_prefs=sitePrefs)
     return hosts[0]
 
 def getElementTypes():

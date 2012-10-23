@@ -223,6 +223,8 @@ class OpenVZ(elements.Element):
 		return out
 			
 	def _getState(self):
+		if not self.vmid:
+			return ST_CREATED
 		res = self._vzctl("status")
 		if "exist" in res and "running" in res:
 			return ST_STARTED
