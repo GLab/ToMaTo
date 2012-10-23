@@ -7,8 +7,12 @@ register = template.Library()
 
 @register.filter
 def mult(value, arg):
-  return value * arg
+  return float(value) * arg
   
+@register.filter
+def minus(value, arg):
+  return float(value) - float(arg)
+
 @register.filter
 def percentage(value, maxval):
   return "%.2f %%" % (float(value) / float(maxval) * 100.0)
@@ -25,3 +29,7 @@ def todate(value):
 @register.filter
 def age(value):
   return time.time()-float(value)
+  
+@register.filter
+def get(h, key):
+  return h[key]

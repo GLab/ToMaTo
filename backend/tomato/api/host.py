@@ -41,6 +41,11 @@ def site_info(name):
 def site_list():
     return [s.info() for s in host.getAllSites()]
 
+def site_modify(name, attrs):
+    site = _getSite(name)
+    site.modify(attrs)
+    return site.info()
+
 def site_remove(name):
     site = _getSite(name)
     site.remove()

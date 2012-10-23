@@ -24,11 +24,25 @@ import xmlrpclib, time
 
 class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
-    description = models.CharField(max_length=255)
     #hosts: [Host]
+    attrs = db.JSONField()
+    description = attributes.attribute("description", str, "")
+    location = attributes.attribute("location", str, "")
     
     class Meta:
         pass
+
+    def modify(self, attrs):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
+        for key, value in attrs.iteritems():
+            if key == "description":
+                self.description = value
+            elif key == "location":
+                self.location = value
+            else:
+                fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
+        self.save()
 
     def remove(self):
         fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
@@ -39,8 +53,16 @@ class Site(attributes.Mixin, models.Model):
     def info(self):
         return {
             "name": self.name,
-            "description": self.description
+            "description": self.description,
+            "location": self.location
         }
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return "Site(%s)" % self.name
+
 
 def getSite(name, **kwargs):
     try:
@@ -229,6 +251,8 @@ class Host(attributes.Mixin, models.Model):
         self.delete()
 
     def modify(self, attrs):
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+        logging.logMessage("modify", category="host", name=self.address, attrs=attrs)
         for key, value in attrs.iteritems():
             if key == "site":
                 self.site = getSite(value)
@@ -268,18 +292,35 @@ class Host(attributes.Mixin, models.Model):
             problems.append("Memory full") 
         return problems
         
+    def getLoad(self):
+        """
+        Returns the host load on a scale from 0 (no load) to 1.0 (fully loaded)
+        """
+        hi = self.hostInfo; res = hi["resources"]; cpus = res["cpus_present"]; disks = res["diskspace"]
+        load = []
+        load.append(res["loadavg"][1] / cpus["count"])
+        load.append(float(res["memory"]["used"]) / int(res["memory"]["total"]))
+        load.append(float(disks["data"]["used"]) / int(disks["data"]["total"]))
+        return min(max(load), 1.0)
+        
     def info(self):
         return {
             "address": self.address,
             "site": self.site.name,
             "enabled": self.enabled,
             "problems": self.problems(),
+            "load": self.getLoad(),
             "element_types": self.elementTypes.keys(),
             "connection_types": self.connectionTypes.keys(),
             "host_info": self.hostInfo.copy() if self.hostInfo else None,
             "host_info_timestamp": self.hostInfoTimestamp,
         }
+        
+    def __str__(self):
+        return self.address
 
+    def __repr__(self):
+        return "Host(%s)" % self.address
 
 class HostElement(attributes.Mixin, models.Model):
     host = models.ForeignKey(Host, null=False, related_name="elements")
@@ -457,18 +498,45 @@ def create(address, site, attrs={}):
     logging.logMessage("create", category="host", info=host.info())        
     return host
 
-def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[]):
+def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], hostPrefs={}, sitePrefs={}):
+    #STEP 1: limit host choices to what is possible
     all_ = getAll(site=site) if site else getAll()
+    hosts = []
     for host in all_:
+        if host.problems():
+            continue
         if set(elementTypes) - set(host.elementTypes.keys()):
             continue
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
         if set(networkKinds) - set(host.getNetworkKinds()):
             continue #FIXME: allow general networks
-        logging.logMessage("select", category="host", result=host.address, site=site, element_types=elementTypes, connection_types=connectionTypes)
-        return host
-    logging.logMessage("select", category="host", result=None, site=site, element_types=elementTypes, connection_types=connectionTypes)
+        hosts.append(host)
+    # any host in hosts can handle the request
+    prefs = dict([(h, 0.0) for h in hosts])
+    #STEP 2: calculate preferences based on host load
+    els = 0.0
+    cons = 0.0
+    for h in hosts:
+        prefs[h] -= h.getLoad() * 100 #up to -100 points for load
+        els += len(h.elements)
+        cons += len(h.connections)
+    avgEls = els/len(hosts)
+    avgCons = cons/len(hosts)
+    for h in hosts:
+        #between -30 and +30 points for element/connection over-/under-population
+        prefs[h] -= max(-20.0, min(10.0*(len(h.elements) - avgEls)/avgEls, 20.0))
+        prefs[h] -= max(-10.0, min(10.0*(len(h.connections) - avgCons)/avgCons, 10.0))
+    #STEP 3: calculate preferences based on host location
+    for h in hosts:
+        if h in hostPrefs:
+            prefs[h] += hostPrefs[h]
+        if h.site in sitePrefs:
+            prefs[h] += sitePrefs[h.site]
+    #STEP 4: select the best host
+    hosts.sort(key=lambda h: prefs[h])
+    logging.logMessage("select", category="host", result=hosts[0].address, prefs=prefs, site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds, host_prefs=hostPrefs, site_prefs=sitePrefs)
+    return hosts[0]
 
 def getElementTypes():
     types = set()

@@ -154,6 +154,8 @@ def xml_rpc_sanitize(s):
 		return s
 	if isinstance(s, int) and abs(s) < (1<<31):
 		return s
+	if isinstance(s, int) and abs(s) >= (1<<31):
+		return float(s)
 	if isinstance(s, list):
 		return [xml_rpc_sanitize(e) for e in s]
 	if isinstance(s, dict):
