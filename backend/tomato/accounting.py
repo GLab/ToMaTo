@@ -20,7 +20,7 @@ from django.db import models
 from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 from datetime import datetime, timedelta
-import time, traceback
+import time
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
@@ -206,7 +206,7 @@ def synchronize():
             h.updateAccountingData(now)
         except:
             logging.logException(host=h.address)
-            traceback.print_exc()
+            print "Error fetching accounting data from %s" % h
     for el in elements.getAll():
         el.updateUsage(now-900)
     for con in connections.getAll():

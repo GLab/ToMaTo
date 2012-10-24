@@ -93,6 +93,7 @@ class Host(attributes.Mixin, models.Model):
     hostInfo = attributes.attribute("info", dict, {})
     hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
     accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
+    lastResourcesSync = attributes.attribute("last_resources_sync", float, 0.0)
     enabled = attributes.attribute("enabled", bool, True)
     componentErrors = attributes.attribute("componentErrors", int, 0)
     # connections: [HostConnection]
@@ -186,6 +187,8 @@ class Host(attributes.Mixin, models.Model):
         return "http://%s:%d/%s/%s" % (self.address, self.hostInfo["fileserver_port"], grant, action)
     
     def synchronizeResources(self):
+        if time.time() - self.lastResourcesSync < config.RESOURCES_SYNC_INTERVAL:
+            return
         logging.logMessage("resource_sync begin", category="host", address=self.address)        
         #TODO: implement for other resources
         from tomato import resources
@@ -230,6 +233,8 @@ class Host(attributes.Mixin, models.Model):
                     self.getProxy().resource_modify(hTpl["id"], attrs)
                     logging.logMessage("template update", category="host", address=self.address, template=attrs)        
         logging.logMessage("resource_sync end", category="host", address=self.address)        
+        self.lastResourcesSync = time.time()
+        self.save()
 
     def updateAccountingData(self, now):
         logging.logMessage("accounting_sync begin", category="host", address=self.address)        
@@ -240,6 +245,7 @@ class Host(attributes.Mixin, models.Model):
                 el.save()
             if not str(el.num) in data["elements"]:
                 print "Missing accounting data for element #%d on host %s" % (el.num, self.address)
+                el.checkMissing()
                 continue
             logging.logMessage("host_records", category="accounting", host=self.address, records=data["elements"][str(el.num)], object=("element", el.id))        
             el.updateAccountingData(data["elements"][str(el.num)])
@@ -249,6 +255,7 @@ class Host(attributes.Mixin, models.Model):
                 con.save()
             if not str(con.num) in data["connections"]:
                 print "Missing accounting data for connection #%d on host %s" % (con.num, self.address)
+                con.checkMissing()
                 continue
             logging.logMessage("host_records", category="accounting", host=self.address, records=data["connections"][str(con.num)], object=("connection", con.id))        
             con.updateAccountingData(data["connections"][str(con.num)])
@@ -283,7 +290,7 @@ class Host(attributes.Mixin, models.Model):
         if not self.enabled:
             problems.append("Manually disabled")
         hi = self.hostInfo
-        if time.time() - self.hostInfoTimestamp > 30 * 60:
+        if time.time() - self.hostInfoTimestamp > 3 * config.HOST_UPDATE_INTERVAL:
             problems.append("Old info age, host unreachable?")
         if hi["uptime"] < 10 * 60:
             problems.append("Node just booted")
@@ -401,6 +408,14 @@ class HostElement(attributes.Mixin, models.Model):
         logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
+    def checkMissing(self):
+        els = self.host.getProxy().element_list()
+        for el in els:
+            if el["id"] == self.num:
+                return
+        logging.logMessage("missing_element", category="host", host=self.host.address, id=self.num, info=self.attrs)
+        self.delete() 
+
     def info(self):
         return self.attrs
 
@@ -490,6 +505,14 @@ class HostConnection(attributes.Mixin, models.Model):
         logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)        
         self.save()
         
+    def checkMissing(self):
+        cons = self.host.getProxy().connections_list()
+        for con in cons:
+            if con["id"] == self.num:
+                return
+        logging.logMessage("missing_connection", category="host", host=self.host.address, id=self.num, info=self.attrs)
+        self.delete() 
+
     def info(self):
         return self.attrs
     
@@ -626,6 +649,6 @@ def synchronize():
             traceback.print_exc()
             pass #needs admin permissions that might lack 
 
-task = util.RepeatedTimer(600, synchronize) #every 10 mins
+task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize) #every min
 
 from tomato import fault
