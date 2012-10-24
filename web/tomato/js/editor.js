@@ -259,6 +259,8 @@ var Window = Class.extend({
 			resizable: false,
 			height:"auto",
 			width:"auto",
+			maxHeight:600,
+			maxWidth:800,
 			title: options.title,
 			show: "slide",
 			hide: "slide",
@@ -793,6 +795,29 @@ var Component = Class.extend({
 		this.id = this.data.id;
 		this.paintUpdate();
 	},
+	showDebugInfo: function() {
+		var t = this;
+		ajax({
+			url: this.component_type+'/'+this.id+'/info',
+		 	data: {},
+		 	successFn: function(result) {
+		 		var win = new Window({
+		 			title: "Debug info",
+		 			location: "center center",
+		 			buttons: {
+		 				Close: function() {
+		 					win.hide();
+		 				}
+					} 
+		 		});
+		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		win.show();
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 	}
+		});
+	},
 	configWindowSettings: function() {
 		return {
 			order: ["name"],
@@ -1080,6 +1105,13 @@ $.contextMenu({
 						obj.showConfigWindow();
 					}
 				},
+				"debug": {
+					name:'Debug',
+					icon:'debug',
+					callback: function(){
+						obj.showDebugInfo();
+					}
+				},
 				"remove": {
 					name:'Delete',
 					icon:'remove',
@@ -1295,6 +1327,13 @@ $.contextMenu({
 					icon:'configure',
 					callback:function(){
 						obj.showConfigWindow();
+					}
+				},
+				"debug": {
+					name:'Debug',
+					icon:'debug',
+					callback: function(){
+						obj.showDebugInfo();
 					}
 				},
 				"sep4": "---",
