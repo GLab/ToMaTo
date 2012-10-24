@@ -20,7 +20,7 @@ from tomato import elements, host, fault
 from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
-class Tinc_VPN(elements.Element):
+class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
 	mode_attr = Attr("mode", desc="Mode", options={"switch": "Switch (learning)", "hub": "Hub (broadcast)"}, default="switch", states=[ST_CREATED, ST_PREPARED])
@@ -130,7 +130,7 @@ class Tinc_VPN(elements.Element):
 
 
 
-class Tinc_Endpoint(elements.Element):
+class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
 	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
@@ -157,6 +157,8 @@ class Tinc_Endpoint(elements.Element):
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
+	
+	SAME_HOST_AFFINITY = 40 #we definitely want to be on the same host as our connected elements
 	
 	class Meta:
 		db_table = "tomato_tinc_endpoint"
@@ -206,7 +208,8 @@ class Tinc_Endpoint(elements.Element):
 			self.save()
 
 	def action_prepare(self):
-		_host = host.select(elementTypes=["tinc"])
+		hPref, sPref = self.getLocationPrefs()
+		_host = host.select(elementTypes=["tinc"], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
 		attrs.update({

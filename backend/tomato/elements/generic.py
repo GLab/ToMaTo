@@ -112,7 +112,8 @@ class VMElement(elements.Element):
 			self.save()
 
 	def action_prepare(self):
-		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys())
+		hPref, sPref = self.getLocationPrefs()
+		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
 		attrs.update({
@@ -162,6 +163,8 @@ class VMInterface(elements.Element):
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
+	SAME_HOST_AFFINITY = -20 #we want connected elements on different hosts to lower host load	
+	
 	class Meta:
 		abstract = True
 	
@@ -190,3 +193,25 @@ class VMInterface(elements.Element):
 
 	def upcast(self):
 		return self
+	
+
+class ConnectingElement:
+	def getLocationData(self, maxDepth=3):
+		"""
+		Determines where this element is located and how much it wants other elements to be close by.
+		Elements that are mainly connections other elements might overwrite this and use location
+		data of these elements instead.
+		Since this calculation can get stuck in a loop the depth is limited by a parameter. The
+		maxDepth is decremented each time the calculation spans another element group.
+		 
+		@param maxDepth: Parameter limiting the maximal depth of calculation
+		"""
+		if maxDepth <= 0:
+			return []
+		if self.parent:
+			return self.parent.upcast().getLocationData(maxDepth=maxDepth)
+		els = set()
+		for ch in self.getChildren():
+			if ch.connection:
+				els.update(ch.getConnectedElement().getLocationData(maxDepth=maxDepth-1))
+		return els

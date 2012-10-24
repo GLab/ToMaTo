@@ -21,7 +21,7 @@ from tomato.resources import network
 from tomato.lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
 
-class External_Network(elements.Element):
+class External_Network(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name")
 	name = name_attr.attribute()
 	samenet_attr = Attr("samenet", desc="Single network segment", states=[ST_CREATED], type="bool", default=False)
@@ -99,7 +99,7 @@ class External_Network(elements.Element):
 		return info
 
 
-class External_Network_Endpoint(elements.Element):
+class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
 	name_attr = Attr("name", desc="Name")
 	name = name_attr.attribute()
@@ -124,6 +124,8 @@ class External_Network_Endpoint(elements.Element):
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
 
+	SAME_HOST_AFFINITY = 50 #we definitely want to be on the same host as our connected elements
+	
 	class Meta:
 		db_table = "tomato_external_network_endpoint"
 		app_label = 'tomato'
@@ -165,7 +167,8 @@ class External_Network_Endpoint(elements.Element):
 			self.save()
 
 	def action_start(self):
-		_host = host.select(elementTypes=[self.TYPE])
+		hPref, sPref = self.getLocationPrefs()
+		_host = host.select(elementTypes=[self.TYPE], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		if self.parent and self.samenet:
 			self.network = network.getInstance(_host, self.parent.network.kind)

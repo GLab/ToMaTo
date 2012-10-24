@@ -54,6 +54,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	CAP_CONNECTABLE = False
 	DEFAULT_ATTRS = {}
 	
+	# whether neighboring elements should be on the same host/site
+	SAME_HOST_AFFINITY = -10 #distribute load
+	SAME_SITE_AFFINITY = 20 #keep traffic local and latencies low
+	
 	class Meta:
 		pass
 
@@ -305,6 +309,54 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			
 	def getConnectableElement(self):
 		return None
+		
+	def getConnectedElement(self):
+		if not self.connection:
+			return None
+		els = self.connection.getElements()
+		assert len(els) == 2
+		if self.id == els[0].id:
+			return els[1]
+		if self.id == els[1].id:
+			return els[0]
+		assert False
+		
+	def getLocationData(self, maxDepth=3):
+		"""
+		Determines where this element is located and how much it wants other elements to be close by.
+		Elements that are mainly connections other elements might overwrite this and use location
+		data of these elements instead.
+		Since this calculation can get stuck in a loop the depth is limited by a parameter. The
+		maxDepth is decremented each time the calculation spans another element group.
+		 
+		@param maxDepth: Parameter limiting the maximal depth of calculation
+		"""
+		els = set()
+		for el in self.getHostElements():
+			els.add((el, self.SAME_HOST_AFFINITY, self.SAME_SITE_AFFINITY))
+		return els
+			
+	def getLocationPrefs(self, children=True):
+		"""
+		Calculate and return host and site preferences by collecting and merging location data
+		of connected elements 
+		"""
+		hostPrefs = {}
+		sitePrefs = {}
+		if self.connection:
+			for el, sha, ssa in self.getConnectedElement().getLocationData():
+				if not el.host:
+					return #can this even happen?
+				hostPrefs[el.host] = hostPrefs.get(el.host, 0.0) + sha + self.SAME_HOST_AFFINITY
+				sitePrefs[el.host.site] = sitePrefs.get(el.host.site, 0.0) + ssa + self.SAME_SITE_AFFINITY
+		if children:
+			for ch in self.getChildren():
+				hPref, sPref = ch.getLocationPrefs()
+				for host, pref in hPref.iteritems():
+					hostPrefs[host] = hostPrefs.get(host, 0.0) + pref 
+				for site, pref in sPref.iteritems():
+					sitePrefs[site] = sitePrefs.get(site, 0.0) + pref
+		return (hostPrefs, sitePrefs)
 			
 	def triggerConnectionStart(self):
 		con = self.getConnection()
@@ -371,6 +423,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def updateUsage(self, now):
 		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])
+
+	def __str__(self):
+		return "%s_%d" % (self.type, self.id)
+		
 
 def get(id_, **kwargs):
 	try:

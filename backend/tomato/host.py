@@ -578,7 +578,11 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
             prefs[h] += sitePrefs[h.site]
     #STEP 4: select the best host
     hosts.sort(key=lambda h: prefs[h], reverse=True)
-    logging.logMessage("select", category="host", result=hosts[0].address, prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds, host_prefs=hostPrefs, site_prefs=sitePrefs)
+    logging.logMessage("select", category="host", result=hosts[0].address, 
+            prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), 
+            site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
+            host_prefs=dict([(k.address, v) for k, v in hostPrefs.iteritems()]),
+            site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
     return hosts[0]
 
 def getElementTypes():
