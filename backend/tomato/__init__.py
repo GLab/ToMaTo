@@ -73,7 +73,7 @@ from rpcserver import stop as stopRPCserver
 
 
 if not config.MAINTENANCE:
-	logging.openDefault(config.LOG_DIR)
+	logging.openDefault(config.LOG_FILE)
 	atexit.register(logging.closeDefault)
 	resources.init()
 	host.task.start() #@UndefinedVariable

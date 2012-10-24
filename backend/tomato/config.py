@@ -32,7 +32,7 @@ AUTH = [
 	},
 ]
 
-LOG_DIR = "logs"
+LOG_FILE = "main.log"
 
 SERVER = [
 	{
