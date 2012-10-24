@@ -20,7 +20,7 @@ from django.db import models
 from tomato.lib import db, attributes, util, logging #@UnresolvedImport
 from tomato.lib.decorators import *
 from datetime import datetime, timedelta
-import time
+import time, traceback
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
@@ -202,7 +202,11 @@ def synchronize():
     from tomato import host, elements, connections, topology
     now = time.time()
     for h in host.getAll():
-        h.updateAccountingData(now)
+        try:
+            h.updateAccountingData(now)
+        except:
+            logging.logException(host=h.address)
+            traceback.print_exc()
     for el in elements.getAll():
         el.updateUsage(now-900)
     for con in connections.getAll():
