@@ -24,6 +24,7 @@ class Repy(generic.VMElement):
 	CAP_CHILDREN = {
 		"repy_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
+	PROFILE_ATTRS = ["ram", "diskspace", "cpus", "bandwidth"]
 	
 	class Meta:
 		db_table = "tomato_repy"

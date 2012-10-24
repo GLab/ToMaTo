@@ -31,7 +31,8 @@ def _display(api, info):
 	if info["elements"] and isinstance(info["elements"][0], int):
 		info = api.topology_info(id, full=True)
 	res = api.resource_list()
-	return render_to_response("topology/info.html", {'top': info, 'top_json': json.dumps(info), 'res_json': json.dumps(res)})	
+	sites = api.site_list()
+	return render_to_response("topology/info.html", {'top': info, 'top_json': json.dumps(info), 'res_json': json.dumps(res), 'sites_json': json.dumps(sites)})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment

@@ -20,7 +20,6 @@ import random, sys
 
 from tomato import fault, host
 from tomato.lib import db, attributes, util #@UnresolvedImport
-from tomato.lib.decorators import *
 
 TYPES = {}
 
@@ -84,7 +83,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
     
     def modify(self, attrs):
-        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")        
+        if not _initPhase:
+            fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")        
         for key, value in attrs.iteritems():
             if hasattr(self, "modify_%s" % key):
                 getattr(self, "modify_%s" % key)(value)
@@ -153,7 +153,8 @@ def _addResourceRange(type_, start, count):
     return create(type_, {"num_start": start, "num_count": count})
 
 def create(type_, attrs={}):
-    fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")    
+    if not _initPhase:
+        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")    
     if type_ in TYPES:
         res = TYPES[type_]()
     else:
@@ -163,7 +164,18 @@ def create(type_, attrs={}):
     return res
 
 def init():
-    pass    
+    import profile
+    global _initPhase
+    _initPhase = True
+    for tech in profile.TECHS:
+        try:
+            profile.getPreferred(tech)
+        except:
+            print >>sys.stderr, "Adding default profile for %s" % tech
+            create("profile", {"tech": tech, "name": "normal", "label": "Normal", "preference": 10})
+    _initPhase = False
+
+_initPhase=False
 
 from tomato import currentUser
 from tomato.auth import Flags

@@ -65,8 +65,6 @@ def element_action(api, id, action, params={}): #@ReservedAssignment
 @wrap_json
 def element_remove(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	print id
-	print api.element_info(id)
 	res = api.element_remove(id)
 	return res
 
@@ -99,5 +97,3 @@ def connection_remove(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
 	res = api.connection_remove(id)
 	return res
-
- 

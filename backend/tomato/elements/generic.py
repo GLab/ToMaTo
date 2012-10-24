@@ -17,6 +17,7 @@
 
 from django.db import models
 from tomato import elements, resources, host, fault
+from tomato.resources import profile as r_profile, template as r_template
 from tomato.lib.attributes import Attr #@UnresolvedImport
 
 ST_CREATED = "created"
@@ -30,9 +31,9 @@ class VMElement(elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
 	profile_attr = Attr("profile", desc="Profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	profile = profile_attr.attribute()
+	profile = models.ForeignKey(r_profile.Profile, null=True)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	template = models.ForeignKey(resources.Resource, null=True)
+	template = models.ForeignKey(r_template.Template, null=True)
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -64,6 +65,13 @@ class VMElement(elements.Element):
 	def mainElement(self):
 		return self.element
 	
+	def _profile(self):
+		if self.profile:
+			return self.profile
+		pref = resources.profile.getPreferred(self.TYPE)
+		fault.check(pref, "Failed to find profile for %s", self.TYPE, fault.INTERNAL_ERROR)
+		return pref
+
 	def _template(self):
 		if self.template:
 			return self.template
@@ -78,12 +86,14 @@ class VMElement(elements.Element):
 		self.site = host.getSite(val)
 
 	def modify_profile(self, val):
-		self.site = host.getSite(val)
+		self.profile = resources.profile.get(self.TYPE, val)
+		if self.element:
+			self.element.modify(self._profileAttrs())
 
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.element:
-			self.element.modify({"template": self.template.upcast().name if self.template else None})
+			self.element.modify({"template": self._template()})
 
 	def onChildAdded(self, iface):
 		if self.element:
@@ -94,6 +104,14 @@ class VMElement(elements.Element):
 		if self.element:
 			iface._remove()
 			iface.setState(self.state)
+
+	def _profileAttrs(self):
+		attrs = {}
+		profile = self._profile()
+		for attr in self.PROFILE_ATTRS:
+			if profile.getAttribute(attr):
+				attrs[attr] = profile.getAttribute(attr)
+		return attrs
 
 	def onError(self, exc):
 		if self.element:
@@ -117,8 +135,9 @@ class VMElement(elements.Element):
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		attrs = self._remoteAttrs()
 		attrs.update({
-			"template": self.template.upcast().name if self.template else None,
+			"template": self._template().name,
 		})
+		attrs.update(self._profileAttrs())
 		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
 		self.save()
 		for iface in self.getChildren():
@@ -148,7 +167,8 @@ class VMElement(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["attrs"]["template"] = self.template.upcast().name if self.template else None
+		info["attrs"]["template"] = self._template().name
+		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
 		return info

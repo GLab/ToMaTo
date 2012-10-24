@@ -24,6 +24,7 @@ class KVMQM(generic.VMElement):
 	CAP_CHILDREN = {
 		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
+	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
 	
 	class Meta:
 		db_table = "tomato_kvmqm"

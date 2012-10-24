@@ -24,6 +24,7 @@ class OpenVZ(generic.VMElement):
 	CAP_CHILDREN = {
 		"openvz_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
+	PROFILE_ATTRS = ["ram", "diskspace"]
 	
 	class Meta:
 		db_table = "tomato_openvz"

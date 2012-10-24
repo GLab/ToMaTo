@@ -257,8 +257,8 @@ var Window = Class.extend({
 			autoOpen: false,
 			draggable: false,
 			resizable: false,
-			height:"auto",
-			width:"auto",
+			height: options.height || "auto",
+			width: options.width || "auto",
 			maxHeight:600,
 			maxWidth:800,
 			title: options.title,
@@ -804,6 +804,8 @@ var Component = Class.extend({
 		 		var win = new Window({
 		 			title: "Debug info",
 		 			location: "center center",
+		 			height: 600,
+		 			width: 800,
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
@@ -1480,6 +1482,13 @@ var ExternalNetworkElement = IconElement.extend({
 	}
 });
 
+var createMap = function(listOfObj, keyAttr, valueAttr, startMap) {
+	var map = startMap ? copy(startMap) : {};
+	for (var i = 0; i < listOfObj.length; i++) 
+		map[listOfObj[i][keyAttr]] = typeof valueAttr === "function" ? valueAttr(listOfObj[i]) : listOfObj[i][valueAttr];
+	return map;
+};
+
 var VMElement = IconElement.extend({
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -1490,15 +1499,28 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template"];
-		var tmpls = this.editor.templates.getAll(this.data.type);
-		var choices = {};
-		for (var i = 0; i < tmpls.length; i++) choices[tmpls[i].name] = tmpls[i].label;
 		config.special.template = new ChoiceElement({
 			label: "Template",
 			name: "template",
-			choices: choices,
+			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.template || this.data.cap_attrs.template["default"],
 			disabled: !this.data.cap_attrs.template.enabled
+		});
+		config.special.site = new ChoiceElement({
+			label: "Site",
+			name: "site",
+			choices: createMap(this.editor.sites, "name", function(site) {
+				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
+			}, {"": "Any site"}),
+			value: this.data.attrs.site || this.data.cap_attrs.site["default"],
+			disabled: !this.data.cap_attrs.site.enabled
+		});
+		config.special.profile = new ChoiceElement({
+			label: "Profile",
+			name: "profile",
+			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
+			value: this.data.attrs.profile || this.data.cap_attrs.profile["default"],
+			disabled: !this.data.cap_attrs.profile.enabled
 		});
 		return config;
 	},
@@ -1610,6 +1632,45 @@ var TemplateStore = Class.extend({
 	}
 });
 
+var Profile = Class.extend({
+	init: function(options) {
+		this.type = options.tech;
+		this.name = options.name;
+		this.label = options.label || options.name;
+		this.restricted = options.restricted;
+	}
+});
+
+var ProfileStore = Class.extend({
+	init: function(data) {
+		data.sort(function(t1, t2){
+			var t = t1.attrs.preference - t2.attrs.preference;
+			if (t) return t;
+			if (t1.attrs.name < t2.attrs.name) return -1;
+			if (t2.attrs.name < t1.attrs.name) return 1;
+			return 0;
+		});
+		this.types = {};
+		for (var i=0; i<data.length; i++)
+		 if (data[i].type == "profile")
+		  this.add(new Profile(data[i].attrs));
+	},
+	add: function(tmpl) {
+		if (! this.types[tmpl.type]) this.types[tmpl.type] = {};
+		this.types[tmpl.type][tmpl.name] = tmpl;
+	},
+	getAll: function(type) {
+		if (! this.types[type]) return [];
+		var tmpls = [];
+		for (var name in this.types[type]) tmpls.push(this.types[type][name]);
+		return tmpls;
+	},
+	get: function(type, name) {
+		if (! this.types[type]) return null;
+		return this.types[type][name];
+	}
+});
+
 var Mode = {
 	select: "select",
 	connect: "connect",
@@ -1626,6 +1687,8 @@ var Editor = Class.extend({
 		this.menu = new Menu(this.options.menu_container);
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
+		this.sites = this.options.sites;
+		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources);
 		this.buildMenu();
 		this.topology.load(options.topology);

@@ -47,6 +47,7 @@ encoding//tomato/lib/util.py=utf-8
 encoding//tomato/log.py=utf-8
 encoding//tomato/resources/__init__.py=utf-8
 encoding//tomato/resources/network.py=utf-8
+encoding//tomato/resources/profile.py=utf-8
 encoding//tomato/resources/template.py=utf-8
 encoding//tomato/rpcserver.py=utf-8
 encoding//tomato/special.py=utf-8

@@ -6,7 +6,7 @@ class JSONLogger:
     self.path = path
     self.open()
   def open(self):
-    self._fp = open(self.path, "w")
+    self._fp = open(self.path, "a")
   def __enter__(self):
     return self
   def __exit__(self, *args):

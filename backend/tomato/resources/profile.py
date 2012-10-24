@@ -16,89 +16,60 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources, fault, config
+from tomato import resources, fault
 from tomato.lib import attributes #@UnresolvedImport
-import os.path, base64, hashlib
 
-PATTERNS = {
-	"kvmqm": "%s.qcow2",
-	"openvz": "%s.tar.gz",
-	"repy": "%s.repy",
-}
+TECHS = ["kvmqm", "openvz", "repy"]
 
-class Template(resources.Resource):
+class Profile(resources.Resource):
 	tech = models.CharField(max_length=20)
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
 	label = attributes.attribute("label", str)
-	subtype = attributes.attribute("subtype", str)
-	torrent_data = attributes.attribute("torrent_data", str)
+	restricted = attributes.attribute("restricted", bool, False)
 	
-	TYPE = "template"
+	TYPE = "profile"
 
 	class Meta:
-		db_table = "tomato_template"
+		db_table = "tomato_profile"
 		app_label = 'tomato'
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
-		for attr in ["name", "tech", "torrent_data"]:
-			fault.check(attr in attrs, "Template needs attribute %s", attr) 
+		for attr in ["name", "tech"]:
+			fault.check(attr in attrs, "Profile needs attribute %s", attr) 
 		resources.Resource.init(self, *args, **kwargs)
-		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
 	def upcast(self):
 		return self
 	
-	def getPath(self):
-		return os.path.join(config.TEMPLATE_PATH, PATTERNS[self.tech] % self.name)
-	
-	def getTorrentPath(self):
-		return self.getPath() + ".torrent"
-
 	def modify_name(self, val):
 		self.name = val
 
 	def modify_tech(self, val):
-		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
+		fault.check(val in TECHS, "Unsupported profile tech: %s", val)
 		self.tech = val
-	
+		
 	def modify_preference(self, val):
-		self.preference = val	
-	
-	def modify_torrent_data(self, val):
-		self.torrent_data = val
-		if self.name and self.tech:
-			with open(self.getTorrentPath(), "w") as fp:
-				fp.write(base64.b64decode(val))
-
-	def remove(self):
-		if os.path.exists(self.getTorrentPath()):
-			os.remove(self.getTorrentPath())
-		if os.path.exists(self.getPath()):
-			os.remove(self.getPath())
-		resources.Resource.remove(self)
+		self.preference = val
 
 	def info(self):
 		info = resources.Resource.info(self)
-		if self.torrent_data:
-			del info["attrs"]["torrent_data"]		
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
-		info["attrs"]["torrent_data_hash"] = hashlib.md5(self.torrent_data).hexdigest() if self.torrent_data else None
 		return info
 
 def get(tech, name):
 	try:
-		return Template.objects.get(tech=tech, name=name)
+		return Profile.objects.get(tech=tech, name=name)
 	except:
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech).order_by("preference")
-	fault.check(tmpls, "No template of type %s registered", tech) 
-	return tmpls[0]
+	prfls = Profile.objects.filter(tech=tech).order_by("preference")
+	fault.check(prfls, "No profile of type %s registered", tech) 
+	return prfls[0]
 
-resources.TYPES[Template.TYPE] = Template
+resources.TYPES[Profile.TYPE] = Profile
