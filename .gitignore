@@ -1,11 +1,10 @@
+docs_build
+
 */config
 */logs
 *.pyc
 *.komodoproject
 *.sqlite
-buildui/nbproject/private
-buildui/dist
-buildui/build
 *~
 *.lyx#
 *Thumbs.db*
@@ -18,5 +17,4 @@ buildui/build
 
 web-old
 backend-old
-
 web/tomato/static/newui

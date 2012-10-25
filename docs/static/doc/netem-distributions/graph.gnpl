@@ -1,0 +1,27 @@
+#set terminal postscript enhanced "NimbusSanL-Regu" 22
+#set output "distr.ps"
+set terminal svg enhanced dashed fname "NimbusSanL-Regu" fsize 14
+set output "distr.svg"
+
+set pointsize 1.4
+set bar small
+
+set style line 1 lt 1 lw 3 lc 1 pt 1
+set style line 2 lt 1 lw 3 lc 2 pt 1
+set style line 3 lt 1 lw 3 lc 3 pt 1
+set style line 4 lt 1 lw 3 lc 8 pt 1
+set style line 5 lt 1 lw 3 lc 7 pt 1
+
+set title "Delay distribution"
+set xlabel "Delays in ms"
+set ylabel "Propability"
+#set key bottom
+set xtics 5
+set mxtics 5
+set yrange [0:0.25]
+set xrange [25:75]
+plot 	'plain.data' using 1:2 title "plain" ls 1 with lines \
+, 	'uniform.data' using 1:2 title "uniform" ls 2 with lines \
+, 	'normal.data' using 1:2 title "normal" ls 3 with lines \
+, 	'pareto.data' using 1:2 title "pareto" ls 4 with lines \
+, 	'paretonormal.data' using 1:2 title "paretonormal" ls 5 with lines

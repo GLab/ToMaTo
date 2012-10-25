@@ -1,0 +1,385 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+ToMaTo data model and API
+\end_layout
+
+\begin_layout Standard
+This document describes the data model and the resulting API of the topology
+ management tool (ToMaTo).
+ The data model and the API are designed to be very generic.
+\end_layout
+
+\begin_layout Section
+Host data model and API
+\end_layout
+
+\begin_layout Standard
+Each host manages a certain set of resources, elements and connections of
+ its own.
+ The hosts keep track of these objects on their own and offer an API to
+ a central broker, i.e.
+ the broker.
+\end_layout
+
+\begin_layout Subsection
+Object types
+\end_layout
+
+\begin_layout Subsubsection
+Element
+\end_layout
+
+\begin_layout Standard
+Elements are generic entities that make up the nodes of a topology.
+ They have the following fields:
+\end_layout
+
+\begin_layout Description
+type The type of the element instance.
+ This field references a named sub-class of Element.
+\end_layout
+
+\begin_layout Description
+parent Reference to a parent element instance.
+ This can be null for a top-level element
+\end_layout
+
+\begin_layout Description
+owner The owner of the element instance.
+ Normally the broker acts as owner for all of its entities and the host
+ does not know about users.
+\end_layout
+
+\begin_layout Description
+state The state this element instance is in.
+\end_layout
+
+\begin_layout Description
+connection Reference to a connection entity if this element instance is
+ connected.
+\end_layout
+
+\begin_layout Standard
+Each subclass implementation of Element must also define the following class
+ variables:
+\end_layout
+
+\begin_layout Description
+CAP_PARENT A list of element types that are allowed as parent to this element
+ type
+\end_layout
+
+\begin_layout Description
+CAP_CHILDREN A key/value map of element types (keys) of potential children
+ elements and lists states of this element instance in which the child element
+ can be added (values).
+\end_layout
+
+\begin_layout Description
+CAP_NEXT_STATE A key/value map of actions that change the state of the element
+ (key) and the target state (values).
+\end_layout
+
+\begin_layout Description
+CAP_ACTIONS A key/value map of available actions (keys) and lists of states
+ in which these actions are allowed (values).
+\end_layout
+
+\begin_layout Description
+CAP_ATTRS A key/value map of available attributes (keys) and lists of states
+ in which these attributes can be changed (values).
+\end_layout
+
+\begin_layout Description
+CAP_CON_CONCEPTS A list of connection concepts that this element supports.
+\end_layout
+
+\begin_layout Paragraph
+Child elements
+\end_layout
+
+\begin_layout Standard
+All elements without child elements are top-level elements.
+ Upon element creation the parent element (or null for top-level elements)
+ must be given.
+ The element can only become a child element if
+\end_layout
+
+\begin_layout Itemize
+the type of the parent element is included in the CAP_PARENT list of the
+ child element
+\end_layout
+
+\begin_layout Itemize
+the type of the child element is listed as a key in CAP_CHILDREN of the
+ parent element
+\end_layout
+
+\begin_layout Itemize
+the parent element is in one of the states listed under CAP_CHILDREN[child.type]
+\end_layout
+
+\begin_layout Standard
+A very common concept for virtual machines will be to create two element
+ types, VM and VM_Interface:
+\end_layout
+
+\begin_layout Itemize
+VM.CAP_CHILDREN contains only VM_Interface and a list of states where interfaces
+ can be added without problems.
+\end_layout
+
+\begin_layout Itemize
+VM_Interface.CAP_PARENT contains only VM
+\end_layout
+
+\begin_layout Itemize
+The state of VM_Interface is coupled to the state of its parent VM
+\end_layout
+
+\begin_layout Itemize
+VM.CAP_ACTIONS contains all the actions needed to change the state
+\end_layout
+
+\begin_layout Itemize
+VM_Interface contains no actions to change the state
+\end_layout
+
+\begin_layout Subsubsection
+Connection
+\end_layout
+
+\begin_layout Standard
+Connections are generic entities that make up the vertexes of a topology.
+ The have the following fields:
+\end_layout
+
+\begin_layout Description
+type The type of the connection instance.
+ This field references a named sub-class of Connection.
+\end_layout
+
+\begin_layout Description
+owner The owner of the connection instance.
+ Normally the broker acts as owner for all of its entities and the host
+ does not know about users.
+\end_layout
+
+\begin_layout Description
+state The state this connection instance is in.
+\end_layout
+
+\begin_layout Description
+elements References to the two elements this connection entity connects.
+ (Connections will always connect two elements.)
+\end_layout
+
+\begin_layout Standard
+Each subclass implementation of Connection must also define the following
+ class variables:
+\end_layout
+
+\begin_layout Description
+CAP_NEXT_STATE A key/value map of actions that change the state of the connectio
+n (key) and the target state (values).
+\end_layout
+
+\begin_layout Description
+CAP_ACTIONS A key/value map of available actions (keys) and lists of states
+ in which these actions are allowed (values).
+\end_layout
+
+\begin_layout Description
+CAP_ATTRS A key/value map of available attributes (keys) and lists of states
+ in which these attributes can be changed (values).
+\end_layout
+
+\begin_layout Description
+CAP_CON_CONCEPTS A list of connection concept pairs that this connection
+ supports.
+\end_layout
+
+\begin_layout Paragraph
+Connection concepts
+\end_layout
+
+\begin_layout Standard
+The connection concepts in Connection.CAP_CON_TYPES and Element.CAP_CON_TYPES
+ reference generic connection concepts.
+ A connection of a certain type can only be established if
+\end_layout
+
+\begin_layout Itemize
+it contains a connection concept pair (A, B) in its CAP_CON_CONCEPTS
+\end_layout
+
+\begin_layout Itemize
+one of the elements contains A in its CAP_CON_CONCEPTS
+\end_layout
+
+\begin_layout Itemize
+the other element contains B in its CAP_CON_CONCEPTS
+\end_layout
+
+\begin_layout Standard
+Virtual machines for example have interfaces as child elements and each
+ child element can have a connection.
+ Thus the virtual machine will have an empty CAP_CON_CONCEPTS as it can
+ not be connected.
+ Its interface type will have 
+\begin_inset Quotes erd
+\end_inset
+
+interface
+\begin_inset Quotes erd
+\end_inset
+
+ in its CAP_CON_CONCEPTS as it supports to be connected based on an interface
+ name.
+ A bridge connector will be able to connect two interfaces an thus contain
+ the pair (
+\begin_inset Quotes eld
+\end_inset
+
+interface
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+interface
+\begin_inset Quotes erd
+\end_inset
+
+) in its CAP_CON_CONCEPTS.
+\end_layout
+
+\begin_layout Subsubsection
+Resource
+\end_layout
+
+\begin_layout Standard
+Resources are host-dependent entities that topology elements can use.
+\end_layout
+
+\begin_layout Description
+type The type of the resource.
+ This might reference subclasses with additional 
+\end_layout
+
+\begin_layout Subsubsection
+ResourceInstance
+\end_layout
+
+\begin_layout Description
+type
+\end_layout
+
+\begin_layout Description
+num
+\end_layout
+
+\begin_layout Description
+ownerElement
+\end_layout
+
+\begin_layout Description
+ownerConnection
+\end_layout
+
+\begin_layout Subsection
+API
+\end_layout
+
+\begin_layout Subsubsection
+Host methods
+\end_layout
+
+\begin_layout Subsubsection
+Element methods
+\end_layout
+
+\begin_layout Subsubsection
+Connection methods
+\end_layout
+
+\begin_layout Section
+Broker data model and API
+\end_layout
+
+\begin_layout Subsection
+Object types
+\end_layout
+
+\begin_layout Subsubsection
+Host
+\end_layout
+
+\begin_layout Subsubsection
+User
+\end_layout
+
+\end_body
+\end_document
