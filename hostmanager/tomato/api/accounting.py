@@ -28,4 +28,4 @@ def accounting_connection_statistics(id, type=None, after=None, before=None): #@
 
 from elements import _getElement
 from connections import _getConnection
-from tomato import currentUser, elements, connections
+from .. import currentUser, elements, connections

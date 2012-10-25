@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import elements, host, fault
-from tomato.lib.attributes import Attr #@UnresolvedImport
+from .. import elements, host, fault
+from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):

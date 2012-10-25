@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources, fault
-from tomato.lib import attributes #@UnresolvedImport
+from .. import resources, fault
+from ..lib import attributes #@UnresolvedImport
 
 TECHS = ["kvmqm", "openvz", "repy"]
 

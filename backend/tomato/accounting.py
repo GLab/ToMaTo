@@ -17,8 +17,8 @@
 
 from django.db import models
 
-from tomato.lib import db, attributes, util, logging #@UnresolvedImport
-from tomato.lib.decorators import *
+from lib import db, attributes, util, logging #@UnresolvedImport
+from lib.decorators import *
 from datetime import datetime, timedelta
 import time
 
@@ -199,7 +199,7 @@ class UsageRecord(models.Model):
         
 def synchronize():
     logging.logMessage("sync begin", category="accounting")        
-    from tomato import host, elements, connections, topology
+    from . import host, elements, connections, topology
     now = time.time()
     for h in host.getAll():
         try:

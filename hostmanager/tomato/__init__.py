@@ -18,7 +18,7 @@
 import os, sys, atexit
 
 # tell django to read config from module tomato.config
-os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
+os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 
 def db_migrate():
 	"""
@@ -59,7 +59,7 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, accounting #@UnresolvedImport
+from . import lib, resources, accounting #@UnresolvedImport
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver

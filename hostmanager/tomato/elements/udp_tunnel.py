@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, elements, fault
-from tomato.lib import util, cmd #@UnresolvedImport
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib.cmd import net, process #@UnresolvedImport
+from .. import connections, elements, fault, config
+from ..lib import util, cmd #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib.cmd import net, process #@UnresolvedImport
 
 DOC="""
 Element type: udp_tunnel
@@ -154,9 +154,9 @@ class UDP_Tunnel(elements.Element):
 		usage.updateContinuous("traffic", traffic, data)
 
 
-socatVersion = cmd.getDpkgVersion("socat")
-
-if socatVersion:
-	elements.TYPES[UDP_Tunnel.TYPE] = UDP_Tunnel
-else:
-	print "Warning: UDP_Tunnel needs socat, disabled"
+if not config.MAINTENANCE:
+	socatVersion = cmd.getDpkgVersion("socat")
+	if socatVersion:
+		elements.TYPES[UDP_Tunnel.TYPE] = UDP_Tunnel
+	else:
+		print "Warning: UDP_Tunnel needs socat, disabled"

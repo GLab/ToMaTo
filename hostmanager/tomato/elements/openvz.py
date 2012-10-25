@@ -17,10 +17,10 @@
 
 import os.path, sys
 from django.db import models
-from tomato import connections, elements, resources, fault, config
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib import decorators, util, cmd #@UnresolvedImport
-from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from .. import connections, elements, resources, fault, config
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib import decorators, util, cmd #@UnresolvedImport
+from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: openvz
@@ -660,10 +660,6 @@ class OpenVZ_Interface(elements.Element):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-perlVersion = cmd.getDpkgVersion("perl")
-vzctlVersion = cmd.getDpkgVersion("vzctl")
-vnctermVersion = cmd.getDpkgVersion("vncterm")
-
 def register(): #pragma: no cover
 	if not vzctlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
@@ -680,4 +676,8 @@ def register(): #pragma: no cover
 	elements.TYPES[OpenVZ.TYPE] = OpenVZ
 	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
 
-register()
+if not config.MAINTENANCE:
+	perlVersion = cmd.getDpkgVersion("perl")
+	vzctlVersion = cmd.getDpkgVersion("vzctl")
+	vnctermVersion = cmd.getDpkgVersion("vncterm")
+	register()

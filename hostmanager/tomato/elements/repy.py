@@ -17,11 +17,11 @@
 
 import os, sys
 from django.db import models
-from tomato import connections, elements, resources, fault
-from tomato.resources import template
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib import util, cmd #@UnresolvedImport
-from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from .. import connections, elements, resources, fault, config
+from ..resources import template
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib import util, cmd #@UnresolvedImport
+from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: repy
@@ -356,9 +356,6 @@ class Repy_Interface(elements.Element):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-repyVersion = cmd.getDpkgVersion("tomato-repy")
-vnctermVersion = cmd.getDpkgVersion("vncterm")
-
 def register(): #pragma: no cover
 	if not repyVersion:
 		print >>sys.stderr, "Warning: Repy needs tomato-repy, disabled"
@@ -372,4 +369,8 @@ def register(): #pragma: no cover
 	elements.TYPES[Repy.TYPE] = Repy
 	elements.TYPES[Repy_Interface.TYPE] = Repy_Interface
 
-register()
+if not config.MAINTENANCE:
+	repyVersion = cmd.getDpkgVersion("tomato-repy")
+	vnctermVersion = cmd.getDpkgVersion("vncterm")
+	register()
+	

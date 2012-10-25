@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.auth import User
+from ..auth import User
 
 class Provider:
 	def __init__(self, admin_user="admin", invalid_user="invalid"):

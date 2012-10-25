@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources, fault, config
-from tomato.lib import attributes #@UnresolvedImport
+from .. import resources, fault, config
+from ..lib import attributes #@UnresolvedImport
 import os.path, base64, hashlib
 
 PATTERNS = {

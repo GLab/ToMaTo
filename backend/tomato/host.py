@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import config, currentUser
+from . import config, currentUser
 from accounting import UsageStatistics
-from tomato.lib import attributes, db, rpc, util, logging #@UnresolvedImport
-from tomato.auth import Flags
+from lib import attributes, db, rpc, util, logging #@UnresolvedImport
+from auth import Flags
 import xmlrpclib, time
 
 class Site(attributes.Mixin, models.Model):
@@ -191,7 +191,7 @@ class Host(attributes.Mixin, models.Model):
             return
         logging.logMessage("resource_sync begin", category="host", address=self.address)        
         #TODO: implement for other resources
-        from tomato import resources
+        from . import resources
         hostNets = {}
         for net in self.getProxy().resource_list("network"):
             hostNets[(net["attrs"]["kind"], net["attrs"]["bridge"])] = net
@@ -446,7 +446,7 @@ class HostElement(attributes.Mixin, models.Model):
         self.usageStatistics.removeOld()
         
     def getOwner(self):
-        from tomato import elements, connections
+        from . import elements, connections
         for el in elements.getAll():
             if self in el.getHostElements():
                 return ("element", el.id)
@@ -542,7 +542,7 @@ class HostConnection(attributes.Mixin, models.Model):
         self.usageStatistics.removeOld()
 
     def getOwner(self):
-        from tomato import elements, connections
+        from . import elements, connections
         for el in elements.getAll():
             if self in el.getHostConnections():
                 return ("element", el.id)
@@ -657,4 +657,4 @@ def synchronize():
 
 task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize) #every min
 
-from tomato import fault
+from . import fault

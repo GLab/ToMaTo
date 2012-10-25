@@ -21,8 +21,8 @@ import traceback
 import time
 from datetime import datetime, timedelta
 
-from tomato.lib import db, attributes, util, logging #@UnresolvedImport
-from tomato.lib.decorators import *
+from lib import db, attributes, util, logging #@UnresolvedImport
+from lib.decorators import *
 
 # storage needs:
 # <100 bytes per record

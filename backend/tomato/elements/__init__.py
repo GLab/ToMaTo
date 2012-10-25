@@ -18,14 +18,14 @@
 import os, shutil
 from django.db import models
 
-from tomato.connections import Connection
-from tomato.auth import Flags
-from tomato.auth.permissions import Permissions, PermissionMixin, Role
-from tomato.topology import Topology
-from tomato.lib import db, attributes, util, logging #@UnresolvedImport
-from tomato.accounting import UsageStatistics
-from tomato.lib.decorators import *
-from tomato import config
+from ..connections import Connection
+from ..auth import Flags
+from ..auth.permissions import Permissions, PermissionMixin, Role
+from ..topology import Topology
+from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..accounting import UsageStatistics
+from ..lib.decorators import *
+from .. import config
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -452,5 +452,5 @@ def create(top, type_, parent=None, attrs={}):
 	logging.logMessage("info", category="element", id=el.id, info=el.info())		
 	return el
 
-from tomato import fault, currentUser, resources, host
+from .. import fault, currentUser, resources, host
 		

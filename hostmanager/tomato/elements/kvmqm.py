@@ -17,11 +17,11 @@
 
 import os, sys, json, shutil
 from django.db import models
-from tomato import connections, elements, resources, fault
-from tomato.resources import template
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib import decorators, util, cmd #@UnresolvedImport
-from tomato.lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from .. import connections, elements, resources, fault, config
+from ..resources import template
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib import decorators, util, cmd #@UnresolvedImport
+from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: kvmqm
@@ -510,10 +510,6 @@ class KVMQM_Interface(elements.Element):
 			usage.updateContinuous("traffic", traffic, data)
 
 
-tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
-socatVersion = cmd.getDpkgVersion("socat")
-qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
-
 def register(): #pragma: no cover
 	if not qmVersion:
 		print >>sys.stderr, "Warning: KVMQM needs a Proxmox VE host, disabled"
@@ -530,4 +526,8 @@ def register(): #pragma: no cover
 	elements.TYPES[KVMQM.TYPE] = KVMQM
 	elements.TYPES[KVMQM_Interface.TYPE] = KVMQM_Interface
 
-register()
+if not config.MAINTENANCE:
+	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
+	socatVersion = cmd.getDpkgVersion("socat")
+	qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
+	register()

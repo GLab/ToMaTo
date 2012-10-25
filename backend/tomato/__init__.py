@@ -18,7 +18,7 @@
 import os, sys, atexit
 
 # tell django to read config from module tomato.config
-os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
+os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 
 #TODO: host resource management
 #TODO: user account management
@@ -62,10 +62,10 @@ if not config.MAINTENANCE:
 
 import api
 
-from tomato import lib, resources, host, accounting #@UnresolvedImport
-from tomato.auth import login as authenticate
-from tomato.lib.cmd import bittorrent #@UnresolvedImport
-from tomato.lib import logging #@UnresolvedImport
+from . import lib, resources, host, accounting #@UnresolvedImport
+from auth import login as authenticate
+from lib.cmd import bittorrent #@UnresolvedImport
+from lib import logging #@UnresolvedImport
 
 from rpcserver import start as startRPCserver
 from rpcserver import stop as stopRPCserver

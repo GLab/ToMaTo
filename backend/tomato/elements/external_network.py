@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import elements, host, fault
-from tomato.resources import network
-from tomato.lib.attributes import Attr #@UnresolvedImport
+from .. import elements, host, fault
+from ..resources import network
+from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
 
 class External_Network(elements.generic.ConnectingElement, elements.Element):

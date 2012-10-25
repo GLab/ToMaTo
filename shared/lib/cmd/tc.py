@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.lib.cmd import run, CommandError
+from . import run, CommandError
 import math
 
 def _tc(type, action, params=[]): #@ReservedAssignment

@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato.lib import attributes, db, logging #@UnresolvedImport
-from tomato.accounting import UsageStatistics
-from tomato.auth import Flags
-from tomato.auth.permissions import Permissions, PermissionMixin, Role
+from lib import attributes, db, logging #@UnresolvedImport
+from accounting import UsageStatistics
+from auth import Flags
+from auth.permissions import Permissions, PermissionMixin, Role
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
     permissions = models.ForeignKey(Permissions, null=False)
@@ -249,4 +249,4 @@ def create(attrs={}):
     logging.logMessage("info", category="topology", id=top.id, info=top.info())    
     return top
 
-from tomato import fault, currentUser
+from . import fault, currentUser

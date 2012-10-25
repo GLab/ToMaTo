@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.lib.decorators import xmlRpcSanitize #@UnresolvedImport
+from ..lib.decorators import xmlRpcSanitize #@UnresolvedImport
 
 def host_info():
     """
@@ -53,14 +53,14 @@ def host_capabilities():
     @rtype: dict
     """
     element_types = {}
-    for type_, class_ in tomato.elements.TYPES.iteritems():
+    for type_, class_ in elements.TYPES.iteritems():
         caps = {}
         for cap in ["actions", "next_state", "children", "parent", "con_concepts"]:
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
         caps["attrs"] = class_.cap_attrs()
         element_types[type_] = caps
     connection_types = {}
-    for type_, class_ in tomato.connections.TYPES.iteritems():
+    for type_, class_ in connections.TYPES.iteritems():
         caps = {}
         for cap in ["actions", "next_state", "con_concepts"]:
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
@@ -69,11 +69,9 @@ def host_capabilities():
     return {
         "elements": element_types,
         "connections": connection_types,
-        "resources": dict([(type_, {}) for type_ in tomato.resources.TYPES]),
+        "resources": dict([(type_, {}) for type_ in resources.TYPES]),
     }
 
-import tomato.elements
-import tomato.resources
-from tomato import config
-from tomato.lib.cmd import hostinfo #@UnresolvedImport
+from .. import elements, connections, resources, config
+from ..lib.cmd import hostinfo #@UnresolvedImport
 import time

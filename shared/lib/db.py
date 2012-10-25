@@ -19,7 +19,7 @@ import json
 import datetime
 from django.db import models, transaction
 from django.core import validators
-from tomato import config
+from .. import config
 
 """
 A :class:`TextField` that stores serialized data in the form of JSON.  You can

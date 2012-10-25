@@ -48,5 +48,5 @@ def element_usage(id): #@ReservedAssignment
     el = _getElement(id)
     return el.totalUsage.info()    
 
-from tomato import fault, elements
+from .. import fault, elements
 from topology import _getTopology

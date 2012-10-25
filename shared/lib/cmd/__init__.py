@@ -81,6 +81,8 @@ def getDpkgVersionStr(package):
 def splitVersion(verStr):
     version = []
     numStr = ""
+    if not verStr:
+        return verStr
     for ch in verStr:
         if ch in "0123456789":
             numStr += ch

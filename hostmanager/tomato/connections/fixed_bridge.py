@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections
-from tomato.lib import cmd #@UnresolvedImport
-from tomato.lib.cmd import net #@UnresolvedImport
+from .. import connections, config
+from ..lib import cmd #@UnresolvedImport
+from ..lib.cmd import net #@UnresolvedImport
 
 DOC="""
 	Description
@@ -123,9 +123,11 @@ class Fixed_Bridge(connections.Connection):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
 
-bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
 
-if bridgeUtilsVersion:
-	connections.TYPES[Fixed_Bridge.TYPE] = Fixed_Bridge
-else:
-	print "Warning: fixed_bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
+if not config.MAINTENANCE:
+	bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
+
+	if bridgeUtilsVersion:
+		connections.TYPES[Fixed_Bridge.TYPE] = Fixed_Bridge
+	else:
+		print "Warning: fixed_bridge not supported on bridge-utils version %s" % bridgeUtilsVersion

@@ -88,4 +88,4 @@ def host_connection_owner(hostname, num):
         fault.raise_("Host connection %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
     return hcon.getOwner()
 
-from tomato import host, fault, config
+from .. import host, fault, config

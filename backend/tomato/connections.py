@@ -17,13 +17,13 @@
 
 from django.db import models
 
-from tomato.topology import Topology
-from tomato.auth import Flags
-from tomato.auth.permissions import Permissions, PermissionMixin, Role
-from tomato.lib import db, attributes, logging #@UnresolvedImport
-from tomato.accounting import UsageStatistics
-from tomato.lib.decorators import *
-from tomato import host
+from topology import Topology
+from auth import Flags
+from auth.permissions import Permissions, PermissionMixin, Role
+from lib import db, attributes, logging #@UnresolvedImport
+from accounting import UsageStatistics
+from lib.decorators import *
+from . import host
 
 REMOVE_ACTION = "(remove)"
 
@@ -373,4 +373,4 @@ def create(el1, el2, attrs={}):
 	logging.logMessage("info", category="connection", id=con.id, info=con.info())
 	return con
 
-from tomato import fault, currentUser
+from . import fault, currentUser

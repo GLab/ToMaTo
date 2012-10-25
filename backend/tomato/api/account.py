@@ -35,5 +35,5 @@ def account_modify(name=None, attrs={}):
     acc = _getAccount(name)
     acc.modify(attrs)
         
-from tomato import fault, currentUser
-from tomato.auth import getUser, getAllUsers, Flags
+from .. import fault, currentUser
+from ..auth import getUser, getAllUsers, Flags

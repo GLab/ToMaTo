@@ -115,4 +115,4 @@ def resource_list(type_filter=None):
     res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
     return [r.info() for r in res]
 
-from tomato import fault, resources, currentUser, config
+from .. import fault, resources, currentUser, config

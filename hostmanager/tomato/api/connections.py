@@ -139,5 +139,5 @@ def connection_list():
     """
     return [con.info() for con in connections.getAll(owner=currentUser())]
 
-from tomato import fault, connections, currentUser
+from .. import fault, connections, currentUser
 from elements import _getElement

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato.lib.cmd import run, CommandError, getDpkgVersionStr 
+from . import run, CommandError, getDpkgVersionStr 
 import platform
 
 _cache = {}

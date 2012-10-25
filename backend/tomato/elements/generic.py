@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import elements, resources, host, fault
-from tomato.resources import profile as r_profile, template as r_template
-from tomato.lib.attributes import Attr #@UnresolvedImport
+from .. import elements, resources, host, fault
+from ..resources import profile as r_profile, template as r_template
+from ..lib.attributes import Attr #@UnresolvedImport
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"

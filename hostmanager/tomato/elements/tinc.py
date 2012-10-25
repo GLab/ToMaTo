@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
-from tomato import connections, elements, fault
-from tomato.lib import util, cmd #@UnresolvedImport
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib.cmd import process, net, path #@UnresolvedImport
+from .. import connections, elements, fault, config
+from ..lib import util, cmd #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib.cmd import process, net, path #@UnresolvedImport
 
 DOC="""
 Element type: tinc
@@ -231,10 +231,9 @@ class Tinc(elements.Element):
 			traffic = sum(net.trafficInfo(self.interfaceName()))
 			usage.updateContinuous("traffic", traffic, data)
 
-
-tincVersion = cmd.getDpkgVersion("tinc")
-
-if [1, 0] <= tincVersion <= [2, 0]:
-	elements.TYPES[Tinc.TYPE] = Tinc
-else:
-	print "Warning: Tinc not supported for tinc version %s, disabled" % tincVersion
+if not config.MAINTENANCE:
+	tincVersion = cmd.getDpkgVersion("tinc")
+	if [1, 0] <= tincVersion <= [2, 0]:
+		elements.TYPES[Tinc.TYPE] = Tinc
+	else:
+		print "Warning: Tinc not supported for tinc version %s, disabled" % tincVersion

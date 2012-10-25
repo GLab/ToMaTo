@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import resources
+from .. import resources
 
 class Network(resources.Resource):
 	kind = models.CharField(max_length=50)

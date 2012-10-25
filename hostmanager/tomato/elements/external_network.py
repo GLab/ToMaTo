@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from tomato import connections, elements, resources
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.resources import network
+from .. import connections, elements, resources
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..resources import network
 
 DOC="""
 Element type: external_network

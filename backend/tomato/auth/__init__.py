@@ -17,8 +17,8 @@
 
 import time, atexit, datetime, crypt, string, random, sys, threading
 from django.db import models
-from tomato.lib import attributes, db, logging #@UnresolvedImport
-from tomato import config, fault, currentUser
+from ..lib import attributes, db, logging #@UnresolvedImport
+from .. import config, fault, currentUser
 
 class Flags:
     Admin = "admin" # Can modify all accounts

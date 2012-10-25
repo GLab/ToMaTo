@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import fault, connections, currentUser #@UnusedImport
+from .. import fault, connections, currentUser #@UnusedImport
 from elements import _getElement
 
 def _getConnection(id_):

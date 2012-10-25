@@ -19,9 +19,9 @@
 
 import xmlrpclib, sys, traceback
 
-import tomato.config
-from tomato import fault, currentUser
-from tomato.lib import db, util, rpc, logging #@UnresolvedImport
+import config
+from . import fault, currentUser, api, login
+from lib import db, util, rpc, logging #@UnresolvedImport
 
 
 def logCall(function, args, kwargs):
@@ -52,13 +52,13 @@ servers = []
 
 def start():
 	print >>sys.stderr, "Starting RPC servers"
-	for settings in tomato.config.SERVER:
+	for settings in config.SERVER:
 		server_address = ('', settings["PORT"])
 		sslOpts = None
 		if settings["SSL"]:
 			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
-		server = rpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=tomato.login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
-		server.register(tomato.api)
+		server = rpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
+		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
 		servers.append(server)

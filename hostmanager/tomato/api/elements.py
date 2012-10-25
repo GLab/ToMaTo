@@ -148,4 +148,4 @@ def element_list(type_filter=None):
     els = elements.getAll(owner=currentUser(), type=type_filter) if type_filter else elements.getAll(owner=currentUser())
     return [el.info() for el in els]
 
-from tomato import fault, elements, currentUser
+from .. import fault, elements, currentUser

@@ -22,8 +22,8 @@ try:    #python >=2.6
 except: #python <2.6
     from cgi import parse_qsl #@Reimport
 
-from tomato.lib import util #@UnresolvedImport
-from tomato import config
+from .. import util #@UnresolvedImport
+from ... import config
 
 ACTION_UPLOAD = "upload"
 ACTION_DOWNLOAD = "download"

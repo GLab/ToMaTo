@@ -37,7 +37,7 @@ class RepeatedTimer(threading.Thread):
 				try:
 					self.func(*self.args, **self.kwargs)
 				except Exception, exc: #pylint: disable-msg=W0703
-					from tomato import fault
+					from .. import fault
 					fault.errors_add(exc, traceback.format_exc())
 	def stop(self):
 		self.event.set()
@@ -46,7 +46,7 @@ def print_except_helper(func, args, kwargs):
 	try:
 		return func(*args, **kwargs) #pylint: disable-msg=W0142
 	except Exception, exc: #pylint: disable-msg=W0703
-		from tomato import fault
+		from .. import fault
 		try:
 			fault.errors_add(exc, traceback.format_exc())
 		except:

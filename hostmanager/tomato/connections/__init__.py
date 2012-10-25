@@ -18,9 +18,9 @@
 import os, shutil
 from django.db import models
 
-from tomato.accounting import UsageStatistics
-from tomato.lib import db, attributes, util, logging #@UnresolvedImport
-from tomato.lib.decorators import *
+from ..accounting import UsageStatistics
+from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib.decorators import *
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -270,11 +270,11 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		}
 		
 	def getResource(self, type_):
-		from tomato import resources #needed to break import cycle
+		from .. import resources #needed to break import cycle
 		return resources.take(type_, self)
 	
 	def returnResource(self, type_, num):
-		from tomato import resources #needed to break import cycle
+		from .. import resources #needed to break import cycle
 		resources.give(type_, num, self)
 		
 	def updateUsage(self, usage, data):
@@ -309,4 +309,4 @@ def create(el1, el2, type_=None, attrs={}):
 				return create(el1, el2, type_, attrs)
 		fault.check(False, "Failed to find matching connection type for element types %s and %s", (el1.type, el2.type))
 
-from tomato import fault, currentUser, config
+from .. import fault, currentUser, config

@@ -17,8 +17,8 @@
 
 from django.db import models
 
-from tomato.auth import User, Flags
-from tomato import currentUser, fault
+from ..auth import User, Flags
+from .. import currentUser, fault
 
 class Role:
     owner = "owner" # full topology control, permission changes, topology removal 

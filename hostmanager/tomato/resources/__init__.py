@@ -18,9 +18,9 @@
 from django.db import models
 import random, sys
 
-from tomato import fault
-from tomato.lib import db, attributes, util, logging #@UnresolvedImport
-from tomato.lib.decorators import *
+from .. import fault
+from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib.decorators import *
 
 TYPES = {}
 
@@ -54,8 +54,8 @@ def take(type_, owner):
             pass
     fault.raise_("Failed to obtain resource of type %s after %d tries" % (type_, try_), code=fault.INTERNAL_ERROR)
 
-from tomato.elements import Element
-from tomato.connections import Connection
+from ..elements import Element
+from ..connections import Connection
 
 class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment

@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import connections, fault
-from tomato.lib import cmd #@UnresolvedImport
-from tomato.lib.attributes import Attr #@UnresolvedImport
-from tomato.lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
+from .. import connections, fault, config
+from ..lib import cmd #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
 
 import os
 
@@ -354,23 +354,24 @@ class Bridge(connections.Connection):
 			usage.memory = process.memory(self.capture_pid)
 		usage.diskspace = path.diskspace(self.dataPath())
 
-bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
-iprouteVersion = cmd.getDpkgVersion("iproute")
-tcpdumpVersion = cmd.getDpkgVersion("tcpdump")
+if not config.MAINTENANCE:
+	bridgeUtilsVersion = cmd.getDpkgVersion("bridge-utils")
+	iprouteVersion = cmd.getDpkgVersion("iproute")
+	tcpdumpVersion = cmd.getDpkgVersion("tcpdump")
 
-if bridgeUtilsVersion:
-	connections.TYPES[Bridge.TYPE] = Bridge
-else:
-	print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
+	if bridgeUtilsVersion:
+		connections.TYPES[Bridge.TYPE] = Bridge
+	else:
+		print "Warning: Bridge not supported on bridge-utils version %s" % bridgeUtilsVersion
 	
-if iprouteVersion:
-	Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_EMUL)
-	Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_EMUL)
-else:
-	print "Warning: Bridge link emulation needs iproute, disabled"
+	if iprouteVersion:
+		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_EMUL)
+		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_EMUL)
+	else:
+		print "Warning: Bridge link emulation needs iproute, disabled"
 	
-if tcpdumpVersion:
-	Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_CAPTURE)
-	Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_CAPTURE)
-else:
-	print "Warning: Bridge packet capturing needs tcpdump, disabled"
+	if tcpdumpVersion:
+		Bridge.CAP_ATTRS.update(Bridge.CAP_ATTRS_CAPTURE)
+		Bridge.CAP_ACTIONS.update(Bridge.CAP_ACTIONS_CAPTURE)
+	else:
+		print "Warning: Bridge packet capturing needs tcpdump, disabled"
