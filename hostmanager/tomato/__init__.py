@@ -20,9 +20,6 @@ import os, sys, atexit
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: debian package
-
-
 def db_migrate():
 	"""
 	NOT CALLABLE VIA XML-RPC

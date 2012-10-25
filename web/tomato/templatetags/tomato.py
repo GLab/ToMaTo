@@ -7,28 +7,28 @@ register = template.Library()
 
 @register.filter
 def mult(value, arg):
-  return float(value) * arg
+  return float(value or "0.0") * arg
   
 @register.filter
 def minus(value, arg):
-  return float(value) - float(arg)
+  return float(value or "0.0") - float(arg or "0.0")
 
 @register.filter
 def percentage(value, maxval):
-  return "%.2f %%" % (float(value) / float(maxval) * 100.0)
+  return "%.2f %%" % (float(value or "0.0") / float(maxval or "0.0") * 100.0)
 
 @register.filter
 def toduration(value):
-  date = datetime.datetime.now() - datetime.timedelta(seconds=float(value)) 
+  date = datetime.datetime.now() - datetime.timedelta(seconds=float(value or "0.0")) 
   return timesince(date)
   
 @register.filter
 def todate(value):
-  return datetime.datetime.utcfromtimestamp(float(value))
+  return datetime.datetime.utcfromtimestamp(float(value or "0.0"))
   
 @register.filter
 def age(value):
-  return time.time()-float(value)
+  return time.time()-float(value or "0.0")
   
 @register.filter
 def get(h, key):

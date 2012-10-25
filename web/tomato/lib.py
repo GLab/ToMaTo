@@ -73,7 +73,7 @@ class wrap_rpc:
 				import os
 				etype = "Socket error"
 				ecode = e.errno
-				etext = os.strerror(exc.errno)
+				etext = os.strerror(e.errno)
 			elif isinstance(e, xmlrpclib.ProtocolError):
 				etype = "RPC protocol error"
 				ecode = e.errcode

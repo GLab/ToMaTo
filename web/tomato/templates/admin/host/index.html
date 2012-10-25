@@ -26,7 +26,7 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
 
 <table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
   <tr>
-  	<th>&nbsp;</th>
+    <th>&nbsp;</th>
     <th>Address</th>
     <th>Site</th>
     <th stddev_column_class="good_low" title="Combination of CPU, memory and disk">Load</th>
@@ -52,7 +52,7 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
 {% for host in host_list %}
   <tr>
 {% if host.problems %}
-  	<td title="{{host.problems}}"><img src="/img/warning16.png"></td>
+    <td title="{{host.problems|join:', '}}"><img src="/img/error.png"></td>
 {% else %}
     <td title="No problems"><img src="/img/tick.png"></td>
 {% endif %}
@@ -60,6 +60,7 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
     <td title="{{sites|get:host.site}}">{{host.site}}</td>
     <td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 
+{% if host.host_info %}
     <td>{{host.host_info.hostmanager.version}}</td>
     <td>{{host.host_info.system.distribution|join:" "}}</td>
     <td>{{host.host_info.system.python}}</td>
@@ -82,6 +83,13 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used}}" title="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}"><nobr>{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|mult:1024|filesizeformat}}</nobr></td>
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</nobr></td>
     <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used}}" title="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|mult:1024|filesizeformat}}</nobr></td>
+{% else %}
+    <td>???</td><td>???</td><td>???</td><td>???</td>
+    <td>???</td><td>???</td><td>???</td><td>???</td>
+    <td>???</td><td>???</td><td>???</td><td>???</td>
+    <td>???</td><td>???</td>
+    <td>???</td><td>???</td><td>???</td><td>???</td>
+{% endif %}
   </tr>
 {% endfor %}
 </table>

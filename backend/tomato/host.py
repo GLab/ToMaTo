@@ -292,6 +292,9 @@ class Host(attributes.Mixin, models.Model):
         hi = self.hostInfo
         if time.time() - self.hostInfoTimestamp > 3 * config.HOST_UPDATE_INTERVAL:
             problems.append("Old info age, host unreachable?")
+        if not hi:
+            problems.append("Node info is missing")
+            return problems
         if hi["uptime"] < 10 * 60:
             problems.append("Node just booted")
         if hi["time_diff"] > 5 * 60:
@@ -321,7 +324,10 @@ class Host(attributes.Mixin, models.Model):
         """
         Returns the host load on a scale from 0 (no load) to 1.0 (fully loaded)
         """
-        hi = self.hostInfo; res = hi["resources"]; cpus = res["cpus_present"]; disks = res["diskspace"]
+        hi = self.hostInfo
+        if not hi:
+            return -1
+        res = hi["resources"]; cpus = res["cpus_present"]; disks = res["diskspace"]
         load = []
         load.append(res["loadavg"][1] / cpus["count"])
         load.append(float(res["memory"]["used"]) / int(res["memory"]["total"]))

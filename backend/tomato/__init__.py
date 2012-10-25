@@ -20,11 +20,10 @@ import os, sys, atexit
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']="tomato.config"
 
-#TODO: smart host selection
 #TODO: host resource management
-#TODO: capabilities
+#TODO: user account management
+#TODO: mail on problems
 #TODO: debian package
-
 
 def db_migrate():
 	"""
