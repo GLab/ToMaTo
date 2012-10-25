@@ -6,11 +6,11 @@
 
 <h1>Confirm Removal</h1>
 
-Are you sure you want to remove the site {{name}} ?
+Are you sure you want to remove the host {{address}} ?
 <form action="{{action}}" method="post">
 {{form.as_p}}
 <input type="submit" value="Yes" /><input type="button" onclick="history.back()" value="No" />
-<script>document.getElementById("id_name").value="{{name}}";</script>
+<script>document.getElementById("id_address").value="{{address}}";</script>
 
 </form>
 

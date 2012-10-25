@@ -27,7 +27,10 @@ import xmlrpclib
 
 class AddHostForm(forms.Form):
     address = forms.CharField(max_length=255)
-    #site = forms.CharField(max_length=50)
+    site = forms.CharField(max_length=50)
+    
+class RemoveHostForm(forms.Form):
+    address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
@@ -68,13 +71,18 @@ def add(api, request):
    
 @wrap_rpc
 def remove(api, request):
-    #
-    #
-    #   DUMMY
-    #
-    #
-    hostManager = True
-    return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})
+    if request.method == 'POST':
+        form = RemoveHostForm(request.POST)
+        if form.is_valid():
+            address = form.cleaned_data["address"]
+            api.host_remove(address)
+            return render_to_response("admin/host/remove_success.html", {'address': address})
+        else:
+            form = RemoveHostForm()
+            return render_to_response("admin/host/remove_confirm.html", {'address': request.GET['address'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+    else:
+        form = RemoveHostForm()
+        return render_to_response("admin/host/remove_confirm.html", {'address': request.GET['address'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
 
 @wrap_rpc
 def edit(api, request):
