@@ -8,9 +8,6 @@
 {% if site_list %}
 <script src="/js/enhancetable.js"></script>
 
-{% if hostManager %}
-<input type="button" onClick="window.location='/site/add'" value="Add site" />
-{% endif %}
 
 <table class="sortable,filterable">
   <tr>
@@ -25,7 +22,7 @@
     <td>{{site.name}}</td>
     <td>{{site.description}}</td>
     {% if hostManager %}
-    <td><small><a href="/site/edit?name={{site.name}}">edit</a> &nbsp; <a href="/site/remove?name={{site.name}}">remove</a></small></td>
+    <td><small><a href="/site/edit?name={{site.name}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="/site/remove?name={{site.name}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
@@ -35,7 +32,7 @@ No sites
 {% endif %}
 
 {% if hostManager %}
-<input type="button" onClick="window.location='/site/add'" value="Add site" />
+<p><input type="button" onClick="window.location='/site/add'" value="Add site" /></p>
 {% endif %}
 
 {% endblock %}

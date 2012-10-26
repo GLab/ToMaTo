@@ -9,7 +9,7 @@
 <script src="/js/enhancetable.js"></script>
 
 {% if hostManager %}
-<input type="button" onClick="window.location='/host/add'" value="Add host" />
+<p><input type="button" onClick="window.location='/host/add'" value="Add host" /></p>
 {% endif %}
 
 <table class="sortable,filterable">
@@ -49,7 +49,7 @@
     <td enhancetable_customkey="{{host.host_info.resources.memory.total}}">{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</td>
     <td>{{host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}</td>
     {% if hostManager %}
-    <td><small><a href="/host/edit?address={{host.address}}">edit</a> &nbsp; <a href="/host/remove?address={{host.address}}">remove</a></small></td>
+    <td><small><a href="/host/edit?address={{host.address}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="/host/remove?address={{host.address}}" ><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
@@ -59,7 +59,7 @@ No hosts
 {% endif %}
 
 {% if hostManager %}
-<input type="button" onClick="window.location='/host/add'" value="Add host" />
+<p><input type="button" onClick="window.location='/host/add'" value="Add host" /></p>
 {% endif %}
 
 {% endblock %}
