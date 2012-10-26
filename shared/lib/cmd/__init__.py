@@ -36,18 +36,12 @@ class CommandError(Exception):
         return "Error executing command '%s': [%d] %s" % (self.command, self.errorCode, self.errorMessage)
 
 def spawn(cmd, stdout=DEVNULL, daemon=True, cwd=None):
-    if daemon:
-        #setsid is important, otherwise programs will be killed when the parent process closes
-        cmd = ["setsid"] + cmd
-    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True, preexec_fn=os.setsid if daemon else None)
     return proc.pid
 
 def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     cmd = "exec " + cmd #important, so proc.pid matches the process and not only the shell
-    if daemon:
-        #setsid is important, otherwise programs will be killed when the parent process closes
-        cmd = "setsid " + cmd
-    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True)
+    proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True, preexec_fn=os.setsid if daemon else None)
     return proc.pid
 
 def run(cmd, **kwargs):
