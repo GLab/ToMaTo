@@ -11,8 +11,6 @@ Contents:
 .. toctree::
   :maxdepth: 2
 
-  backend
-  web
   hostmanager/index
    
 Indices and tables
@@ -21,3 +19,9 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+TODO
+----
+* backend
+* web
+* cli

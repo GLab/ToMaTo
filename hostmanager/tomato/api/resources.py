@@ -25,20 +25,32 @@ def _getResource(id_):
 
 def resource_create(type, attrs={}): #@ReservedAssignment
     """
-    Creates a resource of given type configuring it with the given attributes
+    Creates a resource of given type, configuring it with the given attributes
     by the way.
     
-    @param type: The type of the new resource.
-    @type type: str
-     
-    @param attrs: Attributes to configure the new resource with. The allowed
-        attributes and their meanings depend on the resource type.
-    @type attrs: dict
+    The resource types that are supported on this host can be obtained using 
+    :py:func:`~hostmanager.tomato.api.host.host_capabilities`
     
-    @return: Information about the resource
-    @rtype: dict    
+    Parameter *type*: 
+      The parameter *type* must be a string identifying one of the supported
+      resource types. 
     
-    @raise various other errors: depending on the type
+    Parameter *attrs*:
+      The attributes of the resource can be given as the parameter *attrs*. 
+      This parameter must be a dict of attributes if given. Attributes can 
+      later be changed using :py:func:`resource_modify`. This method should
+      behave like::
+      
+         info = resource_create(type, {})
+         resource_modify(info["id"], attrs)
+    
+    Return value:
+      The return value of this method is the info dict of the new resource as
+      returned by :py:func:`resource_info`. This info dict also contains the
+      resource id that is needed for further manipulation of that object.
+    
+    Exceptions:
+      Various other exceptions can be raised, depending on the given type.
     """
     _checkAdmin()
     attrs = dict(attrs)
@@ -49,19 +61,25 @@ def resource_modify(id, attrs): #@ReservedAssignment
     """
     Modifies a resource, configuring it with the given attributes.
     
-    @param id: The id of the resource
-    @type id: int
+    The attributes that are supported by the resource depend on the resource 
+    *type*.
+
+    Parameter *id*:
+      The parameter *id* identifies the resource by giving its unique id.
      
-    @param attrs: Attributes to configure the resource with. The allowed
-        attributes and their meanings depend on the resource type.
-    @type attrs: dict
+    Parameter *attrs*:
+      The attributes of the resource can be given as the parameter *attrs*.
+      This parameter must be a dict of attributes.
     
-    @return: Information about the resource
-    @rtype: dict    
+    Return value:
+      The return value of this method is the info dict of the resource as 
+      returned by :py:func:`resource_info`. This info dict will reflect all
+      attribute changes.
     
-    @raise No such resource: if the resource id does not exist or belongs to
-        another owner
-    @raise various other errors: depending on the type
+    Exceptions:
+      If the given resource does not exist an exception *resource does not
+      exist* is raised.
+      Various other exceptions can be raised, depending on the resource type. 
     """
     _checkAdmin()
     res = _getResource(int(id))
@@ -72,31 +90,47 @@ def resource_remove(id): #@ReservedAssignment
     """
     Removes a resource.
     
-    @param id: The id of the resource
-    @type id: int
-     
-    @return: {}
-    @rtype: dict    
+    Parameter *id*:
+      The parameter *id* identifies the resource by giving its unique id.
+
+    Return value:
+      The return value of this method is ``None``. 
     
-    @raise No such resource: if the resource id does not exist
-    @raise various other errors: depending on the type
+    Exceptions:
+      If the given resource does not exist an exception *resource does not
+      exist* is raised.
+      Various other exceptions can be raised, depending on the resource type. 
     """
     _checkAdmin()
     res = _getResource(int(id))
     res.remove()
-    return {}
 
 def resource_info(id): #@ReservedAssignment
     """
     Retrieves information about a resource.
     
-    @param id: The id of the resource
-    @type id: int
-     
-    @return: Information about the resource
-    @rtype: dict    
-    
-    @raise No such resource: if the resource id does not exist
+    Parameter *id*:
+      The parameter *id* identifies the resource by giving its unique id.
+
+    Return value:
+      The return value of this method is a dict containing information
+      about this resource. The information that is returned depends on the
+      *type* of this resource but the following information is always returned. 
+
+    ``id``
+      The unique id of the element.
+      
+    ``type``
+      The type of the element.
+      
+    ``attrs``
+      A dict of attributes of this resource. The contents of this field depend
+      on the *type* of the resource. If this resource does not have attributes,
+      this field is ``{}``.    
+
+    Exceptions:
+      If the given resource does not exist an exception *resource does not
+      exist* is raised.
     """
     res = _getResource(int(id))
     return res.info()
@@ -104,13 +138,15 @@ def resource_info(id): #@ReservedAssignment
 def resource_list(type_filter=None):
     """
     Retrieves information about all resources. 
-    
-    @param type_filter: If this is set, only resources of matching type will be
-        returned.
-    @type type_filter: str
-
-    @return: Information about the resources
-    @rtype: list of dicts    
+     
+    Parameter *type_filter*:
+      If *type_filter* is set, only resources with a matching type will be 
+      returned.
+     
+    Return value:
+      A list with information entries of all matching resources. Each list 
+      entry contains exactly the same information as returned by 
+      :py:func:`resource_info`. If no resource matches, the list is empty. 
     """
     res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
     return [r.info() for r in res]

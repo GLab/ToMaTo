@@ -1,8 +1,6 @@
 Hostmanager API
 ===============
 
-.. py:currentmodule: hostmanager.tomato.api
-
 Elements
 --------
 .. automodule:: hostmanager.tomato.api.elements
