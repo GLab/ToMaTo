@@ -129,6 +129,7 @@ class Repy(elements.Element):
 	ram = ram_attr.attribute()
 	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, faultType=fault.new_user, default=1000000)
 	bandwidth = bandwidth_attr.attribute()
+	#TODO: use template ref instead of attr
 	template_attr = Attr("template", desc="Template", states=[ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.decorators import xmlRpcSanitize #@UnresolvedImport
+from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
 
 def host_info():
     """
@@ -44,7 +44,6 @@ def host_info():
         "system": hostinfo.system()
     }
 
-@xmlRpcSanitize
 def host_capabilities():
     """
     Retrieves the capabilities of the host. 
@@ -66,11 +65,11 @@ def host_capabilities():
             caps[cap] = getattr(class_, "CAP_"+cap.upper())
         caps["attrs"] = class_.cap_attrs()
         connection_types[type_] = caps
-    return {
+    return xml_rpc_sanitize({
         "elements": element_types,
         "connections": connection_types,
         "resources": dict([(type_, {}) for type_ in resources.TYPES]),
-    }
+    })
 
 from .. import elements, connections, resources, config
 from ..lib.cmd import hostinfo #@UnresolvedImport

@@ -25,25 +25,50 @@ def connection_create(element1, element2, type=None, attrs={}): #@ReservedAssign
     Connects the given elements using the given type of connection, configuring
     it with the given attributes by the way. The order of the elements does not
     matter. The given connection type must support the element types.
+    The elements that are connected can not be changed later.
     
-    @param element1: The id of the first element to connect
-    @type element1: int
+    The connection types that are supported on this host and their attributes, 
+    as well as which elements can be connected can be obtained using 
+    :py:func:`~hostmanager.tomato.api.host.host_capabilities`    
+    
+    Parameter *element1*:
+      The element id of the first element to include in the connection. The
+      elements that are connected can not be changed later.
+    
+    Parameter *element2*:
+      The element id of the second element to include in the connection. The
+      elements that are connected can not be changed later.
 
-    @param element2: The id of the second element to connect
-    @type element2: int
-
-    @param type: The type of the connection, must either be one of the 
-        supported connections types or None to determine automatically.
-    @type type: str
-     
-    @param attrs: Attributes to configure the connection with. The allowed
-        attributes and their meanings depend on the connection type.
-    @type attrs: dict
+    Parameter *type*: 
+      If the parameter *type* is specified, it must be a string identifying
+      one of the supported connection types. If *type* is not specified a
+      matching connection type will be determined based on the elements.
     
-    @return: Information about the connection
-    @rtype: dict    
+    Parameter *attrs*:
+      The attributes of the connection can be given as the parameter *attrs*.
+      This parameter must be a dict of attributes if given. Attributes can 
+      later be changed using :py:func:`connection_modify`. This method should
+      behave like::
+      
+         info = connection_create(element1, element2, type, {})
+         connection_modify(info["id"], attrs)
     
-    @raise various other errors: depending on the type
+    Return value:
+      The return value of this method is the info dict of the new connection as
+      returned by :py:func:`connection_info`.
+      This info dict also contains the connection id that is needed for further 
+      manipulation of that object.
+    
+    Exceptions are raised if:      
+      * one of the elements does not exist or belongs to a different user 
+      * one of the elements does not support to be connected in its current 
+        state
+      * one of the elements is already connected
+      * both elements are the same
+      * *type* is specified and the type can not be used to connect the 
+        elements
+      * *type* is not specified and no available connection type can be used to
+        connect the elements
     """
     el1 = _getElement(element1)
     el2 = _getElement(element2)
@@ -54,19 +79,29 @@ def connection_modify(id, attrs): #@ReservedAssignment
     """
     Modifies a connection, configuring it with the given attributes.
     
-    @param id: The id of the connection
-    @type id: int
+    The attributes that are supported by the connection depend on the 
+    connection *type* and can be obtained using 
+    :py:func:`~hostmanager.tomato.api.host.host_capabilities`
+    Attribute availability can depend on the connection *state* which can be 
+    obtained using :py:func:`~connection_info`.
+
+    Parameter *id*:
+      The parameter *id* identifies the connection by giving its unique id.
      
-    @param attrs: Attributes to configure the connection with. The allowed
-        attributes and their meanings depend on the connection type.
-    @type attrs: dict
+    Parameter *attrs*:
+      The attributes of the connection can be given as the parameter *attrs*.
+      This parameter must be a dict of attributes.
     
-    @return: Information about the connection
-    @rtype: dict    
+    Return value:
+      The return value of this method is the info dict of the connection as 
+      returned by :py:func:`connection_info`. This info dict will reflect all
+      attribute changes.
     
-    @raise No such connection: if the connection id does not exist or belongs
-        to another owner
-    @raise various other errors: depending on the type
+    Exceptions:
+      If the given connection does not exist or belongs to another owner
+      an exception *connection does not exist* is raised.
+      Various other exceptions can be raised, depending on the connection type 
+      and state.
     """
     con = _getConnection(int(id))
     con.modify(attrs)
@@ -76,22 +111,33 @@ def connection_action(id, action, params={}): #@ReservedAssignment
     """
     Performs an action on the connection.
     
-    @param id: The id of the connection
-    @type id: int
-     
-    @param action: The action to be performed on the connection. The allowed
-        actions and their meanings depend on the connection type.
-    @type action: str
+    The actions that are supported by the connection depend on the connection 
+    *type* and can be obtained using 
+    :py:func:`~hostmanager.tomato.api.host.host_capabilities`
+    Action availability can depend on the connection *state* which can be 
+    obtained using :py:func:`~connection_info`.
+    
+    Parameter *id*:
+      The parameter *id* identifies the connection by giving its unique id.
 
-    @param params: Parameters for the action. The parameters and their meanings
-        depend on the connection type.
-    @type params: dict
+    Parameter *action*:
+      The parameter *action* is the action to execute on the connection.
+     
+    Parameter *params*:
+      The parameters for the action (if needed) can be given as the parameter
+      *params*. This parameter must be a dict if given.
     
-    @return: Return value of the action
+    Return value:
+      The return value of this method is  **not the info dict of the 
+      connection**. Instead this method returns the result of the action.
+      Changes of the action to the connection can be checked using 
+      :py:func:`~connection_info`. 
     
-    @raise No such connection: if the connection id does not exist or belongs
-        to another owner
-    @raise various other errors: depending on the type
+    Exceptions:
+      If the given connection does not exist or belongs to another owner
+      an exception *connection does not exist* is raised.
+      Various other exceptions can be raised, depending on the connection type 
+      and state.
     """
     con = _getConnection(int(id))
     res = con.action(action, params)
@@ -99,17 +145,24 @@ def connection_action(id, action, params={}): #@ReservedAssignment
 
 def connection_remove(id): #@ReservedAssignment
     """
-    Removes a conection.
+    Removes a connection.
     
-    @param id: The id of the connection
-    @type id: int
-     
-    @return: {}
-    @rtype: dict    
+    Whether connections can be removed in a certain *state* depends on the
+    connection *type* and can be obtained using 
+    :py:func:`~hostmanager.tomato.api.host.host_capabilities`
+    The connection state can be obtained using :py:func:`~connection_info`.
+
+    Parameter *id*:
+      The parameter *id* identifies the connection by giving its unique id.
+
+    Return value:
+      The return value of this method is ``None``. 
     
-    @raise No such connection: if the connection id does not exist or belongs
-        to another owner
-    @raise various other errors: depending on the type
+    Exceptions:
+      If the given connection does not exist or belongs to another owner
+      an exception *connection does not exist* is raised.
+      Various other exceptions can be raised, depending on the connection type 
+      and state.
     """
     con = _getConnection(int(id))
     con.remove()
@@ -118,14 +171,36 @@ def connection_info(id): #@ReservedAssignment
     """
     Retrieves information about a connection.
     
-    @param id: The id of the connection
-    @type id: int
-     
-    @return: Information about the connection
-    @rtype: dict    
+    Parameter *id*:
+      The parameter *id* identifies the connection by giving its unique id.
+
+    Return value:
+      The return value of this method is a dict containing information
+      about this connection. The information that is returned depends on the
+      *type* and *state* of this connection but the following information is 
+      always returned. 
+
+    ``id``
+      The unique id of the connection.
+      
+    ``type``
+      The type of the connection.
+      
+    ``state``
+      The current state this connection is in.
+      
+    ``elements``
+      A list with the unique element ids of both elements. This array is always
+      of size 2.
     
-    @raise No such connection: if the connection id does not exist or belongs
-        to another owner
+    ``attrs``
+      A dict of attributes of this connection. The contents of this field depends
+      on the *type* and *state* of the connection. If this connection does not have
+      attributes, this field is ``{}``.
+
+    Exceptions:
+      If the given connection does not exist or belongs to another owner
+      an exception *connection does not exist* is raised.
     """
     con = _getConnection(int(id))
     return con.info()
@@ -133,9 +208,11 @@ def connection_info(id): #@ReservedAssignment
 def connection_list():
     """
     Retrieves information about all connections of the user. 
-    
-    @return: Information about the connections
-    @rtype: list of dicts    
+     
+    Return value:
+      A list with information entries of all connections. Each list entry
+      contains exactly the same information as returned by 
+      :py:func:`connection_info`. If no connections exist, the list is empty. 
     """
     return [con.info() for con in connections.getAll(owner=currentUser())]
 

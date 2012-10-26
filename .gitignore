@@ -9,7 +9,8 @@ docs_build
 *.lyx#
 *Thumbs.db*
 ~$*.pptx
-
+*.log
+*.json
 *.pem
 *.torrent
 *.tar.gz
