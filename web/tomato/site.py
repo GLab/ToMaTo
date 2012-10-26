@@ -63,12 +63,11 @@ def remove(api, request):
             name = form.cleaned_data["name"]
             api.site_remove(name)
             return render_to_response("admin/site/remove_success.html", {'name': name})
-        else:
-            form = RemoveSiteForm()
-            return render_to_response("admin/site/remove_confirm.html", {'name': request.GET['name'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
     else:
-        form = RemoveSiteForm()
-        return render_to_response("admin/site/remove_confirm.html", {'name': request.GET['name'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+        name = request.GET['name']
+        if name:
+            form = RemoveSiteForm()
+            return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
     
 @wrap_rpc
 def edit(api, request):

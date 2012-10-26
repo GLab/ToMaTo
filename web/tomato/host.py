@@ -60,10 +60,14 @@ def add(api, request):
             formData = form.cleaned_data
             if formData["address"]: #At this point, check if trying to add a duplicate. (This is a dummy!)
                 api.host_create(formData["address"],formData["site"])
-                return render_to_response("admin/host/add_success.html", {'address': formData["site"]})
+                return render_to_response("admin/host/add_success.html", {'address': formData["address"]})
             else:
+                form = AddHostForm()
+                form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
                 return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
         else:
+            form = AddHostForm()
+            form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
     else:
         form = AddHostForm()
@@ -78,12 +82,11 @@ def remove(api, request):
             address = form.cleaned_data["address"]
             api.host_remove(address)
             return render_to_response("admin/host/remove_success.html", {'address': address})
-        else:
-            form = RemoveHostForm()
-            return render_to_response("admin/host/remove_confirm.html", {'address': request.GET['address'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
     else:
-        form = RemoveHostForm()
-        return render_to_response("admin/host/remove_confirm.html", {'address': request.GET['address'], 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+        address=request.GET['address']
+        if address:
+            form = RemoveHostForm()
+            return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
 
 @wrap_rpc
 def edit(api, request):
