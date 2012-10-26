@@ -39,7 +39,7 @@ def site_name_list(api):
     l = api.site_list()
     res = []
     for site in l:
-        res.append(site["name"])
+      res.append((site["name"],site["description"] or site["name"]))
     res.sort()
     return res
 
@@ -67,6 +67,7 @@ def add(api, request):
             return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
     else:
         form = AddHostForm()
+        form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
         return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
    
 @wrap_rpc
