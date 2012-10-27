@@ -22,7 +22,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
 
 DOC="""
-Element type: tinc
+Element type: ``tinc``
 
 Description:
 	This element type represents one endpoint of a Tinc VPN network. The 
@@ -35,25 +35,29 @@ Possible parents: None
 
 Possible children: None
 
-Default state: created
+Default state: *created*
 
-Removable in states: created
+Removable in states: *created*
 
-Connection concepts: interface
+Connection concepts: *interface*
 
 States:
-	created: In this state, the endpoint is known but not active.
-	started: In this state, the endpoint is active and ready to 
-		send/receive packets. 
-		
+	*created*: In this state, the endpoint is known but not active.
+	*started*: In this state, the endpoint is active and ready to send/receive packets. 
+
 Attributes:
-	peers: list of dicts, changeable in state created, default: []
+	*peers*: list of dicts, changeable in state *created*, default: ``[]``
 		The list of peers to connect to/accept connections from. Each peer must
 		be a key/value map with the following attributes:
-			host (str): the hostname/ip address of the peer
-			port (int): the port of the peer
-			pubkey (str): the public key of the peer in PEM format  
-	mode: str, changeable in state created, default: switch 
+		
+			*host* (str):
+			  the hostname/ip address of the peer
+			*port* (int):
+			  the port of the peer
+			*pubkey* (str):
+			  the public key of the peer in PEM format  
+			  
+	*mode*: str, changeable in state *created*, default: ``switch`` 
 		The mode the endpoint operates in. This attribute can either be 
 		"switch" or "hub". In the switch mode the endpoint will learn MAC 
 		addresses and forward packets directly to the associated endpoint if 
@@ -62,16 +66,17 @@ Attributes:
 		broadcast all packets and not learn any MAC addreses.
 		Note: All endpoints in one VPN should operate in the same mode, 
 		otherwise strange behaviour can result.		
-	port: int, read-only
+	*port*: int, read-only
 		The port on this host on which the endpoint is listening in state 
 		started.
-	pubkey: str, read-only
+	*pubkey*: str, read-only
 		The public key of this endpoint.
 		
+		
 Actions:
-	start, callable in state created, next state: started
+	*start*, callable in state *created*, next state: *started*
 	 	Starts the endpoint so that it is ready to send/receive packets.
-	stop, callable in state started, next state: created
+	*stop*, callable in state *started*, next state: *created*
 	 	Stops the endpoint.
 """
 

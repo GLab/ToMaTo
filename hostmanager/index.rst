@@ -1,5 +1,5 @@
-ToMaTo Hostmanager Documentation
-================================
+Hostmanager Documentation
+=========================
 
 Contents:
 
