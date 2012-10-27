@@ -94,6 +94,7 @@ class UDP_Tunnel(elements.Element):
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_udp_tunnel"

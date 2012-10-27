@@ -53,12 +53,9 @@ administrative access.
 
 Generating a key-pair
 ^^^^^^^^^^^^^^^^^^^^^
-A self-signed key-pair can be created with the following commands::
+A self-signed key-pair can be created with the following command::
 
-  openssl genrsa -out my.key 1024
-  openssl req -new -key my.key -out my.csr
-  openssl x509 -req -in my.csr -signkey my.key -out my.pem
-  rm my.csr
+  openssl req -new -x509 -days 1000 -nodes -out key.pem -keyout cert.pem
 
 It is important to create a key without a password if the the key should be
 used for a backend.

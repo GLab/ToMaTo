@@ -1,8 +1,3 @@
-.. ToMaTo documentation master file, created by
-   sphinx-quickstart on Thu Oct 25 10:02:59 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to ToMaTo's documentation!
 ==================================
 
@@ -12,7 +7,8 @@ Contents:
   :maxdepth: 2
 
   hostmanager/index
-   
+
+
 Indices and tables
 ==================
 
@@ -20,8 +16,8 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-TODO
-----
+Missing Topics
+--------------
 * backend
 * web
 * cli

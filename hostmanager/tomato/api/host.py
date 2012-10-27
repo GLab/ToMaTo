@@ -179,6 +179,7 @@ def host_capabilities():
       ``attrs``
         This field contains a dict with all attribute names as the keys and a
         dict with the following fields as values:
+
         ``name``
           The name of the attribute, this is the same as the key of the parent 
           dict.

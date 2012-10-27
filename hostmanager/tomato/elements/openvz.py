@@ -190,6 +190,7 @@ class OpenVZ(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_openvz"
@@ -583,6 +584,7 @@ class OpenVZ_Interface(elements.Element):
 	CAP_PARENT = [OpenVZ.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_openvz_interface"

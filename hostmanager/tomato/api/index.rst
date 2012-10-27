@@ -1,5 +1,8 @@
 Hostmanager API
 ===============
+The hostmanager offers the following methods via an XML-RPC interface. The 
+interface uses an encoding as documented in :doc:`../lib/xmlrpc`.
+All of the methods can be called by their method names without modules, etc.
 
 Elements
 --------

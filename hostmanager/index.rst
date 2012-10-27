@@ -4,13 +4,25 @@ ToMaTo Hostmanager Documentation
 Contents:
 
 .. toctree::
-   
+   :maxdepth: 2
+
+   tomato/installation
    tomato/api/index
+   tomato/backends
+   tomato/fileserver
+   tomato/elements/index
+   tomato/connections/index
    
-TODO
-----
-  * Hostmanager setup
+
+Other topics:
+
+.. toctree::
+   :maxdepth: 1
+
+   tomato/lib/xmlrpc
+
+
+Missing Topics
+--------------
+  * Configuration
   * Accounting
-  * Integrated fileserver
-  * Element types
-  * Connection types

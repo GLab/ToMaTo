@@ -159,6 +159,7 @@ class Repy(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_repy"
@@ -326,6 +327,7 @@ class Repy_Interface(elements.Element):
 	CAP_PARENT = [Repy.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_repy_interface"

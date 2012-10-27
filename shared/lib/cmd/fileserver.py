@@ -16,6 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.    If not, see <http://www.gnu.org/licenses/>
 
+"""
+Grants
+------
+For security reasons, the fileserver uses so called *grants* to verify that
+an upload or download request is authorized by the hostmanager. The grants are
+pseudo-random strings that are very unlikely to be guessed.
+Note that grants have an internal timeout and loose their validity after that.
+
+
+Uploading files
+---------------
+The filemanager accepts file uploads for valid grants under the URL 
+``http://SERVER:PORT/GRANT/upload``. Uploads have to be sent via POST with
+*multipart/form-data* encoding. After sucessfully uploading a file, a successs
+message is shown. A redirect to a different URL can be requested by appending
+``?redirect=URL_BASE64`` to the upload URL where *URL_BASE64* is the 
+base64-encoded destination URL.
+A simple upload form can be accessed under the URL 
+``http://SERVER:PORT/GRANT/upload_form``. 
+
+
+Downloading files
+-----------------
+The filemanager accepts file download requests for valid grants under the URL
+``http://SERVER:PORT/GRANT/download``. Downloads have to be requested via GET
+requests. The filemanager accepts the following parameters for downloads:
+
+  ``name``
+    The name of the file that is being sent to the client
+  ``mimetype``
+    The content-type of the file that is being sent to the client
+
+The fileserver will also honor the ``If-modified-since`` header.
+"""
+
+
 import SocketServer, BaseHTTPServer, hashlib, cgi, urlparse, urllib, shutil, base64, time, os.path, datetime, sys
 try:    #python >=2.6
     from urlparse import parse_qsl #@UnusedImport

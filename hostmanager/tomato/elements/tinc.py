@@ -112,6 +112,7 @@ class Tinc(elements.Element):
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {"mode": "switch"}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_tinc"
