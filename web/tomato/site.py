@@ -69,6 +69,7 @@ def remove(api, request):
         name = request.GET['name']
         if name:
             form = RemoveSiteForm()
+            form.fields["name"].initial = name
             return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
     
 @wrap_rpc

@@ -76,6 +76,7 @@ def remove(api, request):
         address=request.GET['address']
         if address:
             form = RemoveHostForm()
+            form.fields["address"].initial = address
             return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
 
 @wrap_rpc
