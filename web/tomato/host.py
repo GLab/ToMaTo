@@ -25,7 +25,7 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
-class AddHostForm(forms.Form):
+class HostForm(forms.Form):
     address = forms.CharField(max_length=255)
     site = forms.CharField(max_length=50)
     
@@ -49,30 +49,20 @@ def index(api, request):
 
 @wrap_rpc
 def add(api, request):
-    #
-    # NOT FULLY IMPLEMENTED
-    # check for duplicates
-    # length of form fields (AddHostForm)
-    #
     if request.method == 'POST':
-        form = AddHostForm(request.POST)
+        form = HostForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            if formData["address"]: #At this point, check if trying to add a duplicate. (This is a dummy!)
-                api.host_create(formData["address"],formData["site"])
-                return render_to_response("admin/host/add_success.html", {'address': formData["address"]})
-            else:
-                form = AddHostForm()
-                form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
-                return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
+            api.host_create(formData["address"],formData["site"])
+            return render_to_response("admin/host/add_success.html", {'address': formData["address"]})
         else:
-            form = AddHostForm()
+            form = HostForm()
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
-            return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
+            return render_to_response("admin/host/form.html", {'form': form, 'action':request.path,"edit":False})
     else:
-        form = AddHostForm()
+        form = HostForm()
         form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
-        return render_to_response("admin/host/add_form.html", {'form': form, 'action':request.path, 'site_list': site_name_list(api)})
+        return render_to_response("admin/host/form.html", {'form': form, 'action':request.path,"edit":False})
    
 @wrap_rpc
 def remove(api, request):
@@ -90,10 +80,18 @@ def remove(api, request):
 
 @wrap_rpc
 def edit(api, request):
-    #
-    #
-    #   DUMMY
-    #
-    #
-    hostManager = True
-    return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': hostManager})
+    if request.method=='POST':
+        form = HostForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.host_modify(formData["address"],{'site':formData["site"]})
+            return render_to_response("admin/host/edit_success.html", {'address': formData["address"]})
+    else:
+        address = request.GET['address']
+        if address:
+            hostinfo=api.host_info(address)
+            form = HostForm(hostinfo)
+            form.fields["address"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+            form.fields["site"].initial = hostinfo["site"]
+            return render_to_response("admin/host/form.html", {'address': address, 'form': form, 'action':request.path, "edit":True})

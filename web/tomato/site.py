@@ -27,9 +27,10 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
-class AddSiteForm(forms.Form):
+class SiteForm(forms.Form):
     name = forms.CharField(max_length=50)
     description = forms.CharField(max_length=255)
+    location = forms.CharField(max_length=255)
     
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -44,16 +45,17 @@ def index(api, request):
 @wrap_rpc
 def add(api, request):
     if request.method == 'POST':
-        form = AddSiteForm(request.POST)
+        form = SiteForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.site_create(formData["name"],formData["description"])
+            api.site_modify(formData["name"],{"location": formData["location"]})
             return render_to_response("admin/site/add_success.html", {'name': formData["name"]})
         else:
-            return render_to_response("admin/site/add_form.html", {'form': form, 'action':request.path})
+            return render_to_response("admin/site/form.html", {'form': form, 'action':request.path, "edit":False})
     else:
-        form = AddSiteForm
-        return render_to_response("admin/site/add_form.html", {'form': form, 'action':request.path})
+        form = SiteForm
+        return render_to_response("admin/site/form.html", {'form': form, 'action':request.path, "edit":False})
     
 @wrap_rpc
 def remove(api, request):
@@ -71,10 +73,15 @@ def remove(api, request):
     
 @wrap_rpc
 def edit(api, request):
-    #
-    #
-    #   DUMMY
-    #
-    #
-    hostManager = True
-    return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': hostManager})
+    if request.method=='POST':
+        form = SiteForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
+            return render_to_response("admin/site/edit_success.html", {'name': formData["name"]})
+    else:
+        name = request.GET['name']
+        if name:
+            form = SiteForm(api.site_info(name))
+            form.fields["name"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            return render_to_response("admin/site/form.html", {'name': name, 'form': form, 'action':request.path, "edit":True})

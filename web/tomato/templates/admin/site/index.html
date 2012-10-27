@@ -13,6 +13,7 @@
   <tr>
     <th>Name</th>
     <th>Description</th>
+    <th>Location</th>
     {% if hostManager %}
     <th />
     {% endif %}
@@ -21,6 +22,7 @@
   <tr>
     <td>{{site.name}}</td>
     <td>{{site.description}}</td>
+    <td>{{site.location}}</td>
     {% if hostManager %}
     <td><small><a href="/site/edit?name={{site.name}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="/site/remove?name={{site.name}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
