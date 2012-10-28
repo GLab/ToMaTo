@@ -21,3 +21,4 @@ Missing Topics
 * backend
 * web
 * cli
+* template synchronization
