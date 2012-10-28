@@ -45,7 +45,8 @@ def site_name_list(api):
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'hostManager': is_hostManager(api.account_info())})
+        sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
+	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def add(api, request):
