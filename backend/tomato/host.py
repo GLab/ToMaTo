@@ -32,6 +32,9 @@ class Site(attributes.Mixin, models.Model):
     class Meta:
         pass
 
+    def init(self, attrs):
+        self.modify(attrs)
+
     def modify(self, attrs):
         fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
         logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
@@ -76,7 +79,10 @@ def getAllSites(**kwargs):
 def createSite(name, description=""):
     fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
     logging.logMessage("create", category="site", name=name, description=description)        
-    return Site.objects.create(name=name, description=description)
+    site = Site(name=name)
+    site.save()
+    site.init({"description": description})
+    return site
 
 def _connect(address, port):
     transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
