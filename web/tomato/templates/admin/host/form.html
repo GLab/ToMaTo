@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+
+{% if edit %}
+<h1>Edit host {{address}}</h1>
+{% else %}
+<h1>Add host</h1>
+{% endif %}
+
+<form action="{{action}}" method="post">
+	{{form.as_p}}
+	
+	{% if edit %}
+	<input type="submit" value="Save" />
+	{% else %}
+	<input type="submit" value="Add" />
+	{% endif %}
+	
+	<input type="button" onclick="history.back()" value="Cancel" />
+</form>
+
+{% endblock %}

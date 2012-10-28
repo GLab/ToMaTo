@@ -5,6 +5,10 @@
 {% block content %}
 <h1>List of hosts</h1>
 
+{% if hostManager %}
+<p><input type="button" onClick="window.location='/host/add'" value="Add host" /></p>
+{% endif %}
+
 {% if host_list %}
 <script src="/js/enhancetable.js"></script>
 <b>Show details:</b>
@@ -48,6 +52,9 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
     <th stddev_column_class="good_high">Free [root]</th>
     <th stddev_column_class="good_high">Total [data]</th>
     <th stddev_column_class="good_high">Free [data]</th>
+    {% if hostManager %}
+    <th />
+    {% endif %}
   </tr>
 {% for host in host_list %}
   <tr>
@@ -90,6 +97,9 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
     <td>???</td><td>???</td>
     <td>???</td><td>???</td><td>???</td><td>???</td>
 {% endif %}
+    {% if hostManager %}
+    <td><small><a href="/host/edit?address={{host.address}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="/host/remove?address={{host.address}}" ><img src="/img/server_delete.png" title="remove" /></a></small></td>
+    {% endif %}
   </tr>
 {% endfor %}
 </table>
@@ -135,4 +145,9 @@ table td.stddev_high.good_high, table td.stddev_low.good_low {
 {% else %}
 No hosts
 {% endif %}
+
+{% if hostManager %}
+<p><input type="button" onClick="window.location='/host/add'" value="Add host" /></p>
+{% endif %}
+
 {% endblock %}

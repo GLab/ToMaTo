@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of sites</h1>
+
+{% if site_list %}
+<script src="/js/enhancetable.js"></script>
+
+
+<table class="sortable,filterable">
+  <tr>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Location</th>
+    {% if hostManager %}
+    <th />
+    {% endif %}
+  </tr>
+{% for site in site_list %}
+  <tr>
+    <td>{{site.name}}</td>
+    <td>{{site.description}}</td>
+    <td>{{site.location}}</td>
+    {% if hostManager %}
+    <td><small><a href="/site/edit?name={{site.name}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="/site/remove?name={{site.name}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+    {% endif %}
+  </tr>
+{% endfor %}
+</table>
+{% else %}
+No sites
+{% endif %}
+
+{% if hostManager %}
+<p><input type="button" onClick="window.location='/site/add'" value="Add site" /></p>
+{% endif %}
+
+{% endblock %}
