@@ -124,6 +124,7 @@ class Bridge(connections.Connection):
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_bridge"

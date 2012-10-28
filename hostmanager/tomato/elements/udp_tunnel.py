@@ -21,7 +21,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import net, process #@UnresolvedImport
 
 DOC="""
-Element type: udp_tunnel
+Element type: ``udp_tunnel``
 
 Description:
 	This element type represents one endpoint of a UDP tunnel. Ethernet 
@@ -36,32 +36,31 @@ Possible parents: None
 
 Possible children: None
 
-Default state: created
+Default state: *created*
 
-Removable in states: created
+Removable in states: *created*
 
-Connection concepts: interface
+Connection concepts: *interface*
 
 States:
-	created: In this state, the endpoint is known but not active.
-	started: In this state, the endpoint is active and ready to 
-		send/receive packets. 
+	*created*: In this state, the endpoint is known but not active.
+	*started*: In this state, the endpoint is active and ready to send/receive packets. 
 		
 Attributes:
-	connect: str, changeable in state created, default: None
+	*connect*: str, changeable in state *created*, default: ``None``
 		If this attribute is set to a value this endpoint is in conect mode,
 		i.e. it will connect to the endpoint given by the connect attribute in
 		the form host:port.
 		Note: For the tunnel to work, at least one of the endpoints must have a
 		connect attribute set to the address and port of the remote endpoint.
-	port: int, read-only
+	*port*: int, read-only
 		The port on this host on which the endpoint is listening in state 
 		started.
 		
 Actions:
-	start, callable in state created, next state: started
+	*start*, callable in state *created*, next state: *started*
 	 	Starts the endpoint so that it is ready to send/receive packets.
-	stop, callable in state started, next state: created
+	*stop*, callable in state *started*, next state: *created*
 	 	Stops the endpoint.
 """
 
@@ -94,6 +93,7 @@ class UDP_Tunnel(elements.Element):
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DEFAULT_ATTRS = {}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_udp_tunnel"

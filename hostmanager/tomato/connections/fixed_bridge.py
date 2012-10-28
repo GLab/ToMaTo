@@ -37,6 +37,7 @@ class Fixed_Bridge(connections.Connection):
 	DEFAULT_ATTRS = {}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_BRIDGE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_fixed_bridge"

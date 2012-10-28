@@ -24,7 +24,7 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
-Element type: kvmqm
+Element type: ``kvmqm``
 
 Description:
 	This element type provides full virtualization by using the KVM 
@@ -34,40 +34,40 @@ Description:
 Possible parents: None
 
 Possible children:
-	kvmqm_interface (can be added in states created and prepared)
+	``kvmqm_interface`` (can be added in states *created* and *prepared*)
 
-Default state: created
+Default state: *created*
 
-Removable in states: created
+Removable in states: *created*
 
 Connection concepts: None
 
 States:
-	created: In this state the VM is known of but qm does not know about it.
+	*created*: In this state the VM is known of but qm does not know about it.
 		No state is stored and no resources are consumed in this state.
-	prepared: In this state the VM is present in the qm configuration and the
+	*prepared*: In this state the VM is present in the qm configuration and the
 		disk image exists but the VM is not running. The disk image stores some
 		state information. The VM is not consuming any resources except for the
 		disk image.
-	started: In this state the VM is running and can be accessed by the user.
+	*started*: In this state the VM is running and can be accessed by the user.
 		The VM holds a disk state and a memory state. It consumes disk storage
 		memory, cpu power, io and networking resources.
 		
 Attributes:
-	cpus: int, changeable in states created and prepared, default: 1
+	*cpus*: int, changeable in states *created* and *prepared*, default: ``1``
 		The number of virtual processors that the VM should have. Each virtual
 		processor can take the resources of one physical processor.
-	ram: int, changeable in states created and prepared, default: 256
+	*ram*: int, changeable in states *created* and *prepared*, default: ``256``
 		The amount of memory the VM should have in megabytes. The virtual
 		machine will only be able to access this much virtual memory. RAM that
 		has been allocated once will stay allocated as long as the VM is
 		running, so in the long run VMs tend to use the maximum amount of RAM.
-	kblang: str, changeable in states created and prepared, default: de
+	*kblang*: str, changeable in states *created* and *prepared*, default: ``de``
 		The language of the emulated keyboard. This attribute defines how
 		keyboard input is translated in keycodes that are handed over to the
 		VM. This setting should correspond to the keyboard setting inside of 
 		the VM. 
-	usbtablet: bool, changeable in states created and prepared, default: True
+	*usbtablet*: bool, changeable in states *created* and *prepared*, default: ``True``
 		Whether to emulate an USB tablet input device or a normal PS/2 mouse.
 		A USB tablet input has the advantage that it uses absolute positions
 		to position the mouse pointer instead of relative movements like PS/2
@@ -75,7 +75,7 @@ Attributes:
 		position and to avoid offsets. On operating systems that do not support
 		USB tablet devices this setting must be disabled, otherwise no mouse 
 		will be available. 
-	template: str, changeable in states created and prepared
+	*template*: str, changeable in states *created* and *prepared*
 		The name of a template of matching virtualization technology to be used
 		for this VM. A copy of this template will be used as an initial disk 
 		image when the device is being prepared. When this attribute is changed
@@ -84,31 +84,31 @@ Attributes:
 		a default template is chosen instead.
 		WARNING: Setting this attribute for a prepared VM will cause the loss
 		of the disk image.   
-	vncport: int, read-only
+	*vncport*: int, read-only
 		The port on this host on which the VM can be accessed via VNC when it
 		is running. 
-	vncpassword: int, read-only
+	*vncpassword*: int, read-only
 		The random password that has to be used to connect to this VM using 
 		VNC. This password should be kept secret.
 
 Actions:
-	prepare, callable in state created, next state: prepared
+	*prepare*, callable in state *created*, next state: *prepared*
 		Creates a qm configuration entry for this VM and uses a copy of the
 		template as disk image.
-	destroy, callable in state prepared, next state: created
+	*destroy*, callable in state *prepared*, next state: *created*
 	 	Removes the qm configuration entry and deletes the disk image.
-	start, callable in state prepared, next state: started
+	*start*, callable in state *prepared*, next state: *started*
 	 	Starts the VM and initiates a boot of the contained OS. This action
 	 	also starts a VNC server for the VM and connects all the interfaces
 	 	of the device.
-	stop, callable in state started, next state: prepared
+	*stop*, callable in state *started*, next state: *prepared*
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using an ACPI shutdown request. The
 	 	contained OS then has 10 seconds to shut down by itself. After this
 	 	time, the VM is just stopped.
 	 	Note: Users should make sure their VMs shut down properly to decrease
 	 	stop time and to avoid data loss or damages in the virtual machine.
-	upload_grant, callable in state prepared
+	*upload_grant*, callable in state *prepared*
 	 	Create/update a grant to upload an image for the VM. The created grant
 	 	will be available as an attribute called upload_grant. The grant allows
 	 	the user to upload a file for a certain time. The url where the file 
@@ -117,9 +117,9 @@ Actions:
 	 	server (can be requested via host_info) and grant is the grant.
 	 	The uploaded file can be used as the VM image with the upload_use 
 	 	action. 
-	upload_use, callable in state prepared
+	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
-	download_grant, callable in state prepared
+	*download_grant*, callable in state *prepared*
 	 	Create/update a grant to download the image for the VM. The created 
 	 	grant will be available as an attribute called download_grant. The
 	 	grant allows the user to download the VM image once for a certain time.
@@ -184,6 +184,7 @@ class KVMQM(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_kvmqm"
@@ -435,29 +436,29 @@ class KVMQM(elements.Element):
 		usage.diskspace = path.diskspace(self._imagePathDir())
 
 DOC_IFACE="""
-Element type: kvmqm_interface
+Element type: ``kvmqm_interface``
 
 Description:
 	This element type represents a network interface of kvmqm element type. Its
 	state is managed by and synchronized with the parent element.
 
-Possible parents: kvmqm
+Possible parents: ``kvmqm``
 
 Possible children: None
 
-Default state: created
+Default state: *created*
 
-Removable in states: created and prepared 
+Removable in states: *created* and *prepared* 
 	
-Connection concepts: interface
+Connection concepts: *interface*
 
 States:
-	created: In this state the interface is known of but qm does not know about
+	*created*: In this state the interface is known of but qm does not know about
 		it.
-	prepared: In this state the interface is present in the qm configuration
+	*prepared*: In this state the interface is present in the qm configuration
 		but not running.
-	started: In this state the interface is running.
-		
+	*started*: In this state the interface is running.
+
 Attributes: None
 
 Actions: None
@@ -478,6 +479,7 @@ class KVMQM_Interface(elements.Element):
 	CAP_PARENT = [KVMQM.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_kvm_interface"

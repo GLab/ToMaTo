@@ -23,7 +23,7 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
-Element type: openvz
+Element type: ``openvz``
 
 Description:
 	This element type provides container virtualization by using the OpenVZ 
@@ -33,53 +33,53 @@ Description:
 Possible parents: None
 
 Possible children:
-	openvz_interface (can be added in states created and prepared)
+	``openvz_interface`` (can be added in states *created* and *prepared*)
 
-Default state: created
+Default state: *created*
 
-Removable in states: created
+Removable in states: *created*
 
 Connection concepts: None
 
 States:
-	created: In this state the VM is known of but vzctl does not know about it.
+	*created*: In this state the VM is known of but vzctl does not know about it.
 		No state is stored and no resources are consumed in this state.
-	prepared: In this state the VM is present in the vzctl configuration and 
+	*prepared*: In this state the VM is present in the vzctl configuration and 
 		the disk image exists but the VM is not running. The disk image stores 
 		some state information. The VM is not consuming any resources except 
 		for the	disk image.
-	started: In this state the VM is running and can be accessed by the user.
+	*started*: In this state the VM is running and can be accessed by the user.
 		The VM holds a disk state and a memory state. It consumes disk storage
 		memory, cpu power, io and networking resources.
 		
 Attributes:
-	ram: int, changeable in all states, default: 256
+	*ram*: int, changeable in all states, default: ``256``
 		The amount of memory the VM should have in megabytes. The virtual
 		machine will only be able to access this much virtual memory. The RAM
 		used by the VM will match the RAM usage inside the VM.
-	diskspace: int, changeable in all states, default: 10240
+	*diskspace*: int, changeable in all states, default: ``10240``
 		The amount of disk space, the VM should have in megabytes. The virtual
 		machine will only be able to access this much disk space. The disk 
 		space used by the VM will match the disk usage inside the VM.
-	rootpassword: str, changeable in all states
+	*rootpassword*: str, changeable in all states
 		The password of the user 'root' inside the VM.
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	hostname, str, changeable in all states
+	*hostname*, str, changeable in all states
 		The hostname as seen inside the VM.
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	gateway4, str, changeable in all states
+	*gateway4*, str, changeable in all states
 		The IPv4 default route to be used inside the VM. The route must be a 
 		valid IPv4 address.
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	gateway6, str, changeable in all states
+	*gateway6*, str, changeable in all states
 		The IPv6 default route to be used inside the VM. The route must be a 
 		valid IPv6 address.
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	template: str, changeable in states created and prepared
+	*template*: str, changeable in states *created* and *prepared*
 		The name of a template of matching virtualization technology to be used
 		for this VM. A copy of this template will be used as an initial disk 
 		image when the device is being prepared. When this attribute is changed
@@ -88,27 +88,27 @@ Attributes:
 		a default template is chosen instead.
 		WARNING: Setting this attribute for a prepared VM will cause the loss
 		of the disk image.
-	vncport: int, read-only
+	*vncport*: int, read-only
 		The port on this host on which the VM can be accessed via VNC when it
 		is running. 
-	vncpassword: int, read-only
+	*vncpassword*: int, read-only
 		The random password that has to be used to connect to this VM using 
 		VNC. This password should be kept secret.
 
 Actions:
-	prepare, callable in state created, next state: prepared
+	*prepare*, callable in state *created*, next state: *prepared*
 		Creates a vzctl configuration entry for this VM and uses a copy of
 		the	template as disk image.
-	destroy, callable in state prepared, next state: created
+	*destroy*, callable in state *prepared*, next state: *created*
 	 	Removes the vzctl configuration entry and deletes the disk image.
-	start, callable in state prepared, next state: started
+	*start*, callable in state *prepared*, next state: *started*
 	 	Starts the VM and initiates a boot of the contained OS. This action
 	 	also starts a VNC server for the VM and connects all the interfaces
 	 	of the device.
-	stop, callable in state started, next state: prepared
+	*stop*, callable in state *started*, next state: *prepared*
 	 	Stops the VNC server, disconnects all the interfaces of the VM and
 	 	then initiates an OS shutdown using the runlevel system.
-	upload_grant, callable in state prepared
+	*upload_grant*, callable in state *prepared*
 	 	Create/update a grant to upload an image for the VM. The created grant
 	 	will be available as an attribute called upload_grant. The grant allows
 	 	the user to upload a file for a certain time. The url where the file 
@@ -117,9 +117,9 @@ Actions:
 	 	server (can be requested via host_info) and grant is the grant.
 	 	The uploaded file can be used as the VM image with the upload_use 
 	 	action. 
-	upload_use, callable in state prepared
+	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
-	download_grant, callable in state prepared
+	*download_grant*, callable in state *prepared*
 	 	Create/update a grant to download the image for the VM. The created 
 	 	grant will be available as an attribute called download_grant. The
 	 	grant allows the user to download the VM image once for a certain time.
@@ -190,6 +190,7 @@ class OpenVZ(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"ram": 256, "diskspace": 10240}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_openvz"
@@ -510,45 +511,45 @@ class OpenVZ(elements.Element):
 
 
 DOC_IFACE="""
-Element type: openvz_interface
+Element type: ``openvz_interface``
 
 Description:
 	This element type represents a network interface of openvz element type. 
 	Its	state is managed by and synchronized with the parent element.
 
-Possible parents: openvz
+Possible parents: ``openvz``
 
 Possible children: None
 
-Default state: created
+Default state: *created*
 
-Removable in states: created and prepared 
+Removable in states: *created* and *prepared* 
 
-Connection concepts: interface
+Connection concepts: *interface*
 
 States:
-	created: In this state the interface is known of but vzctl does not know
+	*created*: In this state the interface is known of but vzctl does not know
 		about it.
-	prepared: In this state the interface is present in the vzctl configuration
+	*prepared*: In this state the interface is present in the vzctl configuration
 		but not running.
-	started: In this state the interface is running.
+	*started*: In this state the interface is running.
 		
 Attributes:
-	ip4address, str, changeable in all states
+	*ip4address*, str, changeable in all states
 		The IPv4 address and prefix length to configure the interface with. The
 		address must be in the format address/prefix_length where address is a
 		valid IPv4 address and prefix_length is a number from 0 to 32.
 		(Example: 10.0.0.1/24)
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	ip6address, str, changeable in all states
+	*ip6address*, str, changeable in all states
 		The IPv6 address and prefix length to configure the interface with. The
 		address must be in the format address/prefix_length where address is a
 		valid IPv6 address and prefix_length is a number from 0 to 128.
 		(Example: fd1a:8807:b8ad:ebbe::/64)
 		Note: This setting can only be changed if the operating system inside
 		the VM is a standard linux.
-	use_dhcp, bool, changeable in all states
+	*use_dhcp*, bool, changeable in all states
 		Whether to start a dhcp client to configure the interface. If use_dhcp
 		is set to True, a dhcp configuration will be attempted AFTER 
 		configuring the interface with the given addresses.
@@ -583,6 +584,7 @@ class OpenVZ_Interface(elements.Element):
 	CAP_PARENT = [OpenVZ.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_openvz_interface"

@@ -21,7 +21,7 @@ from ..lib.attributes import Attr #@UnresolvedImport
 from ..resources import network
 
 DOC="""
-Element type: external_network
+Element type: ``external_network``
 
 Description:
 	This element type provides access to external networks present at this 
@@ -31,18 +31,18 @@ Possible parents: None
 
 Possible children: None
 
-Default state: default
+Default state: *default*
 
-Removable in states: default
+Removable in states: *default*
 
-Connection concepts: bridge
+Connection concepts: *bridge*
 
 States:
-	default: This is the only possible state. In this state the bridge is 
+	*default*: This is the only possible state. In this state the bridge is 
 		present and ready.
 		
 Attributes:
-	network: str, changeable in all states
+	*network*: str, changeable in all states
 		The kind of network to be chosen for this external network. A network
 		resource with a matching kind attribute is chosen as network for this
 		element. If no network with the given kind exists (esp. for 

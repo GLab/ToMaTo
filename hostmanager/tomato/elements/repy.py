@@ -24,7 +24,7 @@ from ..lib import util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 DOC="""
-Element type: repy
+Element type: ``repy``
 
 Description:
 	This element type provides programming language virtualization by using the
@@ -34,61 +34,61 @@ Description:
 Possible parents: None
 
 Possible children:
-	repy_interface (can be added in state created)
+	``repy_interface`` (can be added in state *created*)
 
-Default state: prepared
+Default state: *prepared*
 
-Removable in states: prepared
+Removable in states: *prepared*
 
 Connection concepts: None
 
 States:
-	prepared: In this state the program is known of and the script exists.
+	*prepared*: In this state the program is known of and the script exists.
 		Only the script is stored and no othe resources are consumed in this
 		state.
-	started: In this state the program is running and can be accessed by the
+	*started*: In this state the program is running and can be accessed by the
 		user. The program holds a memory state but no disk state. It consumes
 		memory, cpu power, io and networking resources.
 		
 Attributes:
-	args: list, changeable in state created, default: []
+	*args*: list, changeable in state *created*, default: ``[]``
 		The arguments to pass to the program when it is started.
-	cpus: float, changeable in state created, default: 0.25
+	*cpus*: float, changeable in state *created*, default: ``0.25``
 		The number of processors that the program can use. This can be set to a
 		fraction to limit the program to that fraction of the processor. If 
 		this value is greater than 1.0 the program is allowed to use the 
 		resources of more than one processor using several threads.
-	ram: int, changeable in state created, default: 25
+	*ram*: int, changeable in state *created*, default: ``25``
 		The amount of memory the program should have in megabytes. The program
 		will only be able to use this much memory for its data structures. If
 		the program tries to use more, this will result in exceptions and/or
 		the program being terminated.
-	bandwidth: int, changeable in state created, default: 1000000
+	*bandwidth*: int, changeable in state *created*, default: ``1000000``
 		The amount of traffic that the program is allowed to cause in bytes per
 		second. All the incoming and the outgoing traffic of all interface is
 		counted against this value but the limit is applied seperately for 
 		incoming and outgoing traffic. The limit is only applied on a per 
 		second basis, i.e. short bursts can go over this limit.
-	template: str, changeable in state created
+	*template*: str, changeable in state *created*
 		The name of a template of matching virtualization technology to be used
 		for this program. A copy of this template will be used as the script 
 		for this program. If no template with the given name exists (esp. for
 		template=None), a default template is chosen instead.
-	vncport: int, read-only
+	*vncport*: int, read-only
 		The port on this host on which the VM can be accessed via VNC when it
 		is running. 
-	vncpassword: int, read-only
+	*vncpassword*: int, read-only
 		The random password that has to be used to connect to this VM using 
 		VNC. This password should be kept secret.
 
 Actions:
-	start, callable in state created, next state: started
+	*start*, callable in state *created*, next state: *started*
 	 	Starts the program and runs the script, and starts a VNC server that
 	 	displays the output of the script. This action also connects all the
 	 	interfaces of the device.
-	stop, callable in state started, next state: created
+	*stop*, callable in state *started*, next state: *created*
 	 	Stops the VNC server and then stops the program.
-	upload_grant, callable in state created
+	*upload_grant*, callable in state *created*
 	 	Create/update a grant to upload an image for the VM. The created grant
 	 	will be available as an attribute called upload_grant. The grant allows
 	 	the user to upload a file for a certain time. The url where the file 
@@ -97,9 +97,9 @@ Actions:
 	 	server (can be requested via host_info) and grant is the grant.
 	 	The uploaded file can be used as the VM image with the upload_use 
 	 	action. 
-	upload_use, callable in state created
+	*upload_use*, callable in state *created*
 		Uses a previously uploaded file as the image of the VM. 
-	download_grant, callable in state created
+	*download_grant*, callable in state *created*
 	 	Create/update a grant to download the image for the VM. The created 
 	 	grant will be available as an attribute called download_grant. The
 	 	grant allows the user to download the VM image once for a certain time.
@@ -159,6 +159,7 @@ class Repy(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
 	DOC = DOC
+	__doc__ = DOC
 	
 	class Meta:
 		db_table = "tomato_repy"
@@ -286,25 +287,25 @@ class Repy(elements.Element):
 
 
 DOC_IFACE="""
-Element type: repy_interface
+Element type: ``repy_interface``
 
 Description:
 	This element type represents a network interface of repy element type. Its
 	state is managed by and synchronized with the parent element.
 
-Possible parents: repy
+Possible parents: ``repy``
 
 Possible children: None
 
-Default state: prepared
+Default state: *prepared*
 
-Removable in states: prepared
+Removable in states: *prepared*
 	
-Connection concepts: interface
+Connection concepts: *interface*
 
 States:
-	prepared: In this state the interface is known of.
-	started: In this state the interface is running.
+	*prepared*: In this state the interface is known of.
+	*started*: In this state the interface is running.
 		
 Attributes: None
 
@@ -326,6 +327,7 @@ class Repy_Interface(elements.Element):
 	CAP_PARENT = [Repy.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
+	__doc__ = DOC_IFACE
 	
 	class Meta:
 		db_table = "tomato_repy_interface"
