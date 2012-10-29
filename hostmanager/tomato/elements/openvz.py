@@ -413,7 +413,7 @@ class OpenVZ(elements.Element):
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
 		if self.vncpid:
-			process.kill(self.vncpid)
+			process.killTree(self.vncpid)
 			del self.vncpid
 		self._vzctl("stop")
 		self.setState(ST_PREPARED, True)

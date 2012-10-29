@@ -27,6 +27,25 @@ def kill(pid, force=False):
 	except CommandError:
 		pass
 	
+def killTree(pid, force=False, tree=None):
+	tree = tree or getTree()
+	kill(pid, force)
+	if pid in tree:
+		for child in tree[pid]:
+			killTree(child, force, tree)
+	
+def getTree():
+	tree = {}
+	for pid in [int(pid) for pid in os.listdir('/proc') if pid.isdigit()]:
+		try:
+			with open('/proc/%d/stat') as fp:
+				stat = fp.readline()
+				parent = stat.split()[3]
+			tree[parent] = tree.get(parent, []) + [pid]
+		except:
+			pass #process terminated during scan
+	return tree
+	
 _jiffiesPerSecond = None 	
 def jiffiesPerSecond():
 	global _jiffiesPerSecond

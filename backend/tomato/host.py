@@ -650,6 +650,7 @@ def getConnectionCapabilities(type_):
             caps = hcaps
     return caps
 
+@db.commit_after
 def synchronize():
     #TODO: implement more than resource sync
     for host in getAll():
@@ -657,9 +658,8 @@ def synchronize():
             host.update()
             host.synchronizeResources()
         except:
-            import traceback
-            traceback.print_exc()
-            pass #needs admin permissions that might lack 
+            logging.logException(host=host.address)
+            print "Error updating information from %s" % host
 
 task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize) #every min
 

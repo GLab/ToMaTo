@@ -248,7 +248,7 @@ class Repy(elements.Element):
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
 		if self.vncpid:
-			process.kill(self.vncpid)
+			process.killTree(self.vncpid)
 			del self.vncpid
 		if self.pid:
 			process.kill(self.pid)

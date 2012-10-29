@@ -20,11 +20,11 @@ import generic
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus"]
 	CAP_CHILDREN = {
 		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
-	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
+	PROFILE_ATTRS = ["ram", "cpus"]
 	
 	class Meta:
 		db_table = "tomato_kvmqm"

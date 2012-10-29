@@ -265,7 +265,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			# complex case: helper elements needed to connect elements on different hosts
 			self.connectionElement1 = el1.host.createElement("udp_tunnel", owner=self)
 			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
-				"connect": "%s:%d" % (el1.host.address, el1.attrs["attrs"]["port"])
+				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
 			}, owner=self)
 			self.connection1 = el1.connectWith(self.connectionElement1, attrs=self._remoteAttrs(), owner=self)
 			self.connection2 = el2.connectWith(self.connectionElement2, owner=self)
