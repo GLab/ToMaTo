@@ -52,6 +52,8 @@ servers = []
 
 def start():
 	print >>sys.stderr, "Starting RPC servers"
+	global servers
+	del servers[:]
 	for settings in config.SERVER:
 		server_address = ('', settings["PORT"])
 		sslOpts = None

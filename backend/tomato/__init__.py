@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, atexit
+import os, sys, signal
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
@@ -51,31 +51,60 @@ def setCurrentUser(user):
 	_currentUser.user = user
 
 def login(credentials, sslCert):
-	user = authenticate(*credentials)
+	user = auth.login(*credentials)
 	setCurrentUser(user)
 	return user
 
 from models import *
 	
-if not config.MAINTENANCE:
-	db_migrate()
-
 import api
 
-from . import lib, resources, host, accounting #@UnresolvedImport
-from auth import login as authenticate
-from lib.cmd import bittorrent #@UnresolvedImport
+from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImport
+from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
-from rpcserver import start as startRPCserver
-from rpcserver import stop as stopRPCserver
+_btTracker = None
+_btClient = None
 
+stopped = threading.Event()
 
-if not config.MAINTENANCE:
+def start():
 	logging.openDefault(config.LOG_FILE)
-	atexit.register(logging.closeDefault)
+	db_migrate()
+	auth.init()
 	resources.init()
 	host.task.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
-	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
-	bittorrent.startClient(config.TEMPLATE_PATH)
+	global _btTracker, _btClient
+	_btTracker = bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
+	_btClient = bittorrent.startClient(config.TEMPLATE_PATH)
+	rpcserver.start()
+	
+def reload_(*args):
+	print >>sys.stderr, "Reloading..."
+	logging.closeDefault()
+	reload(config)
+	logging.openDefault(config.LOG_FILE)
+	#stopRPCserver()
+	#startRPCserver()
+
+def stop(*args):
+	print >>sys.stderr, "Shutting down..."
+	rpcserver.stop()
+	host.task.stop() #@UndefinedVariable
+	accounting.task.stop() #@UndefinedVariable
+	process.kill(_btTracker)
+	process.kill(_btClient)
+	logging.closeDefault()
+	stopped.set()
+
+def run():
+	start()
+	signal.signal(signal.SIGTERM, stop)
+	signal.signal(signal.SIGINT, stop)
+	signal.signal(signal.SIGHUP, reload_)
+	try:
+		while not stopped.isSet():
+			stopped.wait(1.0)
+	except KeyboardInterrupt:
+		stop()

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, atexit, datetime, crypt, string, random, sys, threading
+import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging #@UnresolvedImport
 from .. import config, fault, currentUser
@@ -161,13 +161,15 @@ def login(username, password):
     return stored
 
 providers = []
-print >>sys.stderr, "Loading auth modules..."
-for conf in config.AUTH:
-    provider = None #make eclipse shut up
-    exec("import %s_provider as provider" % conf["PROVIDER"]) #pylint: disable-msg=W0122
-    prov = provider.init(**(conf["OPTIONS"]))
-    prov.name = conf["NAME"]
-    providers.append(prov)
-    print >>sys.stderr, " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
-if not providers:
-    print >>sys.stderr, "Warning: No authentication modules configured."
+
+def init():
+    print >>sys.stderr, "Loading auth modules..."
+    for conf in config.AUTH:
+        provider = None #make eclipse shut up
+        exec("import %s_provider as provider" % conf["PROVIDER"]) #pylint: disable-msg=W0122
+        prov = provider.init(**(conf["OPTIONS"]))
+        prov.name = conf["NAME"]
+        providers.append(prov)
+        print >>sys.stderr, " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
+    if not providers:
+        print >>sys.stderr, "Warning: No authentication modules configured."

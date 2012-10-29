@@ -25,22 +25,29 @@ class RepeatedTimer(threading.Thread):
 		self.args = args
 		self.kwargs = kwargs
 		threading.Thread.__init__(self)
-		self.event = threading.Event()
+		self.stopped = threading.Event()
+		self.stopped_confirm = threading.Event()
 		self.daemon = True
 	def run(self):
-		while not self.event.isSet():
+		while not self.stopped.isSet():
 			try:
-				self.event.wait(self.timeout)
+				self.stopped.wait(self.timeout)
 			except: #pylint: disable-msg=W0702
+				self.stopped_confirm.set()
 				return
-			if not self.event.isSet():
+			if not self.stopped.isSet():
 				try:
 					self.func(*self.args, **self.kwargs)
 				except Exception, exc: #pylint: disable-msg=W0703
 					from .. import fault
 					fault.errors_add(exc, traceback.format_exc())
+		self.stopped_confirm.set()
 	def stop(self):
-		self.event.set()
+		self.stopped.set()
+		try:
+			self.stopped_confirm.wait()
+		except:
+			pass
 
 def print_except_helper(func, args, kwargs):
 	try:

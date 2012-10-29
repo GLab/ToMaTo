@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from . import run, spawn, CommandError, process
-import os, atexit
+import os
 
 def startTracker(port, path):
 	assert os.path.exists(path)
@@ -27,7 +27,7 @@ def startTracker(port, path):
 	elif "--parse_dir_interval" in usage: #bittornado
 		args += ["--parse_dir_interval", "60"] #seconds
 	pid = spawn(args)
-	atexit.register(lambda :process.kill(pid))
+	return pid
 
 def fileSize(torrentData):
 	from BitTorrent.bencode import bdecode
@@ -49,7 +49,7 @@ def startClient(path, bwlimit=10000):
 	#TODO: bittorrent seems to be unstable, restart every few hours
 	assert os.path.exists(path)
 	pid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit)], cwd=path, daemon=False)
-	atexit.register(lambda :process.kill(pid))
+	return pid
 
 def createTorrent(tracker, dataPath, torrentPath=""):
 	assert os.path.exists(dataPath)

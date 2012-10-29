@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, atexit
+import os, sys
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
@@ -36,7 +36,7 @@ def db_migrate():
 import config
 
 	
-import threading
+import threading, signal
 _currentUser = threading.local()
 
 def currentUser():
@@ -54,24 +54,48 @@ def login(credentials, sslCert):
 
 from models import *
 	
-if not config.MAINTENANCE:
-	db_migrate()
-
 import api
 
-from . import lib, resources, accounting #@UnresolvedImport
-
-from rpcserver import start as startRPCserver
-from rpcserver import stop as stopRPCserver
-from lib.cmd.fileserver import start as startFileserver #@UnresolvedImport
-from lib.cmd.fileserver import stop as stopFileserver #@UnresolvedImport
-from lib.cmd import bittorrent #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver #@UnresolvedImport
+from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
-if not config.MAINTENANCE:
+_btClient = None
+
+stopped = threading.Event()
+
+def start():
 	logging.openDefault(config.LOG_FILE)
-	atexit.register(logging.closeDefault)
+	db_migrate()
 	resources.init()
 	accounting.task.start() #@UndefinedVariable
-	bittorrent.startClient(config.TEMPLATE_DIR)
+	global _btTracker, _btClient
+	_btClient = bittorrent.startClient(config.TEMPLATE_DIR)
+	fileserver.start()
+	rpcserver.start()
 	
+def reload_(*args):
+	print >>sys.stderr, "Reloading..."
+	logging.closeDefault()
+	reload(config)
+	logging.openDefault(config.LOG_FILE)
+
+def stop(*args):
+	print >>sys.stderr, "Shutting down..."
+	rpcserver.stop()
+	fileserver.stop()
+	accounting.task.stop() #@UndefinedVariable
+	process.kill(_btClient)
+	logging.closeDefault()
+	stopped.set()
+
+def run():
+	start()
+	signal.signal(signal.SIGTERM, stop)
+	signal.signal(signal.SIGINT, stop)
+	signal.signal(signal.SIGHUP, reload_)
+	try:
+		while not stopped.isSet():
+			stopped.wait(1.0)
+	except KeyboardInterrupt:
+		stop()
