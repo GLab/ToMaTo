@@ -115,6 +115,10 @@ ST_STARTED = "started"
 class Repy(elements.Element):
 	pid_attr = Attr("pid", type="int")
 	pid = pid_attr.attribute()
+	websocket_port_attr = Attr("websocket_port", type="int")
+	websocket_port = websocket_port_attr.attribute()
+	websocket_pid_attr = Attr("websocket_pid", type="int")
+	websocket_pid = websocket_pid_attr.attribute()
 	vncport_attr = Attr("vncport", type="int")
 	vncport = vncport_attr.attribute()
 	vncpid_attr = Attr("vncpid", type="int")
@@ -171,6 +175,7 @@ class Repy(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
+		self.websocket_port = self.getResource("port")
 		self.vncpassword = cmd.randomPassword()
 		self.modify_template("") #use default template
 		self._setProfile()
@@ -253,6 +258,10 @@ class Repy(elements.Element):
 				con.connectInterface(self._interfaceName(interface.name))
 		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
+		if not self.websocket_port:
+			self.websocket_port = self.getResource("port")
+		if websockifyVersion:
+			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport])
 
 	def action_stop(self):
 		for interface in self.getChildren():
@@ -265,6 +274,9 @@ class Repy(elements.Element):
 		if self.pid:
 			process.kill(self.pid)
 			del self.pid
+		if self.websocket_pid:
+			process.kill(self.websocket_pid)
+			del self.websocket_pid
 		self.setState(ST_PREPARED, True)
 		
 	def action_upload_grant(self):
@@ -388,5 +400,6 @@ def register(): #pragma: no cover
 if not config.MAINTENANCE:
 	repyVersion = cmd.getDpkgVersion("tomato-repy")
 	vnctermVersion = cmd.getDpkgVersion("vncterm")
+	websockifyVersion = cmd.getDpkgVersion("websockify")
 	register()
 	

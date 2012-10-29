@@ -136,6 +136,10 @@ ST_STARTED = "started"
 class KVMQM(elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
+	websocket_port_attr = Attr("websocket_port", type="int")
+	websocket_port = websocket_port_attr.attribute()
+	websocket_pid_attr = Attr("websocket_pid", type="int")
+	websocket_pid = websocket_pid_attr.attribute()
 	vncport_attr = Attr("vncport", type="int")
 	vncport = vncport_attr.attribute()
 	vncpid_attr = Attr("vncpid", type="int")
@@ -196,6 +200,7 @@ class KVMQM(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
+		self.websocket_port = self.getResource("port")
 		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 				
@@ -384,6 +389,10 @@ class KVMQM(elements.Element):
 		util.waitFor(lambda :os.path.exists(self._controlPath()))
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
 		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
+		if not self.websocket_port:
+			self.websocket_port = self.getResource("port")
+		if websockifyVersion:
+			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport])
 
 	def action_stop(self):
 		self._checkState()
@@ -394,6 +403,9 @@ class KVMQM(elements.Element):
 		if self.vncpid:
 			process.kill(self.vncpid)
 			del self.vncpid
+		if self.websocket_pid:
+			process.kill(self.websocket_pid)
+			del self.websocket_pid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
 		self.setState(ST_PREPARED, True)
 		
@@ -531,6 +543,7 @@ def register(): #pragma: no cover
 
 if not config.MAINTENANCE:
 	tcpserverVersion = cmd.getDpkgVersion("ucspi-tcp")
+	websockifyVersion = cmd.getDpkgVersion("websockify")
 	socatVersion = cmd.getDpkgVersion("socat")
 	qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
 	register()

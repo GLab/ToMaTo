@@ -9,6 +9,6 @@ Package: tomato-host-proxmox
 Architecture: all
 Depends: ${misc:Depends}, tomato-hostmanager, pve-qemu-kvm, vzctl, vzdump,
  bridge-utils, iproute, tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm,
- tcpslice, tomato-repy (>=0.5), vtun
+ tcpslice, tomato-repy (>=0.5), vtun, websockify
 Description: Meta package to install tomato on proxmox hosts
  Meta package to install tomato on proxmox hosts
