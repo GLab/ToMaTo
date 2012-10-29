@@ -13,7 +13,6 @@ docs_build
 *.json
 *.pem
 *.torrent
-*.tar.gz
 *.qcow2
 
 web-old
