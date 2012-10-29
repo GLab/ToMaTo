@@ -253,6 +253,7 @@ var ChoiceElement = FormElement.extend({
 var Window = Class.extend({
 	init: function(options) {
 		this.options = options;
+		this.options.position = options.position || 'center center';
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
 			draggable: false,
@@ -269,6 +270,8 @@ var Window = Class.extend({
 			buttons: options.buttons || {}
 		});
 		this.setPosition(options.position);
+		if (options.content) this.div.append(options.content);
+		if (options.autoShow) this.show();
 	},
 	setTitle: function(title) {
 		this.div.dialog("option", "title", title);
@@ -1206,6 +1209,24 @@ var Element = Component.extend({
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 	},
+	openVNCurl: function() {
+		var host = this.data.attrs.host;
+		var port = this.data.attrs.vncport;
+		var passwd = this.data.attrs.vncpassword;
+		var link = "vnc://:" + passwd + "@" + host + ":" + port;
+	    window.open(link, '_self');
+	},
+	showVNCinfo: function() {
+		var host = this.data.attrs.host;
+		var port = this.data.attrs.vncport;
+		var passwd = this.data.attrs.vncpassword;
+		var link = "vnc://:" + passwd + "@" + host + ":" + port;
+ 		var win = new Window({
+ 			title: "VNC info",
+ 			content: '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Password: <pre>"+passwd+"</pre></p>",
+ 			autoShow: true
+ 		});
+	},
 	consoleAvailable: function() {
 		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
 	},
@@ -1262,60 +1283,74 @@ $.contextMenu({
 	selector: '.tomato.element',
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
-		return {
+		var menu = {
 			callback: function(key, options) {},
 			items: {
 				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
-				"connect": {
+				"connect": obj.isConnectable() ? {
 					name:'Connect',
 					icon:'connect',
 					callback: function(){
 						obj.editor.onElementConnectTo(obj);
-					},
-					disabled: !obj.isConnectable()
-				},
+					}
+				} : null,
 				"sep1": "---",
-				"start": {
+				"start": obj.actionAvailable("start") ? {
 					name:'Start',
 					icon:'start',
 					callback: function(){
 						obj.action_start();
-					},
-					disabled: !obj.actionAvailable("start")
-				},
-				"stop": {
+					}
+				} : null,
+				"stop": obj.actionAvailable("stop") ? {
 					name:"Stop",
 					icon:"stop",
 					callback: function(){
 						obj.action_stop();
-					},
-					disabled: !obj.actionAvailable("stop")
-				},
-				"prepare": {
+					}
+				} : null,
+				"prepare": obj.actionAvailable("prepare") ? {
 					name:"Prepare",
 					icon:"prepare",
 					callback: function(){
 						obj.action_prepare();
-					},
-					disabled: !obj.actionAvailable("prepare")
-				},
-				"destroy": {
+					}
+				} : null,
+				"destroy": obj.actionAvailable("destroy") ? {
 					name:"Destroy",
 					icon:"destroy",
 					callback: function(){
 						obj.action_destroy();
-					},
-					disabled: !obj.actionAvailable("destroy")
-				},
+					}
+				} : null,
 				"sep2": "---",
-				"console": {
+				"console": obj.consoleAvailable() ? {
 					name:"Console",
 					icon:"console",
-					callback: function(){
-						obj.openConsole();
-					},
-					disabled: !obj.consoleAvailable()
-				},
+					items: {
+						"console_info": {
+							name:"VNC Information",
+							icon:"info",
+							callback: function(){
+								obj.showVNCinfo();
+							}
+						},
+						"console_link": {
+							name:"vnc:// link",
+							icon:"console",
+							callback: function(){
+								obj.openVNCurl();
+							}
+						},
+						"console_java": {
+							name: "Java applet",
+							icon: "java-applet",
+							callback: function(){
+								obj.openConsole();
+							}
+						}, 
+					}
+				} : null,
 				"usage": {
 					name:"Usage",
 					icon:"usage",
@@ -1339,16 +1374,19 @@ $.contextMenu({
 					}
 				},
 				"sep4": "---",
-				"remove": {
+				"remove": obj.isRemovable() ? {
 					name:'Delete',
 					icon:'remove',
 					callback: function(){
 						obj.remove(null, true);
-					},
-					disabled: !obj.isRemovable()
-				}
+					}
+				} : null
 			}
+		};
+		for (var name in menu.items) {
+			if (! menu.items[name]) delete menu.items[name]; 
 		}
+		return menu;
 	}
 });
 

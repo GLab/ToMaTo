@@ -28,6 +28,7 @@ def kill(pid, force=False):
 		pass
 	
 def killTree(pid, force=False, tree=None):
+	pid = int(pid)
 	tree = tree or getTree()
 	kill(pid, force)
 	if pid in tree:
@@ -38,9 +39,9 @@ def getTree():
 	tree = {}
 	for pid in [int(pid) for pid in os.listdir('/proc') if pid.isdigit()]:
 		try:
-			with open('/proc/%d/stat') as fp:
+			with open('/proc/%d/stat' % pid) as fp:
 				stat = fp.readline()
-				parent = stat.split()[3]
+				parent = int(stat.split()[3])
 			tree[parent] = tree.get(parent, []) + [pid]
 		except:
 			pass #process terminated during scan

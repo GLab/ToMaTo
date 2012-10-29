@@ -159,7 +159,7 @@ class Repy(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"args": [], "cpus": 0.25, "ram": 25, "bandwidth": 1000000}
 	DOC = DOC
-	__doc__ = DOC
+	__doc__ = DOC #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_repy"
@@ -174,6 +174,18 @@ class Repy(elements.Element):
 		self.vncpassword = cmd.randomPassword()
 		self.modify_template("") #use default template
 		self._setProfile()
+
+	def _getState(self):
+		if self.pid and process.exists(self.pid):
+			return ST_STARTED
+		return ST_PREPARED
+		
+	def _checkState(self):
+		savedState = self.state
+		realState = self._getState()
+		if savedState != realState:
+			self.setState(realState, True) #pragma: no cover
+		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
 
 	def _interfaceName(self, name):
 		return "repy%d%s" % (self.id, name)
@@ -276,8 +288,9 @@ class Repy(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
+		self._checkState()
 		usage.diskspace = path.diskspace(self.dataPath())
-		if self.pid:
+		if self.state == ST_STARTED:
 			usage.memory = process.memory(self.pid)
 			cputime = process.cputime(self.pid)
 			if self.vncpid:
@@ -327,7 +340,7 @@ class Repy_Interface(elements.Element):
 	CAP_PARENT = [Repy.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
-	__doc__ = DOC_IFACE
+	__doc__ = DOC_IFACE #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_repy_interface"

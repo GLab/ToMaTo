@@ -137,7 +137,7 @@ class Host(attributes.Mixin, models.Model):
         caps = self._capabilities()
         self.elementTypes = caps["elements"]
         self.connectionTypes = caps["connections"]
-        self.componentErrors = 0
+        self.componentErrors = max(0, self.componentErrors-1)
         self.save()
         logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)        
         logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)        
@@ -296,7 +296,7 @@ class Host(attributes.Mixin, models.Model):
         if not self.enabled:
             problems.append("Manually disabled")
         hi = self.hostInfo
-        if time.time() - self.hostInfoTimestamp > 3 * config.HOST_UPDATE_INTERVAL:
+        if time.time() - self.hostInfoTimestamp > 2 * config.HOST_UPDATE_INTERVAL + 300:
             problems.append("Old info age, host unreachable?")
         if not hi:
             problems.append("Node info is missing")

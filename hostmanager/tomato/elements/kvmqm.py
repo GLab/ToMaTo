@@ -184,7 +184,7 @@ class KVMQM(elements.Element):
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
 	DOC = DOC
-	__doc__ = DOC
+	__doc__ = DOC #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_kvmqm"
@@ -418,6 +418,7 @@ class KVMQM(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
+		self._checkState()
 		if self.state == ST_CREATED:
 			return
 		if self.state == ST_STARTED:
@@ -479,7 +480,7 @@ class KVMQM_Interface(elements.Element):
 	CAP_PARENT = [KVMQM.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
-	__doc__ = DOC_IFACE
+	__doc__ = DOC_IFACE #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_kvm_interface"

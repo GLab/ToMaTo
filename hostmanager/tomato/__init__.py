@@ -81,13 +81,18 @@ def reload_(*args):
 	logging.openDefault(config.LOG_FILE)
 
 def stop(*args):
-	print >>sys.stderr, "Shutting down..."
-	rpcserver.stop()
-	fileserver.stop()
-	accounting.task.stop() #@UndefinedVariable
-	process.kill(_btClient)
-	logging.closeDefault()
-	stopped.set()
+	try:
+		print >>sys.stderr, "Shutting down..."
+		rpcserver.stop()
+		fileserver.stop()
+		accounting.task.stop() #@UndefinedVariable
+		process.kill(_btClient)
+		logging.closeDefault()
+		stopped.set()
+	except:
+		import traceback
+		traceback.print_exc()
+		sys.exit(0)
 
 def run():
 	start()
