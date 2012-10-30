@@ -408,12 +408,15 @@ class OpenVZ(elements.Element):
                 con.connectInterface(self._interfaceName(interface.name))
             interface._configure() #configure after connecting to allow dhcp, etc.
         self._setGateways()
+        net.freeTcpPort(self.vncport)
         self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
         fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
         if not self.websocket_port:
             self.websocket_port = self.getResource("port")
         if websockifyVersion:
+            net.freeTcpPort(self.websocket_port)
             self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport])
+            fault.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
                 
     def action_stop(self):
         self._checkState()

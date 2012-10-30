@@ -505,7 +505,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode", "debug_mode"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -1110,13 +1110,13 @@ $.contextMenu({
 						obj.showConfigWindow();
 					}
 				},
-				"debug": {
+				"debug": obj.editor.options.debug_mode ? {
 					name:'Debug',
 					icon:'debug',
 					callback: function(){
 						obj.showDebugInfo();
 					}
-				},
+				} : null,
 				"remove": {
 					name:'Delete',
 					icon:'remove',
@@ -1148,7 +1148,9 @@ var Element = Component.extend({
 		return (!this.editor.options.fixed_pos) && this.editor.mode == Mode.select;
 	},
 	isConnectable: function() {
-		return true;
+		if (this.connection) return false;
+		if (! this.data.cap_children) return false;
+		return this.data.cap_children.length > 0;
 	},
 	isRemovable: function() {
 		return this.actionAvailable("(remove)");
@@ -1298,7 +1300,6 @@ $.contextMenu({
 						obj.editor.onElementConnectTo(obj);
 					}
 				} : null,
-				"sep1": "---",
 				"start": obj.actionAvailable("start") ? {
 					name:'Start',
 					icon:'start',
@@ -1377,13 +1378,13 @@ $.contextMenu({
 						obj.showConfigWindow();
 					}
 				},
-				"debug": {
+				"debug": obj.editor.options.debug_mode ? {
 					name:'Debug',
 					icon:'debug',
 					callback: function(){
 						obj.showDebugInfo();
 					}
-				},
+				} : null,
 				"sep4": "---",
 				"remove": obj.isRemovable() ? {
 					name:'Delete',
@@ -2201,9 +2202,14 @@ var Editor = Class.extend({
 		        name:"beginner_mode",
 		        label:"Beginner mode",
 		        tooltip:"Displays help messages for all elements"
+		    }),
+		    debug_mode: this.optionMenuItem({
+		        name:"debug_mode",
+		        label:"Debug mode",
+		        tooltip:"Displays debug messages"
 		    })
 		};
-		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode]);
+		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode, this.optionCheckboxes.debug_mode]);
 
 		this.menu.paint();
 	}

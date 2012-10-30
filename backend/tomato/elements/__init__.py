@@ -399,6 +399,13 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		if self.DIRECT_ACTIONS and mel:
 			actions |= set(mel.getAllowedActions()) - set(self.DIRECT_ACTIONS_EXCLUDE)
 		return list(actions) 
+	
+	def capChildren(self):
+		children = []
+		for type_, states in self.CAP_CHILDREN.iteritems():
+			if self.state in states:
+				children.append(type_)
+		return children 
 			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
@@ -413,7 +420,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 			"cap_actions": self.capActions(),
-			"cap_attrs": self.capAttrs()
+			"cap_attrs": self.capAttrs(),
+			"cap_children": self.capChildren()
 		}
 		mel = self.mainElement()
 		if mel:

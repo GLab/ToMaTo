@@ -88,7 +88,6 @@ project_url="http://dswd.github.com/ToMaTo/%s"
 help_url="http://github.com/dswd/ToMaTo/wiki/%s"
 ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
 map="generic"
-novnc_url="http://kanaka.github.com/noVNC/noVNC/vnc_auto.html?host=%(host)s&port=%(port)d&password=%(password)s"
 
 try:
 	import sys

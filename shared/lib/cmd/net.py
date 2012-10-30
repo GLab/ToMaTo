@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from .. import util
 from . import run, CommandError
+from process import killTree
 import path
 import os
 
@@ -68,11 +70,24 @@ def trafficInfo(ifname):
 	return (rx, tx)
 
 def tcpPortUsed(port):
+	return bool(tcpPortUsers(port))
+
+def tcpPortUsers(port):
 	try:
-		run(["lsof", "-t", "-i", "TCP:%d" % port])
-		return True
+		res = run(["lsof", "-ti", "TCP:%d" % port])
+		return [int(line.strip()) for line in res.splitlines()]
 	except:
-		return False
+		return []
+	
+def freeTcpPort(port):
+	pids = tcpPortUsers(port)
+	for pid in pids:
+		killTree(pid)
+	if not util.waitFor(lambda :not tcpPortUsed(port)):
+		pids = tcpPortUsers(port)
+		for pid in pids:
+			killTree(pid, force=True)
+	
 
 def _brifPath(brname):
 	return os.path.join(_ifacePath(brname), "brif")

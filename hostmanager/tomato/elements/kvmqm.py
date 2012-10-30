@@ -386,13 +386,17 @@ class KVMQM(elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
-		util.waitFor(lambda :os.path.exists(self._controlPath()))
+		fault.check(util.waitFor(lambda :os.path.exists(self._controlPath())), "Control path does not exist")
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
+		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
+		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
+			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport])
+			fault.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
 
 	def action_stop(self):
 		self._checkState()

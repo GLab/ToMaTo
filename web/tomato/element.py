@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.shortcuts import render_to_response, redirect
-from settings import novnc_url
+from django.shortcuts import render_to_response
 
 import json
 
@@ -37,5 +36,5 @@ def console(api, request, id): #@ReservedAssignment
 @wrap_rpc
 def console_novnc(api, request, id): #@ReservedAssignment
 	info=api.element_info(id)
-	return redirect(novnc_url % {"host": info["attrs"]["host"], "port": info["attrs"]["websocket_port"], "password": info["attrs"]["vncpassword"]})
-	
+	top=api.topology_info(info["topology"])
+	return render_to_response("element/console_novnc.html", {'info': info, 'top': top})
