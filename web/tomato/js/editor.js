@@ -1209,6 +1209,9 @@ var Element = Component.extend({
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
 	},
+	openConsoleNoVNC: function() {
+	    window.open('../element/'+this.id+'/console_novnc', '_blank', "innerWidth=760,innerheight=440,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+	},
 	openVNCurl: function() {
 		var host = this.data.attrs.host;
 		var port = this.data.attrs.vncport;
@@ -1219,11 +1222,12 @@ var Element = Component.extend({
 	showVNCinfo: function() {
 		var host = this.data.attrs.host;
 		var port = this.data.attrs.vncport;
+		var wport = this.data.attrs.websocket_port;
 		var passwd = this.data.attrs.vncpassword;
 		var link = "vnc://:" + passwd + "@" + host + ":" + port;
  		var win = new Window({
  			title: "VNC info",
- 			content: '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Password: <pre>"+passwd+"</pre></p>",
+ 			content: '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Websocket-Port: "+wport+"</p><p>Password: <pre>"+passwd+"</pre></p>",
  			autoShow: true
  		});
 	},
@@ -1340,6 +1344,13 @@ $.contextMenu({
 							icon:"console",
 							callback: function(){
 								obj.openVNCurl();
+							}
+						},
+						"console_novnc": {
+							name:"NoVNC (HTML5+JS)",
+							icon:"novnc",
+							callback: function(){
+								obj.openConsoleNoVNC();
 							}
 						},
 						"console_java": {

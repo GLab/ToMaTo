@@ -40,6 +40,7 @@ urlpatterns = patterns('',
 	(r'^topology/import$', 'tomato.topology.import_form'),
 	(r'^element/(?P<id>\d+)/usage$', 'tomato.element.usage'),
 	(r'^element/(?P<id>\d+)/console$', 'tomato.element.console'),
+	(r'^element/(?P<id>\d+)/console_novnc$', 'tomato.element.console_novnc'),
 	(r'^host/$', 'tomato.host.index'),
 	(r'^host/add$', 'tomato.host.add'), #adapt path in input (buttons) in templates/admin/host/index.html
 	(r'^host/edit*$', 'tomato.host.edit'), #adapt path in templates/admin/host/index.html
