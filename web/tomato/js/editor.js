@@ -712,6 +712,9 @@ var Topology = Class.extend({
 			this.modify_value("name", name);
 			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
 		}
+	},
+	name: function() {
+		return this.data.attrs.name;
 	}
 });
 
@@ -723,7 +726,7 @@ $.contextMenu({
 			callback: function(key, options) {},
 			items: {
 				"header": {
-					html:'<span>Topology</span>',
+					html:'<span>Topology "'+obj.name()+'"</span>',
 					type:"html"
 				},
 				"start": {
@@ -911,11 +914,6 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 	}
 		});
-	},
-	name: function() {
-		var name = this.data.attrs.name;
-		if (this.parent) name = this.parent.name() + "." + name;
-		return name;
 	}
 });
 
@@ -996,6 +994,12 @@ var Connection = Component.extend({
 		this.elements = [];
 		this.component_type = "connection";
 	},
+	fromElement: function() {
+		return this.elements[0].id < this.elements[1].id ? this.elements[0] : this.elements[1];
+	},
+	toElement: function() {
+		return this.elements[0].id > this.elements[1].id ? this.elements[0] : this.elements[1];
+	},
 	otherElement: function(me) {
 		for (var i=0; i<this.elements.length; i++) if (this.elements[i].id != me.id) return this.elements[i];
 	},
@@ -1011,8 +1015,8 @@ var Connection = Component.extend({
 		}
 	},
 	getPath: function() {
-		var pos1 = this.elements[0].getAbsPos();
-		var pos2 = this.elements[1].getAbsPos();
+		var pos1 = this.fromElement().getAbsPos();
+		var pos2 = this.toElement().getAbsPos();
 		var path = "M"+pos1.x+" "+pos1.y+"L"+pos2.x+" "+pos2.y;
 		//TODO: use bezier loop for very short connections
 		return path;
@@ -1021,11 +1025,9 @@ var Connection = Component.extend({
 		return this.getCenter();
 	},
 	getAngle: function() {
-		var pos1 = this.elements[0].getAbsPos();
-		var pos2 = this.elements[1].getAbsPos();
-		var angle = Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
-		if (this.elements[0].id > this.elements[1].id) return angle;
-		else return angle + 180;
+		var pos1 = this.toElement().getAbsPos();
+		var pos2 = this.fromElement().getAbsPos();
+		return Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
 	},
 	paint: function() {
 		this.path = this.canvas.path(this.getPath());
@@ -1106,6 +1108,9 @@ var Connection = Component.extend({
 		 	}
 		});
 		for (var i=0; i<t.elements.length; i++) t.elements[i].remove();
+	},
+	name: function() {
+		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
 	}
 });
 
@@ -1113,11 +1118,11 @@ $.contextMenu({
 	selector: '.tomato.connection',
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
-		return {
+		var menu = {
 			callback: function(key, options) {},
 			items: {
 				"header": {
-					html:'<span>Connection '+obj.id+'</span>', type:"html"
+					html:'<span>Connection '+obj.name()+'</span>', type:"html"
 				},
 				"configure": {
 					name:'Configure',
@@ -1141,7 +1146,11 @@ $.contextMenu({
 					}
 				}
 			}
+		};
+		for (var name in menu.items) {
+			if (! menu.items[name]) delete menu.items[name]; 
 		}
+		return menu;
 	}
 });
 
@@ -1298,6 +1307,11 @@ var Element = Component.extend({
 		for (var i=0; i<this.children.length; i++) this.children[i].remove(waiter);
 		if (this.connection) this.connection.remove();
 		waiter(this);
+	},
+	name: function() {
+		var name = this.data.attrs.name;
+		if (this.parent) name = this.parent.name() + "." + name;
+		return name;
 	}
 });
 
@@ -1308,7 +1322,7 @@ $.contextMenu({
 		var menu = {
 			callback: function(key, options) {},
 			items: {
-				"header": {html:'<span>Element '+obj.data.attrs.name+'</span>', type:"html"},
+				"header": {html:'<span>Element '+obj.name()+'</span>', type:"html"},
 				"connect": obj.isConnectable() ? {
 					name:'Connect',
 					icon:'connect',
