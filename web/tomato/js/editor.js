@@ -410,7 +410,12 @@ var Workspace = Class.extend({
 	onClicked: function(evt) {
 		switch (this.editor.mode) {
 			case Mode.position:
-				var pos = this.canvas.relPos({x: evt.offsetX, y: evt.offsetY});
+				var pos;
+				if (evt.offsetX) pos = this.canvas.relPos({x: evt.offsetX, y: evt.offsetY});
+				else {
+					var objPos = this.container.offset();
+					pos = this.canvas.relPos({x: evt.pageX - objPos.left, y: evt.pageY - objPos.top});
+				}
 				this.editor.positionElement(pos);
 				break;
 			default:
