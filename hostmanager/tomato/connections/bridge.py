@@ -124,7 +124,7 @@ class Bridge(connections.Connection):
 	DEFAULT_ATTRS = {"bandwidth_to": 10000, "bandwidth_from": 10000}
 	CAP_CON_CONCEPTS = [(connections.CONCEPT_INTERFACE, connections.CONCEPT_INTERFACE)]
 	DOC = DOC
-	__doc__ = DOC
+	__doc__ = DOC #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_bridge"
@@ -186,9 +186,8 @@ class Bridge(connections.Connection):
 		ifA, ifB = elA.interfaceName(), elB.interfaceName()
 		if not ifA or not ifB:
 			return
-		attrsA = dict([(k.replace("_from", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_from")])
-		attrsB = dict([(k.replace("_to", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_to")])
-		#FIXME: check if directions are correct
+		attrsA = dict([(k.replace("_to", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_to")])
+		attrsB = dict([(k.replace("_from", ""), v) for k, v in self.attrs.iteritems() if k.endswith("_from")])
 		tc.setLinkEmulation(ifA, **attrsA)
 		tc.setLinkEmulation(ifB, **attrsB)
 	

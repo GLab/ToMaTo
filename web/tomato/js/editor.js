@@ -188,7 +188,7 @@ var TextElement = FormElement.extend({
 		this.element.change(function() {
 			t.onChanged(this.value);
 		});
-		if (options.value) this.setValue(options.value);
+		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
 		return this.element[0].value;
@@ -211,7 +211,7 @@ var CheckboxElement = FormElement.extend({
 		this.element.change(function() {
 			t.onChanged(this.value);
 		});
-		if (options.value) this.setValue(options.value);
+		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
 		return this.element[0].checked;
@@ -232,7 +232,7 @@ var ChoiceElement = FormElement.extend({
 		});
 		this.choices = options.choices || {};
 		this.setChoices(this.choices);
-		if (options.value) this.setValue(options.value);
+		if (options.value != null) this.setValue(options.value);
 	},
 	setChoices: function(choices) {
 		this.element.find("option").remove();
@@ -911,6 +911,11 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 	}
 		});
+	},
+	name: function() {
+		var name = this.data.attrs.name;
+		if (this.parent) name = this.parent.name() + "." + name;
+		return name;
 	}
 });
 
@@ -939,24 +944,33 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
     	canvas1.path(_path2).transform(_transform1).attr(_attrs);
     	canvas2.path(_path1).transform(_transform2);
     	canvas2.path(_path2).transform(_transform2).attr(_attrs);
+    	var name1 = con.elements[0].name();
+    	var name2 = con.elements[1].name();
+    	if (con.elements[0].id > con.elements[1].id) {
+    		var t = name1;
+    		name1 = name2;
+    		name2 = t;
+    	}
+    	var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
+    	var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
 		this.table.append($('<tr/>')
 				.append($("<th>Direction</th>"))
-				.append($('<td align="middle"/>').append(dir1))
-				.append($('<td align="middle"/>').append(dir2))
+				.append($('<td align="middle"/>').append(fromDir).append(dir1))
+				.append($('<td align="middle"/>').append(toDir).append(dir2))
 				.append($('<td>&nbsp;</td>'))
 		);
 		//simple fields
 		var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 		for (var i = 0; i < order.length; i++) {
 			var name = order[i];
-			var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
-			this.elements.push(el_to);
 			var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
 			this.elements.push(el_from);
+			var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
+			this.elements.push(el_to);
 			this.table.append($("<tr/>")
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].desc))
-					.append($("<td/>").append(el_to.getElement()))
 					.append($("<td/>").append(el_from.getElement()))
+					.append($("<td/>").append(el_to.getElement()))
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].unit))
 			);
 		}
@@ -1009,7 +1023,9 @@ var Connection = Component.extend({
 	getAngle: function() {
 		var pos1 = this.elements[0].getAbsPos();
 		var pos2 = this.elements[1].getAbsPos();
-		return Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
+		var angle = Raphael.angle(pos1.x, pos1.y, pos2.x, pos2.y);
+		if (this.elements[0].id > this.elements[1].id) return angle;
+		else return angle + 180;
 	},
 	paint: function() {
 		this.path = this.canvas.path(this.getPath());

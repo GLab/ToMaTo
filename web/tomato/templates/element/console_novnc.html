@@ -91,8 +91,6 @@
             $D('sendCtrlAltDelButton').style.display = "inline";
             $D('sendCtrlAltDelButton').onclick = sendCtrlAltDel;
 
-            document.title = unescape(WebUtil.getQueryVar('title', 'noVNC'));
-
             rfb = new RFB({'target':       $D('noVNC_canvas'),
                            'encrypt':      WebUtil.getQueryVar('encrypt',
                                     (window.location.protocol === "https:")),

@@ -261,12 +261,13 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
 					
 	def info(self):
+		els = [el.id for el in self.elements.all()]
 		return {
 			"id": self.id,
 			"type": self.type,
 			"state": self.state,
 			"attrs": self.attrs.copy(),
-			"elements": [el.id for el in self.getElements()],
+			"elements": sorted(els), #sort elements so that first one is from and second one is to
 		}
 		
 	def getResource(self, type_):

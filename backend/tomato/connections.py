@@ -95,8 +95,14 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		caps = host.getConnectionCapabilities(self.remoteType())
 		allowed = caps["attrs"].keys() if caps else []
 		attrs = {}
+		reversed = not self._correctDirection() #@ReservedAssignment
 		for key, value in self.attrs.iteritems():
 			if key in allowed:
+				if reversed:
+					if key.endswith("_from"):
+						key = key[:-5] + "_to"
+					if key.endswith("_to"):
+						key = key[:-3] + "_from"
 				attrs[key] = value
 		return attrs
 
@@ -241,7 +247,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		self.delete()
 			
 	def getElements(self):
-		return [el.upcast() for el in self.elements.all()]
+		# sort elements so el1->el2 is from and el2->el1 is to
+		return sorted([el.upcast() for el in self.elements.all()], key=lambda el: el.id)
 			
 	def getHostElements(self):
 		return filter(bool, [self.connectionElement1, self.connectionElement2])
@@ -252,6 +259,21 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def onError(self, exc):
 		pass
 
+	def _correctDirection(self):
+		"""
+		Find out whether the directions are correct
+		"""
+		el1 = self.getElements()[0].mainElement()
+		fault.check(el1, "Can not check directions on unprepared element")
+		id1 = el1.num
+		if self.connectionElement1:
+			id2 = self.connectionElement1.num
+		else:
+			el2 = self.getElements()[1].mainElement()
+			fault.check(el2, "Can not check directions on unprepared element")
+			id2 = el2.num
+		return id1 < id2
+		
 	def _start(self):
 		el1, el2 = self.getElements()
 		el1, el2 = el1.mainElement(), el2.mainElement()
@@ -338,7 +360,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			"id": self.id,
 			"state": self.state,
 			"attrs": self.attrs.copy(),
-			"elements": [el.id for el in self.getElements()],
+			"elements": sorted([el.id for el in self.elements.all()]), #sort elements so that first is from and second is to
 			"cap_attrs": self.capAttrs()
 		}
 		
