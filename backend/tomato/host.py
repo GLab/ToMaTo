@@ -335,7 +335,7 @@ class Host(attributes.Mixin, models.Model):
             return -1
         res = hi["resources"]; cpus = res["cpus_present"]; disks = res["diskspace"]
         load = []
-        load.append(res["loadavg"][1] / cpus["count"])
+        load.append(res["loadavg"][2] / cpus["count"])
         load.append(float(res["memory"]["used"]) / int(res["memory"]["total"]))
         load.append(float(disks["data"]["used"]) / int(disks["data"]["total"]))
         return min(max(load), 1.0)
@@ -651,15 +651,18 @@ def getConnectionCapabilities(type_):
     return caps
 
 @db.commit_after
-def synchronize():
+def synchronizeHost(host):
     #TODO: implement more than resource sync
+    try:
+        host.update()
+        host.synchronizeResources()
+    except:
+        logging.logException(host=host.address)
+        print "Error updating information from %s" % host
+    
+def synchronize():
     for host in getAll():
-        try:
-            host.update()
-            host.synchronizeResources()
-        except:
-            logging.logException(host=host.address)
-            print "Error updating information from %s" % host
+        util.start_thread(synchronizeHost, host)
 
 task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize) #every min
 

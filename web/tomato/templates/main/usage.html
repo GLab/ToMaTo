@@ -96,7 +96,7 @@ $(function () {
             tooltip: {
                 formatter: function() {
                         return '<b>'+ this.series.name +'</b><br/>'+
-                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatTime][this.series.yAxis.options.index](this.y) + '</b>';
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatTime, formatSize][this.series.yAxis.options.index](this.y) + '</b>';
                 }
             },
             series: [{ name: 'Memory', data: memory["5minutes"], yAxis: 0 },

@@ -10,6 +10,10 @@ def mult(value, arg):
   return float(value or "0.0") * arg
   
 @register.filter
+def div(value, arg):
+  return float(value or "0.0") / arg
+
+@register.filter
 def minus(value, arg):
   return float(value or "0.0") - float(arg or "0.0")
 

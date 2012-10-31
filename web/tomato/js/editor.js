@@ -826,6 +826,9 @@ var Component = Class.extend({
 		 	}
 		});
 	},
+	showUsage: function() {
+  		window.open('../'+this.component_type+'/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+	},
 	configWindowSettings: function() {
 		return {
 			order: ["name"],
@@ -1124,6 +1127,13 @@ $.contextMenu({
 				"header": {
 					html:'<span>Connection '+obj.name()+'</span>', type:"html"
 				},
+				"usage": {
+					name:"Usage",
+					icon:"usage",
+					callback: function(){
+						obj.showUsage();
+					}
+				},
 				"configure": {
 					name:'Configure',
 					icon:'configure',
@@ -1229,9 +1239,6 @@ var Element = Component.extend({
 		var grid = this.editor.options.grid_size;
 		if (this.editor.options.snap_to_grid) pos = {x: Math.round(pos.x/grid)*grid, y: Math.round(pos.y/grid)*grid};
 		this.setPos(this.canvas.relPos(pos));
-	},
-	showUsage: function() {
-  		window.open('../element/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
 	},
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");

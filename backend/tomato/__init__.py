@@ -88,8 +88,14 @@ def reload_(*args):
 	#stopRPCserver()
 	#startRPCserver()
 
+def forceStop(*args):
+	print >>sys.stderr, "Force stopping..."
+	sys.exit(1)
+
 def stop(*args):
 	print >>sys.stderr, "Shutting down..."
+	signal.alarm(30)
+	signal.signal(signal.SIGALRM, forceStop)
 	rpcserver.stop()
 	host.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
