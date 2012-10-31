@@ -192,8 +192,6 @@ class Bridge(connections.Connection):
 		tc.setLinkEmulation(ifB, **attrsB)
 	
 	def _stopEmulation(self):
-		if not self.emulation:
-			return
 		els = self.getElements()
 		if len(els) != 2:
 			return
