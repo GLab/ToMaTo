@@ -59,11 +59,11 @@ def add(api, request):
         else:
             form = HostForm()
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
-            return render_to_response("admin/host/form.html", {'form': form, 'action':request.path,"edit":False})
+            return render_to_response("admin/host/form.html", {'form': form, "edit":False})
     else:
         form = HostForm()
         form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
-        return render_to_response("admin/host/form.html", {'form': form, 'action':request.path,"edit":False})
+        return render_to_response("admin/host/form.html", {'form': form, "edit":False})
    
 @wrap_rpc
 def remove(api, request):
@@ -77,12 +77,12 @@ def remove(api, request):
             address=request.GET['address']
             form = RemoveHostForm()
             form.fields["address"].initial = address
-            return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+            return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
     else:
         address=request.GET['address']
         form = RemoveHostForm()
         form.fields["address"].initial = address
-        return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+        return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
 
 @wrap_rpc
 def edit(api, request):
@@ -93,7 +93,7 @@ def edit(api, request):
             api.host_modify(formData["address"],{'site':formData["site"]})
             return render_to_response("admin/host/edit_success.html", {'address': formData["address"]})
         else:
-            return render_to_response("admin/host/form.html", {'address': address, 'form': form, 'action':request.path, "edit":True})
+            return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
     else:
         address = request.GET['address']
         if address:
@@ -102,6 +102,6 @@ def edit(api, request):
             form.fields["address"].widget=forms.TextInput(attrs={'disabled':'disabled'})
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             form.fields["site"].initial = hostinfo["site"]
-            return render_to_response("admin/host/form.html", {'address': address, 'form': form, 'action':request.path, "edit":True})
+            return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

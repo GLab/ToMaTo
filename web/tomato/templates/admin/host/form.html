@@ -6,11 +6,12 @@
 
 {% if edit %}
 <h1>Edit host {{address}}</h1>
+<form action="{%url host.edit%}" method="post">
 {% else %}
 <h1>Add host</h1>
+<form action="{%url host.add%}" method="post">
 {% endif %}
 
-<form action="{{action}}" method="post">
 	{{form.as_p}}
 	
 	{% if edit %}
