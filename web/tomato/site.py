@@ -65,12 +65,17 @@ def remove(api, request):
             name = form.cleaned_data["name"]
             api.site_remove(name)
             return render_to_response("admin/site/remove_success.html", {'name': name})
-    else:
-        name = request.GET['name']
-        if name:
+        else:
+            name = request.POST['name']
             form = RemoveSiteForm()
             form.fields["name"].initial = name
             return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
+    
+    else:
+        name = request.GET['name']
+        form = RemoveSiteForm()
+        form.fields["name"].initial = name
+        return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form, 'action':request.path})
     
 @wrap_rpc
 def edit(api, request):
@@ -80,9 +85,15 @@ def edit(api, request):
             formData = form.cleaned_data
             api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'name': formData["name"]})
+        else:
+            form.fields["name"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            return render_to_response("admin/site/form.html", {'name': name, 'form': form, 'action':request.path, "edit":True})
+            
     else:
         name = request.GET['name']
         if name:
             form = SiteForm(api.site_info(name))
             form.fields["name"].widget=forms.TextInput(attrs={'disabled':'disabled'})
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, 'action':request.path, "edit":True})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
