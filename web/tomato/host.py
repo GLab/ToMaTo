@@ -93,13 +93,15 @@ def edit(api, request):
             api.host_modify(formData["address"],{'site':formData["site"]})
             return render_to_response("admin/host/edit_success.html", {'address': formData["address"]})
         else:
+            address="ERROR"
+            form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
     else:
         address = request.GET['address']
         if address:
             hostinfo=api.host_info(address)
             form = HostForm(hostinfo)
-            form.fields["address"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             form.fields["site"].initial = hostinfo["site"]
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})

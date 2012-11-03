@@ -86,14 +86,15 @@ def edit(api, request):
             api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'name': formData["name"]})
         else:
-            form.fields["name"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            name="ERROR"
+            form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
             
     else:
         name = request.GET['name']
         if name:
             form = SiteForm(api.site_info(name))
-            form.fields["name"].widget=forms.TextInput(attrs={'disabled':'disabled'})
+            form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
