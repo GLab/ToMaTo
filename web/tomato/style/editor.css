@@ -63,8 +63,16 @@
 	cursor: hand;
 }
 
+.tomato.workspace.mode_connect .tomato, .tomato.workspace.mode_connect_once .tomato {
+	cursor: url(../img/cursor_invalid.png);
+}
+
 .tomato.workspace.mode_connect .tomato.connectable, .tomato.workspace.mode_connect_once .tomato.connectable {
 	cursor: url(../img/cursor_connect.png);
+}
+
+.tomato.workspace.mode_remove .tomato {
+	cursor: url(../img/cursor_invalid.png);
 }
 
 .tomato.workspace.mode_remove .tomato.removable {

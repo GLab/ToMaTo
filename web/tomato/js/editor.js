@@ -163,6 +163,9 @@ var FormElement = Class.extend({
 	getName: function() {
 		return this.name;
 	},
+	setEnabled: function(value) {
+		this.element.attr({disabled: !value});
+	},
 	onChanged: function(value) {
 		if (this.isValid(value)) {
 			this.element.removeClass("invalid");
@@ -209,7 +212,7 @@ var CheckboxElement = FormElement.extend({
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
 		this.element.change(function() {
-			t.onChanged(this.value);
+			t.onChanged(this.checked);
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
@@ -929,9 +932,14 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		this._super(options);
 		this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
+		this.emulation_elements = [];
+		var t = this;
 		var el = new CheckboxElement({
 			name: "emulation",
-			value: con.data.attrs.emulation
+			value: con.data.attrs.emulation,
+			callback: function(el, value) {
+				t.updateEmulationStatus(value);
+			}
 		});
 		this.elements.push(el);
 		this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
@@ -971,8 +979,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var name = order[i];
 			var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
 			this.elements.push(el_from);
+			this.emulation_elements.push(el_from);
 			var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
 			this.elements.push(el_to);
+			this.emulation_elements.push(el_to);
 			this.table.append($("<tr/>")
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].desc))
 					.append($("<td/>").append(el_from.getElement()))
@@ -980,18 +990,40 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].unit))
 			);
 		}
+		this.updateEmulationStatus(con.data.attrs.emulation);
+		
 		this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));		
 		this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
-		var order = ["capturing", "capture_mode", "capture_filter"];
+		this.capturing_elements = [];
+		var el = new CheckboxElement({
+			name: "capturing",
+			value: con.data.attrs.capturing,
+			callback: function(el, value) {
+				t.updateCapturingStatus(value);
+			}
+		});
+		this.elements.push(el);
+		this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+		var order = ["capture_mode", "capture_filter"];
 		for (var i = 0; i < order.length; i++) {
 			var name = order[i];
 			var el = this.autoElement(con.data.cap_attrs[name], con.data.attrs[name])
+			this.capturing_elements.push(el);
 			this.elements.push(el);
 			this.table.append($("<tr/>")
 					.append($("<td/>").append(con.data.cap_attrs[name].desc))
 					.append($("<td colspan=3/>").append(el.getElement()))
 			);
 		}
+		this.updateCapturingStatus(con.data.attrs.capturing);
+	},
+	updateEmulationStatus: function(enabled) {
+		for (var i=0; i<this.emulation_elements.length; i++)
+			 this.emulation_elements[i].setEnabled(enabled);
+	},
+	updateCapturingStatus: function(enabled) {
+		for (var i=0; i<this.capturing_elements.length; i++)
+			 this.capturing_elements[i].setEnabled(enabled);
 	}
 });
 
@@ -1006,7 +1038,7 @@ var Connection = Component.extend({
 		return this.elements[0].id < this.elements[1].id ? this.elements[0] : this.elements[1];
 	},
 	toElement: function() {
-		return this.elements[0].id > this.elements[1].id ? this.elements[0] : this.elements[1];
+		return this.elements[0].id >= this.elements[1].id ? this.elements[0] : this.elements[1];
 	},
 	otherElement: function(me) {
 		for (var i=0; i<this.elements.length; i++) if (this.elements[i].id != me.id) return this.elements[i];
@@ -1023,8 +1055,8 @@ var Connection = Component.extend({
 		}
 	},
 	getPath: function() {
-		var pos1 = this.fromElement().getAbsPos();
-		var pos2 = this.toElement().getAbsPos();
+		var pos1 = this.elements[0].getAbsPos();
+		var pos2 = this.elements[1].getAbsPos();
 		var path = "M"+pos1.x+" "+pos1.y+"L"+pos2.x+" "+pos2.y;
 		//TODO: use bezier loop for very short connections
 		return path;
@@ -1813,16 +1845,19 @@ var Editor = Class.extend({
 	onElementSelected: function(el) {
 		switch (this.mode) {
 			case Mode.connectOnce:
+				if (! el.isConnectable()) return;
 				this.topology.createConnection(el, this.connectElement);
 				this.setMode(Mode.select);
 				break;
 			case Mode.connect:
+				if (! el.isConnectable()) return;
 				if (this.connectElement) {
 					this.topology.createConnection(el, this.connectElement);
 					this.connectElement = null;
 				} else this.connectElement = el;
 				break;
 			case Mode.remove:
+				if (! el.isRemovable()) return;
 				el.remove();
 				break;
 			default:
