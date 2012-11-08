@@ -20,6 +20,7 @@
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.views.decorators.cache import cache_page
 from django.http import Http404
 from django import forms
 from django.core.urlresolvers import reverse
@@ -38,6 +39,7 @@ class RemoveSiteForm(forms.Form):
 def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
 
+@cache_page(60)
 @wrap_rpc
 def index(api, request):
     return render_to_response("admin/site/index.html", {'site_list': api.site_list(), 'hostManager': is_hostManager(api.account_info())})

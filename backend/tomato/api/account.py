@@ -18,7 +18,7 @@
 
 def _getAccount(name):
     acc = currentUser()
-    if name:
+    if name and name != acc.name:
         fault.check(acc.hasFlag(Flags.Admin), "No permissions")
         acc = getUser(name)
     fault.check(acc, "No such user")
@@ -41,6 +41,9 @@ def account_create(username, password, attrs={}, provider=""):
         
 def account_change_password(password):
     changePassword(password)
+        
+def flags():
+    return [getattr(Flags, flag) for flag in dir(Flags) if not flag.startswith("__")]
         
 from .. import fault, currentUser
 from ..auth import getUser, getAllUsers, Flags, register, changePassword

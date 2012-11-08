@@ -36,4 +36,6 @@ def project(request, page=""):
 	return HttpResponseRedirect(settings.project_url % page)
 
 def logout(request):
+	if "auth" in request.session:
+		del request.session["auth"]
 	return HttpResponseNotAuthorized()

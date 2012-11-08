@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..auth import User, Provider as AuthProvider
+from ..import fault
 
 class Provider(AuthProvider):
 	def parseOptions(self, allow_registration=True, default_flags=["over_quota"], **kwargs):
@@ -39,7 +40,8 @@ class Provider(AuthProvider):
 	def changePassword(self, username, password):
 		pass # password in user record will be changed by auth
 	def register(self, username, password, attrs):
-		user = User.create(name=username, admin=False, flags=self.default_flags)
+		fault.check(self.getUsers(name=username).count()==0, "Username already exists")
+		user = User.create(name=username, flags=self.default_flags)
 		user.save()
 		user.storePassword(password)
 		user.modify(attrs)

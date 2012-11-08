@@ -18,6 +18,7 @@
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.views.decorators.cache import cache_page
 from django.http import Http404
 from django import forms
 from django.core.urlresolvers import reverse
@@ -43,6 +44,7 @@ def site_name_list(api):
     res.sort()
     return res
 
+@cache_page(60)
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])

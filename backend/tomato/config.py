@@ -32,7 +32,7 @@ AUTH = [
 				"password_timeout": None,
 				"account_timeout": 60*60*24*365*5, # 5 years
 				"allow_registration": True,
-				"default_flags": ["over_quota"]
+				"default_flags": ["over_quota", "new_account"]
 		}
 	},
 	{

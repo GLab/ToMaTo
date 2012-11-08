@@ -1,0 +1,13 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Registration</h1>
+
+<form action="{%url account.register%}" method="POST">
+<table>
+{{form.as_table}}
+</table>
+<input type="submit" value="Save"/>
+</form>
+
+{% endblock %}

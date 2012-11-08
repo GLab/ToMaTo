@@ -29,8 +29,9 @@ class Flags:
     GlobalUser = "global_user" # User for every topology    
     NoTopologyCreate = "no_topology_create" # Restriction on topology_create
     OverQuota = "over_quota" # Restriction on actions start, prepare and upload_grant
+    NewAccount = "new_account" # Account is new, just a tag
 
-RESTRICTED_ATTRS = ["flags"]
+RESTRICTED_ATTRS = ["flags", "password_time", "password", "origin", "name", "last_login"]
 
 class User(attributes.Mixin, models.Model):
     name = models.CharField(max_length=255)
@@ -41,6 +42,7 @@ class User(attributes.Mixin, models.Model):
     last_login = models.FloatField(default=time.time())
     
     realname = attributes.attribute("realname", str)
+    affiliation = attributes.attribute("affiliation", str)
     email = attributes.attribute("email", str)
     flags = attributes.attribute("flags", list, [])
 
@@ -116,6 +118,7 @@ class User(attributes.Mixin, models.Model):
         info = {
             "name": self.name,
             "origin": self.origin,
+            "id": "%s@%s" % (self.name, self.origin) 
         }
         info.update(self.attrs)
         return info
@@ -164,14 +167,16 @@ class Provider:
 def getUser(name):
     origin = None
     if "@" in name:
-        name, origin = name.split("@")
+        name, origin = name.split("@", 1)
     try:
-        if origin:
+        if not origin is None:
             return User.objects.get(name=name, origin=origin)
         else:
             return User.objects.get(name=name)
     except User.DoesNotExist:
         return None
+    except User.MultipleObjectsReturned:
+        fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
 
 def getAllUsers():
     return User.objects.all()
