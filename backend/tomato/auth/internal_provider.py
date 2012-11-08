@@ -18,17 +18,33 @@
 from ..auth import User, Provider as AuthProvider
 
 class Provider(AuthProvider):
-	def parseOptions(self, admin_user="admin", invalid_user="invalid", **kwargs):
-		self.admin_user = admin_user
-		self.invalid_user = invalid_user
-	
+	def parseOptions(self, allow_registration=True, default_flags=["over_quota"], **kwargs):
+		self.allow_registration = allow_registration
+		self.default_flags = default_flags
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
-		if username==self.invalid_user:
-			return
-		elif username==self.admin_user:
-			return User.create(name=username, admin=True)
-		else:
-			return User.create(name=username)
-
+		try:
+			user = self.getUsers().get(name=username)
+			if user.checkPassword(password):
+				return user
+			else:
+				return False
+		except User.DoesNotExist:
+			return False
+	def getPasswordTimeout(self):
+		return None
+	def canRegister(self):
+		return self.allow_registration
+	def canChangePassword(self):
+		return True
+	def changePassword(self, username, password):
+		pass # password in user record will be changed by auth
+	def register(self, username, password, attrs):
+		user = User.create(name=username, admin=False, flags=self.default_flags)
+		user.save()
+		user.storePassword(password)
+		user.modify(attrs)
+		user.save()
+		return user
+		
 def init(**kwargs):
 	return Provider(**kwargs)

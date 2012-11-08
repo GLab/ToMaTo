@@ -15,17 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 import hashlib
 
-class Provider:
+class Provider(AuthProvider):
 	"""
 	dict auth provider
 	
 	This auth provider uses given user dicts as authentication data.
-	Two seperate dicts called users and admins are used for respective
-	logins. If the given login ceredntials are found in the admin dict, the 
-	user dict is not checked and the login is grated with admin rights.
 	Before checking the credentials the password is first converted using a 
 	given hash function. If the hash option is set to None or False, the raw
 	password will be checked against the database.
@@ -35,13 +32,12 @@ class Provider:
 	The auth provider takes the following options:
 		users: The dict containing username: passsword pairs for normal users,
 		       defaults to {}
-		admins: The dict containing username: passsword pairs for admin users
-		       defaults to {}
+		flags: A list of flags to assign to all users
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def __init__(self, users={}, admins={}, hash=None): #@ReservedAssignment
+	def parseOptions(self, users={}, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
 		self.users = users
-		self.admins = admins
+		self.flags = flags
 		self.hash = hash
 	
 	def _hash(self, hash, data): #@ReservedAssignment
@@ -53,9 +49,7 @@ class Provider:
 		if self.hash:
 			password = self._hash(self.hash, password)
 		if username in self.users and self.users[username] == password:
-			return User.create(name=username, admin=True)
-		if username in self.admins and self.admins[username] == password:
-			return User.create(name=username)
+			return User.create(name=username, flags=self.flags)
 		return False
 
 def init(**kwargs):

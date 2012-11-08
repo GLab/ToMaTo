@@ -75,6 +75,7 @@ def start():
 	resources.init()
 	host.task.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
+	auth.task.start() #@UndefinedVariable
 	global _btTracker, _btClient
 	_btTracker = bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	_btClient = bittorrent.startClient(config.TEMPLATE_PATH)
@@ -97,6 +98,7 @@ def stop(*args):
 	signal.alarm(30)
 	signal.signal(signal.SIGALRM, forceStop)
 	rpcserver.stop()
+	auth.task.stop() #@UndefinedVariable
 	host.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
 	process.kill(_btTracker)

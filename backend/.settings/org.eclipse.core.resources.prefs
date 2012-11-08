@@ -13,6 +13,7 @@ encoding//tomato/auth/__init__.py=utf-8
 encoding//tomato/auth/dict_provider.py=utf-8
 encoding//tomato/auth/dummy_provider.py=utf-8
 encoding//tomato/auth/htpasswd_provider.py=utf-8
+encoding//tomato/auth/internal_provider.py=utf-8
 encoding//tomato/auth/ldap_provider.py=utf-8
 encoding//tomato/auth/permissions.py=utf-8
 encoding//tomato/auth/planetlab_provider.py=utf-8

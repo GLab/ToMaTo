@@ -17,7 +17,7 @@
 
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
-from ..lib import attributes, db, logging #@UnresolvedImport
+from ..lib import attributes, db, logging, util #@UnresolvedImport
 from .. import config, fault, currentUser
 
 class Flags:
@@ -37,7 +37,8 @@ class User(attributes.Mixin, models.Model):
     origin = models.CharField(max_length=50)
     attrs = db.JSONField()
     password = models.CharField(max_length=250, null=True)
-    password_time = models.DateTimeField(null=True)
+    password_time = models.FloatField(null=True)
+    last_login = models.FloatField(default=time.time())
     
     realname = attributes.attribute("realname", str)
     email = attributes.attribute("email", str)
@@ -50,11 +51,10 @@ class User(attributes.Mixin, models.Model):
         ordering=["name", "origin"]
 
     @classmethod    
-    def create(cls, name, admin=False, **kwargs):
+    def create(cls, name, **kwargs):
         user = User(name=name)
         user.attrs = kwargs
-        if admin:
-            user.flags = [Flags.Admin, Flags.HostsManager, Flags.GlobalUser]
+        user.last_login = time.time()
         return user
     
     def _saveAttributes(self):
@@ -68,7 +68,24 @@ class User(attributes.Mixin, models.Model):
         salt = "$1$"
         salt += ''.join([ random.choice(saltchars) for _ in range(8) ])
         self.password = crypt.crypt(password, salt)
-        self.password_time = datetime.datetime.now()
+        self.password_time = time.time()
+        self.save()
+    
+    def forgetPassword(self):
+        self.password = None
+        self.password_time = None
+        self.save()        
+        
+    def updateFrom(self, other):
+        if not self.email and other.email:
+            self.email = other.email
+        if not self.realname and other.realname:
+            self.realname = other.realname
+        self.save()
+    
+    def loggedIn(self):
+        logging.logMessage("successful login", category="auth", user=self.name, origin=self.origin)
+        self.last_login = time.time()
         self.save()
     
     def hasFlag(self, flag):
@@ -110,7 +127,39 @@ class User(attributes.Mixin, models.Model):
         return "%s@%s" % ( self.name, self.origin ) if self.origin else self.name
 
 
-timeout = datetime.timedelta(hours=config.LOGIN_TIMEOUT)
+class Provider:
+    def __init__(self, name, options):
+        self.name = name
+        self.options = options
+        self.parseOptions(**options)
+    def parseOptions(self, **kwargs):
+        pass
+    def canRegister(self):
+        return False
+    def register(self, username, password, attrs):
+        raise Exception("not supported")
+    def canChangePassword(self):
+        return False
+    def changePassword(self, username, password):
+        raise Exception("not supported")
+    def getName(self):
+        return self.name
+    def getAccountTimeout(self):
+        return self.options.get("account_timeout", 0)
+    def getPasswordTimeout(self):
+        return self.options.get("password_timeout", 0)
+    def getUsers(self, **kwargs):
+        return User.objects.filter(origin=self.name, **kwargs)
+    def cleanup(self):
+        if self.getPasswordTimeout():
+            for user in self.getUsers(password_time__lte = time.time() - self.getPasswordTimeout()):
+                logging.logMessage("password cache timeout", category="auth", user=user.name)
+                user.forgetPassword()
+        if self.getAccountTimeout():
+            for user in self.getUsers(last_login__lte = time.time() - self.getAccountTimeout()):
+                logging.logMessage("account timeout", category="auth", user=user.name)
+                user.remove()
+
 
 def getUser(name):
     origin = None
@@ -128,19 +177,13 @@ def getAllUsers():
     return User.objects.all()
 
 def cleanup():
-    #FIXME: delete users that have timed out and are unreferenced
-    for user in User.objects.filter(password_time__lte = datetime.datetime.now() - timeout):
-        logging.logMessage("password cache timeout", category="auth", user=user.name)
-        user.password = None
-        user.password_time = None
-        user.save()
+    for provider in providers:
+        provider.cleanup()
     
 def provider_login(username, password):
     for prov in providers:
         user = prov.login(username, password)
         if user:
-            user.origin = prov.name
-            logging.logMessage("successful login", category="auth", user=user.name, origin=user.origin)
             return user
     logging.logMessage("failed login", category="auth", user=username)
     return None
@@ -148,28 +191,49 @@ def provider_login(username, password):
 def login(username, password):
     for user in User.objects.filter(name = username):
         if user.password and user.checkPassword(password):
+            user.loggedIn()
             return user
     user = provider_login(username, password)
     if not user:
         return None
     try:
         stored = User.objects.get(name=user.name, origin=user.origin)
+        stored.updateFrom(user)
     except User.DoesNotExist:
         user.save()
         stored = user
     stored.storePassword(password)
+    stored.loggedIn()
     return stored
 
+def register(username, password, attrs={}, provider=""):
+    for prov in providers:
+        if not prov.getName() == provider:
+            continue
+        fault.check(prov.canRegister(), "Provider can not register users")
+        return prov.register(username, password, attrs)
+    fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
+
+def changePassword(password):
+    user = currentUser()
+    for prov in providers:
+        if not prov.getName() == user.origin:
+            continue
+        fault.check(prov.canChangePassword(), "Provider can not change password")
+        prov.changePassword(user.name, password)
+        user.storePassword(password)
+
 providers = []
+
+task = util.RepeatedTimer(300, cleanup) #every 5 minutes
 
 def init():
     print >>sys.stderr, "Loading auth modules..."
     for conf in config.AUTH:
         provider = None #make eclipse shut up
-        exec("import %s_provider as provider" % conf["PROVIDER"]) #pylint: disable-msg=W0122
-        prov = provider.init(**(conf["OPTIONS"]))
-        prov.name = conf["NAME"]
+        exec("import %s_provider as provider" % conf["provider"]) #pylint: disable-msg=W0122
+        prov = provider.init(name=conf["name"], options=conf["options"])
         providers.append(prov)
-        print >>sys.stderr, " - %s (%s)" % (conf["NAME"], conf["PROVIDER"])
+        print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
     if not providers:
         print >>sys.stderr, "Warning: No authentication modules configured."

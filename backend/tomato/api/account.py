@@ -35,5 +35,12 @@ def account_modify(name=None, attrs={}):
     acc = _getAccount(name)
     acc.modify(attrs)
         
+def account_create(username, password, attrs={}, provider=""):
+    user = register(username, password, attrs, provider)
+    return user.info()
+        
+def account_change_password(password):
+    changePassword(password)
+        
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, Flags
+from ..auth import getUser, getAllUsers, Flags, register, changePassword

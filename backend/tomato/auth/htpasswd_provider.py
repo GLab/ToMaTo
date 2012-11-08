@@ -15,29 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 import crypt
 
-class Provider:
+class Provider(AuthProvider):
 	"""
 	.htpasswd auth provider
 	
 	This auth provider uses a .htpasswd file as an authentication backend.
 	It reads the user credentials from the given file and compares the them to
-	the given login credentials. If the credentials match to a user in the
-	file, the username is compared to the given admin username (if that is not
-	None or False). If the username is the same as the admin username the login
-	is granted admin status.
+	the given login credentials.
 	
 	Note: .htpasswd files can be created and manipulated using the htpasswd command
 	
 	The auth provider takes the following options:
 		file: The path of the .htpasswd file
-		admin_user: The username of the admin user, defaults to None
+		flags: The flags to assign to all users
 	"""
-	def __init__(self, file, admin_user=None): #@ReservedAssignment
+	def parseOptions(self, file, flags=[], **kwargs): #@ReservedAssignment
 		self.file = file
-		self.admin_user = admin_user
+		self.flags = flags
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		lines = [l.rstrip().split(':', 1) for l in file(self.file).readlines()]
@@ -47,7 +44,7 @@ class Provider:
 		hashedPassword = lines[0][1]
 		if not hashedPassword == crypt.crypt(password, hashedPassword[:2]):
 			return None
-		return User.create(name=username, admin=(self.admin_user != None and username == self.admin_user))
+		return User.create(name=username, flags=self.flags)
 	
 def init(**kwargs):
 	return Provider(**kwargs)

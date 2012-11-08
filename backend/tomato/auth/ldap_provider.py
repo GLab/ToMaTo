@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 
 import ldap
 
-class Provider:
+class Provider(AuthProvider):
 	"""
 	LDAP auth provider
 	
@@ -43,17 +43,16 @@ class Provider:
 		bind_dn: The DN of a bind user to check the username
 		bind_pw: The password of the bind user
 		identity_base: The base path for all identities
-		admin_group: The group of members that admin user DNs must be part of
-		user_group: The group of members that normal user DNs must be part of
+		groups: A dict of group/flags pairs where the user DN must be part of 
+		  the group to match and get thne flags.
 	"""
-	def __init__(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, admin_group, user_group):
+	def parseOptions(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, groups, **kwargs):
 		self.server_uri = server_uri
 		self.server_cert = server_cert
 		self.bind_dn = bind_dn
 		self.bind_pw = bind_pw
 		self.identity_base = identity_base
-		self.admin_group = admin_group
-		self.user_group = user_group
+		self.groups = groups
 
 	def _ldap_conn(self):
 		ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -72,13 +71,12 @@ class Provider:
 			return False
 		userdn = data[0][0]
 		email = data[0][1]['mail'][0]
-		if not self._check_credentials(username, userdn, password):
+		if not self._check_credentials(userdn, password):
 			return False
-		isUser = self._is_user(username, userdn)
-		if not isUser:
-			return None
-		isAdmin = self._is_admin(username, userdn)
-		return User.create(name=username, admin=isAdmin, email=email)
+		for group, flags in self.groups.iteritems():
+			if self._is_in_group(userdn, group):
+				return User.create(name=username, flags=flags, email=email)
+		return False
 		
 	def _get_user(self, user):
 		"""
@@ -97,7 +95,7 @@ class Provider:
 		finally:
 			conn.unbind_s()
 
-	def _check_credentials(self, user, userdn, password):
+	def _check_credentials(self, userdn, password):
 		"""
 		Check if a supplied password matches the user.
 		"""
@@ -107,32 +105,25 @@ class Provider:
 			conn.simple_bind_s(who=userdn, cred=password)
 			return True
 		except ldap.LDAPError, error_message:
-			print 'Authenticating user %s failed: %s' % (user, str(error_message))
+			print 'Authenticating user %s failed: %s' % (userdn, str(error_message))
 			return False
 		finally:
 			conn.unbind_s()
 		
-	def _is_in_group(self, user, userdn, group, groupdn):
+	def _is_in_group(self, userdn, groupdn):
 		conn = self._ldap_conn()
 		try:
 			members = conn.search_s(groupdn, ldap.SCOPE_SUBTREE, attrlist=['member'])
 			if members[0][1].has_key('member'):
 				return userdn in members[0][1]['member']
 			else:
-				print 'Group %s has no members.' % group
+				print 'Group %s has no members.' % groupdn
 				return False
 		except ldap.LDAPError, error_message:
-			print 'Authenticating user %s failed: %s' % (user, str(error_message))
+			print 'Authenticating user %s failed: %s' % (userdn, str(error_message))
 			return False
 		finally:
 			conn.unbind_s()
-
-	def _is_admin(self, user, userdn):
-		return self._is_in_group(user, userdn, 'admins', self.admin_group)
-
-	def _is_user(self, user, userdn):
-		return self._is_in_group(user, userdn, 'users', self.user_group)
-
 
 def init(**kwargs):
 	return Provider(**kwargs)

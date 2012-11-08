@@ -589,6 +589,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
         if set(networkKinds) - set(host.getNetworkKinds()):
             continue #FIXME: allow general networks
         hosts.append(host)
+    fault.check(hosts, "No hosts found for requirements")
     # any host in hosts can handle the request
     prefs = dict([(h, 0.0) for h in hosts])
     #STEP 2: calculate preferences based on host load

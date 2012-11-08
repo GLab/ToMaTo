@@ -15,18 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 import hashlib
 from django.db import connections
 
-class Provider:
+class Provider(AuthProvider):
 	"""
 	SQL auth provider
 	
 	This auth provider uses SQL as an authentication backend. It executes an
 	SQL query to check the user credentials and accepts the login if the query
-	result contains at least one row. If the admin query succeeds the user 
-	query will not be checked.
+	result contains at least one row. 
 	In the queries, the keywords :username and :password will be substituted by
 	the login credentials.
 	Before checking the credentials the password is first converted using a 
@@ -39,17 +38,17 @@ class Provider:
 	      or other modules.
 	
 	The auth provider takes the following options:
-		user_query: An SQL query to use to check for a user in the database.
-		admin_query: An SQL query to use to check for an admin in the database.
+		query: An SQL query to use to check for a user in the database.
+		flags: A list of flags to assign
 		database: The database backend to use, as configured in the config
 		          in DATABASES, defaults to "default"
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def __init__(self, user_query, admin_query, database="default", hash="sha1"): #@ReservedAssignment
+	def parseOptions(self, query, database="default", flags=[], hash="sha1", **kwargs): #@ReservedAssignment
 		self.hash = hash
 		self.database = database
-		self.user_query = user_query
-		self.admin_query = admin_query
+		self.query = query
+		self.flags = flags
 	
 	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
@@ -60,12 +59,9 @@ class Provider:
 		if self.hash:
 			password = self._hash(self.hash, password)
 		cursor = connections[self.database].cursor()
-		cursor.execute(self.admin_query, {"username":username, "password":password})
+		cursor.execute(self.query, {"username":username, "password":password})
 		if cursor.fetchone():
-			return User.create(name=username, admin=True)
-		cursor.execute(self.user_query, {"username":username, "password":password})
-		if cursor.fetchone():
-			return User.create(name=username)
+			return User.create(name=username, flags=self.flags)
 		return False
 
 def init(**kwargs):

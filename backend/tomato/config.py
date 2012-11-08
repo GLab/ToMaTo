@@ -26,10 +26,26 @@ TRACKER_PORT = 8001
 
 AUTH = [
 	{
-		"NAME": "test",
-		"PROVIDER": "dummy",
-		"OPTIONS": {}
+		"name": "",
+		"provider": "internal",
+		"options": {
+				"password_timeout": None,
+				"account_timeout": 60*60*24*365*5, # 5 years
+				"allow_registration": True,
+				"default_flags": ["over_quota"]
+		}
 	},
+	{
+		"name": "guest",
+		"provider": "dict",
+		"options": {
+				"users": {
+						"guest": "guest"
+				},
+				"flags": ["no_topology_create", "over_quota"],
+				"hash": None
+		}
+	}
 ]
 
 LOG_FILE = "main.log"
@@ -51,8 +67,6 @@ DATABASES = {
 		'NAME': 'db.sqlite'
 	}
 }
-
-LOGIN_TIMEOUT = 12
 
 HOST_UPDATE_INTERVAL = 60
 RESOURCES_SYNC_INTERVAL = 600

@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 import xmlrpclib
 
-class Provider:
+class Provider(AuthProvider):
 	"""
 	Planetlab auth provider
 	
@@ -33,14 +33,14 @@ class Provider:
 		api_uri: The PLCAPI URI, i.e.: https://host:port/PLCAPI/
 		site_filter: A site abbreviation or list of site abbreviations to allow
 		             access.
-		accept_admin: If this is set to True, admin roles will be preserved.             
+		roles: ...
 	"""
-	def __init__(self, api_uri, site_filter=None, accept_admin=False):
+	def parseOptions(self, api_uri, site_filter=None, roles={"user": []}, **kwargs):
 		self.api_uri = api_uri
 		self.site_filter = site_filter
 		if isinstance(self.site_filter, str):
 			self.site_filter = [self.site_filter]
-		self.accept_admin = accept_admin
+		self.roles = roles
 		
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		try:
@@ -55,9 +55,11 @@ class Provider:
 					if not (set(self.site_filter) & set(sites)):
 						return False
 				roles = persons[0]["roles"]
-				if not "user" in roles:
-					return None
-				return User.create(name=username, admin=self.accept_admin and "admin" in roles)
+				for role in roles:
+					if role in self.roles:
+						flags = self.roles[role]
+						return User.create(name=username, email=username, flags=flags)
+				return False
 			except Exception, errormessage:
 				return False
 		except Exception, errormessage:
