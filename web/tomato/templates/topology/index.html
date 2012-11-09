@@ -1,17 +1,23 @@
 {% extends "topology/base.html" %}
 
+{% load tomato %}
+
 {% block content %}
 <h1>List of topologies</h1>
 
 {% if top_list %}
 <script src="/js/enhancetable.js"></script>
-<table class="sortable,filterable">
+<table class="sortable,filterable,stddevcolor">
   <tr>
     <th>ID</th>
     <th>Name</th>
     <th>Owner</th>
     <th>Elements</th>
     <th>Connections</th>
+    <th stddev_column_class="good_low">CPUs</th>
+    <th stddev_column_class="good_low">Traffic</th>
+    <th stddev_column_class="good_low">Memory</th>
+    <th stddev_column_class="good_low">Disk</th>
     <th></th>
   </tr>
 {% for top in top_list %}
@@ -21,12 +27,16 @@
     <td>
     	{% for user, role in top.permissions.items %}
     		{% if role == "owner" %}
-    			{{user}}{% if forloop.revcounter0 %}, {% endif %}
+    			<a href="{%url account.info user%}">{{user}}</a>{% if forloop.revcounter0 %}, {% endif %}
     		{% endif %}
     	{% endfor %}
     </td>
     <td>{{top.elements|length}}</td>
     <td>{{top.connections|length}}</td>
+    <td enhancetable_customkey="{{top.usage.usage.cputime}}">{{top.usage.usage.cputime|div:300|floatformat}} CPUs</td>
+    <td enhancetable_customkey="{{top.usage.usage.traffic}}">{{top.usage.usage.traffic|div:300|filesizeformat}}/s</td>
+    <td enhancetable_customkey="{{top.usage.usage.memory}}">{{top.usage.usage.memory|filesizeformat}}</td>
+    <td enhancetable_customkey="{{top.usage.usage.diskspace}}">{{top.usage.usage.diskspace|filesizeformat}}</td>
     <td>
     	<a href="javascript:window.open('{%url topology.usage top.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><img src="/img/chart_bar.png"/></a>
     </td>

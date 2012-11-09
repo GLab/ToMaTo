@@ -329,18 +329,9 @@ div.ui-widget {
 	font-size:1.0em;
 }
 
-.task_succeeded {
+table td.stddev_high.good_low, table td.stddev_low.good_high {
+	color: red !important;
+}
+table td.stddev_high.good_high, table td.stddev_low.good_low {
 	color: green;
-}
-
-.task_failed {
-	color: red;
-}
-
-.task_reversing, .task_aborted {
-	color: orange;
-}
-
-.task_waiting {
-	color: gray;
 }

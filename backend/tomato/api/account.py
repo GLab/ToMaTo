@@ -19,7 +19,6 @@
 def _getAccount(name):
     acc = currentUser()
     if name and name != acc.name:
-        fault.check(acc.hasFlag(Flags.Admin), "No permissions")
         acc = getUser(name)
     fault.check(acc, "No such user")
     return acc
@@ -33,6 +32,8 @@ def account_list():
 
 def account_modify(name=None, attrs={}):
     acc = _getAccount(name)
+    if name and name != currentUser().name:
+        fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
     acc.modify(attrs)
         
 def account_create(username, password, attrs={}, provider=""):

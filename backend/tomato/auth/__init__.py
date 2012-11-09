@@ -127,7 +127,7 @@ class User(attributes.Mixin, models.Model):
         return self.__unicode__()
 
     def __unicode__(self):
-        return "%s@%s" % ( self.name, self.origin ) if self.origin else self.name
+        return "%s@%s" % ( self.name, self.origin )
 
 
 class Provider:

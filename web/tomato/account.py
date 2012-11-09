@@ -55,13 +55,14 @@ class AccountForm(forms.Form):
 
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
+        data["flags"] = data.get("flags", [])
         AccountForm.__init__(self, data)
         flags = [(f, f) for f in api.flags()]
         self.fields["name"].widget = FixedText()
         del self.fields["password"]
         del self.fields["origin"]
         self.fields["flags"].choices = flags
-        if "admin" in api.user["flags"]:
+        if "admin" in api.user.get("flags", []):
             self.fields["flags"].widget = forms.widgets.CheckboxSelectMultiple(choices=flags)
         else:
             self.fields["flags"].widget = FixedList()
