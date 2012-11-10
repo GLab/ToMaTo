@@ -5,8 +5,18 @@
 {% block content %}
 
 {% if edit %}
-<h1>Edit site {{name}}</h1>
-<form action="{%url site.edit%}" method="post">
+<h1>Edit {{tech}} device profile</h1>
+
+{% if tech == 'kvmqm' %}
+<form action="{%url device_profile.edit_kvmqm%}" method="post">
+{% else %}
+{% if tech == 'openvz' %}
+<form action="{%url device_profile.edit_openvz%}" method="post">
+{% else %}
+<form action="{%url device_profile.edit_repy%}" method="post">
+{% endif %}
+{% endif %}
+
 {% else %}
 <h1>Add {{tech}} device profile</h1>
 

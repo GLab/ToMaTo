@@ -49,6 +49,15 @@ class KVMqmForm(forms.Form):
     cpus = forms.IntegerField(label="no. of CPUs")
     preference = forms.IntegerField(label="Preference")
     
+class EditOpenVZForm(OpenVZForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    
+class EditRePyForm(RePyForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    
+class EditKVMqmForm(KVMqmForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
@@ -144,13 +153,67 @@ def add(api, request):
 
 @wrap_rpc
 def edit_kvmqm(api, request):
-    return index(api,request)
+    if request.method=='POST':
+        form = EditKVMqmForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
+            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'kvmqm'})
+        else:
+            name="ERROR"
+            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'kvmqm', 'form': form, "edit":True})
+    else:
+        res_id = request.GET['id']
+        if res_id:
+            res_info = api.resource_info(res_id)
+            origData = res_info['attrs']
+            origData['res_id'] = res_id
+            form = EditKVMqmForm(origData)
+            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_openvz(api, request):
-    return index(api,request)
+    if request.method=='POST':
+        form = EditOpenVZForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
+            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'openvz'})
+        else:
+            name="ERROR"
+            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'openvz', 'form': form, "edit":True})
+    else:
+        res_id = request.GET['id']
+        if res_id:
+            res_info = api.resource_info(res_id)
+            origData = res_info['attrs']
+            origData['res_id'] = res_id
+            form = EditOpenVZForm(origData)
+            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_repy(api, request):
-    return index(api,request)
+    if request.method=='POST':
+        form = EditRePyForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_modify(formData["res_id"],{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
+            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
+        else:
+            name="ERROR"
+            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'repy', 'form': form, "edit":True})
+    else:
+        res_id = request.GET['id']
+        if res_id:
+            res_info = api.resource_info(res_id)
+            origData = res_info['attrs']
+            origData['res_id'] = res_id
+            form = EditRePyForm(origData)
+            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
