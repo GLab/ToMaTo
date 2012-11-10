@@ -39,14 +39,13 @@
 No kvmqm profiles
 {% endif %}
 {% if hostManager %}
-<p><input type="button" onClick="window.location='{%url device_profile.add%}?form=kvmqm'" value="Add kvmqm profile" /></p>
+<p><input type="button" onClick="window.location='{%url device_profile.add_kvmqm%}'" value="Add kvmqm profile" /></p>
 {% endif %}
 
 
 
 
 {% if profile_openvz_list %}
-<script src="/js/enhancetable.js"></script>
 
 <br />
 <h2>openvz</h2>
@@ -77,14 +76,13 @@ No kvmqm profiles
 No openvz profiles
 {% endif %}
 {% if hostManager %}
-<p><input type="button" onClick="window.location='{%url device_profile.add%}?form=openvz'" value="Add openvz profile" /></p>
+<p><input type="button" onClick="window.location='{%url device_profile.add_openvz%}'" value="Add openvz profile" /></p>
 {% endif %}
 
 
 
 
 {% if profile_repy_list %}
-<script src="/js/enhancetable.js"></script>
 
 <br />
 <h2>repy</h2>
@@ -115,7 +113,7 @@ No openvz profiles
 No repy profiles
 {% endif %}
 {% if hostManager %}
-<p><input type="button" onClick="window.location='{%url device_profile.add%}?form=repy%'" value="Add repy profile" /></p>
+<p><input type="button" onClick="window.location='{%url device_profile.add_repy%}%'" value="Add repy profile" /></p>
 {% endif %}
 
 

@@ -27,16 +27,33 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
-class SiteForm(forms.Form):
-    name = forms.CharField(max_length=50)
-    description = forms.CharField(max_length=255)
-    location = forms.CharField(max_length=255)
+class OpenVZForm(forms.Form):
+    name = forms.CharField(max_length=50,label="Internal Name")
+    label = forms.CharField(max_length=255)
+    diskspace = forms.CharField(max_length=20,label="Disk Space")
+    ram = forms.CharField(max_length=255,label="RAM")
+    preference = forms.CharField(max_length=255,label="Preference")
+
+class RePyForm(forms.Form):
+    name = forms.CharField(max_length=50,label="Internal Name")
+    label = forms.CharField(max_length=255)
+    ram = forms.CharField(max_length=255,label="RAM")
+    cpus = forms.CharField(max_length=5,label = "no. of CPUs")
+    preference = forms.CharField(max_length=255,label="Preference")
+
+class KVMqmForm(forms.Form):
+    name = forms.CharField(max_length=50,label="Internal Name")
+    label = forms.CharField(max_length=255)
+    diskspace = forms.CharField(max_length=20,label="Disk Space")
+    ram = forms.CharField(max_length=255,label="RAM")
+    cpus = forms.CharField(max_length=5,label="no. of CPPUs")
+    preference = forms.CharField(max_length=255,label="Preference")
     
-class RemoveSiteForm(forms.Form):
-    name = forms.CharField(max_length=50, widget=forms.HiddenInput)
+class RemoveResourceForm(forms.Form):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):
@@ -58,12 +75,69 @@ def index(api, request):
 
 
 @wrap_rpc
-def add(api, request):
-    return index(api,request)
-
+def add_openvz(api, request):
+    if request.method == 'POST':
+        form = OpenVZForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
+            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"],'tech':'openvz'})
+        else:
+            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
+    else:
+        form = OpenVZForm
+        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
+    
+@wrap_rpc
+def add_kvmqm(api, request):
+    if request.method == 'POST':
+        form = KVMqmForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
+            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"], 'tech':'kvmqm'})
+        else:
+            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
+    else:
+        form = KVMqmForm
+        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
+    
+@wrap_rpc
+def add_repy(api, request):
+    if request.method == 'POST':
+        form = RePyForm(request.POST)
+        if form.is_valid():
+            formData = form.cleaned_data
+            api.resource_create('profile',{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
+            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"], 'tech':'repy'})
+        else:
+            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
+    else:
+        form = RePyForm
+        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
+    
 @wrap_rpc
 def remove(api, request):
-    return index(api,request)
+    if request.method == 'POST':
+        form = RemoveResourceForm(request.POST)
+        if form.is_valid():
+            res_id = form.cleaned_data["res_id"]
+            label = api.resource_info(res_id)['attrs']['label']
+            tech = api.resource_info(res_id)['attrs']['tech']
+            api.resource_remove(res_id)
+            return render_to_response("admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
+        else:
+            res_id = request.POST['res_id']
+            form = RemoveResourceForm()
+            form.fields["res_id"].initial = res_id
+            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+    
+    else:
+        res_id = request.GET['id']
+        form = RemoveResourceForm()
+        form.fields["res_id"].initial = res_id
+        return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+    
 
 @wrap_rpc
 def edit(api, request):
