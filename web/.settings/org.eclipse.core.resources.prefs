@@ -1,6 +1,7 @@
 eclipse.preferences.version=1
 encoding//tomato/ajax.py=utf-8
 encoding//tomato/connection.py=utf-8
+encoding//tomato/device_profile.py=utf-8
 encoding//tomato/element.py=utf-8
 encoding//tomato/host.py=utf-8
 encoding//tomato/lib.py=utf-8

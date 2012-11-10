@@ -30,7 +30,7 @@
     <td>{{templ.attrs.subtype}}</td>
     <td>{{templ.attrs.preference}}</td>
     {% if hostManager %}
-    <td><small><a href="{%url vhosttemplates.edit%}?name={{templ.attrs.name}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url vhosttemplates.remove%}?name={{templ.attrs.name}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
+    <td><small><a href="{%url vhosttemplates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url vhosttemplates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
