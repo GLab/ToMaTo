@@ -30,24 +30,24 @@ import xmlrpclib
 class OpenVZForm(forms.Form):
     name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    diskspace = forms.CharField(max_length=20,label="Disk Space")
-    ram = forms.CharField(max_length=255,label="RAM")
-    preference = forms.CharField(max_length=255,label="Preference")
+    diskspace = forms.IntegerField(label="Disk Space")
+    ram = forms.IntegerField(label="RAM")
+    preference = forms.IntegerField(label="Preference")
 
 class RePyForm(forms.Form):
     name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    ram = forms.CharField(max_length=255,label="RAM")
-    cpus = forms.CharField(max_length=5,label = "no. of CPUs")
-    preference = forms.CharField(max_length=255,label="Preference")
+    ram = forms.IntegerField(label="RAM")
+    cpus = forms.FloatField(label = "no. of CPUs")
+    preference = forms.IntegerField(label="Preference")
 
 class KVMqmForm(forms.Form):
     name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    diskspace = forms.CharField(max_length=20,label="Disk Space")
-    ram = forms.CharField(max_length=255,label="RAM")
-    cpus = forms.CharField(max_length=5,label="no. of CPPUs")
-    preference = forms.CharField(max_length=255,label="Preference")
+    diskspace = forms.IntegerField(label="Disk Space")
+    ram = forms.IntegerField(label="RAM")
+    cpus = forms.IntegerField(label="no. of CPUs")
+    preference = forms.IntegerField(label="Preference")
     
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
