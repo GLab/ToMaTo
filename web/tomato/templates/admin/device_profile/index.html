@@ -14,6 +14,9 @@
 <table class="sortable,filterable">
   <tr>
     <th>Label</th>
+    <th>Disk Space</th>
+    <th>RAM</th>
+    <th>CPUs</th>
     <th>Preference</th>
     {% if hostManager %}
     <th />
@@ -22,6 +25,9 @@
 {% for profile in profile_kvmqm_list %}
   <tr>
     <td>{{profile.attrs.label}}</td>
+    <td>{{profile.attrs.diskspace}}</td>
+    <td>{{profile.attrs.ram}}</td>
+    <td>{{profile.attrs.cpus}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
     <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
@@ -48,6 +54,8 @@ No kvmqm profiles
 <table class="sortable,filterable">
   <tr>
     <th>Label</th>
+    <th>Disk Space</th>
+    <th>RAM</th>
     <th>Preference</th>
     {% if hostManager %}
     <th />
@@ -56,6 +64,8 @@ No kvmqm profiles
 {% for profile in profile_openvz_list %}
   <tr>
     <td>{{profile.attrs.label}}</td>
+    <td>{{profile.attrs.diskspace}}</td>
+    <td>{{profile.attrs.ram}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
     <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
@@ -82,6 +92,8 @@ No openvz profiles
 <table class="sortable,filterable">
   <tr>
     <th>Label</th>
+    <th>RAM</th>
+    <th>CPUs</th>
     <th>Preference</th>
     {% if hostManager %}
     <th />
@@ -90,6 +102,8 @@ No openvz profiles
 {% for profile in profile_repy_list %}
   <tr>
     <td>{{profile.attrs.label}}</td>
+    <td>{{profile.attrs.ram}}</td>
+    <td>{{profile.attrs.cpus}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
     <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
