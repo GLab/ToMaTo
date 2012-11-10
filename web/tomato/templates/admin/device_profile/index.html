@@ -24,7 +24,7 @@
     <td>{{profile.attrs.label}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
-    <td><small><a href="{%url device_profile.edit%}?id={{templ.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{templ.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+    <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
@@ -58,7 +58,7 @@ No kvmqm profiles
     <td>{{profile.attrs.label}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
-    <td><small><a href="{%url device_profile.edit%}?id={{templ.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{templ.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+    <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
@@ -92,7 +92,7 @@ No openvz profiles
     <td>{{profile.attrs.label}}</td>
     <td>{{profile.attrs.preference}}</td>
     {% if hostManager %}
-    <td><small><a href="{%url device_profile.edit%}?id={{templ.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{templ.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+    <td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
     {% endif %}
   </tr>
 {% endfor %}
