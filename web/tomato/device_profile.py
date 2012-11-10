@@ -138,8 +138,19 @@ def remove(api, request):
         form.fields["res_id"].initial = res_id
         return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
     
+@wrap_rpc
+def add(api, request):
+    return render_to_response("admin/device_profile/add_unspecified.html",{})
 
 @wrap_rpc
-def edit(api, request):
+def edit_kvmqm(api, request):
+    return index(api,request)
+
+@wrap_rpc
+def edit_openvz(api, request):
+    return index(api,request)
+
+@wrap_rpc
+def edit_repy(api, request):
     return index(api,request)
 
