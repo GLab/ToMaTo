@@ -6,41 +6,45 @@
 <h1>List of templates</h1>
 
 {% if hostManager %}
-<p><input type="button" onClick="window.location='{%url vhosttemplates.add%}'" value="Add template" /></p>
+	<p><input type="button" onClick="window.location='{%url vhosttemplates.add%}'" value="Add template" /></p>
 {% endif %}
 
 {% if templ_list %}
-<script src="/js/enhancetable.js"></script>
-
-
-<table class="sortable,filterable">
-  <tr>
-    <th>Label</th>
-    <th>Technology</th>
-    <th>Subtype</th>
-    <th>Preference</th>
-    {% if hostManager %}
-    <th />
-    {% endif %}
-  </tr>
-{% for templ in templ_list %}
-  <tr>
-    <td>{{templ.attrs.label}}</td>
-    <td>{{templ.attrs.tech}}</td>
-    <td>{{templ.attrs.subtype}}</td>
-    <td>{{templ.attrs.preference}}</td>
-    {% if hostManager %}
-    <td><small><a href="{%url vhosttemplates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url vhosttemplates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
-    {% endif %}
-  </tr>
-{% endfor %}
-</table>
+	<script src="/js/enhancetable.js"></script>
+	
+	
+	<table class="sortable,filterable">
+	  <tr>
+	    <th>Label</th>
+	    <th>Technology</th>
+	    <th>Subtype</th>
+	    <th>Preference</th>
+	    
+	    {% if hostManager %}
+	    	<th />
+	    {% endif %}
+	    
+	  </tr>
+	{% for templ in templ_list %}
+	  <tr>
+	    <td>{{templ.attrs.label}}</td>
+	    <td>{{templ.attrs.tech}}</td>
+	    <td>{{templ.attrs.subtype}}</td>
+	    <td>{{templ.attrs.preference}}</td>
+	    
+	    {% if hostManager %}
+	    	<td><small><a href="{%url vhosttemplates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url vhosttemplates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
+	    {% endif %}
+	    
+	  </tr>
+	{% endfor %}
+	</table>
 {% else %}
-No sites
+	No sites
 {% endif %}
 
 {% if hostManager %}
-<p><input type="button" onClick="window.location='{%url vhosttemplates.add%}'" value="Add template" /></p>
+	<p><input type="button" onClick="window.location='{%url vhosttemplates.add%}'" value="Add template" /></p>
 {% endif %}
 
 {% endblock %}

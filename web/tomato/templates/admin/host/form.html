@@ -4,23 +4,24 @@
 
 {% block content %}
 
-{% if edit %}
-<h1>Edit host {{address}}</h1>
-<form action="{%url host.edit%}" method="post">
-{% else %}
-<h1>Add host</h1>
-<form action="{%url host.add%}" method="post">
-{% endif %}
-
-	{{form.as_p}}
-	
+{# check whether this form is for editing or adding #}
 	{% if edit %}
-	<input type="submit" value="Save" />
+		<h1>Edit host {{address}}</h1>
+		<form action="{%url host.edit%}" method="post">
 	{% else %}
-	<input type="submit" value="Add" />
+		<h1>Add host</h1>
+		<form action="{%url host.add%}" method="post">
 	{% endif %}
-	
-	<input type="button" onclick="history.back()" value="Cancel" />
-</form>
+
+		{{form.as_p}}
+
+		{% if edit %}
+			<input type="submit" value="Save" />
+		{% else %}
+			<input type="submit" value="Add" />
+		{% endif %}
+
+		<input type="button" onclick="history.back()" value="Cancel" />
+	</form>
 
 {% endblock %}

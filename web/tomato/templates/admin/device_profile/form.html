@@ -5,39 +5,45 @@
 {% block content %}
 
 {% if edit %}
-<h1>Edit {{tech}} device profile</h1>
 
-{% if tech == 'kvmqm' %}
-<form action="{%url device_profile.edit_kvmqm%}" method="post">
-{% else %}
-{% if tech == 'openvz' %}
-<form action="{%url device_profile.edit_openvz%}" method="post">
-{% else %}
-<form action="{%url device_profile.edit_repy%}" method="post">
-{% endif %}
-{% endif %}
+	<h1>Edit {{tech}} device profile</h1>
+	
+	{% if tech == 'kvmqm' %}
+		<form action="{%url device_profile.edit_kvmqm%}" method="post">
+	{% else %}
+	
+		{% if tech == 'openvz' %}
+			<form action="{%url device_profile.edit_openvz%}" method="post">
+		{% else %}
+			<form action="{%url device_profile.edit_repy%}" method="post">
+		{% endif %}
+		
+	{% endif %}
 
 {% else %}
-<h1>Add {{tech}} device profile</h1>
 
-{% if tech == 'kvmqm' %}
-<form action="{%url device_profile.add_kvmqm%}" method="post">
-{% else %}
-{% if tech == 'openvz' %}
-<form action="{%url device_profile.add_openvz%}" method="post">
-{% else %}
-<form action="{%url device_profile.add_repy%}" method="post">
-{% endif %}
-{% endif %}
+	<h1>Add {{tech}} device profile</h1>
+
+	{% if tech == 'kvmqm' %}
+		<form action="{%url device_profile.add_kvmqm%}" method="post">
+	{% else %}
+	
+		{% if tech == 'openvz' %}
+			<form action="{%url device_profile.add_openvz%}" method="post">
+		{% else %}
+			<form action="{%url device_profile.add_repy%}" method="post">
+		{% endif %}
+	
+	{% endif %}
 
 {% endif %}
 
 	{{form.as_p}}
 	
 	{% if edit %}
-	<input type="submit" value="Save" />
+		<input type="submit" value="Save" />
 	{% else %}
-	<input type="submit" value="Add" />
+		<input type="submit" value="Add" />
 	{% endif %}
 	
 	<input type="button" onclick="history.back()" value="Cancel" />

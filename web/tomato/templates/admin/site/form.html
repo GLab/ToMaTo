@@ -5,19 +5,19 @@
 {% block content %}
 
 {% if edit %}
-<h1>Edit site {{name}}</h1>
-<form action="{%url site.edit%}" method="post">
+	<h1>Edit site {{name}}</h1>
+	<form action="{%url site.edit%}" method="post">
 {% else %}
-<h1>Add site</h1>
-<form action="{%url site.add%}" method="post">
+	<h1>Add site</h1>
+	<form action="{%url site.add%}" method="post">
 {% endif %}
 
 	{{form.as_p}}
 	
 	{% if edit %}
-	<input type="submit" value="Save" />
+		<input type="submit" value="Save" />
 	{% else %}
-	<input type="submit" value="Add" />
+		<input type="submit" value="Add" />
 	{% endif %}
 	
 	<input type="button" onclick="history.back()" value="Cancel" />
