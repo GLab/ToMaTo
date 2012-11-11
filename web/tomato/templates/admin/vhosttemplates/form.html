@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+
+{# check whether this form is for editing or adding #}
+	{% if edit %}
+	
+		{% if edit_data %}
+			<h1>Edit template {{label}}</h1>
+			<form action="{%url vhosttemplates.edit_data%}" method="post" enctype="multipart/form-data">
+		{% else %}
+			<h1>Edit template {{label}}</h1>
+			<form action="{%url vhosttemplates.edit_torrent%}" method="post" enctype="multipart/form-data">
+		{% endif %}
+		
+	{% else %}
+		<h1>Add template</h1>
+		<form action="{%url vhosttemplates.add%}" method="post" enctype="multipart/form-data">
+	{% endif %}
+
+		{{form.as_p}}
+
+		{% if edit %}
+			<input type="submit" value="Save" />
+		{% else %}
+			<input type="submit" value="Add" />
+		{% endif %}
+
+		<input type="button" onclick="history.back()" value="Cancel" />
+	</form>
+
+{% endblock %}
