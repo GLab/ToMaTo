@@ -131,10 +131,13 @@ def remove(api, request):
         form = RemoveResourceForm(request.POST)
         if form.is_valid():
             res_id = form.cleaned_data["res_id"]
-            label = api.resource_info(res_id)['attrs']['label']
-            tech = api.resource_info(res_id)['attrs']['tech']
-            api.resource_remove(res_id)
-            return render_to_response("admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
+            if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'profile':
+                label = api.resource_info(res_id)['attrs']['label']
+                tech = api.resource_info(res_id)['attrs']['tech']
+                api.resource_remove(res_id)
+                return render_to_response("admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             res_id = request.POST['res_id']
             form = RemoveResourceForm()
@@ -157,8 +160,11 @@ def edit_kvmqm(api, request):
         form = EditKVMqmForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
-            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'kvmqm'})
+            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'kvmqm':
+                api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
+                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'kvmqm'})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
         else:
             name="ERROR"
             return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'kvmqm', 'form': form, "edit":True})
@@ -179,8 +185,11 @@ def edit_openvz(api, request):
         form = EditOpenVZForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
-            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'openvz'})
+            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'openvz':
+                api.resource_modify(formData["res_id"],{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
+                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'openvz'})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
         else:
             name="ERROR"
             return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'openvz', 'form': form, "edit":True})
@@ -201,8 +210,11 @@ def edit_repy(api, request):
         form = EditRePyForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.resource_modify(formData["res_id"],{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
-            return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
+            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'repy':
+                api.resource_modify(formData["res_id"],{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
+                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
         else:
             name="ERROR"
             return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'repy', 'form': form, "edit":True})
