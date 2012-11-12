@@ -35,7 +35,7 @@ class TemplateForm(forms.Form):
     preference = forms.IntegerField(label="Preference")
 
 class AddTemplateForm(TemplateForm):
-    torrentfile  = forms.FileField(label="Torrent containing image:")
+    torrentfile  = forms.FileField(label="Torrent:")
     
 class EditTemplateForm(TemplateForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
