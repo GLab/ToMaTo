@@ -29,8 +29,8 @@
 		{% for profile in profile_kvmqm_list %}
 		  <tr>
 		    <td>{{profile.attrs.label}}</td>
-		    <td>{{profile.attrs.diskspace}}</td>
-		    <td>{{profile.attrs.ram}}</td>
+		    <td>{{profile.attrs.diskspace}} MB</td>
+		    <td>{{profile.attrs.ram}} MB</td>
 		    <td>{{profile.attrs.cpus}}</td>
 		    <td>{{profile.attrs.preference}}</td>
 		    
@@ -73,8 +73,8 @@
 		{% for profile in profile_openvz_list %}
 		  <tr>
 		    <td>{{profile.attrs.label}}</td>
-		    <td>{{profile.attrs.diskspace}}</td>
-		    <td>{{profile.attrs.ram}}</td>
+		    <td>{{profile.attrs.diskspace}} MB</td>
+		    <td>{{profile.attrs.ram}} MB</td>
 		    <td>{{profile.attrs.preference}}</td>
 		    
 		    {% if hostManager %}
@@ -116,7 +116,7 @@
 		{% for profile in profile_repy_list %}
 		  <tr>
 		    <td>{{profile.attrs.label}}</td>
-		    <td>{{profile.attrs.ram}}</td>
+		    <td>{{profile.attrs.ram}} MB</td>
 		    <td>{{profile.attrs.cpus}}</td>
 		    <td>{{profile.attrs.preference}}</td>
 		    

@@ -28,26 +28,32 @@ from lib import *
 import xmlrpclib
 
 class OpenVZForm(forms.Form):
-    name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    diskspace = forms.IntegerField(label="Disk Space")
-    ram = forms.IntegerField(label="RAM")
+    diskspace = forms.IntegerField(label="Disk Space (MB)")
+    ram = forms.IntegerField(label="RAM (MB)")
     preference = forms.IntegerField(label="Preference")
 
 class RePyForm(forms.Form):
-    name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    ram = forms.IntegerField(label="RAM")
+    ram = forms.IntegerField(label="RAM (MB)")
     cpus = forms.FloatField(label = "no. of CPUs")
     preference = forms.IntegerField(label="Preference")
 
 class KVMqmForm(forms.Form):
-    name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
-    diskspace = forms.IntegerField(label="Disk Space")
-    ram = forms.IntegerField(label="RAM")
+    diskspace = forms.IntegerField(label="Disk Space (MB)")
+    ram = forms.IntegerField(label="RAM (MB)")
     cpus = forms.IntegerField(label="no. of CPUs")
     preference = forms.IntegerField(label="Preference")
+    
+class AddOpenVZForm(OpenVZForm):
+    name = forms.CharField(max_length=50,label="Internal Name")
+    
+class AddRePyForm(OpenVZForm):
+    name = forms.CharField(max_length=50,label="Internal Name")
+    
+class AddKVMqmForm(OpenVZForm):
+    name = forms.CharField(max_length=50,label="Internal Name")
     
 class EditOpenVZForm(OpenVZForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -86,7 +92,7 @@ def index(api, request):
 @wrap_rpc
 def add_openvz(api, request):
     if request.method == 'POST':
-        form = OpenVZForm(request.POST)
+        form = AddOpenVZForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
@@ -94,13 +100,13 @@ def add_openvz(api, request):
         else:
             return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
     else:
-        form = OpenVZForm
+        form = AddOpenVZForm
         return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
     
 @wrap_rpc
 def add_kvmqm(api, request):
     if request.method == 'POST':
-        form = KVMqmForm(request.POST)
+        form = AddKVMqmForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
@@ -108,13 +114,13 @@ def add_kvmqm(api, request):
         else:
             return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
     else:
-        form = KVMqmForm
+        form = AddKVMqmForm
         return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
     
 @wrap_rpc
 def add_repy(api, request):
     if request.method == 'POST':
-        form = RePyForm(request.POST)
+        form = AddRePyForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
@@ -122,7 +128,7 @@ def add_repy(api, request):
         else:
             return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
     else:
-        form = RePyForm
+        form = AddRePyForm
         return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
     
 @wrap_rpc
