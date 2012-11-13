@@ -35,25 +35,34 @@ class OpenVZForm(forms.Form):
 
 class RePyForm(forms.Form):
     label = forms.CharField(max_length=255)
-    ram = forms.IntegerField(label="RAM (MB)")
     cpus = forms.FloatField(label = "no. of CPUs")
+    ram = forms.IntegerField(label="RAM (MB)")
     preference = forms.IntegerField(label="Preference")
 
 class KVMqmForm(forms.Form):
     label = forms.CharField(max_length=255)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
-    ram = forms.IntegerField(label="RAM (MB)")
     cpus = forms.IntegerField(label="no. of CPUs")
+    ram = forms.IntegerField(label="RAM (MB)")
     preference = forms.IntegerField(label="Preference")
     
 class AddOpenVZForm(OpenVZForm):
     name = forms.CharField(max_length=50,label="Internal Name")
+    def __init__(self, *args, **kwargs):
+        super(AddOpenVZForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['name', 'label', 'diskspace', 'ram', 'preference']
     
-class AddRePyForm(OpenVZForm):
+class AddRePyForm(RePyForm):
     name = forms.CharField(max_length=50,label="Internal Name")
+    def __init__(self, *args, **kwargs):
+        super(AddRePyForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['name', 'label', 'cpus', 'ram', 'preference']
     
-class AddKVMqmForm(OpenVZForm):
+class AddKVMqmForm(KVMqmForm):
     name = forms.CharField(max_length=50,label="Internal Name")
+    def __init__(self, *args, **kwargs):
+        super(AddKVMqmForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['name', 'label', 'diskspace', 'cpus', 'ram', 'preference']
     
 class EditOpenVZForm(OpenVZForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
