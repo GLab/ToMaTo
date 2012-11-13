@@ -1,0 +1,139 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of device profiles</h1>
+
+
+{# kvmqm #}
+
+	{% if profile_kvmqm_list %}
+		<script src="/js/enhancetable.js"></script>
+		
+		<h2>kvmqm</h2>
+		
+		<table class="sortable,filterable">
+		  <tr>
+		    <th>Label</th>
+		    <th>Disk Space</th>
+		    <th>RAM</th>
+		    <th>CPUs</th>
+		    <th>Preference</th>
+		    
+		    {% if hostManager %}
+		    	<th />
+		    {% endif %}
+		    
+		  </tr>
+		{% for profile in profile_kvmqm_list %}
+		  <tr>
+		    <td>{{profile.attrs.label}}</td>
+		    <td>{{profile.attrs.diskspace}} MB</td>
+		    <td>{{profile.attrs.ram}} MB</td>
+		    <td>{{profile.attrs.cpus}}</td>
+		    <td>{{profile.attrs.preference}}</td>
+		    
+		    {% if hostManager %}
+		    	<td><small><a href="{%url device_profile.edit_kvmqm%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+		    {% endif %}
+		    
+		  </tr>
+		{% endfor %}
+		
+		</table>
+	{% else %}
+		No kvmqm profiles
+	{% endif %}
+	
+	{% if hostManager %}
+		<p><input type="button" onClick="window.location='{%url device_profile.add_kvmqm%}'" value="Add kvmqm profile" /></p>
+	{% endif %}
+
+
+{# openvz #}
+
+	{% if profile_openvz_list %}
+
+		<br />
+		<h2>openvz</h2>
+	
+		<table class="sortable,filterable">
+		  <tr>
+		    <th>Label</th>
+		    <th>Disk Space</th>
+		    <th>RAM</th>
+		    <th>Preference</th>
+		    
+		    {% if hostManager %}
+		    	<th />
+		    {% endif %}
+		    
+		  </tr>
+		{% for profile in profile_openvz_list %}
+		  <tr>
+		    <td>{{profile.attrs.label}}</td>
+		    <td>{{profile.attrs.diskspace}} MB</td>
+		    <td>{{profile.attrs.ram}} MB</td>
+		    <td>{{profile.attrs.preference}}</td>
+		    
+		    {% if hostManager %}
+		    	<td><small><a href="{%url device_profile.edit_openvz%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+		    {% endif %}
+		    
+		  </tr>
+		{% endfor %}
+		</table>
+	{% else %}
+		No openvz profiles
+	{% endif %}
+	
+	{% if hostManager %}
+		<p><input type="button" onClick="window.location='{%url device_profile.add_openvz%}'" value="Add openvz profile" /></p>
+	{% endif %}
+
+
+
+{# repy #}
+
+	{% if profile_repy_list %}
+	
+		<br />
+		<h2>repy</h2>
+		
+		<table class="sortable,filterable">
+		  <tr>
+		    <th>Label</th>
+		    <th>RAM</th>
+		    <th>CPUs</th>
+		    <th>Preference</th>
+		    
+		    {% if hostManager %}
+		    	<th />
+		    {% endif %}
+		    
+		  </tr>
+		{% for profile in profile_repy_list %}
+		  <tr>
+		    <td>{{profile.attrs.label}}</td>
+		    <td>{{profile.attrs.ram}} MB</td>
+		    <td>{{profile.attrs.cpus}}</td>
+		    <td>{{profile.attrs.preference}}</td>
+		    
+		    {% if hostManager %}
+		    	<td><small><a href="{%url device_profile.edit_repy%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
+		    {% endif %}
+		    
+		  </tr>
+		{% endfor %}
+		</table>
+	{% else %}
+		No repy profiles
+	{% endif %}
+	
+	{% if hostManager %}
+		<p><input type="button" onClick="window.location='{%url device_profile.add_repy%}'" value="Add repy profile" /></p>
+	{% endif %}
+
+
+{% endblock %}
