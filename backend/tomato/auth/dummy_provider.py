@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User
+from ..auth import User, Provider as AuthProvider
 
-class Provider:
-	def __init__(self, admin_user="admin", invalid_user="invalid"):
+class Provider(AuthProvider):
+	def parseOptions(self, admin_user="admin", invalid_user="invalid", **kwargs):
 		self.admin_user = admin_user
 		self.invalid_user = invalid_user
 	

@@ -23,15 +23,6 @@
 	<input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label>
 	<input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label>
 
-	<style>
-	table td.stddev_high.good_low, table td.stddev_low.good_high {
-		color: red !important;
-	}
-	table td.stddev_high.good_high, table td.stddev_low.good_low {
-		color: green;
-	}
-	</style>
-
 	<table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
 	  <tr>
 	    <th>&nbsp;</th>
@@ -42,7 +33,7 @@
 	    <th>Distribution</th>
 	    <th>Python</th>
 	    <th>Kernel</th>
-	    <th stddev_column_class="good_low">Info age</th>
+    <th stddev_column_class="good_high">Info age</th>
 	    <th stddev_column_class="good_high">Uptime</th>
 	    <th stddev_column_class="good_low good_high">Time diff</th>
 	    <th stddev_column_class="good_low">Query time</th>

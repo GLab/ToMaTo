@@ -26,7 +26,7 @@ TIME_ZONE = 'Europe/Berlin'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'de-de'
+LANGUAGE_CODE = 'en-US'
 
 SITE_ID = 1
 
@@ -68,6 +68,18 @@ AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.RemoteUserAuthBackend',
 
 ROOT_URLCONF = 'tomato.urls'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'TIMEOUT': 3600,
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }
+    }
+}
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
 import os
 CURRENT_DIR = os.path.dirname(__file__)
 TEMPLATE_DIRS = os.path.join(CURRENT_DIR, 'templates')
@@ -84,6 +96,8 @@ server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
+guest_username="guest"
+guest_password="guest"
 project_url="http://dswd.github.com/ToMaTo/%s"
 help_url="http://github.com/dswd/ToMaTo/wiki/%s"
 ticket_url="http://github.com/dswd/ToMaTo/issues/%s"

@@ -215,4 +215,4 @@ def synchronize():
         top.updateUsage(now-900)
     logging.logMessage("sync end", category="accounting")        
 
-task = util.RepeatedTimer(300, synchronize) #every 5 minutesd
+task = util.RepeatedTimer(300, synchronize) #every 5 minutes

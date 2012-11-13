@@ -23,13 +23,16 @@ from settings import *
 import tags
 
 def getauth(request):
-	if not request.META.has_key("HTTP_AUTHORIZATION"):
+	auth = request.session.get("auth")
+	if request.META.has_key("HTTP_AUTHORIZATION"):
+		authstr=request.META["HTTP_AUTHORIZATION"]
+		(authmeth, auth) = authstr.split(' ',1)
+		if 'basic' != authmeth.lower():
+			return None
+		auth = auth.strip().decode('base64')
+		request.session["auth"] = auth
+	if not auth:
 		return None
-	authstr=request.META["HTTP_AUTHORIZATION"]
-	(authmeth, auth) = authstr.split(' ',1)
-	if 'basic' != authmeth.lower():
-		return None
-	auth = auth.strip().decode('base64')
 	username, password = auth.split(':',1)
 	return (username, password)
 
@@ -42,6 +45,11 @@ class ServerProxy(object):
 			return call_proxy(args, kwargs)
 		return _call
 
+def getGuestApi():
+	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, guest_username, guest_password, server_host, server_port), allow_none=True )
+	api.user = api.account_info()
+	return api
+
 def getapi(request):
 	auth=getauth(request)
 	if not auth:
@@ -50,7 +58,7 @@ def getapi(request):
 	username = urllib.quote_plus(username)
 	password = urllib.quote_plus(password)
 	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
-	api.account_info()
+	api.user = api.account_info()
 	return api
 
 class HttpResponseNotAuthorized(HttpResponse):
@@ -69,6 +77,8 @@ class wrap_rpc:
 				return HttpResponseNotAuthorized()
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
+			import traceback
+			traceback.print_exc()
 			if isinstance(e, socket.error):
 				import os
 				etype = "Socket error"

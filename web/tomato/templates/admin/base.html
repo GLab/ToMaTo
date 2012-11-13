@@ -2,11 +2,11 @@
 
 {% block menu_top %}
 <ul>
+	<li><a href="{%url account.info_or_register%}">Account</a></li>
 	<li><a href="{%url topology.index%}">Topologies</a></li>
 	<li class="active"><a href="{%url host.index%}">Admin</a></li>
 	<li><a href="{%url main.project%}" target="_help">Project</a></li>
 	<li><a href="{%url main.help%}" target="_help">Help</a></li>
-	<li><a href="{%url main.ticket%}" target="_ticket">Create Ticket</a></li>
 	<li><a href="{%url main.logout%}" target="_logout" onclick="alert('Please cancel the following dialog and close the new page.'); return true">Logout</a></li>
 </ul>
 {% endblock %}

@@ -23,15 +23,15 @@ $(function () {
     		});
             for (var i=0; i<data[range].length; i++) {
                 var rec = data[range][i];
-                traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic]);
+                traffic[range].push([rec.end * 1000 - offset, rec.usage.traffic / (rec.end-rec.begin)]);
                 memory[range].push([rec.end * 1000 - offset, rec.usage.memory]);
-                cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime]);
+                cputime[range].push([rec.end * 1000 - offset, rec.usage.cputime / (rec.end-rec.begin)]);
                 diskspace[range].push([rec.end * 1000 - offset, rec.usage.diskspace]);
             }
         }
         var formatSize = function(value) {
             suffix = 0;
-            while (value > 1000) {
+            while (value >= 1000) {
                 value /= 1000.0;
                 suffix++;
             }
@@ -48,10 +48,24 @@ $(function () {
                 suffix++;
             }
             return Math.round(value*100)/100 + " " + ["s", "min", "h"][suffix];
+        }
+        var formatCPUs = function(value) {
+        	return Math.round(value*100)/100 + " CPUs";
+        };
+        var formatCPUsEx = function(value) {
+        	return formatCPUs(value) + " (" + formatTime(value*(data[currentRange][0].end-data[currentRange][0].begin)) + ")";
+        };
+        var formatTraffic = function(value) {
+        	return formatSize(value) + "/s";
+        };
+        var formatTrafficEx = function(value) {
+        	return formatTraffic(value) + " (" + formatSize(value*(data[currentRange][0].end-data[currentRange][0].begin)) + ")"
         };
         var colors = Highcharts.getOptions().colors;
         var symbols = Highcharts.getOptions().symbols;
+        var currentRange = "5minutes"
         setRange = function(range) {
+        	currentRange = range;
             chart.series[0].remove(true);
             chart.series[0].remove(true);
             chart.series[0].remove(true);
@@ -77,16 +91,16 @@ $(function () {
             }, {
                 labels: {
                     formatter: function() {
-                        return formatTime(this.value);
+                        return formatCPUs(this.value);
                     }
                 },
-                title: { text: 'CPU Time' },
+                title: { text: 'CPUs used' },
                 min: 0,
                 opposite: true
             }, {
                 labels: {
                     formatter: function() {
-                        return formatSize(this.value);
+                        return formatTraffic(this.value);
                     }
                 },
                 title: { text: 'Traffic' },
@@ -96,13 +110,13 @@ $(function () {
             tooltip: {
                 formatter: function() {
                         return '<b>'+ this.series.name +'</b><br/>'+
-                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatTime, formatSize][this.series.yAxis.options.index](this.y) + '</b>';
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatSize, formatCPUsEx, formatTrafficEx][this.series.yAxis.options.index](this.y) + '</b>';
                 }
             },
             series: [{ name: 'Memory', data: memory["5minutes"], yAxis: 0 },
                      { name: 'Diskspace', data: diskspace["5minutes"], yAxis: 0 }, 
                      { name: 'Traffic', data: traffic["5minutes"], yAxis: 2 },
-                     { name: 'CPU-Time', data: cputime["5minutes"], yAxis: 1 }]
+                     { name: 'CPUs used', data: cputime["5minutes"], yAxis: 1 }]
         });
     });
     

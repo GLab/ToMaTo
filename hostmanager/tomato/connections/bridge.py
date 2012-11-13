@@ -33,7 +33,7 @@ class Bridge(connections.Connection):
 	bridge_attr = Attr("bridge", type="str")
 	bridge = bridge_attr.attribute()
 	
-	emulation_attr = Attr("emulation", desc="Enable emulation", type="bool", default=False)
+	emulation_attr = Attr("emulation", desc="Enable emulation", type="bool", default=True)
 	emulation = emulation_attr.attribute()
 
 	bandwidth_to_attr = Attr("bandwidth_to", desc="Bandwidth", unit="kbit/s", type="float", minValue=0, maxValue=1000000, faultType=fault.new_user, default=10000)

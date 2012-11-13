@@ -19,7 +19,7 @@ from django.db import models
 from . import config, currentUser
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
-from auth import Flags
+from auth import Flags, mailFlaggedUsers
 import xmlrpclib, time
 
 class Site(attributes.Mixin, models.Model):
@@ -589,6 +589,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
         if set(networkKinds) - set(host.getNetworkKinds()):
             continue #FIXME: allow general networks
         hosts.append(host)
+    fault.check(hosts, "No hosts found for requirements")
     # any host in hosts can handle the request
     prefs = dict([(h, 0.0) for h in hosts])
     #STEP 2: calculate preferences based on host load
@@ -653,10 +654,16 @@ def getConnectionCapabilities(type_):
 @db.commit_after
 def synchronizeHost(host):
     #TODO: implement more than resource sync
+    oldProblems = host.problems()
     try:
         host.update()
         host.synchronizeResources()
+        problems = host.problems()
+        if oldProblems != problems:
+            mailFlaggedUsers(Flags.HostsManager, "Host %s" % host, "Host %s has changed state.\n\nProblems now: %s\nProblems before: %s" % (host, ", ".join(problems), ", ".join(oldProblems)))
     except:
+        if host.problems() and not oldProblems:
+            mailFlaggedUsers(Flags.HostsManager, "Host unreachable: %s" % host, "Host %s is unreachable." % host)
         logging.logException(host=host.address)
         print "Error updating information from %s" % host
     

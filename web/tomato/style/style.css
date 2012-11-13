@@ -9,7 +9,6 @@ h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
 
 table {
-	background-color: #CDCDCD;
 	font-size: 1.0em;
 	text-align: left;
 	border-spacing: 0px;
@@ -310,19 +309,18 @@ th {
 }
 
 form table th {
-	font-weight: normal;
 	vertical-align:top;
 }
 
 
-form table ul.errorlist {
+form ul.errorlist {
 	padding: 0;
 	margin: 0;
 	list-style-type: none;
 }
 
-form table ul.errorlist li {
-	font-size:0.5em;
+form ul.errorlist li {
+	font-size:9pt;
 	color:red;
 	font-weight:bold;
 }
@@ -331,18 +329,9 @@ div.ui-widget {
 	font-size:1.0em;
 }
 
-.task_succeeded {
+table td.stddev_high.good_low, table td.stddev_low.good_high {
+	color: red !important;
+}
+table td.stddev_high.good_high, table td.stddev_low.good_low {
 	color: green;
-}
-
-.task_failed {
-	color: red;
-}
-
-.task_reversing, .task_aborted {
-	color: orange;
-}
-
-.task_waiting {
-	color: gray;
 }

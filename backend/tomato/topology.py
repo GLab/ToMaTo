@@ -222,9 +222,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         return {
             "id": self.id,
             "attrs": self.attrs.copy(),
-            "permissions": dict([(p.user.name, p.role) for p in self.permissions.entries.all()]),
+            "permissions": dict([(str(p.user), p.role) for p in self.permissions.entries.all()]),
             "elements": elements,
             "connections": connections,
+            "usage": self.totalUsage.getRecords(type="5minutes").order_by("end")[0].info()
         }
         
     def updateUsage(self, now):

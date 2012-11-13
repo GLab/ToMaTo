@@ -1,0 +1,28 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Account list</h1>
+
+<script src="/js/enhancetable.js"></script>
+<table class="sortable,filterable">
+  <tr>
+    <th>Name</th>
+    <th>Origin</th>
+    <th>Full name</th>
+    <th>Affiliation</th>
+    <th>Flags</th>
+    <th></th>
+  </tr>
+{% for account in accounts %}
+  <tr>
+    <td>{{account.name}}</td>
+    <td>{{account.origin}}</td>
+    <td>{{account.realname}}</td>
+    <td>{{account.affiliation}}</td>    
+    <td>{{account.flags|join:", "}}</td>
+    <td><a href="{%url account.info account.id %}"><img src="/img/user_edit.png" title="edit" /></a></td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}
