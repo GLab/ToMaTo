@@ -6,7 +6,16 @@ Contents:
 .. toctree::
   :maxdepth: 2
 
+  backend/index
   hostmanager/index
+  web/index
+  cli/index
+
+  
+.. toctree::
+  :maxdepth: 1
+  
+  docs/templates
 
 
 Indices and tables
@@ -15,10 +24,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-Missing Topics
---------------
-* backend
-* web
-* cli
-* template synchronization
