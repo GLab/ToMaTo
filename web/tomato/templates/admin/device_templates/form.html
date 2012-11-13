@@ -6,14 +6,19 @@
 
 {# check whether this form is for editing or adding #}
 	{% if edit %}
-		<h1>Edit host {{address}}</h1>
-		<form action="{%url host.edit%}" method="post">
-	{% else %}
-		<h1>Add host</h1>
-		<form action="{%url host.add%}" method="post">
-	{% endif %}
-
+	
+		{% if edit_data %}
+			<h1>Edit template {{label}}</h1>
+			<form action="{%url device_templates.edit_data%}" method="post" enctype="multipart/form-data">
+		{% else %}
+			<h1>Edit template {{label}}</h1>
+			<form action="{%url device_templates.edit_torrent%}" method="post" enctype="multipart/form-data">
+		{% endif %}
 		
+	{% else %}
+		<h1>Add template</h1>
+		<form action="{%url device_templates.add%}" method="post" enctype="multipart/form-data">
+	{% endif %}
 
 		<table>
 			{{form.as_table}}
@@ -21,17 +26,19 @@
 			<tr>
 				<td />
 				<td align="right">
-
+	
 					{% if edit %}
 						<input type="submit" value="Save" />
 					{% else %}
 						<input type="submit" value="Add" />
 					{% endif %}
-
+					
 					<input type="button" onclick="history.back()" value="Cancel" />
 				</td>
 			</tr>
+			
 		</table>
+		
 	</form>
 
 {% endblock %}

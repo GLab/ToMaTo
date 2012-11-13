@@ -12,15 +12,25 @@
 	<form action="{%url site.add%}" method="post">
 {% endif %}
 
-	{{form.as_p}}
 	
-	{% if edit %}
-		<input type="submit" value="Save" />
-	{% else %}
-		<input type="submit" value="Add" />
-	{% endif %}
+
+		<table>
+			{{form.as_table}}
 	
-	<input type="button" onclick="history.back()" value="Cancel" />
+			<tr>
+				<td />
+				<td align="right">
+					
+					{% if edit %}
+						<input type="submit" value="Save" />
+					{% else %}
+						<input type="submit" value="Add" />
+					{% endif %}
+					
+					<input type="button" onclick="history.back()" value="Cancel" />
+				</td>
+			</tr>
+		</table>
 	
 </form>
 
