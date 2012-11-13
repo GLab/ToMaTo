@@ -42,8 +42,9 @@ def element_create(type, parent=None, attrs={}): #@ReservedAssignment
     
     Parameter *attrs*:
       The attributes of the element can be given as the parameter *attrs*. This 
-      parameter must be a dict of attributes if given. Attributes can later be 
-      changed using :py:func:`element_modify`. This method should behave like::
+      parameter must be a :term:`dict` of attributes if given. Attributes can
+      later be changed using :py:func:`element_modify`. This method should 
+      behave like::
       
          info = element_create(type, parent, {})
          element_modify(info["id"], attrs)

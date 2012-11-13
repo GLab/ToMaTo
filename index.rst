@@ -16,6 +16,7 @@ Contents:
   :maxdepth: 1
   
   docs/templates
+  docs/glossary
 
 
 Indices and tables
