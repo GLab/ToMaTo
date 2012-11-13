@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Account {{account.name}}</h1>
 
-<form action="{%url account.info%}" method="POST">
+<form action="{%url account.info account.id%}" method="POST">
 <table>
 {{form.as_table}}
 </table>

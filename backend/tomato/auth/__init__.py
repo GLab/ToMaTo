@@ -17,7 +17,7 @@
 
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
-from ..lib import attributes, db, logging, util #@UnresolvedImport
+from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
 from .. import config, fault, currentUser
 
 class Flags:
@@ -123,6 +123,14 @@ class User(attributes.Mixin, models.Model):
         info.update(self.attrs)
         return info
         
+    def sendMail(self, subject, message):
+        if not self.email:
+            logging.logMessage("failed to send mail", category="user", subject=subject)
+        data = {"subject": subject, "message": message, "realname": self.realname or self.name}
+        subject = config.EMAIL_SUBJECT_TEMPLATE % data
+        message = config.EMAIL_MESSAGE_TEMPLATE % data
+        mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message)
+        
     def __str__(self):
         return self.__unicode__()
 
@@ -177,6 +185,13 @@ def getUser(name):
         return None
     except User.MultipleObjectsReturned:
         fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
+
+def getFlaggedUsers(flag):
+    return filter(lambda user: user.hasFlag(flag), getAllUsers())
+
+def mailFlaggedUsers(flag, subject, message):
+    for user in getFlaggedUsers(flag):
+        user.sendMail(subject, message)
 
 def getAllUsers():
     return User.objects.all()

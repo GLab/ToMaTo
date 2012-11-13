@@ -55,7 +55,6 @@ class AccountForm(forms.Form):
 
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
-        data["flags"] = data.get("flags", [])
         AccountForm.__init__(self, data)
         flags = [(f, f) for f in api.flags()]
         self.fields["name"].widget = FixedText()
@@ -92,7 +91,7 @@ def info(api, request, id=None):
                 del data["flags"]
             del data["name"]
             api.account_modify(id, attrs=data)
-            return HttpResponseRedirect(reverse("tomato.account.info"))
+            return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
     else:
         form = AccountChangeForm(api, user)
     return render_to_response("account/info.html", {"account": user, "form": form})

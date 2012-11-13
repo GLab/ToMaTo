@@ -71,7 +71,14 @@ DATABASES = {
 HOST_UPDATE_INTERVAL = 60
 RESOURCES_SYNC_INTERVAL = 600
 
-MAIL = {}
+EMAIL_FROM = "ToMaTo backend <schwerdel@informatik.uni-kl.de>"
+EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
+EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
+EMAIL_HOST = "smtp.uni-kl.de"
+#EMAIL_PORT =
+#EMAIL_HOST_USER =
+#EMAIL_HOST_PASSWORD =
+#EMAIL_USE_TLS
 
 TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
