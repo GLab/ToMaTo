@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of templates</h1>
+
+
+{% if templ_list %}
+	<script src="/js/enhancetable.js"></script>
+	
+	
+	<table class="sortable,filterable">
+	  <tr>
+	    <th>Label</th>
+	    <th>Technology</th>
+	    <th>Subtype</th>
+	    <th>Preference</th>
+	    
+	    
+	  </tr>
+	{% for templ in templ_list %}
+	  <tr>
+	    <td>{{templ.attrs.label}}</td>
+	    <td>{{templ.attrs.tech}}</td>
+	    <td>{{templ.attrs.subtype}}</td>
+	    <td>{{templ.attrs.preference}}</td>
+	    
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	No sites
+{% endif %}
+
+
+{% endblock %}

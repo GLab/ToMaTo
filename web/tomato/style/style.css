@@ -29,6 +29,9 @@ table tbody td {
 table tr:nth-child(even) td {
 	background-color: #ebF2F2;
 }
+table.whitebg tr:nth-child(even) td {
+	background-color: white;
+}
 
 code {font-size:0.9px;color:#0000ff;}
 pre {
