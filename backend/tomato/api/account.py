@@ -24,26 +24,44 @@ def _getAccount(name):
     return acc
 
 def account_info(name=None):
+    """
+    undocumented
+    """
     acc = _getAccount(name)
     return acc.info()
 
 def account_list():
+    """
+    undocumented
+    """
     return [acc.info() for acc in getAllUsers()]
 
 def account_modify(name=None, attrs={}):
+    """
+    undocumented
+    """
     acc = _getAccount(name)
     if name and name != currentUser().name:
         fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
     acc.modify(attrs)
         
 def account_create(username, password, attrs={}, provider=""):
+    """
+    undocumented
+    """
     user = register(username, password, attrs, provider)
     return user.info()
         
 def account_change_password(password):
+    """
+    undocumented
+    """
     changePassword(password)
         
 def flags():
+    """
+    undocumented
+    """
     return [getattr(Flags, flag) for flag in dir(Flags) if not flag.startswith("__")]
         
 from .. import fault, currentUser

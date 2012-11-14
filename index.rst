@@ -1,8 +1,8 @@
-Welcome to ToMaTo's documentation!
-==================================
+Topology Management Documentation
+=================================
 
-Contents:
-
+ToMaTo parts
+------------
 .. toctree::
   :maxdepth: 2
 
@@ -12,19 +12,22 @@ Contents:
   cli/index
 
   
+Other topics
+------------
 .. toctree::
   :maxdepth: 1
   
   docs/linkemulation
   docs/packetcapturing
   docs/templates
+  docs/accountingdata
   docs/glossary
   docs/license
+  docs/missing
 
 
 Indices and tables
-==================
-
+------------------
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
