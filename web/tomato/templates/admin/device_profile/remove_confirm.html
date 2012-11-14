@@ -6,10 +6,11 @@
 
 <h1>Confirm Removal</h1>
 
-Are you sure you want to remove the host {{address}} ?
-<form action="{%url host.remove%}" method="post">
+Are you sure you want to remove the {{tech}} device profile {{label}} ?
+<form action="{%url device_profile.remove%}" method="post">
 {{form.as_p}}
 <input type="submit" value="Yes" /><input type="button" onclick="history.back()" value="Cancel" />
+
 
 </form>
 
