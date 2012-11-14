@@ -55,6 +55,14 @@ Glossary
       A connection is a relation between exactly two *elements*. The connnection can have 
       attributes of its own.
       
+   Device
+      This is a term from an older version of ToMaTo. A device is an *element* that is a virtual
+      machine.
+   
+   Connector
+      This is a term from an older version of ToMaTo. Connectors are *elements* that are network 
+      elements.
+      
    Template
       Templates are pre-installed disk images for virtual machine *elements*. Depending on the VM
       technology different templates with different operating systems and software exist. For 

@@ -15,8 +15,11 @@ Contents:
 .. toctree::
   :maxdepth: 1
   
+  docs/linkemulation
+  docs/packetcapturing
   docs/templates
   docs/glossary
+  docs/license
 
 
 Indices and tables
