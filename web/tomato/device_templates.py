@@ -27,25 +27,6 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
-class TemplateForm(forms.Form):
-    name = forms.CharField(max_length=50,label="Internal Name")
-    label = forms.CharField(max_length=255)
-    subtype = forms.CharField(max_length=255)
-    tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices={('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')}))
-    preference = forms.IntegerField(label="Preference")
-
-class AddTemplateForm(TemplateForm):
-    torrentfile  = forms.FileField(label="Torrent:")
-    
-class EditTemplateForm(TemplateForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-class ChangeTemplateTorrentForm(forms.Form):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    torrentfile  = forms.FileField(label="Torrent containing image:")    
-    
-class RemoveTemplateForm(forms.Form):
-    name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
 	return 'hosts_manager' in account_info['flags']
@@ -63,19 +44,13 @@ def index(api, request):
 
 @wrap_rpc
 def add(api, request):
-    if request.method == 'POST':
-        form = AddTemplateForm(request.POST, request.FILES)
-        if form.is_valid():
-            formData = form.cleaned_data
-            f = request.FILES['file']
-            #
-            #
-            #   DUMMY
-            #
-            #
-            return render_to_response("admin/device_templates/add_success.html", {'label': formData['label']})
-        else:
-            return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
+    reslist = api.resource_list()
+    templ_list = []
+    for res in reslist:
+        if res['type'] == 'template':
+            templ_list.append(res)
+        
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
     else:
         form = AddTemplateForm
         return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
@@ -83,12 +58,16 @@ def add(api, request):
 
 @wrap_rpc
 def remove(api, request):
-    return index(api,request)
-    #
-    #
-    #   DUMMY
-    #
-    #
+    reslist = api.resource_list()
+    templ_list = []
+    for res in reslist:
+        if res['type'] == 'template':
+            templ_list.append(res)
+        
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
+    else:
+        form = AddTemplateForm
+        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
 @wrap_rpc
 def edit(api, request):
@@ -96,36 +75,28 @@ def edit(api, request):
 
 @wrap_rpc
 def edit_data(api, request):
-    if request.method=='POST':
-        form = EditTemplateForm(request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            if api.resource_info(formData['res_id'])['type'] == 'template':
-                api.resource_modify(formData["res_id"],{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference']})
-                return render_to_response("admin/device_templates/edit_success.html", {'label': formData["label"]})
-            else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
-        else:
-            name="ERROR"
-            return render_to_response("admin/device_templates/form.html", {'label': name, 'form': form, "edit":True, 'edit_data':True})
+    reslist = api.resource_list()
+    templ_list = []
+    for res in reslist:
+        if res['type'] == 'template':
+            templ_list.append(res)
+        
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
     else:
-        res_id = request.GET['id']
-        if res_id:
-            res_info = api.resource_info(res_id)
-            origData = res_info['attrs']
-            origData['res_id'] = res_id
-            form = EditTemplateForm(origData)
-            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
-        else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+        form = AddTemplateForm
+        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
 
 @wrap_rpc
 def edit_torrent(api, request):
-    return index(api,request)
-    #
-    #
-    #   DUMMY
-    #
-    #
+    reslist = api.resource_list()
+    templ_list = []
+    for res in reslist:
+        if res['type'] == 'template':
+            templ_list.append(res)
+        
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
+    else:
+        form = AddTemplateForm
+        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
