@@ -51,9 +51,6 @@ def add(api, request):
             templ_list.append(res)
         
     return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
-    else:
-        form = AddTemplateForm
-        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
    
 
 @wrap_rpc
@@ -65,13 +62,16 @@ def remove(api, request):
             templ_list.append(res)
         
     return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
-    else:
-        form = AddTemplateForm
-        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
 @wrap_rpc
 def edit(api, request):
-    return render_to_response("admin/device_templates/edit_unspecified.html",{'res_id':request.GET['id'],'label':api.resource_info(request.GET['id'])['attrs']['label']})
+    reslist = api.resource_list()
+    templ_list = []
+    for res in reslist:
+        if res['type'] == 'template':
+            templ_list.append(res)
+        
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def edit_data(api, request):
@@ -82,9 +82,6 @@ def edit_data(api, request):
             templ_list.append(res)
         
     return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
-    else:
-        form = AddTemplateForm
-        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
 
 @wrap_rpc
@@ -96,7 +93,4 @@ def edit_torrent(api, request):
             templ_list.append(res)
         
     return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
-    else:
-        form = AddTemplateForm
-        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
 
