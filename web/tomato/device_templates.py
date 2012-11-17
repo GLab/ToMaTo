@@ -48,7 +48,7 @@ class ChangeTemplateTorrentForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     torrentfile  = forms.FileField(label="Torrent containing image:")    
     
-class RemoveTemplateForm(forms.Form):
+class RemoveResourceForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
@@ -84,12 +84,28 @@ def add(api, request):
 
 @wrap_rpc
 def remove(api, request):
-    return index(api,request)
-    #
-    #
-    #   DUMMY
-    #
-    #
+    if request.method == 'POST':
+        form = RemoveResourceForm(request.POST)
+        if form.is_valid():
+            res_id = form.cleaned_data["res_id"]
+            if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'template':
+                label = api.resource_info(res_id)['attrs']['label']
+                api.resource_remove(res_id)
+                return render_to_response("admin/device_templates/remove_success.html", {'label':label})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'There is no template with id '+res_id})
+        else:
+            res_id = request.POST['res_id']
+            form = RemoveResourceForm()
+            form.fields["res_id"].initial = res_id
+            return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+    
+    else:
+        res_id = request.GET['id']
+        form = RemoveResourceForm()
+        form.fields["res_id"].initial = res_id
+        return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+    
 
 @wrap_rpc
 def edit(api, request):
