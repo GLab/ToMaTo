@@ -26,9 +26,9 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+import base64
 
 class TemplateForm(forms.Form):
-    name = forms.CharField(max_length=50,label="Internal Name")
     label = forms.CharField(max_length=255)
     subtype = forms.CharField(max_length=255)
     tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices={('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')}))
@@ -36,6 +36,10 @@ class TemplateForm(forms.Form):
 
 class AddTemplateForm(TemplateForm):
     torrentfile  = forms.FileField(label="Torrent:")
+    name = forms.CharField(max_length=50,label="Internal Name")
+    def __init__(self, *args, **kwargs):
+        super(AddTemplateForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference','torrentfile']
     
 class EditTemplateForm(TemplateForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -67,12 +71,9 @@ def add(api, request):
         form = AddTemplateForm(request.POST, request.FILES)
         if form.is_valid():
             formData = form.cleaned_data
-            f = request.FILES['file']
-            #
-            #
-            #   DUMMY
-            #
-            #
+            f = request.FILES['torrentfile']
+            torrent_data = base64.b64encode(f.read())
+            api.resource_create('template',{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference'],'torrent_data':torrent_data})
             return render_to_response("admin/device_templates/add_success.html", {'label': formData['label']})
         else:
             return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
@@ -97,11 +98,39 @@ def edit(api, request):
 @wrap_rpc
 def edit_data(api, request):
     if request.method=='POST':
+        form = ChangeTemplateTorrentForm(request.POST,request.FILES)
+        if form.is_valid():
+            formData = form.cleaned_data
+            f = request.FILES['torrentfile']
+            torrent_data = base64.b64encode(f.read())
+            res_info = api.resource_info(formData['res_id'])
+            if res_info['type'] == 'template':
+                api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
+                return render_to_response("admin/device_templates/edit_success.html", {'label': res_info['label']})
+            else:
+                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
+        else:
+            name="ERROR"
+            return render_to_response("admin/device_templates/form.html", {'label': name, 'form': form, "edit":True, 'edit_data':True})
+    else:
+        res_id = request.GET['id']
+        if res_id:
+            origData={'res_id':res_id}
+            res_info = api.resource_info(res_id)
+            form = ChangeTemplateTorrentForm(origData)
+            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+
+
+@wrap_rpc
+def edit_torrent(api, request):
+    if request.method=='POST':
         form = EditTemplateForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'template':
-                api.resource_modify(formData["res_id"],{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference']})
+                api.resource_modify(formData["res_id"],{'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference']})
                 return render_to_response("admin/device_templates/edit_success.html", {'label': formData["label"]})
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
@@ -119,13 +148,4 @@ def edit_data(api, request):
         else:
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
-
-@wrap_rpc
-def edit_torrent(api, request):
-    return index(api,request)
-    #
-    #
-    #   DUMMY
-    #
-    #
 
