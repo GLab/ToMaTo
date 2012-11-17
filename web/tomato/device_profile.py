@@ -28,38 +28,38 @@ from lib import *
 import xmlrpclib
 
 class OpenVZForm(forms.Form):
-    label = forms.CharField(max_length=255)
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class RePyForm(forms.Form):
-    label = forms.CharField(max_length=255)
-    cpus = forms.FloatField(label = "no. of CPUs")
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+    cpus = forms.FloatField(label = "number of CPUs")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class KVMqmForm(forms.Form):
-    label = forms.CharField(max_length=255)
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
     diskspace = forms.IntegerField(label="Disk Space (MB)")
-    cpus = forms.IntegerField(label="no. of CPUs")
+    cpus = forms.IntegerField(label="number of CPUs")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
     
 class AddOpenVZForm(OpenVZForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all OpenVZ templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddOpenVZForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'diskspace', 'ram', 'preference']
     
 class AddRePyForm(RePyForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all RePy templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddRePyForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'cpus', 'ram', 'preference']
     
 class AddKVMqmForm(KVMqmForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all KVM templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddKVMqmForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'diskspace', 'cpus', 'ram', 'preference']

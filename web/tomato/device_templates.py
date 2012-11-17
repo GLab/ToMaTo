@@ -29,14 +29,14 @@ import xmlrpclib
 import base64
 
 class TemplateForm(forms.Form):
-    label = forms.CharField(max_length=255)
+    label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
     subtype = forms.CharField(max_length=255)
     tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices={('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')}))
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class AddTemplateForm(TemplateForm):
-    torrentfile  = forms.FileField(label="Torrent:")
-    name = forms.CharField(max_length=50,label="Internal Name")
+    torrentfile  = forms.FileField(label="Torrent:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddTemplateForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference','torrentfile']
@@ -46,13 +46,13 @@ class EditTemplateForm(TemplateForm):
     
 class ChangeTemplateTorrentForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    torrentfile  = forms.FileField(label="Torrent containing image:")    
+    torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')    
     
 class RemoveResourceForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):

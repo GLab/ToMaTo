@@ -27,20 +27,20 @@ from lib import *
 import xmlrpclib
 
 class HostForm(forms.Form):
-    address = forms.CharField(max_length=255)
-    site = forms.CharField(max_length=50)
+    address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
+    site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     
 class RemoveHostForm(forms.Form):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
     
 def site_name_list(api):
     l = api.site_list()
     res = []
     for site in l:
-      res.append((site["name"],site["description"] or site["name"]))
+        res.append((site["name"],site["description"] or site["name"]))
     res.sort()
     return res
 
@@ -48,7 +48,7 @@ def site_name_list(api):
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
+        return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def add(api, request):
@@ -97,6 +97,7 @@ def edit(api, request):
         else:
             address="ERROR"
             form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["address"].help_text=None
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
     else:
         address = request.GET['address']
@@ -104,6 +105,7 @@ def edit(api, request):
             hostinfo=api.host_info(address)
             form = HostForm(hostinfo)
             form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["address"].help_text=None
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             form.fields["site"].initial = hostinfo["site"]
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})

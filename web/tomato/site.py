@@ -29,15 +29,15 @@ from lib import *
 import xmlrpclib
 
 class SiteForm(forms.Form):
-    name = forms.CharField(max_length=50)
-    description = forms.CharField(max_length=255)
-    location = forms.CharField(max_length=255)
+    name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
+    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
 
 @cache_page(60)
 @wrap_rpc
@@ -90,6 +90,7 @@ def edit(api, request):
         else:
             name="ERROR"
             form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["name"].help_text=None
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
             
     else:
@@ -97,6 +98,7 @@ def edit(api, request):
         if name:
             form = SiteForm(api.site_info(name))
             form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["name"].help_text=None
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
