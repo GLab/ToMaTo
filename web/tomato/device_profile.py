@@ -155,9 +155,12 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             res_id = request.POST['res_id']
-            form = RemoveResourceForm()
-            form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            if res_id:
+                form = RemoveResourceForm()
+                form.fields["res_id"].initial = res_id
+                return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         res_id = request.GET['id']
@@ -181,8 +184,11 @@ def edit_kvmqm(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'kvmqm', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'kvmqm', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -206,8 +212,11 @@ def edit_openvz(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'openvz', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'openvz', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -231,8 +240,11 @@ def edit_repy(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'repy', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'repy', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:

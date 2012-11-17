@@ -69,9 +69,12 @@ def remove(api, request):
             return render_to_response("admin/site/remove_success.html", {'name': name})
         else:
             name = request.POST['name']
-            form = RemoveSiteForm()
-            form.fields["name"].initial = name
-            return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            if name:
+                form = RemoveSiteForm()
+                form.fields["name"].initial = name
+                return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         name = request.GET['name']
@@ -88,10 +91,13 @@ def edit(api, request):
             api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'name': formData["name"]})
         else:
-            name="ERROR"
-            form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-            form.fields["name"].help_text=None
-            return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
+            name=request.POST["name"]
+            if name:
+                form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+                form.fields["name"].help_text=None
+                return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
     else:
         name = request.GET['name']
