@@ -56,7 +56,7 @@ class AccountForm(forms.Form):
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
         AccountForm.__init__(self, data)
-        flags = [(f, f) for f in api.flags()]
+        flags = [(f, f) for f in api.account_flags()]
         self.fields["name"].widget = FixedText()
         del self.fields["password"]
         del self.fields["origin"]

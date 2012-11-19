@@ -4,14 +4,15 @@ Missing topics
  
 General
 -------
-  * Accounting 
+  * Usage calculation
+  * Accounts & Providers
+  * Logging
  
 Backend
 -------
   * API
      * Topology
        * topology_permission()
-     * Accounts
      * Host
   * Installation
   * Configuration

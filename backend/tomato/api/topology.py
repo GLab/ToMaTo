@@ -129,8 +129,8 @@ def topology_info(id, full=False): #@ReservedAssignment
     Parameter *full*:
       If this parameter is ``True``, the fields ``elements`` and 
       ``connections`` will be a list holding all information of 
-      :py:func:`~backend.tomato.api.element.element_info`
-      and :py:func:`~backend.tomato.api.connection.connection_info`
+      :py:func:`~backend.tomato.api.elements.element_info`
+      and :py:func:`~backend.tomato.api.connections.connection_info`
       for each component.
       Otherwise these fields will be lists holding only the ids of the
       respective objects.
