@@ -1,5 +1,5 @@
 PACKAGE=tomato-hostmanager
-_VERSION=0.0.15
+_VERSION=0.0.16
 _SUBVERSION=
 
 include ../common.mk
