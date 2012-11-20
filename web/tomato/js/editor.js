@@ -774,7 +774,7 @@ $.contextMenu({
 					}
 				},
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
@@ -925,6 +925,9 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 	}
 		});
+	},
+	actionAvailable: function(action) {
+		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
 	}
 });
 
@@ -1091,9 +1094,6 @@ var Connection = Component.extend({
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
 	},
-	action: function(action, params) {
-		log("Connection action: "+action);
-	},
 	action_start: function() {
 		this.action("start");
 	},
@@ -1105,6 +1105,19 @@ var Connection = Component.extend({
 	},
 	action_destroy: function() {
 		this.action("destroy");
+	},
+	downloadCapture: function() {
+		this.action("download_grant", {callback: function(con, res) {
+			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			window.location.href = url;
+		}})
+	},
+	viewCapture: function() {
+		this.action("download_grant", {callback: function(con, res) {
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download"; 
+			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
+		}})
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
@@ -1165,12 +1178,27 @@ $.contextMenu({
 					html:'<span>Connection '+obj.name()+'</span>', type:"html"
 				},
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
 					}
 				},
+				"cloudshark_capture": obj.actionAvailable("download_grant") ? {
+					name:"View capture in Cloudshark",
+					icon:"cloudshark",
+					callback: function(){
+						obj.viewCapture();
+					}
+				} : null,
+				"download_capture": obj.actionAvailable("download_grant") ? {
+					name:"Download capture",
+					icon:"download-capture",
+					callback: function(){
+						obj.downloadCapture();
+					}
+				} : null,
+				"sep1": "---",
 				"configure": {
 					name:'Configure',
 					icon:'configure',
@@ -1185,6 +1213,7 @@ $.contextMenu({
 						obj.showDebugInfo();
 					}
 				} : null,
+				"sep2": "---",
 				"remove": {
 					name:'Delete',
 					icon:'remove',
@@ -1226,9 +1255,6 @@ var Element = Component.extend({
 	},
 	isRemovable: function() {
 		return this.actionAvailable("(remove)");
-	},
-	actionAvailable: function(action) {
-		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
 	},
 	enableClick: function(obj) {
 		obj.click(function() {
@@ -1320,7 +1346,7 @@ var Element = Component.extend({
 					name += ".repy";
 					break;
 			}
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + name; 
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
@@ -1473,7 +1499,7 @@ $.contextMenu({
 					}
 				} : null,
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
@@ -2267,7 +2293,7 @@ var Editor = Class.extend({
 		}));
 		group.addStackedElements([
 			Menu.button({
-				label: "Usage",
+				label: "Resource usage",
 				icon: "img/chart_bar.png",
 				toggle: false,
 				small: true,
