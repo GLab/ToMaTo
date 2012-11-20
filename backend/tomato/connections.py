@@ -376,6 +376,9 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		}
 		info["attrs"]["host"] = self.connection1.host.address if self.connection1 else None
 		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
+		mcon = self.mainConnection()
+		if mcon:
+			info["attrs"].update(mcon.attrs["attrs"])
 		return info
 
 		

@@ -1106,6 +1106,9 @@ var Connection = Component.extend({
 	action_destroy: function() {
 		this.action("destroy");
 	},
+	captureDownloadable: function() {
+		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "file";
+	},
 	downloadCapture: function() {
 		this.action("download_grant", {callback: function(con, res) {
 			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
@@ -1118,6 +1121,15 @@ var Connection = Component.extend({
 			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download"; 
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})
+	},
+	liveCaptureEnabled: function() {
+		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
+	},
+	liveCaptureInfo: function() {
+		var host = this.data.attrs.host;
+		var port = this.data.attrs.capture_port;
+		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
+		new Window({title: "Live capture Information", content: '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", autoShow: true});
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
@@ -1184,21 +1196,33 @@ $.contextMenu({
 						obj.showUsage();
 					}
 				},
-				"cloudshark_capture": obj.actionAvailable("download_grant") ? {
+				"sep1": "---",
+				"cloudshark_capture": obj.captureDownloadable() ? {
 					name:"View capture in Cloudshark",
 					icon:"cloudshark",
 					callback: function(){
 						obj.viewCapture();
 					}
 				} : null,
-				"download_capture": obj.actionAvailable("download_grant") ? {
+				"download_capture": obj.captureDownloadable() ? {
 					name:"Download capture",
 					icon:"download-capture",
 					callback: function(){
 						obj.downloadCapture();
 					}
 				} : null,
-				"sep1": "---",
+				"live_capture": obj.liveCaptureEnabled() ? {
+					name:"Live capture info",
+					icon:"live-capture",
+					callback: function(){
+						obj.liveCaptureInfo();
+					}
+				} : null,
+				"no_capture": (! obj.liveCaptureEnabled() && ! obj.captureDownloadable()) ? {
+					name:"No captures",
+					icon:"no-capture"
+				} : null,
+				"sep2": "---",
 				"configure": {
 					name:'Configure',
 					icon:'configure',
@@ -1213,7 +1237,7 @@ $.contextMenu({
 						obj.showDebugInfo();
 					}
 				} : null,
-				"sep2": "---",
+				"sep3": "---",
 				"remove": {
 					name:'Delete',
 					icon:'remove',
