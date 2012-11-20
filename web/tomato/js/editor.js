@@ -918,7 +918,7 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		t.updateData(result[1]);
 		 		t.setBusy(false);
-		 		if (options.callback) options.callback(t, result[1]);
+		 		if (options.callback) options.callback(t, result[0], result[1]);
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -1305,6 +1305,41 @@ var Element = Component.extend({
 	consoleAvailable: function() {
 		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
 	},
+	downloadImage: function() {
+		this.action("download_grant", {callback: function(el, res) {
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name;
+			switch (el.data.type) {
+				case "kvmqm":
+				case "kvm":
+					name += ".qcow2";
+					break;
+				case "openvz":
+					name += ".tar.gz";
+					break;
+				case "repy":
+					name += ".repy";
+					break;
+			}
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + name; 
+			window.location.href = url;
+		}})
+	},
+	uploadImage: function() {
+		this.action("upload_grant", {callback: function(el, res) {
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var div = $('<div/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target"/>');
+			iframe.css("display", "none");
+			$('body').append(iframe);
+			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+			iframe.load(function(){
+				iframe.remove();
+				info.hide();
+				el.action("upload_use");
+			});
+			var info = new Window({title: "Upload image", content: div, autoShow: true});
+		}});
+	},
 	action_start: function() {
 		this.action("start");
 	},
@@ -1444,6 +1479,20 @@ $.contextMenu({
 						obj.showUsage();
 					}
 				},
+				"download_image": obj.actionAvailable("download_grant") ? {
+					name:"Download image",
+					icon:"drive",
+					callback: function(){
+						obj.downloadImage();
+					}
+				} : null,
+				"upload_image": obj.actionAvailable("upload_grant") ? {
+					name:"Upload image",
+					icon:"drive",
+					callback: function(){
+						obj.uploadImage();
+					}
+				} : null,
 				"sep3": "---",
 				"configure": {
 					name:'Configure',
