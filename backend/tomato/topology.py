@@ -219,13 +219,14 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         else:
             elements = [el.id for el in self.elements.all()]
             connections = [con.id for con in self.connections.all()]
+        usage = self.totalUsage.getRecords(type="5minutes").order_by("end")
         return {
             "id": self.id,
             "attrs": self.attrs.copy(),
             "permissions": dict([(str(p.user), p.role) for p in self.permissions.entries.all()]),
             "elements": elements,
             "connections": connections,
-            "usage": self.totalUsage.getRecords(type="5minutes").order_by("end")[0].info()
+            "usage": usage[0].info() if usage else None
         }
         
     def updateUsage(self, now):

@@ -20,10 +20,9 @@ import os, sys, signal
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 
-#TODO: host resource management
-#TODO: user account management
-#TODO: mail on problems
 #TODO: debian package
+#TODO: tinc clustering
+#TODO: external networks
 
 def db_migrate():
 	"""

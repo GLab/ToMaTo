@@ -12,7 +12,7 @@ Backend
 -------
   * API
      * Topology
-       * topology_permission()
+        * topology_permission()
      * Host
   * Installation
   * Configuration

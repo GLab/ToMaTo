@@ -65,10 +65,11 @@ def log(**kwargs):
 def maskPasswords(data):
     tmp = {}
     for key, value in data.iteritems():
-        for pattern in ["password", "passwd", "pwd"]:
-            if field in key:
-                value = "MD5=%s" % hashlib.md5(value).hexdigest()
         if isinstance(value, dict):
-            value = maskPassword(value)
+            value = maskPasswords(value)
+        else:
+            for pattern in ["password", "passwd", "pwd"]:
+                if pattern in key:
+                    value = "MD5=%s" % hashlib.md5(value).hexdigest()
         tmp[key] = value
     return tmp 
