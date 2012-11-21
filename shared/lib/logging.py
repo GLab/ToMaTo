@@ -1,5 +1,5 @@
 from datetime import datetime
-import sys, os, gzip, bz2, time, json, traceback
+import sys, os, gzip, bz2, time, json, traceback, hashlib
 
 class JSONLogger:
   def __init__(self, path):
@@ -33,7 +33,7 @@ class JSONLogger:
     data = {"category": category, "timestamp": timestr}
     if not caller is False:
         data["caller"] = self._caller()
-    data.update(kwargs)
+    data.update(maskPasswords(kwargs))
     self._write(data)
   def logMessage(self, message, category=None, **kwargs):
     self.log(message=message, category=category, **kwargs)
@@ -61,3 +61,15 @@ def logMessage(message, **kwargs):
     
 def log(**kwargs):
     _default.log(**kwargs)
+    
+def maskPasswords(data):
+    tmp = {}
+    for key, value in data.iteritems():
+        if isinstance(value, dict):
+            value = maskPasswords(value)
+        else:
+            for pattern in ["password", "passwd", "pwd"]:
+                if pattern in key:
+                    value = "MD5=%s" % hashlib.md5(value).hexdigest()
+        tmp[key] = value
+    return tmp 

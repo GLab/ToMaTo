@@ -145,7 +145,7 @@ class Bridge(connections.Connection):
 				os.mkdir(self.dataPath("capture"))
 			self.capture_pid = cmd.spawn(["tcpdump", "-i", self.bridge, "-n", "-C", "10", "-w", self.dataPath("capture/"), "-U", "-W", "5", "-s0", self.capture_filter])
 		elif self.capture_mode == "net":
-			self.capture_pid = cmd.spawn(["tcpserver", "-qHRl", "0", "0", str(self.capture_port), "tcpdump", "-i", self.bridge, "-s0" "-nUw", "-", self.capture_filter])
+			self.capture_pid = cmd.spawn(["tcpserver", "-qHRl", "0", "0", str(self.capture_port), "tcpdump", "-i", self.bridge, "-s0", "-nUw", "-", self.capture_filter])
 		else:
 			fault.raise_("Capture mode must be either file or net")
 				

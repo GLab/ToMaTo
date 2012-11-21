@@ -31,7 +31,8 @@ class Flags:
     OverQuota = "over_quota" # Restriction on actions start, prepare and upload_grant
     NewAccount = "new_account" # Account is new, just a tag
 
-RESTRICTED_ATTRS = ["flags", "password_time", "password", "origin", "name", "last_login"]
+USER_ATTRS = ["realname", "affiliation", "email", "password"]
+ADMIN_ATTRS = ["flags", "origin", "name"]
 
 class User(attributes.Mixin, models.Model):
     name = models.CharField(max_length=255)
@@ -107,13 +108,34 @@ class User(attributes.Mixin, models.Model):
         self.flags.remove(flag)
         self.save()
 
-    def modify(self, attrs):
-        logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)    
-        for key, value in attrs.iteritems():
-            fault.check(not key in RESTRICTED_ATTRS or currentUser().hasFlag(Flags.Admin), "No permission to change attribute %s", key)
-            self.attrs[key] = value
-        self.save()
+    def modify_origin(self, value):
+        self.origin = value
+        
+    def modify_name(self, value):
+        self.name = value
 
+    def modify_password(self, password):
+        for prov in providers:
+            if not prov.getName() == self.origin:
+                continue
+            fault.check(prov.canChangePassword(), "Provider can not change password")
+            prov.changePassword(self.name, password)
+            self.storePassword(password)
+
+    def modify(self, attrs):
+        logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
+        for key, value in attrs.iteritems():
+            if key.startswith("_"):
+                self.attrs[key] = value
+                continue
+            fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
+            func = getattr(self, "modify_%s" % key)
+            if func:
+                func(value)
+            else:
+                self.attrs[key] = value
+        self.save()
+    
     def info(self):
         info = {
             "name": self.name,
@@ -231,17 +253,10 @@ def register(username, password, attrs={}, provider=""):
         if not prov.getName() == provider:
             continue
         fault.check(prov.canRegister(), "Provider can not register users")
-        return prov.register(username, password, attrs)
+        user = prov.register(username, password, attrs)
+        user.modify(attrs)
+        return user
     fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
-
-def changePassword(password):
-    user = currentUser()
-    for prov in providers:
-        if not prov.getName() == user.origin:
-            continue
-        fault.check(prov.canChangePassword(), "Provider can not change password")
-        prov.changePassword(user.name, password)
-        user.storePassword(password)
 
 providers = []
 

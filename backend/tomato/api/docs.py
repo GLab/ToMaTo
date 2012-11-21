@@ -18,6 +18,9 @@
 from .. import elements, connections
 
 def docs():
+    """
+    undocumented
+    """
     return {
         "elements": dict([(name, cls.DOC) for name, cls in elements.TYPES.iteritems()]),
         "connections": {"default": connections.Connection.DOC},

@@ -20,9 +20,3 @@ Other topics:
    :maxdepth: 1
 
    tomato/lib/xmlrpc
-
-
-Missing Topics
---------------
-  * Configuration
-  * Accounting

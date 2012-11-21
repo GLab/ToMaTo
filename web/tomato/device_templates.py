@@ -173,3 +173,4 @@ def edit_torrent(api, request):
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 
+    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})

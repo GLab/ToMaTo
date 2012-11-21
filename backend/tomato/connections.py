@@ -214,7 +214,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if action in self.CUSTOM_ACTIONS:
 				res = getattr(self, "action_%s" % action)(**params)
 			else:
-				mcon = self.mainElement()
+				mcon = self.mainConnection()
 				assert mcon
 				res = mcon.action(action, params)
 				self.setState(mcon.state, True)
@@ -352,17 +352,35 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if "states" in attrs[name]:
 				del attrs[name]["states"]	
 		return attrs
+
+	def capActions(self):
+		actions = set()
+		for action, states in self.CUSTOM_ACTIONS.iteritems():
+			if self.state in states:
+				actions.add(action)
+		mcon = self.mainConnection()
+		if self.DIRECT_ACTIONS and mcon:
+			actions |= set(mcon.getAllowedActions()) - set(self.DIRECT_ACTIONS_EXCLUDE)
+		return list(actions) 
 		
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
-		return {
+		info = {
 			"id": self.id,
 			"state": self.state,
 			"attrs": self.attrs.copy(),
 			"elements": sorted([el.id for el in self.elements.all()]), #sort elements so that first is from and second is to
-			"cap_attrs": self.capAttrs()
+			"cap_attrs": self.capAttrs(),
+			"cap_actions": self.capActions()
 		}
+		info["attrs"]["host"] = self.connection1.host.address if self.connection1 else None
+		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
+		mcon = self.mainConnection()
+		if mcon:
+			info["attrs"].update(mcon.attrs["attrs"])
+		return info
+
 		
 	def updateUsage(self, now):
 		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]

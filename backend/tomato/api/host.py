@@ -16,6 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def server_info():
+    """
+    undocumented
+    """
     return {
         "TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
     }
@@ -31,48 +34,81 @@ def _getHost(address):
     return h
 
 def site_create(name, description=""):
+    """
+    undocumented
+    """
     s = host.createSite(name, description)
     return s.info()
 
 def site_info(name):
+    """
+    undocumented
+    """
     site = _getSite(name)
     return site.info()
 
 def site_list():
+    """
+    undocumented
+    """
     return [s.info() for s in host.getAllSites()]
 
 def site_modify(name, attrs):
+    """
+    undocumented
+    """
     site = _getSite(name)
     site.modify(attrs)
     return site.info()
 
 def site_remove(name):
+    """
+    undocumented
+    """
     site = _getSite(name)
     site.remove()
 
 def host_create(address, site, attrs={}):
+    """
+    undocumented
+    """
     site = _getSite(site)
     h = host.create(address, site, attrs)
     return h.info()
 
 def host_info(address):
+    """
+    undocumented
+    """
     h = _getHost(address)
     return h.info()
 
 def host_list(site_filter=None):
+    """
+    undocumented
+    """
     hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
     return [h.info() for h in hosts]
 
 def host_modify(address, attrs):
+    """
+    undocumented
+    """
     h = _getHost(address)
     h.modify(attrs)
     return h.info()
 
 def host_remove(address):
+    """
+    undocumented
+    """
     h = _getHost(address)
     h.remove()
 
 def host_element_owner(hostname, num):
+    """
+    undocumented
+    """
     h = _getHost(hostname)
     try:
         hel = h.getElement(num)
@@ -81,6 +117,9 @@ def host_element_owner(hostname, num):
     return hel.getOwner()
 
 def host_connection_owner(hostname, num):
+    """
+    undocumented
+    """
     h = _getHost(hostname)
     try:
         hcon = h.getConnection(num)

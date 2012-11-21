@@ -774,7 +774,7 @@ $.contextMenu({
 					}
 				},
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
@@ -918,13 +918,16 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		t.updateData(result[1]);
 		 		t.setBusy(false);
-		 		if (options.callback) options.callback(t, result[1]);
+		 		if (options.callback) options.callback(t, result[0], result[1]);
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
 		 		t.setBusy(false);
 		 	}
 		});
+	},
+	actionAvailable: function(action) {
+		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
 	}
 });
 
@@ -1091,9 +1094,6 @@ var Connection = Component.extend({
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
 	},
-	action: function(action, params) {
-		log("Connection action: "+action);
-	},
 	action_start: function() {
 		this.action("start");
 	},
@@ -1105,6 +1105,31 @@ var Connection = Component.extend({
 	},
 	action_destroy: function() {
 		this.action("destroy");
+	},
+	captureDownloadable: function() {
+		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "file";
+	},
+	downloadCapture: function() {
+		this.action("download_grant", {callback: function(con, res) {
+			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			window.location.href = url;
+		}})
+	},
+	viewCapture: function() {
+		this.action("download_grant", {callback: function(con, res) {
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download"; 
+			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
+		}})
+	},
+	liveCaptureEnabled: function() {
+		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
+	},
+	liveCaptureInfo: function() {
+		var host = this.data.attrs.host;
+		var port = this.data.attrs.capture_port;
+		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
+		new Window({title: "Live capture Information", content: '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", autoShow: true});
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
@@ -1165,12 +1190,39 @@ $.contextMenu({
 					html:'<span>Connection '+obj.name()+'</span>', type:"html"
 				},
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
 					}
 				},
+				"sep1": "---",
+				"cloudshark_capture": obj.captureDownloadable() ? {
+					name:"View capture in Cloudshark",
+					icon:"cloudshark",
+					callback: function(){
+						obj.viewCapture();
+					}
+				} : null,
+				"download_capture": obj.captureDownloadable() ? {
+					name:"Download capture",
+					icon:"download-capture",
+					callback: function(){
+						obj.downloadCapture();
+					}
+				} : null,
+				"live_capture": obj.liveCaptureEnabled() ? {
+					name:"Live capture info",
+					icon:"live-capture",
+					callback: function(){
+						obj.liveCaptureInfo();
+					}
+				} : null,
+				"no_capture": (! obj.liveCaptureEnabled() && ! obj.captureDownloadable()) ? {
+					name:"No captures",
+					icon:"no-capture"
+				} : null,
+				"sep2": "---",
 				"configure": {
 					name:'Configure',
 					icon:'configure',
@@ -1185,6 +1237,7 @@ $.contextMenu({
 						obj.showDebugInfo();
 					}
 				} : null,
+				"sep3": "---",
 				"remove": {
 					name:'Delete',
 					icon:'remove',
@@ -1226,9 +1279,6 @@ var Element = Component.extend({
 	},
 	isRemovable: function() {
 		return this.actionAvailable("(remove)");
-	},
-	actionAvailable: function(action) {
-		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
 	},
 	enableClick: function(obj) {
 		obj.click(function() {
@@ -1304,6 +1354,41 @@ var Element = Component.extend({
 	},
 	consoleAvailable: function() {
 		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
+	},
+	downloadImage: function() {
+		this.action("download_grant", {callback: function(el, res) {
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name;
+			switch (el.data.type) {
+				case "kvmqm":
+				case "kvm":
+					name += ".qcow2";
+					break;
+				case "openvz":
+					name += ".tar.gz";
+					break;
+				case "repy":
+					name += ".repy";
+					break;
+			}
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			window.location.href = url;
+		}})
+	},
+	uploadImage: function() {
+		this.action("upload_grant", {callback: function(el, res) {
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var div = $('<div/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target"/>');
+			iframe.css("display", "none");
+			$('body').append(iframe);
+			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+			iframe.load(function(){
+				iframe.remove();
+				info.hide();
+				el.action("upload_use");
+			});
+			var info = new Window({title: "Upload image", content: div, autoShow: true});
+		}});
 	},
 	action_start: function() {
 		this.action("start");
@@ -1438,12 +1523,26 @@ $.contextMenu({
 					}
 				} : null,
 				"usage": {
-					name:"Usage",
+					name:"Resource usage",
 					icon:"usage",
 					callback: function(){
 						obj.showUsage();
 					}
 				},
+				"download_image": obj.actionAvailable("download_grant") ? {
+					name:"Download image",
+					icon:"drive",
+					callback: function(){
+						obj.downloadImage();
+					}
+				} : null,
+				"upload_image": obj.actionAvailable("upload_grant") ? {
+					name:"Upload image",
+					icon:"drive",
+					callback: function(){
+						obj.uploadImage();
+					}
+				} : null,
 				"sep3": "---",
 				"configure": {
 					name:'Configure',
@@ -2218,7 +2317,7 @@ var Editor = Class.extend({
 		}));
 		group.addStackedElements([
 			Menu.button({
-				label: "Usage",
+				label: "Resource usage",
 				icon: "img/chart_bar.png",
 				toggle: false,
 				small: true,

@@ -15,13 +15,14 @@ set style line 5 lt 1 lw 3 lc 7 pt 1
 set title "Delay distribution"
 set xlabel "Delays in ms"
 set ylabel "Propability"
+set format y '%2.0f%%'
 #set key bottom
 set xtics 5
 set mxtics 5
-set yrange [0:0.25]
+set yrange [0:25]
 set xrange [25:75]
-plot 	'plain.data' using 1:2 title "plain" ls 1 with lines \
-, 	'uniform.data' using 1:2 title "uniform" ls 2 with lines \
-, 	'normal.data' using 1:2 title "normal" ls 3 with lines \
-, 	'pareto.data' using 1:2 title "pareto" ls 4 with lines \
-, 	'paretonormal.data' using 1:2 title "paretonormal" ls 5 with lines
+plot 	'plain.data' using 1:($2*100) title "no delay" ls 1 with lines \
+, 	'uniform.data' using 1:($2*100) title "uniform" ls 2 with lines \
+, 	'normal.data' using 1:($2*100) title "normal" ls 3 with lines \
+, 	'pareto.data' using 1:($2*100) title "pareto" ls 4 with lines \
+, 	'paretonormal.data' using 1:($2*100) title "paretonormal" ls 5 with lines
