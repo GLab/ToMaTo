@@ -5,6 +5,9 @@
 {% block content %}
 <h1>List of templates</h1>
 
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
+{% endif %}
 
 {% if templ_list %}
 	<script src="/js/enhancetable.js"></script>
@@ -17,6 +20,9 @@
 	    <th>Subtype</th>
 	    <th>Preference</th>
 	    
+	    {% if hostManager %}
+	    	<th />
+	    {% endif %}
 	    
 	  </tr>
 	{% for templ in templ_list %}
@@ -26,6 +32,10 @@
 	    <td>{{templ.attrs.subtype}}</td>
 	    <td>{{templ.attrs.preference}}</td>
 	    
+	    {% if hostManager %}
+	    	<td><small><a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_templates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
+	    {% endif %}
+	    
 	  </tr>
 	{% endfor %}
 	</table>
@@ -33,5 +43,8 @@
 	No sites
 {% endif %}
 
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
+{% endif %}
 
 {% endblock %}
