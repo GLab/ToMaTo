@@ -114,7 +114,7 @@ def edit(api, request):
     return render_to_response("admin/device_templates/edit_unspecified.html",{'res_id':request.GET['id'],'label':api.resource_info(request.GET['id'])['attrs']['label']})
 
 @wrap_rpc
-def edit_data(api, request):
+def edit_torrent(api, request):
     if request.method=='POST':
         form = ChangeTemplateTorrentForm(request.POST,request.FILES)
         if form.is_valid():
@@ -145,7 +145,7 @@ def edit_data(api, request):
 
 
 @wrap_rpc
-def edit_torrent(api, request):
+def edit_data(api, request):
     if request.method=='POST':
         form = EditTemplateForm(request.POST)
         if form.is_valid():
@@ -158,7 +158,7 @@ def edit_torrent(api, request):
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_templates/form.html", {'label': request.POST["label"], 'form': form, "edit":True, 'edit_data':True})
+                return render_to_response("admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':True})
             else:
                 return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -173,4 +173,3 @@ def edit_torrent(api, request):
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 
-    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
