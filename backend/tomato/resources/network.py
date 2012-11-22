@@ -59,6 +59,7 @@ class NetworkInstance(resources.Resource):
 	bridge = models.CharField(max_length=20)
 	
 	TYPE = "network_instance"
+	FIELD_NAME = "networkinstance"
 
 	class Meta:
 		db_table = "tomato_network_instance"
@@ -69,7 +70,12 @@ class NetworkInstance(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["network", "host", "bridge"]:
-			fault.check("kind" in attrs, "Network_Instance needs attribute %s", attr) 
+			fault.check("kind" in attrs, "Network_Instance needs attribute %s", attr)
+		self.network = get(attrs["kind"])
+		fault.check(self.network, "Network %s does not exist", attrs["kind"])
+		self.host = host.get(address=attrs["host"])
+		fault.check(self.network, "Host %s does not exist", attrs["host"])
+		self.bridge = attrs["bridge"]
 		resources.Resource.init(self, *args, **kwargs)
 				
 	def upcast(self):
@@ -90,9 +96,9 @@ class NetworkInstance(resources.Resource):
 		self.network = net
 	
 	def modify_host(self, val):
-		host = host.get(val)
-		fault.check(host, "No such host: %s", val)
-		self.host = host
+		h = host.get(address=val)
+		fault.check(h, "No such host: %s", val)
+		self.host = h
 	
 	def info(self):
 		info = resources.Resource.info(self)
@@ -105,6 +111,11 @@ def get(kind):
 	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("preference")[0]
 
 def getInstance(host, kind):
-	return NetworkInstance.objects.filter(models.Q(host=host)&(models.Q(network__kind=kind)|models.Q(network__kind__startswith=kind+"/"))).order_by("network__preference")[0]
+	instances = NetworkInstance.objects
+	if kind:
+		instances = instances.filter(models.Q(host=host)&(models.Q(network__kind=kind)|models.Q(network__kind__startswith=kind+"/")))
+	fault.check(instances, "No network instances found for %s on %s", (kind, host))
+	return instances.order_by("network__preference")[0]
 
 resources.TYPES[Network.TYPE] = Network
+resources.TYPES[NetworkInstance.TYPE] = NetworkInstance

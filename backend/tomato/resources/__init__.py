@@ -60,6 +60,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
     numStart = attributes.attribute("num_start", int)
     numCount = attributes.attribute("num_count", int)
     
+    FIELD_NAME = None #take type as field name
+    
     class Meta:
         pass
 
@@ -76,7 +78,8 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
         if not self.type in TYPES:
             return self
         try:
-            return getattr(self, self.type)
+            field = TYPES[self.type].FIELD_NAME or self.type
+            return getattr(self, field)
         except:
             import traceback
             traceback.print_exc()

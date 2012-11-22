@@ -270,7 +270,14 @@ class Host(attributes.Mixin, models.Model):
         logging.logMessage("accounting_sync end", category="host", address=self.address)        
     
     def getNetworkKinds(self):
-        return [net.getKind() for net in self.networks.all()]
+        nets = [net.getKind() for net in self.networks.all()]
+        for net in nets:
+            if "/" in net:
+                kind, subkind = net.split("/", 1)
+                nets.append(kind)
+        if nets:
+            nets.append(None)
+        return nets
     
     def remove(self):
         fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
@@ -587,7 +594,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
         if set(networkKinds) - set(host.getNetworkKinds()):
-            continue #FIXME: allow general networks
+            continue
         hosts.append(host)
     fault.check(hosts, "No hosts found for requirements")
     # any host in hosts can handle the request

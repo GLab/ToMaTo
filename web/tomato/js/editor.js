@@ -737,32 +737,38 @@ $.contextMenu({
 					html:'<span>Topology "'+obj.name()+'"</span>',
 					type:"html"
 				},
-				"start": {
-					name:'Start',
-					icon:'start',
-					callback: function(){
-						obj.action_start();
-					}
-				},
-				"stop": {
-					name:"Stop",
-					icon:"stop",
-					callback: function(){
-						obj.action_stop();
-					}
-				},
-				"prepare": {
-					name:"Prepare",
-					icon:"prepare",
-					callback: function(){
-						obj.action_prepare();
-					}
-				},
-				"destroy": {
-					name:"Destroy",
-					icon:"destroy",
-					callback:function(){
-						obj.action_destroy();
+				"actions": {
+					name:'Global actions',
+					icon:'control',
+					items: {
+						"start": {
+							name:'Start',
+							icon:'start',
+							callback: function(){
+								obj.action_start();
+							}
+						},
+						"stop": {
+							name:"Stop",
+							icon:"stop",
+							callback: function(){
+								obj.action_stop();
+							}
+						},
+						"prepare": {
+							name:"Prepare",
+							icon:"prepare",
+							callback: function(){
+								obj.action_prepare();
+							}
+						},
+						"destroy": {
+							name:"Destroy",
+							icon:"destroy",
+							callback:function(){
+								obj.action_destroy();
+							}
+						}
 					}
 				},
 				"sep1": "---",
@@ -1694,6 +1700,18 @@ var ExternalNetworkElement = IconElement.extend({
 		this.iconUrl = "img/" + this.data.attrs.kind + "32.png";
 		this.iconSize = {x: 32, y:32};
 	},
+	configWindowSettings: function() {
+		var config = this._super();
+		config.order = ["name", "kind"];
+		config.special.kind = new ChoiceElement({
+			label: "Network kind",
+			name: "kind",
+			choices: createMap(this.editor.networks.all(), "kind", "label"),
+			value: this.data.attrs.kind || this.data.cap_attrs.kind["default"],
+			disabled: !this.data.cap_attrs.kind.enabled
+		});
+		return config;
+	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
 	},
@@ -1828,7 +1846,7 @@ var Template = Class.extend({
 var TemplateStore = Class.extend({
 	init: function(data) {
 		data.sort(function(t1, t2){
-			var t = t1.attrs.preference - t2.attrs.preference;
+			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
 			if (t1.attrs.name < t2.attrs.name) return -1;
 			if (t2.attrs.name < t1.attrs.name) return 1;
@@ -1867,7 +1885,7 @@ var Profile = Class.extend({
 var ProfileStore = Class.extend({
 	init: function(data) {
 		data.sort(function(t1, t2){
-			var t = t1.attrs.preference - t2.attrs.preference;
+			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
 			if (t1.attrs.name < t2.attrs.name) return -1;
 			if (t2.attrs.name < t1.attrs.name) return 1;
@@ -1894,6 +1912,25 @@ var ProfileStore = Class.extend({
 	}
 });
 
+var NetworkStore = Class.extend({
+	init: function(data) {
+		data.sort(function(t1, t2){
+			var t = t2.attrs.preference - t1.attrs.preference;
+			if (t) return t;
+			if (t1.attrs.kind < t2.attrs.kind) return -1;
+			if (t2.attrs.kind < t1.attrs.kind) return 1;
+			return 0;
+		});
+		this.nets = [];
+		for (var i=0; i<data.length; i++)
+		 if (data[i].type == "network")
+		  this.nets.push(data[i].attrs);
+	},
+	all: function() {
+		return this.nets;
+	}
+});
+
 var Mode = {
 	select: "select",
 	connect: "connect",
@@ -1913,6 +1950,7 @@ var Editor = Class.extend({
 		this.sites = this.options.sites;
 		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources);
+		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.topology.load(options.topology);
 		this.setMode(Mode.select);

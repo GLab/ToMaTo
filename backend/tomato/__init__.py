@@ -23,6 +23,7 @@ os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
 #TODO: debian package
 #TODO: tinc clustering
 #TODO: external networks
+#TODO: interface auto-config
 
 def db_migrate():
 	"""
