@@ -29,7 +29,7 @@ enhancetable = {
     
     if (!document.createElement || !document.getElementsByTagName) return;
     
-    enhancetable.DATE_RE = /^(\d\d?)[\/\.-](\d\d?)[\/\.-]((\d\d)?\d\d)$/;
+    enhancetable.DATE_RE = /^(0?[1-9][0-9]?)[\/\.-](0?[1-9][0-9]?)[\/\.-]((\d\d)?\d\d)$/;
     
     forEach(document.getElementsByTagName('table'), function(table) {
       if (table.className.search(/\bsortable\b/) != -1 && table.rows.length>2) {
