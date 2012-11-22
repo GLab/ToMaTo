@@ -83,9 +83,12 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         address=request.GET['address']
-        form = RemoveHostForm()
-        form.fields["address"].initial = address
-        return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if address:
+            form = RemoveHostForm()
+            form.fields["address"].initial = address
+            return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit(api, request):

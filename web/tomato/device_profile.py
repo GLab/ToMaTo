@@ -164,9 +164,12 @@ def remove(api, request):
     
     else:
         res_id = request.GET['id']
-        form = RemoveResourceForm()
-        form.fields["res_id"].initial = res_id
-        return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if res_id:
+            form = RemoveResourceForm()
+            form.fields["res_id"].initial = res_id
+            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def add(api, request):
@@ -198,7 +201,7 @@ def edit_kvmqm(api, request):
             form = EditKVMqmForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_openvz(api, request):
@@ -226,7 +229,7 @@ def edit_openvz(api, request):
             form = EditOpenVZForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_repy(api, request):
@@ -254,5 +257,5 @@ def edit_repy(api, request):
             form = EditRePyForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 

@@ -49,7 +49,7 @@ class ChangeTemplateTorrentForm(forms.Form):
     torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')    
     
 class RemoveResourceForm(forms.Form):
-    name = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
     return 'hosts_manager' in account_info['flags']
@@ -104,9 +104,12 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
-        form = RemoveResourceForm()
-        form.fields["res_id"].initial = res_id
-        return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if res_id:
+            form = RemoveResourceForm()
+            form.fields["res_id"].initial = res_id
+            return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 
 @wrap_rpc
@@ -124,24 +127,24 @@ def edit_torrent(api, request):
             res_info = api.resource_info(formData['res_id'])
             if res_info['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
-                return render_to_response("admin/device_templates/edit_success.html", {'label': res_info['label']})
+                return render_to_response("admin/device_templates/edit_success.html", {'label': res_info['attrs']['label']})
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':True})
+                return render_to_response("admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':False})
             else:
                 return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
-            origData={'res_id':res_id}
             res_info = api.resource_info(res_id)
-            form = ChangeTemplateTorrentForm(origData)
+            form = ChangeTemplateTorrentForm()
+            form.fields['res_id'].initial = res_id
             return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 
 @wrap_rpc
@@ -168,7 +171,7 @@ def edit_data(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditTemplateForm(origData)
-            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
+            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
         else:
             return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 

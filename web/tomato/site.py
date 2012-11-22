@@ -78,9 +78,12 @@ def remove(api, request):
     
     else:
         name = request.GET['name']
-        form = RemoveSiteForm()
-        form.fields["name"].initial = name
-        return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if name:
+            form = RemoveSiteForm()
+            form.fields["name"].initial = name
+            return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request):
@@ -107,4 +110,4 @@ def edit(api, request):
             form.fields["name"].help_text=None
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
