@@ -118,7 +118,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		"name": name_attr,
 		"kind": kind_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ATTRS_EXCLUDE = ["network"]
 	CAP_PARENT = [None, External_Network.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
