@@ -273,7 +273,7 @@ class Host(attributes.Mixin, models.Model):
         nets = [net.getKind() for net in self.networks.all()]
         for net in nets:
             if "/" in net:
-                kind, subkind = net.split("/", 1)
+                kind, _ = net.split("/", 1)
                 nets.append(kind)
         if nets:
             nets.append(None)

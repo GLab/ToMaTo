@@ -169,7 +169,6 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		_host = host.select(elementTypes=["external_network"], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		if self.parent and self.parent.upcast().samenet:
-			#FIXME: this does not work
 			self.network = network.getInstance(_host, self.parent.network.kind)
 		else:
 			self.network = network.getInstance(_host, self.kind)			
