@@ -21,7 +21,6 @@ Hostmanager
 -----------
   * API
      * Connections
-  * Configuration
   
 Frontends
 ---------
