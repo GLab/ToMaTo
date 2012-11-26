@@ -163,6 +163,10 @@ var FormElement = Class.extend({
 	getName: function() {
 		return this.name;
 	},
+	convertInput: function(value) {
+		if (this.options.inputConverter) value = this.options.inputConverter(value);
+		return value;
+	},
 	setEnabled: function(value) {
 		this.element.attr({disabled: !value});
 	},
@@ -243,12 +247,12 @@ var ChoiceElement = FormElement.extend({
 		this.setValue(this.getValue());
 	},
 	getValue: function() {
-		return this.element[0].value;
+		return this.convertInput(this.element[0].value);
 	},
 	setValue: function(value) {
 		var options = this.element.find("option");
 		for (var i=0; i < options.length; i++) {
-			$(options[i]).attr({selected: options[i].value == value});
+			$(options[i]).attr({selected: options[i].value == value + ""});
 		}
 	}
 });
@@ -513,11 +517,13 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode", "debug_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode", "colorify_segments", "debug_mode"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
 		this.settingOptions = false;		
+
+		this.onUpdate();
 	},
 	setBusy: function(busy) {
 		this.busy = busy;
@@ -590,10 +596,11 @@ var Topology = Class.extend({
 			url: "topology/" + this.id + "/create_element",
 			data: data,
 			successFn: function(data) {
+				t.elements[data.id] = obj;
 				obj.setBusy(false);
 				obj.updateData(data);
-				t.elements[data.id] = obj;
 				if (callback) callback(obj);
+				t.onUpdate();
 			},
 			errorFn: function(error) {
 				alert(error);
@@ -617,8 +624,9 @@ var Topology = Class.extend({
 				url: "connection/create",
 				data: data,
 				successFn: function(data) {
-					obj.updateData(data);
 					t.connections[data.id] = obj;
+					obj.updateData(data);
+					t.onUpdate();
 				},
 				errorFn: function(error) {
 					alert(error);
@@ -636,6 +644,7 @@ var Topology = Class.extend({
 	onOptionChanged: function(name) {
 		if (this.settingOptions) return;
 		this.modify_value("_" + name, this.editor.options[name]);
+		this.onUpdate();
 	},
 	action: function(action, options) {
 		var options = options || {};
@@ -658,6 +667,7 @@ var Topology = Class.extend({
 			}
 		}
 		if (ids <= 0 && options.callback) options.callback();
+		this.onUpdate();
 	},
 	action_start: function() {
 		var t = this;
@@ -723,6 +733,55 @@ var Topology = Class.extend({
 	},
 	name: function() {
 		return this.data.attrs.name;
+	},
+	onUpdate: function() {
+		this.checkNetworkLoops();
+		var segments = this.getNetworkSegments();
+		this.colorNetworkSegments(segments);
+	},
+	getNetworkSegments: function() {
+		var segments = [];
+		for (var con in this.connections) {
+			var found = false;
+			for (var i=0; i<segments.length; i++)
+			 if (segments[i].connections.indexOf(this.connections[con].id) >= 0)
+			  found = true;
+			if (found) continue;
+			segments.push(this.connections[con].calculateSegment());
+		}
+		return segments;
+	},
+	checkNetworkLoops: function() {
+		var maxCount = 1;
+		this.loop_last_warn = this.loop_last_warn || 1;
+		for (var i in  this.elements) {
+			var el = this.elements[i];
+			if (el.data.type != "external_network_endpoint") continue;
+			if (! el.connection) continue; //can that happen?
+			var segment = el.connection.calculateSegment([el.id], []);
+			var count = 0;
+			for (var j=0; j<segment.elements.length; j++) {
+				var e = this.elements[segment.elements[j]];
+				if (! e) continue; //brand new element
+				if (e.data.type == "external_network_endpoint") count++;
+			}
+			maxCount = Math.max(maxCount, count);
+		}
+		if (maxCount > this.loop_last_warn) alert("Network segments must not contain multiple external network exits! This could lead to loops in the network and result in a total network crash.");
+		this.loop_last_warn = maxCount;
+	},
+	colorNetworkSegments: function(segments) {
+		var skips = 0;
+		for (var i=0; i<segments.length; i++) {
+			var cons = segments[i].connections;
+			var num = (this.editor.options.colorify_segments && cons.length > 1) ? (i-skips) : NaN;
+			if (cons.length == 1) skips++;
+			for (var j=0; j<cons.length; j++) {
+				var con = this.connections[cons[j]];
+				if (! con) continue; //brand new connection
+				con.setSegment(num);
+			}
+		}
 	}
 });
 
@@ -813,6 +872,7 @@ var Component = Class.extend({
 	updateData: function(data) {
 		if (data) this.data = data;
 		this.id = this.data.id;
+		this.topology.onUpdate();
 		this.paintUpdate();
 	},
 	showDebugInfo: function() {
@@ -855,13 +915,16 @@ var Component = Class.extend({
 		var absPos = this.getAbsPos();
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
+		var settings = this.configWindowSettings();
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
 					var values = t.configWindow.getValues();
-					for (var name in values) if (values[name] == t.data.attrs[name]) delete values[name];
+					for (var name in values) {
+						if (values[name] === t.data.attrs[name]) delete values[name];
+					}
 					t.modify(values);					
 					t.configWindow = null;
 				},
@@ -871,7 +934,6 @@ var Component = Class.extend({
 				} 
 			}
 		});
-		var settings = this.configWindowSettings();
 		for (var i=0; i<settings.order.length; i++) {
 			var name = settings.order[i];
 			if (settings.special[name]) this.configWindow.add(settings.special[name]);
@@ -1042,6 +1104,7 @@ var Connection = Component.extend({
 		this._super(topology, data, canvas);
 		this.elements = [];
 		this.component_type = "connection";
+		this.segment = -1;
 	},
 	fromElement: function() {
 		return this.elements[0].id < this.elements[1].id ? this.elements[0] : this.elements[1];
@@ -1080,6 +1143,7 @@ var Connection = Component.extend({
 	},
 	paint: function() {
 		this.path = this.canvas.path(this.getPath());
+		this.path.attr({"stroke-width": 2});
 		this.path.toBack();
 		var pos = this.getAbsPos();
 		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
@@ -1089,16 +1153,36 @@ var Connection = Component.extend({
 		$(this.handle.node).click(function() {
 			t.onClicked();
 		})
+		this.paintUpdate();
 		for (var i=0; i<this.elements.length; i++) this.elements[i].paintUpdate();
 	},
 	paintRemove: function(){
 		this.path.remove();
 		this.handle.remove();
 	},
+	setSegment: function(segment){
+		this.segment = segment;
+		this.paintUpdate();
+	},
 	paintUpdate: function(){
+		var colors = ["#2A4BD7", "#AD2323", "#1D6914", "#814A19", "#8126C0", "#FFEE33", "#FF9233", "#29D0D0", "#9DAFFF", "#81C57A", "#FFCDF3"];
+		var color = colors[this.segment % colors.length] || "grey";
+		this.path.attr({stroke: color});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
+	},
+	calculateSegment: function(els, cons) {
+		if (! els) els = [];
+		if (! cons) cons = [];
+		if (cons.indexOf(this.id) >= 0) return {elements: els, connections: cons};
+		cons.push(this.id);
+		for (var i=0; i < this.elements.length; i++) {
+			var res = this.elements[i].calculateSegment(els, cons);
+			els = res.elements;
+			cons = res.connections;
+		}
+		return {elements: els, connections: cons};
 	},
 	action_start: function() {
 		this.action("start");
@@ -1172,6 +1256,7 @@ var Connection = Component.extend({
 		 		for (var i=0; i<t.elements.length; i++) delete t.elements[i].connection;
 		 		t.setBusy(false);
 		 		if (callback) callback(t);
+		 		t.topology.onUpdate();
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -1285,6 +1370,32 @@ var Element = Component.extend({
 	},
 	isRemovable: function() {
 		return this.actionAvailable("(remove)");
+	},
+	isEndpoint: function() {
+		return true;
+	},
+	calculateSegment: function(els, cons) {
+		if (! els) els = [];
+		if (! cons) cons = [];
+		if (els.indexOf(this.id) >= 0) return {elements: els, connections: cons};
+		els.push(this.id);
+		if (this.connection) {
+			var res = this.connection.calculateSegment(els, cons);
+			els = res.elements;
+			cons = res.connections;
+		}
+		if (this.isEndpoint()) return {elements: els, connections: cons};
+		for (var i=0; i < this.children.length; i++) {
+			var res = this.children[i].calculateSegment(els, cons);
+			els = res.elements;
+			cons = res.connections;
+		}
+		if (this.parent) {
+			var res = this.parent.calculateSegment(els, cons);
+			els = res.elements;
+			cons = res.connections;
+		}
+		return {elements: els, connections: cons};
 	},
 	enableClick: function(obj) {
 		obj.click(function() {
@@ -1432,6 +1543,7 @@ var Element = Component.extend({
 			 		if (t.parent) t.parent.removeChild(t);
 			 		t.setBusy(false);
 			 		if (callback) callback(t);
+			 		t.topology.onUpdate();
 			 	},
 			 	errorFn: function(error) {
 			 		alert(error);
@@ -1689,6 +1801,9 @@ var VPNElement = IconElement.extend({
 	isRemovable: function() {
 		return this._super() && !this.busy;
 	},
+	isEndpoint: function() {
+		return false;
+	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: "tinc_endpoint", parent: this.data.id}, callback);
 	}
@@ -1718,6 +1833,9 @@ var ExternalNetworkElement = IconElement.extend({
 	isRemovable: function() {
 		return this._super() && !this.busy;
 	},
+	isEndpoint: function() {
+		return false;
+	},
 	getConnectTarget: function(callback) {
 		return this.topology.createElement({type: "external_network_endpoint", parent: this.data.id}, callback);
 	}
@@ -1737,9 +1855,22 @@ var VMElement = IconElement.extend({
 	isRemovable: function() {
 		return this._super() && !this.busy;
 	},
+	isEndpoint: function() {
+		var default_ = true;
+		if (this.data && this.data.type == "repy") {
+			default_ = false;
+			var tmpl = this.getTemplate();
+			log(tmpl && tmpl.subtype);
+			if (tmpl && tmpl.subtype == "device") default_ = true;
+		}
+		return (this.data.attrs && this.data.attrs._endpoint != null) ? this.data.attrs._endpoint : default_;
+	},
+	getTemplate: function() {
+		return this.editor.templates.get(this.data.type, this.data.attrs.template);
+	},
 	configWindowSettings: function() {
 		var config = this._super();
-		config.order = ["name", "site", "profile", "template"];
+		config.order = ["name", "site", "profile", "template", "_endpoint"];
 		config.special.template = new ChoiceElement({
 			label: "Template",
 			name: "template",
@@ -1763,6 +1894,13 @@ var VMElement = IconElement.extend({
 			value: this.data.attrs.profile || this.data.cap_attrs.profile["default"],
 			disabled: !this.data.cap_attrs.profile.enabled
 		});
+		config.special._endpoint = new ChoiceElement({
+			label: "Segment seperation",
+			name: "_endpoint",
+			choices: {true: "Seperates segments", false: "Connects segments"},
+			value: this.isEndpoint(),
+			inputConverter: Boolean.parse
+		}); 
 		return config;
 	},
 	getConnectTarget: function(callback) {
@@ -1779,6 +1917,9 @@ var ChildElement = Element.extend({
 		var magSquared = (xd * xd + yd * yd);
 		var mag = 14.0 / Math.sqrt(magSquared);
 		return {x: ppos.x + (xd * mag), y: ppos.y + (yd * mag)};
+	},
+	isEndpoint: function() {
+		return this.parent.isEndpoint();
 	},
 	getAbsPos: function() {
 		return this.parent.getAbsPos();
@@ -2417,13 +2558,18 @@ var Editor = Class.extend({
 		        label:"Beginner mode",
 		        tooltip:"Displays help messages for all elements"
 		    }),
+		    colorify_segments: this.optionMenuItem({
+		        name:"colorify_segments",
+		        label:"Colorify segments",
+		        tooltip:"Paint different network segments with different colors"
+		    }),
 		    debug_mode: this.optionMenuItem({
 		        name:"debug_mode",
 		        label:"Debug mode",
 		        tooltip:"Displays debug messages"
 		    })
 		};
-		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode, this.optionCheckboxes.debug_mode]);
+		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode, this.optionCheckboxes.colorify_segments, this.optionCheckboxes.debug_mode]);
 
 		this.menu.paint();
 	}
