@@ -30,7 +30,7 @@ import base64
 
 class TemplateForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
-    subtype = forms.CharField(max_length=255)
+    subtype = forms.CharField(max_length=255, required=False)
     preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class AddTemplateForm(TemplateForm):
