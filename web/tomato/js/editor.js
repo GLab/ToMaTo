@@ -1175,14 +1175,14 @@ var Connection = Component.extend({
 	},
 	paintUpdate: function(){
 		var colors = ["#2A4BD7", "#AD2323", "#1D6914", "#814A19", "#8126C0", "#FFEE33", "#FF9233", "#29D0D0", "#9DAFFF", "#81C57A", "#FFCDF3"];
-		var color = colors[this.segment % colors.length] || "grey";
+		var color = colors[this.segment % colors.length] || "#505050";
 		var attrs = this.data.attrs;
-		var le = attrs && attrs.emulation && (attrs.delay_to || attrs.jitter_to || attrs.lossration_to || attrs.duplicate_to || attrs.corrupt_to
-				         || attrs.delay_from || attrs.jitter_from || attrs.lossration_from || attrs.duplicate_from || attrs.corrupt_from);
+		var le = attrs && attrs.emulation && (attrs.delay_to || attrs.jitter_to || attrs.lossratio_to || attrs.duplicate_to || attrs.corrupt_to
+				         || attrs.delay_from || attrs.jitter_from || attrs.lossratio_from || attrs.duplicate_from || attrs.corrupt_from);
 		var bw = 10000000;
 		if (attrs && attrs.emulation) bw = Math.min(attrs.bandwidth_to, attrs.bandwidth_from); 
-		this.path.attr({stroke: color, "stroke-dasharray": [le ? "-" : ""]});
-		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 3 : 2 )});
+		this.path.attr({stroke: color, "stroke-dasharray": [le ? "--" : ""]});
+		this.path.attr({"stroke-width": bw < 10000 ? 1 : ( bw > 10000 ? 4 : 2.5 )});
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});

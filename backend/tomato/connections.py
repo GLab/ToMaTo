@@ -50,7 +50,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	DIRECT_ATTRS_EXCLUDE = []
 	CUSTOM_ATTRS = {}
 	
-	DEFAULT_ATTRS = {}
+	DEFAULT_ATTRS = {"emulation": True, "bandwidth_to": 10000, "bandwidth_from": 10000}
 	
 	DOC=""
 	
