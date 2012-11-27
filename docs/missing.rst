@@ -16,6 +16,7 @@ Backend
      * Host
   * Installation
   * Configuration
+  * Permissions
   
 Hostmanager
 -----------

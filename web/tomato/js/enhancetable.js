@@ -194,7 +194,7 @@ enhancetable = {
             this.removeChild(document.getElementById('enhancetable_sortfwdind'));
             sortrevind = document.createElement('span');
             sortrevind.id = "enhancetable_sortrevind";
-            sortrevind.innerHTML = stIsIE ? '&nbsp<font face="webdings">5</font>' : '&nbsp;&#x25B4;';
+            sortrevind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
             this.appendChild(sortrevind);
             return;
           }
@@ -207,7 +207,7 @@ enhancetable = {
             this.removeChild(document.getElementById('enhancetable_sortrevind'));
             sortfwdind = document.createElement('span');
             sortfwdind.id = "enhancetable_sortfwdind";
-            sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
+            sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">5</font>' : '&nbsp;&#x25B4;';
             this.appendChild(sortfwdind);
             return;
           }
@@ -228,7 +228,7 @@ enhancetable = {
           this.className += ' enhancetable_sorted';
           sortfwdind = document.createElement('span');
           sortfwdind.id = "enhancetable_sortfwdind";
-          sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
+          sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">5</font>' : '&nbsp;&#x25B4;';
           this.appendChild(sortfwdind);
 
 	        // build an array to sort. This is a Schwartzian transform thing,
