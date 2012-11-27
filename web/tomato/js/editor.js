@@ -369,8 +369,18 @@ var Workspace = Class.extend({
     	this.canvas.relPos = function(pos) {
     		return {x: (pos.x - fs) / (c.width-2*fs), y: (pos.y - fs) / (c.height-2*fs)};
     	}
-    	this.beginnerHelp = this.canvas.text(c.width/2, c.height/4, "").attr({"font-size": 25, "fill": "#999999"});
-    	this.updateBeginnerHelp();
+    	
+    	//tutorial UI
+    	this.tutorialBarBG = this.canvas.rect(0,c.height-120,c.width,120,0).attr({"fill":"#660000"});
+    	this.tutorialBarText = this.canvas.text(c.width/2, c.height-60, "").attr({"font-size": 13, "fill": "#ffffff"});
+    	
+    	//pointer to an element of tutorialSteps
+    	this.tutorialStatus = 0;
+    	
+    	//load the basic tutorial at the creating of the editor.
+    	this.tutorialSteps = editor_tutorial.basic;
+    	this.updateTutorialBar();
+    	
 		var t = this;
 		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
 		this.container.click(function(evt){
@@ -380,25 +390,45 @@ var Workspace = Class.extend({
 			t.onMouseMove(evt);
 		});
 	},
-	updateBeginnerHelp: function() {
+	
+	setTutorialText: function(text) { //set tutorial text to 'text'.
+		this.tutorialBarText.attr({text: text});
+	},
+	setVisibleTutorial: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
+		if (vis) {
+			this.tutorialBarBG.show();
+			this.tutorialBarText.show();
+		} else {
+			this.tutorialBarBG.hide();
+			this.tutorialBarText.hide();
+		}
+	},
+	triggerTutorialProgress: function(triggerString) { //continues tutorial if correct trigger
+		if (this.editor.options.beginner_mode) //don't waste cpu time if not needed...
+			if (triggerString == this.tutorialSteps[this.tutorialStatus].trigger) {
+				this.tutorialStatus++;
+				this.updateTutorialBar();
+		}
+	},
+	updateTutorialBar: function() {
+	
+		//just hide the tutorial when disabled.
 		if (! this.editor.options.beginner_mode) {
-			this.beginnerHelp.hide();
+			this.setVisibleTutorial(false);
 			return;
 		}
-		var text = "";
-		if (this.editor.topology.elementCount() == 0) { 
-			text = "Select an element from the palette\nand click into the workspace to\nadd it to the topology.";
-		} else if (this.editor.topology.elementCount() < 3) { 
-			text = "Add some other elements to the topology\nso you can create connections.";
-		} else if (this.editor.topology.connectionCount() == 0) {
- 			text = "Right-click on an element, select connect\nand click on another element to\nconnect these elements.";
-		} else if (this.editor.topology.connectionCount() < 2) { 
-			text = "Add another connection so your\ntopology is fully connected.";
-		}
-		this.beginnerHelp.attr({text: text});
-		if (text) this.beginnerHelp.show();
-		else this.beginnerHelp.hide();
-		window.setTimeout("editor.workspace.updateBeginnerHelp();", 1000);
+		
+		//get text by current status, and insert it. If text is empty, hide the tutorial.
+		var text = this.tutorialSteps[this.tutorialStatus].text;
+		this.setTutorialText(text);
+		this.setVisibleTutorial(true);
+		
+		//wait a second, then run this again.
+		window.setTimeout("editor.workspace.updateTutorialBar();", 1000);
+	},
+	loadTutorial: function(tutName) {//loads editor_tutorial.tutName; tutName is a string
+		this.tutorialSteps = editor_tutorial[tutname]
+		this.tutorialStatus = 0;
 	},
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {
@@ -426,7 +456,7 @@ var Workspace = Class.extend({
 		}
 	},
 	onOptionChanged: function(name) {
-    	this.updateBeginnerHelp();
+    	this.updateTutorialBar();
 	},
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
