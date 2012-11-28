@@ -28,38 +28,38 @@ from lib import *
 import xmlrpclib
 
 class OpenVZForm(forms.Form):
-    label = forms.CharField(max_length=255)
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class RePyForm(forms.Form):
-    label = forms.CharField(max_length=255)
-    cpus = forms.FloatField(label = "no. of CPUs")
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+    cpus = forms.FloatField(label = "number of CPUs")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
 class KVMqmForm(forms.Form):
-    label = forms.CharField(max_length=255)
+    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
     diskspace = forms.IntegerField(label="Disk Space (MB)")
-    cpus = forms.IntegerField(label="no. of CPUs")
+    cpus = forms.IntegerField(label="number of CPUs")
     ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
     
 class AddOpenVZForm(OpenVZForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all OpenVZ templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddOpenVZForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'diskspace', 'ram', 'preference']
     
 class AddRePyForm(RePyForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all RePy templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddRePyForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'cpus', 'ram', 'preference']
     
 class AddKVMqmForm(KVMqmForm):
-    name = forms.CharField(max_length=50,label="Internal Name")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all KVM templates. Cannot be changed. Not displayed.")
     def __init__(self, *args, **kwargs):
         super(AddKVMqmForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'diskspace', 'cpus', 'ram', 'preference']
@@ -155,15 +155,21 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             res_id = request.POST['res_id']
-            form = RemoveResourceForm()
-            form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            if res_id:
+                form = RemoveResourceForm()
+                form.fields["res_id"].initial = res_id
+                return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         res_id = request.GET['id']
-        form = RemoveResourceForm()
-        form.fields["res_id"].initial = res_id
-        return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if res_id:
+            form = RemoveResourceForm()
+            form.fields["res_id"].initial = res_id
+            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def add(api, request):
@@ -181,8 +187,11 @@ def edit_kvmqm(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'kvmqm', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'kvmqm', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -192,7 +201,7 @@ def edit_kvmqm(api, request):
             form = EditKVMqmForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_openvz(api, request):
@@ -206,8 +215,11 @@ def edit_openvz(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'openvz', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'openvz', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -217,7 +229,7 @@ def edit_openvz(api, request):
             form = EditOpenVZForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_repy(api, request):
@@ -231,8 +243,11 @@ def edit_repy(api, request):
             else:
                 return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
         else:
-            name="ERROR"
-            return render_to_response("admin/device_profile/form.html", {'label': name, 'tech':'repy', 'form': form, "edit":True})
+            label = request.POST["label"]
+            if label:
+                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'repy', 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -242,5 +257,5 @@ def edit_repy(api, request):
             form = EditRePyForm(origData)
             return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 

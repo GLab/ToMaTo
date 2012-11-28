@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Add Device Profile</h1>
+
+For which technology shall the new device profile be?<br />
+<input type="button" onClick="window.location='{%url device_profile.add_kvmqm%}'" value="kvmqm" /><br />
+<input type="button" onClick="window.location='{%url device_profile.add_openvz%}'" value="openvz" /><br />
+<input type="button" onClick="window.location='{%url device_profile.add_repy%}'" value="repy" />
+
+
+
+{% endblock %}
