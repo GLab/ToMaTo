@@ -707,7 +707,14 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
-		alert("Not implemented yet.");
+		if (confirm("Are you sure?")) {
+			ajax({
+				url: "topology/"+this.id+"/remove",
+				successFn: function() {
+					window.location = "/topology";
+				}
+			});
+		}
 	},
 	showUsage: function() {
   		window.open('/topology/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
@@ -861,7 +868,13 @@ $.contextMenu({
 					}
 				},
 				"sep2": "---",
-				"remove": {name:'Delete', icon:'remove'}
+				"remove": {
+					name:'Delete',
+					icon:'remove',
+					callback: function(){
+						obj.remove();
+					}
+				}
 			}
 		};
 	}

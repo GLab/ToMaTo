@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser
+from . import config, currentUser, starttime
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags, mailFlaggedUsers
@@ -303,7 +303,7 @@ class Host(attributes.Mixin, models.Model):
         if not self.enabled:
             problems.append("Manually disabled")
         hi = self.hostInfo
-        if time.time() - self.hostInfoTimestamp > 2 * config.HOST_UPDATE_INTERVAL + 300:
+        if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
             problems.append("Old info age, host unreachable?")
         if not hi:
             problems.append("Node info is missing")

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, signal
+import os, sys, signal, time
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
@@ -57,6 +57,8 @@ def login(credentials, sslCert):
 	setCurrentUser(user)
 	return user
 
+starttime = None
+
 from models import *
 	
 import api
@@ -78,10 +80,11 @@ def start():
 	host.task.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
 	auth.task.start() #@UndefinedVariable
-	global _btTracker, _btClient
+	global _btTracker, _btClient, starttime
 	_btTracker = bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	_btClient = bittorrent.startClient(config.TEMPLATE_PATH)
 	rpcserver.start()
+	starttime = time.time()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
