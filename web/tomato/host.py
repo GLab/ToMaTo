@@ -27,20 +27,20 @@ from lib import *
 import xmlrpclib
 
 class HostForm(forms.Form):
-    address = forms.CharField(max_length=255)
-    site = forms.CharField(max_length=50)
+    address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
+    site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     
 class RemoveHostForm(forms.Form):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
     
 def site_name_list(api):
     l = api.site_list()
     res = []
     for site in l:
-      res.append((site["name"],site["description"] or site["name"]))
+        res.append((site["name"],site["description"] or site["name"]))
     res.sort()
     return res
 
@@ -48,7 +48,7 @@ def site_name_list(api):
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-	return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
+        return render_to_response("admin/host/index.html", {'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
 
 @wrap_rpc
 def add(api, request):
@@ -59,7 +59,6 @@ def add(api, request):
             api.host_create(formData["address"],formData["site"])
             return render_to_response("admin/host/add_success.html", {'address': formData["address"]})
         else:
-            form = HostForm()
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             return render_to_response("admin/host/form.html", {'form': form, "edit":False})
     else:
@@ -76,15 +75,20 @@ def remove(api, request):
             api.host_remove(address)
             return render_to_response("admin/host/remove_success.html", {'address': address})
         else:
-            address=request.GET['address']
+            address=request.POST['address']
+            if address:
+                form.fields["address"].initial = address
+                return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+    else:
+        address=request.GET['address']
+        if address:
             form = RemoveHostForm()
             form.fields["address"].initial = address
             return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
-    else:
-        address=request.GET['address']
-        form = RemoveHostForm()
-        form.fields["address"].initial = address
-        return render_to_response("admin/host/remove_confirm.html", {'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit(api, request):
@@ -95,15 +99,20 @@ def edit(api, request):
             api.host_modify(formData["address"],{'site':formData["site"]})
             return render_to_response("admin/host/edit_success.html", {'address': formData["address"]})
         else:
-            address="ERROR"
-            form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-            return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
+            address=request.POST["address"]
+            if address:
+                form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+                form.fields["address"].help_text=None
+                return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         address = request.GET['address']
         if address:
             hostinfo=api.host_info(address)
             form = HostForm(hostinfo)
             form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["address"].help_text=None
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             form.fields["site"].initial = hostinfo["site"]
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})

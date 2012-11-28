@@ -29,15 +29,15 @@ from lib import *
 import xmlrpclib
 
 class SiteForm(forms.Form):
-    name = forms.CharField(max_length=50)
-    description = forms.CharField(max_length=255)
-    location = forms.CharField(max_length=255)
+    name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
+    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 def is_hostManager(account_info):
-	return 'hosts_manager' in account_info['flags']
+    return 'hosts_manager' in account_info['flags']
 
 @cache_page(60)
 @wrap_rpc
@@ -69,15 +69,21 @@ def remove(api, request):
             return render_to_response("admin/site/remove_success.html", {'name': name})
         else:
             name = request.POST['name']
-            form = RemoveSiteForm()
-            form.fields["name"].initial = name
-            return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            if name:
+                form = RemoveSiteForm()
+                form.fields["name"].initial = name
+                return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         name = request.GET['name']
-        form = RemoveSiteForm()
-        form.fields["name"].initial = name
-        return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        if name:
+            form = RemoveSiteForm()
+            form.fields["name"].initial = name
+            return render_to_response("admin/site/remove_confirm.html", {'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+        else:
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request):
@@ -88,15 +94,20 @@ def edit(api, request):
             api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'name': formData["name"]})
         else:
-            name="ERROR"
-            form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-            return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
+            name=request.POST["name"]
+            if name:
+                form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+                form.fields["name"].help_text=None
+                return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
+            else:
+                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
     else:
         name = request.GET['name']
         if name:
             form = SiteForm(api.site_info(name))
             form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+            form.fields["name"].help_text=None
             return render_to_response("admin/site/form.html", {'name': name, 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
