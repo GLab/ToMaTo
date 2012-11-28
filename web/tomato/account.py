@@ -74,7 +74,7 @@ class AccountRegisterForm(AccountForm):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("account/index.html", {'accounts': api.account_list()})
+    return render_to_response("account/index.html", {'user': api.user, 'accounts': api.account_list()})
 
 @wrap_rpc
 def info(api, request, id=None):
@@ -94,7 +94,7 @@ def info(api, request, id=None):
             return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
     else:
         form = AccountChangeForm(api, user)
-    return render_to_response("account/info.html", {"account": user, "form": form})
+    return render_to_response("account/info.html", {'user': api.user, "account": user, "form": form})
     
 def register(request):
     if request.method=='POST':
@@ -115,15 +115,3 @@ def register(request):
     else:
         form = AccountRegisterForm() 
     return render_to_response("account/register.html", {"form": form})
-    
-def info_or_register(request):
-    try:
-        api = getapi(request)
-        if api:
-            return HttpResponseRedirect(reverse("tomato.account.info"))
-    except:
-        import traceback
-        traceback.print_exc
-        pass
-    return HttpResponseRedirect(reverse("tomato.account.register"))
-        

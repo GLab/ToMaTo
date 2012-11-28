@@ -95,7 +95,7 @@ def index(api, request):
                 else:
                     profile_repy_list.append(res)
         
-    return render_to_response("admin/device_profile/index.html", {'profile_kvmqm_list': profile_kvmqm_list, 'profile_openvz_list': profile_openvz_list, 'profile_repy_list': profile_repy_list, 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_kvmqm_list': profile_kvmqm_list, 'profile_openvz_list': profile_openvz_list, 'profile_repy_list': profile_repy_list, 'hostManager': is_hostManager(api.account_info())})
 
 
 @wrap_rpc
@@ -105,12 +105,12 @@ def add_openvz(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
-            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"],'tech':'openvz'})
+            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
         else:
-            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
     else:
         form = AddOpenVZForm
-        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"openvz"})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
     
 @wrap_rpc
 def add_kvmqm(api, request):
@@ -119,12 +119,12 @@ def add_kvmqm(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
-            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"], 'tech':'kvmqm'})
+            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"], 'tech':'kvmqm'})
         else:
-            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"kvmqm"})
     else:
         form = AddKVMqmForm
-        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"kvmqm"})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"kvmqm"})
     
 @wrap_rpc
 def add_repy(api, request):
@@ -133,12 +133,12 @@ def add_repy(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('profile',{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
-            return render_to_response("admin/device_profile/add_success.html", {'label': formData["label"], 'tech':'repy'})
+            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"], 'tech':'repy'})
         else:
-            return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"repy"})
     else:
         form = AddRePyForm
-        return render_to_response("admin/device_profile/form.html", {'form': form, "edit":False, 'tech':"repy"})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"repy"})
     
 @wrap_rpc
 def remove(api, request):
@@ -150,26 +150,26 @@ def remove(api, request):
                 label = api.resource_info(res_id)['attrs']['label']
                 tech = api.resource_info(res_id)['attrs']['tech']
                 api.resource_remove(res_id)
-                return render_to_response("admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
+                return render_to_response("admin/device_profile/remove_success.html", {'user': api.user, 'label':label, 'tech':tech})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             res_id = request.POST['res_id']
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         res_id = request.GET['id']
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def add(api, request):
@@ -183,13 +183,13 @@ def edit_kvmqm(api, request):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'kvmqm':
                 api.resource_modify(formData["res_id"],{'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
-                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'kvmqm'})
+                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'kvmqm'})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'kvmqm', 'form': form, "edit":True})
+                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'kvmqm', 'form': form, "edit":True})
             else:
                 return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -199,9 +199,9 @@ def edit_kvmqm(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditKVMqmForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_openvz(api, request):
@@ -211,15 +211,15 @@ def edit_openvz(api, request):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'openvz':
                 api.resource_modify(formData["res_id"],{'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
-                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'openvz'})
+                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'openvz', 'form': form, "edit":True})
+                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'openvz', 'form': form, "edit":True})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -227,9 +227,9 @@ def edit_openvz(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditOpenVZForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
 def edit_repy(api, request):
@@ -239,15 +239,15 @@ def edit_repy(api, request):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'repy':
                 api.resource_modify(formData["res_id"],{'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
-                return render_to_response("admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
+                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'repy'})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_profile/form.html", {'label': label, 'tech':'repy', 'form': form, "edit":True})
+                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'repy', 'form': form, "edit":True})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -255,7 +255,7 @@ def edit_repy(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditRePyForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
