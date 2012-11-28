@@ -68,7 +68,11 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
     def init(self, attrs={}):
         self.attrs = {}
         self.save()
-        self.modify(attrs)
+        try:
+            self.modify(attrs)
+        except:
+            self.remove()
+            raise
         
     def getInstanceRange(self):
         fault.check(self.numStart and self.numCount, "This resource can not have any instances", code=fault.INTERNAL_ERROR)
