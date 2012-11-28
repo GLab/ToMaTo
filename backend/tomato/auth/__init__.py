@@ -108,12 +108,6 @@ class User(attributes.Mixin, models.Model):
         self.flags.remove(flag)
         self.save()
 
-    def modify_origin(self, value):
-        self.origin = value
-        
-    def modify_name(self, value):
-        self.name = value
-
     def modify_password(self, password):
         for prov in providers:
             if not prov.getName() == self.origin:
@@ -129,9 +123,8 @@ class User(attributes.Mixin, models.Model):
                 self.attrs[key] = value
                 continue
             fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
-            func = getattr(self, "modify_%s" % key)
-            if func:
-                func(value)
+            if hasattr(self, "modify_%s" % key):
+                getattr(self, "modify_%s" % key)(value)
             else:
                 self.attrs[key] = value
         self.save()

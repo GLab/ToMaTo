@@ -393,6 +393,11 @@ var Workspace = Class.extend({
 		this.container.mousemove(function(evt){
 			t.onMouseMove(evt);
 		});
+		this.busyIcon = this.canvas.image("img/loading_big.gif", this.size.x/2, this.size.y/2, 32, 32);
+		this.busyIcon.attr({opacity: 0.0});
+	},
+	setBusy: function(busy) {
+		this.busyIcon.attr({opacity: busy ? 1.0 : 0.0});
 	},
 	updateBeginnerHelp: function() {
 		if (! this.editor.options.beginner_mode) {
@@ -2108,8 +2113,16 @@ var Editor = Class.extend({
 		this.templates = new TemplateStore(this.options.resources);
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
-		this.topology.load(options.topology);
 		this.setMode(Mode.select);
+		var t = this;
+		this.workspace.setBusy(true);
+		ajax ({
+			url: "topology/"+options.topology+"/info",
+			successFn: function(data){
+				t.topology.load(data);
+				t.workspace.setBusy(false);
+			}
+		});
 	},
 	setOption: function(name, value) {
 		this.options[name] = value;

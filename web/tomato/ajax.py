@@ -21,7 +21,7 @@ from lib import wrap_json
 @wrap_json
 def topology_info(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.topology_info(id)
+	info = api.topology_info(id, True)
 	return info
 
 @wrap_json

@@ -107,7 +107,7 @@ def register(request):
             del data["name"]
             api = getGuestApi()
             try:
-                api.account_create(username, password, attrs=data)
+                api.account_create(username, password=password, attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:
