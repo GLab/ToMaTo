@@ -124,7 +124,8 @@ The database to use for ToMaTo. The contents are the same as for
 `Django <http://docs.djangoproject.com/en/dev/ref/databases>`_.
 The only actively supported database at this time is PostgresQL but other
 real databases should work as well. SQLite is known not to work due to its
-limited concurrency capabilities.
+limited concurrency capabilities. See :doc:`/docs/databases` for information
+about selecting and maintaining databases.
 Please note that only one data base is supported. 
 """
 

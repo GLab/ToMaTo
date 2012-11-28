@@ -36,7 +36,7 @@ class TemplateForm(forms.Form):
 class AddTemplateForm(TemplateForm):
     torrentfile  = forms.FileField(label="Torrent:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')
     name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
-    tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices={('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')}))
+    tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
     def __init__(self, *args, **kwargs):
         super(AddTemplateForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference','torrentfile']

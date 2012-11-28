@@ -185,7 +185,18 @@ def topology_list(full=False): #@ReservedAssignment
 
 def topology_permission(id, user, role): #@ReservedAssignment
     """
-    undocumented
+    Grants/changes permissions for a user on a topology. See :doc:`permissions`
+    for further information about available roles and their meanings.
+    
+    Parameter *id*:
+      The parameter *id* identifies the topology by giving its unique id.
+
+    Parameter *user*:
+      The name of the user.
+
+    Parameter *role*:
+      The name of the role for this user. If the user already has a role,
+      if will be changed.
     """
     top = _getTopology(id)
     user = _getAccount(user)

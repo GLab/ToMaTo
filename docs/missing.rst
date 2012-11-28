@@ -11,8 +11,6 @@ General
 Backend
 -------
   * API
-     * Topology
-        * topology_permission()
      * Host
   * Installation
   * Configuration

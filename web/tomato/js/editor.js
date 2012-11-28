@@ -707,6 +707,10 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
+		if (this.elementCount()) {
+			alert("Topology is not empty");
+			return;
+		}
 		if (confirm("Are you sure?")) {
 			ajax({
 				url: "topology/"+this.id+"/remove",
@@ -977,6 +981,19 @@ var Component = Class.extend({
 		}
 		this.configWindow.show();
 	},
+	update: function() {
+		var t = this;
+		ajax({
+			url: this.component_type+'/'+this.id+'/info',
+		 	successFn: function(result) {
+		 		t.updateData(result);
+		 		t.setBusy(false);
+		 	},
+		 	errorFn: function() {
+		 		t.setBusy(false);
+		 	}
+		});
+	},
 	modify: function(attrs) {
 		this.setBusy(true);
 		log("Modify "+this.component_type+" #"+this.id);
@@ -991,7 +1008,7 @@ var Component = Class.extend({
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
-		 		t.setBusy(false);
+		 		t.update();
 		 	}
 		});
 	},
@@ -1018,7 +1035,7 @@ var Component = Class.extend({
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
-		 		t.setBusy(false);
+		 		t.update();
 		 	}
 		});
 	},
