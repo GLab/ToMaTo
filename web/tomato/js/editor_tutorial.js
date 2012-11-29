@@ -1,4 +1,48 @@
+/*
+ * TODO tutorial:
+ * 	exchange trigger with a function
+ * 		takes a (random) object
+ * 		decides if this object triggers the progress
+ * 			if yes: ruturn true; else: false
+ * 
+ * split text into explanation and directive
+ * 
+ * finish basic tutorial
+ * 
+ * add links to help (either in-text or an optional help button)
+ * 		assumes help has been created
+ */
+
 var editor_tutorial = {
+        /*
+         * part one: tutorial list: metadata for the tutorials
+         * 
+         * Structure for the tutorial list:
+         * name: the key where to find the tutorial data. must be different from "tutorials"
+         * title: Title of the tutorial for display
+         * description: a short description for a tooltip or similar
+         */
+		tutorials: [
+		    //0: this is the one which will be loaded by default
+			{
+				name: "basic",
+				title: "Basic Usage",
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+			}
+		],
+		
+         
+
+		/*
+		 * part two: tutorial data
+		 * 
+		 * Structure: name: [{trigger, text}]
+		 * name: name two find a tutorial, must be the same as in the tutorial list
+		 * per step:
+		 * 	trigger: trigger string to continue with the next step
+		 * 	text: the text shown on screen (HTML formatting possible)
+		 */
+		
 		basic: [     	
 					//0
 					{

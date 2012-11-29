@@ -259,8 +259,8 @@ var Window = Class.extend({
 		this.options.position = options.position || 'center center';
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
-			draggable: false,
-			resizable: false,
+			draggable: options.draggable != null ? options.draggable : false,
+			resizable: options.resizable != null ? options.resizable : false,
 			height: options.height || "auto",
 			width: options.width || "auto",
 			maxHeight:600,
@@ -269,7 +269,7 @@ var Window = Class.extend({
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
-			modal: true,
+			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {}
 		});
 		this.setPosition(options.position);
@@ -371,15 +371,24 @@ var Workspace = Class.extend({
     	}
     	
     	//tutorial UI
-    	this.tutorialBarBG = this.canvas.rect(0,c.height-120,c.width,120,0).attr({"fill":"#660000"});
-    	this.tutorialBarText = this.canvas.text(c.width/2, c.height-60, "").attr({"font-size": 13, "fill": "#ffffff"});
+	this.tutorialText = $("<div>.</div>");
+	this.tutorialWindow = new Window({ 
+		autoOpen: true, 
+		draggable: true,  
+		resizable: true, 
+		title: ".", 
+		modal: false, 
+		buttons: {},
+		width:500,
+		});
+	this.tutorialWindow.add(this.tutorialText);
     	
     	//pointer to an element of tutorialSteps
     	this.tutorialStatus = 0;
     	
     	//load the basic tutorial at the creating of the editor.
-    	this.tutorialSteps = editor_tutorial.basic;
-    	this.updateTutorialBar();
+    	this.tutorialSteps = [];
+    	this.loadTutorial(0);
     	
 		var t = this;
 		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
@@ -392,43 +401,45 @@ var Workspace = Class.extend({
 	},
 	
 	setTutorialText: function(text) { //set tutorial text to 'text'.
-		this.tutorialBarText.attr({text: text});
+		this.tutorialText.empty();
+		this.tutorialText.append(text);
 	},
-	setVisibleTutorial: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
+	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
 		if (vis) {
-			this.tutorialBarBG.show();
-			this.tutorialBarText.show();
+			this.tutorialWindow.show();
 		} else {
-			this.tutorialBarBG.hide();
-			this.tutorialBarText.hide();
+			this.tutorialWindow.hide();
 		}
 	},
 	triggerTutorialProgress: function(triggerString) { //continues tutorial if correct trigger
 		if (this.editor.options.beginner_mode) //don't waste cpu time if not needed...
 			if (triggerString == this.tutorialSteps[this.tutorialStatus].trigger) {
 				this.tutorialStatus++;
-				this.updateTutorialBar();
+				this.updateTutorialWindow();
 		}
 	},
-	updateTutorialBar: function() {
+	updateTutorialWindow: function() {
 	
 		//just hide the tutorial when disabled.
 		if (! this.editor.options.beginner_mode) {
-			this.setVisibleTutorial(false);
+			this.setTutorialVisible(false);
 			return;
 		}
 		
 		//get text by current status, and insert it. If text is empty, hide the tutorial.
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.setTutorialText(text);
-		this.setVisibleTutorial(true);
+		this.setTutorialVisible(true);
 		
 		//wait a second, then run this again.
-		window.setTimeout("editor.workspace.updateTutorialBar();", 1000);
+		window.setTimeout("editor.workspace.updateTutorialWindow();", 1000);
 	},
-	loadTutorial: function(tutName) {//loads editor_tutorial.tutName; tutName is a string
-		this.tutorialSteps = editor_tutorial[tutname]
+	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
+		tutorialData = editor_tutorial.tutorials[tutID];
+		this.tutorialWindow.setTitle("Tutorial: "+tutorialData.title);
+		this.tutorialSteps = editor_tutorial[tutorialData.name]
 		this.tutorialStatus = 0;
+		this.updateTutorialWindow;
 	},
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {
@@ -456,7 +467,7 @@ var Workspace = Class.extend({
 		}
 	},
 	onOptionChanged: function(name) {
-    	this.updateTutorialBar();
+    		this.updateTutorialWindow();
 	},
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
