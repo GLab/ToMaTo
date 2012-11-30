@@ -371,17 +371,17 @@ var Workspace = Class.extend({
     	}
     	
     	//tutorial UI
-	this.tutorialText = $("<div>.</div>");
-	this.tutorialWindow = new Window({ 
-		autoOpen: true, 
-		draggable: true,  
-		resizable: true, 
-		title: ".", 
-		modal: false, 
-		buttons: {},
-		width:500,
-		});
-	this.tutorialWindow.add(this.tutorialText);
+		this.tutorialText = $("<div>.</div>");
+		this.tutorialWindow = new Window({ 
+			autoOpen: true, 
+			draggable: true,  
+			resizable: true, 
+			title: ".", 
+			modal: false, 
+			buttons: {},
+			width:500,
+			});
+		this.tutorialWindow.add(this.tutorialText);
     	
     	//pointer to an element of tutorialSteps
     	this.tutorialStatus = 0;
@@ -411,9 +411,9 @@ var Workspace = Class.extend({
 			this.tutorialWindow.hide();
 		}
 	},
-	triggerTutorialProgress: function(triggerString) { //continues tutorial if correct trigger
+	triggerTutorialProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.editor.options.beginner_mode) //don't waste cpu time if not needed...
-			if (triggerString == this.tutorialSteps[this.tutorialStatus].trigger) {
+			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
 				this.tutorialStatus++;
 				this.updateTutorialWindow();
 		}

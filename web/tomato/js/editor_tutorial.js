@@ -1,9 +1,5 @@
 /*
  * TODO tutorial:
- * 	exchange trigger with a function
- * 		takes a (random) object
- * 		decides if this object triggers the progress
- * 			if yes: ruturn true; else: false
  * 
  * split text into explanation and directive
  * 
@@ -39,14 +35,15 @@ var editor_tutorial = {
 		 * Structure: name: [{trigger, text}]
 		 * name: name two find a tutorial, must be the same as in the tutorial list
 		 * per step:
-		 * 	trigger: trigger string to continue with the next step
+		 * 	trigger: takes a trigger object (handed over by every function that may be a tutorial trigger at one certain time)
+		 * 		decides if this trigger object matches current step (shall the tut continue now - next step?)
 		 * 	text: the text shown on screen (HTML formatting possible)
 		 */
 		
 		basic: [     	
 					//0
 					{
-					trigger:'placeopenvz',
+					trigger:function(obj) { return true; },
 					text:	"Welcome to ToMaTo!. You have just created a new Topology.\n\
 							This guide will tell you the basics of how to use this editor.\n\
 							If you already know how to use this tool, you can disable this tutorial at any point by disabling 'Beginner mode' in 'Options'.\n \n\
@@ -56,7 +53,7 @@ var editor_tutorial = {
 					
 					//1
 					{
-					trigger:'movesomething',
+					trigger:function(obj) { return true; },
 					text:	"Congratulations! You have placed your first OpenVZ device.\n\
 							You can always identify OpenVZ devices by a blue screen.\n\
 							OpenVZ devices are virtual machines which use their host's kernel to operate, but have their own virtual file system.\n\
@@ -67,14 +64,14 @@ var editor_tutorial = {
 					
 					//2
 					{
-					trigger:'placekvm',
+					trigger:function(obj) { return true; },
 					text:	"You will need more devices to get a whole topology. This time, let's create a KVM device.\n \n\
 							Click 'KVM' in 'Common elements' in the menu above, and the place it in the editor by clicking somewhere into the white."
 					},
 					
 					//3
 					{
-					trigger:'connectnodes',
+					trigger:function(obj) { return true; },
 					text:	"You just created a KVM device.\n\
 							KVM devices can be identified by a green screen.\n\
 							Contary to OpenVZ, KVM devices run completely separate from their host systems.\n\
@@ -85,7 +82,7 @@ var editor_tutorial = {
 					
 					//4
 					{
-					trigger:'fdjkalfhajl',
+					trigger:function(obj) { return true; },
 					text:	"You have connected the two devices."
 					}
 		]
