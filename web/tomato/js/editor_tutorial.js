@@ -24,7 +24,18 @@ var editor_tutorial = {
 				name: "basic",
 				title: "Basic Usage",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+			},
+			{
+				name: "basic", //TODO: make this its own tutorial.
+				title: "Devices",
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+			},
+			{
+				name: "basic", //TODO: make this its own tutorial.
+				title: "Connections",
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
 			}
+			
 		],
 		
          
@@ -37,36 +48,46 @@ var editor_tutorial = {
 		 * per step:
 		 * 	trigger: takes a trigger object (handed over by every function that may be a tutorial trigger at one certain time)
 		 * 		decides if this trigger object matches current step (shall the tut continue now - next step?)
-		 * 	text: the text shown on screen (HTML formatting possible)
+		 * 	text: the text shown on screen (HTML formatting possible; CSS: style/editor.css)
 		 */
 		
 		basic: [     	
 					//0
 					{
 					trigger:function(obj) { return true; },
-					text:	"Welcome to ToMaTo!. You have just created a new Topology.\n\
-							This guide will tell you the basics of how to use this editor.\n\
-							If you already know how to use this tool, you can disable this tutorial at any point by disabling 'Beginner mode' in 'Options'.\n \n\
-							To add a first device to your topology, first click on 'OpenVZ' (blue screen) in 'Common elements' in the menu above, and then\n\
-							click somewhere in the white field."
+					text:	'<p class="tutorialExplanation">\
+								Welcome to ToMaTo! You have just created a new Topology.<br />\
+								This guide will tell you the basics of how to use this editor.<br />\
+								If you already know how to use this tool, you can disable this tutorial \
+								at any point by disabling Beginner mode in Options.</p>\
+							<p class = "tutorialCommand">\
+								To add a first device to your topology, first click on OpenVZ (blue screen) \
+								in Common elements in the menu above, and then click somewhere in the white field.</p>'
 					},
 					
 					//1
 					{
 					trigger:function(obj) { return true; },
-					text:	"Congratulations! You have placed your first OpenVZ device.\n\
-							You can always identify OpenVZ devices by a blue screen.\n\
-							OpenVZ devices are virtual machines which use their host's kernel to operate, but have their own virtual file system.\n\
-							This makes them more efficient to run, but disallows modifying the kernel.\n\
-							This also means, you can only run Linux systems in OpenVZ devices.\n \n\
-							You can move your new device via drag-and-drop. Try it!"
+					text:	'<p class="tutorialExplanation">\
+								Congratulations! You have placed your first OpenVZ device.<br />\
+								You can always identify OpenVZ devices by a blue screen.\
+								OpenVZ devices are virtual machines which use their host\'s kernel to operate, but have their own virtual file system.\
+								This makes them more efficient to run, but disallows modifying the kernel, but,\
+								however, this also means, you can only run Linux systems in OpenVZ devices.</p>\
+							<p class="tutorialCommand">\
+								You can move your new device via drag-and-drop. Try it now!</p>'
 					},
 					
 					//2
 					{
 					trigger:function(obj) { return true; },
-					text:	"You will need more devices to get a whole topology. This time, let's create a KVM device.\n \n\
-							Click 'KVM' in 'Common elements' in the menu above, and the place it in the editor by clicking somewhere into the white."
+					text:	'<p class="tutorialExplanation">\
+								You can disable moving elements in the options.</p>\
+							<p class="tutorialExplanation">\
+								You will need more devices to get a whole topology. This time, let\s create a KVM device.</p>\
+							<p class="tutorialCommand">\
+								Click KVM in Common elements in the menu above, and the place it in the editor by\
+								clicking somewhere into the white.</p>'
 					},
 					
 					//3

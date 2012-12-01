@@ -372,6 +372,16 @@ var Workspace = Class.extend({
     	
     	//tutorial UI
 		this.tutorialText = $("<div>.</div>");
+		this.tutorialButtons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
+		this.tutorialBackButton = $("<input type=\"button\" value=\"Back\" />");
+		this.tutorialButtons.append(this.tutorialBackButton);
+		this.tutorialBackButton.click(function() {editor.workspace.tutorialGoBack(); });
+		this.tutorialSkipButton = $("<input type=\"button\" value=\"Skip\" />");
+		this.tutorialButtons.append(this.tutorialSkipButton);
+		this.tutorialSkipButton.click(function() {editor.workspace.tutorialGoForth(); });
+		this.tutorialCloseButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
+		this.tutorialButtons.append(this.tutorialCloseButton);
+		this.tutorialCloseButton.click(function() { /* TODO: close tutorial */ });
 		this.tutorialWindow = new Window({ 
 			autoOpen: true, 
 			draggable: true,  
@@ -382,6 +392,7 @@ var Workspace = Class.extend({
 			width:500,
 			});
 		this.tutorialWindow.add(this.tutorialText);
+    	this.tutorialWindow.add(this.tutorialButtons);
     	
     	//pointer to an element of tutorialSteps
     	this.tutorialStatus = 0;
@@ -411,11 +422,33 @@ var Workspace = Class.extend({
 			this.tutorialWindow.hide();
 		}
 	},
+	tutorialGoBack: function() {
+		if (this.tutorialStatus > 0) {
+			this.tutorialStatus--;
+			this.tutorialSkipButton.show();
+			this.tutorialCloseButton.hide();
+		}
+		if (this.tutorialStatus == 0) {
+			this.tutorialBackButton.hide();
+		}
+		this.updateTutorialWindow();
+	},
+	tutorialGoForth: function() {
+		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
+			this.tutorialStatus++;	
+			this.tutorialBackButton.show();
+		}
+		if (this.tutorialStatus + 1 == this.tutorialSteps.length) {
+			this.tutorialSkipButton.hide();
+			this.tutorialCloseButton.show();
+		}
+		this.updateTutorialWindow();
+		
+	},
 	triggerTutorialProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.editor.options.beginner_mode) //don't waste cpu time if not needed...
 			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
-				this.tutorialStatus++;
-				this.updateTutorialWindow();
+				this.tutorialGoForth();
 		}
 	},
 	updateTutorialWindow: function() {
@@ -439,6 +472,9 @@ var Workspace = Class.extend({
 		this.tutorialWindow.setTitle("Tutorial: "+tutorialData.title);
 		this.tutorialSteps = editor_tutorial[tutorialData.name]
 		this.tutorialStatus = 0;
+		this.tutorialBackButton.hide();
+		this.tutorialSkipButton.show();
+		this.tutorialCloseButton.hide();
 		this.updateTutorialWindow;
 	},
 	onMouseMove: function(evt) {
