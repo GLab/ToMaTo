@@ -1,7 +1,7 @@
 /*
  * TODO tutorial:
  * 
- * split text into explanation and directive
+ * implement tutorial window close button
  * 
  * finish basic tutorial
  * 
@@ -17,23 +17,27 @@ var editor_tutorial = {
          * name: the key where to find the tutorial data. must be different from "tutorials"
          * title: Title of the tutorial for display
          * description: a short description for a tooltip or similar
+         * icon: url to the menu icon
          */
 		tutorials: [
 		    //0: this is the one which will be loaded by default
 			{
 				name: "basic",
 				title: "Basic Usage",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				icon: "img/user.png"
 			},
 			{
 				name: "basic", //TODO: make this its own tutorial.
 				title: "Devices",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				icon: "img/openvz16.png"
 			},
 			{
 				name: "basic", //TODO: make this its own tutorial.
 				title: "Connections",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies."
+				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				icon: "img/connect16.png"
 			}
 			
 		],
@@ -58,8 +62,7 @@ var editor_tutorial = {
 					text:	'<p class="tutorialExplanation">\
 								Welcome to ToMaTo! You have just created a new Topology.<br />\
 								This guide will tell you the basics of how to use this editor.<br />\
-								If you already know how to use this tool, you can disable this tutorial \
-								at any point by disabling Beginner mode in Options.</p>\
+								If you already know how to use this tool, you can close this window.</p>\
 							<p class = "tutorialCommand">\
 								To add a first device to your topology, first click on OpenVZ (blue screen) \
 								in Common elements in the menu above, and then click somewhere in the white field.</p>'
