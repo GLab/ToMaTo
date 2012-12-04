@@ -30,6 +30,12 @@ class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     
+class EditHostForm(HostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditHostForm, self).__init__(*args, **kwargs)
+        self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+        self.fields["address"].help_text=None
+    
 class RemoveHostForm(forms.Form):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
@@ -93,7 +99,7 @@ def remove(api, request):
 @wrap_rpc
 def edit(api, request):
     if request.method=='POST':
-        form = HostForm(request.POST)
+        form = EditHostForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.host_modify(formData["address"],{'site':formData["site"]})
@@ -110,9 +116,7 @@ def edit(api, request):
         address = request.GET['address']
         if address:
             hostinfo=api.host_info(address)
-            form = HostForm(hostinfo)
-            form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-            form.fields["address"].help_text=None
+            form = EditHostForm(hostinfo)
             form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             form.fields["site"].initial = hostinfo["site"]
             return render_to_response("admin/host/form.html", {'address': address, 'form': form, "edit":True})

@@ -15,10 +15,11 @@
 	
 	<table class="sortable,filterable">
 	  <tr>
+	  	<th>Tech</th>
 	    <th>Label</th>
-	    <th>Technology</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
+	    <th>Restricted</th>
 	    
 	    {% if hostManager %}
 	    	<th />
@@ -27,10 +28,25 @@
 	  </tr>
 	{% for templ in templ_list %}
 	  <tr>
+	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right">
+			{% if templ.attrs.tech == 'kvmqm' %}
+				<img src="/img/kvm16.png" title="KVM" />
+			{% else %}{% if templ.attrs.tech == 'openvz' %}
+				<img src="/img/openvz16.png" title="OpenVZ" />
+			{% else %}
+				<img src="/img/repy16.png" title="Repy" />
+			{% endif %}{% endif %}
+		</td>
+	  
 	    <td>{{templ.attrs.label}}</td>
-	    <td>{{templ.attrs.tech}}</td>
 	    <td>{{templ.attrs.subtype}}</td>
 	    <td>{{templ.attrs.preference}}</td>
+	    
+	    <td>
+		    {% if templ.attrs.restricted %}
+		    	<img src="/img/tick.png" title="restricted" />
+		    {% endif %}
+	    </td>
 	    
 	    {% if hostManager %}
 	    	<td><small><a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_templates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
