@@ -1736,7 +1736,7 @@ var createElementMenu = function(obj) {
 };
 
 $.contextMenu({
-	selector: 'rect,circle',
+	selector: 'rect,circle', //filtering on classes of SVG objects does not work
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
 		switch (obj.component_type) {
