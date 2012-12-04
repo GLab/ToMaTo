@@ -11,11 +11,13 @@
 	
 	<table class="sortable,filterable">
 	  <tr>
+		<th>Tech</th>
 		<th>Label</th>
 		<th>Disk Space</th>
 		<th>RAM</th>
 		<th>CPUs</th>
 		<th>Preference</th>
+	    <th>Restricted</th>
 		
 		{% if hostManager %}
 			<th />
@@ -24,11 +26,34 @@
 	  </tr>
 	{% for profile in profile_list %}
 	  <tr>
+		
+		<td enhancetable_customkey="{{profile.attrs.tech}}" align="right">
+			{% if profile.attrs.tech == 'kvmqm' %}
+				<img src="/img/kvm16.png" title="KVM" />
+			{% else %}{% if profile.attrs.tech == 'openvz' %}
+				<img src="/img/openvz16.png" title="OpenVZ" />
+			{% else %}
+				<img src="/img/repy16.png" title="Repy" />
+			{% endif %}{% endif %}
+		</td>
+		
 		<td>{{profile.attrs.label}}</td>
-		<td>{{profile.attrs.diskspace}} MB</td>
+		
+		<td>
+			{% if profile.attrs.tech != 'repy' %}
+				{{profile.attrs.diskspace}} MB
+			{% endif %}
+		</td>
+		
 		<td>{{profile.attrs.ram}} MB</td>
 		<td>{{profile.attrs.cpus}}</td>
 		<td>{{profile.attrs.preference}}</td>
+		
+	    <td>
+		    {% if profile.attrs.restricted %}
+		    	<img src="/img/tick.png" title="restricted" />
+		    {% endif %}
+	    </td>
 		
 		{% if hostManager %}
 			<td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
