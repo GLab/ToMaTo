@@ -19,6 +19,7 @@
 	    <th>Technology</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
+	    <th>Restricted</th>
 	    
 	    {% if hostManager %}
 	    	<th />
@@ -31,6 +32,15 @@
 	    <td>{{templ.attrs.tech}}</td>
 	    <td>{{templ.attrs.subtype}}</td>
 	    <td>{{templ.attrs.preference}}</td>
+	    <td>
+	    
+	    {% if templ.attrs.restricted %}
+	    	true
+	    {% else %}
+	    	false
+	    {% endif %}
+	    
+	    </td>
 	    
 	    {% if hostManager %}
 	    	<td><small><a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_templates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
