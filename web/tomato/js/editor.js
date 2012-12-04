@@ -50,7 +50,7 @@ var MenuTab = Class.extend({
 	init: function(name) {
 		this.name = name;
 		this.div = $('<div id="menu_tab_'+name+'"></div>');
-		this.link = $('<li><a href="#menu_tab_'+name+'"><span><label>'+name+'</label></span></a></li>');
+		this.link = $('<li><a href="'+window.location+'#menu_tab_'+name+'"><span><label>'+name+'</label></span></a></li>');
 		this.panel = $('<ul></ul>');
 		this.div.append(this.panel);
 		this.groups = {};
@@ -94,7 +94,7 @@ Menu.button = function(options) {
 		html.addClass("ui-button-toggle");
 		if (options.toggleGroup) options.toggleGroup.add(html);
 	}
-	var icon = $('<span class="ui-icon"></span>');
+	var icon = $('<span class="ui-button-icon ui-icon"></span>');
 	if (options.small) {
 		html.addClass("ui-ribbon-small-button");
 		icon.addClass("icon-16x16");
@@ -103,18 +103,18 @@ Menu.button = function(options) {
 		icon.addClass("icon-32x32");
 	}
 	html.append(icon);
-	html.append($('<span>'+options.label+'</span>'));
+	html.append($('<span class="ui-button-label">'+options.label+'</span>'));
 	if (options.func || options.toggle && options.toggleGroup) {
 		html.click(function() {
 			if (options.toggle && options.toggleGroup) options.toggleGroup.selected(this);
 			if (options.func) options.func(this);	
 		}); //must be done before call to button()
 	}
+	icon.css('background-image', 'url("'+options.icon+'")'); //must be done after call to button()
 	html.button({tooltip: options.tooltip || options.label || options.name});
 	html.attr("id", options.name || options.label);
-	icon.css('background-image', 'url("'+options.icon+'")'); //must be done after call to button()
 	html.setChecked = function(value){
-		this.button("option", "checked", value);
+		this.toggleClass("ui-button-checked ui-state-highlight", value);
 	}
 	if (options.checked) html.setChecked(true);
 	return html
@@ -1320,80 +1320,76 @@ var Connection = Component.extend({
 	}
 });
 
-$.contextMenu({
-	selector: '.tomato.connection',
-	build: function(trigger, e) {
-		var obj = trigger[0].obj;
-		var menu = {
-			callback: function(key, options) {},
-			items: {
-				"header": {
-					html:'<span>Connection '+obj.name()+'</span>', type:"html"
-				},
-				"usage": {
-					name:"Resource usage",
-					icon:"usage",
-					callback: function(){
-						obj.showUsage();
-					}
-				},
-				"sep1": "---",
-				"cloudshark_capture": obj.captureDownloadable() ? {
-					name:"View capture in Cloudshark",
-					icon:"cloudshark",
-					callback: function(){
-						obj.viewCapture();
-					}
-				} : null,
-				"download_capture": obj.captureDownloadable() ? {
-					name:"Download capture",
-					icon:"download-capture",
-					callback: function(){
-						obj.downloadCapture();
-					}
-				} : null,
-				"live_capture": obj.liveCaptureEnabled() ? {
-					name:"Live capture info",
-					icon:"live-capture",
-					callback: function(){
-						obj.liveCaptureInfo();
-					}
-				} : null,
-				"no_capture": (! obj.liveCaptureEnabled() && ! obj.captureDownloadable()) ? {
-					name:"No captures",
-					icon:"no-capture"
-				} : null,
-				"sep2": "---",
-				"configure": {
-					name:'Configure',
-					icon:'configure',
-					callback: function(){
-						obj.showConfigWindow();
-					}
-				},
-				"debug": obj.editor.options.debug_mode ? {
-					name:'Debug',
-					icon:'debug',
-					callback: function(){
-						obj.showDebugInfo();
-					}
-				} : null,
-				"sep3": "---",
-				"remove": {
-					name:'Delete',
-					icon:'remove',
-					callback: function(){
-						obj.remove(null, true);
-					}
+var createConnectionMenu = function(obj) {
+	var menu = {
+		callback: function(key, options) {},
+		items: {
+			"header": {
+				html:'<span>Connection '+obj.name()+'</span>', type:"html"
+			},
+			"usage": {
+				name:"Resource usage",
+				icon:"usage",
+				callback: function(){
+					obj.showUsage();
+				}
+			},
+			"sep1": "---",
+			"cloudshark_capture": obj.captureDownloadable() ? {
+				name:"View capture in Cloudshark",
+				icon:"cloudshark",
+				callback: function(){
+					obj.viewCapture();
+				}
+			} : null,
+			"download_capture": obj.captureDownloadable() ? {
+				name:"Download capture",
+				icon:"download-capture",
+				callback: function(){
+					obj.downloadCapture();
+				}
+			} : null,
+			"live_capture": obj.liveCaptureEnabled() ? {
+				name:"Live capture info",
+				icon:"live-capture",
+				callback: function(){
+					obj.liveCaptureInfo();
+				}
+			} : null,
+			"no_capture": (! obj.liveCaptureEnabled() && ! obj.captureDownloadable()) ? {
+				name:"No captures",
+				icon:"no-capture"
+			} : null,
+			"sep2": "---",
+			"configure": {
+				name:'Configure',
+				icon:'configure',
+				callback: function(){
+					obj.showConfigWindow();
+				}
+			},
+			"debug": obj.editor.options.debug_mode ? {
+				name:'Debug',
+				icon:'debug',
+				callback: function(){
+					obj.showDebugInfo();
+				}
+			} : null,
+			"sep3": "---",
+			"remove": {
+				name:'Delete',
+				icon:'remove',
+				callback: function(){
+					obj.remove(null, true);
 				}
 			}
-		};
-		for (var name in menu.items) {
-			if (! menu.items[name]) delete menu.items[name]; 
 		}
-		return menu;
+	};
+	for (var name in menu.items) {
+		if (! menu.items[name]) delete menu.items[name]; 
 	}
-});
+	return menu;
+};
 
 
 var Element = Component.extend({
@@ -1520,7 +1516,7 @@ var Element = Component.extend({
  		});
 	},
 	consoleAvailable: function() {
-		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host;
+		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host && this.data.state == "started";
 	},
 	downloadImage: function() {
 		this.action("download_grant", {callback: function(el, res) {
@@ -1612,134 +1608,143 @@ var Element = Component.extend({
 	}
 });
 
+var createElementMenu = function(obj) {
+	var menu = {
+		callback: function(key, options) {},
+		items: {
+			"header": {html:'<span>Element '+obj.name()+'</span>', type:"html"},
+			"connect": obj.isConnectable() ? {
+				name:'Connect',
+				icon:'connect',
+				callback: function(){
+					obj.editor.onElementConnectTo(obj);
+				}
+			} : null,
+			"start": obj.actionAvailable("start") ? {
+				name:'Start',
+				icon:'start',
+				callback: function(){
+					obj.action_start();
+				}
+			} : null,
+			"stop": obj.actionAvailable("stop") ? {
+				name:"Stop",
+				icon:"stop",
+				callback: function(){
+					obj.action_stop();
+				}
+			} : null,
+			"prepare": obj.actionAvailable("prepare") ? {
+				name:"Prepare",
+				icon:"prepare",
+				callback: function(){
+					obj.action_prepare();
+				}
+			} : null,
+			"destroy": obj.actionAvailable("destroy") ? {
+				name:"Destroy",
+				icon:"destroy",
+				callback: function(){
+					obj.action_destroy();
+				}
+			} : null,
+			"sep2": "---",
+			"console": obj.consoleAvailable() ? {
+				name:"Console",
+				icon:"console",
+				items: {
+					"console_info": {
+						name:"VNC Information",
+						icon:"info",
+						callback: function(){
+							obj.showVNCinfo();
+						}
+					},
+					"console_link": {
+						name:"vnc:// link",
+						icon:"console",
+						callback: function(){
+							obj.openVNCurl();
+						}
+					},
+					"console_novnc": {
+						name:"NoVNC (HTML5+JS)",
+						icon:"novnc",
+						callback: function(){
+							obj.openConsoleNoVNC();
+						}
+					},
+					"console_java": {
+						name: "Java applet",
+						icon: "java-applet",
+						callback: function(){
+							obj.openConsole();
+						}
+					}, 
+				}
+			} : null,
+			"usage": {
+				name:"Resource usage",
+				icon:"usage",
+				callback: function(){
+					obj.showUsage();
+				}
+			},
+			"download_image": obj.actionAvailable("download_grant") ? {
+				name:"Download image",
+				icon:"drive",
+				callback: function(){
+					obj.downloadImage();
+				}
+			} : null,
+			"upload_image": obj.actionAvailable("upload_grant") ? {
+				name:"Upload image",
+				icon:"drive",
+				callback: function(){
+					obj.uploadImage();
+				}
+			} : null,
+			"sep3": "---",
+			"configure": {
+				name:'Configure',
+				icon:'configure',
+				callback:function(){
+					obj.showConfigWindow();
+				}
+			},
+			"debug": obj.editor.options.debug_mode ? {
+				name:'Debug',
+				icon:'debug',
+				callback: function(){
+					obj.showDebugInfo();
+				}
+			} : null,
+			"sep4": "---",
+			"remove": obj.isRemovable() ? {
+				name:'Delete',
+				icon:'remove',
+				callback: function(){
+					obj.remove(null, true);
+				}
+			} : null
+		}
+	};
+	for (var name in menu.items) {
+		if (! menu.items[name]) delete menu.items[name]; 
+	}
+	return menu;
+};
+
 $.contextMenu({
-	selector: '.tomato.element',
+	selector: 'rect,circle',
 	build: function(trigger, e) {
 		var obj = trigger[0].obj;
-		var menu = {
-			callback: function(key, options) {},
-			items: {
-				"header": {html:'<span>Element '+obj.name()+'</span>', type:"html"},
-				"connect": obj.isConnectable() ? {
-					name:'Connect',
-					icon:'connect',
-					callback: function(){
-						obj.editor.onElementConnectTo(obj);
-					}
-				} : null,
-				"start": obj.actionAvailable("start") ? {
-					name:'Start',
-					icon:'start',
-					callback: function(){
-						obj.action_start();
-					}
-				} : null,
-				"stop": obj.actionAvailable("stop") ? {
-					name:"Stop",
-					icon:"stop",
-					callback: function(){
-						obj.action_stop();
-					}
-				} : null,
-				"prepare": obj.actionAvailable("prepare") ? {
-					name:"Prepare",
-					icon:"prepare",
-					callback: function(){
-						obj.action_prepare();
-					}
-				} : null,
-				"destroy": obj.actionAvailable("destroy") ? {
-					name:"Destroy",
-					icon:"destroy",
-					callback: function(){
-						obj.action_destroy();
-					}
-				} : null,
-				"sep2": "---",
-				"console": obj.consoleAvailable() ? {
-					name:"Console",
-					icon:"console",
-					items: {
-						"console_info": {
-							name:"VNC Information",
-							icon:"info",
-							callback: function(){
-								obj.showVNCinfo();
-							}
-						},
-						"console_link": {
-							name:"vnc:// link",
-							icon:"console",
-							callback: function(){
-								obj.openVNCurl();
-							}
-						},
-						"console_novnc": {
-							name:"NoVNC (HTML5+JS)",
-							icon:"novnc",
-							callback: function(){
-								obj.openConsoleNoVNC();
-							}
-						},
-						"console_java": {
-							name: "Java applet",
-							icon: "java-applet",
-							callback: function(){
-								obj.openConsole();
-							}
-						}, 
-					}
-				} : null,
-				"usage": {
-					name:"Resource usage",
-					icon:"usage",
-					callback: function(){
-						obj.showUsage();
-					}
-				},
-				"download_image": obj.actionAvailable("download_grant") ? {
-					name:"Download image",
-					icon:"drive",
-					callback: function(){
-						obj.downloadImage();
-					}
-				} : null,
-				"upload_image": obj.actionAvailable("upload_grant") ? {
-					name:"Upload image",
-					icon:"drive",
-					callback: function(){
-						obj.uploadImage();
-					}
-				} : null,
-				"sep3": "---",
-				"configure": {
-					name:'Configure',
-					icon:'configure',
-					callback:function(){
-						obj.showConfigWindow();
-					}
-				},
-				"debug": obj.editor.options.debug_mode ? {
-					name:'Debug',
-					icon:'debug',
-					callback: function(){
-						obj.showDebugInfo();
-					}
-				} : null,
-				"sep4": "---",
-				"remove": obj.isRemovable() ? {
-					name:'Delete',
-					icon:'remove',
-					callback: function(){
-						obj.remove(null, true);
-					}
-				} : null
-			}
-		};
-		for (var name in menu.items) {
-			if (! menu.items[name]) delete menu.items[name]; 
+		switch (obj.component_type) {
+			case "element":
+				return createElementMenu(obj);
+			case "connection":
+				return createConnectionMenu(obj);
 		}
-		return menu;
 	}
 });
 
@@ -1782,7 +1787,7 @@ var IconElement = Element.extend({
 	},
 	setBusy: function(busy) {
 		this._super(busy);
-		this.updateStateIcon();
+		this.paintUpdate();
 	},
 	updateStateIcon: function() {
 		if (this.busy) {
@@ -1816,9 +1821,13 @@ var IconElement = Element.extend({
 		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
 		this.enableDragging(this.rect);
 		this.enableClick(this.rect);
-		$(this.rect.node).attr("class", "tomato element selectable");
+		//$(this.rect.node).attr("class", "tomato element selectable");
+    //$(this.rect.node).addClass("tomato element selectable");
 		this.rect.node.obj = this;
-		this.rect.conditionalClass("connectable", this.isConnectable());
+    this.rect.conditionalClass("tomato", true);
+    this.rect.conditionalClass("element", true);
+    this.rect.conditionalClass("selectable", true);
+    this.rect.conditionalClass("connectable", this.isConnectable());
 		this.rect.conditionalClass("removable", this.isRemovable());
 	},
 	paintRemove: function(){
@@ -1832,8 +1841,9 @@ var IconElement = Element.extend({
 		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-10});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2+5});
-		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2+5});
+		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2+5, text: this.data.attrs.name});
 		this.updateStateIcon();
+		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.conditionalClass("connectable", this.isConnectable());
 		this.rect.conditionalClass("removable", this.isRemovable());
 	}
@@ -2246,12 +2256,12 @@ var Editor = Class.extend({
 	},
 	buildMenu: function() {
 		var t = this;
-	
-		var toggleGroup = new ToggleGroup();
+
+    var toggleGroup = new ToggleGroup();
 	
 		var tab = this.menu.addTab("Home");
 
-		var group = tab.addGroup("Modes");
+    var group = tab.addGroup("Modes");
 		this.selectBtn = Menu.button({
 			label: "Select & Move",
 			icon: "img/select32.png",
