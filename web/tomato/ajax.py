@@ -21,7 +21,7 @@ from lib import wrap_json
 @wrap_json
 def topology_info(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.topology_info(id)
+	info = api.topology_info(id, True)
 	return info
 
 @wrap_json
@@ -36,6 +36,11 @@ def topology_action(api, id, action, params={}): #@ReservedAssignment
 	res = api.topology_action(id, action, params)
 	info = api.topology_info(id)
 	return (res, info)
+
+@wrap_json
+def topology_remove(api, id): #@ReservedAssignment
+	id = int(id) #@ReservedAssignment
+	return api.topology_remove(id)
 
 @wrap_json
 def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignment

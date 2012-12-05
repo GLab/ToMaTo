@@ -29,9 +29,13 @@ def startTracker(port, path):
 	pid = spawn(args)
 	return pid
 
-def fileSize(torrentData):
+def torrentInfo(torrentData):
 	from BitTorrent.bencode import bdecode
 	info = bdecode(torrentData)["info"]
+	return info
+
+def fileSize(torrentData):
+	info = torrentInfo(torrentData)
 	if info.has_key('length'):
 		return info["length"]
 	file_length = 0

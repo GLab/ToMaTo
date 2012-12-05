@@ -59,13 +59,19 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
-		stats = UsageStatistics()
-		stats.init()
-		stats.save()
-		self.usageStatistics = stats
+		self.getUsageStatistics() #triggers creation
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
+
+	def getUsageStatistics(self):
+		if not self.usageStatistics:
+			# only happens during object creation or when object creation failed
+			stats = UsageStatistics()
+			stats.init()
+			stats.save()
+			self.usageStatistics = stats
+		return self.usageStatistics
 
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving

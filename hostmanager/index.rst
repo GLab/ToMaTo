@@ -7,6 +7,7 @@ Contents:
    :maxdepth: 2
 
    tomato/installation
+   tomato/config
    tomato/api/index
    tomato/backends
    tomato/fileserver

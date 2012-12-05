@@ -72,13 +72,13 @@ class JSONField(models.TextField):
 			pass
 		return value
 
-	def get_db_prep_save(self, value):
+	def get_db_prep_save(self, value, *args, **kwargs):
 		"""Convert our JSON object to a string before we save"""
 		if value == "":
 			return None
 		if isinstance(value, dict):
 			value = self._dumps(value)
-		return super(JSONField, self).get_db_prep_save(value)
+		return super(JSONField, self).get_db_prep_save(value, *args, **kwargs)
 	
 class CommaSeparatedListField(models.TextField):
 	description = "A list of simple strings"

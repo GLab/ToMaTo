@@ -131,12 +131,12 @@ def account_create(username, password, attrs={}, provider=""):
         
 def account_flags():
     """
-    Returns the list of all account flags.
+    Returns the dict of all account flags and their short descriptions.
     
     Return value:
       A list of all available account flags.
     """
-    return [getattr(Flags, flag) for flag in dir(Flags) if not flag.startswith("__")]
+    return flags
         
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, Flags, register
+from ..auth import getUser, getAllUsers, flags, Flags, register

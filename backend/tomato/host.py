@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser
+from . import config, currentUser, starttime
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags, mailFlaggedUsers
@@ -270,7 +270,14 @@ class Host(attributes.Mixin, models.Model):
         logging.logMessage("accounting_sync end", category="host", address=self.address)        
     
     def getNetworkKinds(self):
-        return [net.getKind() for net in self.networks.all()]
+        nets = [net.getKind() for net in self.networks.all()]
+        for net in nets:
+            if "/" in net:
+                kind, _ = net.split("/", 1)
+                nets.append(kind)
+        if nets:
+            nets.append(None)
+        return nets
     
     def remove(self):
         fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
@@ -296,7 +303,7 @@ class Host(attributes.Mixin, models.Model):
         if not self.enabled:
             problems.append("Manually disabled")
         hi = self.hostInfo
-        if time.time() - self.hostInfoTimestamp > 2 * config.HOST_UPDATE_INTERVAL + 300:
+        if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
             problems.append("Old info age, host unreachable?")
         if not hi:
             problems.append("Node info is missing")
@@ -587,7 +594,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
         if set(connectionTypes) - set(host.connectionTypes.keys()):
             continue
         if set(networkKinds) - set(host.getNetworkKinds()):
-            continue #FIXME: allow general networks
+            continue
         hosts.append(host)
     fault.check(hosts, "No hosts found for requirements")
     # any host in hosts can handle the request

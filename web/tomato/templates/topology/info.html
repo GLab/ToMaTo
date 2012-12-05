@@ -3,19 +3,12 @@
 {% block header %}
 <base href="/"/>
 <link type="text/css" href="style/jquery-ui.css" rel="stylesheet" />
-<link type="text/css" href="style/ui.all.css" rel="stylesheet" />
-<link type="text/css" href="style/ui.tabs.css" rel="stylesheet" />
-<link type="text/css" href="style/ui.button.css" rel="stylesheet" />
 <link type="text/css" href="style/ui.ribbon.css" rel="stylesheet" />
-<link type="text/css" href="style/ui.orbButton.css" rel="stylesheet" />
 <link type="text/css" href="style/jquery.contextMenu.css" rel="stylesheet" />
 <link type="text/css" href="style/editor.css" rel="stylesheet" />
 <script language="JavaScript" type="text/javascript" src="js/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/jquery-ui.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/ui.core.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/ui.tabs.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/ui.ribbon.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/ui.button.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/raphael.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
@@ -35,7 +28,7 @@
   	safe_mode: true,
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
-  	topology: {{top_json|safe}}
+  	topology: {{top.id}}
   });
 </script>
 {% endblock %}

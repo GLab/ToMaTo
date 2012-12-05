@@ -39,11 +39,13 @@ p.tutorialCommand {
 	background-position: left top !important;
 }
 .icon-16x16 {
+  float: left;
 	width: 16px !important;
 	height: 16px !important;
 	background-position: left top !important;
 	margin-left: 1px !important;
 	margin-top: 1px !important;
+  margin-right: 3px;
 }
 .ui-icon.icon-22x22 {
 	margin-left: -2px !important;
@@ -53,7 +55,7 @@ p.tutorialCommand {
 .icon-32x32 {
 	width: 32px !important;
 	height: 32px !important;
-	background-position: left top !important;
+	background-position: middle top !important;
 }
 
 .context-menu-list .context-menu-item.not-selectable:first-child {

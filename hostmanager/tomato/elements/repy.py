@@ -29,7 +29,8 @@ Element type: ``repy``
 Description:
 	This element type provides programming language virtualization by using the
 	Repy python sandbox. An adapted version of the original Seattle Repy that
-	can read and write ethernet packets is used.
+	can read and write ethernet packets is used. See :doc:`/docs/repy` for more
+	information about Repy.
 
 Possible parents: None
 
@@ -312,7 +313,7 @@ class Repy(elements.Element):
 				usage.memory += process.memory(self.vncpid)
 				cputime += process.cputime(self.vncpid)
 			usage.updateContinuous("cputime", cputime, data)
-
+Repy.__doc__ = DOC
 
 DOC_IFACE="""
 Element type: ``repy_interface``
@@ -355,7 +356,6 @@ class Repy_Interface(elements.Element):
 	CAP_PARENT = [Repy.TYPE]
 	CAP_CON_CONCEPTS = [connections.CONCEPT_INTERFACE]
 	DOC = DOC_IFACE
-	__doc__ = DOC_IFACE #@ReservedAssignment
 	
 	class Meta:
 		db_table = "tomato_repy_interface"
@@ -386,6 +386,7 @@ class Repy_Interface(elements.Element):
 		if net.ifaceExists(ifname):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
+Repy_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
 	if not repyVersion:
@@ -405,4 +406,3 @@ if not config.MAINTENANCE:
 	vnctermVersion = cmd.getDpkgVersion("vncterm")
 	websockifyVersion = cmd.getDpkgVersion("websockify")
 	register()
-	

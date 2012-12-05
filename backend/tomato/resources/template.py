@@ -18,6 +18,7 @@
 from django.db import models
 from .. import resources, fault, config
 from ..lib import attributes #@UnresolvedImport
+from ..lib.cmd import path, bittorrent #@UnresolvedImport
 import os.path, base64, hashlib
 
 PATTERNS = {
@@ -68,16 +69,22 @@ class Template(resources.Resource):
 		self.preference = val	
 	
 	def modify_torrent_data(self, val):
+		raw = base64.b64decode(val)
+		try:
+			info = bittorrent.torrentInfo(raw)
+		except:
+			fault.raise_("Invalid torrent file", fault.USER_ERROR)
+		fault.check(len(info["files"]) == 1, "Torrent must contain exactly one file")
 		self.torrent_data = val
 		if self.name and self.tech:
 			with open(self.getTorrentPath(), "w") as fp:
-				fp.write(base64.b64decode(val))
+				fp.write(raw)
 
 	def remove(self):
 		if os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
 		if os.path.exists(self.getPath()):
-			os.remove(self.getPath())
+			path.remove(self.getPath(), recursive=True)
 		resources.Resource.remove(self)
 
 	def info(self):
