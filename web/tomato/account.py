@@ -46,19 +46,28 @@ class FixedList(forms.MultipleHiddenInput):
     
 class AccountForm(forms.Form):
     name = forms.CharField(label="Account name", max_length=50)
-    password = forms.CharField(label="Password", widget=forms.PasswordInput)
+    password = forms.CharField(label="Password", widget=forms.PasswordInput, required=False)
+    password2 = forms.CharField(label="Password (repeated)", widget=forms.PasswordInput, required=False)
     origin = forms.CharField(label="Origin", widget=forms.HiddenInput, required=False)
     realname = forms.CharField(label="Full name")
     affiliation = forms.CharField()
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
+        
+    def clean_password(self):
+        if self.data.get('password') != self.data.get('password2'):
+            raise forms.ValidationError('Passwords are not the same')
+        return self.data.get('password')
+    
+    def clean(self, *args, **kwargs):
+        self.clean_password()
+        return forms.Form.clean(self, *args, **kwargs)
 
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
         AccountForm.__init__(self, data)
-        flags = [(f, f) for f in api.account_flags()]
+        flags = api.account_flags().items()
         self.fields["name"].widget = FixedText()
-        del self.fields["password"]
         del self.fields["origin"]
         self.fields["flags"].choices = flags
         if "admin" in api.user.get("flags", []):
@@ -69,12 +78,13 @@ class AccountChangeForm(AccountForm):
 class AccountRegisterForm(AccountForm):
     def __init__(self, data=None):
         AccountForm.__init__(self, data)
+        self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("account/index.html", {'accounts': api.account_list()})
+    return render_to_response("account/index.html", {'user': api.user, 'accounts': api.account_list()})
 
 @wrap_rpc
 def info(api, request, id=None):
@@ -90,11 +100,14 @@ def info(api, request, id=None):
             if not "admin" in api.user["flags"]:
                 del data["flags"]
             del data["name"]
+            del data["password2"]
+            if not data["password"]:
+                del data["password"]
             api.account_modify(id, attrs=data)
             return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
     else:
         form = AccountChangeForm(api, user)
-    return render_to_response("account/info.html", {"account": user, "form": form})
+    return render_to_response("account/info.html", {'user': api.user, "account": user, "form": form})
     
 def register(request):
     if request.method=='POST':
@@ -104,10 +117,11 @@ def register(request):
             username = data["name"]
             password = data["password"]
             del data["password"]
+            del data["password2"]
             del data["name"]
             api = getGuestApi()
             try:
-                api.account_create(username, password, attrs=data)
+                api.account_create(username, password=password, attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:
@@ -115,15 +129,3 @@ def register(request):
     else:
         form = AccountRegisterForm() 
     return render_to_response("account/register.html", {"form": form})
-    
-def info_or_register(request):
-    try:
-        api = getapi(request)
-        if api:
-            return HttpResponseRedirect(reverse("tomato.account.info"))
-    except:
-        import traceback
-        traceback.print_exc
-        pass
-    return HttpResponseRedirect(reverse("tomato.account.register"))
-        

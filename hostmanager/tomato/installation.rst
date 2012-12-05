@@ -65,5 +65,5 @@ Some steps are needed to finalize the installation:
  * Installation of additional packages so that more :doc:`elements/index` and 
    :doc:`connections/index` become available. (For Proxmox hosts, the package
    ``tomato-host-promxmox`` installs all needed software.
- * :doc:`configuration`
+ * :doc:`config`
  * :doc:`backends`

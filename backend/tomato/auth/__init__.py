@@ -21,15 +21,27 @@ from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
 from .. import config, fault, currentUser
 
 class Flags:
-    Admin = "admin" # Can modify all accounts
-    Debug = "debug" # Can see everything
-    HostsManager = "hosts_manager" # Can manage all hosts and sites
-    GlobalOwner = "global_owner" # Owner for every topology
-    GlobalManager = "global_manager" # Manager for every topology
-    GlobalUser = "global_user" # User for every topology    
-    NoTopologyCreate = "no_topology_create" # Restriction on topology_create
-    OverQuota = "over_quota" # Restriction on actions start, prepare and upload_grant
-    NewAccount = "new_account" # Account is new, just a tag
+    Admin = "admin"
+    Debug = "debug"
+    HostsManager = "hosts_manager"
+    GlobalOwner = "global_owner"
+    GlobalManager = "global_manager"
+    GlobalUser = "global_user"    
+    NoTopologyCreate = "no_topology_create"
+    OverQuota = "over_quota"
+    NewAccount = "new_account"
+
+flags = {
+    Flags.Admin: "Admin: Modify all accounts",
+    Flags.Debug: "Debug: See everything",
+    Flags.HostsManager: "HostsManager: Can manage all hosts and sites",
+    Flags.GlobalOwner: "GlobalOwner: Owner for every topology",
+    Flags.GlobalManager: "GlobalManager: Manager for every topology",
+    Flags.GlobalUser: "GlobalUser: User for every topology",
+    Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
+    Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
+    Flags.NewAccount: "NewAccount: Account is new, just a tag"
+}
 
 USER_ATTRS = ["realname", "affiliation", "email", "password"]
 ADMIN_ATTRS = ["flags", "origin", "name"]
@@ -108,12 +120,6 @@ class User(attributes.Mixin, models.Model):
         self.flags.remove(flag)
         self.save()
 
-    def modify_origin(self, value):
-        self.origin = value
-        
-    def modify_name(self, value):
-        self.name = value
-
     def modify_password(self, password):
         for prov in providers:
             if not prov.getName() == self.origin:
@@ -129,9 +135,8 @@ class User(attributes.Mixin, models.Model):
                 self.attrs[key] = value
                 continue
             fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
-            func = getattr(self, "modify_%s" % key)
-            if func:
-                func(value)
+            if hasattr(self, "modify_%s" % key):
+                getattr(self, "modify_%s" % key)(value)
             else:
                 self.attrs[key] = value
         self.save()

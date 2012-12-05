@@ -11,17 +11,15 @@ General
 Backend
 -------
   * API
-     * Topology
-        * topology_permission()
      * Host
   * Installation
   * Configuration
+  * Permissions
   
 Hostmanager
 -----------
   * API
      * Connections
-  * Configuration
   
 Frontends
 ---------

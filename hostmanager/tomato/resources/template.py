@@ -18,7 +18,7 @@
 from django.db import models
 from .. import resources, fault, config
 from ..lib import attributes #@UnresolvedImport
-from ..lib.cmd import bittorrent #@UnresolvedImport
+from ..lib.cmd import bittorrent, path #@UnresolvedImport
 import os, base64, hashlib
 
 PATTERNS = {
@@ -76,7 +76,7 @@ class Template(resources.Resource):
 		if os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
 		if os.path.exists(self.getPath()):
-			os.remove(self.getPath())
+			path.remove(self.getPath(), recursive=True)
 		resources.Resource.remove(self)
 
 	def isReady(self):

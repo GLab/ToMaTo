@@ -24,6 +24,7 @@
   border-top: 1px solid lightGrey/*{borderColorDefault}*/;
   background: #E6E6E6/*{bgColorDefault}*/ url(images/ui-bg_glass_75_e6e6e6_1x400.png)/*{bgImgUrlDefault}*/ 0/*{bgDefaultXPos}*/ 50%/*{bgDefaultYPos}*/ repeat-x/*{bgDefaultRepeat}*/;
 }
+
 .icon-22x22 {
 	width: 22px !important;
 	height: 22px !important;
@@ -31,11 +32,13 @@
 	background-position: left top !important;
 }
 .icon-16x16 {
+  float: left;
 	width: 16px !important;
 	height: 16px !important;
 	background-position: left top !important;
 	margin-left: 1px !important;
 	margin-top: 1px !important;
+  margin-right: 3px;
 }
 .ui-icon.icon-22x22 {
 	margin-left: -2px !important;
@@ -45,7 +48,7 @@
 .icon-32x32 {
 	width: 32px !important;
 	height: 32px !important;
-	background-position: left top !important;
+	background-position: middle top !important;
 }
 
 .context-menu-list .context-menu-item.not-selectable:first-child {

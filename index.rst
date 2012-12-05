@@ -21,6 +21,8 @@ Other topics
   docs/packetcapturing
   docs/templates
   docs/accountingdata
+  docs/repy
+  docs/databases
   docs/glossary
   docs/license
   docs/missing

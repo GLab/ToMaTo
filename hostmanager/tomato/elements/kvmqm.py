@@ -187,8 +187,8 @@ class KVMQM(elements.Element):
 	}
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
-	DOC = DOC
 	__doc__ = DOC #@ReservedAssignment
+	DOC = DOC
 	
 	class Meta:
 		db_table = "tomato_kvmqm"
@@ -451,6 +451,8 @@ class KVMQM(elements.Element):
 			usage.memory = memory
 			usage.updateContinuous("cputime", cputime, data)
 		usage.diskspace = path.diskspace(self._imagePathDir())
+KVMQM.__doc__ = DOC
+
 
 DOC_IFACE="""
 Element type: ``kvmqm_interface``
@@ -475,7 +477,7 @@ States:
 	*prepared*: In this state the interface is present in the qm configuration
 		but not running.
 	*started*: In this state the interface is running.
-
+        
 Attributes: None
 
 Actions: None
@@ -527,7 +529,7 @@ class KVMQM_Interface(elements.Element):
 		if net.ifaceExists(ifname):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
-
+KVMQM_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
 	if not qmVersion:

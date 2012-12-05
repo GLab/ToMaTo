@@ -17,8 +17,6 @@
 
 import os, socket
 
-VERSION = 0.1
-
 CERTIFICATE = "../cli/admin.pem"
 
 TEMPLATE_PATH = "templates"

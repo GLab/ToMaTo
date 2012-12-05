@@ -37,7 +37,7 @@ class TemplateForm(forms.Form):
 class AddTemplateForm(TemplateForm):
     torrentfile  = forms.FileField(label="Torrent:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')
     name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
-    tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices={('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')}))
+    tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
     def __init__(self, *args, **kwargs):
         super(AddTemplateForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference','torrentfile']
@@ -63,7 +63,7 @@ def index(api, request):
         if res['type'] == 'template':
             templ_list.append(res)
         
-    return render_to_response("admin/device_templates/index.html", {'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
 
 
 @wrap_rpc
@@ -75,12 +75,12 @@ def add(api, request):
             f = request.FILES['torrentfile']
             torrent_data = base64.b64encode(f.read())
             api.resource_create('template',{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference'],'tech': formData['tech'],'restricted': formData['restricted'],'torrent_data':torrent_data})
-            return render_to_response("admin/device_templates/add_success.html", {'label': formData['label']})
+            return render_to_response("admin/device_templates/add_success.html", {'user': api.user, 'label': formData['label']})
         else:
-            return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
+            return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
         form = AddTemplateForm
-        return render_to_response("admin/device_templates/form.html", {'form': form, "edit":False})
+        return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
    
 
 @wrap_rpc
@@ -92,30 +92,30 @@ def remove(api, request):
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'template':
                 label = api.resource_info(res_id)['attrs']['label']
                 api.resource_remove(res_id)
-                return render_to_response("admin/device_templates/remove_success.html", {'label':label})
+                return render_to_response("admin/device_templates/remove_success.html", {'user': api.user, 'label':label})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'There is no template with id '+res_id})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no template with id '+res_id})
         else:
             res_id = request.POST['res_id']
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 
 @wrap_rpc
 def edit(api, request):
-    return render_to_response("admin/device_templates/edit_unspecified.html",{'res_id':request.GET['id'],'label':api.resource_info(request.GET['id'])['attrs']['label']})
+    return render_to_response("admin/device_templates/edit_unspecified.html",{'user': api.user, 'res_id':request.GET['id'],'label':api.resource_info(request.GET['id'])['attrs']['label']})
 
 @wrap_rpc
 def edit_torrent(api, request):
@@ -128,24 +128,24 @@ def edit_torrent(api, request):
             res_info = api.resource_info(formData['res_id'])
             if res_info['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
-                return render_to_response("admin/device_templates/edit_success.html", {'label': res_info['attrs']['label']})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label']})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':False})
+                return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': label, 'form': form, "edit":True, 'edit_data':False})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
             res_info = api.resource_info(res_id)
             form = ChangeTemplateTorrentForm()
             form.fields['res_id'].initial = res_id
-            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
+            return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 
 @wrap_rpc
@@ -156,15 +156,15 @@ def edit_data(api, request):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'label':formData['label'],'restricted': formData['restricted'],'subtype':formData['subtype'],'preference':formData['preference']})
-                return render_to_response("admin/device_templates/edit_success.html", {'label': formData["label"]})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"]})
             else:
-                return render_to_response("main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':True})
+                return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': label, 'form': form, "edit":True, 'edit_data':True})
             else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         res_id = request.GET['id']
         if res_id:
@@ -172,8 +172,8 @@ def edit_data(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditTemplateForm(origData)
-            return render_to_response("admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
+            return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
         else:
-            return render_to_response("main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 

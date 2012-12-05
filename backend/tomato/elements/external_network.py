@@ -42,7 +42,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		"kind": kind_attr,
 	}
 
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ATTRS_EXCLUDE = ["network"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
@@ -78,15 +78,14 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 
 	def action_stop(self):
 		for ch in self.getChildren():
-			if ch.state == ST_STARTED:
-				ch.action("stop", {})
+			ch.action("stop", {})
 		self.setState(ST_CREATED)
 
 	def action_start(self):
 		if self.samenet:
 			self.network = network.get(self.kind)
 		for ch in self.getChildren():
-			if ch.state == ST_CREATED:
+			if not ch.state == ST_STARTED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
@@ -111,15 +110,15 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 	CAP_CHILDREN = {}
 	
 	CUSTOM_ACTIONS = {
-		"start": [ST_CREATED],
-		"stop": [ST_STARTED],
+		"start": [ST_CREATED, "default"],
+		"stop": [ST_STARTED, "default"],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
 		"name": name_attr,
 		"kind": kind_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ATTRS_EXCLUDE = ["network"]
 	CAP_PARENT = [None, External_Network.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True
@@ -157,7 +156,6 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 			except fault.XMLRPCError, exc:
 				if exc.faultCode == fault.UNKNOWN_OBJECT:
 					self.element.state = ST_CREATED
-			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
 				if self.element:
 					self.element.remove()
@@ -168,18 +166,18 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
-		_host = host.select(elementTypes=[self.TYPE], hostPrefs=hPref, sitePrefs=sPref)
+		_host = host.select(elementTypes=["external_network"], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
-		if self.parent and self.samenet:
+		if self.parent and self.parent.upcast().samenet:
 			self.network = network.getInstance(_host, self.parent.network.kind)
 		else:
 			self.network = network.getInstance(_host, self.kind)			
-		attrs = {"kind": self.network.network.kind}
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
+		attrs = {"network": self.network.network.kind}
+		self.element = _host.createElement("external_network", parent=None, attrs=attrs, owner=self)
 		self.setState(ST_STARTED)
 		self.triggerConnectionStart()
 		
-	def action_destroy(self):
+	def action_stop(self):
 		self.triggerConnectionStop()
 		if self.element:
 			self.element.remove()

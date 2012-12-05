@@ -523,7 +523,7 @@ class OpenVZ(elements.Element):
         diskspace = self._diskspace()
         if diskspace:
             usage.diskspace = diskspace
-            
+OpenVZ.__doc__ = DOC            
 
 
 DOC_IFACE="""
@@ -675,6 +675,7 @@ class OpenVZ_Interface(elements.Element):
         if net.ifaceExists(ifname):
             traffic = sum(net.trafficInfo(ifname))
             usage.updateContinuous("traffic", traffic, data)
+OpenVZ_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
     if not vzctlVersion:
