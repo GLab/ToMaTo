@@ -128,7 +128,7 @@ def edit_torrent(api, request):
             res_info = api.resource_info(formData['res_id'])
             if res_info['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
-                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label']})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label'], 'res_id': formData['res_id'], 'edited_data': True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:
@@ -156,7 +156,7 @@ def edit_data(api, request):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'label':formData['label'],'restricted': formData['restricted'],'subtype':formData['subtype'],'preference':formData['preference']})
-                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"]})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:

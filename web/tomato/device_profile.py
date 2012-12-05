@@ -53,9 +53,9 @@ class EditKVMqmForm(ProfileForm):
     
 class AddProfileForm(ProfileForm):
     tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
-    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all OpenVZ templates. Cannot be changed. Not displayed.")
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all templates of the same tech. Cannot be changed. Not displayed.")
     diskspace = forms.IntegerField(label="Disk Space (MB)", required = False, help_text="only OpenVZ and KVMqm")
-    cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy: float number; KMVqm: integer number")
+    cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy: float number; KVMqm: integer number; OpenVZ: not needed.")
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
