@@ -20,21 +20,23 @@ var editor_tutorial = {
          * icon: url to the menu icon
          */
 		tutorials: [
-		    //0: this is the one which will be loaded by default
+		    //0: this is the one which will be loaded by default for new users
 			{
 				name: "basic",
 				title: "Basic Usage",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
 				icon: "img/user.png"
 			},
+			
+		    // other tutorials; can be loaded through menu
 			{
-				name: "basic", //TODO: make this its own tutorial.
+				name: "devices",
 				title: "Devices",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
 				icon: "img/openvz16.png"
 			},
 			{
-				name: "basic", //TODO: make this its own tutorial.
+				name: "connections",
 				title: "Connections",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
 				icon: "img/connect16.png"
@@ -53,6 +55,9 @@ var editor_tutorial = {
 		 * 	trigger: takes a trigger object (handed over by every function that may be a tutorial trigger at one certain time)
 		 * 		decides if this trigger object matches current step (shall the tut continue now - next step?)
 		 * 	text: the text shown on screen (HTML formatting possible; CSS: style/editor.css)
+		 *
+		 * be careful: tutorials with only 1 step might be buggy.
+		 *
 		 */
 		
 		basic: [     	
@@ -106,8 +111,22 @@ var editor_tutorial = {
 					
 					//4
 					{
-					trigger:function(obj) { return true; },
+					trigger:function(obj) { return false; },
 					text:	"You have connected the two devices."
+					}
+		],
+		
+		devices: [
+					{
+					trigger:function(obj) { return false; },
+					text:	"This tutorial has yet to be created."
+					}
+		],
+		
+		connections: [
+					{
+					trigger:function(obj) { return false; },
+					text:	"This tutorial has yet to be created."
 					}
 		]
 }
