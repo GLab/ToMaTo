@@ -2718,21 +2718,19 @@ var Editor = Class.extend({
 		var tab = this.menu.addTab("Tutorials");
 		var group = tab.addGroup("Tutorials");
 		var tuts = editor_tutorial.tutorials;
-		var buttons = [];
 		for (var i = 0; i<tuts.length; i++) {
-			buttons[i]=Menu.button({
+			group.addElement(Menu.button({
 				label: tuts[i].title,
 				icon: tuts[i].icon,
 				toggle: false,
-				small: true,
+				small: false,
 				tutID: i,
 				tooltip: tuts[i].description,
 				func: function() { 
 					editor.workspace.loadTutorial(this.tutID); 
 				}
-			});
+			}));
 		}
-		group.addStackedElements(buttons);
 
 
 		this.menu.paint();
