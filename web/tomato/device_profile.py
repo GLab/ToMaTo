@@ -69,12 +69,7 @@ def is_hostManager(account_info):
 
 @wrap_rpc
 def index(api, request):
-    reslist = api.resource_list()
-    profile_list = []
-    for res in reslist:
-        if res['type'] == 'profile':
-            profile_list.append(res)
-        
+    profile_list = api.resource_list('profile')
     return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list, 'hostManager': is_hostManager(api.account_info())})
 
 

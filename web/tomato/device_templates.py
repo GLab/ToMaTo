@@ -57,12 +57,7 @@ def is_hostManager(account_info):
 
 @wrap_rpc
 def index(api, request):
-    reslist = api.resource_list()
-    templ_list = []
-    for res in reslist:
-        if res['type'] == 'template':
-            templ_list.append(res)
-        
+    templ_list = api.resource_list('template')
     return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
 
 
