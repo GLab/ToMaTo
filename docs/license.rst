@@ -36,12 +36,7 @@ The design, layout and logo have been developed by University of Würzburg and U
 
 Icons
 *****
-Some icons have been included from the Silk icon set 1.3 of Mark James.
-Those icons are licensed under the Creative Commons Attribution 2.5 License.
-
-::
-
-   Copyright (C) by Mark James <mjames@gmail.com> http://www.famfamfam.com/lab/icons/silk
+Licenses of icons are listed in :doc:`/web/tomato/img/sources`.
 
 
 Obtaining the code
