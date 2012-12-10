@@ -70,8 +70,8 @@ class NetworkInstance(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["network", "host", "bridge"]:
-			fault.check("kind" in attrs, "Network_Instance needs attribute %s", attr)
-		self.network = get(attrs["kind"])
+			fault.check(attr in attrs, "Network_Instance needs attribute %s", attr)
+		self.network = get(attrs["network"])
 		fault.check(self.network, "Network %s does not exist", attrs["kind"])
 		self.host = host.get(address=attrs["host"])
 		fault.check(self.network, "Host %s does not exist", attrs["host"])

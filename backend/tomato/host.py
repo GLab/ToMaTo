@@ -314,7 +314,7 @@ class Host(attributes.Mixin, models.Model):
             problems.append("Node just booted")
         if hi["time_diff"] > 5 * 60:
             problems.append("Node clock is out of sync")             
-        if hi["query_time"] > 0.5:
+        if hi["query_time"] > 5:
             problems.append("Last query took very long")             
         res = hi["resources"]
         cpus = res["cpus_present"]
@@ -676,6 +676,17 @@ def getConnectionCapabilities(type_):
         if len(repr(hcaps)) > len(repr(caps)):
             caps = hcaps
     return caps
+
+def getPublicKey():
+    lines = []
+    ignore = False
+    with open(config.CERTIFICATE) as key:
+        for line in key:
+            if "PRIVATE" in line:
+                ignore = not ignore
+            elif not ignore:
+                lines.append(line)
+    return "".join(lines)
 
 @db.commit_after
 def synchronizeHost(host):
