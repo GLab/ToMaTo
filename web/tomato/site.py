@@ -43,7 +43,6 @@ class EditSiteForm(SiteForm):
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
 
-@cache_page(60)
 @wrap_rpc
 def index(api, request):
     return render_to_response("admin/site/index.html", {'user': api.user, 'site_list': api.site_list(), 'hostManager': is_hostManager(api.account_info())})

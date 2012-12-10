@@ -49,7 +49,6 @@ def site_name_list(api):
     res.sort()
     return res
 
-@cache_page(60)
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
