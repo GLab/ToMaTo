@@ -38,4 +38,4 @@ def project(request, page=""):
 def logout(request):
 	if "auth" in request.session:
 		del request.session["auth"]
-	return HttpResponseNotAuthorized()
+	return HttpResponseNotAuthorized(code=401, text="You have been logged out.")

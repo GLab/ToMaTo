@@ -63,9 +63,11 @@ def getapi(request):
 
 class HttpResponseNotAuthorized(HttpResponse):
 	status_code = 401
-	def __init__(self):
+	def __init__(self, code=401, text=""):
 		HttpResponse.__init__(self)
+		self.status_code = code
 		self['WWW-Authenticate'] = 'Basic realm="%s"' % server_httprealm
+		self.write(text)
 
 class wrap_rpc:
 	def __init__(self, fun):

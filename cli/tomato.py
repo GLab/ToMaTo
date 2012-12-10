@@ -51,6 +51,7 @@ def getConnection(hostname, port, ssl, username=None, password=None, sslCert=Non
 	transport = None
 	if ssl and sslCert:
 		transport = SafeTransportWithCerts(sslCert, sslCert)
+	#print '%s://%s%s:%s' % (proto, auth, hostname, port)
 	return ServerProxy('%s://%s%s:%s' % (proto, auth, hostname, port), allow_none=True, transport=transport)
 	
 def runInteractive(locals):
