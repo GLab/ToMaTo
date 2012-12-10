@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl
+import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
 
 def parseArgs():
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
@@ -43,8 +43,10 @@ def getConnection(hostname, port, ssl, username=None, password=None, sslCert=Non
 	proto = 'https' if ssl else 'http'
 	auth = ""
 	if username:
+		username = urllib.quote_plus(username)
 		auth = username
 		if password:
+			password = urllib.quote_plus(password)
 			auth += ":" + password
 	if auth:
 		auth += "@"
