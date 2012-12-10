@@ -54,9 +54,9 @@ class User(attributes.Mixin, models.Model):
     password_time = models.FloatField(null=True)
     last_login = models.FloatField(default=time.time())
     
-    realname = attributes.attribute("realname", str)
-    affiliation = attributes.attribute("affiliation", str)
-    email = attributes.attribute("email", str)
+    realname = attributes.attribute("realname", unicode)
+    affiliation = attributes.attribute("affiliation", unicode)
+    email = attributes.attribute("email", unicode)
     flags = attributes.attribute("flags", list, [])
 
     class Meta:

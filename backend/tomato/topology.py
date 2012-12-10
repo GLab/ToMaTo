@@ -25,7 +25,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
     permissions = models.ForeignKey(Permissions, null=False)
     totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
     attrs = db.JSONField()
-    name = attributes.attribute("name", str)
+    name = attributes.attribute("name", unicode)
     
     DOC = ""
     CAP_ACTIONS = ["prepare", "destroy", "start", "stop"]

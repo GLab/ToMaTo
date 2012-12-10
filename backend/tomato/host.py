@@ -26,8 +26,8 @@ class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
     #hosts: [Host]
     attrs = db.JSONField()
-    description = attributes.attribute("description", str, "")
-    location = attributes.attribute("location", str, "")
+    description = attributes.attribute("description", unicode, "")
+    location = attributes.attribute("location", unicode, "")
     
     class Meta:
         pass

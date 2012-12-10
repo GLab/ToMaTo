@@ -49,7 +49,7 @@ class Attr:
 			if self.type == "float":
 				value = float(value)
 			if self.type == "str":
-				value = str(value)
+				value = unicode(value)
 			if self.type == "bool":
 				value = bool(value)
 		except:
