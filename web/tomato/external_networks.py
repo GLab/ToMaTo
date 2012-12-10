@@ -25,22 +25,10 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import RemoveResourceForm, is_hostManager
 
-class HostForm(forms.Form):
-    address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
-    site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
+
     
-class EditHostForm(HostForm):
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-        self.fields["address"].help_text=None
-    
-class RemoveHostForm(forms.Form):
-    address = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
     
 def site_name_list(api):
     l = api.site_list()

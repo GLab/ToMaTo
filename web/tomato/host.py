@@ -25,6 +25,7 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import is_hostManager
 
 class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
@@ -39,8 +40,6 @@ class EditHostForm(HostForm):
 class RemoveHostForm(forms.Form):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
     
 def site_name_list(api):
     l = api.site_list()

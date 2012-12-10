@@ -27,6 +27,7 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import is_hostManager
 
 class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
@@ -41,9 +42,6 @@ class EditSiteForm(SiteForm):
     
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
 
 @cache_page(60)
 @wrap_rpc

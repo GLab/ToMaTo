@@ -27,6 +27,7 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 import base64
+from admin_common import RemoveResourceForm, is_hostManager
 
 class TemplateForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -49,11 +50,6 @@ class ChangeTemplateTorrentForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')    
     
-class RemoveResourceForm(forms.Form):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):
