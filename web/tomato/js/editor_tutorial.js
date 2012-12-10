@@ -39,7 +39,7 @@ var editor_tutorial = {
 				name: "connections",
 				title: "Connections",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
-				icon: "img/connect16.png" //TODO: bigger icon
+				icon: "img/connect32.png"
 			}
 			
 		],
