@@ -5,7 +5,24 @@
 {% block content %}
 <h1>Success</h1>
 
-<p>Successfully edited the template {{label}}.</p>
+<p>Successfully edited the
+{% if edited_data %}
+data
+{% else %}
+torrent
+{% endif %}
+of the template {{label}}.</p>
+
 <p><a href="{%url device_templates.index%}">Back to list</a></p>
+
+<p>
+{% if edited_data %}
+<input type="button" onClick="window.location='{%url device_templates.edit_torrent%}?id={{res_id}}'" value="Change torrent" />
+{% else %}
+<input type="button" onClick="window.location='{%url device_templates.edit_data%}?id={{res_id}}'" value="Edit data" /><br />
+{% endif %}
+
+
+</p>
 
 {% endblock %}

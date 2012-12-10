@@ -32,6 +32,7 @@ class TemplateForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
     subtype = forms.CharField(max_length=255, required=False)
     preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
+    restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 
 class AddTemplateForm(TemplateForm):
     torrentfile  = forms.FileField(label="Torrent:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')
@@ -73,7 +74,7 @@ def add(api, request):
             formData = form.cleaned_data
             f = request.FILES['torrentfile']
             torrent_data = base64.b64encode(f.read())
-            api.resource_create('template',{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference'],'tech': formData['tech'],'torrent_data':torrent_data})
+            api.resource_create('template',{'name':formData['name'],'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference'],'tech': formData['tech'],'restricted': formData['restricted'],'torrent_data':torrent_data})
             return render_to_response("admin/device_templates/add_success.html", {'user': api.user, 'label': formData['label']})
         else:
             return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -127,7 +128,7 @@ def edit_torrent(api, request):
             res_info = api.resource_info(formData['res_id'])
             if res_info['type'] == 'template':
                 api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
-                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label']})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label'], 'res_id': formData['res_id'], 'edited_data': True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:
@@ -154,8 +155,8 @@ def edit_data(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'template':
-                api.resource_modify(formData["res_id"],{'label':formData['label'],'subtype':formData['subtype'],'preference':formData['preference']})
-                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"]})
+                api.resource_modify(formData["res_id"],{'label':formData['label'],'restricted': formData['restricted'],'subtype':formData['subtype'],'preference':formData['preference']})
+                return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
         else:

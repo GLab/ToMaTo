@@ -33,6 +33,12 @@ class SiteForm(forms.Form):
     description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     
+class EditSiteForm(SiteForm):
+    def __init__(self, *args, **kwargs):
+        super(EditSiteForm, self).__init__(*args, **kwargs)
+        self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
+        self.fields["name"].help_text=None
+    
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
@@ -88,7 +94,7 @@ def remove(api, request):
 @wrap_rpc
 def edit(api, request):
     if request.method=='POST':
-        form = SiteForm(request.POST)
+        form = EditSiteForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
@@ -105,9 +111,7 @@ def edit(api, request):
     else:
         name = request.GET['name']
         if name:
-            form = SiteForm(api.site_info(name))
-            form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-            form.fields["name"].help_text=None
+            form = EditSiteForm(api.site_info(name))
             return render_to_response("admin/site/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})

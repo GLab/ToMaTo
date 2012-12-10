@@ -263,8 +263,8 @@ var Window = Class.extend({
 		this.options.position = options.position || 'center center';
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
-			draggable: false,
-			resizable: false,
+			draggable: options.draggable != null ? options.draggable : false,
+			resizable: options.resizable != null ? options.resizable : false,
 			height: options.height || "auto",
 			width: options.width || "auto",
 			maxHeight:600,
@@ -273,7 +273,7 @@ var Window = Class.extend({
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
-			modal: true,
+			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {}
 		});
 		this.setPosition(options.position);
@@ -383,8 +383,42 @@ var Workspace = Class.extend({
     	this.canvas.relPos = function(pos) {
     		return {x: (pos.x - fs) / (c.width-2*fs), y: (pos.y - fs) / (c.height-2*fs)};
     	}
-    	this.beginnerHelp = this.canvas.text(c.width/2, c.height/4, "").attr({"font-size": 25, "fill": "#999999"});
-    	this.updateBeginnerHelp();
+    	
+    	//tutorial UI
+    	this.tutorialVisible = this.editor.options.beginner_mode;
+		this.tutorialText = $("<div>.</div>");
+		this.tutorialButtons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
+		this.tutorialBackButton = $("<input type=\"button\" value=\"Back\" />");
+		this.tutorialButtons.append(this.tutorialBackButton);
+		this.tutorialBackButton.click(function() {editor.workspace.tutorialGoBack(); });
+		this.tutorialSkipButton = $("<input type=\"button\" value=\"Skip\" />");
+		this.tutorialButtons.append(this.tutorialSkipButton);
+		this.tutorialSkipButton.click(function() {editor.workspace.tutorialGoForth(); });
+		this.tutorialCloseButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
+		this.tutorialButtons.append(this.tutorialCloseButton);
+		this.tutorialCloseButton.click(function() { 
+			editor.workspace.setTutorialVisible(false);
+		});
+		
+		this.tutorialWindow = new Window({ 
+			autoOpen: true, 
+			draggable: true,  
+			resizable: true, 
+			title: ".", 
+			modal: false, 
+			buttons: {},
+			width:500,
+			});
+		this.tutorialWindow.add(this.tutorialText);
+    	this.tutorialWindow.add(this.tutorialButtons);
+    	
+    	//pointer to an element of tutorialSteps
+    	this.tutorialStatus = 0;
+    	
+    	//load the basic tutorial at the creating of the editor.
+    	this.tutorialSteps = [];
+    	this.loadTutorial(0);
+    	
 		var t = this;
 		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
 		this.container.click(function(evt){
@@ -399,25 +433,65 @@ var Workspace = Class.extend({
 	setBusy: function(busy) {
 		this.busyIcon.attr({opacity: busy ? 1.0 : 0.0});
 	},
-	updateBeginnerHelp: function() {
-		if (! this.editor.options.beginner_mode) {
-			this.beginnerHelp.hide();
-			return;
+	
+	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
+		if (vis) {
+			this.tutorialWindow.show();
+		} else {
+			this.tutorialWindow.hide();
 		}
-		var text = "";
-		if (this.editor.topology.elementCount() == 0) { 
-			text = "Select an element from the palette\nand click into the workspace to\nadd it to the topology.";
-		} else if (this.editor.topology.elementCount() < 3) { 
-			text = "Add some other elements to the topology\nso you can create connections.";
-		} else if (this.editor.topology.connectionCount() == 0) {
- 			text = "Right-click on an element, select connect\nand click on another element to\nconnect these elements.";
-		} else if (this.editor.topology.connectionCount() < 2) { 
-			text = "Add another connection so your\ntopology is fully connected.";
+		this.tutorialVisible = vis;
+	},
+	tutorialGoBack: function() {
+		if (this.tutorialStatus > 0) {
+			this.tutorialStatus--;
+			this.tutorialSkipButton.show();
+			this.tutorialCloseButton.hide();
 		}
-		this.beginnerHelp.attr({text: text});
-		if (text) this.beginnerHelp.show();
-		else this.beginnerHelp.hide();
-		window.setTimeout("editor.workspace.updateBeginnerHelp();", 1000);
+		if (this.tutorialStatus == 0) {
+			this.tutorialBackButton.hide();
+		}
+		this.updateTutorialText();
+	},
+	tutorialGoForth: function() {
+		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
+			this.tutorialStatus++;	
+			this.tutorialBackButton.show();
+		}
+		if (this.tutorialStatus + 1 == this.tutorialSteps.length) {
+			this.tutorialSkipButton.hide();
+			this.tutorialCloseButton.show();
+		}
+		this.updateTutorialText();
+		
+	},
+	triggerTutorialProgress: function(triggerObj) { //continues tutorial if correct trigger
+		if (this.tutorialVisible) //don't waste cpu time if not needed... trigger function may be complex.
+			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
+				this.tutorialGoForth();
+		}
+	},
+	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
+	
+		//go to 1st step
+		this.tutorialStatus = 0;
+		this.tutorialBackButton.hide();
+		this.tutorialSkipButton.show();
+		this.tutorialCloseButton.hide();
+		
+		//load tutorial
+		tutorialData = editor_tutorial.tutorials[tutID];
+		this.tutorialWindow.setTitle("Tutorial: "+tutorialData.title);
+		this.tutorialSteps = editor_tutorial[tutorialData.name]
+		this.updateTutorialText();
+		
+		//show window
+		this.setTutorialVisible(true);
+	},
+	updateTutorialText: function() {
+		var text = this.tutorialSteps[this.tutorialStatus].text;
+		this.tutorialText.empty();
+		this.tutorialText.append(text);
 	},
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {
@@ -445,7 +519,7 @@ var Workspace = Class.extend({
 		}
 	},
 	onOptionChanged: function(name) {
-    	this.updateBeginnerHelp();
+    		this.updateTutorialText();
 	},
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
@@ -532,7 +606,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "beginner_mode", "colorify_segments", "debug_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -2621,23 +2695,45 @@ var Editor = Class.extend({
 		        label:"Fixed positions",
 		        tooltip:"Elements can not be moved"
 		    }),
-		    beginner_mode: this.optionMenuItem({
-		        name:"beginner_mode",
-		        label:"Beginner mode",
-		        tooltip:"Displays help messages for all elements"
-		    }),
+
 		    colorify_segments: this.optionMenuItem({
 		        name:"colorify_segments",
 		        label:"Colorify segments",
 		        tooltip:"Paint different network segments with different colors"
 		    }),
+		    
 		    debug_mode: this.optionMenuItem({
 		        name:"debug_mode",
 		        label:"Debug mode",
 		        tooltip:"Displays debug messages"
 		    })
 		};
-		group.addStackedElements([this.optionCheckboxes.safe_mode, this.optionCheckboxes.snap_to_grid, this.optionCheckboxes.fixed_pos, this.optionCheckboxes.beginner_mode, this.optionCheckboxes.colorify_segments, this.optionCheckboxes.debug_mode]);
+
+		group.addStackedElements([this.optionCheckboxes.safe_mode, 
+									this.optionCheckboxes.snap_to_grid, 
+									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.debug_mode
+								]);
+
+		var tab = this.menu.addTab("Tutorials");
+		var group = tab.addGroup("Tutorials");
+		var tuts = editor_tutorial.tutorials;
+		var buttons = [];
+		for (var i = 0; i<tuts.length; i++) {
+			buttons[i]=Menu.button({
+				label: tuts[i].title,
+				icon: tuts[i].icon,
+				toggle: false,
+				small: true,
+				tutID: i,
+				tooltip: tuts[i].description,
+				func: function() { 
+					editor.workspace.loadTutorial(this.tutID); 
+				}
+			});
+		}
+		group.addStackedElements(buttons);
+
 
 		this.menu.paint();
 	}

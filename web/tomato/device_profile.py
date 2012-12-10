@@ -27,51 +27,39 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 
-class OpenVZForm(forms.Form):
+class ProfileForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+    ram = forms.IntegerField(label="RAM (MB)")
+    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
+    restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
+
+
+class EditOpenVZForm(ProfileForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
-    ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
-class RePyForm(forms.Form):
-    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+class EditRePyForm(ProfileForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     cpus = forms.FloatField(label = "number of CPUs")
-    ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 
-class KVMqmForm(forms.Form):
-    label = forms.CharField(max_length=255, help_text="The displayed label for this template")
+class EditKVMqmForm(ProfileForm):
+    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     cpus = forms.IntegerField(label="number of CPUs")
-    ram = forms.IntegerField(label="RAM (MB)")
-    preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
     
-class AddOpenVZForm(OpenVZForm):
-    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all OpenVZ templates. Cannot be changed. Not displayed.")
+    
+class AddProfileForm(ProfileForm):
+    tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
+    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all templates of the same tech. Cannot be changed. Not displayed.")
+    diskspace = forms.IntegerField(label="Disk Space (MB)", required = False, help_text="only OpenVZ and KVMqm")
+    cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy: float number; KVMqm: integer number; OpenVZ: not needed.")
     def __init__(self, *args, **kwargs):
-        super(AddOpenVZForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['name', 'label', 'diskspace', 'ram', 'preference']
+        super(AddProfileForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
     
-class AddRePyForm(RePyForm):
-    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all RePy templates. Cannot be changed. Not displayed.")
-    def __init__(self, *args, **kwargs):
-        super(AddRePyForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['name', 'label', 'cpus', 'ram', 'preference']
-    
-class AddKVMqmForm(KVMqmForm):
-    name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all KVM templates. Cannot be changed. Not displayed.")
-    def __init__(self, *args, **kwargs):
-        super(AddKVMqmForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['name', 'label', 'diskspace', 'cpus', 'ram', 'preference']
-    
-class EditOpenVZForm(OpenVZForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-class EditRePyForm(RePyForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-class EditKVMqmForm(KVMqmForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -82,63 +70,42 @@ def is_hostManager(account_info):
 @wrap_rpc
 def index(api, request):
     reslist = api.resource_list()
-    profile_kvmqm_list = []
-    profile_repy_list = []
-    profile_openvz_list = []
+    profile_list = []
     for res in reslist:
         if res['type'] == 'profile':
-            if res['attrs']['tech'] == 'kvmqm':
-                profile_kvmqm_list.append(res)
-            else:
-                if res['attrs']['tech'] == 'openvz':
-                    profile_openvz_list.append(res)
-                else:
-                    profile_repy_list.append(res)
+            profile_list.append(res)
         
-    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_kvmqm_list': profile_kvmqm_list, 'profile_openvz_list': profile_openvz_list, 'profile_repy_list': profile_repy_list, 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list, 'hostManager': is_hostManager(api.account_info())})
 
 
 @wrap_rpc
-def add_openvz(api, request):
+def add(api, request):
     if request.method == 'POST':
-        form = AddOpenVZForm(request.POST)
+        form = AddProfileForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
+            
+            data={'tech': formData['tech'],
+                 'name': formData['name'],
+                 'ram':formData['ram'],
+                 'label':formData['label'],
+                 'preference':formData['preference']}
+            if formData['diskspace'] and (formData['tech'] != 'repy'):
+                data['diskspace'] = formData['diskspace']
+            if formData['cpus'] and (formData['tech'] != 'openvz'):
+                data['cpus'] = formData['cpus']
+            if formData['restricted']:
+                data['restricted'] = formData['restricted']
+            
+            api.resource_create('profile',data)
+           
             return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
         else:
             return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
     else:
-        form = AddOpenVZForm
+        form = AddProfileForm
         return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
-    
-@wrap_rpc
-def add_kvmqm(api, request):
-    if request.method == 'POST':
-        form = AddKVMqmForm(request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            api.resource_create('profile',{'name':formData['name'],'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
-            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"], 'tech':'kvmqm'})
-        else:
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"kvmqm"})
-    else:
-        form = AddKVMqmForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"kvmqm"})
-    
-@wrap_rpc
-def add_repy(api, request):
-    if request.method == 'POST':
-        form = AddRePyForm(request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            api.resource_create('profile',{'name':formData['name'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
-            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"], 'tech':'repy'})
-        else:
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"repy"})
-    else:
-        form = AddRePyForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"repy"})
+
     
 @wrap_rpc
 def remove(api, request):
@@ -172,73 +139,31 @@ def remove(api, request):
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 @wrap_rpc
-def add(api, request):
-    return render_to_response("admin/device_profile/add_unspecified.html",{})
-
-@wrap_rpc
-def edit_kvmqm(api, request):
+def edit(api, request):
     if request.method=='POST':
-        form = EditKVMqmForm(request.POST)
+        tech = request.POST['tech']
+        if tech == 'repy':
+            form = EditRePyForm(request.POST)
+        else:
+            if tech == 'openvz':
+                form = EditOpenVZForm(request.POST)
+            else:
+                form = EditKVMqmForm(request.POST)
+        
         if form.is_valid():
             formData = form.cleaned_data
-            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'kvmqm':
-                api.resource_modify(formData["res_id"],{'diskspace':formData['diskspace'],'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'kvmqm','preference':formData['preference']})
-                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'kvmqm'})
-            else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no kvmqm device profile.'})
-        else:
-            label = request.POST["label"]
-            if label:
-                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'kvmqm', 'form': form, "edit":True})
-            else:
-                return render_to_response("main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-    else:
-        res_id = request.GET['id']
-        if res_id:
-            res_info = api.resource_info(res_id)
-            origData = res_info['attrs']
-            origData['res_id'] = res_id
-            form = EditKVMqmForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'kvmqm', 'form': form, "edit":True})
-        else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
-
-@wrap_rpc
-def edit_openvz(api, request):
-    if request.method=='POST':
-        form = EditOpenVZForm(request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'openvz':
-                api.resource_modify(formData["res_id"],{'diskspace':formData['diskspace'],'ram':formData['ram'],'label':formData['label'],'tech':'openvz','preference':formData['preference']})
-                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
-            else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no openvz device profile.'})
-        else:
-            label = request.POST["label"]
-            if label:
-                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'openvz', 'form': form, "edit":True})
-            else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-    else:
-        res_id = request.GET['id']
-        if res_id:
-            res_info = api.resource_info(res_id)
-            origData = res_info['attrs']
-            origData['res_id'] = res_id
-            form = EditOpenVZForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'openvz', 'form': form, "edit":True})
-        else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
-
-@wrap_rpc
-def edit_repy(api, request):
-    if request.method=='POST':
-        form = EditRePyForm(request.POST)
-        if form.is_valid():
-            formData = form.cleaned_data
-            if api.resource_info(formData['res_id'])['type'] == 'profile' and api.resource_info(formData['res_id'])['attrs']['tech'] == 'repy':
-                api.resource_modify(formData["res_id"],{'ram':formData['ram'],'cpus':formData['cpus'],'label':formData['label'],'tech':'repy','preference':formData['preference']})
+            data={'ram':formData['ram'],
+                 'label':formData['label'],
+                 'preference':formData['preference']}
+            if (formData['tech'] != 'repy'):
+                data['diskspace'] = formData['diskspace']
+            if (formData['tech'] != 'openvz'):
+                data['cpus'] = formData['cpus']
+            if formData['restricted']:
+                data['restricted'] = formData['restricted']
+            
+            if api.resource_info(formData['res_id'])['type'] == 'profile':
+                api.resource_modify(formData["res_id"],data)
                 return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'repy'})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
@@ -254,8 +179,13 @@ def edit_repy(api, request):
             res_info = api.resource_info(res_id)
             origData = res_info['attrs']
             origData['res_id'] = res_id
-            form = EditRePyForm(origData)
+            if origData['tech'] == 'repy':
+                form = EditRePyForm(origData)
+            else:
+                if origData['tech'] == 'openvz':
+                    form = EditOpenVZForm(origData)
+                else:
+                    form = EditKVMqmForm(origData)
             return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
-
