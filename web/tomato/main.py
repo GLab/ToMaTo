@@ -22,7 +22,6 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib, settings
-import template
 
 def index(request):
 	return render_to_response("main/start.html")
