@@ -397,6 +397,12 @@ var Workspace = Class.extend({
 		this.tutorialSkipButton.click(function() {editor.workspace.tutorialGoForth(); });
 		this.tutorialCloseButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
 		this.tutorialButtons.append(this.tutorialCloseButton);
+		
+		this.tutorialHelpButton = $("<div class=\"tutorialHelp\"></div>");
+		this.tutorialHelpLink = $("<a onclick=\"window.open(editor.workspace.tutorialHelpLinkTarget,'_help');\"><img src=\"/img/help.png\"></a>");
+		this.tutorialHelpButton.append(this.tutorialHelpLink);
+		this.tutorialHelpLinkTarget="/help/";
+		
 		this.tutorialCloseButton.click(function() { 
 			editor.workspace.setTutorialVisible(false);
 		});
@@ -410,7 +416,9 @@ var Workspace = Class.extend({
 			buttons: {},
 			width:500,
 			});
-		this.tutorialWindow.add(this.tutorialText);
+		
+    	this.tutorialWindow.add(this.tutorialHelpButton);
+    	this.tutorialWindow.add(this.tutorialText);
     	this.tutorialWindow.add(this.tutorialButtons);
     	
     	//pointer to an element of tutorialSteps
@@ -492,6 +500,14 @@ var Workspace = Class.extend({
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.tutorialText.empty();
 		this.tutorialText.append(text);
+		
+		helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
+		if (helpUrl) {
+			this.tutorialHelpLinkTarget="/help/"+helpUrl;
+			this.tutorialHelpButton.show();
+		} else {
+			this.tutorialHelpButton.hide();
+		}
 	},
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {

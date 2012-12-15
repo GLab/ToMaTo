@@ -1,5 +1,20 @@
 {% extends "help/base.html" %}
 
 {% block content %}
-kvm
+<h1>KVM devices</h1>
+
+<h2>Introduction</h2>
+<p>KVM (<b>K</b>ernel-based <b>V</b>irtual <b>M</b>achine) is a virtualization infrastructure for Linux. It supports Linux, Windows and many other guest operating systems.</p>
+<p>Since, unlike OpenVZ, it virtualizes the guest system's kernel, there is no limit to the manipulation of the guest system's kernel.</p>
+
+<h2>See Also</h2>
+<ul>
+<li><a href="{%url main.help 'devices'%}">Devices</a></li>
+</ul>
+
+<h2>External Links</h2>
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine">Wikipedia page</a></li>
+</ul>
+
 {% endblock %}

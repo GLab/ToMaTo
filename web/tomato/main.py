@@ -30,7 +30,7 @@ def help(request, page=""):
 	if page=="":
 		return render_to_response("help/index.html")
 	else:
-		django.template.loader.get_template("help/pages/"+page+".html")
+		return render_to_response("help/pages/"+page+".html")
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)

@@ -82,8 +82,11 @@ var editor_tutorial = {
 								OpenVZ devices are virtual machines which use their host\'s kernel to operate, but have their own virtual file system.\
 								This makes them more efficient to run, but disallows modifying the kernel, but,\
 								however, this also means, you can only run Linux systems in OpenVZ devices.</p>\
+							<p class="tutorialExplanation">Did you notice the ? button, which just appeared in the top-right corner of this window?\
+								This leads you to a help page which tells you more about what you just did (Don\'t worry, it opens in a new browser tab).</p>\
 							<p class="tutorialCommand">\
-								You can move your new device via drag-and-drop. Try it now!</p>'
+								You can move your new device via drag-and-drop. Try it now!</p>',
+					help_page:'kvm'
 					},
 					
 					//2
@@ -106,7 +109,8 @@ var editor_tutorial = {
 							Contary to OpenVZ, KVM devices run completely separate from their host systems.\n\
 							This means that you can modify the kernel and/or use any system which supports the host's processor architecture.\n \n\
 							By now, the two devices don't have any network connection.\n\
-							To connect them, right-Click on one of them, select 'Connect', and then left-click on the other one."
+							To connect them, right-Click on one of them, select 'Connect', and then left-click on the other one.",
+					help_page:'openvz'
 					},
 					
 					//4
