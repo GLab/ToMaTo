@@ -127,4 +127,7 @@ def host_connection_owner(hostname, num):
         fault.raise_("Host connection %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
     return hcon.getOwner()
 
+def host_public_key():
+    return host.getPublicKey()
+
 from .. import host, fault, config
