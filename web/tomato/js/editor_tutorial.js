@@ -25,7 +25,7 @@ var editor_tutorial = {
 				name: "basic",
 				title: "Basic Usage",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
-				icon: "img/user.png"
+				icon: "img/user32.png"
 			},
 			
 		    // other tutorials; can be loaded through menu
@@ -33,13 +33,13 @@ var editor_tutorial = {
 				name: "devices",
 				title: "Devices",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
-				icon: "img/openvz16.png"
+				icon: "img/openvz32.png"
 			},
 			{
 				name: "connections",
 				title: "Connections",
 				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
-				icon: "img/connect16.png"
+				icon: "img/connect32.png"
 			}
 			
 		],

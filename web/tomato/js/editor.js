@@ -385,6 +385,7 @@ var Workspace = Class.extend({
     	}
     	
     	//tutorial UI
+    	this.editor.listeners.push(this.triggerTutorialProgress);
     	this.tutorialVisible = this.editor.options.beginner_mode;
 		this.tutorialText = $("<div>.</div>");
 		this.tutorialButtons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
@@ -433,7 +434,6 @@ var Workspace = Class.extend({
 	setBusy: function(busy) {
 		this.busyIcon.attr({opacity: busy ? 1.0 : 0.0});
 	},
-	
 	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
 		if (vis) {
 			this.tutorialWindow.show();
@@ -619,8 +619,7 @@ var Topology = Class.extend({
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
-		log("Modify topology #"+this.id);
-		log(attrs);
+		this.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
 		//TODO: success and error callbacks
 		ajax({
@@ -674,11 +673,10 @@ var Topology = Class.extend({
 		return base+num;
 	},
 	createElement: function(data, callback) {
-		log("Create element");
-		log(data);
 		data.attrs = data.attrs || {};
 		if (!data.parent) data.attrs.name = data.attrs.name || this.nextElementName(data);
 		var obj = this.loadElement(data);
+		this.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "begin", attrs: data});
 		obj.setBusy(true);
 		var t = this;
 		ajax({
@@ -689,11 +687,13 @@ var Topology = Class.extend({
 				obj.setBusy(false);
 				obj.updateData(data);
 				if (callback) callback(obj);
+				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "end", attrs: data});
 				t.onUpdate();
 			},
 			errorFn: function(error) {
 				alert(error);
 				obj.paintRemove();
+				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "error", attrs: data});
 			}
 		});
 		return obj;
@@ -708,6 +708,7 @@ var Topology = Class.extend({
 		var callback = function(ready) {
 			ids++;
 			if (ids < 2) return;
+			t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "begin", attrs: data});
 			data.elements = [el1.id, el2.id];
 			ajax({
 				url: "connection/create",
@@ -715,11 +716,13 @@ var Topology = Class.extend({
 				successFn: function(data) {
 					t.connections[data.id] = obj;
 					obj.updateData(data);
+					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "end", attrs: data});
 					t.onUpdate();
 				},
 				errorFn: function(error) {
 					alert(error);
 					obj.paintRemove();
+					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "error", attrs: data});
 				}
 			});
 		};
@@ -738,10 +741,12 @@ var Topology = Class.extend({
 	action: function(action, options) {
 		var options = options || {};
 		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this topology?")) return;
+		this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "begin", action: action});
 		var ids = 0;
 		var cb = function() {
 			ids--;
 			if (ids <= 0 && options.callback) options.callback();
+			this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action});
 		}
 		for (var id in this.elements) {
 			var el = this.elements[id];
@@ -786,9 +791,12 @@ var Topology = Class.extend({
 			return;
 		}
 		if (confirm("Are you sure?")) {
+			this.editor.triggerEvent({component: "topology", object: this, operation: "remove", phase: "begin"});
+			var t = this;
 			ajax({
 				url: "topology/"+this.id+"/remove",
 				successFn: function() {
+					t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "end"});
 					window.location = "/topology";
 				}
 			});
@@ -796,6 +804,7 @@ var Topology = Class.extend({
 	},
 	showUsage: function() {
   		window.open('/topology/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+		this.editor.triggerEvent({component: "topology", object: this, operation: "usage-dialog"});
 	},
 	notesDialog: function() {
 		var dialog = $("<div/>");
@@ -838,6 +847,7 @@ var Topology = Class.extend({
 		this.checkNetworkLoops();
 		var segments = this.getNetworkSegments();
 		this.colorNetworkSegments(segments);
+		this.editor.triggerEvent({component: "topology", object: this, operation: "update"});
 	},
 	getNetworkSegments: function() {
 		var segments = [];
@@ -981,6 +991,11 @@ var Component = Class.extend({
 		this.topology.onUpdate();
 		this.paintUpdate();
 	},
+	triggerEvent: function(event) {
+		event.component = this.component_type;
+		event.object = this;
+		this.editor.triggerEvent(event);
+	},
 	showDebugInfo: function() {
 		var t = this;
 		ajax({
@@ -1008,6 +1023,7 @@ var Component = Class.extend({
 	},
 	showUsage: function() {
   		window.open('../'+this.component_type+'/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+		this.triggerEvent({operation: "usage-dialog"});
 	},
 	configWindowSettings: function() {
 		return {
@@ -1054,24 +1070,27 @@ var Component = Class.extend({
 			}
 		}
 		this.configWindow.show();
+		this.triggerEvent({operation: "attribute-dialog"});
 	},
 	update: function() {
 		var t = this;
+		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);
 		 		t.setBusy(false);
+				t.triggerEvent({operation: "update", phase: "end"});
 		 	},
 		 	errorFn: function() {
 		 		t.setBusy(false);
+				t.triggerEvent({operation: "update", phase: "error"});
 		 	}
 		});
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
-		log("Modify "+this.component_type+" #"+this.id);
-		log(attrs);
+		this.triggerEvent({operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
 		ajax({
 			url: this.component_type+'/'+this.id+'/modify',
@@ -1079,10 +1098,12 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		t.updateData(result);
 		 		t.setBusy(false);
+				t.triggerEvent({operation: "modify", phase: "end", attrs: attrs});
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
 		 		t.update();
+				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
 	},
@@ -1096,8 +1117,7 @@ var Component = Class.extend({
 		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this "+this.component_type+"?")) return;
 		this.setBusy(true);
 		var params = options.params || {};
-		log(this.component_type+" action #"+this.id+": "+action);
-		log(params);
+		this.triggerEvent({operation: "action", phase: "begin", action: action, params: params});
 		var t = this;
 		ajax({
 			url: this.component_type+'/'+this.id+'/action',
@@ -1106,10 +1126,12 @@ var Component = Class.extend({
 		 		t.updateData(result[1]);
 		 		t.setBusy(false);
 		 		if (options.callback) options.callback(t, result[0], result[1]);
+				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
 		 		t.update();
+				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 		 	}
 		});
 	},
@@ -1366,11 +1388,13 @@ var Connection = Component.extend({
 			}
 		}, this);
 		this.configWindow.show();
+		this.triggerEvent({operation: "attribute-dialog"});
 	},
 	remove: function(callback, ask) {
 		if (this.busy) return;
 		if (ask && this.editor.options.safe_mode && ! confirm("Do you want to delete this connection?")) return;
 		this.setBusy(true);
+		this.triggerEvent({operation: "remove", phase: "begin"});
 		var t = this;
 		ajax({
 			url: 'connection/'+this.id+'/remove',
@@ -1381,10 +1405,12 @@ var Connection = Component.extend({
 		 		t.setBusy(false);
 		 		if (callback) callback(t);
 		 		t.topology.onUpdate();
+				t.triggerEvent({operation: "remove", phase: "end"});
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
 		 		t.setBusy(false);
+				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
 		});
 		for (var i=0; i<t.elements.length; i++) t.elements[i].remove();
@@ -1566,9 +1592,11 @@ var Element = Component.extend({
 	},
 	openConsole: function() {
 	    window.open('../element/'+this.id+'/console', '_blank', "innerWidth=745,innerheight=400,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "console-dialog"});
 	},
 	openConsoleNoVNC: function() {
 	    window.open('../element/'+this.id+'/console_novnc', '_blank', "innerWidth=760,innerheight=440,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "console-dialog"});
 	},
 	openVNCurl: function() {
 		var host = this.data.attrs.host;
@@ -1576,6 +1604,7 @@ var Element = Component.extend({
 		var passwd = this.data.attrs.vncpassword;
 		var link = "vnc://:" + passwd + "@" + host + ":" + port;
 	    window.open(link, '_self');
+		this.triggerEvent({operation: "console-dialog"});
 	},
 	showVNCinfo: function() {
 		var host = this.data.attrs.host;
@@ -1588,6 +1617,7 @@ var Element = Component.extend({
  			content: '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Websocket-Port: "+wport+"</p><p>Password: <pre>"+passwd+"</pre></p>",
  			autoShow: true
  		});
+		this.triggerEvent({operation: "console-dialog"});
 	},
 	consoleAvailable: function() {
 		return this.data.attrs.vncpassword && this.data.attrs.vncport && this.data.attrs.host && this.data.state == "started";
@@ -1648,6 +1678,7 @@ var Element = Component.extend({
 		if (this.busy) return;
 		if (ask && this.editor.options.safe_mode && ! confirm("Do you want to delete this element?")) return;
 		this.setBusy(true);
+		this.triggerEvent({operation: "remove", phase: "begin"});
 		var t = this;
 		var removed = false;
 		var waiter = function(obj) {
@@ -1664,10 +1695,12 @@ var Element = Component.extend({
 			 		t.setBusy(false);
 			 		if (callback) callback(t);
 			 		t.topology.onUpdate();
+					t.triggerEvent({operation: "remove", phase: "end"});
 			 	},
 			 	errorFn: function(error) {
 			 		alert(error);
 			 		t.setBusy(false);
+					t.triggerEvent({operation: "remove", phase: "error"});
 			 	}
 			});			
 		}
@@ -1994,7 +2027,6 @@ var VMElement = IconElement.extend({
 		if (this.data && this.data.type == "repy") {
 			default_ = false;
 			var tmpl = this.getTemplate();
-			log(tmpl && tmpl.subtype);
 			if (tmpl && tmpl.subtype == "device") default_ = true;
 		}
 		return (this.data.attrs && this.data.attrs._endpoint != null) ? this.data.attrs._endpoint : default_;
@@ -2219,6 +2251,7 @@ var Editor = Class.extend({
 		this.options = options;
 		this.options.grid_size = this.options.grid_size || 25;
 		this.options.frame_size = this.options.frame_size || this.options.grid_size;
+		this.listeners = [];
 		this.menu = new Menu(this.options.menu_container);
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
@@ -2238,10 +2271,15 @@ var Editor = Class.extend({
 			}
 		});
 	},
+	triggerEvent: function(event) {
+		log(event);
+		for (var i = 0; i < this.listeners.length; i++) this.listeners[i](event);
+	},
 	setOption: function(name, value) {
 		this.options[name] = value;
 		this.optionCheckboxes[name].setChecked(value);
 		this.onOptionChanged(name);
+		this.triggerEvent({component: "editor", object: this, operation: "option", name: name, value: value});
 	},
 	onOptionChanged: function(name) {
 		this.topology.onOptionChanged(name);
@@ -2298,11 +2336,11 @@ var Editor = Class.extend({
 		this.workspace.onModeChanged(mode);
 		if (mode != Mode.position) this.positionElement = null;
 		if (mode != Mode.connect && mode != Mode.connectOnce) this.connectElement = null;
+		this.triggerEvent({component: "editor", object: this, operation: "mode", mode: this.mode});
 	},
 	setPositionElement: function(el) {
 		this.positionElement = el;
-		this.setMode(Mode.position);
-		
+		this.setMode(Mode.position);		
 	},
 	createPositionElementFunc: function(el) {
 		var t = this;
@@ -2331,11 +2369,11 @@ var Editor = Class.extend({
 	buildMenu: function() {
 		var t = this;
 
-    var toggleGroup = new ToggleGroup();
+		var toggleGroup = new ToggleGroup();
 	
 		var tab = this.menu.addTab("Home");
 
-    var group = tab.addGroup("Modes");
+		var group = tab.addGroup("Modes");
 		this.selectBtn = Menu.button({
 			label: "Select & Move",
 			icon: "img/select32.png",
@@ -2718,21 +2756,19 @@ var Editor = Class.extend({
 		var tab = this.menu.addTab("Tutorials");
 		var group = tab.addGroup("Tutorials");
 		var tuts = editor_tutorial.tutorials;
-		var buttons = [];
 		for (var i = 0; i<tuts.length; i++) {
-			buttons[i]=Menu.button({
+			group.addElement(Menu.button({
 				label: tuts[i].title,
 				icon: tuts[i].icon,
 				toggle: false,
-				small: true,
+				small: false,
 				tutID: i,
 				tooltip: tuts[i].description,
 				func: function() { 
 					editor.workspace.loadTutorial(this.tutID); 
 				}
-			});
+			}));
 		}
-		group.addStackedElements(buttons);
 
 
 		this.menu.paint();

@@ -26,8 +26,8 @@ class Site(attributes.Mixin, models.Model):
     name = models.CharField(max_length=10, unique=True)
     #hosts: [Host]
     attrs = db.JSONField()
-    description = attributes.attribute("description", str, "")
-    location = attributes.attribute("location", str, "")
+    description = attributes.attribute("description", unicode, "")
+    location = attributes.attribute("location", unicode, "")
     
     class Meta:
         pass
@@ -102,6 +102,8 @@ class Host(attributes.Mixin, models.Model):
     lastResourcesSync = attributes.attribute("last_resources_sync", float, 0.0)
     enabled = attributes.attribute("enabled", bool, True)
     componentErrors = attributes.attribute("componentErrors", int, 0)
+    problemAge = attributes.attribute("problem_age", float, 0)
+    problemMailTime = attributes.attribute("problem_mail_time", float, 0)
     # connections: [HostConnection]
     # elements: [HostElement]
     
@@ -312,7 +314,7 @@ class Host(attributes.Mixin, models.Model):
             problems.append("Node just booted")
         if hi["time_diff"] > 5 * 60:
             problems.append("Node clock is out of sync")             
-        if hi["query_time"] > 0.5:
+        if hi["query_time"] > 5:
             problems.append("Last query took very long")             
         res = hi["resources"]
         cpus = res["cpus_present"]
@@ -332,6 +334,23 @@ class Host(attributes.Mixin, models.Model):
         if self.componentErrors > 2:
             problems.append("Multiple component errors")
         return problems
+    
+    def checkProblems(self):
+        problems = self.problems()
+        if problems and not self.problemAge:
+            # a brand new problem, wait until it is stable
+            self.problemAge = time.time()
+        if self.problemAge and not problems:
+            if self.problemMailTime == self.problemAge:
+                # problem is resolved and mail has been sent for this problem
+                mailFlaggedUsers(Flags.HostsManager, "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
+            self.problemAge = 0
+        if problems and (self.problemAge < time.time() - 300):
+            if self.problemMailTime != self.problemAge:
+                # problem exists and no mail has been sent so far
+                self.problemMailTime = self.problemAge
+                mailFlaggedUsers(Flags.HostsManager, "Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
+        self.save()
         
     def getLoad(self):
         """
@@ -658,21 +677,28 @@ def getConnectionCapabilities(type_):
             caps = hcaps
     return caps
 
+def getPublicKey():
+    lines = []
+    ignore = False
+    with open(config.CERTIFICATE) as key:
+        for line in key:
+            if "PRIVATE" in line:
+                ignore = not ignore
+            elif not ignore:
+                lines.append(line)
+    return "".join(lines)
+
 @db.commit_after
 def synchronizeHost(host):
     #TODO: implement more than resource sync
-    oldProblems = host.problems()
     try:
         host.update()
         host.synchronizeResources()
-        problems = host.problems()
-        if oldProblems != problems:
-            mailFlaggedUsers(Flags.HostsManager, "Host %s" % host, "Host %s has changed state.\n\nProblems now: %s\nProblems before: %s" % (host, ", ".join(problems), ", ".join(oldProblems)))
     except:
-        if host.problems() and not oldProblems:
-            mailFlaggedUsers(Flags.HostsManager, "Host unreachable: %s" % host, "Host %s is unreachable." % host)
         logging.logException(host=host.address)
         print "Error updating information from %s" % host
+    host.checkProblems()
+
     
 def synchronize():
     for host in getAll():
