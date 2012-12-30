@@ -55,6 +55,7 @@ var editor_tutorial = {
 		 * 	trigger: takes a trigger object (handed over by every function that may be a tutorial trigger at one certain time)
 		 * 		decides if this trigger object matches current step (shall the tut continue now - next step?)
 		 * 	text: the text shown on screen (HTML formatting possible; CSS: style/editor.css)
+		 *  help_page: if set, a ?-icon will appear in the tutorial window, directing to the url '/help/help_page'
 		 *
 		 * be careful: tutorials with only 1 step might be buggy.
 		 *
@@ -93,30 +94,119 @@ var editor_tutorial = {
 					{
 					trigger:function(obj) { return true; },
 					text:	'<p class="tutorialExplanation">\
-								You can disable moving elements in the options.</p>\
+								You can disable moving elements or enable <i>snap-to-grid</i> in the options.</p>\
 							<p class="tutorialExplanation">\
 								You will need more devices to get a whole topology. This time, let\s create a KVM device.</p>\
 							<p class="tutorialCommand">\
-								Click KVM in Common elements in the menu above, and the place it in the editor by\
+								Click KVM (green screen) in Common elements in the menu above, and the place it in the editor by\
 								clicking somewhere into the white.</p>'
 					},
 					
 					//3
 					{
 					trigger:function(obj) { return true; },
-					text:	"You just created a KVM device.\n\
-							KVM devices can be identified by a green screen.\n\
-							Contary to OpenVZ, KVM devices run completely separate from their host systems.\n\
-							This means that you can modify the kernel and/or use any system which supports the host's processor architecture.\n \n\
-							By now, the two devices don't have any network connection.\n\
-							To connect them, right-Click on one of them, select 'Connect', and then left-click on the other one.",
+					text:	'<p class="tutorialExplanation">\
+								You just created a KVM device.\
+								KVM devices can be identified by a green screen.\
+								Contrary to OpenVZ, KVM devices run completely separated from their host systems.\
+								This means that you can modify the kernel and/or use any system which supports the host\'s processor architecture.</p>\
+							<p class="tutorialExplanation">\
+								By now, the two devices don\'t have any network connection.</p>\
+							<p class="tutorialCommand">\
+								To connect them, right-Click on one of them, select Connect, and then left-click on the other one.</p>',
 					help_page:'openvz'
 					},
 					
 					//4
 					{
 					trigger:function(obj) { return false; },
-					text:	"You have connected the two devices."
+					text:	'<p class="tutorialExplanation">\
+								You have now connected the two devices. The connection is shown as a line between the two devices. To learn more about connections, take a look at the \'connections\' tutorial later.</p>\
+							<p class="tutorialExplanation">\
+								Since you now have a topology, why not run it?</p>\
+							<p class="tutorialExplanation">\
+								To get started, the devices and connections must be created first.\
+								<i>Note: If you don\'t have the permissions to run topologies, you can skip to the last window of this tutorial.</i></p>\
+							<p class="tutorialCommand">\
+								Click on \'Prepare\' under \'Topology control\'.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device.</p>\
+							<p class="tutorialExplanation">\
+								Now, you want to run it.</p>\
+							<p class="tutorialCommand">\
+								Click on \'Run\' under \'Topology control\'.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								You have started the topology. This means that all virtual machines are running now. You can see this by finding a running (<img src="/img/started.png" />) icon on the devices.</p>\
+							<p class="tutorialExplanation">\
+								<i>Note:</i> If no or not all devices have been prepared when you start the topology, ToMaTo will automatically do this step for you. You can skip the prepare step without need to worry.</p>\
+							<p class="tutorialExplanation">\
+								Note also that you did not connect the devices to the internet yet (We\'ll do that in the \'connections\' tutorial).</p>\
+							<p class="tutorialCommand">\
+								To access the devices via command line, right-click the device, Console, Java Applet</p>\
+							<p class="tutorialExplanation">\
+								You will need to allow the java applet.</p>\
+							<p class="tutorialExplanation">\
+								You can also use one of the other options, but you\'ll need to press the \'Skip\' button to continue this tutorial.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								You can now play around with these two devices.</p>\
+							<p class="tutorialExplanation">\
+								If you are done, you can close the connection</p>\
+							<p class="tutorialCommand">\
+								To stop the devices, press the \'Stop\' button in the top menu.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								The devices are stopped when you see the prepared (<img src="/img/prepared.png" />) icon again.</p>\
+							<p class="tutorialExplanation">\
+								Devices will not be stopped by closing the window etc, but only when you stop them (although there might be other cases where a stop may be forced by the system or administrators).</p>\
+							<p class="tutorialCommand">\
+								To destroy the devices, click the \'destroy\' button.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								You have now destroyed the devices etc. This means, you have undone the preparation.</p>\
+							<p class="tutorialExplanation">\
+								You can also start, stop, prepare and destroy individual devices in their right-click menu.</p>\
+							<p class="tutorialExplanation">\
+								You might now want to remove the connection between the two devices.</p>\
+							<p class="tutorialCommand">\
+								To delete the connection, right-click the connection (the square on the line) and select \'delete\'.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								To delete devices or connection, you can also use the \'delete\' mode from the Modes in the menu.</p>\
+							<p class="tutorialCommand">\
+								Now, delete both devices.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialCommand">\
+								Now, delete the other device.</p>'
+					},
+					
+					{
+					trigger:function(obj) { return false; },
+					text:	'<p class="tutorialExplanation">\
+								Congratulations, you have successfully completed the basic tutorial. To get the most out of this tool, you can find additional tutorials in the menu under \'Tutorials\'.</p>'
 					}
 		],
 		
