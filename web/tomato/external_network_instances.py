@@ -26,16 +26,6 @@ from django.core.urlresolvers import reverse
 from lib import *
 import xmlrpclib
 from admin_common import RemoveResourceForm, is_hostManager
-    
-
-    
-def site_name_list(api):
-    l = api.site_list()
-    res = []
-    for site in l:
-        res.append((site["name"],site["description"] or site["name"]))
-    res.sort()
-    return res
 
 
 @wrap_rpc
