@@ -28,7 +28,10 @@ class ImportTopologyForm(forms.Form):
     
 @wrap_rpc
 def index(api, request):
-	toplist=api.topology_list()
+    toplist=api.topology_list()
+    beginner_mode = "true"
+    if False: #TODO: this is a stub. check for a user account parameter if beginner_mode must be enabled.
+        beginner_mode = "false"
 	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
 
 def _display(api, info):
