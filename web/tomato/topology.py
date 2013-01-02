@@ -17,11 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.shortcuts import render_to_response, redirect
+from django import forms
 
 import json
 
 from lib import wrap_rpc
 
+class ImportTopologyForm(forms.Form):
+    topologyfile  = forms.FileField(label="Topology File")    
+    
 @wrap_rpc
 def index(api, request):
 	toplist=api.topology_list()
@@ -49,4 +53,17 @@ def create(api, request):
 
 @wrap_rpc
 def import_form(api, request):
-	return index(request)
+    if request.method=='POST':
+        form = ImportTopologyForm(request.POST,request.FILES)
+        if form.is_valid():
+            f = request.FILES['topologyfile']
+            
+            # TODO this is a stub: use f to handle the imported file.
+            # Documentation of what to do with f: https://docs.djangoproject.com/en/dev/topics/http/file-uploads/?from=olddocs#handling-uploaded-files
+            
+        else:
+         	return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
+    else:
+        form = ImportTopologyForm()
+        return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
+        
