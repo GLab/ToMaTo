@@ -102,13 +102,13 @@ def edit(api, request):
             if api.resource_info(formData['res_id'])['type'] == 'network':
                 api.resource_modify(formData["res_id"],{'label':formData['label'],
                                                         'preference':formData['preference']})
-                return render_to_response("admin/external_networks/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
+                return render_to_response("admin/external_networks/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id']})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})
         else:
             kind = request.POST["kind"]
             if kind:
-                return render_to_response("admin/external_networks/form.html", {'user': api.user, 'label': kind, 'form': form, "edit":True, 'edit_data':True})
+                return render_to_response("admin/external_networks/form.html", {'user': api.user, 'label': kind, 'form': form, "edit":True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -118,6 +118,6 @@ def edit(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditNetworkForm(origData)
-            return render_to_response("admin/external_networks/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
+            return render_to_response("admin/external_networks/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
