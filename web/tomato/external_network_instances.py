@@ -31,14 +31,17 @@ class NetworkInstanceForm(forms.Form):
     host = forms.CharField(label="Host",max_length=255)
     bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
     kind = forms.ChoiceField(label="Kind")
+    def __init__(self, api, *args, **kwargs):
+        super(NetworkInstanceForm, self).__init__(*args, **kwargs)
+        self.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
     
 class EditNetworkInstanceForm(NetworkInstanceForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    #def __init__(self, *args, **kwargs):
-    #    super(EditNetworkInstanceForm, self).__init__(*args, **kwargs)
+    def __init__(self, api, *args, **kwargs):
+        super(EditNetworkInstanceForm, self).__init__(api, *args, **kwargs)
+        
     #    self.fields["host"].widget=forms.TextInput(attrs={'readonly':'readonly'})
     #    self.fields["host"].help_text=None
-    
     # TODO: is this needed (= !(can host be changed?) - uncomment or delete?
     # TODO: (also for host.HostForm) move the creation of choice list into __init__
     
@@ -60,7 +63,7 @@ def index(api, request):
 @wrap_rpc
 def add(api, request):
     if request.method == 'POST':
-        form = NetworkInstanceForm(request.POST)
+        form = NetworkInstanceForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.resource_create('network',{'host':formData['host'],
@@ -73,7 +76,7 @@ def add(api, request):
             form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
             return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
-        form = NetworkInstanceForm
+        form = NetworkInstanceForm(api)
         form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
         return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False,})
     
@@ -111,7 +114,7 @@ def remove(api, request):
 @wrap_rpc
 def edit(api, request):
     if request.method=='POST':
-        form = EditNetworkInstanceForm(request.POST)
+        form = EditNetworkInstanceForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'network_instance':
@@ -135,7 +138,7 @@ def edit(api, request):
             res_info = api.resource_info(res_id)
             origData = res_info['attrs']
             origData['res_id'] = res_id
-            form = EditNetworkInstanceForm(origData)
+            form = EditNetworkInstanceForm(api, origData)
             form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
             return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'label': res_info['attrs']['host'], 'form': form, "edit":True})
         else:
