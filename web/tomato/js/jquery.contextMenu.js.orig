@@ -1267,10 +1267,6 @@ $.contextMenu = function(operation, options) {
                 case 'left':
                         $document.on('click' + o.ns, o.selector, o, handle.click);
                     break;
-                    
-                case 'longclick':
-                        $document.on('longclick' + o.ns, o.selector, o, handle.click);
-                    break;
                 /*
                 default:
                     // http://www.quirksmode.org/dom/events/contextmenu.html

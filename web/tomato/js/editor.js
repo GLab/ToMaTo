@@ -373,6 +373,7 @@ var Workspace = Class.extend({
 		container.addClass("ui-widget-content").addClass("ui-corner-all")
 		container.addClass("tomato").addClass("workspace");
 		container[0].obj = editor.topology;
+		this.container.click(function(){});
     	this.size = {x: this.container.width(), y: this.container.height()};
     	this.canvas = Raphael(this.container[0], this.size.x, this.size.y);
     	var c = this.canvas;
@@ -385,7 +386,10 @@ var Workspace = Class.extend({
     	}
     	
     	//tutorial UI
-    	this.editor.listeners.push(this.triggerTutorialProgress);
+    	var t = this;
+    	this.editor.listeners.push(function(){
+    		t.triggerTutorialProgress();
+    	});
     	this.tutorialVisible = this.editor.options.beginner_mode;
 		this.tutorialText = $("<div>.</div>");
 		this.tutorialButtons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
@@ -895,77 +899,83 @@ var Topology = Class.extend({
 	}
 });
 
-$.contextMenu({
-	selector: '.tomato.workspace',
-	build: function(trigger, e) {
-		var obj = trigger[0].obj;
-		return {
-			callback: function(key, options) {},
-			items: {
-				"header": {
-					html:'<span>Topology "'+obj.name()+'"</span>',
-					type:"html"
-				},
-				"actions": {
-					name:'Global actions',
-					icon:'control',
-					items: {
-						"start": {
-							name:'Start',
-							icon:'start',
-							callback: function(){
-								obj.action_start();
-							}
-						},
-						"stop": {
-							name:"Stop",
-							icon:"stop",
-							callback: function(){
-								obj.action_stop();
-							}
-						},
-						"prepare": {
-							name:"Prepare",
-							icon:"prepare",
-							callback: function(){
-								obj.action_prepare();
-							}
-						},
-						"destroy": {
-							name:"Destroy",
-							icon:"destroy",
-							callback:function(){
-								obj.action_destroy();
-							}
+var createTopologyMenu = function(obj) {
+	return {
+		callback: function(key, options) {},
+		items: {
+			"header": {
+				html:'<span>Topology "'+obj.name()+'"</span>',
+				type:"html"
+			},
+			"actions": {
+				name:'Global actions',
+				icon:'control',
+				items: {
+					"start": {
+						name:'Start',
+						icon:'start',
+						callback: function(){
+							obj.action_start();
+						}
+					},
+					"stop": {
+						name:"Stop",
+						icon:"stop",
+						callback: function(){
+							obj.action_stop();
+						}
+					},
+					"prepare": {
+						name:"Prepare",
+						icon:"prepare",
+						callback: function(){
+							obj.action_prepare();
+						}
+					},
+					"destroy": {
+						name:"Destroy",
+						icon:"destroy",
+						callback:function(){
+							obj.action_destroy();
 						}
 					}
-				},
-				"sep1": "---",
-				"notes": {
-					name:"Notes",
-					icon:"notes",
-					callback: function(){
-						obj.notesDialog();
-					}
-				},
-				"usage": {
-					name:"Resource usage",
-					icon:"usage",
-					callback: function(){
-						obj.showUsage();
-					}
-				},
-				"sep2": "---",
-				"remove": {
-					name:'Delete',
-					icon:'remove',
-					callback: function(){
-						obj.remove();
-					}
+				}
+			},
+			"sep1": "---",
+			"notes": {
+				name:"Notes",
+				icon:"notes",
+				callback: function(){
+					obj.notesDialog();
+				}
+			},
+			"usage": {
+				name:"Resource usage",
+				icon:"usage",
+				callback: function(){
+					obj.showUsage();
+				}
+			},
+			"sep2": "---",
+			"remove": {
+				name:'Delete',
+				icon:'remove',
+				callback: function(){
+					obj.remove();
 				}
 			}
-		};
-	}
+		}
+	};	
+};
+
+['right', 'longclick'].forEach(function(trigger) {
+	$.contextMenu({
+		selector: '.tomato.workspace',
+		trigger: trigger,
+		build: function(trigger, e) {
+			return createTopologyMenu(trigger[0].obj);
+		}
+	});	
 });
 
 var Component = Class.extend({
@@ -1842,17 +1852,23 @@ var createElementMenu = function(obj) {
 	return menu;
 };
 
-$.contextMenu({
-	selector: 'rect,circle', //filtering on classes of SVG objects does not work
-	build: function(trigger, e) {
-		var obj = trigger[0].obj;
-		switch (obj.component_type) {
-			case "element":
-				return createElementMenu(obj);
-			case "connection":
-				return createConnectionMenu(obj);
-		}
+var createComponentMenu = function(obj) {
+	switch (obj.component_type) {
+		case "element":
+			return createElementMenu(obj);
+		case "connection":
+			return createConnectionMenu(obj);
 	}
+};
+
+['right', 'longclick'].forEach(function(trigger) {
+	$.contextMenu({
+		selector: 'rect,circle', //filtering on classes of SVG objects does not work
+		trigger: trigger,
+		build: function(trigger, e) {
+			return createComponentMenu(trigger[0].obj);
+		}
+	});	
 });
 
 var UnknownElement = Element.extend({
