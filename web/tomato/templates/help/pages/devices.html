@@ -1,0 +1,21 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Devices</h1>
+
+<h2>Introduction</h2>
+<p>A device is a virtual machine based on either <a href="{%url main.help 'kvm'%}">KVM</a> or <a href="{%url main.help 'openvz'%}">OpenVZ</a> or <a href="{%url main.help 'repy'%}">RePy.</a></p>
+<p>Every device is based on a <a href="{%url main.help 'device_templates'%}">device template</a>, and associated to a <a href="{%url main.help 'device_profile'%}">device profile</a> for resource management.</p>
+<p>Since a topology is a network of <a href="{%url main.help 'connection'%}">connected</p> devices, devices are the core functionality of ToMaTo.</p>
+
+<h2>Preparation</h2>
+<p>Before a device can be run, it must first be prepared. 
+This involves allocation of diskspace, 
+deployment of the template and all the configuration which has to be done on its <a href="{%url main.help 'host'%}">host</a>.</p>
+<p>ToMaTo uses load balancing to deploy devices on several hosts.</p>
+<p>Devices can be destroyed to undo the preparation.</p>
+
+<h2>Run</h2>
+<p>A running device uses resources as specified by its device profile.</p>
+
+{% endblock %}

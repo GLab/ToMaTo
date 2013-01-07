@@ -5,6 +5,7 @@
 {% block content %}
 <h1>List of topologies</h1>
 
+
 {% if top_list %}
 <script src="/js/enhancetable.js"></script>
 <table class="sortable,filterable,stddevcolor">
@@ -44,6 +45,11 @@
 {% endfor %}
 </table>
 {% else %}
-Currently you do not have any topologies you can access. Click on "create new topology" to create one.
+Currently you do not have any topologies you can access.
 {% endif %}
+
+
+<input type="button" onClick="window.location='{%url topology.create%}'" value="New" />
+<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />
+
 {% endblock %}
