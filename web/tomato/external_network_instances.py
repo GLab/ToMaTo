@@ -28,12 +28,13 @@ import xmlrpclib
 from admin_common import RemoveResourceForm, is_hostManager
 
 class NetworkInstanceForm(forms.Form):
-    host = forms.CharField(label="Host",max_length=255)
+    host = forms.ChoiceField(label="Host")
     bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
-    kind = forms.ChoiceField(label="Kind")
+    network = forms.ChoiceField(label="Kind")
     def __init__(self, api, *args, **kwargs):
         super(NetworkInstanceForm, self).__init__(*args, **kwargs)
-        self.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
+        self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
+        self.fields["host"].widget = forms.widgets.Select(choices=host_list(api))
     
 class EditNetworkInstanceForm(NetworkInstanceForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -54,6 +55,14 @@ def external_network_list(api):
     res.sort()
     return res
 
+def host_list(api):
+    l = api.host_list()
+    res = []
+    for host in l:
+        res.append((host['address'],host['address']))
+    res.sort()
+    return res
+
 
 @wrap_rpc
 def index(api, request):
@@ -68,16 +77,13 @@ def add(api, request):
             formData = form.cleaned_data
             api.resource_create('network',{'host':formData['host'],
                                            'bridge':formData['bridge'],
-                                           'kind':formData['kind'],
-                                           'network':formData['kind']}) #TODO: are network and kind always the same? - redundant data??
+                                           'network':formData['network']})
            
             return render_to_response("admin/external_network_instances/add_success.html", {'user': api.user, 'label': formData["host"]})
         else:
-            form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
             return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
         form = NetworkInstanceForm(api)
-        form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
         return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False,})
     
    
@@ -120,15 +126,13 @@ def edit(api, request):
             if api.resource_info(formData['res_id'])['type'] == 'network_instance':
                 api.resource_modify(formData["res_id"],{'host':formData['host'],# TODO: again: can host be changed?
                                                         'bridge':formData['bridge'],
-                                                        'kind':formData['kind'],
-                                                        'network':formData['kind']}) # TODO: again: are network and kind the same?
+                                                        'network':formData['network']}) 
                 return render_to_response("admin/external_network_instances/edit_success.html", {'user': api.user, 'label': formData["host"], 'res_id': formData['res_id']})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network instance.'})
         else:
             host = request.POST["host"]
             if host:
-                form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
                 return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'label': host, 'form': form, "edit":True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
@@ -139,7 +143,6 @@ def edit(api, request):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditNetworkInstanceForm(api, origData)
-            form.fields["kind"].widget = forms.widgets.Select(choices=external_network_list(api))
             return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'label': res_info['attrs']['host'], 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
