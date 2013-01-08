@@ -28,9 +28,9 @@ import xmlrpclib
 from admin_common import RemoveResourceForm, is_hostManager
 
 class NetworkInstanceForm(forms.Form):
-    host = forms.ChoiceField(label="Host")
+    host = forms.CharField(label="Host")
     bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
-    network = forms.ChoiceField(label="Kind")
+    network = forms.CharField(label="Kind")
     def __init__(self, api, *args, **kwargs):
         super(NetworkInstanceForm, self).__init__(*args, **kwargs)
         self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
