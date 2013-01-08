@@ -40,11 +40,6 @@ class EditNetworkInstanceForm(NetworkInstanceForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     def __init__(self, api, *args, **kwargs):
         super(EditNetworkInstanceForm, self).__init__(api, *args, **kwargs)
-        
-    #    self.fields["host"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-    #    self.fields["host"].help_text=None
-    # TODO: is this needed (= !(can host be changed?) - uncomment or delete?
-    # TODO: (also for host.HostForm) move the creation of choice list into __init__
     
     
 def external_network_list(api):
@@ -124,7 +119,7 @@ def edit(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'network_instance':
-                api.resource_modify(formData["res_id"],{'host':formData['host'],# TODO: again: can host be changed?
+                api.resource_modify(formData["res_id"],{'host':formData['host'],
                                                         'bridge':formData['bridge'],
                                                         'network':formData['network']}) 
                 return render_to_response("admin/external_network_instances/edit_success.html", {'user': api.user, 'label': formData["host"], 'res_id': formData['res_id']})
