@@ -97,12 +97,12 @@ def add(api, request):
             
             api.resource_create('profile',data)
            
-            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
+            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':data['tech']})
         else:
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
     else:
         form = AddProfileForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
 
     
 @wrap_rpc

@@ -94,7 +94,8 @@ def edit(api, request):
         form = EditSiteForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
+            api.site_modify(formData["name"],{'description':formData["description"],
+                                              'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             name=request.POST["name"]
