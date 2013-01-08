@@ -338,3 +338,9 @@ table td.stddev_high.good_low, table td.stddev_low.good_high {
 table td.stddev_high.good_high, table td.stddev_low.good_low {
 	color: green;
 }
+
+p.code {
+	padding:2px;
+	margin:0px;
+	background-color:#eeeeee;
+}
