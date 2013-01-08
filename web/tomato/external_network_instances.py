@@ -50,7 +50,7 @@ def external_network_list(api):
     l = api.resource_list('network')
     res = []
     for netw in l:
-        res.append((netw["kind"],netw["label"] + ' (' + netw["kind"] + ')'))
+        res.append((netw["attrs"]["kind"],netw["attrs"]["label"] + ' -- ' + netw["attrs"]["kind"] ))
     res.sort()
     return res
 
