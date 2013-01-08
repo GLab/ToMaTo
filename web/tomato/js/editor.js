@@ -2473,16 +2473,6 @@ var Editor = Class.extend({
 				func: function() {
 					t.topology.action_destroy();
 				}
-			}),
-			Menu.button({
-				label: "Delete",
-				name: "topology-remove",
-				icon: "img/eraser16.png",
-				toggle: false,
-				small: true,
-				func: function() {
-					t.topology.remove();
-				}
 			})
 		]);
 		
@@ -2706,16 +2696,17 @@ var Editor = Class.extend({
 				t.topology.notesDialog();
 			}
 		}));
+		
+		group.addElement(Menu.button({
+			label: "Resource usage",
+			icon: "img/office-chart-bar.png",
+			toggle: false,
+			small: false,
+			func: function(){
+				t.topology.showUsage();
+			}
+		}));
 		group.addStackedElements([
-			Menu.button({
-				label: "Resource usage",
-				icon: "img/chart_bar.png",
-				toggle: false,
-				small: true,
-				func: function(){
-					t.topology.showUsage();
-				}
-			}),
 			Menu.button({
 				label: "Rename",
 				icon: "img/rename.png",
@@ -2732,6 +2723,16 @@ var Editor = Class.extend({
 				small: true,
 				func: function() {
 					alert("Not implemented yet.");
+				}
+			}),
+			Menu.button({
+				label: "Delete",
+				name: "topology-remove",
+				icon: "img/eraser16.png",
+				toggle: false,
+				small: true,
+				func: function() {
+					t.topology.remove();
 				}
 			})
 		]);
