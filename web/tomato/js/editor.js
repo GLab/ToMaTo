@@ -387,8 +387,8 @@ var Workspace = Class.extend({
     	
     	//tutorial UI
     	var t = this;
-    	this.editor.listeners.push(function(){
-    		t.triggerTutorialProgress();
+    	this.editor.listeners.push(function(obj){
+    		t.triggerTutorialProgress(obj);
     	});
     	this.tutorialVisible = this.editor.options.beginner_mode;
 		this.tutorialText = $("<div>.</div>");

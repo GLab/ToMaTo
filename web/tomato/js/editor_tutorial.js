@@ -64,7 +64,7 @@ var editor_tutorial = {
 		basic: [     	
 					//0
 					{
-					trigger:function(obj) { return true; },
+					trigger:function(obj) { return false; },
 					text:	'<p class="tutorialExplanation">\
 								Welcome to ToMaTo! You have just created a new Topology.<br />\
 								This guide will tell you the basics of how to use this editor.<br />\
