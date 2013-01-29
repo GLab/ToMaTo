@@ -49,7 +49,7 @@ var editor_tutorial = {
 		/*
 		 * part two: tutorial data
 		 * 
-		 * Structure: name: [{trigger, text}]
+		 * Structure: name: [{trigger, text, help_page}]
 		 * name: name two find a tutorial, must be the same as in the tutorial list
 		 * per step:
 		 * 	trigger: takes a trigger object (handed over by every function that may be a tutorial trigger at one certain time)
@@ -64,7 +64,28 @@ var editor_tutorial = {
 		basic: [     	
 					//0
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.attrs != undefined && 
+								obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined) {
+								
+								if (obj.attrs.type != undefined && 
+									obj.attrs.state != undefined) {
+									
+									if (obj.attrs.state == "created" && 
+										obj.attrs.type == "openvz" && 
+										obj.component == "element" &&
+										obj.operation == "create" &&
+										obj.phase == "end") {
+										return true;
+									}
+									}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								Welcome to ToMaTo! You have just created a new Topology.<br />\
 								This guide will tell you the basics of how to use this editor.<br />\
@@ -76,7 +97,7 @@ var editor_tutorial = {
 					
 					//1
 					{
-					trigger:function(obj) { return true; },
+					trigger:function(obj) { return false; },
 					text:	'<p class="tutorialExplanation">\
 								Congratulations! You have placed your first OpenVZ device.<br />\
 								You can always identify OpenVZ devices by a blue screen.\
@@ -92,7 +113,7 @@ var editor_tutorial = {
 					
 					//2
 					{
-					trigger:function(obj) { return true; },
+					trigger:function(obj) { return false; },
 					text:	'<p class="tutorialExplanation">\
 								You can disable moving elements or enable <i>snap-to-grid</i> in the options.</p>\
 							<p class="tutorialExplanation">\
@@ -104,7 +125,7 @@ var editor_tutorial = {
 					
 					//3
 					{
-					trigger:function(obj) { return true; },
+					trigger:function(obj) { return false; },
 					text:	'<p class="tutorialExplanation">\
 								You just created a KVM device.\
 								KVM devices can be identified by a green screen.\
