@@ -81,7 +81,7 @@ var editor_tutorial = {
 										obj.phase == "end") {
 										return true;
 									}
-									}
+								}
 							}
 						}
 						return false;
@@ -113,11 +113,32 @@ var editor_tutorial = {
 					
 					//2
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.attrs != undefined && 
+								obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined) {
+								
+								if (obj.attrs.type != undefined && 
+									obj.attrs.state != undefined) {
+									
+									if (obj.attrs.state == "created" && 
+										obj.attrs.type == "kvmqm" && 
+										obj.component == "element" &&
+										obj.operation == "create" &&
+										obj.phase == "end") {
+										return true;
+									}
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You can disable moving elements or enable <i>snap-to-grid</i> in the options.</p>\
 							<p class="tutorialExplanation">\
-								You will need more devices to get a whole topology. This time, let\s create a KVM device.</p>\
+								You will need more devices to get a whole topology. This time, let\'s create a KVM device.</p>\
 							<p class="tutorialCommand">\
 								Click KVM (green screen) in Common elements in the menu above, and the place it in the editor by\
 								clicking somewhere into the white.</p>'
@@ -125,7 +146,26 @@ var editor_tutorial = {
 					
 					//3
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.attrs != undefined && 
+								obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined) {
+								
+								if (obj.attrs.state != undefined) {
+									
+									if (obj.attrs.state == "created" &&
+										obj.component == "connection" &&
+										obj.operation == "create" &&
+										obj.phase == "end") {
+										return true;
+									}
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You just created a KVM device.\
 								KVM devices can be identified by a green screen.\
@@ -140,26 +180,58 @@ var editor_tutorial = {
 					
 					//4
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.action != undefined &&
+								obj.phase != undefined) {
+									
+								if (obj.action == "prepare" &&
+									obj.component == "element" &&
+									obj.operation == "action" &&
+									obj.phase == "begin") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You have now connected the two devices. The connection is shown as a line between the two devices. To learn more about connections, take a look at the \'connections\' tutorial later.</p>\
 							<p class="tutorialExplanation">\
-								Since you now have a topology, why not run it?</p>\
+								Since you now have a topology, you can now run it?</p>\
 							<p class="tutorialExplanation">\
-								To get started, the devices and connections must be created first.\
-								<i>Note: If you don\'t have the permissions to run topologies, you can skip to the last window of this tutorial.</i></p>\
+								To get started, the devices and connections must be created on the server.\
+								<i>Note: If you don\'t have the permissions to run topologies (yet), you can skip to the last window of this tutorial.</i></p>\
 							<p class="tutorialCommand">\
 								Click on \'Prepare\' under \'Topology control\'.</p>'
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.action != undefined &&
+								obj.phase != undefined) {
+									
+								if (obj.action == "start" &&
+									obj.component == "element" &&
+									obj.operation == "action" &&
+									obj.phase == "begin") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
-								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device.</p>\
+								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device. Please wait for this.</p>\
 							<p class="tutorialExplanation">\
 								Now, you want to run it.</p>\
 							<p class="tutorialCommand">\
-								Click on \'Run\' under \'Topology control\'.</p>'
+								Click on \'Start\' under \'Topology control\'. This will start the simulation of this topology.</p>'
 					},
 					
 					{
@@ -175,11 +247,27 @@ var editor_tutorial = {
 							<p class="tutorialExplanation">\
 								You will need to allow the java applet.</p>\
 							<p class="tutorialExplanation">\
-								You can also use one of the other options, but you\'ll need to press the \'Skip\' button to continue this tutorial.</p>'
+								You can also use one of the other options, but then you\'ll need to press the \'Skip\' button to continue this tutorial.</p>'
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.action != undefined &&
+								obj.phase != undefined) {
+									
+								if (obj.action == "stop" &&
+									obj.component == "element" &&
+									obj.operation == "action" &&
+									obj.phase == "begin") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You can now play around with these two devices.</p>\
 							<p class="tutorialExplanation">\
@@ -189,7 +277,23 @@ var editor_tutorial = {
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.action != undefined &&
+								obj.phase != undefined) {
+									
+								if (obj.action == "destroy" &&
+									obj.component == "element" &&
+									obj.operation == "action" &&
+									obj.phase == "begin") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								The devices are stopped when you see the prepared (<img src="/img/prepared.png" />) icon again.</p>\
 							<p class="tutorialExplanation">\

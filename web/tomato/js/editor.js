@@ -305,6 +305,9 @@ var Window = Class.extend({
 	}
 });
 
+var TutorialWindow = Window.extend({
+});
+
 var AttributeWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
@@ -411,7 +414,7 @@ var Workspace = Class.extend({
 			editor.workspace.setTutorialVisible(false);
 		});
 		
-		this.tutorialWindow = new Window({ 
+		this.tutorialWindow = new TutorialWindow({ 
 			autoOpen: true, 
 			draggable: true,  
 			resizable: true, 
