@@ -327,7 +327,7 @@ var TutorialWindow = Window.extend({
 			this.helpLinkTarget="/help/";
 			
 			this.closeButton.click(function() { 
-				editor.workspace.setTutorialVisible(false);
+				editor.workspace.tutorialWindow.setTutorialVisible(false);
 			});
 			
 			this.add(this.helpButton);
