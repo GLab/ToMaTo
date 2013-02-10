@@ -2820,7 +2820,7 @@ var Editor = Class.extend({
 				tutID: i,
 				tooltip: tuts[i].description,
 				func: function() { 
-					editor.workspace.loadTutorial(this.tutID); 
+					editor.workspace.tutorialWindow.loadTutorial(this.tutID); 
 				}
 			}));
 		}
