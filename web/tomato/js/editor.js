@@ -306,6 +306,118 @@ var Window = Class.extend({
 });
 
 var TutorialWindow = Window.extend({
+	init: function(options) {
+			this._super(options);
+			
+			//create UI
+			this.text = $("<div>.</div>");
+			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
+			this.backButton = $("<input type=\"button\" value=\"Back\" />");
+			this.buttons.append(this.backButton);
+			this.backButton.click(function() {editor.workspace.tutorialWindow.tutorialGoBack(); });
+			this.skipButton = $("<input type=\"button\" value=\"Skip\" />");
+			this.buttons.append(this.skipButton);
+			this.skipButton.click(function() {editor.workspace.tutorialWindow.tutorialGoForth(); });
+			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
+			this.buttons.append(this.closeButton);
+			
+			this.helpButton = $("<div class=\"tutorialHelp\"></div>");
+			this.helpLink = $("<a onclick=\"window.open(editor.workspace.tutorialHelpLinkTarget,'_help');\"><img src=\"/img/help.png\"></a>");
+			this.helpButton.append(this.helpLink);
+			this.helpLinkTarget="/help/";
+			
+			this.closeButton.click(function() { 
+				editor.workspace.setTutorialVisible(false);
+			});
+			
+			this.add(this.helpButton);
+			this.add(this.text);
+			this.add(this.buttons);
+			
+			//pointer to an element of tutorialSteps
+			this.tutorialStatus = 0;
+			
+			this.tutorialVisible = true;
+			if (options.tutorialVisible != undefined) {
+				this.setTutorialVisible(options.tutorialVisible);
+			}
+			
+			//load the basic tutorial at the creating of the editor.
+			this.tutorialSource = options.tutorialSource || editor_tutorial;
+			this.tutorialSteps = [];
+			this.loadTutorial(0);
+			
+	},
+	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
+		if (vis) {
+			this.show();
+		} else {
+			this.hide();
+		}
+		this.tutorialVisible = vis;
+	},
+	tutorialGoBack: function() {
+		if (this.tutorialStatus > 0) {
+			this.tutorialStatus--;
+			this.skipButton.show();
+			this.closeButton.hide();
+		}
+		if (this.tutorialStatus == 0) {
+			this.backButton.hide();
+		}
+		this.updateText();
+	},
+	tutorialGoForth: function() {
+		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
+			this.tutorialStatus++;	
+			this.backButton.show();
+		}
+		if (this.tutorialStatus + 1 == this.tutorialSteps.length) {
+			this.skipButton.hide();
+			this.closeButton.show();
+		}
+		this.updateText();
+	},
+	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
+		if (this.tutorialVisible) //don't waste cpu time if not needed... trigger function may be complex.
+			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
+				this.tutorialGoForth();
+		}
+	},
+	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
+	
+		//go to 1st step
+		this.tutorialStatus = 0;
+		this.backButton.hide();
+		this.skipButton.show();
+		this.closeButton.hide();
+		
+		//load tutorial
+		tutorialData = this.tutorialSource.tutorials[tutID];
+		this.setTitle("Tutorial: "+tutorialData.title);
+		this.tutorialSteps = this.tutorialSource[tutorialData.name]
+		this.updateText();
+		
+		//show window
+		this.setTutorialVisible(true);
+	},
+	updateText: function() {
+		var text = this.tutorialSteps[this.tutorialStatus].text;
+		this.text.empty();
+		this.text.append(text);
+		
+		//dirty hack: un-set the window's height property
+		this.div[0].style.height = "";
+		
+		helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
+		if (helpUrl) {
+			this.helpLinkTarget="/help/"+helpUrl;
+			this.helpButton.show();
+		} else {
+			this.helpButton.hide();
+		}
+	},
+	
 });
 
 var AttributeWindow = Window.extend({
@@ -389,32 +501,7 @@ var Workspace = Class.extend({
     	}
     	
     	//tutorial UI
-    	var t = this;
-    	this.editor.listeners.push(function(obj){
-    		t.triggerTutorialProgress(obj);
-    	});
-    	this.tutorialVisible = this.editor.options.beginner_mode;
-		this.tutorialText = $("<div>.</div>");
-		this.tutorialButtons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
-		this.tutorialBackButton = $("<input type=\"button\" value=\"Back\" />");
-		this.tutorialButtons.append(this.tutorialBackButton);
-		this.tutorialBackButton.click(function() {editor.workspace.tutorialGoBack(); });
-		this.tutorialSkipButton = $("<input type=\"button\" value=\"Skip\" />");
-		this.tutorialButtons.append(this.tutorialSkipButton);
-		this.tutorialSkipButton.click(function() {editor.workspace.tutorialGoForth(); });
-		this.tutorialCloseButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
-		this.tutorialButtons.append(this.tutorialCloseButton);
-		
-		this.tutorialHelpButton = $("<div class=\"tutorialHelp\"></div>");
-		this.tutorialHelpLink = $("<a onclick=\"window.open(editor.workspace.tutorialHelpLinkTarget,'_help');\"><img src=\"/img/help.png\"></a>");
-		this.tutorialHelpButton.append(this.tutorialHelpLink);
-		this.tutorialHelpLinkTarget="/help/";
-		
-		this.tutorialCloseButton.click(function() { 
-			editor.workspace.setTutorialVisible(false);
-		});
-		
-		this.tutorialWindow = new TutorialWindow({ 
+    	this.tutorialWindow = new TutorialWindow({ 
 			autoOpen: true, 
 			draggable: true,  
 			resizable: false, 
@@ -422,20 +509,16 @@ var Workspace = Class.extend({
 			modal: false, 
 			buttons: {},
 			width:500,
+			tutorialVisible:this.editor.options.beginner_mode,
+			tutorialSource:editor_tutorial
 			});
-		
-    	this.tutorialWindow.add(this.tutorialHelpButton);
-    	this.tutorialWindow.add(this.tutorialText);
-    	this.tutorialWindow.add(this.tutorialButtons);
     	
-    	//pointer to an element of tutorialSteps
-    	this.tutorialStatus = 0;
+    	var t = this;
+    	this.editor.listeners.push(function(obj){
+    		t.tutorialWindow.triggerProgress(obj);
+    	});
     	
-    	//load the basic tutorial at the creating of the editor.
-    	this.tutorialSteps = [];
-    	this.loadTutorial(0);
     	
-		var t = this;
 		this.connectPath = this.canvas.path("M0 0L0 0").attr({"stroke-dasharray": "- "});
 		this.container.click(function(evt){
 			t.onClicked(evt);
@@ -446,79 +529,12 @@ var Workspace = Class.extend({
 		this.busyIcon = this.canvas.image("img/loading_big.gif", this.size.x/2, this.size.y/2, 32, 32);
 		this.busyIcon.attr({opacity: 0.0});
 	},
+	
 	setBusy: function(busy) {
 		this.busyIcon.attr({opacity: busy ? 1.0 : 0.0});
 	},
-	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
-		if (vis) {
-			this.tutorialWindow.show();
-		} else {
-			this.tutorialWindow.hide();
-		}
-		this.tutorialVisible = vis;
-	},
-	tutorialGoBack: function() {
-		if (this.tutorialStatus > 0) {
-			this.tutorialStatus--;
-			this.tutorialSkipButton.show();
-			this.tutorialCloseButton.hide();
-		}
-		if (this.tutorialStatus == 0) {
-			this.tutorialBackButton.hide();
-		}
-		this.updateTutorialText();
-	},
-	tutorialGoForth: function() {
-		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
-			this.tutorialStatus++;	
-			this.tutorialBackButton.show();
-		}
-		if (this.tutorialStatus + 1 == this.tutorialSteps.length) {
-			this.tutorialSkipButton.hide();
-			this.tutorialCloseButton.show();
-		}
-		this.updateTutorialText();
-		
-	},
-	triggerTutorialProgress: function(triggerObj) { //continues tutorial if correct trigger
-		if (this.tutorialVisible) //don't waste cpu time if not needed... trigger function may be complex.
-			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
-				this.tutorialGoForth();
-		}
-	},
-	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 	
-		//go to 1st step
-		this.tutorialStatus = 0;
-		this.tutorialBackButton.hide();
-		this.tutorialSkipButton.show();
-		this.tutorialCloseButton.hide();
-		
-		//load tutorial
-		tutorialData = editor_tutorial.tutorials[tutID];
-		this.tutorialWindow.setTitle("Tutorial: "+tutorialData.title);
-		this.tutorialSteps = editor_tutorial[tutorialData.name]
-		this.updateTutorialText();
-		
-		//show window
-		this.setTutorialVisible(true);
-	},
-	updateTutorialText: function() {
-		var text = this.tutorialSteps[this.tutorialStatus].text;
-		this.tutorialText.empty();
-		this.tutorialText.append(text);
-		
-		//dirty hack: un-set the window's height property
-		this.tutorialWindow.div[0].style.height = "";
-		
-		helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
-		if (helpUrl) {
-			this.tutorialHelpLinkTarget="/help/"+helpUrl;
-			this.tutorialHelpButton.show();
-		} else {
-			this.tutorialHelpButton.hide();
-		}
-	},
+	
 	onMouseMove: function(evt) {
 		if (! this.editor.connectElement) {
 			this.connectPath.hide();
@@ -545,7 +561,7 @@ var Workspace = Class.extend({
 		}
 	},
 	onOptionChanged: function(name) {
-    		this.updateTutorialText();
+    		this.tutorialWindow.updateText();
 	},
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
