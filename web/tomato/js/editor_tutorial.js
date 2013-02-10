@@ -97,7 +97,27 @@ var editor_tutorial = {
 					
 					//1
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.attrs != undefined && 
+								obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined) {
+								
+								if (obj.attrs._pos != undefined) {
+									
+									if (obj.attrs._pos.x != undefined &&
+										obj.attrs._pos.y != undefined &&
+										obj.component == "element" &&
+										obj.operation == "modify" &&
+										obj.phase == "end") {
+										return true;
+									}
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								Congratulations! You have placed your first OpenVZ device.<br />\
 								You can always identify OpenVZ devices by a blue screen.\
@@ -235,7 +255,19 @@ var editor_tutorial = {
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined) {
+									
+								if (obj.component == "element" &&
+									obj.operation == "console-dialog") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You have started the topology. This means that all virtual machines are running now. You can see this by finding a running (<img src="/img/started.png" />) icon on the devices.</p>\
 							<p class="tutorialExplanation">\
@@ -303,7 +335,21 @@ var editor_tutorial = {
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined) {
+									
+								if (obj.component == "connection" &&
+									obj.operation == "remove" &&
+									obj.phase == "end") {
+									return true;
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								You have now destroyed the devices etc. This means, you have undone the preparation.</p>\
 							<p class="tutorialExplanation">\
@@ -315,7 +361,31 @@ var editor_tutorial = {
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined &&
+								obj.object != undefined) {
+									
+								if (obj.object.data != undefined &&
+									obj.component == "element" &&
+									obj.operation == "remove" &&
+									obj.phase == "end") {
+									
+									if (obj.object.data.type != undefined) {
+											
+										if (obj.object.data.type == "openvz" ||
+											obj.object.data.type == "kvmqm" ||
+											obj.object.data.type == "repy") {
+											return true;
+										}
+									}
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialExplanation">\
 								To delete devices or connection, you can also use the \'delete\' mode from the Modes in the menu.</p>\
 							<p class="tutorialCommand">\
@@ -323,7 +393,31 @@ var editor_tutorial = {
 					},
 					
 					{
-					trigger:function(obj) { return false; },
+					trigger:function(obj) { 
+						if (obj != undefined) {
+							if (obj.component != undefined && 
+								obj.operation != undefined &&
+								obj.phase != undefined &&
+								obj.object != undefined) {
+									
+								if (obj.object.data != undefined &&
+									obj.component == "element" &&
+									obj.operation == "remove" &&
+									obj.phase == "end") {
+									
+									if (obj.object.data.type != undefined) {
+											
+										if (obj.object.data.type == "openvz" ||
+											obj.object.data.type == "kvmqm" ||
+											obj.object.data.type == "repy") {
+											return true;
+										}
+									}
+								}
+							}
+						}
+						return false;
+					},
 					text:	'<p class="tutorialCommand">\
 								Now, delete the other device.</p>'
 					},
