@@ -135,7 +135,7 @@ var editor_tutorial = {
 								however, this also means, you can only run Linux systems in OpenVZ devices.</p>\
 							<p class="tutorialExplanation">Did you notice the ? button, which just appeared in the top-right corner of this window?\
 								This leads you to a help page which tells you more about what you just did (Don\'t worry, it opens in a new browser tab).</p>',
-					help_page:'openvz',
+					help_page:'system/openvz',
 					skip_button: 'Continue'
 					},
 					{
@@ -205,7 +205,7 @@ var editor_tutorial = {
 								KVM devices can be identified by a green screen.\
 								Contrary to OpenVZ, KVM devices run completely separated from their host systems.\
 								This means that you can modify the kernel and/or use any system which supports the host\'s processor architecture.</p>',
-					help_page:'kvm',
+					help_page:'system/kvm',
 					skip_button:'continue'
 					},
 					{

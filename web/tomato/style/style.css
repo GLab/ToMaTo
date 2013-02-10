@@ -344,3 +344,22 @@ p.code {
 	margin:0px;
 	background-color:#eeeeee;
 }
+
+div.licensegroup {
+	padding: 5px;
+	margin: 10px;
+	background-color:#eeeeee;
+}
+div.licensegroup p {
+	margin-top:0px;
+}
+
+div.helpgroup {
+	padding: 15px;
+}
+div.helpgroup h3 {
+	padding-top: 5px;
+}
+div.helpgroup li {
+	margin:4px;
+}
