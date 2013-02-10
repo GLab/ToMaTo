@@ -417,7 +417,7 @@ var Workspace = Class.extend({
 		this.tutorialWindow = new TutorialWindow({ 
 			autoOpen: true, 
 			draggable: true,  
-			resizable: true, 
+			resizable: false, 
 			title: ".", 
 			modal: false, 
 			buttons: {},
@@ -507,6 +507,9 @@ var Workspace = Class.extend({
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.tutorialText.empty();
 		this.tutorialText.append(text);
+		
+		//dirty hack: un-set the window's height property
+		this.tutorialWindow.div[0].style.height = "";
 		
 		helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
 		if (helpUrl) {
