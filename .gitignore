@@ -4,6 +4,7 @@ docs_build
 */logs
 *.pyc
 *.komodoproject
+*.pydevproject
 *.sqlite
 *~
 *.lyx#
