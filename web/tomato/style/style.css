@@ -184,7 +184,8 @@ a:active, a:hover
 #menu_top a {
 	display: block;
 	float: left;
-	margin-left: 30px;
+	margin-left: 10px;
+	margin-right:20px;
 	padding: 7px;
 	text-decoration: none;
 	font-size: 13px;
