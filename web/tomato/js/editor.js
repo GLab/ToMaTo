@@ -379,9 +379,12 @@ var TutorialWindow = Window.extend({
 		this.updateText();
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
-		if (this.tutorialVisible) //don't waste cpu time if not needed... trigger function may be complex.
-			if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
-				this.tutorialGoForth();
+		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
+			if (this.tutorialSteps[this.tutorialStatus].trigger != undefined) {
+				if (this.tutorialSteps[this.tutorialStatus].trigger(triggerObj)) {
+					this.tutorialGoForth();
+				}
+			}
 		}
 	},
 	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
@@ -409,14 +412,21 @@ var TutorialWindow = Window.extend({
 		//dirty hack: un-set the window's height property
 		this.div[0].style.height = "";
 		
-		helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
+		var helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
 		if (helpUrl) {
 			this.helpLinkTarget="/help/"+helpUrl;
 			this.helpButton.show();
 		} else {
 			this.helpButton.hide();
 		}
-	},
+		
+		var skipButtonText = this.tutorialSteps[this.tutorialStatus].skip_button;
+		if (skipButtonText) {
+			this.skipButton[0].value = skipButtonText;
+		} else {
+			this.skipButton[0].value = "Skip";
+		}
+	}
 	
 });
 
