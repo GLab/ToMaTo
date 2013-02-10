@@ -510,7 +510,7 @@ var Workspace = Class.extend({
 			buttons: {},
 			width:500,
 			tutorialVisible:this.editor.options.beginner_mode,
-			tutorialSource:editor_tutorial
+			tutorialSource:this.editor.tutorialSource
 			});
     	
     	var t = this;
@@ -2313,6 +2313,7 @@ var Editor = Class.extend({
 		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources);
 		this.networks = new NetworkStore(this.options.resources);
+		this.tutorialSource = editor_tutorial;
 		this.buildMenu();
 		this.setMode(Mode.select);
 		var t = this;
@@ -2810,7 +2811,7 @@ var Editor = Class.extend({
 
 		var tab = this.menu.addTab("Tutorials");
 		var group = tab.addGroup("Tutorials");
-		var tuts = editor_tutorial.tutorials;
+		var tuts = this.tutorialSource.tutorials;
 		for (var i = 0; i<tuts.length; i++) {
 			group.addElement(Menu.button({
 				label: tuts[i].title,
