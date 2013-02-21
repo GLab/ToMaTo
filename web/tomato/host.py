@@ -25,22 +25,24 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import is_hostManager
 
 class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
+    def __init__(self, api, *args, **kwargs):
+        super(HostForm, self).__init__(*args, **kwargs)
+        self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
     
 class EditHostForm(HostForm):
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
+    def __init__(self, api, *args, **kwargs):
+        super(EditHostForm, self).__init__(api, *args, **kwargs)
         self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["address"].help_text=None
     
 class RemoveHostForm(forms.Form):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
     
 def site_name_list(api):
     l = api.site_list()
@@ -50,7 +52,6 @@ def site_name_list(api):
     res.sort()
     return res
 
-@cache_page(60)
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
@@ -59,17 +60,15 @@ def index(api, request):
 @wrap_rpc
 def add(api, request):
     if request.method == 'POST':
-        form = HostForm(request.POST)
+        form = HostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.host_create(formData["address"],formData["site"])
             return render_to_response("admin/host/add_success.html", {'user': api.user, 'address': formData["address"]})
         else:
-            form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
             return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
-        form = HostForm()
-        form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+        form = HostForm(api)
         return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
    
 @wrap_rpc
@@ -99,7 +98,7 @@ def remove(api, request):
 @wrap_rpc
 def edit(api, request):
     if request.method=='POST':
-        form = EditHostForm(request.POST)
+        form = EditHostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
             api.host_modify(formData["address"],{'site':formData["site"]})
@@ -107,8 +106,6 @@ def edit(api, request):
         else:
             address=request.POST["address"]
             if address:
-                form.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
-                form.fields["address"].help_text=None
                 return render_to_response("admin/host/form.html", {'user': api.user, 'address': address, 'form': form, "edit":True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
@@ -116,8 +113,7 @@ def edit(api, request):
         address = request.GET['address']
         if address:
             hostinfo=api.host_info(address)
-            form = EditHostForm(hostinfo)
-            form.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+            form = EditHostForm(api, hostinfo)
             form.fields["site"].initial = hostinfo["site"]
             return render_to_response("admin/host/form.html", {'user': api.user, 'address': address, 'form': form, "edit":True})
         else:

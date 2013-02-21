@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Success</h1>
+
+<p>Successfully removed the external network instance {{label}}.</p>
+<p><a href="{%url external_network_instances.index%}">Back to list</a></p>
+
+{% endblock %}

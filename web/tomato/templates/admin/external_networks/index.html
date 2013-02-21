@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of external networks</h1>
+
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external network" /></p>
+{% endif %}
+
+{% if netw_list %}
+	<script src="/js/enhancetable.js"></script>
+	
+	
+	<table class="sortable,filterable">
+	  <tr>
+	    <th>Label</th>
+	  	<th>Kind</th>
+	    <th>Preference</th>
+	    
+	    {% if hostManager %}
+	    	<th />
+	    {% endif %}
+	    
+	  </tr>
+	{% for netw in netw_list %}
+	  <tr>
+	  	<td>{{netw.attrs.label}}</td>
+	  	<td>{{netw.attrs.kind}}</td>
+	  	<td>{{netw.attrs.preference}}</td>	    
+	    
+	    {% if hostManager %}
+	    	<td><small><a href="{%url external_networks.edit%}?id={{netw.id}}"><img src="/img/connect_edit.png" title="edit" /></a> &nbsp; <a href="{%url external_networks.remove%}?id={{netw.id}}"><img src="/img/connect_delete.png" title="remove" /></a></small></td>
+	    {% endif %}
+	    
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	No external networks
+{% endif %}
+
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external networks" /></p>
+{% endif %}
+
+{% endblock %}

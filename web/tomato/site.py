@@ -27,6 +27,7 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import is_hostManager
 
 class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
@@ -41,11 +42,7 @@ class EditSiteForm(SiteForm):
     
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
 
-@cache_page(60)
 @wrap_rpc
 def index(api, request):
     return render_to_response("admin/site/index.html", {'user': api.user, 'site_list': api.site_list(), 'hostManager': is_hostManager(api.account_info())})
@@ -97,7 +94,8 @@ def edit(api, request):
         form = EditSiteForm(request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.site_modify(formData["name"],{'description':formData["description"],'location':formData["location"]})
+            api.site_modify(formData["name"],{'description':formData["description"],
+                                              'location':formData["location"]})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             name=request.POST["name"]

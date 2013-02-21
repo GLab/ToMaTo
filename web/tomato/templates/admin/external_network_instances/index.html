@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of external network instances</h1>
+
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external network" /></p>
+{% endif %}
+
+{% if netwI_list %}
+	<script src="/js/enhancetable.js"></script>
+	
+	
+	<table class="sortable,filterable">
+	  <tr>
+	    <th>Host</th>
+	  	<th>Bridge</th>
+	    <th>Network</th>
+	    
+	    {% if hostManager %}
+	    	<th />
+	    {% endif %}
+	    
+	  </tr>
+	{% for netwI in netwI_list %}
+	  <tr>
+	  	<td>{{netwI.attrs.host}}</td>
+	  	<td>{{netwI.attrs.bridge}}</td>
+	  	<td>{{netwI.attrs.network}}</td>
+	    
+	    {% if hostManager %}
+	    	<td><small><a href="{%url external_network_instances.edit%}?id={{netwI.id}}"><img src="/img/connect_edit.png" title="edit" /></a> &nbsp; <a href="{%url external_network_instances.remove%}?id={{netwI.id}}"><img src="/img/connect_delete.png" title="remove" /></a></small></td>
+	    {% endif %}
+	    
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	No external network instances
+{% endif %}
+
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external networks" /></p>
+{% endif %}
+
+{% endblock %}

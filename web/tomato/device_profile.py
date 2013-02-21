@@ -26,6 +26,7 @@ from django.core.urlresolvers import reverse
 
 from lib import *
 import xmlrpclib
+from admin_common import RemoveResourceForm, is_hostManager
 
 class ProfileForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this template")
@@ -38,17 +39,26 @@ class EditOpenVZForm(ProfileForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
+    def __init__(self, *args, **kwargs):
+        super(EditOpenVZForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['tech', 'label', 'diskspace', 'ram', 'restricted', 'preference']
 
 class EditRePyForm(ProfileForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     cpus = forms.FloatField(label = "number of CPUs")
+    def __init__(self, *args, **kwargs):
+        super(EditRePyForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['tech', 'label', 'cpus', 'ram', 'restricted', 'preference']
 
 class EditKVMqmForm(ProfileForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     cpus = forms.IntegerField(label="number of CPUs")
+    def __init__(self, *args, **kwargs):
+        super(EditKVMqmForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
     
     
 class AddProfileForm(ProfileForm):
@@ -59,22 +69,10 @@ class AddProfileForm(ProfileForm):
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
-    
-    
-class RemoveResourceForm(forms.Form):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
 
 @wrap_rpc
 def index(api, request):
-    reslist = api.resource_list()
-    profile_list = []
-    for res in reslist:
-        if res['type'] == 'profile':
-            profile_list.append(res)
-        
+    profile_list = api.resource_list('profile')
     return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list, 'hostManager': is_hostManager(api.account_info())})
 
 
@@ -99,12 +97,12 @@ def add(api, request):
             
             api.resource_create('profile',data)
            
-            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':'openvz'})
+            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':data['tech']})
         else:
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
+            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
     else:
         form = AddProfileForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':"openvz"})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
 
     
 @wrap_rpc

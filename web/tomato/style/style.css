@@ -184,7 +184,8 @@ a:active, a:hover
 #menu_top a {
 	display: block;
 	float: left;
-	margin-left: 30px;
+	margin-left: 10px;
+	margin-right:20px;
 	padding: 7px;
 	text-decoration: none;
 	font-size: 13px;
@@ -337,4 +338,29 @@ table td.stddev_high.good_low, table td.stddev_low.good_high {
 }
 table td.stddev_high.good_high, table td.stddev_low.good_low {
 	color: green;
+}
+
+p.code {
+	padding:2px;
+	margin:0px;
+	background-color:#eeeeee;
+}
+
+div.licensegroup {
+	padding: 5px;
+	margin: 10px;
+	background-color:#eeeeee;
+}
+div.licensegroup p {
+	margin-top:0px;
+}
+
+div.helpgroup {
+	padding: 15px;
+}
+div.helpgroup h3 {
+	padding-top: 5px;
+}
+div.helpgroup li {
+	margin:4px;
 }

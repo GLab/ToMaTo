@@ -31,6 +31,10 @@ p.tutorialExplanation {
 p.tutorialCommand {
 	font-weight:bold;
 }
+div.tutorialHelp {
+	float:right;
+	cursor:pointer;
+}
 
 .icon-22x22 {
 	width: 22px !important;

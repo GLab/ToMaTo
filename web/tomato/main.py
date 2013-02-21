@@ -26,8 +26,11 @@ import xmlrpclib, settings
 def index(request):
 	return render_to_response("main/start.html")
 
-def help(request, page=""): #@ReservedAssignment
-	return HttpResponseRedirect(settings.help_url % page)
+def help(request, page=""):
+	if page=="":
+		return render_to_response("help/index.html")
+	else:
+		return render_to_response("help/pages/"+page+".html")
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)
@@ -39,3 +42,4 @@ def logout(request):
 	if "auth" in request.session:
 		del request.session["auth"]
 	return HttpResponseNotAuthorized(code=401, text="You have been logged out.")
+
