@@ -1084,6 +1084,7 @@ var Component = Class.extend({
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
 	update: function() {
+		log("update");
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
@@ -1098,6 +1099,8 @@ var Component = Class.extend({
 				t.triggerEvent({operation: "update", phase: "error"});
 		 	}
 		});
+	},
+	updateDependent: function() {
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
@@ -1138,6 +1141,7 @@ var Component = Class.extend({
 		 		t.setBusy(false);
 		 		if (options.callback) options.callback(t, result[0], result[1]);
 				t.triggerEvent({operation: "action", phase: "end", action: action, params: params});
+				t.updateDependent();
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -1154,91 +1158,94 @@ var Component = Class.extend({
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		this._super(options);
-		this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
-		this.emulation_elements = [];
-		var t = this;
-		var el = new CheckboxElement({
-			name: "emulation",
-			value: con.data.attrs.emulation,
-			callback: function(el, value) {
-				t.updateEmulationStatus(value);
+		if (con.data.cap_attrs.emulation) {
+			this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
+			this.emulation_elements = [];
+			var t = this;
+			var el = new CheckboxElement({
+				name: "emulation",
+				value: con.data.attrs.emulation,
+				callback: function(el, value) {
+					t.updateEmulationStatus(value);
+				}
+			});
+			this.elements.push(el);
+			this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+			//direction arrows
+			var size = 30;
+			var _div = '<div style="width: '+size+'px; height: '+size+'px;"/>';
+			var dir1 = $(_div); var dir2 = $(_div);
+			var canvas1 = Raphael(dir1[0], size, size);
+			var canvas2 = Raphael(dir2[0], size, size);
+			var _path1 = "M 0.1 0.5 L 0.9 0.5";
+			var _path2 = "M 0.7 0.5 L 0.4 0.3 M 0.7 0.5 L 0.4 0.7";
+			var _transform1 = "R"+con.getAngle()+",0.5,0.5S"+size+","+size+",0,0";
+			var _transform2 = "R"+(con.getAngle()+180)+",0.5,0.5S"+size+","+size+",0,0";
+			var _attrs = {"stroke-width": 2, stroke: "red", "stroke-linecap": "round", "stroke-linejoin": "round"};
+			canvas1.path(_path1).transform(_transform1);
+			canvas1.path(_path2).transform(_transform1).attr(_attrs);
+			canvas2.path(_path1).transform(_transform2);
+			canvas2.path(_path2).transform(_transform2).attr(_attrs);
+			var name1 = con.elements[0].name();
+			var name2 = con.elements[1].name();
+			if (con.elements[0].id > con.elements[1].id) {
+				var t = name1;
+				name1 = name2;
+				name2 = t;
 			}
-		});
-		this.elements.push(el);
-		this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
-		//direction arrows
-		var size = 30;
-		var _div = '<div style="width: '+size+'px; height: '+size+'px;"/>';
-		var dir1 = $(_div); var dir2 = $(_div);
-    	var canvas1 = Raphael(dir1[0], size, size);
-    	var canvas2 = Raphael(dir2[0], size, size);
-    	var _path1 = "M 0.1 0.5 L 0.9 0.5";
-    	var _path2 = "M 0.7 0.5 L 0.4 0.3 M 0.7 0.5 L 0.4 0.7";
-    	var _transform1 = "R"+con.getAngle()+",0.5,0.5S"+size+","+size+",0,0";
-    	var _transform2 = "R"+(con.getAngle()+180)+",0.5,0.5S"+size+","+size+",0,0";
-    	var _attrs = {"stroke-width": 2, stroke: "red", "stroke-linecap": "round", "stroke-linejoin": "round"};
-    	canvas1.path(_path1).transform(_transform1);
-    	canvas1.path(_path2).transform(_transform1).attr(_attrs);
-    	canvas2.path(_path1).transform(_transform2);
-    	canvas2.path(_path2).transform(_transform2).attr(_attrs);
-    	var name1 = con.elements[0].name();
-    	var name2 = con.elements[1].name();
-    	if (con.elements[0].id > con.elements[1].id) {
-    		var t = name1;
-    		name1 = name2;
-    		name2 = t;
-    	}
-    	var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
-    	var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
-		this.table.append($('<tr/>')
+			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
+			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
+			this.table.append($('<tr/>')
 				.append($("<th>Direction</th>"))
 				.append($('<td align="middle"/>').append(fromDir).append(dir1))
 				.append($('<td align="middle"/>').append(toDir).append(dir2))
 				.append($('<td>&nbsp;</td>'))
-		);
-		//simple fields
-		var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
-		for (var i = 0; i < order.length; i++) {
-			var name = order[i];
-			var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
-			this.elements.push(el_from);
-			this.emulation_elements.push(el_from);
-			var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
-			this.elements.push(el_to);
-			this.emulation_elements.push(el_to);
-			this.table.append($("<tr/>")
+			);
+			//simple fields
+			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
+			for (var i = 0; i < order.length; i++) {
+				var name = order[i];
+				var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
+				this.elements.push(el_from);
+				this.emulation_elements.push(el_from);
+				var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
+				this.elements.push(el_to);
+				this.emulation_elements.push(el_to);
+				this.table.append($("<tr/>")
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].desc))
 					.append($("<td/>").append(el_from.getElement()))
 					.append($("<td/>").append(el_to.getElement()))
 					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].unit))
-			);
-		}
-		this.updateEmulationStatus(con.data.attrs.emulation);
-		
-		this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));		
-		this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
-		this.capturing_elements = [];
-		var el = new CheckboxElement({
-			name: "capturing",
-			value: con.data.attrs.capturing,
-			callback: function(el, value) {
-				t.updateCapturingStatus(value);
+				);
 			}
-		});
-		this.elements.push(el);
-		this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
-		var order = ["capture_mode", "capture_filter"];
-		for (var i = 0; i < order.length; i++) {
-			var name = order[i];
-			var el = this.autoElement(con.data.cap_attrs[name], con.data.attrs[name])
-			this.capturing_elements.push(el);
+			this.updateEmulationStatus(con.data.attrs.emulation);
+			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
+		}
+		if (con.data.cap_attrs.capturing) {
+			this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
+			this.capturing_elements = [];
+			var el = new CheckboxElement({
+				name: "capturing",
+				value: con.data.attrs.capturing,
+				callback: function(el, value) {
+					t.updateCapturingStatus(value);
+				}
+			});
 			this.elements.push(el);
-			this.table.append($("<tr/>")
+			this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+			var order = ["capture_mode", "capture_filter"];
+			for (var i = 0; i < order.length; i++) {
+				var name = order[i];
+				var el = this.autoElement(con.data.cap_attrs[name], con.data.attrs[name])
+				this.capturing_elements.push(el);
+				this.elements.push(el);
+				this.table.append($("<tr/>")
 					.append($("<td/>").append(con.data.cap_attrs[name].desc))
 					.append($("<td colspan=3/>").append(el.getElement()))
-			);
+				);
+			}
+			this.updateCapturingStatus(con.data.attrs.capturing);
 		}
-		this.updateCapturingStatus(con.data.attrs.capturing);
 	},
 	updateEmulationStatus: function(enabled) {
 		for (var i=0; i<this.emulation_elements.length; i++)
@@ -1679,6 +1686,16 @@ var Element = Component.extend({
 	},
 	action_destroy: function() {
 		this.action("destroy");
+	},
+	updateDependent: function() {
+		for (var i = 0; i < this.children.length; i++) {
+			this.children[i].update();
+			this.children[i].updateDependent();
+		}
+		if (this.connection) {
+			this.connection.update();
+			this.connection.updateDependent();			
+		}
 	},
 	removeChild: function(ch) {
 		for (var i = 0; i < this.children.length; i++)
