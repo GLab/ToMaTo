@@ -3,9 +3,40 @@
 {% load tomato %}
 
 {% block content %}
+
+
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/raphael.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/util.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/map.js"></script>
+
+
+
 <h1>Physical Link Stats</h1>
 
 
+<div id="map" style="width:450px;height:600px;"></div>
+<script>
+$("head").append($('<link href="/style/jquery-ui.css" rel="stylesheet" type="text/css" />'));
+map = new Map({x:450, y:600}, "/img/Germany_location_map.svg", {west: 5.5, east: 15.5, north: 55.1, south:47.1});
+
+
+
+{% for site in site_location_list %}
+	map.addSite( "{{site.name}}", "{{site.displayName}}" , {lat: {{site.geolocation.latitude}} , long: {{site.geolocation.longitude}} });
+{% endfor %}
+
+
+
+
+{% for l in connections %}
+	map.addConnection("{{l.src}}", "{{l.dst}}", {
+						//TODO: add stats
+						});
+{% endfor %}
+
+</script>
 	
 
 {% endblock %}
