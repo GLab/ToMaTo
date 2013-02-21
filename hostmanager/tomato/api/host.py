@@ -17,6 +17,9 @@
 
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
 
+def _checkAdmin():
+    fault.check(currentUser() in config.ADMIN_USERS, "Method only allowed for admin users")
+
 def host_info():
     """
     Retrieves general information about the host.
@@ -255,6 +258,9 @@ def host_capabilities():
         "resources": dict([(type_, {}) for type_ in resources.TYPES]),
     })
 
-from .. import elements, connections, resources, config
-from ..lib.cmd import hostinfo #@UnresolvedImport
+def host_ping(dst):
+    return net.ping(dst)
+
+from .. import elements, connections, resources, config, fault, currentUser
+from ..lib.cmd import hostinfo, net #@UnresolvedImport
 import time

@@ -47,6 +47,7 @@ encoding//tomato/lib/decorators.py=utf-8
 encoding//tomato/lib/ipfw.py=utf-8
 encoding//tomato/lib/rpc.py=utf-8
 encoding//tomato/lib/util.py=utf-8
+encoding//tomato/link.py=utf-8
 encoding//tomato/log.py=utf-8
 encoding//tomato/resources/__init__.py=utf-8
 encoding//tomato/resources/network.py=utf-8
