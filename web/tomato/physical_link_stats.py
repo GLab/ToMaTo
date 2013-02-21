@@ -16,12 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.http import HttpResponse, Http404, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.core.urlresolvers import reverse
 
 from lib import *
-import xmlrpclib, settings
 
 def get_site_location(site_name,api):
 	

@@ -18,14 +18,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.http import Http404
-from django import forms
-from django.core.urlresolvers import reverse
 
+from django import forms
 from lib import *
-import xmlrpclib
 from admin_common import RemoveResourceForm, is_hostManager
 
 class ProfileForm(forms.Form):
