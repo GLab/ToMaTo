@@ -130,4 +130,7 @@ def host_connection_owner(hostname, num):
 def host_public_key():
     return host.getPublicKey()
 
-from .. import host, fault, config
+def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
+    return link.getStatistics(siteA, siteB, type, after, before)
+
+from .. import host, fault, config, link

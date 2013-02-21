@@ -19,7 +19,7 @@ from .. import util
 from . import run, CommandError
 from process import killTree
 import path
-import os
+import os, re
 
 def getIfbCount():
 	def _ifbExists(n):
@@ -119,3 +119,17 @@ def bridgeRemoveInterface(brname, ifname):
 	assert ifaceExists(ifname)
 	if ifname in bridgeInterfaces(brname):
 		run(["brctl", "delif", brname, ifname])
+		
+def ping(dst, count=100, timeout=1.0, totalTimeout=100.0):
+	try:
+		res = run(["ping", dst, "-Aqn", "-c", str(count), "-w", str(totalTimeout), "-W", str(timeout)])
+		match = re.search("(\d+) packets transmitted, (\d+) received, (\d+)% packet loss, time (\d+)ms\nrtt min/avg/max/mdev = (\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+) ms", res)
+		if match:
+			tx, rx, loss, _, rttMin, rttAvg, rttMax, rttMdev = match.groups()
+			tx, rx = map(int, [tx, rx])
+			loss = int(loss)/100.0
+			rttMin, rttAvg, rttMax, rttMdev = map(lambda s: float(s)/1000.0, [rttMin, rttAvg, rttMax, rttMdev])
+			return {"transmitted": tx, "received": rx, "loss": loss, "rtt_min": rttMin, "rtt_avg": rttAvg, "rtt_max": rttMax, "rtt_mdev": rttMdev}
+	except:
+		pass
+	return {"transmitted": count, "received": 0, "loss": 1.0}

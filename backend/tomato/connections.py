@@ -89,7 +89,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return self.connection1
 
 	def remoteType(self):
-		return "bridge"
+		return self.mainConnection().type if self.mainConnection() else "bridge"
 
 	def _remoteAttrs(self):
 		caps = host.getConnectionCapabilities(self.remoteType())
@@ -278,9 +278,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		el1, el2 = self.getElements()
 		el1, el2 = el1.mainElement(), el2.mainElement()
 		fault.check(el1 and el2, "Can not connect unprepared element")
+		# First create connection, then set attributes
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
-			self.connection1 = el1.connectWith(el2, attrs=self._remoteAttrs(), owner=self)
+			self.connection1 = el1.connectWith(el2, attrs={}, owner=self)
 			if self.connection1.state == ST_CREATED:
 				self.connection1.action("start")
 		else:
@@ -289,13 +290,21 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
 				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
 			}, owner=self)
-			self.connection1 = el1.connectWith(self.connectionElement1, attrs=self._remoteAttrs(), owner=self)
+			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, owner=self)
 			self.connection2 = el2.connectWith(self.connectionElement2, owner=self)
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
 			self.connection1.action("start")
 			self.connection2.action("start")
+		# Find out and set allowed attributes
+		allowed = self.connection1.getAllowedAttributes()
+		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs().items()))
+		self.connection1.modify(attrs)
+		# Unset all disallowed attributes
+		for key in self.attrs.keys():
+			if not key in allowed:
+				del self.attrs[key]
 		self.setState(ST_STARTED)
 			
 	def _stop(self):

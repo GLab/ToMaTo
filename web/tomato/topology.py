@@ -34,12 +34,7 @@ def index(api, request):
 def _display(api, info):
     res = api.resource_list()
     sites = api.site_list()
-
-    beginner_mode = "true"
-    if False: #TODO: this IF statement is a stub. check for a user account parameter if beginner_mode should be disabled.
-        beginner_mode = "false"
-        
-    return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'beginner_mode': beginner_mode})	
+    return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'beginner_mode': json.dumps(api.user.get("tutorial", True))})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment

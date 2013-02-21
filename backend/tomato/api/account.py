@@ -95,7 +95,7 @@ def account_modify(name=None, attrs={}):
       reflected in this dict.
     """
     acc = _getAccount(name)
-    if name and name != currentUser().name:
+    if acc.name != currentUser().name:
         fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
     acc.modify(attrs)
     return acc.info()
