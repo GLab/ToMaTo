@@ -80,6 +80,7 @@ def start():
 	host.task.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
 	auth.task.start() #@UndefinedVariable
+	link.task.start() #@UndefinedVariable
 	global _btTracker, _btClient, starttime
 	_btTracker = bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	_btClient = bittorrent.startClient(config.TEMPLATE_PATH)
@@ -105,6 +106,7 @@ def stop(*args):
 	rpcserver.stop()
 	auth.task.stop() #@UndefinedVariable
 	host.task.stop() #@UndefinedVariable
+	link.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
 	process.kill(_btTracker)
 	process.kill(_btClient)
