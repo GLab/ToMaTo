@@ -387,8 +387,8 @@ var Workspace = Class.extend({
     	
     	//tutorial UI
     	var t = this;
-    	this.editor.listeners.push(function(){
-    		t.triggerTutorialProgress();
+    	this.editor.listeners.push(function(obj){
+    		t.triggerTutorialProgress(obj);
     	});
     	this.tutorialVisible = this.editor.options.beginner_mode;
 		this.tutorialText = $("<div>.</div>");
@@ -747,10 +747,11 @@ var Topology = Class.extend({
 		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this topology?")) return;
 		this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "begin", action: action});
 		var ids = 0;
+		var t = this;
 		var cb = function() {
 			ids--;
 			if (ids <= 0 && options.callback) options.callback();
-			this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action});
+			t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action});
 		}
 		for (var id in this.elements) {
 			var el = this.elements[id];
