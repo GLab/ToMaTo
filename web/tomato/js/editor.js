@@ -399,10 +399,7 @@ var TutorialWindow = Window.extend({
 		tutorialData = this.tutorialSource.tutorials[tutID];
 		this.setTitle("Tutorial: "+tutorialData.title);
 		this.tutorialSteps = this.tutorialSource[tutorialData.name]
-		this.updateText();
-		
-		//show window
-		this.setTutorialVisible(true);
+		this.updateText();		
 	},
 	updateText: function() {
 		var text = this.tutorialSteps[this.tutorialStatus].text;
@@ -512,7 +509,7 @@ var Workspace = Class.extend({
     	
     	//tutorial UI
     	this.tutorialWindow = new TutorialWindow({ 
-			autoOpen: true, 
+			autoOpen: false, 
 			draggable: true,  
 			resizable: false, 
 			title: ".", 
@@ -1132,7 +1129,6 @@ var Component = Class.extend({
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
 	update: function() {
-		log("update");
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
@@ -2850,6 +2846,7 @@ var Editor = Class.extend({
 				tooltip: tuts[i].description,
 				func: function() { 
 					editor.workspace.tutorialWindow.loadTutorial(this.tutID); 
+					editor.workspace.tutorialWindow.setTutorialVisible(true);
 				}
 			}));
 		}
