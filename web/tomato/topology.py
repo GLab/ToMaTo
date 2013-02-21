@@ -34,7 +34,7 @@ def index(api, request):
 def _display(api, info):
     res = api.resource_list()
     sites = api.site_list()
-    return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'beginner_mode': json.dumps(api.user["tutorial"])})	
+    return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'beginner_mode': json.dumps(api.user.get("tutorial", True))})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment

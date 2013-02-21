@@ -322,7 +322,11 @@ var TutorialWindow = Window.extend({
 			this.buttons.append(this.closeButton);
 			
 			this.helpButton = $("<div class=\"tutorialHelp\"></div>");
-			this.helpLink = $("<a onclick=\"window.open(editor.workspace.tutorialHelpLinkTarget,'_help');\"><img src=\"/img/help.png\"></a>");
+			this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
+			var t = this;
+			this.helpLink.click(function(){
+				window.open(t.helpLinkTarget,'_help');
+			});
 			this.helpButton.append(this.helpLink);
 			this.helpLinkTarget="/help/";
 			
