@@ -24,7 +24,7 @@ from OpenSSL import SSL
 SSL CLient certs:
 
 on client:
-- Create client certificate: openssl req -new -x509 -days 1000 -nodes -out client_key.pem -keyout client_cert.pem
+- Create client certificate: openssl req -new -x509 -days 1000 -nodes -out client_cert.pem -keyout client_key.pem
 - Create an instance of ServerProx with transport=SafeTransportWithCerts("client_key.pem", "client_cert.pem")
 
 on server:
