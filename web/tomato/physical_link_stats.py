@@ -65,11 +65,13 @@ def site_site_connections(api):
 		src = i[0]
 		dst = i[1]
 		
-		#TODO: add stats
+		color = "#ffff44"
+		#TODO: select useful color.
 		
 		r.append({
 			"src":src,
-			"dst":dst
+			"dst":dst,
+			"color":color
 			})
 	return r
 

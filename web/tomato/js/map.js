@@ -64,8 +64,7 @@ var Connection = Class.extend({
 		this.handle.click(f);
 	},
 	getColor: function() {
-		return "#44ff44";
-		//TODO: determine color from this.attrs
+		return this.attrs.color;
 	}
 });
 

@@ -33,7 +33,7 @@ map = new Map({x:450, y:600}, "/img/Germany_location_map.svg", {west: 5.5, east:
 
 {% for l in connections %}
 	map.addConnection("{{l.src}}", "{{l.dst}}", {
-						//TODO: add stats
+						color: "{{l.color}}"
 						});
 {% endfor %}
 
