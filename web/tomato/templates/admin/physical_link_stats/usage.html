@@ -11,9 +11,11 @@ $(function () {
     	var offset = new Date().getTimezoneOffset()*60000;
         var loss = {};
         var delay_avg = {};
+        var delay_stddev = {};
         for (var range in data) {
             loss[range] = [];
             delay_avg[range] = [];
+            delay_stddev[range] = [];
 		    data[range].sort(function(a, b) {
     			return a.end - b.end;
     		});
@@ -21,6 +23,7 @@ $(function () {
                 var rec = data[range][i];
                 loss[range].push([rec.end * 1000 - offset, rec.loss]);
                 delay_avg[range].push([rec.end * 1000 - offset, rec.delay_avg]);
+                delay_stddev[range].push([rec.end * 1000 - offset, rec.delay_stddev])
             }
         }
         var formatDelay = function(value) {
@@ -69,8 +72,18 @@ $(function () {
             }],
             tooltip: {
                 formatter: function() {
-                        return '<b>'+ this.series.name +'</b><br/>'+
+                        str = '<b>'+ this.series.name +'</b><br/>'+
                         Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatLoss, formatDelay][this.series.yAxis.options.index](this.y) + '</b>';
+                        
+                        if (this.series.yAxis.options.index == 1) {
+                        	for (var i=0; i<delay_stddev[currentRange].length; i++) {
+                        		if (delay_stddev[currentRange][i][0] == this.x) {
+									str = str + " ± " + formatDelay(delay_stddev[currentRange][i][1]);
+                        		}
+                        	}
+                        }
+                        
+                        return str;
                 }
             },
             series: [{ name: 'Loss Ratio', data: loss["5minutes"], yAxis: 0 },
