@@ -39,11 +39,12 @@ def site_list(api):
 
 def site_location_list(api):
 	r = []
-	l = site_list(api)
+	l = api.site_list()
 	for i in l:
-		r.append({'name':i,
-				  'geolocation':get_site_location(i,api),
-				  'displayName':api.site_info(i)['description']})
+		r.append({'name':i['name'],
+				  'geolocation':get_site_location(i['name'],api),
+				  'displayName':i['description']
+				  })
 	return r
 
 def site_site_pairs(api,allow_self=True): # allow_self: allow self-referencing pairs like ('ukl','ukl')
@@ -72,7 +73,17 @@ def site_site_connections(api):
 			})
 	return r
 
+
 @wrap_rpc
 def index(api, request):
 	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.account_info()})
 
+
+@wrap_rpc
+def details_link(api, request, src, dst):
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.account_info()});
+
+@wrap_rpc
+def details_site(api, request, site):
+	
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.account_info()});

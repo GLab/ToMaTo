@@ -6,6 +6,12 @@ var Site = Class.extend({
 		this.pos = pos;
 		this.marker = this.map.g.circle(this.pos.x, this.pos.y, 5).attr({fill: "#0000A0", title:this.displayName});
 		this.name_tag = this.map.g.text(this.pos.x, this.pos.y+10, this.name).attr({"font-size":12, "font": "Verdana"});
+		
+		var f = function () {
+			window.open('/link_stats/' + name, '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
+		};
+		this.marker.click(f);
+		this.name_tag.click(f);
 	}
 });
 
@@ -48,19 +54,12 @@ var Connection = Class.extend({
 		var middle = {x: (this.src.pos.x + this.dst.pos.x)/2, y: (this.src.pos.y + this.dst.pos.y)/2};
 		this.handle = this.map.g.rect(middle.x-4, middle.y-4, 8, 8).attr({fill: "#A0A0A0"});
 		
-		this.win = $('<div/>');
-		this.win.append("TODO: use this.win.append(str) to append connection stats");//TODO
-		this.win.dialog({autoOpen: false, draggable: true,
-			resizable: false, height:"auto", width:700, title: "Connection " + src.displayName + " <-> " + dst.displayName, 
-			show: "slide", hide: "slide", minHeight: 50});
+		
+		
 		this.path.parent = this;
 		this.handle.parent = this;
 		var f = function () {
-			if (this.parent.win.dialog("isOpen")) this.parent.win.dialog("close");
-			else {
-				this.parent.win.dialog("option", "position", {my: "left top", at: "right top", of: this.parent.handle[0], offset: "15 -10"});
-				this.parent.win.dialog("open");
-			}
+			window.open('/link_stats/' + src.name + "/" + dst.name, '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
 		};
 		this.handle.click(f);
 	},
@@ -73,6 +72,7 @@ var Connection = Class.extend({
 var Map = Class.extend({
 	init: function(size, background, coord_rect) {
 		this.div = $("#map");
+		this.link_details = $("#link_details");
 		this.size = size;
 		this.coord_rect = coord_rect;
 		this.g = Raphael(this.div[0], size.x, size.y);

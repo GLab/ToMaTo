@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block header %}
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript">
+var chart;
+var setRange;
+$(function () {
+    var data = {{usage|safe}};
+    $(document).ready(function() {
+    	var offset = new Date().getTimezoneOffset()*60000;
+        var loss = {};
+        var delay_avg = {};
+        for (var range in data) {
+            loss[range] = [];
+            delay_avg[range] = [];
+		    data[range].sort(function(a, b) {
+    			return a.end - b.end;
+    		});
+            for (var i=0; i<data[range].length; i++) {
+                var rec = data[range][i];
+                loss[range].push([rec.end * 1000 - offset, rec.loss]);
+                delay_avg[range].push([rec.end * 1000 - offset, rec.delay_avg]);
+            }
+        }
+        var formatDelay = function(value) {
+            value /= 1e-3;
+            if (value < 1) {
+            	return Math.round(value / 1e-3) + " \μs";
+            } else {
+            	return Math.round(value*10)/10 + " ms";
+            }
+        }
+        var formatLoss = function(value) {
+        	return Math.round(value*10000)/100 + " %";
+        }
+        var colors = Highcharts.getOptions().colors;
+        var symbols = Highcharts.getOptions().symbols;
+        var currentRange = "5minutes"
+        setRange = function(range) {
+        	currentRange = range;
+            chart.series[0].remove(true);
+            chart.series[0].remove(true);
+            chart.addSeries({ name: 'Loss Ratio', data: loss[range], yAxis: 0, color: colors[0], marker:{symbol: symbols[0]} });
+            chart.addSeries({ name: 'Average Delay', data: delay_avg[range], yAxis: 1, color: colors[1], marker:{symbol: symbols[1]} });
+        }
+        chart = new Highcharts.Chart({
+            chart: { renderTo: 'container', type: 'spline' },
+            title: { text: 'Link Statistics' },
+            subtitle: { text: '{{name}}' },
+            xAxis: { type: 'datetime' },
+            yAxis: [{
+                labels: {
+                    formatter: function() {
+                        return formatLoss(this.value);
+                    }
+                },
+                title: { text: 'Loss Ratio' },
+                min: 0
+            }, {
+                labels: {
+                    formatter: function() {
+                        return formatDelay(this.value);
+                    }
+                },
+                title: { text: 'Average Delay' },
+                min: 0,
+                opposite: true
+            }],
+            tooltip: {
+                formatter: function() {
+                        return '<b>'+ this.series.name +'</b><br/>'+
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M', this.x) +' <b>'+ [formatLoss, formatDelay][this.series.yAxis.options.index](this.y) + '</b>';
+                }
+            },
+            series: [{ name: 'Loss Ratio', data: loss["5minutes"], yAxis: 0 },
+                     { name: 'Average Dalay', data: delay_avg["5minutes"], yAxis: 1 }]
+        });
+    });
+    
+});
+</script>
+{% endblock %}
+
+{% block page %}
+<script src="/js/highcharts.js"></script>
+<script src="/js/modules/exporting.js"></script>
+
+<div style="min-width: 400px; margin: auto auto; text-align:right">
+	<b>Interval: </b>
+	<select onchange="setRange(this.options[this.selectedIndex].value);">
+  		<option value="year">Years</option>
+  		<option value="month">Months</option>
+  		<option value="day">Days</option>
+  		<option value="hour">Hours</option>
+  		<option value="5minutes" selected>5 Minutes</option>
+	</select>
+</div>
+<div id="container" style="min-width: 400px; height: 400px; margin: auto auto"></div>
+{% endblock %}
