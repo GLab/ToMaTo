@@ -2832,7 +2832,8 @@ var Editor = Class.extend({
 		};
 
 		group.addStackedElements([this.optionCheckboxes.safe_mode, 
-									this.optionCheckboxes.snap_to_grid, 
+									this.optionCheckboxes.snap_to_grid,
+									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
 									this.optionCheckboxes.debug_mode
 								]);
