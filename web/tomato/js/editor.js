@@ -2517,6 +2517,18 @@ var Editor = Class.extend({
 			t.selectBtn.click();
 		}
 	},
+	createUploadFunc: function(type) {
+		var t = this;
+		return function(pos) {
+			var data = {type: type, attrs: {_pos: pos}};
+			t.topology.createElement(data, function(el) {
+				el.action("prepare", {callback: function(el){
+					el.uploadImage();
+				}});
+			});
+			t.selectBtn.click();
+		}
+	},
 	createTemplateFunc: function(tmpl) {
 		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
 	},
@@ -2699,9 +2711,7 @@ var Editor = Class.extend({
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
-				func: function() {
-					alert("Not implemented yet.");
-				}
+				func: this.createPositionElementFunc(this.createUploadFunc("kvmqm"))
 			}),
 			Menu.button({
 				label: "OpenVZ image",
@@ -2710,9 +2720,7 @@ var Editor = Class.extend({
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
-				func: function() {
-					alert("Not implemented yet.");
-				}
+				func: this.createPositionElementFunc(this.createUploadFunc("openvz"))
 			}),
 			Menu.button({
 				label: "Repy script",
@@ -2721,9 +2729,7 @@ var Editor = Class.extend({
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
-				func: function() {
-					alert("Not implemented yet.");
-				}
+				func: this.createPositionElementFunc(this.createUploadFunc("repy"))
 			})
 		]);
 
@@ -2764,9 +2770,7 @@ var Editor = Class.extend({
 			toggle: true,
 			toggleGroup: toggleGroup,
 			small: false,
-			func: function() {
-				alert("Not implemented yet.");
-			}
+			func: this.createPositionElementFunc(this.createUploadFunc("repy"))
 		}));
 		var tmpls = t.templates.getAll("repy");
 		var btns = [];
