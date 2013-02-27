@@ -771,6 +771,8 @@ var Topology = Class.extend({
 					obj.updateData(data);
 					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "end", attrs: data});
 					t.onUpdate();
+					el1.onConnected();
+					el2.onConnected();
 				},
 				errorFn: function(error) {
 					alert(error);
@@ -1200,6 +1202,8 @@ var Component = Class.extend({
 	},
 	actionAvailable: function(action) {
 		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
+	},
+	onConnected: function() {
 	}
 });
 
@@ -1585,6 +1589,69 @@ var Element = Component.extend({
 	},
 	isEndpoint: function() {
 		return true;
+	},
+	getUsedAddress: function() {
+		if (this.data.attrs.use_dhcp) return "dhcp";
+		if (! this.data.attrs.ip4address) return null;
+		res = /10.0.([0-9]+).([0-9]+)\/[0-9]+/.exec(this.data.attrs.ip4address);
+		if (! res) return res;
+		return [parseInt(res[1]), parseInt(res[2])];
+	},
+	getAddressHint: function() {
+		var segs = this.topology.getNetworkSegments();
+		for (var i=0; i < segs.length; i++) {
+			var seg = segs[i];
+			if (seg.elements.indexOf(this.id)>=0) break;
+		}
+		//Determine major usage counts in segment
+		var usedMajors = {};
+		for (var i=0; i < seg.elements.length; i++) {
+			var el = this.topology.elements[seg.elements[i]];
+			if (el.data.type == "external_network_endpoint") return "dhcp";
+			var addr = el.getUsedAddress();
+			if (! addr) continue;
+			if (addr == "dhcp")	usedMajors.dhcp = (usedMajors.dhcp || 0) + 1;
+			else usedMajors[addr[0]] = (usedMajors[addr[0]] || 0) + 1;
+		}
+		//Find the most common major
+		var major = null;
+		var majorCount = 0;
+		for (var m in usedMajors) {
+			if (usedMajors[m] > majorCount) {
+				major = m;
+				majorCount = usedMajors[m]; 
+			}
+		}
+		if (major == "dhcp") return "dhcp";
+		if (! major) {
+			//If no major in segment so far, find free global major
+			var usedMajors = {};
+			for (var i=0; i < segs.length; i++) {
+				var seg = segs[i];
+				for (var j=0; j < seg.elements.length; j++) {
+					var el = this.topology.elements[seg.elements[j]];
+					var addr = el.getUsedAddress();
+					if (! addr || addr == "dhcp") continue;
+					usedMajors[addr[0]] = (usedMajors[addr[0]] || 0) + 1; 
+				}
+			}
+			var major = 0;
+			while (usedMajors[major]) major++;
+			return [major, 1];
+		} else {
+			//Find free minor for the major
+			major = parseInt(major);
+			var usedMinors = {};
+			for (var j=0; j < seg.elements.length; j++) {
+				var el = this.topology.elements[seg.elements[j]];
+				var addr = el.getUsedAddress();
+				if (! addr || addr == "dhcp") continue;
+				if (addr[0] == major) usedMinors[addr[1]] = (usedMinors[addr[1]] || 0) + 1; 
+			}
+			var minor = 1;
+			while (usedMinors[minor]) minor++;
+			return [major, minor];			
+		}
 	},
 	calculateSegment: function(els, cons) {
 		if (! els) els = [];
@@ -2192,7 +2259,11 @@ var ChildElement = Element.extend({
 });
 
 var VMInterfaceElement = ChildElement.extend({
-	
+	onConnected: function() {
+		var hint = this.getAddressHint();
+		if (hint == "dhcp") this.modify({"use_dhcp": true});
+		else this.modify({"ip4address": "10.0." + hint[0] + "." + hint[1] + "/24"});
+	}
 });
 
 var SwitchPortElement = ChildElement.extend({

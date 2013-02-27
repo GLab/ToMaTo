@@ -28,6 +28,7 @@ class Site(attributes.Mixin, models.Model):
     attrs = db.JSONField()
     description = attributes.attribute("description", unicode, "")
     location = attributes.attribute("location", unicode, "")
+    geolocation = attributes.attribute("geolocation", dict, {})
     
     class Meta:
         pass
@@ -43,6 +44,8 @@ class Site(attributes.Mixin, models.Model):
                 self.description = value
             elif key == "location":
                 self.location = value
+            elif key == "geolocation":
+                self.geolocation = value
             else:
                 fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
         self.save()
@@ -57,7 +60,8 @@ class Site(attributes.Mixin, models.Model):
         return {
             "name": self.name,
             "description": self.description,
-            "location": self.location
+            "location": self.location,
+            "geolocation": self.geolocation
         }
 
     def __str__(self):
