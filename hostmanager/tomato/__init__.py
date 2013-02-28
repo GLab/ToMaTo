@@ -56,7 +56,7 @@ from models import *
 	
 import api
 
-from . import lib, resources, accounting, rpcserver #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver, elements #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
@@ -73,6 +73,7 @@ def start():
 	_btClient = bittorrent.startClient(config.TEMPLATE_DIR)
 	fileserver.start()
 	rpcserver.start()
+	elements.timeoutTask.start() #@UndefinedVariable
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
@@ -85,6 +86,7 @@ def stop(*args):
 		print >>sys.stderr, "Shutting down..."
 		rpcserver.stop()
 		fileserver.stop()
+		elements.timeoutTask.stop() #@UndefinedVariable
 		accounting.task.stop() #@UndefinedVariable
 		process.kill(_btClient)
 		logging.closeDefault()

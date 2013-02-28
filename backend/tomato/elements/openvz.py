@@ -20,7 +20,7 @@ import generic
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "timeout"]
 	CAP_CHILDREN = {
 		"openvz_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}

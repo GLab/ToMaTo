@@ -46,7 +46,7 @@ class VMElement(elements.Element):
 		"profile": profile_attr,
 		"template": template_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 	
@@ -183,6 +183,7 @@ class VMInterface(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
+	DIRECT_ATTRS_EXCLUDE=["timeout"]
 	
 	SAME_HOST_AFFINITY = -20 #we want connected elements on different hosts to lower host load	
 	

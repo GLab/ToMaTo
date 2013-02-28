@@ -64,6 +64,7 @@ class External_Network(elements.Element):
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
 		"network": network_attr,
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -104,6 +105,5 @@ class External_Network(elements.Element):
 
 	def updateUsage(self, usage, data):
 		pass
-
 
 elements.TYPES[External_Network.TYPE] = External_Network

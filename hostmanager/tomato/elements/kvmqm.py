@@ -181,6 +181,7 @@ class KVMQM(elements.Element):
 		"kblang": kblang_attr,
 		"usbtablet": usbtablet_attr,
 		"template": template_attr,
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {
 		"kvmqm_interface": [ST_CREATED, ST_PREPARED],
@@ -451,6 +452,7 @@ class KVMQM(elements.Element):
 			usage.memory = memory
 			usage.updateContinuous("cputime", cputime, data)
 		usage.diskspace = path.diskspace(self._imagePathDir())
+		
 KVMQM.__doc__ = DOC
 
 
@@ -493,6 +495,7 @@ class KVMQM_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [KVMQM.TYPE]
@@ -529,6 +532,7 @@ class KVMQM_Interface(elements.Element):
 		if net.ifaceExists(ifname):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
+			
 KVMQM_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover

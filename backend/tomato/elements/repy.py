@@ -20,7 +20,7 @@ import generic
 
 class Repy(generic.VMElement):
 	TYPE = "repy"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "bandwidth"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "bandwidth", "timeout"]
 	CAP_CHILDREN = {
 		"repy_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}

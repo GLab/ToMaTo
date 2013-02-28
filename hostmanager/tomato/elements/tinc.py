@@ -111,6 +111,7 @@ class Tinc(elements.Element):
 	CAP_ATTRS = {
 		"mode": mode_attr,
 		"peers": peers_attr,
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -236,7 +237,7 @@ class Tinc(elements.Element):
 			usage.updateContinuous("cputime", cputime, data)
 			traffic = sum(net.trafficInfo(self.interfaceName()))
 			usage.updateContinuous("traffic", traffic, data)
-
+			
 if not config.MAINTENANCE:
 	tincVersion = cmd.getDpkgVersion("tinc")
 	if [1, 0] <= tincVersion <= [2, 0]:

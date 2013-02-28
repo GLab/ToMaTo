@@ -42,7 +42,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		"kind": kind_attr,
 	}
 
-	DIRECT_ATTRS_EXCLUDE = ["network"]
+	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
@@ -118,7 +118,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		"name": name_attr,
 		"kind": kind_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = ["network"]
+	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
 	CAP_PARENT = [None, External_Network.TYPE]
 	DEFAULT_ATTRS = {}
 	CAP_CONNECTABLE = True

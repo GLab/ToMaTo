@@ -15,14 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil
+import os, shutil, time
 from django.db import models
 
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
 from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
 from .. import config
+
+ST_CREATED = "created"
+ST_PREPARED = "prepared"
+ST_STARTED = "started"
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -34,12 +39,14 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
+	timeout = models.FloatField()
+	timeout_attr = Attr("timeout", desc="Timeout", states=[], type="float", null=False)
 	attrs = db.JSONField()
 	
 	DOC = ""
 	CAP_ACTIONS = {}
 	CAP_NEXT_STATE = {}
-	CAP_ATTRS = {}
+	CAP_ATTRS = {"timeout": timeout_attr}
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
 	CAP_CON_CONCEPTS = []
@@ -58,6 +65,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		self.parent = parent
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
+		self.timeout = time.time() + config.MAX_TIMEOUT
 		self.save()
 		self.getUsageStatistics() #triggers creation
 		if not os.path.exists(self.dataPath()):
@@ -131,6 +139,11 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		for key in attrs.keys():
 			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key), code=fault.UNSUPPORTED_ATTRIBUTE)
 			self.CAP_ATTRS[key].check(self, attrs[key])
+		
+	def modify_timeout(self, value):
+		fault.check(value > time.time(), "Refusing to set timeout into the past")
+		fault.check(value <= time.time() + config.MAX_TIMEOUT, "Refusing to set timeout too far into the future")
+		self.timeout = value
 		
 	def modify(self, attrs):
 		"""
@@ -250,6 +263,21 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def onChildRemoved(self, child):
 		pass
 			
+	def onTimeout(self):
+		self.tearDown()
+			
+	def tearDown(self):
+		if self.connection:
+			self.getConnection().tearDown()
+			self.connection = None
+		if self.state == ST_STARTED:
+			self.action_stop()
+		if self.state == ST_PREPARED:
+			self.action_destroy()
+		for ch in self.getChildren():
+			ch.tearDown()
+		self.remove()			
+			
 	def getResource(self, type_):
 		return resources.take(type_, self)
 	
@@ -266,6 +294,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			"type": self.type,
 			"parent": self.parent.id if self.hasParent() else None,
 			"state": self.state,
+			"timeout": self.timeout,
 			"attrs": self.attrs.copy(),
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
@@ -295,6 +324,17 @@ def create(type_, parent=None, attrs={}):
 	logging.logMessage("create", category="element", id=el.id)	
 	logging.logMessage("info", category="element", id=el.id, info=el.info())	
 	return el
+
+def checkTimeout():
+	for el in Element.objects.filter(timeout__lte=time.time()):
+		el = el.upcast()
+		logging.logMessage("timeout", category="element", info=el.info())
+		try:
+			el.onTimeout()
+		except:
+			logging.logException()
+
+timeoutTask = util.RepeatedTimer(3600, checkTimeout)
 
 from .. import fault, currentUser, resources
 		
