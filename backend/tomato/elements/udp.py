@@ -36,12 +36,11 @@ class UDP_Endpoint(elements.Element):
 		"name": name_attr,
 		"connect": connect_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ATTRS_EXCLUDE = ["timeout"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
 	TYPE = "udp_endpoint"
-	DIRECT_ATTRS_EXCLUDE = []
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	

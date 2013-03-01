@@ -157,6 +157,7 @@ class Repy(elements.Element):
 		"cpus": cpus_attr,
 		"ram": ram_attr,
 		"bandwidth": bandwidth_attr,
+		"timeout": elements.Element.timeout_attr		
 	}
 	CAP_CHILDREN = {
 		"repy_interface": [ST_PREPARED],
@@ -313,6 +314,7 @@ class Repy(elements.Element):
 				usage.memory += process.memory(self.vncpid)
 				cputime += process.cputime(self.vncpid)
 			usage.updateContinuous("cputime", cputime, data)
+
 Repy.__doc__ = DOC
 
 DOC_IFACE="""
@@ -351,6 +353,7 @@ class Repy_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [Repy.TYPE]
@@ -386,6 +389,8 @@ class Repy_Interface(elements.Element):
 		if net.ifaceExists(ifname):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
+	
+			
 Repy_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover

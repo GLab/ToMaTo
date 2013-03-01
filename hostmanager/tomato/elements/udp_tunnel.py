@@ -87,6 +87,7 @@ class UDP_Tunnel(elements.Element):
 	}		
 	CAP_ATTRS = {
 		"connect": connect_attr,
+		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
 	CAP_PARENT = [None]
@@ -152,7 +153,6 @@ class UDP_Tunnel(elements.Element):
 		usage.updateContinuous("cputime", cputime, data)
 		traffic = sum(net.trafficInfo(self.interfaceName()))
 		usage.updateContinuous("traffic", traffic, data)
-
 
 if not config.MAINTENANCE:
 	socatVersion = cmd.getDpkgVersion("socat")

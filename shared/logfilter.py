@@ -31,8 +31,14 @@ def buildFilters(args):
       
 
 def filterLogs(logs, filters):
+  lino = 0
   for line in logs:
-    data = json.loads(line)
+    lino += 1
+    try:
+        data = json.loads(line)
+    except:
+        print >>sys.stderr, "Malformed line: %d" % lino
+	continue
     match = True
     for f in filters:
       if not f(data):

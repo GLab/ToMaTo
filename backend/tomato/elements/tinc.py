@@ -149,7 +149,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 		"mode": mode_attr,
 		"peers": peers_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ATTRS_EXCLUDE = ["timeout"]
 	CAP_PARENT = [None, Tinc_VPN.TYPE]
 	DEFAULT_ATTRS = {}
 

@@ -56,11 +56,9 @@ from models import *
 	
 import api
 
-from . import lib, resources, accounting, rpcserver #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver, elements #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
-
-_btClient = None
 
 stopped = threading.Event()
 
@@ -69,10 +67,11 @@ def start():
 	db_migrate()
 	resources.init()
 	accounting.task.start() #@UndefinedVariable
-	global _btTracker, _btClient
-	_btClient = bittorrent.startClient(config.TEMPLATE_DIR)
+	bittorrent.startClient(config.TEMPLATE_DIR)
+	bittorrent.task.start() #@UndefinedVariable
 	fileserver.start()
 	rpcserver.start()
+	elements.timeoutTask.start() #@UndefinedVariable
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
@@ -85,8 +84,10 @@ def stop(*args):
 		print >>sys.stderr, "Shutting down..."
 		rpcserver.stop()
 		fileserver.stop()
+		elements.timeoutTask.stop() #@UndefinedVariable
 		accounting.task.stop() #@UndefinedVariable
-		process.kill(_btClient)
+		bittorrent.task.stop() #@UndefinedVariable
+		bittorrent.stopClient()
 		logging.closeDefault()
 		stopped.set()
 	except:

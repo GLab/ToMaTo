@@ -37,27 +37,31 @@ def check(indent="", shellError=False):
 	print indent + "checking Bridge connection type..." 
 	indent += "\t"
 	try:
-		print indent+"creating openvz device with two interfaces..."
-		dev = element_create("openvz")["id"]
-		print indent+"\tID: %d" % dev
-		eth0 = element_create("openvz_interface", dev, {"use_dhcp": False, "ip4address": "10.0.0.1/24"})["id"]		
+		print indent+"creating two openvz devices with one interface each..."
+		dev0 = element_create("openvz")["id"]
+		print indent+"\tID: %d" % dev0
+		eth0 = element_create("openvz_interface", dev0, {"use_dhcp": False, "ip4address": "10.0.0.1/24"})["id"]		
 		print indent+"\tID: %d" % eth0
-		eth1 = element_create("openvz_interface", dev, {"use_dhcp": False, "ip4address": "10.0.0.2/24"})["id"]
+		dev1 = element_create("openvz")["id"]
+		print indent+"\tID: %d" % dev1
+		eth1 = element_create("openvz_interface", dev1, {"use_dhcp": False, "ip4address": "10.0.0.2/24"})["id"]
 		print indent+"\tID: %d" % eth1
 
 		print indent+"creating bridge between interfaces..."
 		id = checkCreate(eth0, eth1, indent=indent)
 
-		print indent+"starting openvz device..."
-		element_action(dev, "prepare")
-		element_action(dev, "start")
+		print indent+"starting openvz devices..."
+		element_action(dev0, "prepare")
+		element_action(dev1, "prepare")
+		element_action(dev0, "start")
+		element_action(dev1, "start")
 		
 		print indent+"starting bridge..."
 		checkAction(id, "start", assertState="started", indent=indent)
 		
 		print indent+"checking connectivity..."
 		time.sleep(5)
-		element_action(dev, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
+		element_action(dev0, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
 		
 		print indent+"changing link emulation values..."
 		connection_modify(id, {"emulation": True, "delay_to": 5.0, "delay_from": 2.0, "jitter_to": 0.0,
@@ -66,12 +70,12 @@ def check(indent="", shellError=False):
 			"duplicate_to": 0.0, "duplicate_from": 0.0, "corrupt_to": 0.0, "corrupt_from": 0.0})
 		
 		print indent+"checking connectivity..."
-		element_action(dev, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
+		element_action(dev0, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
 
 		print indent+"checking file capture..."
 		connection_modify(id, {"capturing": True, "capture_mode": "file", "capture_filter": "icmp"})
 		
-		element_action(dev, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
+		element_action(dev0, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
 		
 		print indent+"checking capture download..."
 		fileserver_port = host_info()["fileserver_port"]
@@ -93,8 +97,9 @@ def check(indent="", shellError=False):
 		print indent+"removing bridge..."
 		checkRemove(id, indent=indent)
 
-		print indent+"tearing down openvz device..."
-		openvzTearDown(dev, indent=indent)
+		print indent+"tearing down openvz devices..."
+		openvzTearDown(dev0, indent=indent)
+		openvzTearDown(dev1, indent=indent)
 	except:
 		import traceback
 		traceback.print_exc()
@@ -104,7 +109,8 @@ def check(indent="", shellError=False):
 		if os.path.exists("capture.pcap"):
 			os.remove("capture.pcap")
 		tearDown(id, indent)
-		openvzTearDown(dev, indent=indent)
+		openvzTearDown(dev0, indent=indent)
+		openvzTearDown(dev1, indent=indent)
 
 if __name__ == "__main__":
 	try:

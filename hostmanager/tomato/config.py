@@ -146,6 +146,17 @@ containing the following fields:
       fileserver directory will be a subdirectory of the data directory.
 """
 
+MAX_TIMEOUT = 30*24*60*60 # 30 days
+"""
+This field defines the maximum timeout value which also is the default timeout.
+"""
+
+BITTORRENT_RESTART = 60 * 30 # 30 minutes
+"""
+This field defines how often the bittorrent client should be restarted.
+"""
+
+
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _socket.connect(("8.8.8.8",80))

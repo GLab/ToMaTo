@@ -55,23 +55,27 @@ def check(indent="", shellError=False):
 		info2 = element_info(id2)
 		element_modify(id2, {"connect": "%s:%d" % (__hostname__, info1["attrs"]["port"])})
 
-		print indent+"creating openvz device with two interfaces..."
-		dev = element_create("openvz")["id"]
-		print indent+"\tID: %d" % dev
-		eth0 = element_create("openvz_interface", dev, {"use_dhcp": False, "ip4address": "10.0.0.1/24"})["id"]		
+		print indent+"creating two openvz devices with one interface each..."
+		dev0 = element_create("openvz")["id"]
+		print indent+"\tID: %d" % dev0
+		eth0 = element_create("openvz_interface", dev0, {"use_dhcp": False, "ip4address": "10.0.0.1/24"})["id"]   
 		print indent+"\tID: %d" % eth0
-		eth1 = element_create("openvz_interface", dev, {"use_dhcp": False, "ip4address": "10.0.0.2/24"})["id"]
+		dev1 = element_create("openvz")["id"]
+		print indent+"\tID: %d" % dev1
+		eth1 = element_create("openvz_interface", dev1, {"use_dhcp": False, "ip4address": "10.0.0.2/24"})["id"]
 		print indent+"\tID: %d" % eth1
-
+		
 		print indent+"connecting interfaces with endpoints..."		
 		con1 = connection_create(eth0, id1)["id"]
 		print indent+"\tID: %d" % con1
 		con2 = connection_create(eth1, id2)["id"]
 		print indent+"\tID: %d" % con2
 		
-		print indent+"starting openvz device..."
-		element_action(dev, "prepare")
-		element_action(dev, "start")
+		print indent+"starting openvz devices..."
+		element_action(dev0, "prepare")
+		element_action(dev1, "prepare")
+		element_action(dev0, "start")
+		element_action(dev1, "start")
 		
 		print indent+"starting udp_tunnel endpoints..."
 		element_action(id1, "start")
@@ -83,7 +87,7 @@ def check(indent="", shellError=False):
 		
 		print indent+"checking connectivity..."
 		time.sleep(5)
-		element_action(dev, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
+		element_action(dev0, "execute", {"cmd": "ping -I eth0 -A -c 10 -n -q 10.0.0.2"})
 		
 		print indent+"stopping connections..."
 		connection_action(con1, "stop")
@@ -97,9 +101,10 @@ def check(indent="", shellError=False):
 		element_action(id1, "stop")
 		element_action(id2, "stop")
 
-		print indent+"tearing down openvz device..."
-		openvzTearDown(dev, indent=indent)
-
+		print indent+"tearing down openvz devices..."
+		openvzTearDown(dev0, indent=indent)
+		openvzTearDown(dev1, indent=indent)
+		
 		print indent+"removing tinc endpoints..."
 		checkRemove(id1, indent=indent)
 		checkRemove(id2, indent=indent)
@@ -113,8 +118,9 @@ def check(indent="", shellError=False):
 		tearDownConnection(con2, indent)
 		tearDown(id1, indent)
 		tearDown(id2, indent)
-		openvzTearDown(dev, indent=indent)
-
+		openvzTearDown(dev0, indent=indent)
+		openvzTearDown(dev1, indent=indent)
+		
 if __name__ == "__main__":
 	try:
 		check(shellError=True)

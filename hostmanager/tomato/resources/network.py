@@ -56,6 +56,6 @@ class Network(resources.Resource):
 		return info
 
 def get(kind):
-	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("preference")[0]
+	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("-preference")[0]
 
 resources.TYPES[Network.TYPE] = Network
