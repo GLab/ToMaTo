@@ -873,7 +873,7 @@ var Topology = Class.extend({
 			draggable: false,
 			resizable: true,
 			height: "auto",
-			width: "auto",
+			width: 550,
 			title: "Notes for Topology",
 			show: "slide",
 			hide: "slide",
@@ -1102,6 +1102,7 @@ var Component = Class.extend({
 		var settings = this.configWindowSettings();
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
+			width: "600",
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1445,6 +1446,7 @@ var Connection = Component.extend({
 		var t = this;
 		this.configWindow = new ConnectionAttributeWindow({
 			title: "Attributes",
+			width: 500,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1789,7 +1791,7 @@ var Element = Component.extend({
 				info.hide();
 				el.action("upload_use");
 			});
-			var info = new Window({title: "Upload image", content: div, autoShow: true});
+			var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
 		}});
 	},
 	action_start: function() {
