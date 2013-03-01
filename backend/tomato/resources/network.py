@@ -108,7 +108,7 @@ class NetworkInstance(resources.Resource):
 		return info
 
 def get(kind):
-	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("preference")[0]
+	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("-preference")[0]
 
 def getInstance(host, kind):
 	instances = NetworkInstance.objects

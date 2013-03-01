@@ -40,7 +40,7 @@ def createDir(path, parents=True):
 		os.makedirs(path)
 		
 def remove(path, recursive=False):
-	if recursive:
+	if recursive and os.path.isdir(path):
 		shutil.rmtree(path)
 	else:
 		os.remove(path)

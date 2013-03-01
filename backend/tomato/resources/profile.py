@@ -68,7 +68,7 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	prfls = Profile.objects.filter(tech=tech).order_by("preference")
+	prfls = Profile.objects.filter(tech=tech).order_by("-preference")
 	fault.check(prfls, "No profile of type %s registered", tech) 
 	return prfls[0]
 

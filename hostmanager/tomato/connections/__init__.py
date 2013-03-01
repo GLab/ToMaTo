@@ -22,6 +22,9 @@ from ..accounting import UsageStatistics
 from ..lib import db, attributes, util, logging #@UnresolvedImport
 from ..lib.decorators import *
 
+ST_CREATED = "created"
+ST_STARTED = "started"
+
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
@@ -286,6 +289,11 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		
 	def updateUsage(self, usage, data):
 		pass
+
+	def tearDown(self):
+		if self.state == ST_STARTED:
+			self.action_stop()
+		self.remove()
 
 		
 def get(id_, **kwargs):

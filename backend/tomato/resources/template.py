@@ -74,7 +74,7 @@ class Template(resources.Resource):
 			info = bittorrent.torrentInfo(raw)
 		except:
 			fault.raise_("Invalid torrent file", fault.USER_ERROR)
-		fault.check(len(info["files"]) == 1, "Torrent must contain exactly one file")
+		fault.check(not "files" in info or len(info["files"]) == 1, "Torrent must contain exactly one file")
 		self.torrent_data = val
 		if self.name and self.tech:
 			with open(self.getTorrentPath(), "w") as fp:
@@ -87,10 +87,26 @@ class Template(resources.Resource):
 			path.remove(self.getPath(), recursive=True)
 		resources.Resource.remove(self)
 
+	def isReady(self):
+		try:
+			path = self.getPath()
+			size = os.path.getsize(path)
+			return size == bittorrent.fileSize(base64.b64decode(self.torrent_data))
+		except:
+			return False
+
 	def info(self):
 		info = resources.Resource.info(self)
 		if self.torrent_data:
-			del info["attrs"]["torrent_data"]		
+			del info["attrs"]["torrent_data"]
+		hostsReady = [h.hasTemplate(self.tech, self.name) for h in host.getAll()]
+		info["attrs"]["ready"] = {
+			"backend": self.isReady(),
+			"hosts": {
+					"ready": len(filter(bool, hostsReady)),
+					"total": len(hostsReady)
+			}
+		} 
 		info["attrs"]["name"] = self.name
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
@@ -104,8 +120,10 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech).order_by("preference")
+	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
 	fault.check(tmpls, "No template of type %s registered", tech) 
 	return tmpls[0]
+
+from .. import host
 
 resources.TYPES[Template.TYPE] = Template

@@ -19,7 +19,7 @@
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
-	    <th>Restricted</th>
+	    <th>Ready</th>
 	    
 	    {% if hostManager %}
 	    	<th />
@@ -40,14 +40,28 @@
 	  
 	    <td title="{{templ.attrs.name}}">{{templ.attrs.label}}</td>
 	    <td>{{templ.attrs.subtype}}</td>
-	    <td>{{templ.attrs.preference}}</td>
-	    
 	    <td>
+	    	{{templ.attrs.preference}}
 		    {% if templ.attrs.restricted %}
-		    	<img src="/img/tick.png" title="restricted" />
+		    	<img src="/img/error.png" title="restricted" />
 		    {% endif %}
 	    </td>
 	    
+	    <td>
+		    {% if templ.attrs.ready.backend %}
+		    	<img src="/img/tick.png" title="on backend" />
+		    {% else %}
+		    	<img src="/img/error.png" title="not on backend" />
+		    {% endif %}
+		    /
+		    {% if templ.attrs.ready.hosts.ready == templ.attrs.ready.hosts.total %}
+		    	<img src="/img/tick.png" title="on all hosts" />
+		    {% else %}
+		    	<img src="/img/error.png" title="not on all hosts" />
+	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
+		    {% endif %}
+	    </td>
+
 	    {% if hostManager %}
 	    	<td><small><a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_templates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
 	    {% endif %}

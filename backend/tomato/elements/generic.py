@@ -46,7 +46,7 @@ class VMElement(elements.Element):
 		"profile": profile_attr,
 		"template": template_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 	
@@ -93,7 +93,7 @@ class VMElement(elements.Element):
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.element:
-			self.element.modify({"template": self._template()})
+			self.element.modify({"template": self._template().name})
 
 	def onChildAdded(self, iface):
 		if self.element:
@@ -183,6 +183,7 @@ class VMInterface(elements.Element):
 	}
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
+	DIRECT_ATTRS_EXCLUDE=["timeout"]
 	
 	SAME_HOST_AFFINITY = -20 #we want connected elements on different hosts to lower host load	
 	

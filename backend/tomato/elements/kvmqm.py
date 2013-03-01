@@ -20,7 +20,7 @@ import generic
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout"]
 	CAP_CHILDREN = {
 		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}

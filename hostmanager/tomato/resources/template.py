@@ -105,7 +105,7 @@ def get(tech, name):
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech).order_by("preference")
+	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
 	fault.check(tmpls, "No template of type %s registered", tech) 
 	return tmpls[0]
 

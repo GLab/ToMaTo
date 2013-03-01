@@ -28,39 +28,34 @@ class ProfileForm(forms.Form):
     ram = forms.IntegerField(label="RAM (MB)")
     preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
     restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
-
-
-class EditOpenVZForm(ProfileForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    diskspace = forms.IntegerField(label="Disk Space (MB)")
-    def __init__(self, *args, **kwargs):
-        super(EditOpenVZForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'label', 'diskspace', 'ram', 'restricted', 'preference']
-
-class EditRePyForm(ProfileForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     cpus = forms.FloatField(label = "number of CPUs")
+
+
+class EditOpenVZForm(ProfileForm):
+    diskspace = forms.IntegerField(label="Disk Space (MB)")
+    def __init__(self, *args, **kwargs):
+        super(EditOpenVZForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference']
+
+class EditRePyForm(ProfileForm):
     def __init__(self, *args, **kwargs):
         super(EditRePyForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'label', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference']
 
 class EditKVMqmForm(ProfileForm):
-    res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     diskspace = forms.IntegerField(label="Disk Space (MB)")
-    cpus = forms.IntegerField(label="number of CPUs")
     def __init__(self, *args, **kwargs):
         super(EditKVMqmForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
     
     
 class AddProfileForm(ProfileForm):
     tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
     name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all templates of the same tech. Cannot be changed. Not displayed.")
     diskspace = forms.IntegerField(label="Disk Space (MB)", required = False, help_text="only OpenVZ and KVMqm")
-    cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy: float number; KVMqm: integer number; OpenVZ: not needed.")
+    cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy, OpenVZ: float number; KVMqm: integer number")
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
@@ -85,7 +80,7 @@ def add(api, request):
                  'preference':formData['preference']}
             if formData['diskspace'] and (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
-            if formData['cpus'] and (formData['tech'] != 'openvz'):
+            if formData['cpus']:
                 data['cpus'] = formData['cpus']
             if formData['restricted']:
                 data['restricted'] = formData['restricted']
@@ -145,13 +140,12 @@ def edit(api, request):
         
         if form.is_valid():
             formData = form.cleaned_data
-            data={'ram':formData['ram'],
+            data={'cpus':formData['cpus'],
+				 'ram':formData['ram'],
                  'label':formData['label'],
                  'preference':formData['preference']}
             if (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
-            if (formData['tech'] != 'openvz'):
-                data['cpus'] = formData['cpus']
             if formData['restricted']:
                 data['restricted'] = formData['restricted']
             
