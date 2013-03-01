@@ -36,12 +36,12 @@ class TemplateForm(forms.Form):
     restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 
 class AddTemplateForm(TemplateForm):
-    torrentfile  = forms.FileField(label="Torrent:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')
+    torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
     name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
     tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
     def __init__(self, *args, **kwargs):
         super(AddTemplateForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference','torrentfile']
+        self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference', 'restricted', 'torrentfile']
     
 class EditTemplateForm(TemplateForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)

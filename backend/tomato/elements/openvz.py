@@ -20,11 +20,11 @@ import generic
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "timeout"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout"]
 	CAP_CHILDREN = {
 		"openvz_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
-	PROFILE_ATTRS = ["ram", "diskspace"]
+	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
 	
 	class Meta:
 		db_table = "tomato_openvz"

@@ -148,6 +148,8 @@ class OpenVZ(elements.Element):
 	vncpassword = vncpassword_attr.attribute()
 	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
 	ram = ram_attr.attribute()
+	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, faultType=fault.new_user, default=1.0)
+	cpus = cpus_attr.attribute()
 	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, faultType=fault.new_user, default=10240)
 	diskspace = diskspace_attr.attribute()
 	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
@@ -180,6 +182,7 @@ class OpenVZ(elements.Element):
 		"stop": ST_PREPARED,
 	}	
 	CAP_ATTRS = {
+		"cpus": cpus_attr,
 		"ram": ram_attr,
 		"diskspace": diskspace_attr,
 		"rootpassword": rootpassword_attr,
@@ -274,6 +277,10 @@ class OpenVZ(elements.Element):
 		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_del", interface.name, "--save"])
 		
+	def _setCpus(self):
+		assert self.state != ST_CREATED
+		self._vzctl("set", ["--cpulimit", "%d%%" % int(self.cpus * 100), "--save"])
+
 	def _setRam(self):
 		assert self.state != ST_CREATED
 		val = "%dM" % int(self.ram)
@@ -334,6 +341,11 @@ class OpenVZ(elements.Element):
 			self._removeInterface(interface)
 		interface.setState(self.state)
 
+	def modify_cpus(self, val):
+		self.cpus = val
+		if self.state != ST_CREATED:
+			self._setCpus()
+		
 	def modify_ram(self, val):
 		self.ram = val
 		if self.state != ST_CREATED:
