@@ -130,6 +130,7 @@ class Host(attributes.Mixin, models.Model):
 	def incrementErrors(self):
 		# count all component errors {element|connection}_{create|action|modify}
 		# this value is reset on every sync
+		logging.logMessage("component error", category="host", host=self.address)
 		self.componentErrors +=1
 		self.save()
 		
@@ -143,7 +144,7 @@ class Host(attributes.Mixin, models.Model):
 		caps = self._capabilities()
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
-		self.componentErrors = max(0, self.componentErrors-1)
+		self.componentErrors = max(0, self.componentErrors/2)
 		self.save()
 		logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)		
 		logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)		
@@ -479,6 +480,7 @@ class HostElement(attributes.Mixin, models.Model):
 			return res
 		except:
 			self.host.incrementErrors()
+			logging.logException(host=self.host.address)
 			return []
 
 	def getAllowedAttributes(self):
@@ -507,7 +509,7 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode != fault.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:
-			logging.logException()
+			logging.logException(host=self.host.address)
 		
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
@@ -615,7 +617,7 @@ class HostConnection(attributes.Mixin, models.Model):
 		try:
 			self.updateInfo()
 		except:
-			logging.logException()
+			logging.logException(host=self.host.address)
 
 def get(**kwargs):
 	try:
@@ -675,7 +677,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 	hosts.sort(key=lambda h: prefs[h], reverse=True)
 	logging.logMessage("select", category="host", result=hosts[0].address, 
 			prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), 
-			site=site, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
+			site=site.name, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
 			host_prefs=dict([(k.address, v) for k, v in hostPrefs.iteritems()]),
 			site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
 	return hosts[0]

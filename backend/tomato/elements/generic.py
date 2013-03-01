@@ -93,7 +93,7 @@ class VMElement(elements.Element):
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.element:
-			self.element.modify({"template": self._template()})
+			self.element.modify({"template": self._template().name})
 
 	def onChildAdded(self, iface):
 		if self.element:

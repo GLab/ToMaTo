@@ -74,7 +74,7 @@ class Template(resources.Resource):
 			info = bittorrent.torrentInfo(raw)
 		except:
 			fault.raise_("Invalid torrent file", fault.USER_ERROR)
-		fault.check(len(info["files"]) == 1, "Torrent must contain exactly one file")
+		fault.check(not "files" in info or len(info["files"]) == 1, "Torrent must contain exactly one file")
 		self.torrent_data = val
 		if self.name and self.tech:
 			with open(self.getTorrentPath(), "w") as fp:

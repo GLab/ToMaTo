@@ -281,7 +281,7 @@ class OpenVZ(elements.Element):
 	
 	def _setDiskspace(self):
 		assert self.state != ST_CREATED
-		val = "%dM" % int(self.ram)
+		val = "%dM" % int(self.diskspace)
 		self._vzctl("set", ["--diskspace", val, "--save"])
 
 	def _setRootpassword(self):

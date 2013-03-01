@@ -1108,6 +1108,8 @@ var Component = Class.extend({
 					var values = t.configWindow.getValues();
 					for (var name in values) {
 						if (values[name] === t.data.attrs[name]) delete values[name];
+						// Tread "" like null
+						if (values[name] === "" && t.data.attrs[name] === null) delete values[name];
 					}
 					t.modify(values);					
 					t.configWindow = null;
