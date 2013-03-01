@@ -21,6 +21,7 @@ CERTIFICATE = "../cli/admin.pem"
 
 TEMPLATE_PATH = "templates"
 TRACKER_PORT = 8001
+BITTORRENT_RESTART = 60 * 30
 
 AUTH = [
 	{

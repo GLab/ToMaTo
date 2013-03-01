@@ -67,9 +67,6 @@ from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImpo
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
-_btTracker = None
-_btClient = None
-
 stopped = threading.Event()
 
 def start():
@@ -81,9 +78,10 @@ def start():
 	accounting.task.start() #@UndefinedVariable
 	auth.task.start() #@UndefinedVariable
 	link.task.start() #@UndefinedVariable
-	global _btTracker, _btClient, starttime
-	_btTracker = bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
-	_btClient = bittorrent.startClient(config.TEMPLATE_PATH)
+	global starttime
+	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
+	bittorrent.startClient(config.TEMPLATE_PATH)
+	bittorrent.task.start() #@UndefinedVariable
 	rpcserver.start()
 	starttime = time.time()
 	
@@ -108,8 +106,9 @@ def stop(*args):
 	host.task.stop() #@UndefinedVariable
 	link.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
-	process.kill(_btTracker)
-	process.kill(_btClient)
+	bittorrent.task.stop() #@UndefinedVariable
+	bittorrent.stopTracker()
+	bittorrent.stopClient()
 	logging.closeDefault()
 	stopped.set()
 
