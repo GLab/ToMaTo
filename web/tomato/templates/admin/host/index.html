@@ -22,6 +22,7 @@
 	<input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label>
 	<input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label>
 	<input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label>
+	<input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label>
 
 	<table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
 	  <tr>
@@ -47,6 +48,8 @@
 	    <th stddev_column_class="good_high">Free [root]</th>
 	    <th stddev_column_class="good_high">Total [data]</th>
 	    <th stddev_column_class="good_high">Free [data]</th>
+	    <th stddev_column_class="good_high">Element types</th>
+	    <th stddev_column_class="good_high">Connection types</th>
 	    
 	    {% if hostManager %}
 	    	<th />
@@ -96,6 +99,9 @@
 			    <td>???</td><td>???</td><td>???</td><td>???</td>
 			{% endif %}
 			
+			<td title="{{host.element_types|join:", "}}">{{host.element_types|length}}</td>
+			<td title="{{host.connection_types|join:", "}}">{{host.connection_types|length}}</td>
+			
 		    {% if hostManager %}
 		    	<td><small><a href="{%url host.edit%}?address={{host.address}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url host.remove%}?address={{host.address}}" ><img src="/img/server_delete.png" title="remove" /></a></small></td>
 		    {% endif %}
@@ -130,6 +136,9 @@
 	  	columnShow(table, col+1, document.getElementById('disk').checked);
 	  	columnShow(table, col+2, document.getElementById('disk').checked);
 	  	columnShow(table, col+3, document.getElementById('disk').checked || important);
+	  	col += 4;
+	  	columnShow(table, col+0, document.getElementById('features').checked);
+	  	columnShow(table, col+1, document.getElementById('features').checked);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');
