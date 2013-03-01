@@ -698,7 +698,7 @@ def register(): #pragma: no cover
 	if not vzctlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
 		return
-	if not ([3] <= vzctlVersion < [4]):
+	if not ([3] <= vzctlVersion < [4, 1]):
 		print >>sys.stderr, "Warning: OpenVZ not supported on vzctl version %s, disabled" % vzctlVersion
 		return
 	if not vnctermVersion:
