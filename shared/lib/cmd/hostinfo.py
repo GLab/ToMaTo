@@ -65,9 +65,10 @@ def hostmanagerVersion():
 
 @cached
 def system():
+	pve_ver = getDpkgVersionStr("pve-manager")
 	return {
 		"kernel": platform.release(),
-		"distribution": platform.dist(),
+		"distribution": ("proxmox", pve_ver, "") if pve_ver else platform.dist(),
 		"python": platform.python_version(),
 		"processor": platform.machine()
 	}
