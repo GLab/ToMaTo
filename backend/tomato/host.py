@@ -100,6 +100,7 @@ class Host(attributes.Mixin, models.Model):
 	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
 	connectionTypes = attributes.attribute("connection_types", dict, {})
+	templates = attributes.attribute("templates", dict, {})
 	hostInfo = attributes.attribute("info", dict, {})
 	hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
 	accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
@@ -224,20 +225,20 @@ class Host(attributes.Mixin, models.Model):
 					#update resource
 					self.getProxy().resource_modify(hNet["id"], attrs)
 					logging.logMessage("network update", category="host", address=self.address, network=attrs)				
-		hostTpls = {}
+		self.templates = {}
 		for tpl in self.getProxy().resource_list("template"):
-			hostTpls[(tpl["attrs"]["tech"], tpl["attrs"]["name"])] = tpl
+			self.templates[tpl["attrs"]["tech"]] = self.templates.get(tpl["attrs"]["tech"], {})
+			self.templates[tpl["attrs"]["tech"]][tpl["attrs"]["name"]] = tpl
 		for tpl in resources.getAll(type="template"):
-			key = (tpl.tech, tpl.name)
 			attrs = tpl.attrs.copy()
 			attrs["name"] = tpl.name
 			attrs["tech"] = tpl.tech
-			if not key in hostTpls:
+			if not attrs["tech"] in self.templates or not attrs["name"] in self.templates[attrs["tech"]]:
 				#create resource
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", address=self.address, template=attrs)		
 			else:
-				hTpl = hostTpls[key]
+				hTpl = self.templates[attrs["tech"]][attrs["name"]]
 				if hTpl["attrs"] != tpl.info()["attrs"]:
 					#update resource
 					if hTpl["attrs"]["torrent_data_hash"] == tpl.info()["attrs"]["torrent_data_hash"]:
@@ -248,6 +249,9 @@ class Host(attributes.Mixin, models.Model):
 		logging.logMessage("resource_sync end", category="host", address=self.address)		
 		self.lastResourcesSync = time.time()
 		self.save()
+
+	def hasTemplate(self, tech, name):
+		return self.templates[tech][name]["attrs"]["ready"] if tech in self.templates and name in self.templates[tech] else False
 
 	def updateAccountingData(self, now):
 		logging.logMessage("accounting_sync begin", category="host", address=self.address)		
