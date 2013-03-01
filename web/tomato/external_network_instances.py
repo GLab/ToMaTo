@@ -24,7 +24,7 @@ from admin_common import RemoveResourceForm, is_hostManager
 class NetworkInstanceForm(forms.Form):
     host = forms.CharField(label="Host")
     bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
-    network = forms.CharField(label="Kind")
+    network = forms.CharField(label="Network")
     def __init__(self, api, *args, **kwargs):
         super(NetworkInstanceForm, self).__init__(*args, **kwargs)
         self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
@@ -64,9 +64,10 @@ def add(api, request):
         form = NetworkInstanceForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.resource_create('network',{'host':formData['host'],
+            api.resource_create('network_instance',{'host':formData['host'],
                                            'bridge':formData['bridge'],
-                                           'network':formData['network']})
+                                           'network':formData['network'],
+                                           'kind':formData['network']})
            
             return render_to_response("admin/external_network_instances/add_success.html", {'user': api.user, 'label': formData["host"]})
         else:
@@ -115,7 +116,8 @@ def edit(api, request):
             if api.resource_info(formData['res_id'])['type'] == 'network_instance':
                 api.resource_modify(formData["res_id"],{'host':formData['host'],
                                                         'bridge':formData['bridge'],
-                                                        'network':formData['network']}) 
+                                                        'network':formData['network'],
+                                                        'kind':formData['network']}) 
                 return render_to_response("admin/external_network_instances/edit_success.html", {'user': api.user, 'label': formData["host"], 'res_id': formData['res_id']})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network instance.'})
