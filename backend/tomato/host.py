@@ -20,7 +20,7 @@ from . import config, currentUser, starttime
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags, mailFlaggedUsers
-import xmlrpclib, time
+import xmlrpclib, time, hashlib
 
 class Site(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=10, unique=True)
@@ -239,9 +239,15 @@ class Host(attributes.Mixin, models.Model):
 				logging.logMessage("template create", category="host", address=self.address, template=attrs)		
 			else:
 				hTpl = self.templates[attrs["tech"]][attrs["name"]]
-				if hTpl["attrs"] != tpl.info()["attrs"]:
+				isAttrs = dict(hTpl["attrs"])
+				del isAttrs["ready"]
+				del isAttrs["preference"] # we have our own
+				shouldAttrs = dict(attrs)
+				shouldAttrs["torrent_data_hash"] = hashlib.md5(attrs["torrent_data"]).hexdigest() if "torrent_data" in attrs else None
+				del shouldAttrs["torrent_data"]
+				if isAttrs != shouldAttrs:
 					#update resource
-					if hTpl["attrs"]["torrent_data_hash"] == tpl.info()["attrs"]["torrent_data_hash"]:
+					if isAttrs["torrent_data_hash"] == shouldAttrs["torrent_data_hash"]:
 						#only send torrent data when needed
 						del attrs["torrent_data"]
 					self.getProxy().resource_modify(hTpl["id"], attrs)
@@ -681,7 +687,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 	hosts.sort(key=lambda h: prefs[h], reverse=True)
 	logging.logMessage("select", category="host", result=hosts[0].address, 
 			prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), 
-			site=site.name, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
+			site=site.name if site else None, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
 			host_prefs=dict([(k.address, v) for k, v in hostPrefs.iteritems()]),
 			site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
 	return hosts[0]

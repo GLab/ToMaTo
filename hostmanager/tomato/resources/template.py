@@ -83,7 +83,8 @@ class Template(resources.Resource):
 		try:
 			path = self.getPath()
 			size = os.path.getsize(path)
-			return size == bittorrent.fileSize(base64.b64decode(self.torrent_data))
+			bsize = bittorrent.fileSize(base64.b64decode(self.torrent_data))
+			return size == bsize
 		except:
 			return False
 

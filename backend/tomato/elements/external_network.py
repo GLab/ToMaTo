@@ -147,7 +147,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		self.name = val
 
 	def modify_kind(self, val):
-		self.kind = self.parent.kind if self.parent else val
+		self.kind = self.getParent().kind if self.parent else val
 
 	def onError(self, exc):
 		if self.element:
@@ -166,10 +166,11 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 
 	def action_start(self):
 		hPref, sPref = self.getLocationPrefs()
-		_host = host.select(elementTypes=["external_network"], hostPrefs=hPref, sitePrefs=sPref)
+		kind = self.getParent().network.kind if self.parent and self.getParent().samenet else self.kind
+		_host = host.select(elementTypes=["external_network"], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
-		if self.parent and self.parent.upcast().samenet:
-			self.network = network.getInstance(_host, self.parent.network.kind)
+		if self.parent and self.getParent().samenet:
+			self.network = network.getInstance(_host, self.getParent().network.kind)
 		else:
 			self.network = network.getInstance(_host, self.kind)			
 		attrs = {"network": self.network.network.kind}
