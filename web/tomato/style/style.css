@@ -171,6 +171,13 @@ a:active, a:hover
 	float: right;
 }
 
+#menu_userinfo {
+	text-align:right;
+	padding-top: 8px;
+	padding-right: 17px;
+	padding-bottom: 2px;
+}
+
 #menu_top ul {
 	margin: 0;
 	padding: 15px 0 0 0;

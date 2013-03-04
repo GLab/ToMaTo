@@ -49,7 +49,11 @@ Currently you do not have any topologies you can access.
 {% endif %}
 
 
-<input type="button" onClick="window.location='{%url topology.create%}'" value="New" />
-<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />
+{% if 'no_topology_create' in user.flags %}
+	<p>You may not create any topologies. Contact the administrator for mor information.</p>
+{% else %}
+	<input type="button" onClick="window.location='{%url topology.create%}'" value="New" />
+	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />
+{% endif %}
 
 {% endblock %}

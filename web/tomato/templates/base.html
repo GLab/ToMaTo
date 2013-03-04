@@ -30,7 +30,16 @@
 			<br/>
 			<h2>Topology management tool</h2>
 		</div>
-		<div id="menu_top">
+		
+			
+			<div id="menu_userinfo">
+			{% if user %}
+			Logged in as {{user.realname}}.
+			{% else %}
+			&nbsp;
+			{% endif %}
+			</div>
+		<div id="menu_top">	
 		{% block menu_top %}{% endblock %}
 		</div> 
 	</div> 
