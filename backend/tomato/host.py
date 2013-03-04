@@ -681,7 +681,7 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 	hosts.sort(key=lambda h: prefs[h], reverse=True)
 	logging.logMessage("select", category="host", result=hosts[0].address, 
 			prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), 
-			site=site.name, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
+			site=site.name if site else None, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
 			host_prefs=dict([(k.address, v) for k, v in hostPrefs.iteritems()]),
 			site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
 	return hosts[0]
