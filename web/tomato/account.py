@@ -45,18 +45,18 @@ class FixedList(forms.MultipleHiddenInput):
             return [value]
             
 class AccountFlagList(FixedList):
-	api = None
-	def render(self, name, value, attrs=None):
-		
-		translationDict = self.api.account_flags()
-		value_show = []
-		for v in value:
-			value_show.append(translationDict.get(v,v))
-			
-		return forms.MultipleHiddenInput.render(self, name, value) + "<br />".join(value_show)
-	def __init__(self, api, *args, **kwargs):
-		super(AccountFlagList, self).__init__(*args, **kwargs)
-		self.api = api
+    api = None
+    def render(self, name, value, attrs=None):
+        
+        translationDict = self.api.account_flags()
+        value_show = []
+        for v in value:
+            value_show.append(translationDict.get(v,v))
+            
+        return forms.MultipleHiddenInput.render(self, name, value) + "<br />".join(value_show)
+    def __init__(self, api, *args, **kwargs):
+        super(AccountFlagList, self).__init__(*args, **kwargs)
+        self.api = api
     
 class AccountForm(forms.Form):
     name = forms.CharField(label="Account name", max_length=50)
