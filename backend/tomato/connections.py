@@ -295,8 +295,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
-			self.connection1.action("start")
-			self.connection2.action("start")
+			if self.connection1.state == ST_CREATED:
+				self.connection1.action("start")
+			if self.connection2.state == ST_CREATED:
+				self.connection2.action("start")
 		# Find out and set allowed attributes
 		allowed = self.connection1.getAllowedAttributes()
 		attrs = dict(filter(lambda (k, v): k in allowed, self._remoteAttrs().items()))
