@@ -26,6 +26,8 @@ class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
     description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
+    geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
+    geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if East",label="Geolocation: Latitude")
     
 class EditSiteForm(SiteForm):
     def __init__(self, *args, **kwargs):
@@ -47,7 +49,9 @@ def add(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             api.site_create(formData["name"],formData["description"])
-            api.site_modify(formData["name"],{"location": formData["location"]})
+            api.site_modify(formData["name"],{"location": formData["location"],
+                                              'geolocation':{'longitude':formData['geolocation_longitude'],
+                                                             'latitude':formData['geolocation_latitude']}})
             return render_to_response("admin/site/add_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -88,7 +92,9 @@ def edit(api, request):
         if form.is_valid():
             formData = form.cleaned_data
             api.site_modify(formData["name"],{'description':formData["description"],
-                                              'location':formData["location"]})
+                                              'location':formData["location"],
+                                              'geolocation':{'longitude':formData['geolocation_longitude'],
+                                                             'latitude':formData['geolocation_latitude']}})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             name=request.POST["name"]
@@ -102,7 +108,11 @@ def edit(api, request):
     else:
         name = request.GET['name']
         if name:
-            form = EditSiteForm(api.site_info(name))
+            siteInfo = api.site_info(name)
+            siteInfo['geolocation_longitude'] = siteInfo['geolocation'].get('longitude',0)
+            siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
+            del siteInfo['geolocation']
+            form = EditSiteForm(siteInfo)
             return render_to_response("admin/site/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})

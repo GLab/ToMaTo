@@ -22,16 +22,9 @@ import math
 	
 
 def get_site_location(site_name,api):
-	
-	#return api.site_info(site_name)['geolocation']
-	
-	if site_name=="ukl":
-		return {'longitude':7.768889,'latitude':49.444722}
-	if site_name=="tum":
-		return {'longitude':11.575278,'latitude':48.136944}
-	if site_name=="uwue":
-		return {'longitude':9.929444,'latitude':49.794444}
-	return {'longitude':0,'latitude':0}
+	geoloc = api.site_info(site_name)['geolocation']
+	return {'longitude':geoloc.get('longitude',0),
+			'latitude':geoloc.get('latitude',0)}
 
 def site_list(api):
 	r = []
