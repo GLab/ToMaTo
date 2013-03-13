@@ -93,12 +93,14 @@ class Site_site_stats:
 		#calculate average
 		delay_sum = 0.0
 		loss_sum = 0.0
+		len_links = 0 #since some elements may not be counted (if in for loop), the length must be calculated regarding this fact.
 		for l in links:
 			if l['laststat'].has_key('delay_avg') and l['laststat'].has_key('loss'):
 				delay_sum += l['laststat']["delay_avg"]
 				loss_sum += l['laststat']["loss"]
-		self.delay_avg = delay_sum / (len(links) if links else 1.0)
-		self.loss_avg = loss_sum / (len(links) if links else 1.0)
+				len_links += 1
+		self.delay_avg = delay_sum / (len_links if links else 1.0)
+		self.loss_avg = loss_sum / (len_links if links else 1.0)
 
 		#calculate stddev
 		delay_stddev = 0.0
@@ -107,31 +109,36 @@ class Site_site_stats:
 			if l['laststat'].has_key('delay_avg') and l['laststat'].has_key('loss'):
 				delay_stddev += (self.delay_avg - l['laststat']["delay_avg"]) * (self.delay_avg - l['laststat']["delay_avg"])
 				loss_stddev += (self.loss_avg - l['laststat']["loss"]) * (self.loss_avg - l['laststat']["loss"])
-		if len(links) > 1:
-			delay_stddev /= len(links) -1
-			loss_stddev /= len(links) -1
+		if len_links > 1:
+			delay_stddev /= len_links -1
+			loss_stddev /= len_links -1
 		self.delay_stddev = math.sqrt(delay_stddev)
 		self.loss_stddev = math.sqrt(loss_stddev)
 
 		
+	#proxy pattern: calculate when needed, but only once.
 	def get_delay_avg(self):
 		if not self.avg_calculated:
 			self.calc_avg()
+			self.avg_calculated = True
 		return self.delay_avg
 	
 	def get_loss_avg(self):
 		if not self.avg_calculated:
 			self.calc_avg()
+			self.avg_calculated = True
 		return self.loss_avg
 		
 	def get_delay_stddev(self):
 		if not self.avg_calculated:
 			self.calc_avg()
+			self.avg_calculated = True
 		return self.delay_stddev
 	
 	def get_loss_stddev(self):
 		if not self.avg_calculated:
 			self.calc_avg()
+			self.avg_calculated = True
 		return self.loss_stddev
 	
 	def get_color(self,src,dst): # returns a html-formatted color
@@ -148,8 +155,12 @@ class Site_site_stats:
 		delay = p['laststat']['delay_avg']
 		loss  = p['laststat']['loss']
 		
-		delay_avg_factor = (delay - self.get_delay_avg()) / self.get_delay_stddev()
-		loss_factor = (loss - self.get_loss_avg()) / self.get_loss_stddev() if loss > 0.001 else -2
+		delay_avg_factor = 0
+		loss_factor = 0
+		if self.get_delay_stddev() != 0:
+			delay_avg_factor = (delay - self.get_delay_avg()) / self.get_delay_stddev()
+		if self.get_loss_stddev() != 0:
+			loss_factor = (loss - self.get_loss_avg()) / self.get_loss_stddev() if loss > 0.001 else -2
 
 		factor = max(delay_avg_factor, loss_factor)
 		factor = max(min((factor+2)/5, 1), 0); #normalize -2..3 -> 0..1
