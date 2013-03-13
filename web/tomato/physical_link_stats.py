@@ -67,8 +67,6 @@ class Site_site_stats:
 	delay_stddev = 0.0
 	loss_stddev = 0.0
 	
-	avg_calculated = False
-	
 	cache_site_site_pairs = []
 	pairs = []
 	
@@ -86,6 +84,8 @@ class Site_site_stats:
 					last = entry
 					
 			self.pairs.append({'src':src,'dst':dst,'laststat':last})
+			
+		self.calc_avg()
 			
 	def calc_avg(self):
 		links = self.pairs
@@ -116,29 +116,16 @@ class Site_site_stats:
 		self.loss_stddev = math.sqrt(loss_stddev)
 
 		
-	#proxy pattern: calculate when needed, but only once.
 	def get_delay_avg(self):
-		if not self.avg_calculated:
-			self.calc_avg()
-			self.avg_calculated = True
 		return self.delay_avg
 	
 	def get_loss_avg(self):
-		if not self.avg_calculated:
-			self.calc_avg()
-			self.avg_calculated = True
 		return self.loss_avg
 		
 	def get_delay_stddev(self):
-		if not self.avg_calculated:
-			self.calc_avg()
-			self.avg_calculated = True
 		return self.delay_stddev
 	
 	def get_loss_stddev(self):
-		if not self.avg_calculated:
-			self.calc_avg()
-			self.avg_calculated = True
 		return self.loss_stddev
 	
 	def get_color(self,src,dst): # returns a html-formatted color
@@ -151,10 +138,10 @@ class Site_site_stats:
 		if p == None or not (p['laststat'].has_key('delay_avg') and p['laststat'].has_key('loss')): #in case nothing was found
 			return '#000000'
 		
-		
 		delay = p['laststat']['delay_avg']
 		loss  = p['laststat']['loss']
 		
+		#calculate color
 		delay_avg_factor = 0
 		loss_factor = 0
 		if self.get_delay_stddev() != 0:
