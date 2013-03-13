@@ -600,9 +600,11 @@ var Topology = Class.extend({
 				break;
 			case "kvm_interface":
 			case "kvmqm_interface":
-			case "openvz_interface":
 			case "repy_interface":
 				elObj = new VMInterfaceElement(this, el, this._getCanvas());
+				break;
+			case "openvz_interface":
+				elObj = new VMConfigurableInterfaceElement(this, el, this._getCanvas());
 				break;
 			case "external_network":
 				elObj = new ExternalNetworkElement(this, el, this._getCanvas());
