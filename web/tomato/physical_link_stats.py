@@ -79,7 +79,7 @@ class Site_site_stats:
 			self.pairs.append({'src':src,'dst':dst,'laststat':last})
 			
 		self.calc_avg()
-			
+
 	def calc_avg(self):
 		links = self.pairs
 			
