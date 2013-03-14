@@ -898,6 +898,13 @@ var Topology = Class.extend({
 			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
 		}
 	},
+	initialRenameDialog: function() {
+		var name = prompt("You have created a new Topology. Please enter a name for it:", this.data.attrs.name);
+		if (name) {
+			this.modify_value("name", name);
+			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
+		}
+	},
 	name: function() {
 		return this.data.attrs.name;
 	},
@@ -2432,6 +2439,8 @@ var Editor = Class.extend({
 			successFn: function(data){
 				t.topology.load(data);
 				t.workspace.setBusy(false);
+				if ((data.elements.length == 0) && (t.topology.name() == "Topology #"+t.topology.id))
+					t.topology.initialRenameDialog();
 			}
 		});
 	},
