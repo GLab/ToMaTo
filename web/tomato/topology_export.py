@@ -104,7 +104,7 @@ def import_topology(api, topology_structure):
                     return {'success':False, 'message': 'incomplete references from connections to elements: "element with ID '+el_id1+' not found"'}
                     
                 #create the connection
-                conn = api.connection_create(conn_id0,conn_id1)
+                conn = api.connection_create(conn_id0,conn_id1,attrs = c['attrs'])
                 c[importer_prefix+'id'] = conn['id']
                     
                     
