@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 
+{% block header %}
+<style type="text/css">
+#left {
+	display: none;
+}
+#content {
+	margin-left: 3mm;
+}
+</style>
+{% endblock %}
+
 {% block menu_top %}
 <ul>
 	{% if user %}
@@ -13,23 +24,4 @@
 	<li><a href="{%url main.project%}" target="_help">Project</a></li>
 	<li><a href="{%url main.help%}" target="_help">Help</a></li>
 </ul>
-{% endblock %}
-
-{% block left %}
-<div id="sidemenu">
-	<h2>Topologies</h2>
-	<ul>
-		<li><a href="{%url topology.index%}">list of topologies</a></li>
-	</ul>
-</div>
-
-{% if top_id %}
-<div id="sidemenu">
-	<h2>Topology {{top_id}}</h2>
-	<ul>
-		<li><a href="{%url topology.show top_id%}">show</a></li>
-		<li><a href="{%url topology.export top_id%}">export</a></li>
-	</ul>
-</div>
-{% endif %}
 {% endblock %}
