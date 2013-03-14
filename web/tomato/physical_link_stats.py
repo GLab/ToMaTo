@@ -92,9 +92,9 @@ class Site_site_stats:
 				delay_sum += l['laststat']["delay_avg"]
 				loss_sum += l['laststat']["loss"]
 				len_links += 1
-		self.delay_avg = delay_sum / (len_links if links else 1.0)
-		self.loss_avg = loss_sum / (len_links if links else 1.0)
-
+		self.delay_avg = delay_sum / (len_links or 1.0)
+		self.loss_avg = loss_sum / (len_links or 1.0)
+		
 		#calculate stddev
 		delay_stddev = 0.0
 		loss_stddev = 0.0
@@ -135,16 +135,16 @@ class Site_site_stats:
 		loss  = p['laststat']['loss']
 		
 		#calculate color
-		delay_avg_factor = 0
-		loss_factor = 0
-		if self.get_delay_stddev() != 0:
+		delay_avg_factor = 0.0
+		loss_factor = 0.0
+		if self.get_delay_stddev() != 0.0:
 			delay_avg_factor = (delay - self.get_delay_avg()) / self.get_delay_stddev()
-		if self.get_loss_stddev() != 0:
+		if self.get_loss_stddev() != 0.0:
 			loss_factor = (loss - self.get_loss_avg()) / self.get_loss_stddev() if loss > 0.001 else -2
 
 		factor = max(delay_avg_factor, loss_factor)
-		factor = max(min((factor+2)/5, 1), 0); #normalize -2..3 -> 0..1
-		return "hsl(" + str((1-factor)/3) + ",1.0,0.4)";
+		factor = max(min((factor+2.0)/5.0, 1.0), 0.0); #normalize -2..3 -> 0..1
+		return "hsl(" + str((1.0-factor)/3.0) + ",1.0,0.4)";
 		
 
 def site_site_connections(api):
