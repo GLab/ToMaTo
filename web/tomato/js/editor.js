@@ -1159,6 +1159,7 @@ var Component = Class.extend({
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
+		for (var name in attrs) this.data.attrs[name] = attrs[name];
 		this.triggerEvent({operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
 		ajax({
@@ -2265,6 +2266,9 @@ var ChildElement = Element.extend({
 });
 
 var VMInterfaceElement = ChildElement.extend({
+});
+
+var VMConfigurableInterfaceElement = VMInterfaceElement.extend({
 	onConnected: function() {
 		var hint = this.getAddressHint();
 		if (hint == "dhcp") this.modify({"use_dhcp": true});

@@ -7,6 +7,8 @@
 
 
 {% if top_list %}
+<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new topology" />
+{#<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />#}
 <script src="/js/enhancetable.js"></script>
 <table class="sortable,filterable,stddevcolor">
   <tr>
@@ -52,8 +54,8 @@ Currently you do not have any topologies you can access.
 {% if 'no_topology_create' in user.flags %}
 	<p>You may not create any topologies. Contact the administrator for mor information.</p>
 {% else %}
-	<input type="button" onClick="window.location='{%url topology.create%}'" value="New" />
-	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />
+	<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new topology" />
+	{#<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from File" />#}
 {% endif %}
 
 {% endblock %}

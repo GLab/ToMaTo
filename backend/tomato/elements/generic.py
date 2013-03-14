@@ -201,7 +201,8 @@ class VMInterface(elements.Element):
 	def _create(self):
 		parEl = self.getParent().element
 		assert parEl
-		self.element = parEl.createChild(self.TYPE, attrs={}, owner=self)
+		attrs = self._remoteAttrs()
+		self.element = parEl.createChild(self.TYPE, attrs=attrs, owner=self)
 		self.save()
 		
 	def _remove(self):
