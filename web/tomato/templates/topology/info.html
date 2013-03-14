@@ -27,8 +27,12 @@
 
 {% block content %}
 <h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
-<div id="menu" style="width:800px;"></div>
-<div id="workspace" style="width:800px; height:600px;"></div>
+
+<div style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
+	<div id="menu" style="width:800px;"></div>
+	<div id="workspace" style="width:800px; height:600px;"></div>
+</div>
+
 <script language="JavaScript" type="text/javascript">
   var editor = new Editor({
   	menu_container: $('#menu'),
