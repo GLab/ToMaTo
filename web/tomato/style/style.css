@@ -371,3 +371,20 @@ div.helpgroup h3 {
 div.helpgroup li {
 	margin:4px;
 }
+
+div.hoverdescription div {
+	display:none;
+}
+div.hoverdescription:hover div {
+	display:inline;
+	position:absolute;
+	margin: 2px;
+	margin-left: 10px;
+	border: 1px solid black;
+	background-color: #ffffff;
+}
+div.hoverdescription:hover div p {
+	padding-left:  15px;
+	padding-right: 15px;
+}
+

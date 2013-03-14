@@ -19,6 +19,7 @@
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
+	    <th>Description</th>
 	    <th>Ready</th>
 	    
 	    {% if hostManager %}
@@ -44,6 +45,21 @@
 	    	{{templ.attrs.preference}}
 		    {% if templ.attrs.restricted %}
 		    	<img src="/img/error.png" title="restricted" />
+		    {% endif %}
+	    </td>
+	    
+	    <td>
+	    	{% if templ.attrs.description %}
+		    	<div class="hoverdescription">
+		    		<img src="/img/info.png" alt="i" />
+		    		<div>
+		    		{% autoescape on %}
+		    		{{ templ.attrs.description|linebreaks }}
+		    		{% endautoescape %}
+		    		</div>
+		    	</div>
+		    {% else %}
+		    	-
 		    {% endif %}
 	    </td>
 	    

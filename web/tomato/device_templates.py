@@ -27,16 +27,17 @@ from admin_common import RemoveResourceForm, is_hostManager
 class TemplateForm(forms.Form):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
+	description = forms.CharField(widget = forms.Textarea)
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
-
+	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
-		self.fields.keyOrder = ['name', 'label', 'subtype', 'tech', 'preference', 'restricted', 'torrentfile']
+		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile']
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -77,7 +78,8 @@ def add(api, request):
 											'preference':formData['preference'],
 											'tech': formData['tech'],
 											'restricted': formData['restricted'],
-											'torrent_data':torrent_data})
+											'torrent_data':torrent_data,
+											'description':formData['description']})
 			return render_to_response("admin/device_templates/add_success.html", {'user': api.user, 'label': formData['label']})
 		else:
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -161,7 +163,8 @@ def edit_data(api, request):
 				api.resource_modify(formData["res_id"],{'label':formData['label'],
 														'restricted': formData['restricted'],
 														'subtype':formData['subtype'],
-														'preference':formData['preference']})
+														'preference':formData['preference'],
+														'description':formData['description']})
 				return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
