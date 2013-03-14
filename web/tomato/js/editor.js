@@ -2867,7 +2867,7 @@ var Editor = Class.extend({
 				toggle: false,
 				small: true,
 				func: function() {
-					alert("Not implemented yet.");
+					window.open(document.URL+ "/export");
 				}
 			}),
 			Menu.button({

@@ -18,6 +18,7 @@
 
 from django.shortcuts import render_to_response, redirect
 from django import forms
+from django.http import HttpResponse
 
 import json
 
@@ -67,3 +68,51 @@ def import_form(api, request):
         form = ImportTopologyForm()
         return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
         
+        
+@wrap_rpc
+def export(api, request, id):
+    
+    def reduceData(data):
+        def reduceData_rec(data, blacklist):
+            if isinstance(data, list):
+                return [reduceData_rec(el, blacklist) for el in data]
+            if isinstance(data, dict):
+                return dict(filter(lambda (k, v): k not in blacklist, [(k, reduceData_rec(v, blacklist)) for k, v in data.iteritems()]))
+            return data
+        
+        del data['id']
+        del data['permissions']
+        del data['attrs']['_snap_to_grid']
+        del data['attrs']['_fixed_pos']
+        
+        blacklist = ['capabilities', 
+                     'cap_attrs', 
+                     'cap_children', 
+                     'cap_actions', 
+                     'usage',
+                     'host',
+                     'host_fileserver_port',
+                     'topology',
+                     'state']
+        
+        data = reduceData_rec(data, blacklist)
+        
+        return data
+    
+
+    top_full = api.topology_info(id,True)
+    top = reduceData(top_full)
+    
+    filename = id + "__" + top['attrs']['name'].lower().replace(" ","_") + ".tomato3"
+    
+    #attach expandable version information to the file
+    return_obj = {
+                  'file_information': {'version': 1},
+                  'topology': top
+                  }
+    
+    response = HttpResponse(json.dumps(return_obj, indent = 2), content_type="text/plain")
+    response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    
+    return response
+    
