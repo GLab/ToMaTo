@@ -32,14 +32,20 @@ var editor_tutorial = {
 			{
 				name: "devices",
 				title: "Devices",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				description: "An advanced look into devices.",
 				icon: "img/openvz32.png"
 			},
 			{
 				name: "connections",
 				title: "Connections",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				description: "An advanced look into networking.",
 				icon: "img/connect32.png"
+			},
+			{
+				name: "data_access",
+				title: "Data Access",
+				description: "Learn how to im- or export data from/to your devices.",
+				icon: "img/download.png"
 			}
 			
 		],
@@ -442,6 +448,21 @@ var editor_tutorial = {
 					text:	"This tutorial has yet to be created."
 					}
 		],
+		
+		data_access: [
+					{
+					text:	"This tutorial has yet to be created."
+					}
+		],
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		
 		common_triggers: {
 				connection_created: function(obj) {
