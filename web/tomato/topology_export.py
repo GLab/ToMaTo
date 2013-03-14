@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # ToMaTo (Topology management software) 
-# Copyright (C) 2010 Integrated Communication Systems Lab, University of Kaiserslautern
+# Copyright (C) 2013 Integrated Communication Systems Lab, University of Kaiserslautern
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,11 +25,31 @@ import re
 def import_topology(api, topology_structure):
     
     def import_v1(api, topo):
-        top = topo['topology']
+        top = topo['topology'].copy()
+        top_id = 0
+        importer_prefix='_v1importer_'
         
-                
+        try:
+            
+            top_id = api.topology_create()['id']
+            
+            name = top['attrs']['name']
+            api.topology_modify(top_id,{'name':name})
+            
+            #iterate through devices. Device == element without parent
+            for e in top['elements']:
+                if e['parent'] is None:
+                    el = api.element_create(top_id,
+                                            e['type'],
+                                            attrs = e['attrs'])
+                    e[importer_prefix+'id'] = el['id']
+                    
         
-        return {'success':True, 'id':17}
+        
+        except KeyError as e:
+            return {'success':False, 'message': 'missing key in file structure: ' + e } #"incomplete data structure (KeyError)"}
+        
+        return {'success':True, 'id':top_id}
     
     
     
