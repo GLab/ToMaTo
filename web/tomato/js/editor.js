@@ -845,10 +845,10 @@ var Topology = Class.extend({
 	},
 	remove: function() {
 		if (this.elementCount()) {
-			alert("Topology is not empty");
+			alert("Please remove all devices before removing this topology.");
 			return;
 		}
-		if (confirm("Are you sure?")) {
+		if (confirm("Are you sure you want to completely remove this topology?")) {
 			this.editor.triggerEvent({component: "topology", object: this, operation: "remove", phase: "begin"});
 			var t = this;
 			ajax({
