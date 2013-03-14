@@ -19,7 +19,7 @@
 from django.shortcuts import render_to_response, redirect
 from django import forms
 from django.http import HttpResponse
-import re
+import topology_export
 
 import json
 
@@ -60,8 +60,13 @@ def import_form(api, request):
         if form.is_valid():
             f = request.FILES['topologyfile']
             
-            #TODO this is a stub: use f to handle the imported file.
-            # Documentation of what to do with f: https://docs.djangoproject.com/en/dev/topics/http/file-uploads/?from=olddocs#handling-uploaded-files
+            topology_structure = json.load(f)
+            res = topology_export.import_topology(api, topology_structure)
+            
+            if res['success']:
+                return redirect("tomato.topology.info", id=res["id"])
+            else:
+                return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':res['message']})
             
         else:
             return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
@@ -73,47 +78,10 @@ def import_form(api, request):
 @wrap_rpc
 def export(api, request, id):
     
-    def reduceData(data):
-        def reduceData_rec(data, blacklist):
-            if isinstance(data, list):
-                return [reduceData_rec(el, blacklist) for el in data]
-            if isinstance(data, dict):
-                return dict(filter(lambda (k, v): k not in blacklist, [(k, reduceData_rec(v, blacklist)) for k, v in data.iteritems()]))
-            return data
-        
-        del data['id']
-        del data['permissions']
-        del data['attrs']['_snap_to_grid']
-        del data['attrs']['_fixed_pos']
-        
-        blacklist = ['capabilities', 
-                     'cap_attrs', 
-                     'cap_children', 
-                     'cap_actions', 
-                     'usage',
-                     'host',
-                     'host_fileserver_port',
-                     'topology',
-                     'state']
-        
-        data = reduceData_rec(data, blacklist)
-        
-        return data
+    top = topology_export.export(api, id)
     
-
-    top_full = api.topology_info(id,True)
-    top = reduceData(top_full)
-    
-    filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
-    
-    #attach expandable version information to the file
-    return_obj = {
-                  'file_information': {'version': 1},
-                  'topology': top
-                  }
-    
-    response = HttpResponse(json.dumps(return_obj, indent = 2), content_type="text/plain")
-    response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    response = HttpResponse(json.dumps(top, indent = 2), content_type="text/plain")
+    response['Content-Disposition'] = 'attachment; filename="' + top['file_information']['original_filename'] + '"'
     
     return response
     
