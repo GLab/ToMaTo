@@ -80,7 +80,7 @@ def export(api, request, id):
     
     top = topology_export.export(api, id)
     
-    response = HttpResponse(json.dumps(top, indent = 2), content_type="text/plain")
+    response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
     response['Content-Disposition'] = 'attachment; filename="' + top['file_information']['original_filename'] + '"'
     
     return response
