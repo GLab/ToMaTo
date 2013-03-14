@@ -19,6 +19,7 @@
 from django.shortcuts import render_to_response, redirect
 from django import forms
 from django.http import HttpResponse
+import re
 
 import json
 
@@ -103,7 +104,7 @@ def export(api, request, id):
     top_full = api.topology_info(id,True)
     top = reduceData(top_full)
     
-    filename = id + "__" + top['attrs']['name'].lower().replace(" ","_") + ".tomato3"
+    filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
     
     #attach expandable version information to the file
     return_obj = {
