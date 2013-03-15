@@ -33,7 +33,7 @@ def import_topology(api, topology_structure):
     #    file_info:     { version: 1},
     #    elements:     [{
     #                    id: int
-    #                    parent: int <reference to other element> | None
+    #                    parent: int <reference to other element> [parent<id] | None
     #                    type: str <type of element which is understood by backend>
     #                    attrs: {<attrs for element which are understood by backend>}
     #                    }]
@@ -48,7 +48,6 @@ def import_topology(api, topology_structure):
     def import_v1(api, topo):
         top = topo['topology'].copy()
         top_id = None
-        importer_prefix='_v1importer_'
         
         try:
             
@@ -57,55 +56,51 @@ def import_topology(api, topology_structure):
             name = top['attrs']['name']
             api.topology_modify(top_id,{'name':name})
             
-            #iterate through devices. Device == element without parent
-            for e in top['elements']:
+            idMap={} #for every elemnt: it will store the new id for given old ids
+                        # (old id = the id stored in the file)
+            
+            
+            elements = sorted(top['elements'], key=lambda el: el['id']) #assumes that for every element, it's parent has a smaller id than itself.
+           
+            for e in elements:
+                el_c = None
+                
+                #create element
                 if e['parent'] is None:
-                    el = api.element_create(top_id,
+                    el_c = api.element_create(top_id,
+                                            e['type'])
+                else:
+                    par_id = idMap[e['parent']]
+                    el_c = api.element_create(top_id,
                                             e['type'],
-                                            attrs = e['attrs'])
-                    e[importer_prefix+'id'] = el['id']
+                                            parent = par_id)
                     
-            #add all connectors:
-            for e in top['elements']:
-                if e['parent'] is not None:
+                newElID = el_c['id']
+                
+                #add attrs; ignore erroneous attrs
+                for attr in e['attrs'].keys():
+                    try:
+                        api.element_modify(newElID,{ attr:e['attrs'][attr] })
+                    except:
+                        pass
                     
-                    # find reference to recently created parent element:
-                    parent_found = None
-                    for p in top['elements']:
-                        if p['id'] == e['parent']:
-                            parent_found = p[importer_prefix+'id']
-                    if parent_found is None:
-                        api.topology_remove(top_id)
-                        return {'success':False, 'message': 'incomplete references inside elements: "element with ID '+e['parent']+' not found"'}
-                    
-                    el = api.element_create(top_id,
-                                            e['type'],
-                                            parent = parent_found,
-                                            attrs = e['attrs'])
-                    e[importer_prefix+'id'] = el['id']
-                    
+                #remember the new id
+                idMap[e['id']] = newElID
+                
+                        
+            
             #add all connections:
             for c in top['connections']:
-                #find both references to recently created connectors:
-                el_id0 = c['elements'][0]
-                el_id1 = c['elements'][1]
-                conn_id0 = None
-                conn_id1 = None
-                for e in top['elements']:
-                    if e['id'] == el_id0:
-                        conn_id0 = e[importer_prefix+'id']
-                    if e['id'] == el_id1:
-                        conn_id1 = e[importer_prefix+'id']
-                if conn_id0 is None:
-                    api.topology_remove(top_id)
-                    return {'success':False, 'message': 'incomplete references from connections to elements: "element with ID '+el_id0+' not found"'}
-                if conn_id1 is None:
-                    api.topology_remove(top_id)
-                    return {'success':False, 'message': 'incomplete references from connections to elements: "element with ID '+el_id1+' not found"'}
-                    
-                #create the connection
-                conn = api.connection_create(conn_id0,conn_id1,attrs = c['attrs'])
-                c[importer_prefix+'id'] = conn['id']
+                el_id0 = idMap[c['elements'][0]]
+                el_id1 = idMap[c['elements'][1]]
+                
+                conn = api.connection_create(el_id0,el_id1)
+                newConnID = conn['id']
+                for attr in c['attrs'].keys():
+                    try:
+                        api.connection_modify(newConnID,{attr:c['attrs'][attr]})
+                    except:
+                        pass
                     
                     
             
