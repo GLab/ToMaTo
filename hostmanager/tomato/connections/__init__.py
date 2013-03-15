@@ -30,7 +30,7 @@ REMOVE_ACTION = "(remove)"
 
 """
 General interface:
-- The element must provide two methods:
+- The element must provide three methods:
 	onConnected()
   		Called when both elements are successfully connected and communication
   		is now possible.

@@ -47,6 +47,10 @@ class Fixed_Bridge(connections.Connection):
 		self.type = self.TYPE
 		self.state = ST_DEFAULT
 		connections.Connection.init(self, *args, **kwargs) #no id and no attrs before this line
+		brname = self._bridgeName()
+		ifname = self._ifaceName()
+		if brname and ifname:
+			self._connect(ifname, brname)
 		
 	def _bridgeName(self):
 		for el in self.getElements():

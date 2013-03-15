@@ -411,6 +411,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"attrs": self.attrs.copy(),
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
+			"debug": {
+					"host_elements": [(o.host.address, o.num) for o in self.getHostElements()],
+					"host_connections": [(o.host.address, o.num) for o in self.getHostConnections()],
+			}
 		}
 		mel = self.mainElement()
 		if mel:
