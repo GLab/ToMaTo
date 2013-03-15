@@ -1626,7 +1626,7 @@ var Element = Component.extend({
 	isConnectable: function() {
 		if (this.connection) return false;
 		if (! this.caps.children) return false;
-		return this.caps.children.length > 0;
+		return jQuery.isEmptyObject(this.caps.children.length);
 	},
 	isRemovable: function() {
 		return this.actionEnabled("(remove)");
