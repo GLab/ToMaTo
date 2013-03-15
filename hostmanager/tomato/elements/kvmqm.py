@@ -303,7 +303,8 @@ class KVMQM(elements.Element):
 		path.copy(path_, self._imagePath())
 
 	def _checkImage(self, path):
-		cmd.run(["qemu-img", "info", "-f", "qcow2", path])
+		err, _ = cmd.runUnchecked(["qemu-img", "info", "-f", "qcow2", path])
+		fault.check(err==0, "File is not a valid qcow2 image")
 
 	def onChildAdded(self, interface):
 		self._checkState()

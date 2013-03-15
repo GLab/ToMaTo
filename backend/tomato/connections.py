@@ -345,45 +345,46 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def triggerStop(self):
 		self._stop()
 		
-	def capAttrs(self):
-		attrs = {}
-		if self.DIRECT_ATTRS:
-			caps = host.getConnectionCapabilities(self.remoteType())
-			if caps:
-				caps = caps["attrs"]
-			if caps:
-				for name in self.DIRECT_ATTRS_EXCLUDE:
-					if name in caps:
-						del caps[name]
-				attrs.update(caps)
-		for name, attr in self.CUSTOM_ATTRS.iteritems():
-			attrs[name] = attr.info()
-		for name, attr in attrs.iteritems():
-			attrs[name]["enabled"] = not "states" in attr or self.state in attr["states"]
-			if "states" in attrs[name]:
-				del attrs[name]["states"]	
-		return attrs
-
-	def capActions(self):
-		actions = set()
-		for action, states in self.CUSTOM_ACTIONS.iteritems():
-			if self.state in states:
-				actions.add(action)
-		mcon = self.mainConnection()
-		if self.DIRECT_ACTIONS and mcon:
-			actions |= set(mcon.getAllowedActions()) - set(self.DIRECT_ACTIONS_EXCLUDE)
-		return list(actions) 
+	@classmethod
+	def getCapabilities(cls, type_, host_):
+		if not host_:
+			host_ = host.getAll()[0]
+		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
+			host_cap = host_.getConnectionCapabilities(type_)
+		cap_actions = dict(cls.CUSTOM_ACTIONS)
+		if cls.DIRECT_ACTIONS:
+			for action, params in host_cap["actions"].iteritems():
+				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
+					cap_actions[action] = params
+		cap_attrs = {}
+		for attr, params in cls.CUSTOM_ATTRS.iteritems():
+			cap_attrs[attr] = params.info()
+		if cls.DIRECT_ATTRS:
+			for attr, params in host_cap["attrs"].iteritems():
+				if not attr in cls.DIRECT_ATTRS_EXCLUDE:
+					cap_attrs[attr] = params
+		return {
+			"attrs": cap_attrs,
+			"actions": cap_actions,
+		}
 		
+	def _getType(self):
+		if self.mainConnection():
+			return self.mainConnection().type
+		for el in self.getElements():
+			if el.type == "external_network_endpoint":
+				return "fixed_bridge"
+		return "bridge"
+			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
 		info = {
 			"id": self.id,
+			"type": self._getType(),
 			"state": self.state,
 			"attrs": self.attrs.copy(),
 			"elements": sorted([el.id for el in self.elements.all()]), #sort elements so that first is from and second is to
-			"cap_attrs": self.capAttrs(),
-			"cap_actions": self.capActions()
 		}
 		info["attrs"]["host"] = self.connection1.host.address if self.connection1 else None
 		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None

@@ -42,12 +42,14 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		"kind": kind_attr,
 	}
 
-	DIRECT_ATTRS_EXCLUDE = ["network", "timeout"]
+	DIRECT_ATTRS = False
+	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
 	TYPE = "external_network"
-	DIRECT_ATTRS_EXCLUDE = []
+	DIRECT_ACTIONS = False
+	DIRECT_ACTION_EXCLUDE = []
 	CAP_CHILDREN = {"external_network_endpoint": [ST_CREATED]}
 	
 	class Meta:
@@ -107,6 +109,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 	network = models.ForeignKey(network.NetworkInstance, null=True)
 
 	TYPE = "external_network_endpoint"
+	HOST_TYPE = "external_network"
 	CAP_CHILDREN = {}
 	
 	CUSTOM_ACTIONS = {
@@ -136,9 +139,6 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-	
-	def remoteType(self):
-		return "external_network"	
 	
 	def mainElement(self):
 		return self.element

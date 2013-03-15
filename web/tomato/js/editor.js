@@ -259,12 +259,13 @@ var ChoiceElement = FormElement.extend({
 
 var Window = Class.extend({
 	init: function(options) {
+		log(options);
 		this.options = options;
 		this.options.position = options.position || 'center center';
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
-			draggable: options.draggable != null ? options.draggable : false,
-			resizable: options.resizable != null ? options.resizable : false,
+			draggable: options.draggable != null ? options.draggable : true,
+			resizable: options.resizable != null ? options.resizable : true,
 			height: options.height || "auto",
 			width: options.width || "auto",
 			maxHeight:600,
@@ -445,7 +446,7 @@ var AttributeWindow = Window.extend({
 		tr.append($("<td/>").append(element.getElement()));
 		this.table.append(tr);
 	},
-	autoElement: function(info, value) {
+	autoElement: function(info, value, enabled) {
 		var el;
 		if (info.options) {
 			el = new ChoiceElement({
@@ -453,14 +454,14 @@ var AttributeWindow = Window.extend({
 				name: info.name,
 				choices: info.options,
 				value: value || info["default"],
-				disabled: !info.enabled
+				disabled: !enabled
 			});
 		} else if (info.type == "bool") {
 			el = new CheckboxElement({
 				label: info.desc || info.name,
 				name: info.name,
 				value: value || info["default"],
-				disabled: !info.enabled
+				disabled: !enabled
 			});
 		} else {
 			var converter = null;
@@ -476,14 +477,14 @@ var AttributeWindow = Window.extend({
 				label: info.desc || info.name,
 				name: info.name,
 				value: value || info["default"],
-				disabled: !info.enabled,
+				disabled: !enabled,
 				inputConverter: converter 
 			});
 		}
 		return el;
 	},
-	autoAdd: function(info, value) {
-		this.add(this.autoElement(info, value));
+	autoAdd: function(info, value, enabled) {
+		this.add(this.autoElement(info, value, enabled));
 	},
 	getValues: function() {
 		var values = {};
@@ -810,7 +811,7 @@ var Topology = Class.extend({
 			var el = this.elements[id];
 			if (el.busy) continue;
 			if (el.parent) continue;
-			if (el.actionAvailable(action)) {
+			if (el.actionEnabled(action)) {
 				el.action(action, {
 					noask: true,
 					callback: cb
@@ -859,6 +860,30 @@ var Topology = Class.extend({
 				}
 			});
 		}
+	},
+	showDebugInfo: function() {
+		var t = this;
+		ajax({
+			url: 'topology/'+this.id+'/info',
+		 	data: {},
+		 	successFn: function(result) {
+		 		var win = new Window({
+		 			title: "Debug info",
+		 			position: "center top",
+		 			width: 800,
+		 			buttons: {
+		 				Close: function() {
+		 					win.hide();
+		 				}
+					} 
+		 		});
+		 		win.add($("<pre></pre>").text(JSON.stringify(result, undefined, 2)));
+		 		win.show();
+		 	},
+		 	errorFn: function(error) {
+		 		alert(error);
+		 	}
+		});
 	},
 	showUsage: function() {
   		window.open('/topology/'+this.id+'/usage', '_blank', 'innerHeight=450,innerWidth=650,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');
@@ -1010,6 +1035,13 @@ var createTopologyMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
+			"debug": obj.editor.options.debug_mode ? {
+				name:'Debug',
+				icon:'debug',
+				callback: function(){
+					obj.showDebugInfo();
+				}
+			} : null,
 			"sep2": "---",
 			"remove": {
 				name:'Delete',
@@ -1036,9 +1068,8 @@ var Component = Class.extend({
 	init: function(topology, data, canvas) {
 		this.topology = topology;
 		this.editor = topology.editor;
-		this.data = data;
+		this.setData(data);
 		this.canvas = canvas;
-		this.id = data.id;
 	},	
 	paint: function() {
 	},
@@ -1049,9 +1080,19 @@ var Component = Class.extend({
 	setBusy: function(busy) {
 		this.busy = busy;
 	},
+	actionEnabled: function(action) {
+		return (action in this.caps.actions) && (this.caps.actions[action].indexOf(this.data.state) >= 0); 
+	},
+	attrEnabled: function(attr) {
+		return (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
+	},
+	setData: function(data) {
+		this.data = data;
+		this.id = data.id;
+		this.caps = this.editor.capabilities[this.component_type][this.data.type];
+	},
 	updateData: function(data) {
-		if (data) this.data = data;
-		this.id = this.data.id;
+		if (data) this.setData(data);
 		this.topology.onUpdate();
 		this.paintUpdate();
 	},
@@ -1068,8 +1109,7 @@ var Component = Class.extend({
 		 	successFn: function(result) {
 		 		var win = new Window({
 		 			title: "Debug info",
-		 			location: "center center",
-		 			height: 600,
+		 			position: "center top",
 		 			width: 800,
 		 			buttons: {
 		 				Close: function() {
@@ -1126,14 +1166,14 @@ var Component = Class.extend({
 		for (var i=0; i<settings.order.length; i++) {
 			var name = settings.order[i];
 			if (settings.special[name]) this.configWindow.add(settings.special[name]);
-			else if (this.data.cap_attrs[name]) this.configWindow.autoAdd(this.data.cap_attrs[name], this.data.attrs[name]);
+			else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
 		}
 		if (settings.unknown) {
-			for (var name in this.data.cap_attrs) {
+			for (var name in this.caps.attrs) {
 				if (settings.order.indexOf(name) >= 0) continue; //do not repeat ordered fields
 				if (settings.ignore.indexOf(name) >= 0) continue;
 				if (settings.special[name]) this.configWindow.add(settings.special[name]);
-				else if (this.data.cap_attrs[name]) this.configWindow.autoAdd(this.data.cap_attrs[name], this.data.attrs[name]);
+				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
 			}
 		}
 		this.configWindow.show();
@@ -1206,9 +1246,6 @@ var Component = Class.extend({
 		 	}
 		});
 	},
-	actionAvailable: function(action) {
-		return this.data.cap_actions && this.data.cap_actions.indexOf(action) > -1;
-	},
 	onConnected: function() {
 	}
 });
@@ -1216,7 +1253,7 @@ var Component = Class.extend({
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		this._super(options);
-		if (con.data.cap_attrs.emulation) {
+		if (con.attrEnabled("emulation")) {
 			this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
 			this.emulation_elements = [];
 			var t = this;
@@ -1263,23 +1300,23 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el_from = this.autoElement(con.data.cap_attrs[name+"_from"], con.data.attrs[name+"_from"])
+				var el_from = this.autoElement(con.caps.attrs[name+"_from"], con.data.attrs[name+"_from"], true)
 				this.elements.push(el_from);
 				this.emulation_elements.push(el_from);
-				var el_to = this.autoElement(con.data.cap_attrs[name+"_to"], con.data.attrs[name+"_to"])
+				var el_to = this.autoElement(con.caps.attrs[name+"_to"], con.data.attrs[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
 				this.table.append($("<tr/>")
-					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].desc))
+					.append($("<td/>").append(con.caps.attrs[name+"_to"].desc))
 					.append($("<td/>").append(el_from.getElement()))
 					.append($("<td/>").append(el_to.getElement()))
-					.append($("<td/>").append(con.data.cap_attrs[name+"_to"].unit))
+					.append($("<td/>").append(con.caps.attrs[name+"_to"].unit))
 				);
 			}
 			this.updateEmulationStatus(con.data.attrs.emulation);
 			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
-		if (con.data.cap_attrs.capturing) {
+		if (con.attrEnabled("capturing")) {
 			this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
@@ -1294,11 +1331,11 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
-				var el = this.autoElement(con.data.cap_attrs[name], con.data.attrs[name])
+				var el = this.autoElement(con.caps.attrs[name], con.data.attrs[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
 				this.table.append($("<tr/>")
-					.append($("<td/>").append(con.data.cap_attrs[name].desc))
+					.append($("<td/>").append(con.caps.attrs[name].desc))
 					.append($("<td colspan=3/>").append(el.getElement()))
 				);
 			}
@@ -1318,9 +1355,9 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 
 var Connection = Component.extend({
 	init: function(topology, data, canvas) {
+		this.component_type = "connection";
 		this._super(topology, data, canvas);
 		this.elements = [];
-		this.component_type = "connection";
 		this.segment = -1;
 	},
 	fromElement: function() {
@@ -1419,7 +1456,7 @@ var Connection = Component.extend({
 		this.action("destroy");
 	},
 	captureDownloadable: function() {
-		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "file";
+		return this.actionEnabled("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "file";
 	},
 	downloadCapture: function() {
 		this.action("download_grant", {callback: function(con, res) {
@@ -1435,7 +1472,7 @@ var Connection = Component.extend({
 		}})
 	},
 	liveCaptureEnabled: function() {
-		return this.actionAvailable("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
+		return this.actionEnabled("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
 	},
 	liveCaptureInfo: function() {
 		var host = this.data.attrs.host;
@@ -1571,10 +1608,10 @@ var createConnectionMenu = function(obj) {
 
 var Element = Component.extend({
 	init: function(topology, data, canvas) {
+		this.component_type = "element";
 		this._super(topology, data, canvas);
 		this.children = [];
 		this.connection = null;
-		this.component_type = "element";
 	},
 	onDragged: function() {
 		if (!this.isMovable()) return;
@@ -1588,11 +1625,11 @@ var Element = Component.extend({
 	},
 	isConnectable: function() {
 		if (this.connection) return false;
-		if (! this.data.cap_children) return false;
-		return this.data.cap_children.length > 0;
+		if (! this.caps.children) return false;
+		return this.caps.children.length > 0;
 	},
 	isRemovable: function() {
-		return this.actionAvailable("(remove)");
+		return this.actionEnabled("(remove)");
 	},
 	isEndpoint: function() {
 		return true;
@@ -1877,28 +1914,28 @@ var createElementMenu = function(obj) {
 					obj.editor.onElementConnectTo(obj);
 				}
 			} : null,
-			"start": obj.actionAvailable("start") ? {
+			"start": obj.actionEnabled("start") ? {
 				name:'Start',
 				icon:'start',
 				callback: function(){
 					obj.action_start();
 				}
 			} : null,
-			"stop": obj.actionAvailable("stop") ? {
+			"stop": obj.actionEnabled("stop") ? {
 				name:"Stop",
 				icon:"stop",
 				callback: function(){
 					obj.action_stop();
 				}
 			} : null,
-			"prepare": obj.actionAvailable("prepare") ? {
+			"prepare": obj.actionEnabled("prepare") ? {
 				name:"Prepare",
 				icon:"prepare",
 				callback: function(){
 					obj.action_prepare();
 				}
 			} : null,
-			"destroy": obj.actionAvailable("destroy") ? {
+			"destroy": obj.actionEnabled("destroy") ? {
 				name:"Destroy",
 				icon:"destroy",
 				callback: function(){
@@ -1947,14 +1984,14 @@ var createElementMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
-			"download_image": obj.actionAvailable("download_grant") ? {
+			"download_image": obj.actionEnabled("download_grant") ? {
 				name:"Download image",
 				icon:"drive",
 				callback: function(){
 					obj.downloadImage();
 				}
 			} : null,
-			"upload_image": obj.actionAvailable("upload_grant") ? {
+			"upload_image": obj.actionEnabled("upload_grant") ? {
 				name:"Upload image",
 				icon:"drive",
 				callback: function(){
@@ -2145,8 +2182,8 @@ var ExternalNetworkElement = IconElement.extend({
 			label: "Network kind",
 			name: "kind",
 			choices: createMap(this.editor.networks.all(), "kind", "label"),
-			value: this.data.attrs.kind || this.data.cap_attrs.kind["default"],
-			disabled: !this.data.cap_attrs.kind.enabled
+			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
+			disabled: !this.attrEnabled("kind")
 		});
 		return config;
 	},
@@ -2197,8 +2234,8 @@ var VMElement = IconElement.extend({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
-			value: this.data.attrs.template || this.data.cap_attrs.template["default"],
-			disabled: !this.data.cap_attrs.template.enabled
+			value: this.data.attrs.template || this.caps.attrs.template["default"],
+			disabled: !this.attrEnabled("template")
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
@@ -2206,15 +2243,15 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.site || this.data.cap_attrs.site["default"],
-			disabled: !this.data.cap_attrs.site.enabled
+			value: this.data.attrs.site || this.caps.attrs.site["default"],
+			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
 			label: "Profile",
 			name: "profile",
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
-			value: this.data.attrs.profile || this.data.cap_attrs.profile["default"],
-			disabled: !this.data.cap_attrs.profile.enabled
+			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
+			disabled: !this.attrEnabled("profile")
 		});
 		config.special._endpoint = new ChoiceElement({
 			label: "Segment seperation",
@@ -2415,6 +2452,7 @@ var Editor = Class.extend({
 		this.options.grid_size = this.options.grid_size || 25;
 		this.options.frame_size = this.options.frame_size || this.options.grid_size;
 		this.listeners = [];
+		this.capabilities = this.options.capabilities;
 		this.menu = new Menu(this.options.menu_container);
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);

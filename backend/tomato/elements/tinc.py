@@ -38,12 +38,15 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		"mode": mode_attr,
 	}
 
+	DIRECT_ATTRS = False
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 
 	TYPE = "tinc_vpn"
-	DIRECT_ATTRS_EXCLUDE = []
+	HOST_TYPE = None
+	DIRECT_ACTIONS = False
+	DIRECT_ACTIONS_EXCLUDE = []
 	CAP_CHILDREN = {"tinc_endpoint": [ST_CREATED, ST_PREPARED]}
 	
 	class Meta:
@@ -57,9 +60,6 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-	
-	def mainElement(self):
-		return None
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED:
@@ -154,6 +154,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	DEFAULT_ATTRS = {}
 
 	TYPE = "tinc_endpoint"
+	HOST_TYPE = "tinc"
 	DIRECT_ATTRS_EXCLUDE = []
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
@@ -171,9 +172,6 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
-	
-	def remoteType(self):
-		return "tinc"
 	
 	def mainElement(self):
 		return self.element
