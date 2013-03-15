@@ -309,6 +309,9 @@ var TutorialWindow = Window.extend({
 	init: function(options) {
 			this._super(options);
 			
+			if (!options.tutorialVisible)
+				return;
+			
 			//create UI
 			this.text = $("<div>.</div>");
 			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
@@ -347,9 +350,8 @@ var TutorialWindow = Window.extend({
 			}
 			
 			//load the basic tutorial at the creating of the editor.
-			this.tutorialSource = options.tutorialSource || editor_tutorial;
 			this.tutorialSteps = [];
-			this.loadTutorial(0);
+			this.loadTutorial();
 			
 	},
 	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
@@ -391,7 +393,7 @@ var TutorialWindow = Window.extend({
 			}
 		}
 	},
-	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
+	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 	
 		//go to 1st step
 		this.tutorialStatus = 0;
@@ -400,9 +402,8 @@ var TutorialWindow = Window.extend({
 		this.closeButton.hide();
 		
 		//load tutorial
-		tutorialData = this.tutorialSource.tutorials[tutID];
-		this.setTitle("Tutorial: "+tutorialData.title);
-		this.tutorialSteps = this.tutorialSource[tutorialData.name]
+		this.setTitle("Tutorial");
+		this.tutorialSteps = editor_tutorial
 		this.updateText();		
 	},
 	updateText: function() {
@@ -520,8 +521,7 @@ var Workspace = Class.extend({
 			modal: false, 
 			buttons: {},
 			width:500,
-			tutorialVisible:this.editor.options.beginner_mode,
-			tutorialSource:this.editor.tutorialSource
+			tutorialVisible:this.editor.options.tutorial,
 		});
     	
     	var t = this;
@@ -2429,7 +2429,6 @@ var Editor = Class.extend({
 		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources);
 		this.networks = new NetworkStore(this.options.resources);
-		this.tutorialSource = editor_tutorial;
 		this.buildMenu();
 		this.setMode(Mode.select);
 		var t = this;
@@ -2932,23 +2931,7 @@ var Editor = Class.extend({
 									this.optionCheckboxes.debug_mode
 								]);
 
-		var tab = this.menu.addTab("Tutorials");
-		var group = tab.addGroup("Tutorials");
-		var tuts = this.tutorialSource.tutorials;
-		for (var i = 0; i<tuts.length; i++) {
-			group.addElement(Menu.button({
-				label: tuts[i].title,
-				icon: tuts[i].icon,
-				toggle: false,
-				small: false,
-				tutID: i,
-				tooltip: tuts[i].description,
-				func: function() { 
-					editor.workspace.tutorialWindow.loadTutorial(this.tutID); 
-					editor.workspace.tutorialWindow.setTutorialVisible(true);
-				}
-			}));
-		}
+		
 
 
 		this.menu.paint();

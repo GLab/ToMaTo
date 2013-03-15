@@ -13,8 +13,12 @@
 <script language="JavaScript" type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/raphael.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor_tutorial.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
+
+{% if tutorial %}
+<script language="JavaScript" type="text/javascript" src="js/editor_tutorial/{{tutorial}}.js"></script>
+{% endif %}
+
 <style type="text/css">
 #left {
 	display: none;
@@ -37,7 +41,13 @@
   var editor = new Editor({
   	menu_container: $('#menu'),
   	workspace_container: $('#workspace'),
-  	beginner_mode: {{beginner_mode}},
+  	
+  	{% if tutorial %}
+  		tutorial:true,
+  	{% else %}
+  		tutorial:false,
+  	{% endif %}
+  	
   	safe_mode: true,
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
