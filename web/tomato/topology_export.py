@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import re
 
 
 #imports a json structure to a topology. returns the new topology's id.
@@ -53,8 +52,11 @@ def import_topology(api, topology_structure):
             
             top_id = api.topology_create()['id']
             
-            name = top['attrs']['name']
-            api.topology_modify(top_id,{'name':name})
+            for attr in top['attrs'].keys():
+                try:
+                    api.topology_modify(top_id,{ attr:top['attrs'][attr] })
+                except:
+                    pass
             
             idMap={} #for every elemnt: it will store the new id for given old ids
                         # (old id = the id stored in the file)
@@ -74,7 +76,7 @@ def import_topology(api, topology_structure):
                     el_c = api.element_create(top_id,
                                             e['type'],
                                             parent = par_id)
-                    
+                
                 newElID = el_c['id']
                 
                 #add attrs; ignore erroneous attrs
@@ -87,7 +89,6 @@ def import_topology(api, topology_structure):
                 #remember the new id
                 idMap[e['id']] = newElID
                 
-                        
             
             #add all connections:
             for c in top['connections']:
@@ -166,8 +167,7 @@ def export(api, id):
         
         blacklist_connections = ['id']
         
-        blacklist_attrs = ['_snap_to_grid',
-                           '_fixed_pos']
+        blacklist_attrs = []
         
         data = reduceData_rec(data, blacklist)
         data['elements'] = reduceData_rec(data['elements'],blacklist_elements)
@@ -180,10 +180,8 @@ def export(api, id):
     top_full = api.topology_info(id,True)
     top = reduceData(top_full)
     
-    filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
-    
     #attach expandable version information to the file
     return {
-            'file_information': {'version': 1, 'original_filename': filename,},
+            'file_information': {'version': 1},
             'topology': top
             }

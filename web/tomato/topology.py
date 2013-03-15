@@ -21,7 +21,7 @@ from django import forms
 from django.http import HttpResponse
 import topology_export
 
-import json
+import json, re
 
 from lib import wrap_rpc
 
@@ -80,8 +80,11 @@ def export(api, request, id):
     
     top = topology_export.export(api, id)
     
+    
+    
+    filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
     response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
-    response['Content-Disposition'] = 'attachment; filename="' + top['file_information']['original_filename'] + '"'
+    response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
     
     return response
     
