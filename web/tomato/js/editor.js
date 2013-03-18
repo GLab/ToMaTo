@@ -274,8 +274,11 @@ var Window = Class.extend({
 			hide: "slide",
 			minHeight:50,
 			modal: options.modal != null ? options.modal : true,
-			buttons: options.buttons || {}
+			buttons: options.buttons || {},
+			closeOnEscape: false
 		});
+		if (options.closeOnEscape != undefined)
+			this.div.closeOnEscape = options.closeOnEscape;
 		this.setPosition(options.position);
 		if (options.content) this.div.append(options.content);
 		if (options.autoShow) this.show();
@@ -308,6 +311,8 @@ var Window = Class.extend({
 var TutorialWindow = Window.extend({
 	init: function(options) {
 			this._super(options);
+			if (options.hideCloseButton)
+				$(".ui-dialog-titlebar-close").hide();
 			
 			if (!options.tutorialVisible)
 				return;
@@ -521,7 +526,9 @@ var Workspace = Class.extend({
 			modal: false, 
 			buttons: {},
 			width:500,
+			closeOnEscape: false,
 			tutorialVisible:this.editor.options.tutorial,
+			hideCloseButton: true
 		});
     	
     	var t = this;
