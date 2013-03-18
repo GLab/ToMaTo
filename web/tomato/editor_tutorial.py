@@ -69,7 +69,8 @@ def loadTutorial(api, request, tut_id):
     file_path = os.path.join(module_dir,'editor_tutorial/'+tut_id+'.tomato3')
     top_str = open(file_path,'r').read()
     top_dict = json.loads(top_str)
+    top_dict['topology']['attrs']['_tutorial_id'] = tut_id
+    top_dict['topology']['attrs']['_tutorial_status'] = 0
     
     top_id = topology_export.import_topology(api, top_dict)['id']
-    api.topology_modify(top_id,{'_tutorial_id':tut_id,'_tutorial_status':0})
     return redirect("tomato.topology.info", id=top_id)
