@@ -1,1 +1,0 @@
-var editor_tutorial = [{text: "This tutorial has not been created yet."}];
