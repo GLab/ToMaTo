@@ -317,6 +317,8 @@ var TutorialWindow = Window.extend({
 			
 			if (!options.tutorialVisible)
 				return;
+				
+			this.tutorialStatus = options.tutorial_status || 0;
 			
 			//create UI
 			this.text = $("<div>.</div>");
@@ -339,16 +341,13 @@ var TutorialWindow = Window.extend({
 			this.helpButton.append(this.helpLink);
 			this.helpLinkTarget="/help/";
 			
-			this.closeButton.click(function() { 
+			this.closeButton.click(function() {
 				editor.workspace.tutorialWindow.setTutorialVisible(false);
 			});
 			
 			this.add(this.helpButton);
 			this.add(this.text);
 			this.add(this.buttons);
-			
-			//pointer to an element of tutorialSteps
-			this.tutorialStatus = 0;
 			
 			this.tutorialVisible = true;
 			if (options.tutorialVisible != undefined) {
@@ -365,6 +364,7 @@ var TutorialWindow = Window.extend({
 			this.show();
 		} else {
 			this.hide();
+			this.closeTutorialForBackend();
 		}
 		this.tutorialVisible = vis;
 	},
@@ -378,6 +378,7 @@ var TutorialWindow = Window.extend({
 			this.backButton.hide();
 		}
 		this.updateText();
+		this.updateStatusToBackend();
 	},
 	tutorialGoForth: function() {
 		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
@@ -389,6 +390,7 @@ var TutorialWindow = Window.extend({
 			this.closeButton.show();
 		}
 		this.updateText();
+		this.updateStatusToBackend();
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
@@ -400,17 +402,28 @@ var TutorialWindow = Window.extend({
 		}
 	},
 	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
-	
-		//go to 1st step
-		this.tutorialStatus = 0;
-		this.backButton.hide();
-		this.skipButton.show();
-		this.closeButton.hide();
-		
 		//load tutorial
 		this.setTitle("Tutorial");
 		this.tutorialSteps = editor_tutorial
-		this.updateText();		
+		
+		//set visible buttons
+		if (this.tutorialStatus == 0) {
+			this.backButton.hide();
+			this.skipButton.show();
+			this.closeButton.hide();
+		} else {
+			this.backButton.show();
+			if (this.tutorialStatus > this.tutorialSteps.length) {
+				this.skipButton.hide();
+				this.closeButton.show();
+			} else {
+				this.skipButton.show();
+				this.closeButton.hide();
+			}
+		}
+		
+		//show text
+		this.updateText();
 	},
 	updateText: function() {
 		var text = this.tutorialSteps[this.tutorialStatus].text;
@@ -434,7 +447,26 @@ var TutorialWindow = Window.extend({
 		} else {
 			this.skipButton[0].value = "Skip";
 		}
+	},
+	updateStatusToBackend: function() {
+		ajax({
+			url: 'topology/'+editor.topology.id+'/modify',
+		 	data: {attrs: {
+		 					_tutorial_status: this.tutorialStatus
+		 					},
+		 			}
+		});
+	},
+	closeTutorialForBackend: function() {
+		ajax({
+			url: 'topology/'+editor.topology.id+'/modify',
+		 	data: {attrs: {
+		 					_tutorial_disabled: true
+		 					},
+		 			}
+		});
 	}
+	
 	
 });
 
@@ -529,6 +561,7 @@ var Workspace = Class.extend({
 			width:500,
 			closeOnEscape: false,
 			tutorialVisible:this.editor.options.tutorial,
+			tutorial_status:this.editor.options.tutorial_status,
 			hideCloseButton: true
 		});
     	
@@ -1117,7 +1150,7 @@ var Component = Class.extend({
 	},
 	showDebugInfo: function() {
 		var t = this;
-		ajax({
+		({
 			url: this.component_type+'/'+this.id+'/info',
 		 	data: {},
 		 	successFn: function(result) {
@@ -1196,7 +1229,7 @@ var Component = Class.extend({
 	update: function() {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
-		ajax({
+		({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);

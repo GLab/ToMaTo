@@ -95,10 +95,11 @@ tutorial_startTopologies = {
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("topology/editor_tutorials_list.html",{'tutorials':tutorials, 'user':api.account_info()})
+    return render_to_response("topology/editor_tutorials_list.html",{'tutorials':tutorials, 'user':api.account_info()})
 
 
 @wrap_rpc
 def loadTutorial(api, request, tut_id):
-	top_id = topology_export.import_topology(api, tutorial_startTopologies[tut_id])['id']
-	return redirect("tomato.topology.info", id=top_id, tut_id=tut_id)
+    top_id = topology_export.import_topology(api, tutorial_startTopologies[tut_id])['id']
+    api.topology_modify(top_id,{'_tutorial_id':tut_id,'_tutorial_status':0})
+    return redirect("tomato.topology.info", id=top_id)

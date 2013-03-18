@@ -33,16 +33,26 @@ def index(api, request):
 	toplist=api.topology_list()
 	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
 
-def _display(api, info, tut_id):
+def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id})	
+	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat})	
 
 @wrap_rpc
-def info(api, request, id, tut_id = None): #@ReservedAssignment
+def info(api, request, id): #@ReservedAssignment
 	info=api.topology_info(id)
-	return _display(api, info, tut_id);
+	tut_stat = None
+	tut_id = None
+	allow_tutorial = True
+	if info['attrs'].has_key('_tutorial_disabled'):
+		allow_tutorial = not info['attrs']['_tutorial_disabled']
+	if allow_tutorial:
+		if info['attrs'].has_key('_tutorial_id'):
+			tut_id = info['attrs']['_tutorial_id']
+			if info['attrs'].has_key('_tutorial_status'):
+				tut_stat = info['attrs']['_tutorial_status']
+	return _display(api, info, tut_id, tut_stat);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment

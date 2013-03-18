@@ -15,9 +15,11 @@
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
+
 {% if tutorial %}
-<script language="JavaScript" type="text/javascript" src="js/editor_tutorial/{{tutorial}}.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/editor_tutorial/{{tutorial}}.js"></script>
 {% endif %}
+
 
 <style type="text/css">
 #left {
@@ -44,10 +46,13 @@
   	
   	{% if tutorial %}
   		tutorial:true,
+  		{% if tutorial_status %}
+			tutorial_status: {{tutorial_status}},
+		{% endif %}
   	{% else %}
   		tutorial:false,
   	{% endif %}
-  	
+	  	
   	safe_mode: true,
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
