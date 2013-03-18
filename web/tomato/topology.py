@@ -31,7 +31,17 @@ class ImportTopologyForm(forms.Form):
 @wrap_rpc
 def index(api, request):
 	toplist=api.topology_list()
-	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
+	tut_in_top_list = False
+	for top in toplist:
+		tut_in_top_list_old = tut_in_top_list
+		if top['attrs'].has_key('_tutorial_id'):
+			top['attrs']['tutorial_id'] = top['attrs']['_tutorial_id']
+			tut_in_top_list = True
+		if top['attrs'].has_key('_tutorial_disabled'):
+			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
+			if top['attrs']['tutorial_disabled']:
+				tut_in_top_list = tut_in_top_list_old
+	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist, 'tut_in_top_list':tut_in_top_list})
 
 def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()

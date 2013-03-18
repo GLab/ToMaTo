@@ -21,10 +21,29 @@
     <th stddev_column_class="good_low">Disk</th>
     <th></th>
   </tr>
+ 
+
+  
 {% for top in top_list %}
   <tr>
     <td>{{top.id}}</td>
-    <td><a href="{%url topology.info top.id%}">{{top.attrs.name}}</a></td>
+    <td style="vertical-align:text-top">
+    
+    {% if top.attrs.tutorial_id %}
+    	{% if not top.attrs.tutorial_disabled %}
+    		<img src="/img/tutorial16.png" style="position:absolute; display:inline;" />
+    	{% endif %}
+    {% endif %}
+    
+    
+    <div style="padding:0px; margin:0px; border:0px; 
+    {% if tut_in_top_list %}
+    	margin-left:17px;
+    {% endif %}
+    ">
+    	<a href="{%url topology.info top.id%}">{{top.attrs.name}}</a></td>
+    </div>
+    
     <td>
     	{% for user, role in top.permissions.items %}
     		{% if role == "owner" %}
