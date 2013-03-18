@@ -3,6 +3,7 @@ encoding//tomato/__init__.py=utf-8
 encoding//tomato/accounting.py=utf-8
 encoding//tomato/api/__init__.py=utf-8
 encoding//tomato/api/account.py=utf-8
+encoding//tomato/api/capabilities.py=utf-8
 encoding//tomato/api/connections.py=utf-8
 encoding//tomato/api/docs.py=utf-8
 encoding//tomato/api/elements.py=utf-8

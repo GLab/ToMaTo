@@ -41,6 +41,7 @@ class UDP_Endpoint(elements.Element):
 	DEFAULT_ATTRS = {}
 
 	TYPE = "udp_endpoint"
+	HOST_TYPE = "udp_tunnel"
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	

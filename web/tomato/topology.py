@@ -26,40 +26,41 @@ import json, re
 from lib import wrap_rpc
 
 class ImportTopologyForm(forms.Form):
-    topologyfile  = forms.FileField(label="Topology File")    
-    
+	topologyfile  = forms.FileField(label="Topology File")	
+	
 @wrap_rpc
 def index(api, request):
-    toplist=api.topology_list()
-    return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
+	toplist=api.topology_list()
+	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
 
 def _display(api, info, tut_id):
-    res = api.resource_list()
-    sites = api.site_list()
+	caps = api.capabilities()
+	res = api.resource_list()
+	sites = api.site_list()
     return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'tutorial':tut_id})	
 
 @wrap_rpc
 def info(api, request, id, tut_id = None): #@ReservedAssignment
-    info=api.topology_info(id)
+	info=api.topology_info(id)
     return _display(api, info, tut_id);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
-    usage=api.topology_usage(id)
-    return render_to_response("main/usage.html", {'user': api.user, 'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
+	usage=api.topology_usage(id)
+	return render_to_response("main/usage.html", {'user': api.user, 'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
 
 @wrap_rpc
 def create(api, request):
-    info=api.topology_create()
-    return redirect("tomato.topology.info", id=info["id"])
+	info=api.topology_create()
+	return redirect("tomato.topology.info", id=info["id"])
 
 @wrap_rpc
 def import_form(api, request):
-    if request.method=='POST':
-        form = ImportTopologyForm(request.POST,request.FILES)
-        if form.is_valid():
-            f = request.FILES['topologyfile']
-            
+	if request.method=='POST':
+		form = ImportTopologyForm(request.POST,request.FILES)
+		if form.is_valid():
+			f = request.FILES['topologyfile']
+			
             topology_structure = json.load(f)
             res = topology_export.import_topology(api, topology_structure) #reminder: when changing the result format of import_topology, also adapt editor_tutorial.loadTutorial 
             
@@ -67,13 +68,13 @@ def import_form(api, request):
                 return redirect("tomato.topology.info", id=res["id"]) 
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':res['message']})
-            
-        else:
-            return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
-    else:
-        form = ImportTopologyForm()
-        return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
-        
+			
+		else:
+			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
+	else:
+		form = ImportTopologyForm()
+		return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
+		
         
 @wrap_rpc
 def export(api, request, id):

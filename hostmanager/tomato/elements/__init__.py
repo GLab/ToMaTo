@@ -251,6 +251,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def getConnection(self):
 		return self.connection.upcast() if self.connection else None
 		
+	def triggerConnect(self):
+		pass
+		
 	def onConnected(self):
 		pass
 	
