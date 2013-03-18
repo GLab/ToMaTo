@@ -48,15 +48,14 @@ var editor_tutorial = [
 							<p class="tutorialExplanation">\
 								Of special importance is the "Modes" group in the "Home" tab: It lets you choose between three modes which define what a left-click in the workspace does when you\'re not using any other features. Especially the "Delete" mode may cause unwanted, irreversible changes to your topology.</p>\
 							<p class="tutorialExplanation">\
-								The "Home" tab provides you the most important features.
-								</p>',
+								The "Home" tab provides you the most important features.</p>',
 					skip_button: 'Continue'
 					},
 					{
 					text: '<p class="tutorialExplanation">\
 								The "Devices" tab provides access to all device templates. See the "Devices" tutorial for more information.</p>\
 							<p class="tutorialExplanation">\
-								The "Network" tab provides access to virtual network hardware. See the "Network" tutorial for more information.</p>
+								The "Network" tab provides access to virtual network hardware. See the "Network" tutorial for more information.</p>\
 							<p class="tutorialExplanation">\
 								Use the "Topology" tab to manage this topology.</p>\
 							<p class="tutorialExplanation">\
@@ -446,8 +445,8 @@ var editor_tutorial = [
 					text:	'<p class="tutorialExplanation">\
 								Congratulations, you have successfully completed the basic tutorial.</p>\
 							<p class="tutorialExplanation">\
-								To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them by clicking the "Tutorials" link in the topology list.</p>
-							<p class="tutorialExplanation">
+								To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them by clicking the "Tutorials" link in the topology list.</p>\
+							<p class="tutorialExplanation">\
 								You can find a button to delete this topology in the "Topology" tab.'
 					}
 		];
