@@ -48,6 +48,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	DIRECT_ATTRS_EXCLUDE = []
 	CUSTOM_ATTRS = {}
 	
+	HOST_TYPE = ""
+	
 	DOC = ""
 	CAP_CHILDREN = {}
 	CAP_PARENT = []
@@ -109,7 +111,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		return None
 
 	def remoteType(self):
-		return self.type
+		return self.HOST_TYPE or self.type
 
 	def _remoteAttrs(self):
 		caps = host.getElementCapabilities(self.remoteType())
@@ -371,41 +373,31 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def onError(self, exc):
 		pass
 		
-	def capAttrs(self):
-		attrs = {}
-		if self.DIRECT_ATTRS:
-			caps = host.getElementCapabilities(self.remoteType())
-			if caps:
-				caps = caps["attrs"]
-			if caps:
-				for name in self.DIRECT_ATTRS_EXCLUDE:
-					if name in caps:
-						del caps[name]
-				attrs.update(caps)
-		for name, attr in self.CUSTOM_ATTRS.iteritems():
-			attrs[name] = attr.info()
-		for name, attr in attrs.iteritems():
-			attrs[name]["enabled"] = not "states" in attr or self.state in attr["states"]
-			if "states" in attrs[name]:
-				del attrs[name]["states"]	
-		return attrs
-			
-	def capActions(self):
-		actions = set()
-		for action, states in self.CUSTOM_ACTIONS.iteritems():
-			if self.state in states:
-				actions.add(action)
-		mel = self.mainElement()
-		if self.DIRECT_ACTIONS and mel:
-			actions |= set(mel.getAllowedActions()) - set(self.DIRECT_ACTIONS_EXCLUDE)
-		return list(actions) 
-	
-	def capChildren(self):
-		children = []
-		for type_, states in self.CAP_CHILDREN.iteritems():
-			if self.state in states:
-				children.append(type_)
-		return children 
+	@classmethod
+	def getCapabilities(cls, host_):
+		if not host_:
+			host_ = host.getAll()[0]
+		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
+			host_cap = host_.getElementCapabilities(cls.HOST_TYPE or cls.TYPE)
+		cap_actions = dict(cls.CUSTOM_ACTIONS)
+		if cls.DIRECT_ACTIONS:
+			for action, params in host_cap["actions"].iteritems():
+				if not action in cls.DIRECT_ACTIONS_EXCLUDE:
+					cap_actions[action] = params
+		cap_attrs = {}
+		for attr, params in cls.CUSTOM_ATTRS.iteritems():
+			cap_attrs[attr] = params.info()
+		if cls.DIRECT_ATTRS:
+			for attr, params in host_cap["attrs"].iteritems():
+				if not attr in cls.DIRECT_ATTRS_EXCLUDE:
+					cap_attrs[attr] = params
+		return {
+			"attrs": cap_attrs,
+			"actions": cap_actions,
+			"children": cls.CAP_CHILDREN,
+			"parent": cls.CAP_PARENT,
+			"connectable": cls.CAP_CONNECTABLE
+		}
 			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
@@ -419,9 +411,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			"attrs": self.attrs.copy(),
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
-			"cap_actions": self.capActions(),
-			"cap_attrs": self.capAttrs(),
-			"cap_children": self.capChildren()
+			"debug": {
+					"host_elements": [(o.host.address, o.num) for o in self.getHostElements()],
+					"host_connections": [(o.host.address, o.num) for o in self.getHostConnections()],
+			}
 		}
 		mel = self.mainElement()
 		if mel:

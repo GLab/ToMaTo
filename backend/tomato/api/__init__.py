@@ -22,3 +22,4 @@ from elements import *
 from connections import *
 from resources import *
 from docs import *
+from capabilities import *
