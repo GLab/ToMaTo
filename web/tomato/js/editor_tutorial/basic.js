@@ -20,7 +20,7 @@ var editor_tutorial = [
 		     	
 					{
 					text:	'<p class="tutorialExplanation">\
-								Welcome to ToMaTo! You have just created a new Topology.<br />\
+								Welcome to ToMaTo!<br />\
 								This guide will tell you the basics of how to use this editor.<br />\
 								If you already know how to use this tool, you can close this window.</p>\
 							<p class="tutorialCommand">\
@@ -31,7 +31,7 @@ var editor_tutorial = [
 					},
 					{
 					text:	'<p class="tutorialExplanation">\
-								First of all, let\'s start with a quick overview over the user interface.</p>\
+								First of all, let\'s start with an overview over the user interface.</p>\
 							<p class="tutorialExplanation">\
 								The Topology Editor consists of two major parts: The menu at the top, and the workspace which is currently empty.</p>\
 							<p class="tutorialExplanation">\
@@ -46,11 +46,21 @@ var editor_tutorial = [
 							<p class="tutorialExplanation">\
 								It is devided into tabs (Home, Devices, ...). Every tab is devided into multiple Groups (Modes, Topology control, ...), each of which consists of multiple buttons.</p>\
 							<p class="tutorialExplanation">\
-								Of special importance is the "Modes" group in the "Home" tab: It lets you choose between three modes which define what a left-click in the workspace does when you\'re not using any other features.</p>\
+								Of special importance is the "Modes" group in the "Home" tab: It lets you choose between three modes which define what a left-click in the workspace does when you\'re not using any other features. Especially the "Delete" mode may cause unwanted, irreversible changes to your topology.</p>\
 							<p class="tutorialExplanation">\
-								</p>\
-							<p class="tutorialExplanation">\
+								The "Home" tab provides you the most important features.
 								</p>',
+					skip_button: 'Continue'
+					},
+					{
+					text: '<p class="tutorialExplanation">\
+								The "Devices" tab provides access to all device templates. See the "Devices" tutorial for more information.</p>\
+							<p class="tutorialExplanation">\
+								The "Network" tab provides access to virtual network hardware. See the "Network" tutorial for more information.</p>
+							<p class="tutorialExplanation">\
+								Use the "Topology" tab to manage this topology.</p>\
+							<p class="tutorialExplanation">\
+								The "Options" tab provides several options, which are saved per-topology.</p>',
 					skip_button: 'Continue'
 					},
 					{
@@ -436,7 +446,9 @@ var editor_tutorial = [
 					text:	'<p class="tutorialExplanation">\
 								Congratulations, you have successfully completed the basic tutorial.</p>\
 							<p class="tutorialExplanation">\
-								To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them in the menu\'s \'Tutorials\' tab.</p>'
+								To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them by clicking the "Tutorials" link in the topology list.</p>
+							<p class="tutorialExplanation">
+								You can find a button to delete this topology in the "Topology" tab.'
 					}
 		];
 		
