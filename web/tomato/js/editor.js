@@ -318,17 +318,20 @@ var TutorialWindow = Window.extend({
 			if (!options.tutorialVisible)
 				return;
 				
+			this.editor = options.editor
+				
 			this.tutorialStatus = options.tutorial_status || 0;
 			
 			//create UI
+			var t = this
 			this.text = $("<div>.</div>");
 			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
 			this.backButton = $("<input type=\"button\" value=\"Back\" />");
 			this.buttons.append(this.backButton);
-			this.backButton.click(function() {editor.workspace.tutorialWindow.tutorialGoBack(); });
+			this.backButton.click(function() {t.tutorialGoBack(); });
 			this.skipButton = $("<input type=\"button\" value=\"Skip\" />");
 			this.buttons.append(this.skipButton);
-			this.skipButton.click(function() {editor.workspace.tutorialWindow.tutorialGoForth(); });
+			this.skipButton.click(function() {t.tutorialGoForth(); });
 			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
 			this.buttons.append(this.closeButton);
 			
@@ -342,7 +345,7 @@ var TutorialWindow = Window.extend({
 			this.helpLinkTarget="/help/";
 			
 			this.closeButton.click(function() {
-				editor.workspace.tutorialWindow.setTutorialVisible(false);
+				t.setTutorialVisible(false);
 			});
 			
 			this.add(this.helpButton);
@@ -364,7 +367,7 @@ var TutorialWindow = Window.extend({
 			this.show();
 		} else {
 			this.hide();
-			this.closeTutorialForBackend();
+			this.closeTutorial();
 		}
 		this.tutorialVisible = vis;
 	},
@@ -450,21 +453,32 @@ var TutorialWindow = Window.extend({
 	},
 	updateStatusToBackend: function() {
 		ajax({
-			url: 'topology/'+editor.topology.id+'/modify',
+			url: 'topology/'+this.editor.topology.id+'/modify',
 		 	data: {attrs: {
 		 					_tutorial_status: this.tutorialStatus
 		 					},
 		 			}
 		});
 	},
-	closeTutorialForBackend: function() {
-		ajax({
-			url: 'topology/'+editor.topology.id+'/modify',
-		 	data: {attrs: {
-		 					_tutorial_disabled: true
-		 					},
-		 			}
-		});
+	closeTutorial: function() {
+		var t = this
+		if (confirm("You have completed the tutorial. Do you wish to keep this topology? (\"Cancel\" will delete it)")) {
+			ajax({
+				url: 'topology/'+this.editor.topology.id+'/modify',
+			 	data: {attrs: {
+			 					_tutorial_disabled: true
+			 					},
+			 			}
+			});
+		} else {
+			ajax({
+				url: "topology/"+this.editor.topology.id+"/remove",
+				successFn: function() {
+					t.editor.triggerEvent({component: "topology", object: t.editor.topology, operation: "remove", phase: "end"});
+					window.location = "/topology";
+				}
+			});	
+		}
 	}
 	
 	
@@ -562,7 +576,8 @@ var Workspace = Class.extend({
 			closeOnEscape: false,
 			tutorialVisible:this.editor.options.tutorial,
 			tutorial_status:this.editor.options.tutorial_status,
-			hideCloseButton: true
+			hideCloseButton: true,
+			editor: this.editor
 		});
     	
     	var t = this;
