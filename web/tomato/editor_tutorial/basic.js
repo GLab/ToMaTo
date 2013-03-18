@@ -64,27 +64,19 @@ var editor_tutorial = [
 					},
 					{
 					trigger:function(obj) { 
-						if (obj != undefined) {
-						if (obj.attrs != undefined && 
-							obj.component != undefined && 
-							obj.operation != undefined &&
-							obj.phase != undefined) {
-							
-							if (obj.attrs.type != undefined && 
-								obj.attrs.state != undefined) {
-								
-								if (obj.attrs.state == "created" && 
-									obj.attrs.type == "openvz" && 
-									obj.component == "element" &&
-									obj.operation == "create" &&
-									obj.phase == "end") {
-									return true;
-								}
-							}
-						}
-					}
-					return false;
-					},
+					
+						mask = {
+							attrs: {
+								state: "created",
+								type: "openvz"
+							},
+							component: "element",
+							operation: "create",
+							phase: "end"
+						};
+						return compareToMask(obj,mask);
+					
+					  },
 					text:	'<p class = "tutorialCommand">\
 								To add a first device to your topology, click on OpenVZ (blue screen) \
 								in \'Common elements\' in the menu, and then click somewhere in the workspace.</p>'
@@ -102,27 +94,21 @@ var editor_tutorial = [
 					skip_button: 'Continue'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs._pos != undefined) {
-									
-									if (obj.attrs._pos.x != undefined &&
-										obj.attrs._pos.y != undefined &&
-										obj.component == "element" &&
-										obj.operation == "modify" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
+					trigger:function(obj) {
+					  
+						mask = {
+							component: "element",
+							operation: "modify",
+							phase: "end"
+						};
+						mask2= {
+						  attrs: {
+							_pos: {x: 1,y: 1}
+						  }
 						}
-						return false;
-					},
+						return compareToMask(obj,mask) && maskExists(obj,mask2);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								You can move your new device via drag-and-drop.</p>\
 							<p class="tutorialCommand">\
@@ -134,28 +120,20 @@ var editor_tutorial = [
 					skip_button: 'Continue'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs.type != undefined && 
-									obj.attrs.state != undefined) {
-									
-									if (obj.attrs.state == "created" && 
-										obj.attrs.type == "kvmqm" && 
-										obj.component == "element" &&
-										obj.operation == "create" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							attrs: {
+								state: "created",
+								type: "kvmqm"
+							},
+							component: "element",
+							operation: "create",
+							phase: "end"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								You will need more devices to get a whole topology. This time, let\'s create a KVM device.</p>\
 							<p class="tutorialCommand">\
@@ -172,26 +150,19 @@ var editor_tutorial = [
 					skip_button:'continue'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs.state != undefined) {
-									
-									if (obj.attrs.state == "created" &&
-										obj.component == "connection" &&
-										obj.operation == "create" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							attrs: {
+								state: "created",
+							},
+							component: "connection",
+							operation: "create",
+							phase: "end"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								By now, the two devices don\'t have any network connection.</p>\
 							<p class="tutorialCommand">\
@@ -206,23 +177,17 @@ var editor_tutorial = [
 					skip_button: 'Continue'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.action != undefined &&
-								obj.phase != undefined) {
-									
-								if (obj.action == "prepare" &&
-									obj.component == "element" &&
-									obj.operation == "action" &&
-									obj.phase == "begin") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							action: "prepare",
+							component: "element",
+							operation: "action",
+							phase: "begin"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								Since you have a topology now, you can run it.</p>\
 							<p class="tutorialExplanation">\
@@ -235,28 +200,22 @@ var editor_tutorial = [
 					text:	'<p class="tutorialExplanation">\
 								The system is now configuring the devices.</p>\
 							<p class="tutorialExplanation">\
-								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device. Please wait for this.</p>',
+								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device. Please wait for this, and click "Continue" when it\'s finished.</p>',
 					skip_button: 'Continue',
 					help_page: 'prepare'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.action != undefined &&
-								obj.phase != undefined) {
-									
-								if (obj.action == "start" &&
-									obj.component == "element" &&
-									obj.operation == "action" &&
-									obj.phase == "begin") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							action: "start",
+							component: "element",
+							operation: "action",
+							phase: "begin"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								Now, you want to run it.</p>\
 							<p class="tutorialCommand">\
@@ -273,19 +232,15 @@ var editor_tutorial = [
 					help_page: 'run'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined) {
-									
-								if (obj.component == "element" &&
-									obj.operation == "console-dialog") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							component: "element",
+							operation: "console-dialog"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialCommand">\
 								To access the devices via command line, right-click the device, Console, Java Applet</p>\
 							<p class="tutorialExplanation">\
@@ -301,23 +256,17 @@ var editor_tutorial = [
 					skip_button: 'Continue'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.action != undefined &&
-								obj.phase != undefined) {
-									
-								if (obj.action == "stop" &&
-									obj.component == "element" &&
-									obj.operation == "action" &&
-									obj.phase == "begin") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							action: "stop",
+							component: "element",
+							operation: "action",
+							phase: "begin"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialCommand">\
 								To stop the devices, press the \'Stop\' button in the top menu.</p>'
 					},
@@ -330,23 +279,17 @@ var editor_tutorial = [
 					help_page: 'prepare'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.action != undefined &&
-								obj.phase != undefined) {
-									
-								if (obj.action == "destroy" &&
-									obj.component == "element" &&
-									obj.operation == "action" &&
-									obj.phase == "begin") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							action: "destroy",
+							component: "element",
+							operation: "action",
+							phase: "begin"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialCommand">\
 								To destroy the devices, click the \'destroy\' button.</p>'
 					},
@@ -359,52 +302,45 @@ var editor_tutorial = [
 					help_page: 'prepare'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-									
-								if (obj.component == "connection" &&
-									obj.operation == "remove" &&
-									obj.phase == "end") {
-									return true;
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask = {
+							component: "connection",
+							operation: "remove",
+							phase: "end"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								To finish the tutorial, let\'s clean up.</p>\
 							<p class="tutorialCommand">\
 								To delete the connection, right-click the connection (the square on the line) and select \'delete\'.</p>'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined &&
-								obj.object != undefined) {
-									
-								if (obj.object.data != undefined &&
-									obj.component == "element" &&
-									obj.operation == "remove" &&
-									obj.phase == "end") {
-									
-									if (obj.object.data.type != undefined) {
-											
-										if (obj.object.data.type == "openvz" ||
-											obj.object.data.type == "kvmqm" ||
-											obj.object.data.type == "repy") {
-											return true;
-										}
-									}
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask_openvz = {
+							object: { data: {
+								type: "openvz"
+							}},
+							component: "element",
+							operation: "remove",
+							phase: "end"
+						};
+						
+						mask_kvmqm = {
+							object: { data: {
+								type: "kvmqm"
+							}},
+							component: "element",
+							operation: "remove",
+							phase: "end"
+						};
+						
+						return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
+						
+					  },
 					text:	'<p class="tutorialExplanation">\
 								To delete devices or connections, you can also use the \'delete\' mode from the \'Modes\' group in the menu.</p>\
 							<p class="tutorialExplanation">\
@@ -413,31 +349,29 @@ var editor_tutorial = [
 								Now, delete both devices.</p>'
 					},
 					{
-					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined &&
-								obj.object != undefined) {
-									
-								if (obj.object.data != undefined &&
-									obj.component == "element" &&
-									obj.operation == "remove" &&
-									obj.phase == "end") {
-									
-									if (obj.object.data.type != undefined) {
-											
-										if (obj.object.data.type == "openvz" ||
-											obj.object.data.type == "kvmqm" ||
-											obj.object.data.type == "repy") {
-											return true;
-										}
-									}
-								}
-							}
-						}
-						return false;
-					},
+					trigger:function(obj) {
+						
+						mask_openvz = {
+							object: { data: {
+								type: "openvz"
+							}},
+							component: "element",
+							operation: "remove",
+							phase: "end"
+						};
+						
+						mask_kvmqm = {
+							object: { data: {
+								type: "kvmqm"
+							}},
+							component: "element",
+							operation: "remove",
+							phase: "end"
+						};
+						
+						return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
+						
+					  },
 					text:	'<p class="tutorialCommand">\
 								Delete the other device.</p>'
 					},
