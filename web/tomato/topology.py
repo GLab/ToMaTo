@@ -37,12 +37,12 @@ def _display(api, info, tut_id):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-    return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'tutorial':tut_id})	
+	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id})	
 
 @wrap_rpc
 def info(api, request, id, tut_id = None): #@ReservedAssignment
 	info=api.topology_info(id)
-    return _display(api, info, tut_id);
+	return _display(api, info, tut_id);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
@@ -61,13 +61,13 @@ def import_form(api, request):
 		if form.is_valid():
 			f = request.FILES['topologyfile']
 			
-            topology_structure = json.load(f)
-            res = topology_export.import_topology(api, topology_structure) #reminder: when changing the result format of import_topology, also adapt editor_tutorial.loadTutorial 
-            
-            if res['success']:
-                return redirect("tomato.topology.info", id=res["id"]) 
-            else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':res['message']})
+			topology_structure = json.load(f)
+			res = topology_export.import_topology(api, topology_structure) #reminder: when changing the result format of import_topology, also adapt editor_tutorial.loadTutorial 
+
+			if res['success']:
+				return redirect("tomato.topology.info", id=res["id"]) 
+			else:
+				return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':res['message']})
 			
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
@@ -75,17 +75,16 @@ def import_form(api, request):
 		form = ImportTopologyForm()
 		return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 		
-        
+
 @wrap_rpc
 def export(api, request, id):
-    
-    top = topology_export.export(api, id)
-    
-    
-    
-    filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
-    response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
-    response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-    
-    return response
-    
+
+	top = topology_export.export(api, id)
+
+
+
+	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
+	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
+	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+
+	return response
