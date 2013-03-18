@@ -416,7 +416,7 @@ var TutorialWindow = Window.extend({
 			this.closeButton.hide();
 		} else {
 			this.backButton.show();
-			if (this.tutorialStatus > this.tutorialSteps.length) {
+			if (this.tutorialStatus == this.tutorialSteps.length - 1) {
 				this.skipButton.hide();
 				this.closeButton.show();
 			} else {
