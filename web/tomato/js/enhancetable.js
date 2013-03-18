@@ -301,25 +301,25 @@ enhancetable = {
                  node.getElementsByTagName('input').length;
     
     if (node.getAttribute("enhancetable_customkey") != null) {
-      return node.getAttribute("enhancetable_customkey");
+      return node.getAttribute("enhancetable_customkey").toLowerCase();
     }
     else if (typeof node.textContent != 'undefined' && !hasInputs) {
-      return node.textContent.replace(/^\s+|\s+$/g, '');
+      return node.textContent.replace(/^\s+|\s+$/g, '').toLowerCase();
     }
     else if (typeof node.innerText != 'undefined' && !hasInputs) {
-      return node.innerText.replace(/^\s+|\s+$/g, '');
+      return node.innerText.replace(/^\s+|\s+$/g, '').toLowerCase();
     }
     else if (typeof node.text != 'undefined' && !hasInputs) {
-      return node.text.replace(/^\s+|\s+$/g, '');
+      return node.text.replace(/^\s+|\s+$/g, '').toLowerCase();
     }
     else {
       switch (node.nodeType) {
         case 3:
           if (node.nodeName.toLowerCase() == 'input') {
-            return node.value.replace(/^\s+|\s+$/g, '');
+            return node.value.replace(/^\s+|\s+$/g, '').toLowerCase();
           }
         case 4:
-          return node.nodeValue.replace(/^\s+|\s+$/g, '');
+          return node.nodeValue.replace(/^\s+|\s+$/g, '').toLowerCase();
           break;
         case 1:
         case 11:
@@ -327,7 +327,7 @@ enhancetable = {
           for (var i = 0; i < node.childNodes.length; i++) {
             innerText += enhancetable.getInnerText(node.childNodes[i]);
           }
-          return innerText.replace(/^\s+|\s+$/g, '');
+          return innerText.replace(/^\s+|\s+$/g, '').toLowerCase();
           break;
         default:
           return '';
