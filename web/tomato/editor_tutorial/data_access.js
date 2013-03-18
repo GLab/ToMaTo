@@ -4,7 +4,9 @@ var editor_tutorial = [
 						Welcome to the Data Access tutorial!<br />\
 						This tutorial will teach you how you can upload and/or download data to or from your devices.</p>\
 					<p class="tutorialExplanation">\
-						Let\'s assume you have created this topology, and now you need to put files on your devices to execute your experiment.</p>',
+						Let\'s assume you have created this topology, and now you need to put files on your devices to execute your experiment.</p>\
+					<p class="tutorialExplanation">\
+						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial</i></p>',
 			skip_button: 'Start tutorial'
 			},
 			{
@@ -31,6 +33,11 @@ var editor_tutorial = [
 						When you prepare the devices, those images will be created from the templates.</p>\
 					<p class="tutorialCommand">\
 						Prepare your topology\'s devices.</p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						Wait for both devices to be prepared. Then press "Continue" button.</p>',
+			skip_button: "Continue"
 			},
 			{
 			text:"TODO: talk about downloading and uploading images here. Explain how to use this for file distribution (create 1 machine; upload to many) and different cool stuff about images."
@@ -135,6 +142,8 @@ var editor_tutorial = [
 					return false;
 				},
 			text:	'<p class="tutorialExplanation">\
+						<i>In case you wonder about the different look of the connections: You\'ll learn more about this in the "Connections" tutorial. You can ignore it in this tutorial.</i></p>\
+					<p class="tutorialExplanation">\
 						Of course your devices must be running to be able to access the internet.</p>\
 					<p class="tutorialCommand">\
 						Start your topology\'s devices.</p>'
