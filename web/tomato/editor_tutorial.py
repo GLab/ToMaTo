@@ -19,14 +19,13 @@
 
 from lib import wrap_rpc
 from django.shortcuts import render_to_response, redirect
-import topology_export
-from django.http import HttpResponse
+import topology_export, os, json
 
 
 #This is a list of available tutorials (values should be self-explaining):
 #'id' references to
-# - a file available as /js/editor_tutorial/'id'.js
-# - a key in tutorial_startTopologies
+# - a tut desc file in ./editor_tutorial/'id'.js
+# - a topology file in ./editor_tutorial/'id'.tomato3
 tutorials = [
                             {
                              'id':   "basic",
@@ -36,61 +35,26 @@ tutorials = [
                             },
                             {
                              'id':   "data_access",
-                             'name': "Accessing Data",
+                             'name': "Data Access",
                              'desc': "Teaches various methods on how to upload and/or download data to/from the devices",
                              'icon': "/img/download.png"
-                            },
-                            {
-                             'id':   "connections",
-                             'name': "Using Connections",
-                             'desc': "Learn everything about connections.",
-                             'icon': "/img/connect32.png"
-                            },
-                            {
-                             'id':   "devices",
-                             'name': "Using Devices",
-                             'desc': "Learn everything about devices.",
-                             'icon': "/img/openvz32.png"
                             }
+                            #===================================================
+                            # {
+                            # 'id':   "connections",
+                            # 'name': "Using Connections",
+                            # 'desc': "Learn everything about connections.",
+                            # 'icon': "/img/connect32.png"
+                            # },
+                            # {
+                            # 'id':   "devices",
+                            # 'name': "Using Devices",
+                            # 'desc': "Learn everything about devices.",
+                            # 'icon': "/img/openvz32.png"
+                            # }
+                            #===================================================
              
             ]
-
-
-
-
-#for every tutorial, specify a starting point as an importable topology:
-tutorial_startTopologies = {
-						'basic': {'file_information':{'version':1}, 'topology':{
-																			'attrs':{'name':"Tutorial: Beginner Tutorial"},
-																			'elements':[],
-																			'connections':[]
-																			}},
-						
-						'data_access': {'file_information':{'version':1}, 'topology':{
-																			'attrs':{'name':"Tutorial: Accessing Data"},
-																			'elements':[],
-																			'connections':[]
-																			}},
-						
-						'connections': {'file_information':{'version':1}, 'topology':{
-																			'attrs':{'name':"Tutorial: Using Connections"},
-																			'elements':[],
-																			'connections':[]
-																			}},
-						
-						'devices': {'file_information':{'version':1}, 'topology':{
-																			'attrs':{'name':"Tutorial: Using Devices"},
-																			'elements':[],
-																			'connections':[]
-																			}}
-						}
-
-
-
-
-
-
-
 
 
 @wrap_rpc
@@ -100,6 +64,12 @@ def index(api, request):
 
 @wrap_rpc
 def loadTutorial(api, request, tut_id):
-    top_id = topology_export.import_topology(api, tutorial_startTopologies[tut_id])['id']
+    
+    module_dir = os.path.dirname(__file__)
+    file_path = os.path.join(module_dir,'editor_tutorial/'+tut_id+'.tomato3')
+    top_str = open(file_path,'r').read()
+    top_dict = json.loads(top_str)
+    
+    top_id = topology_export.import_topology(api, top_dict)['id']
     api.topology_modify(top_id,{'_tutorial_id':tut_id,'_tutorial_status':0})
     return redirect("tomato.topology.info", id=top_id)

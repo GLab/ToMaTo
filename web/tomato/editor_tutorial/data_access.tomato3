@@ -1,0 +1,106 @@
+{
+  "file_information": {
+    "version": 1
+  }, 
+  "topology": {
+    "connections": [
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "elements": [
+          1534, 
+          1535
+        ], 
+        "type": "bridge", 
+        "attrs": {
+          "bandwidth_from": 1000, 
+          "lossratio_to": 0, 
+          "delay_to": 0, 
+          "duplicate_from": 0, 
+          "distribution_to": "uniform", 
+          "delay_from": 100, 
+          "capture_mode": "file", 
+          "lossratio_from": 0, 
+          "corrupt_to": 0, 
+          "emulation": true, 
+          "jitter_from": 0, 
+          "duplicate_to": 0, 
+          "distribution_from": "uniform", 
+          "bandwidth_to": 10000, 
+          "jitter_to": 0, 
+          "corrupt_from": 0, 
+          "capturing": false, 
+          "capture_filter": ""
+        }
+      }
+    ], 
+    "elements": [
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "openvz_interface", 
+        "attrs": {
+          "ip4address": "10.0.0.1/24"
+        }, 
+        "parent": 1532, 
+        "id": 1535
+      }, 
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "kvmqm_interface", 
+        "attrs": {}, 
+        "parent": 1533, 
+        "id": 1534
+      }, 
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "kvmqm", 
+        "attrs": {
+          "profile": "normal", 
+          "site": null, 
+          "name": "kvmqm1", 
+          "template": "debian-6.0_x86", 
+          "_pos": {
+            "y": 0.3181818181818182, 
+            "x": 0.5666666666666667
+          }
+        }, 
+        "parent": null, 
+        "id": 1533
+      }, 
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "openvz", 
+        "attrs": {
+          "profile": "normal", 
+          "site": null, 
+          "name": "openvz1", 
+          "template": "debian-6.0_x86", 
+          "_pos": {
+            "y": 0.3181818181818182, 
+            "x": 0.23333333333333334
+          }
+        }, 
+        "parent": null, 
+        "id": 1532
+      }
+    ], 
+    "attrs": {
+      "_snap_to_grid": true, 
+      "name": "Tutorial: Data Access"
+    }
+  }
+}
