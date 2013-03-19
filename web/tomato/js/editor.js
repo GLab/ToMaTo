@@ -1316,7 +1316,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
-			this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
+			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
 			this.emulation_elements = [];
 			var t = this;
 			var el = new CheckboxElement({
@@ -1353,7 +1353,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
 			this.table.append($('<tr/>')
-				.append($("<th>Direction</th>"))
+				.append($("<td>Direction</td>"))
 				.append($('<td align="middle"/>').append(fromDir).append(dir1))
 				.append($('<td align="middle"/>').append(toDir).append(dir2))
 				.append($('<td>&nbsp;</td>'))
@@ -1379,7 +1379,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
 		if (con.attrEnabled("capturing")) {
-			this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
+			this.table.append($("<tr/>").append($("<th colspan=4><big>Packet capturing</big></th>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
