@@ -42,7 +42,7 @@ tutorials = [
                             {
                             'id':   "connections",
                             'name': "Using Connections",
-                            'desc': "Learn everything about connections.",
+                            'desc': "Learn everything about connections. (currently under construction)",
                             'icon': "/img/connect32.png"
                             }
                             #===================================================

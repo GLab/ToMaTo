@@ -162,15 +162,47 @@ var editor_tutorial = [
 				return compareToMask(obj,mask);
 				
 			  },
-			text:	'<p class="tutorialExplanation>\
+			text:	'<p class="tutorialExplanation">\
 						While your topology is being started, let me explain what happens:<br />\
 						All devices connected to a switch connected to to the internet will have a direct connection to the internet (no NAT router or similar). TODO: Is this correct?<br />\
 						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
 					<p class="tutorialCommand>\
 						When the topology is running, open a console connection to the device.</p>'
 			},
-			
-			
+			{
+			text:	'<p class="tutorialExplanation">\
+						<i><small>This tutorial can\'t read the console\'s I/O, so just follow the following instructions.</small></i></p>\
+					<p class="tutorialExplanation">\
+						You should be able to ping any server on the internet. Please start a continuous ping to any server.</p>\
+					<p class="tutorialExplanation">\
+						The delay you are currently seeing is the delay between your device\'s host system and the server you are pinging.</p>\
+					<p class="tutorialExplanation">\
+						Open the connection\'s configure dialogue again, and set the delay of one direction to 100ms, and Apply the changes.<br />\
+						You will notice that this delay will be added to your previous delay.<br />\
+						You will also notice a change in the connection\'s appearance: A dashed line means that link emulation is taking place (except for bandwidth).</p>\
+					<p class="tutorialExplanation">\
+						Now, set a jitter of 50ms on the same direction. You will notice a jitter in the delay.</p>',
+			skip_button:	"Continue"
+			},
+			{
+			text:	'<p class="tutorialExplanation>\
+						You can reset the delay to 0ms now.</p>\
+					<p class="tutorialExplanation>\
+						When playing around with loss ratio, corruption ratio, and/or duplication ratio, you will notice lost, corrupted and duplicated packets in your ping history, where the ratio is the probability of corruption for each packet when travelling in the corresponding direction.<br />\
+					<p class="tutorialExplanation>\
+						Please reset delay and ratios to 0, and stop the pinging.</p>',
+			skip_button:	"Continue"
+			},
+			{
+			text:	'<p class="tutorialExplanation>\
+						For the next step, you need a URL to a large file (at least 100MB), or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
+					<p class="tutorialExplanation>\
+						The default bandwidth is set to 10Mbit/s. You will see this when you download the file (you don\'t need to complete the download; just start it and cancel when you have seen the download speed.</p>\
+					<p class="tutorialExplanation>\
+						You can now change the bandwidth (from internet to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
+						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
+			skip_button:	"Continue"
+			}
 			
 			{
 			text:	'<p class="tutorialExplanation">\
