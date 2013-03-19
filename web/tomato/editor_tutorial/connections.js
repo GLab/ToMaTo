@@ -116,7 +116,7 @@ var editor_tutorial = [
 					<p class="tutorialExplanation">\
 						Bandwidth and delay should be self-explaining. By setting a jitter, you can simulate a jitter in the delay (it will be normally distributed by a standard deviation of the set jitter).<br />\
 						TODO: explain distribution\
-						Loss ration, duplication ratio and corruption ratio should also be self-explaining.</p>\',
+						Loss ratio, duplication ratio and corruption ratio should also be self-explaining.</p>',
 			skip_button: "Continue"
 			},
 			{
@@ -124,7 +124,7 @@ var editor_tutorial = [
 				
 				mask = {
 						component: "element",
-						operation: "attribute-dialog"
+						operation: "attribute-dialog",
 						object: {
 							data: {
 								type: "openvz_interface"
@@ -151,7 +151,7 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialCommand">\
 						Make sure DHCP is enabled. The close this dialog and start your topology.'
-			}
+			},
 			{
 			trigger:function(obj) {
 				
@@ -205,7 +205,7 @@ var editor_tutorial = [
 			},
 			{
 			text:'TODO: Packet capturing, colorified segments.'
-			}
+			},
 			
 			{
 			text:	'<p class="tutorialExplanation">\
