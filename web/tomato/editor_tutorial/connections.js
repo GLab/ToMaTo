@@ -13,7 +13,7 @@ var editor_tutorial = [
 						To start, let\'s take a closer look at a connection.</p>\
 					<p class="tutorialExplanation">\
 						Every connection consits of two network interfaces and the connection itself.<br />\
-						An interface is represented by a grey circle at a device. Here you can configure the device's network preferences (e.g., ip address).<br />
+						An interface is represented by a grey circle at a device. Here you can configure the device\'s network preferences (e.g., ip address).<br />\
 						The connection is represented by a blue square at its center. Here, you can configure the link (e.g., bandwidth, loss rate, etc).</p>\
 					<p class="tutorialExplanation">\
 						The options available to a connection depend on the connected devices. The same is for interfaces.</p>',
@@ -24,7 +24,7 @@ var editor_tutorial = [
 						Additionally, we have to define some terms:\
 						<ul><li><b>Connection</b>: The connection which you can see in this editor. In this tutorial, "Connection" always refers to the blue square on a connection.</li>\
 						<li><b>Link</b>: The virtualized representation of a connection</li>\
-						<li><b>Link Emulation</b>: The fact that a link acts like a physical link. This means delay, packet loss, etc.<br />
+						<li><b>Link Emulation</b>: The fact that a link acts like a physical link. This means delay, packet loss, etc.<br />\
 						Link emulation is set on a connection and executed on a link.</li>',
 			skip_button: 'Continue'
 			},
@@ -47,7 +47,7 @@ var editor_tutorial = [
 						By default, a connection can only be created between exactly two devices.\
 						If you want to connect multiple devices to the same network, you need a switch.</p>\
 					<p class="tutorialExplanation">\
-						It is not possible to turn on link emulation on a connection which connects anything with the Internet.
+						It is not possible to turn on link emulation on a connection which connects anything with the Internet.\
 						To be able to do this, we can use a switch</p>\
 					<p class="tutorialCommand">\
 						Add a switch to your topology, and connect it to both the Internet and your device.</p>'
@@ -66,7 +66,7 @@ var editor_tutorial = [
 				return compareToMask(obj,mask);
 				
 			  },
-			text:	'<p class="tutorialCommand">
+			text:	'<p class="tutorialCommand">\
 						Connect the switch to both elements</p>'
 			},
 			{
@@ -83,9 +83,94 @@ var editor_tutorial = [
 				return compareToMask(obj,mask);
 				
 			  },
-			text:	'<p class="tutorialCommand">
+			text:	'<p class="tutorialCommand">\
 						Don\'t forget the second connection.</p>'
 			},
+			{
+			trigger:function(obj) { 
+				console.log("TODO: check if this is a connection between the switch and a device or the internet");
+				mask = {
+					component: "connection",
+					operation: "attribute-dialog"
+				};
+				return compareToMask(obj,mask);
+				
+			  },
+			text:	'<p class="tutorialCommand">\
+						Open the Configure Dialog of the Device-Switch connection.</p>\
+					<p class="tutorialExplanation">\
+						To open the Configure Dialog, Right-click on the connection (that is, the blue square), and select "Configure".</p>\
+					<p class="tutorialExplanation">\
+						<i><small>This tutorial will also react if you open the other connection\'s configure dialog (technical issues). In case you wonder what you would see in it: It would be empty.</small></i></p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						You might might need a small overview:</p>\
+					<p class="tutorialExplanation">\
+						The attributes are devided into two subjects: link emulation and packet capturing.<br />\
+						For now, let\'s ignore the packet capturing part, and only look at link emulation.\
+					<p class="tutorialExplanation">\
+						Values are devided into two columns, one for each direction.<br />\
+						Every value only affects packets being sent in that particular direction.<br />\
+						The best way to determine the direction of the column is to look at the small graphic. It has the same orientation as the link in the editor, and the red arrow is the direction.</p>\
+					<p class="tutorialExplanation">\
+						Bandwidth and delay should be self-explaining. By setting a jitter, you can simulate a jitter in the delay (it will be normally distributed by a standard deviation of the set jitter).<br />\
+						TODO: explain distribution\
+						Loss ration, duplication ratio and corruption ratio should also be self-explaining.</p>\',
+			skip_button: "Continue"
+			},
+			{
+			trigger:function(obj) {
+				
+				mask = {
+						component: "element",
+						operation: "attribute-dialog"
+						object: {
+							data: {
+								type: "openvz_interface"
+							}
+						}
+					};
+				return compareToMask(obj,mask);
+				
+			  },
+			text:	'<p class="tutorialCommand">\
+						Close this Configure Dialog and open the Configure Dialog for the network interface on your OpenVZ device.</p>'
+			},
+			{
+			trigger:function(obj) {
+				
+				mask = {
+					action: "start",
+					component: "element",
+					operation: "action",
+					phase: "begin"
+				};
+				return compareToMask(obj,mask);
+				
+			  },
+			text:	'<p class="tutorialCommand">\
+						Make sure DHCP is enabled. The close this dialog and start your topology.'
+			}
+			{
+			trigger:function(obj) {
+				
+				mask = {
+					component: "element",
+					operation: "console-dialog"
+				};
+				return compareToMask(obj,mask);
+				
+			  },
+			text:	'<p class="tutorialExplanation>\
+						While your topology is being started, let me explain what happens:<br />\
+						All devices connected to a switch connected to to the internet will have a direct connection to the internet (no NAT router or similar). TODO: Is this correct?<br />\
+						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
+					<p class="tutorialCommand>\
+						When the topology is running, open a console connection to the device.</p>'
+			},
+			
+			
 			
 			{
 			text:	'<p class="tutorialExplanation">\
