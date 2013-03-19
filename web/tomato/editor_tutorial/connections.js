@@ -202,6 +202,9 @@ var editor_tutorial = [
 						You can now change the bandwidth (from internet to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
 						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
 			skip_button:	"Continue"
+			},
+			{
+			text:'TODO: Packet capturing, colorified segments.'
 			}
 			
 			{
