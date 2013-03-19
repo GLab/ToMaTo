@@ -6,7 +6,7 @@ var editor_tutorial = [
 					<p class="tutorialExplanation">\
 						Let\'s assume you have created this topology, and now you need to put files on your devices to execute your experiment.</p>\
 					<p class="tutorialExplanation">\
-						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial</i></p>',
+						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial, and a basic knowledge about the Linux command line (especially ifconfig, ssh, and scp)</i></p>',
 			skip_button: 'Start tutorial'
 			},
 			{
@@ -111,5 +111,44 @@ var editor_tutorial = [
 						Of course your devices must be running to be able to access the internet.</p>\
 					<p class="tutorialCommand">\
 						Start your topology\'s devices.</p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						Wait for both all devices to be running. Then press "Continue" button.</p>',
+			skip_button: "Continue"
+			},
+			{
+					trigger:function(obj) {
+						
+						mask = {
+							component: "element",
+							operation: "console-dialog"
+						};
+						return compareToMask(obj,mask);
+						
+					  },
+			text:	'<p class="tutorialCommand">\
+						Please open a terminal connection to one of your devices.</p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						You should now be able to ping any server in the internet. Try it! You can also see your device's global IP address using commands like ifconfig.\
+					<p class="tutorialExplanation">\
+						If you need to install software, you can use your device's OS preferred way to do this.</p>',
+			skip_button: "Continue"
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						You might want to connect to the device using ssh or scp.</p>\
+					<p class="tutorialExplanation">\
+						Use the command "ssh-enable" to enable ssh access.<p>\
+					<p class="tutorialExplanation">\
+						You will be asked to set a root password. Using ifconfig, you can determine your global IP address. You can then connect to the device via ssh, or transmit data to or from it via scp (Try it!)</p>'
+			skip_button: "Continue"
+			},
+			
+			{
+			text:	'<p class="tutorialExplanation">\
+						That was it for this tutorial! More ways to access data will be coming soon.</p>'
 			}
 ];
