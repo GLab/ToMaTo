@@ -1,0 +1,51 @@
+{
+  "file_information": {
+    "version": 1
+  }, 
+  "topology": {
+    "connections": [], 
+    "elements": [
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "openvz", 
+        "attrs": {
+          "profile": "normal", 
+          "site": null, 
+          "name": "openvz1", 
+          "template": "debian-6.0_x86", 
+          "_pos": {
+            "y": 0.18181818181818182, 
+            "x": 0.23333333333333334
+          }
+        }, 
+        "parent": null, 
+        "id": 1576
+      }, 
+      {
+        "debug": {
+          "host_connections": [], 
+          "host_elements": []
+        }, 
+        "type": "external_network", 
+        "attrs": {
+          "kind": "internet", 
+          "samenet": false, 
+          "name": "internet1", 
+          "_pos": {
+            "y": 0.18181818181818182, 
+            "x": 0.7666666666666667
+          }
+        }, 
+        "parent": null, 
+        "id": 1578
+      }
+    ], 
+    "attrs": {
+      "_snap_to_grid": true, 
+      "name": "Tutorial: Connections"
+    }
+  }
+}

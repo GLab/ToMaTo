@@ -38,14 +38,14 @@ tutorials = [
                              'name': "Data Access",
                              'desc': "Teaches various methods on how to upload and/or download data to/from the devices",
                              'icon': "/img/download.png"
+                            },
+                            {
+                            'id':   "connections",
+                            'name': "Using Connections",
+                            'desc': "Learn everything about connections.",
+                            'icon': "/img/connect32.png"
                             }
                             #===================================================
-                            # {
-                            # 'id':   "connections",
-                            # 'name': "Using Connections",
-                            # 'desc': "Learn everything about connections.",
-                            # 'icon': "/img/connect32.png"
-                            # },
                             # {
                             # 'id':   "devices",
                             # 'name': "Using Devices",
