@@ -185,26 +185,33 @@ var editor_tutorial = [
 			skip_button:	"Continue"
 			},
 			{
-			text:	'<p class="tutorialExplanation>\
+			text:	'<p class="tutorialExplanation">\
 						You can reset the delay to 0ms now.</p>\
-					<p class="tutorialExplanation>\
+					<p class="tutorialExplanation">\
 						When playing around with loss ratio, corruption ratio, and/or duplication ratio, you will notice lost, corrupted and duplicated packets in your ping history, where the ratio is the probability of corruption for each packet when travelling in the corresponding direction.<br />\
-					<p class="tutorialExplanation>\
+					<p class="tutorialExplanation">\
 						Please reset delay and ratios to 0, and stop the pinging.</p>',
 			skip_button:	"Continue"
 			},
 			{
-			text:	'<p class="tutorialExplanation>\
+			text:	'<p class="tutorialExplanation">\
 						For the next step, you need a URL to a large file (at least 100MB), or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
-					<p class="tutorialExplanation>\
+					<p class="tutorialExplanation">\
 						The default bandwidth is set to 10Mbit/s. You will see this when you download the file (you don\'t need to complete the download; just start it and cancel when you have seen the download speed.</p>\
-					<p class="tutorialExplanation>\
+					<p class="tutorialExplanation">\
 						You can now change the bandwidth (from internet to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
 						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
 			skip_button:	"Continue"
 			},
 			{
-			text:'TODO: Packet capturing, colorified segments.'
+			text:'TODO: Packet capturing'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						A last hint: In the "Options" tab, you can find the option "colorify segments".<br />\
+						By using this options, you can colorify segments of a more complex topology:<br />\
+						<img src="/img/tutorial_connections_colorify.png" /></p>',
+			skip_button:	"Continue"
 			},
 			
 			{
