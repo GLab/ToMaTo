@@ -28,10 +28,14 @@
 	  <tr>
 	  	<td>{{netw.attrs.label}}</td>
 	  	<td>{{netw.attrs.kind}}</td>
-	  	<td>{{netw.attrs.preference}}</td>	    
+	  	<td>{{netw.attrs.preference}}</td>
 	    
 	    {% if hostManager %}
-	    	<td><small><a href="{%url external_networks.edit%}?id={{netw.id}}"><img src="/img/connect_edit.png" title="edit" /></a> &nbsp; <a href="{%url external_networks.remove%}?id={{netw.id}}"><img src="/img/connect_delete.png" title="remove" /></a></small></td>
+	    	<td>
+	    		<a href="{%url external_networks.edit%}?id={{netw.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		&nbsp;
+	    		<a href="{%url external_networks.remove%}?id={{netw.id}}" ><img src="/img/cross.png" title="remove" /></a>
+			</td>
 	    {% endif %}
 	    
 	  </tr>

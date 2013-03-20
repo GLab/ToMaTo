@@ -77,9 +77,13 @@
 	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
 		    {% endif %}
 	    </td>
-
+	    
 	    {% if hostManager %}
-	    	<td><small><a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_templates.remove%}?id={{templ.id}}"><img src="/img/cd_delete.png" title="remove" /></a></small></td>
+	    	<td>
+	    		<a href="{%url device_templates.edit%}?id={{templ.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		&nbsp;
+	    		<a href="{%url device_templates.remove%}?id={{templ.id}}" ><img src="/img/cross.png" title="remove" /></a>
+			</td>
 	    {% endif %}
 	    
 	  </tr>

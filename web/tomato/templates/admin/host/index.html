@@ -103,7 +103,11 @@
 			<td title="{{host.connection_types|join:", "}}">{{host.connection_types|length}}</td>
 			
 		    {% if hostManager %}
-		    	<td><small><a href="{%url host.edit%}?address={{host.address}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url host.remove%}?address={{host.address}}" ><img src="/img/server_delete.png" title="remove" /></a></small></td>
+		    	<td>
+		    		<a href="{%url host.edit%}?address={{host.address}}"><img src="/img/pencil.png" title="edit" /></a>
+		    		&nbsp;
+		    		<a href="{%url host.remove%}?address={{host.address}}" ><img src="/img/cross.png" title="remove" /></a>
+				</td>
 		    {% endif %}
 	  </tr>
 	{% endfor %}
