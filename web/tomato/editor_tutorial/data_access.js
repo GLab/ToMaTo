@@ -132,9 +132,9 @@ var editor_tutorial = [
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						You should now be able to ping any server in the internet. Try it! You can also see your device's global IP address using commands like ifconfig.\
+						You should now be able to ping any server in the Internet. Try it! You can also see your device\'s global IP address using commands like ifconfig.</p>\
 					<p class="tutorialExplanation">\
-						If you need to install software, you can use your device's OS preferred way to do this.</p>',
+						If you need to install software, you can use your device\'s OS preferred way to do this.</p>',
 			skip_button: "Continue"
 			},
 			{
@@ -143,7 +143,7 @@ var editor_tutorial = [
 					<p class="tutorialExplanation">\
 						Use the command "ssh-enable" to enable ssh access.<p>\
 					<p class="tutorialExplanation">\
-						You will be asked to set a root password. Using ifconfig, you can determine your global IP address. You can then connect to the device via ssh, or transmit data to or from it via scp (Try it!)</p>'
+						You will be asked to set a root password. Using ifconfig, you can determine your global IP address. You can then connect to the device via ssh, or transmit data to or from it via scp (Try it!)</p>',
 			skip_button: "Continue"
 			},
 			
