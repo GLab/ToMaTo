@@ -69,12 +69,13 @@ a:active, a:hover
 
 #content {
         margin-left: 200px;
+        max-width:1260px;
         /*margin-bottom: 1cm;*/
 }
 
 #page {
         min-width: 780px;
-        max-width: 1260px;
+        /*max-width: 1260px;*/
         clear:both;
         display: block;
         padding-bottom:55px;
@@ -89,6 +90,7 @@ a:active, a:hover
 	height: 80px;
 	margin: 0 auto 10px auto;
 	background:url(spacer_hor.gif) repeat-x left bottom;
+	width:100%
 }
 
 #footer-container{
@@ -121,6 +123,9 @@ a:active, a:hover
 #logo-text{
 	float:left;
 	vertical-align:middle;
+}
+#logo-text img {
+	margin-left:20px;
 }
 
 #logo-text h1{
