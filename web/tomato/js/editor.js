@@ -2965,7 +2965,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Delete",
 				name: "topology-remove",
-				icon: "img/eraser16.png",
+				icon: "img/cross.png",
 				toggle: false,
 				small: true,
 				func: function() {
