@@ -43,6 +43,11 @@ def topology_remove(api, id): #@ReservedAssignment
 	return api.topology_remove(id)
 
 @wrap_json
+def topology_permission(api, id, user, permission): #@ReservedAssignment
+	id = int(id) #@ReservedAssignment
+	return api.topology_permission(id, user, permission)
+
+@wrap_json
 def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignment
 	topid = int(topid) #@ReservedAssignment
 	info = api.element_create(topid, type, parent, attrs)
