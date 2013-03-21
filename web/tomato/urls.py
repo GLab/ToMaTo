@@ -94,4 +94,5 @@ urlpatterns = patterns('',
 	(r'^ajax/connection/(?P<id>\d+)/action$', 'tomato.ajax.connection_action'),
 	(r'^ajax/connection/(?P<id>\d+)/modify$', 'tomato.ajax.connection_modify'),
 	(r'^ajax/connection/(?P<id>\d+)/remove$', 'tomato.ajax.connection_remove'),
+	(r'^ajax/account/(?P<name>.*)/info', 'tomato.ajax.account_info'),
 )

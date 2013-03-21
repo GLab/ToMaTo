@@ -429,6 +429,7 @@ var TutorialWindow = Window.extend({
 		this.updateText();
 	},
 	updateText: function() {
+		if (!this.tutorialVisible) return;
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.text.empty();
 		this.text.append(text);
@@ -545,6 +546,65 @@ var AttributeWindow = Window.extend({
 	}
 });
 
+var PermissionsWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		var t = this;
+
+		this.options = options;
+		this.topology = options.topology;
+		
+		this.userList = $('<div />');
+		this.div.append(this.userList);
+		this.listCreated = false;
+		
+		this.buttons = $('<div />');
+		this.div.append(this.buttons);
+		
+		this.availRoles = ["owner","manager","user","external"];
+	},
+	
+	createUserPermList: function() {
+		if (this.listCreated) return;
+		this.listCreated = true;
+		
+		this.userListFinder = {};
+		this.userTable = $('<table><tr><th>User</th><th>Permission</th></tr></table>');
+		this.userList.append(this.userTable);
+		var perm = this.topology.data.permissions;
+		for (u in perm) {
+			var tr = $('<tr />');
+			var td_name = $('<td/>');
+			var td_perm = $('<td>'+perm[u]+'</td>');
+
+			ajax({
+				url:	'account/'+u+'/info',
+				successFn: function(data) {
+					td_name.append( data.realname+' ('+data.id+')' );
+				}
+			});
+
+			tr.append(td_name);
+			tr.append(td_perm);
+			this.userListFinder[u] = {
+					td_name: td_name,
+					td_perm: td_perm
+			};
+			this.userTable.append(tr);
+		}
+	},
+	
+	addUser: function(username) {
+		
+	},
+	
+	changeUserPermission: function(username, role) {
+		
+	}
+	
+	
+});
+
 var Workspace = Class.extend({
 	init: function(container, editor) {
 		this.container = container;
@@ -579,6 +639,16 @@ var Workspace = Class.extend({
 			hideCloseButton: true,
 			editor: this.editor
 		});
+    	
+    	this.permissionsWindow = new PermissionsWindow({
+    		autoOpen: false,
+    		draggable: true,
+    		resizable: false,
+    		title: "Permissions",
+    		modal: false,
+    		width: 500,
+    		topology: this.editor.topology
+    	});
     	
     	var t = this;
     	this.editor.listeners.push(function(obj){
@@ -2979,7 +3049,8 @@ var Editor = Class.extend({
 			toggle: false,
 			small: false,
 			func: function() {
-				alert("Not implemented yet.");
+				t.workspace.permissionsWindow.createUserPermList();
+				t.workspace.permissionsWindow.show();
 			}
 		}));
 

@@ -102,3 +102,8 @@ def connection_remove(api, id): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
 	res = api.connection_remove(id)
 	return res
+
+@wrap_json
+def account_info(api, name):
+	res = api.account_info(name)
+	return res
