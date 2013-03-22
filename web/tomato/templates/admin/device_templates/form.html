@@ -8,10 +8,10 @@
 	{% if edit %}
 	
 		{% if edit_data %}
-			<h1>Edit template {{label}}</h1>
+			<h1>Edit Template {{label}}</h1>
 			<form action="{%url device_templates.edit_data%}" method="post" enctype="multipart/form-data">
 		{% else %}
-			<h1>Edit template {{label}}</h1>
+			<h1>Edit Template {{label}}</h1>
 			<form action="{%url device_templates.edit_torrent%}" method="post" enctype="multipart/form-data">
 		{% endif %}
 		
