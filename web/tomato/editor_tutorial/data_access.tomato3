@@ -5,10 +5,6 @@
   "topology": {
     "connections": [
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "elements": [
           1534, 
           1535
@@ -38,10 +34,6 @@
     ], 
     "elements": [
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "openvz_interface", 
         "attrs": {
           "ip4address": "10.0.0.1/24"
@@ -50,20 +42,12 @@
         "id": 1535
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "kvmqm_interface", 
         "attrs": {}, 
         "parent": 1533, 
         "id": 1534
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "kvmqm", 
         "attrs": {
           "profile": "normal", 
@@ -79,10 +63,6 @@
         "id": 1533
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "openvz", 
         "attrs": {
           "profile": "normal", 
