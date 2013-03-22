@@ -60,7 +60,8 @@
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
   	topology: {{top.id}},
-  	userId: "{{user.id}}"
+  	userId: "{{user.id}}",
+  	isGlobalOwner: "{{user.flags.global_owner}}",
   });
 </script>
 {% endblock %}

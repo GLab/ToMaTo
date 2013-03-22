@@ -552,6 +552,7 @@ var PermissionsWindow = Window.extend({
 		var t = this;
 
 		this.options = options;
+		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
 		
 		this.userList = $('<div />');
@@ -560,13 +561,7 @@ var PermissionsWindow = Window.extend({
 		this.listCreated = false;
 		
 		this.buttons = $('<div />');
-		if (options.allowChange) {
-			var addbutton = $('<input type="button" value="Add User" />');
-			addbutton.click(function(){
-				t.addNewUser();
-			});
-			this.buttons.append(addbutton);
-		}
+		
 		
 		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
 		closeButton.click(function(){
@@ -589,7 +584,19 @@ var PermissionsWindow = Window.extend({
 		if (this.listCreated) return;
 		this.listCreated = true;
 		
-		this.userTable = $('<table><tr><th>User</th><th>Permission</th></tr></table>');
+		if (!this.options.allowChange) {
+			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
+		}
+		
+		if (this.options.allowChange) {
+			var addbutton = $('<input type="button" value="Add User" />');
+			addbutton.click(function(){
+				t.addNewUser();
+			});
+			this.buttons.append(addbutton);
+		}
+		
+		this.userTable = $('<table><tr><th/><th>User</th><th>Permission</th></tr></table>');
 		if (this.options.allowChange) this.userTable.append($('<th />'));
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
@@ -605,21 +612,23 @@ var PermissionsWindow = Window.extend({
 		var td_name = $('<td/>');
 		var td_perm = $('<td/>');
 		var td_buttons = $('<td/>');
+		var td_icon = $('<td/>')
 		
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
 				var s = data.realname+' ('+data.id+')'
-				if (data.id == t.options.ownUserId)
-					s = '<img src="/img/user.png" title="This is you!" /> ' + s;
-				td_name.append( s );
+				td_name.append(s);
+				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
 
+		tr.append(td_icon);
 		tr.append(td_name);
 		tr.append(td_perm);
 		if (this.options.allowChange) tr.append(td_buttons);
 		this.userListFinder[username] = {
+				td_icon: td_icon,
 				td_name: td_name,
 				td_perm: td_perm,
 				td_buttons: td_buttons
@@ -792,7 +801,7 @@ var Workspace = Class.extend({
     		modal: false,
     		width: 500,
     		topology: this.editor.topology,
-    		allowChange: true, //todo: set value depending on user permissions
+    		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
     		ownUserId: this.editor.options.userId 
     	});
     	
