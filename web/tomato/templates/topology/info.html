@@ -59,7 +59,9 @@
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
-  	topology: {{top.id}}
+  	topology: {{top.id}},
+  	userId: "{{user.id}}",
+  	isGlobalOwner: "{{user.flags.global_owner}}",
   });
 </script>
 

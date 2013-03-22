@@ -429,6 +429,7 @@ var TutorialWindow = Window.extend({
 		this.updateText();
 	},
 	updateText: function() {
+		if (!this.tutorialVisible) return;
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.text.empty();
 		this.text.append(text);
@@ -545,6 +546,218 @@ var AttributeWindow = Window.extend({
 	}
 });
 
+var PermissionsWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		var t = this;
+
+		this.options = options;
+		this.options.allowChange = this.options.isGlobalOwner
+		this.topology = options.topology;
+		
+		this.userList = $('<div />');
+		this.userListFinder = {};
+		this.div.append(this.userList);
+		this.listCreated = false;
+		
+		this.buttons = $('<div />');
+		
+		
+		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
+		closeButton.click(function(){
+			/* if (t.div.getElementsByTagName("select").length > 0) {
+				if (!window.confirm("Are you sure you want to discard all changes?"))
+					return
+				else
+					this.div.empty();
+					this.listCreated = false;
+			} */
+			t.hide();
+		});
+		this.buttons.append(closeButton);
+		
+		this.div.append(this.buttons);
+		
+	},
+	
+	createUserPermList: function() {
+		if (this.listCreated) return;
+		this.listCreated = true;
+		
+		if (!this.options.allowChange) {
+			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
+		}
+		
+		if (this.options.allowChange) {
+			var addbutton = $('<input type="button" value="Add User" />');
+			addbutton.click(function(){
+				t.addNewUser();
+			});
+			this.buttons.append(addbutton);
+		}
+		
+		this.userTable = $('<table><tr><th/><th>User</th><th>Permission</th></tr></table>');
+		if (this.options.allowChange) this.userTable.append($('<th />'));
+		this.userList.append(this.userTable);
+		var perm = this.topology.data.permissions;
+		for (u in perm) {
+			if (perm[u] != null)
+				this.addUserToList(u);
+		}
+	},
+	
+	addUserToList: function(username) {
+		var t = this;
+		var tr = $('<tr />');
+		var td_name = $('<td/>');
+		var td_perm = $('<td/>');
+		var td_buttons = $('<td/>');
+		var td_icon = $('<td/>')
+		
+		ajax({
+			url:	'account/'+username+'/info',
+			successFn: function(data) {
+				var s = data.realname+' ('+data.id+')'
+				td_name.append(s);
+				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
+			}
+		});
+
+		tr.append(td_icon);
+		tr.append(td_name);
+		tr.append(td_perm);
+		if (this.options.allowChange) tr.append(td_buttons);
+		this.userListFinder[username] = {
+				td_icon: td_icon,
+				td_name: td_name,
+				td_perm: td_perm,
+				td_buttons: td_buttons
+		};
+		this.userTable.append(tr);
+		
+		this.backToView(username);
+	},
+	
+	addNewUser: function() {
+		var username = window.prompt("Please enter the user's username")
+		var t = this;
+		if (username) ajax({
+			url:	'account/'+username+'/info',
+			successFn: function(data) {
+				if (!(data.id in t.userListFinder)) {
+					if (window.confirm("Found the user "+ data.realname +"\nIs this correct?")) {
+						t.addUserToList(data.id);
+						t.makePermissionEditable(data.id);
+					}
+				} else
+					window.alert("This user is already in the list.");
+			},
+			errorFn: function(msg) {
+				window.alert("Error: "+msg);
+			}
+		});
+		
+	},
+	
+	removeUserFromList: function(username) {
+		this.userListFinder[username].td_name.parent().remove();
+	},
+	
+	makePermissionEditable: function(username) {
+		if (!this.options.allowChange || this.username == this.options.ownUserId) return;
+		
+		var t = this;
+		td_perm = this.userListFinder[username].td_perm;
+		td_buttons = this.userListFinder[username].td_buttons;
+		permission = this.topology.data.permissions[username];
+		td_perm.empty();
+		td_buttons.empty();
+		var sel_id='permissions_'+username;
+		var sel=$('<select name="sel" id="'+sel_id+'">\
+				<option value="owner">owner</option>\
+				<option value="manager">manager</option>\
+				<option value="user">user</option>\
+				<option value="external">external</option>\
+				</select>');
+		if ((permission == undefined) || (permission == null))
+			permission = 'null';
+		sel.val(permission);
+		td_perm.append(sel);
+		
+		var saveButton = $('<img src="/img/tick.png" title="save" style="cursor:pointer;" />');
+		saveButton.click(function() {
+			var sel = document.getElementById(sel_id);
+			var perm = sel.options[sel.selectedIndex].value;
+			t.setPermission(username, perm);
+		});
+		td_buttons.append(saveButton);
+		
+		var cancelButton = $('<img src="/img/eraser16.png" title="save" style="cursor:pointer;" />');
+		cancelButton.click(function(){
+			t.backToView(username);
+		});
+		td_buttons.append(cancelButton);
+	},
+	
+	setPermission: function(username, permission) {
+		if (!this.options.allowChange || this.username == this.options.ownUserId) return;
+		
+		var t = this;
+		
+		var perm_send = null;
+		if (permission != 'null')
+			perm_send = permission;
+		
+		ajax({
+			url: 'topology/'+this.topology.id+'/permission',
+			data: {user: username, permission: perm_send},
+			successFn: function(){ 
+				t.topology.data.permissions[username]=permission;
+				if (perm_send == null) {
+					t.removeUserFromList(username)
+				} else {
+					t.backToView(username);
+				}
+			},
+			errorFn: function(msg){
+				window.alert("Error while setting permission: "+msg);
+				t.backToView(username);
+			}
+		})
+	},
+	
+	backToView: function(username) {
+		var t = this;
+		
+		var permission = "[no permission]";
+		if (username in this.topology.data.permissions) permission = this.topology.data.permissions[username];
+		
+		var td_perm = this.userListFinder[username].td_perm;
+		var td_buttons = this.userListFinder[username].td_buttons;
+		td_perm.empty();
+		td_buttons.empty();
+		
+		td_perm.append(permission);
+		
+		if (username != this.options.ownUserId) {
+			var editButton = $('<img src="/img/pencil.png" title="change" style="cursor:pointer;" />');
+			editButton.click(function(){
+				t.makePermissionEditable(username);
+			});
+			td_buttons.append(editButton);
+			
+			var removeButton = $('<img src="/img/cross.png" title="change" style="cursor:pointer;" />');
+			removeButton.click(function(){
+				t.setPermission(username,null);
+			})
+			td_buttons.append(removeButton);
+		}
+		
+	}
+	
+	
+});
+
 var Workspace = Class.extend({
 	init: function(container, editor) {
 		this.container = container;
@@ -579,6 +792,18 @@ var Workspace = Class.extend({
 			hideCloseButton: true,
 			editor: this.editor
 		});
+    	
+    	this.permissionsWindow = new PermissionsWindow({
+    		autoOpen: false,
+    		draggable: true,
+    		resizable: false,
+    		title: "Permissions",
+    		modal: false,
+    		width: 500,
+    		topology: this.editor.topology,
+    		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
+    		ownUserId: this.editor.options.userId 
+    	});
     	
     	var t = this;
     	this.editor.listeners.push(function(obj){
@@ -2979,7 +3204,8 @@ var Editor = Class.extend({
 			toggle: false,
 			small: false,
 			func: function() {
-				alert("Not implemented yet.");
+				t.workspace.permissionsWindow.createUserPermList();
+				t.workspace.permissionsWindow.show();
 			}
 		}));
 
