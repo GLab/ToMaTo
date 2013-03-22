@@ -846,10 +846,10 @@ var Topology = Class.extend({
 	},
 	remove: function() {
 		if (this.elementCount()) {
-			alert("Topology is not empty");
+			alert("Please remove all devices before removing this topology.");
 			return;
 		}
-		if (confirm("Are you sure?")) {
+		if (confirm("Are you sure you want to completely remove this topology?")) {
 			this.editor.triggerEvent({component: "topology", object: this, operation: "remove", phase: "begin"});
 			var t = this;
 			ajax({
@@ -923,6 +923,13 @@ var Topology = Class.extend({
 			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
 		}
 	},
+	initialRenameDialog: function() {
+		var name = prompt("You have created a new Topology. Please enter a name for it:", this.data.attrs.name);
+		if (name) {
+			this.modify_value("name", name);
+			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
+		}
+	},
 	name: function() {
 		return this.data.attrs.name;
 	},
@@ -979,7 +986,7 @@ var Topology = Class.extend({
 });
 
 var createTopologyMenu = function(obj) {
-	return {
+	var menu = {
 		callback: function(key, options) {},
 		items: {
 			"header": {
@@ -1052,6 +1059,10 @@ var createTopologyMenu = function(obj) {
 			}
 		}
 	};	
+	for (var name in menu.items) {
+		if (! menu.items[name]) delete menu.items[name]; 
+	}
+	return menu;
 };
 
 ['right', 'longclick'].forEach(function(trigger) {
@@ -2470,6 +2481,8 @@ var Editor = Class.extend({
 			successFn: function(data){
 				t.topology.load(data);
 				t.workspace.setBusy(false);
+				if ((data.elements.length == 0) && (t.topology.name() == "Topology #"+t.topology.id))
+					t.topology.initialRenameDialog();
 			}
 		});
 	},
@@ -2896,7 +2909,7 @@ var Editor = Class.extend({
 				toggle: false,
 				small: true,
 				func: function() {
-					alert("Not implemented yet.");
+					window.open(document.URL+ "/export");
 				}
 			}),
 			Menu.button({

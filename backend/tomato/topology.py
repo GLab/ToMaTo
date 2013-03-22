@@ -185,7 +185,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         for el in self.getElements():
             el.checkRemove(recurse=recurse)
         for con in self.getConnections():
-            con.checkRemove(recurse=recurse)
+            con.checkRemove()
 
     def remove(self, recurse=True):
         self.checkRemove(recurse)
@@ -205,8 +205,9 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
         self.name = val
             
     def setRole(self, user, role):
-        fault.check(role in Role.RANKING, "Role must be one of %s", Role.RANKING)
+        fault.check(role in Role.RANKING or not role, "Role must be one of %s", Role.RANKING)
         self.checkRole(Role.owner)
+        fault.check(user != currentUser(), "Must not set permissions for yourself")
         logging.logMessage("permission", category="topology", id=self.id, user=user.name, role=role)
         self.permissions.set(user, role)
             

@@ -32,14 +32,20 @@ var editor_tutorial = {
 			{
 				name: "devices",
 				title: "Devices",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				description: "An advanced look into devices.",
 				icon: "img/openvz32.png"
 			},
 			{
 				name: "connections",
 				title: "Connections",
-				description: "This tutorial will tell you the very basics of how to use the editor and topologies.",
+				description: "An advanced look into networking.",
 				icon: "img/connect32.png"
+			},
+			{
+				name: "data_access",
+				title: "Data Access",
+				description: "Learn how to im- or export data from/to your devices.",
+				icon: "img/download.png"
 			}
 			
 		],
@@ -101,26 +107,7 @@ var editor_tutorial = {
 					},
 					{
 					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs.type != undefined && 
-									obj.attrs.state != undefined) {
-									
-									if (obj.attrs.state == "created" && 
-										obj.attrs.type == "openvz" && 
-										obj.component == "element" &&
-										obj.operation == "create" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
-						}
-						return false;
+						return editor_tutorial.common_triggers.openvz_created(obj)
 					},
 					text:	'<p class = "tutorialCommand">\
 								To add a first device to your topology, click on OpenVZ (blue screen) \
@@ -172,26 +159,7 @@ var editor_tutorial = {
 					},
 					{
 					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs.type != undefined && 
-									obj.attrs.state != undefined) {
-									
-									if (obj.attrs.state == "created" && 
-										obj.attrs.type == "kvmqm" && 
-										obj.component == "element" &&
-										obj.operation == "create" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
-						}
-						return false;
+						return editor_tutorial.common_triggers.kvm_created(obj);
 					},
 					text:	'<p class="tutorialExplanation">\
 								You will need more devices to get a whole topology. This time, let\'s create a KVM device.</p>\
@@ -210,24 +178,7 @@ var editor_tutorial = {
 					},
 					{
 					trigger:function(obj) { 
-						if (obj != undefined) {
-							if (obj.attrs != undefined && 
-								obj.component != undefined && 
-								obj.operation != undefined &&
-								obj.phase != undefined) {
-								
-								if (obj.attrs.state != undefined) {
-									
-									if (obj.attrs.state == "created" &&
-										obj.component == "connection" &&
-										obj.operation == "create" &&
-										obj.phase == "end") {
-										return true;
-									}
-								}
-							}
-						}
-						return false;
+						return editor_tutorial.common_triggers.connection_created(obj);
 					},
 					text:	'<p class="tutorialExplanation">\
 								By now, the two devices don\'t have any network connection.</p>\
@@ -488,15 +439,97 @@ var editor_tutorial = {
 		
 		devices: [
 					{
-					trigger:function(obj) { return false; },
 					text:	"This tutorial has yet to be created."
 					}
 		],
 		
 		connections: [
 					{
-					trigger:function(obj) { return false; },
 					text:	"This tutorial has yet to be created."
 					}
-		]
+		],
+		
+		data_access: [
+					{
+					text:	"This tutorial has yet to be created."
+					}
+		],
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		common_triggers: {
+				connection_created: function(obj) {
+					if (obj != undefined) {
+						if (obj.attrs != undefined && 
+							obj.component != undefined && 
+							obj.operation != undefined &&
+							obj.phase != undefined) {
+							
+							if (obj.attrs.state != undefined) {
+								
+								if (obj.attrs.state == "created" &&
+									obj.component == "connection" &&
+									obj.operation == "create" &&
+									obj.phase == "end") {
+									return true;
+								}
+							}
+						}
+					}
+					return false;
+				},
+				
+				openvz_created: function(obj) {
+					if (obj != undefined) {
+						if (obj.attrs != undefined && 
+							obj.component != undefined && 
+							obj.operation != undefined &&
+							obj.phase != undefined) {
+							
+							if (obj.attrs.type != undefined && 
+								obj.attrs.state != undefined) {
+								
+								if (obj.attrs.state == "created" && 
+									obj.attrs.type == "openvz" && 
+									obj.component == "element" &&
+									obj.operation == "create" &&
+									obj.phase == "end") {
+									return true;
+								}
+							}
+						}
+					}
+					return false;
+				},
+				
+				kvm_created: function(obj) {
+					if (obj != undefined) {
+						if (obj.attrs != undefined && 
+							obj.component != undefined && 
+							obj.operation != undefined &&
+							obj.phase != undefined) {
+							
+							if (obj.attrs.type != undefined && 
+								obj.attrs.state != undefined) {
+								
+								if (obj.attrs.state == "created" && 
+									obj.attrs.type == "kvmqm" && 
+									obj.component == "element" &&
+									obj.operation == "create" &&
+									obj.phase == "end") {
+									return true;
+								}
+							}
+						}
+					}
+					return false;
+				}
+		}
 }
