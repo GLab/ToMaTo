@@ -1266,7 +1266,7 @@ var Topology = Class.extend({
 });
 
 var createTopologyMenu = function(obj) {
-	return {
+	var menu = {
 		callback: function(key, options) {},
 		items: {
 			"header": {
@@ -1339,6 +1339,10 @@ var createTopologyMenu = function(obj) {
 			}
 		}
 	};	
+	for (var name in menu.items) {
+		if (! menu.items[name]) delete menu.items[name]; 
+	}
+	return menu;
 };
 
 ['right', 'longclick'].forEach(function(trigger) {
