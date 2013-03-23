@@ -94,10 +94,10 @@ def import_topology(api, topology_structure):
 	
 	#check if version info exists in file:
 	if not 'file_information' in topology_structure:
-		return {'success': False, 'message': "unknown file structure."}
+		return (None, 'unknown file structure')
 	inf = topology_structure['file_information']
 	if not 'version' in inf:
-		return {'success': False, 'message': "unknown file structure."}
+		return (None, 'unknown file structure')
 	
 	
 	#check version
@@ -105,7 +105,7 @@ def import_topology(api, topology_structure):
 		return import_v1(api,topology_structure)
 	
 	#if version did not match any known
-	return {'success': False, 'message': "unknown file version."}
+	return (None, "unknown file version.")
 
 
 

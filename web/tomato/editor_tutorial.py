@@ -72,5 +72,9 @@ def loadTutorial(api, request, tut_id):
     top_dict['topology']['attrs']['_tutorial_id'] = tut_id
     top_dict['topology']['attrs']['_tutorial_status'] = 0
     
-    top_id = topology_export.import_topology(api, top_dict)['id']
-    return redirect("tomato.topology.info", id=top_id)
+    top = topology_export.import_topology(api, top_dict)
+    top_id = top[0]
+    if top_id:
+        return redirect("tomato.topology.info", id=top_id)
+    else:
+        return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':top[1]})

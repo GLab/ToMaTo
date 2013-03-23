@@ -83,7 +83,10 @@ def import_form(api, request):
 			
 			topology_structure = json.load(f)
 			res = topology_export.import_topology(api, topology_structure)
-			return redirect("tomato.topology.info", id=res[0])
+			if res[0]:
+				return redirect("tomato.topology.info", id=res[0])
+			else:
+				return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':top[1]})
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 	else:
