@@ -82,7 +82,9 @@ var editor_tutorial = [
 						In the "Devices" tab, on the right side, you can find "upload own images" devices.<br />\
 						When you place such a device on your topology, it will be prepared immediately, and then you\'ll be asked to upload an image</p>\
 					<p class="tutorialCommand">\
-						Place suche a device on your topology (cancel the upload if you want). After this, click "Continue"</p>',
+						Place suche a device on your topology (cancel the upload if you want). After this, click "Continue"</p>\
+					<p class="tutorialExplanation">\
+						Ignore this device for the rest of the tutorial, or delete it.</p>',
 			skip_button: "Continue"
 			},
 			{
