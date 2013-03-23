@@ -81,9 +81,7 @@
     ], 
     "attrs": {
       "_snap_to_grid": true, 
-      "_tutorial_id": "data_access", 
-      "name": "Tutorial: Data Access", 
-      "_tutorial_status": 0
+      "name": "Tutorial: Data Access"
     }
   }
 }
