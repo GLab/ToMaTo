@@ -19,6 +19,7 @@
 {% block page %}
 <div id="border_top"></div> 
 <div id="page"> 
+
 	<div id="header"> 
 		<div id="minimenu_top" class="smallmenu"></div> 
 		<div id="logo">
@@ -51,7 +52,7 @@
 		
 		{% block menu_select %}{% endblock %}
 		</div> 
-	</div> 
+	</div>  
  
 	<div id="left"> 
 		{% block left %}{% endblock %}
@@ -65,10 +66,16 @@
 
 
 <footer>
+	
+	<div id="links">
+		<a href="{%url main.project%}">Project</a>  
+   		<a href="{%url main.help "license/license"%}">License</a>
+	</div>
+	
    	<div id="legal">
-   		Copyright © 2010 <a href="http://www.icsy.de">Integrated Communication Systems Lab</a> of the <a href="http://www.uni-kl.de">University of Kaiserslautern</a>, on behalf of the German Lab<br />
-   		<a href="{%url main.project%}" style="margin-right:25px;">Project</a>  <a href="{%url main.help "license/license"%}">License</a>
-   	</div> 
+   		Copyright © 2010 <a href="http://www.icsy.de">Integrated Communication Systems Lab</a> of the <a href="http://www.uni-kl.de">University of Kaiserslautern</a>, on behalf of the <a href="http://www.german-lab.de">German Lab</a>. 
+	</div> 
+	
 </footer>
 
 </body> 

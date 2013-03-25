@@ -52,10 +52,10 @@
 	    	{% if templ.attrs.description %}
 		    	<div class="hoverdescription">
 		    		<img src="/img/info.png" alt="i" />
-		    		<div>
-		    		{% autoescape on %}
-		    		{{ templ.attrs.description|linebreaks }}
-		    		{% endautoescape %}
+		    		<div class="contextmenu">
+			    		{% autoescape on %}
+			    		{{ templ.attrs.description|linebreaks }}
+			    		{% endautoescape %}
 		    		</div>
 		    	</div>
 		    {% else %}
