@@ -34,7 +34,58 @@ var editor_tutorial = [
 			skip_button: "Continue"
 			},
 			{
-			text:"TODO: talk about downloading and uploading images here. Explain how to use this for file distribution (create 1 machine; upload to many) and different cool stuff about images."
+			trigger:function(obj) { 
+				
+				mask = {
+					action: 'download_grant',
+					component: "element",
+					operation: "action",
+					phase: "end"
+				};
+				return compareToMask(obj,mask);
+			
+			  },
+			text:	'<p class="tutorialExplanation">\
+						Let\'s assume you have changed some files, and now you want to backup your device\'s disk image.<br />\
+						You can download the disk image of any prepared device by right-clicking on the device and select "Download image".</p>\
+					<p class="tutorialCommand">\
+						Download a disk image.</p>\
+					<p class="tutorialExplanation">\
+						Warning: The download might be big. Skip this step if you are on a metered connection!</p>'
+			},
+			{
+			trigger:function(obj) {	
+				mask = {
+					action: 'upload_use',
+					component: "element",
+					operation: "action",
+					phase: "end"
+				};
+				return compareToMask(obj,mask);
+			
+			  },
+			text:	'<p class="tutorialExplanation">\
+						The download might take a bit longer.</p>\
+					<p class="tutorialExplanation">\
+						You can upload any image to a device of the same technology. You can not use images accross technologies (e.g., you can\'t upload an OpenVZ image to a KVM device, and vice versa).</p>\
+					<p class="tutorialCommand">\
+						Upload your image again.</p>\
+					<p class="tutorialExplanation">\
+						Again, skip this step if a big upload might cause you any troubles.</p>\
+					<p class="tutorialExplanation">\
+						The tutorial will continue after the upload has been finished.<br />\
+						If you need to create multiple devices with certain modifications to their template,\
+						creating the image in one device, and then distributing it to many might be the best method to accomplish this.</p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						In the "Devices" tab, on the right side, you can find "upload own images" devices.<br />\
+						When you place such a device on your topology, it will be prepared immediately, and then you\'ll be asked to upload an image</p>\
+					<p class="tutorialCommand">\
+						Place suche a device on your topology (cancel the upload if you want). After this, click "Continue"</p>\
+					<p class="tutorialExplanation">\
+						Ignore this device for the rest of the tutorial, or delete it.</p>',
+			skip_button: "Continue"
 			},
 			{
 			trigger:function(obj) { 

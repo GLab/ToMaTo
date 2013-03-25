@@ -66,7 +66,6 @@ class AccountForm(forms.Form):
     realname = forms.CharField(label="Full name")
     affiliation = forms.CharField()
     email = forms.EmailField()
-    tutorial = forms.BooleanField(label="Automatically start tutorial", required=False)
     flags = forms.MultipleChoiceField(required=False)
         
     def clean_password(self):
@@ -97,7 +96,6 @@ class AccountRegisterForm(AccountForm):
         self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
-        del self.fields["tutorial"]
 
 @wrap_rpc
 def index(api, request):

@@ -43,7 +43,7 @@ flags = {
     Flags.NewAccount: "NewAccount: Account is new, just a tag"
 }
 
-USER_ATTRS = ["realname", "affiliation", "email", "password", "tutorial"]
+USER_ATTRS = ["realname", "affiliation", "email", "password"]
 ADMIN_ATTRS = ["flags", "origin", "name"]
 
 class User(attributes.Mixin, models.Model):
@@ -58,7 +58,6 @@ class User(attributes.Mixin, models.Model):
     affiliation = attributes.attribute("affiliation", unicode)
     email = attributes.attribute("email", unicode)
     flags = attributes.attribute("flags", list, [])
-    tutorial = attributes.attribute("tutorial", bool, True)
 
     class Meta:
         db_table = "tomato_user"
@@ -71,7 +70,6 @@ class User(attributes.Mixin, models.Model):
         user = User(name=name)
         user.attrs = kwargs
         user.last_login = time.time()
-        user.tutorial = True
         return user
     
     def _saveAttributes(self):

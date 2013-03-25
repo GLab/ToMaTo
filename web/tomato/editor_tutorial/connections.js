@@ -195,16 +195,26 @@ var editor_tutorial = [
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						For the next step, you need a URL to a large file (at least 100MB), or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
+						For the next step, you need a URL to a large file (> ~50MB) or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
 					<p class="tutorialExplanation">\
 						The default bandwidth is set to 10Mbit/s. You will see this when you download the file (you don\'t need to complete the download; just start it and cancel when you have seen the download speed.</p>\
 					<p class="tutorialExplanation">\
-						You can now change the bandwidth (from internet to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
+						You can now change the bandwidth (from switch to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
 						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
 			skip_button:	"Continue"
 			},
 			{
-			text:'TODO: Packet capturing'
+			text:	'<p class="tutorialExplanation">\
+						Now, let\'s take a look at packet capturing.<br />\
+						Enable packet capturing (mode: "for download", filter expressionÖ "") in the connection\'s settings, and then let the device load a webpage.</p>\
+					<p class="tutorialExplanation">\
+						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
+						The downloaded file can be viewed by any application which supports pcap viewing.</p>\
+					<p class="tutorialExplanation">\
+						If you instead prefer life-viewing using wireshark, set the capture mode to "via network". Then, a different item will appear in the right-click menu ("live capture info"), providing all info you need.</p>\
+					<p class="tutorialExplanation">\
+						The filter expression is the same you would use with tcpdump. (See the tdpdump manpage for more information)</p>',
+			skip_button:	"Continue"
 			},
 			{
 			text:	'<p class="tutorialExplanation">\

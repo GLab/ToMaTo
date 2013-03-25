@@ -406,7 +406,6 @@ var TutorialWindow = Window.extend({
 	},
 	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 		//load tutorial
-		this.setTitle("Tutorial");
 		this.tutorialSteps = editor_tutorial
 		
 		//set visible buttons
@@ -433,6 +432,8 @@ var TutorialWindow = Window.extend({
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.text.empty();
 		this.text.append(text);
+
+		this.setTitle("Tutorial [" + (this.tutorialStatus+1) + "/" + this.tutorialSteps.length + "]");
 		
 		//dirty hack: un-set the window's height property
 		this.div[0].style.height = "";
@@ -1266,7 +1267,7 @@ var Topology = Class.extend({
 });
 
 var createTopologyMenu = function(obj) {
-	return {
+	var menu = {
 		callback: function(key, options) {},
 		items: {
 			"header": {
@@ -1339,6 +1340,10 @@ var createTopologyMenu = function(obj) {
 			}
 		}
 	};	
+	for (var name in menu.items) {
+		if (! menu.items[name]) delete menu.items[name]; 
+	}
+	return menu;
 };
 
 ['right', 'longclick'].forEach(function(trigger) {
