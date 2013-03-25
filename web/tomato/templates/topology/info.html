@@ -27,7 +27,9 @@
 	display: none;
 }
 #content {
-	margin-left: 3mm;
+	margin-left:0px;
+	margin-right:0px;
+	max-width:none;
 }
 </style>
 {% endblock %}
@@ -95,10 +97,6 @@ function shrinkHeader() {
 	header.appendChild(logo);
 	header.appendChild(l);
 	header.appendChild(top_name);
-	
-	var border_top = document.getElementById("border_top");
-	border_top.style.backgroundPositionY = -border_top.scrollHeight + 10;
-	border_top.style.height = 8;
 	
 	
 }
