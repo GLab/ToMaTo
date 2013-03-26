@@ -257,6 +257,41 @@ var ChoiceElement = FormElement.extend({
 	}
 });
 
+var TemplateChoiceElement = ChoiceElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.descriptions = options.descriptions;
+		console.log(this.descriptions);
+		var t = this;
+		this.element.change(function(){
+			t.updateInfoBox();
+		});
+		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		this.element.after(this.info);
+		this.updateInfoBox();
+	},
+	updateInfoBox: function() {
+		
+		var escape_str = function(str) {
+		    var tagsToReplace = {
+		            '&': '&amp;',
+		            '<': '&lt;',
+		            '>': '&gt;',
+		            '\n':'<br />'
+		        };
+		        return str.replace(/[&<>\n]/g, function(tag) {
+		            return tagsToReplace[tag] || tag;
+		        });
+		    };
+		
+		this.info.empty();
+		var desc = $('<div padding: 0px;><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		//desc.append($());
+		this.info.append(' &nbsp; <img src="/img/info.png" />');
+		this.info.append(desc);
+	}
+});
+
 var Window = Class.extend({
 	init: function(options) {
 		log(options);
@@ -2537,10 +2572,11 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
-		config.special.template = new ChoiceElement({
+		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
+			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2643,6 +2679,7 @@ var Template = Class.extend({
 		this.subtype = options.subtype;
 		this.name = options.name;
 		this.label = options.label || options.name;
+		this.description = options.description || "no description available";
 	},
 	menuButton: function(options) {
 		return Menu.button({
