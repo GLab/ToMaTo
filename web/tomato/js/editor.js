@@ -618,8 +618,8 @@ var PermissionsWindow = Window.extend({
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' ('+data.id+')'
-				td_name.append(s);
+				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank">'+data.id+'</a>)'
+				td_name.append($(s));
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
