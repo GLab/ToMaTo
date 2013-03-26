@@ -579,6 +579,13 @@ var PermissionsWindow = Window.extend({
 		
 		this.div.append(this.buttons);
 		
+		this.permissionExplanation = {
+				owner: "full topology control, permission changes, topology removal",
+				manager: "full topology control, no topology delete, no permission changes",
+				user: "no destroy/prepare, no topology changes, no permission changes",
+				external: "no access at all"
+		};
+		
 	},
 	
 	createUserPermList: function() {
@@ -731,7 +738,10 @@ var PermissionsWindow = Window.extend({
 		var t = this;
 		
 		var permission = "[no permission]";
-		if (username in this.topology.data.permissions) permission = this.topology.data.permissions[username];
+		if (username in this.topology.data.permissions) {
+			permission_var = this.topology.data.permissions[username];
+			permission = $('<div class="hoverdescription">'+permission_var+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
+		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
 		var td_buttons = this.userListFinder[username].td_buttons;
