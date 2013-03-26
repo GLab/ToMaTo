@@ -267,7 +267,7 @@ var Window = Class.extend({
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
 			height: options.height || "auto",
-			width: options.width || "auto",
+			width: options.width || "",
 			maxHeight:600,
 			maxWidth:800,
 			title: options.title,
@@ -1780,7 +1780,12 @@ var Connection = Component.extend({
 		var host = this.data.attrs.host;
 		var port = this.data.attrs.capture_port;
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
-		new Window({title: "Live capture Information", content: '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", autoShow: true});
+		new Window({
+			title: "Live capture Information", 
+			content: '<p>Host: '+host+'<br />Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", 
+			autoShow: true,
+			width: 600
+		});
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
