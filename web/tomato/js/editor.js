@@ -261,7 +261,7 @@ var Window = Class.extend({
 	init: function(options) {
 		log(options);
 		this.options = options;
-		this.options.position = options.position || 'center center';
+		this.options.position = options.position || ['center',200];
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
