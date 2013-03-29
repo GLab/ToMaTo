@@ -705,7 +705,7 @@ var PermissionsWindow = Window.extend({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
 				if (!(data.id in t.userListFinder)) {
-					if (window.confirm("Found the user "+ data.realname +"\nIs this correct?")) {
+					if (window.confirm("Found the user "+ data.realname + ' (' + data.id +")\nIs this correct?")) {
 						t.addUserToList(data.id);
 						t.makePermissionEditable(data.id);
 					}
