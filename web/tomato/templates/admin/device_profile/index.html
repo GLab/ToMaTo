@@ -57,9 +57,9 @@
 	    
 	    {% if hostManager %}
 	    	<td>
-	    		<a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		<a href="{%url device_profile.edit profile.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
-	    		<a href="{%url device_profile.remove%}?id={{profile.id}}" ><img src="/img/cross.png" title="remove" /></a>
+	    		<a href="{%url device_profile.remove profile.id%}" ><img src="/img/cross.png" title="remove" /></a>
 			</td>
 	    {% endif %}
 		

@@ -89,7 +89,7 @@ def add(api, request):
    
 
 @wrap_rpc
-def remove(api, request):
+def remove(api, request, res_id=None):
 	if request.method == 'POST':
 		form = RemoveResourceForm(request.POST)
 		if form.is_valid():
@@ -101,7 +101,8 @@ def remove(api, request):
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no template with id '+res_id})
 		else:
-			res_id = request.POST['res_id']
+			if not res_id:
+				res_id = request.POST['res_id']
 			if res_id:
 				form = RemoveResourceForm()
 				form.fields["res_id"].initial = res_id
@@ -109,7 +110,6 @@ def remove(api, request):
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
-		res_id = request.GET['id']
 		if res_id:
 			form = RemoveResourceForm()
 			form.fields["res_id"].initial = res_id
@@ -119,11 +119,14 @@ def remove(api, request):
 	
 
 @wrap_rpc
-def edit(api, request):
-	return render_to_response("admin/device_templates/edit_unspecified.html",{'user': api.user, 'res_id':request.GET['id'],'label':api.resource_info(request.GET['id'])['attrs']['label']})
+def edit(api, request, res_id=None):
+	if res_id:
+		return render_to_response("admin/device_templates/edit_unspecified.html",{'user': api.user, 'res_id':res_id,'label':api.resource_info(request.GET['id'])['attrs']['label']})
+	else:
+		return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 @wrap_rpc
-def edit_torrent(api, request):
+def edit_torrent(api, request, res_id=None):
 	if request.method=='POST':
 		form = ChangeTemplateTorrentForm(request.POST,request.FILES)
 		if form.is_valid():
@@ -143,7 +146,6 @@ def edit_torrent(api, request):
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
-		res_id = request.GET['id']
 		if res_id:
 			res_info = api.resource_info(res_id)
 			form = ChangeTemplateTorrentForm()
@@ -154,7 +156,7 @@ def edit_torrent(api, request):
 
 
 @wrap_rpc
-def edit_data(api, request):
+def edit_data(api, request, res_id=None):
 	if request.method=='POST':
 		form = EditTemplateForm(request.POST)
 		if form.is_valid():
@@ -175,7 +177,6 @@ def edit_data(api, request):
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
-		res_id = request.GET['id']
 		if res_id:
 			res_info = api.resource_info(res_id)
 			origData = res_info['attrs']
