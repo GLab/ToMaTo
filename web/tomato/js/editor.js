@@ -595,12 +595,12 @@ var PermissionsWindow = Window.extend({
 				external: "no access at all",
 				'null': 'remove user from list'
 		};
-		this.readablePermssions = {
+		this.readablePermissions = {
 				owner: "Owner",
 				manager: "Manager",
 				user: "User",
 				external: "External",
-				'null': "Remove"
+				'null': "[no permission]"
 		}
 		
 		
@@ -736,7 +736,7 @@ var PermissionsWindow = Window.extend({
 		
 		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
 		for (var i = 0; i<this.permissions.length; i++) {
-			sel.append($('<option value="'+this.permissions[i]+'">'+this.readablePermssions[this.permissions[i]]+'</option>'));
+			sel.append($('<option value="'+this.permissions[i]+'">'+this.readablePermissions[this.permissions[i]]+'</option>'));
 		}
 		
 		if ((permission == undefined) || (permission == null))
@@ -789,10 +789,10 @@ var PermissionsWindow = Window.extend({
 	backToView: function(username) {
 		var t = this;
 		
-		var permission = "[no permission]";
+		var permission = '<div class="hoverdescription">'+this.readablePermissions['null']+'</div>';
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+this.readablePermssions[permission_var]+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
+			permission = $('<div class="hoverdescription">'+this.readablePermissions[permission_var]+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
