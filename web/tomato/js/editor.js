@@ -585,6 +585,26 @@ var AttributeWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
+		
+		
+		this.permissions = ['owner','manager','user','external'];
+		this.permissionExplanation = {
+				owner: "full topology control, permission changes, topology removal",
+				manager: "full topology control, no topology delete, no permission changes",
+				user: "no destroy/prepare, no topology changes, no permission changes",
+				external: "no access at all",
+				'null': 'remove user from list'
+		};
+		this.readablePermssions = {
+				owner: "Owner",
+				manager: "Manager",
+				user: "User",
+				external: "External",
+				'null': "Remove"
+		}
+		
+		
+		
 		var t = this;
 
 		this.options = options;
@@ -614,16 +634,13 @@ var PermissionsWindow = Window.extend({
 		
 		this.div.append(this.buttons);
 		
-		this.permissionExplanation = {
-				owner: "full topology control, permission changes, topology removal",
-				manager: "full topology control, no topology delete, no permission changes",
-				user: "no destroy/prepare, no topology changes, no permission changes",
-				external: "no access at all"
-		};
+		
 		
 	},
 	
 	createUserPermList: function() {
+		var t = this;
+		
 		if (this.listCreated) return;
 		this.listCreated = true;
 		
@@ -716,12 +733,12 @@ var PermissionsWindow = Window.extend({
 		td_perm.empty();
 		td_buttons.empty();
 		var sel_id='permissions_'+username;
-		var sel=$('<select name="sel" id="'+sel_id+'">\
-				<option value="owner">owner</option>\
-				<option value="manager">manager</option>\
-				<option value="user">user</option>\
-				<option value="external">external</option>\
-				</select>');
+		
+		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
+		for (var i = 0; i<this.permissions.length; i++) {
+			sel.append($('<option value="'+this.permissions[i]+'">'+this.readablePermssions[this.permissions[i]]+'</option>'));
+		}
+		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
 		sel.val(permission);
@@ -775,7 +792,7 @@ var PermissionsWindow = Window.extend({
 		var permission = "[no permission]";
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+permission_var+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
+			permission = $('<div class="hoverdescription">'+this.readablePermssions[permission_var]+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
