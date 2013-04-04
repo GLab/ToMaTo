@@ -1457,7 +1457,7 @@ var Component = Class.extend({
 	},
 	showDebugInfo: function() {
 		var t = this;
-		({
+		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	data: {},
 		 	successFn: function(result) {
@@ -1536,7 +1536,7 @@ var Component = Class.extend({
 	update: function() {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
-		({
+		ajax ({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);
