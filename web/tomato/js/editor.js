@@ -586,30 +586,12 @@ var PermissionsWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
 		
-		
-		this.permissions = ['owner','manager','user','external'];
-		this.permissionExplanation = {
-				owner: "full topology control, permission changes, topology removal",
-				manager: "full topology control, no topology delete, no permission changes",
-				user: "no destroy/prepare, no topology changes, no permission changes",
-				external: "no access at all",
-				'null': 'remove user from list'
-		};
-		this.readablePermissions = {
-				owner: "Owner",
-				manager: "Manager",
-				user: "User",
-				external: "External",
-				'null': "[no permission]"
-		}
-		
-		
-		
 		var t = this;
 
 		this.options = options;
 		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
+		this.permissions = this.options.permissions;
 		
 		this.userList = $('<div />');
 		this.userListFinder = {};
@@ -735,8 +717,9 @@ var PermissionsWindow = Window.extend({
 		var sel_id='permissions_'+username;
 		
 		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
-		for (var i = 0; i<this.permissions.length; i++) {
-			sel.append($('<option value="'+this.permissions[i]+'">'+this.readablePermissions[this.permissions[i]]+'</option>'));
+		for (perm in this.permissions) {
+			if (perm != "null")
+				sel.append($('<option value="'+perm+'">'+this.permissions[perm].title+'</option>'));
 		}
 		
 		if ((permission == undefined) || (permission == null))
@@ -789,10 +772,10 @@ var PermissionsWindow = Window.extend({
 	backToView: function(username) {
 		var t = this;
 		
-		var permission = '<div class="hoverdescription">'+this.readablePermissions['null']+'</div>';
+		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+this.readablePermissions[permission_var]+'<div><p>'+ this.permissionExplanation[permission_var] +'</p></div></div>')
+			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div><p>'+ this.permissions[permission_var].description +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
@@ -865,7 +848,8 @@ var Workspace = Class.extend({
     		width: 500,
     		topology: this.editor.topology,
     		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
-    		ownUserId: this.editor.options.userId 
+    		ownUserId: this.editor.options.userId,
+    		permissions: this.editor.options.permission_list
     	});
     	
     	var t = this;
