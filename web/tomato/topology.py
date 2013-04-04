@@ -104,7 +104,7 @@ def import_form(api, request):
 			if res[0]:
 				return redirect("tomato.topology.info", id=res[0])
 			else:
-				return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':top[1]})
+				return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':res[1]})
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 	else:
