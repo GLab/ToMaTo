@@ -1,0 +1,27 @@
+{% extends "topology/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Editor Tutorials</h1>
+
+
+
+<table class="sortable" style="vertical-align:middle;">
+
+{% for tut in tutorials %}
+  <tr>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url editor_tutorial.loadTutorial tut.id%}"><img src="{{tut.icon}}" /></a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url editor_tutorial.loadTutorial tut.id%}">{{tut.name}}</a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm;">{{tut.desc}}</td>
+
+
+{% endfor %}
+</table>
+
+
+
+
+
+
+{% endblock %}

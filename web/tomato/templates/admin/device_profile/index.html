@@ -54,10 +54,14 @@
 		    	<img src="/img/tick.png" title="restricted" />
 		    {% endif %}
 	    </td>
-		
-		{% if hostManager %}
-			<td><small><a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/server_edit.png" title="edit" /></a> &nbsp; <a href="{%url device_profile.remove%}?id={{profile.id}}"><img src="/img/server_delete.png" title="remove" /></a></small></td>
-		{% endif %}
+	    
+	    {% if hostManager %}
+	    	<td>
+	    		<a href="{%url device_profile.edit%}?id={{profile.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		&nbsp;
+	    		<a href="{%url device_profile.remove%}?id={{profile.id}}" ><img src="/img/cross.png" title="remove" /></a>
+			</td>
+	    {% endif %}
 		
 	  </tr>
 	{% endfor %}

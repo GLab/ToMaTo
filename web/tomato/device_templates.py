@@ -27,7 +27,7 @@ from admin_common import RemoveResourceForm, is_hostManager
 class TemplateForm(forms.Form):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
-	description = forms.CharField(widget = forms.Textarea)
+	description = forms.CharField(widget = forms.Textarea, required=False)
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	

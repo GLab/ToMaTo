@@ -31,7 +31,11 @@
 	  	<td>{{netwI.attrs.network}}</td>
 	    
 	    {% if hostManager %}
-	    	<td><small><a href="{%url external_network_instances.edit%}?id={{netwI.id}}"><img src="/img/connect_edit.png" title="edit" /></a> &nbsp; <a href="{%url external_network_instances.remove%}?id={{netwI.id}}"><img src="/img/connect_delete.png" title="remove" /></a></small></td>
+	    	<td>
+	    		<a href="{%url external_network_instances.edit%}?id={{netwI.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		&nbsp;
+	    		<a href="{%url external_network_instances.remove%}?id={{netwI.id}}" ><img src="/img/cross.png" title="remove" /></a>
+			</td>
 	    {% endif %}
 	    
 	  </tr>

@@ -13,8 +13,15 @@
 <script language="JavaScript" type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/raphael.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
-<script language="JavaScript" type="text/javascript" src="js/editor_tutorial.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
+
+
+{% if tutorial %}
+	<script language="JavaScript" type="text/javascript" src="js/editor_tutorial_help.js"></script>
+	<script language="JavaScript" type="text/javascript" src="editor_tutorial/{{tutorial}}.js"></script>
+{% endif %}
+
+
 <style type="text/css">
 #left {
 	display: none;
@@ -26,9 +33,10 @@
 {% endblock %}
 
 {% block content %}
-<h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
+
 
 <div style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
+	<h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
 	<div id="menu" style="width:800px;"></div>
 	<div id="workspace" style="width:800px; height:600px;"></div>
 </div>
@@ -37,12 +45,22 @@
   var editor = new Editor({
   	menu_container: $('#menu'),
   	workspace_container: $('#workspace'),
-  	beginner_mode: {{beginner_mode}},
+  	
+  	{% if tutorial %}
+  		tutorial:true,
+  		{% if tutorial_status %}
+			tutorial_status: {{tutorial_status}},
+		{% endif %}
+  	{% else %}
+  		tutorial:false,
+  	{% endif %}
+	  	
   	safe_mode: true,
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
-  	topology: {{top.id}}
+  	topology: {{top.id}},
+  	userId: "{{user.id}}"
   });
 </script>
 {% endblock %}

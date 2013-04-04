@@ -19,9 +19,8 @@
 from django.shortcuts import render_to_response, redirect
 from django import forms
 from django.http import HttpResponse
-import topology_export
 
-import json
+import json, re
 
 from lib import wrap_rpc
 
@@ -31,18 +30,38 @@ class ImportTopologyForm(forms.Form):
 @wrap_rpc
 def index(api, request):
 	toplist=api.topology_list()
-	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist})
+	tut_in_top_list = False
+	for top in toplist:
+		tut_in_top_list_old = tut_in_top_list
+		if top['attrs'].has_key('_tutorial_id'):
+			top['attrs']['tutorial_id'] = top['attrs']['_tutorial_id']
+			tut_in_top_list = True
+		if top['attrs'].has_key('_tutorial_disabled'):
+			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
+			if top['attrs']['tutorial_disabled']:
+				tut_in_top_list = tut_in_top_list_old
+	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist, 'tut_in_top_list':tut_in_top_list})
 
-def _display(api, info):
+def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'caps_json': json.dumps(caps), 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'beginner_mode': json.dumps(api.user.get("tutorial", True))})	
+	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
 	info=api.topology_info(id)
-	return _display(api, info);
+	tut_stat = None
+	tut_id = None
+	allow_tutorial = True
+	if info['attrs'].has_key('_tutorial_disabled'):
+		allow_tutorial = not info['attrs']['_tutorial_disabled']
+	if allow_tutorial:
+		if info['attrs'].has_key('_tutorial_id'):
+			tut_id = info['attrs']['_tutorial_id']
+			if info['attrs'].has_key('_tutorial_status'):
+				tut_stat = info['attrs']['_tutorial_status']
+	return _display(api, info, tut_id, tut_stat);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
@@ -59,24 +78,20 @@ def import_form(api, request):
 	if request.method=='POST':
 		form = ImportTopologyForm(request.POST,request.FILES)
 		if form.is_valid():
-			f = request.FILES['topologyfile']
-			
+			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
-			res = topology_export.import_topology(api, topology_structure)
-			return redirect("tomato.topology.info", id=res[0])
+			id_, _, _ = api.topology_import(topology_structure)
+			return redirect("tomato.topology.info", id=id_)
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 	else:
 		form = ImportTopologyForm()
 		return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 		
-		
 @wrap_rpc
 def export(api, request, id):
-	
-	top = topology_export.export(api, id)
-	
+	top = api.topology_export(id)
+	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
 	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
-	response['Content-Disposition'] = 'attachment; filename="' + top['file_information']['original_filename'] + '"'
-	
+	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

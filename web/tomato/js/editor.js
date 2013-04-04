@@ -275,8 +275,11 @@ var Window = Class.extend({
 			hide: "slide",
 			minHeight:50,
 			modal: options.modal != null ? options.modal : true,
-			buttons: options.buttons || {}
+			buttons: options.buttons || {},
+			closeOnEscape: false
 		});
+		if (options.closeOnEscape != undefined)
+			this.div.closeOnEscape = options.closeOnEscape;
 		this.setPosition(options.position);
 		if (options.content) this.div.append(options.content);
 		if (options.autoShow) this.show();
@@ -309,16 +312,26 @@ var Window = Class.extend({
 var TutorialWindow = Window.extend({
 	init: function(options) {
 			this._super(options);
+			if (options.hideCloseButton)
+				$(".ui-dialog-titlebar-close").hide();
+			
+			if (!options.tutorialVisible)
+				return;
+				
+			this.editor = options.editor
+				
+			this.tutorialStatus = options.tutorial_status || 0;
 			
 			//create UI
+			var t = this
 			this.text = $("<div>.</div>");
 			this.buttons = $("<p style=\"text-align:right; margin-bottom:0px; padding-bottom:0px;\"></p>");
 			this.backButton = $("<input type=\"button\" value=\"Back\" />");
 			this.buttons.append(this.backButton);
-			this.backButton.click(function() {editor.workspace.tutorialWindow.tutorialGoBack(); });
+			this.backButton.click(function() {t.tutorialGoBack(); });
 			this.skipButton = $("<input type=\"button\" value=\"Skip\" />");
 			this.buttons.append(this.skipButton);
-			this.skipButton.click(function() {editor.workspace.tutorialWindow.tutorialGoForth(); });
+			this.skipButton.click(function() {t.tutorialGoForth(); });
 			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
 			this.buttons.append(this.closeButton);
 			
@@ -331,16 +344,13 @@ var TutorialWindow = Window.extend({
 			this.helpButton.append(this.helpLink);
 			this.helpLinkTarget="/help/";
 			
-			this.closeButton.click(function() { 
-				editor.workspace.tutorialWindow.setTutorialVisible(false);
+			this.closeButton.click(function() {
+				t.setTutorialVisible(false);
 			});
 			
 			this.add(this.helpButton);
 			this.add(this.text);
 			this.add(this.buttons);
-			
-			//pointer to an element of tutorialSteps
-			this.tutorialStatus = 0;
 			
 			this.tutorialVisible = true;
 			if (options.tutorialVisible != undefined) {
@@ -348,9 +358,8 @@ var TutorialWindow = Window.extend({
 			}
 			
 			//load the basic tutorial at the creating of the editor.
-			this.tutorialSource = options.tutorialSource || editor_tutorial;
 			this.tutorialSteps = [];
-			this.loadTutorial(0);
+			this.loadTutorial();
 			
 	},
 	setTutorialVisible: function(vis) {  //vis==true: show tutorial. vis==false: hide tutorial.
@@ -358,6 +367,7 @@ var TutorialWindow = Window.extend({
 			this.show();
 		} else {
 			this.hide();
+			this.closeTutorial();
 		}
 		this.tutorialVisible = vis;
 	},
@@ -371,6 +381,7 @@ var TutorialWindow = Window.extend({
 			this.backButton.hide();
 		}
 		this.updateText();
+		this.updateStatusToBackend();
 	},
 	tutorialGoForth: function() {
 		if (this.tutorialStatus + 1 < this.tutorialSteps.length) {
@@ -382,6 +393,7 @@ var TutorialWindow = Window.extend({
 			this.closeButton.show();
 		}
 		this.updateText();
+		this.updateStatusToBackend();
 	},
 	triggerProgress: function(triggerObj) { //continues tutorial if correct trigger
 		if (this.tutorialVisible) { //don't waste cpu time if not needed... trigger function may be complex.
@@ -392,21 +404,32 @@ var TutorialWindow = Window.extend({
 			}
 		}
 	},
-	loadTutorial: function(tutID) {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
-	
-		//go to 1st step
-		this.tutorialStatus = 0;
-		this.backButton.hide();
-		this.skipButton.show();
-		this.closeButton.hide();
-		
+	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 		//load tutorial
-		tutorialData = this.tutorialSource.tutorials[tutID];
-		this.setTitle("Tutorial: "+tutorialData.title);
-		this.tutorialSteps = this.tutorialSource[tutorialData.name]
-		this.updateText();		
+		this.setTitle("Tutorial");
+		this.tutorialSteps = editor_tutorial
+		
+		//set visible buttons
+		if (this.tutorialStatus == 0) {
+			this.backButton.hide();
+			this.skipButton.show();
+			this.closeButton.hide();
+		} else {
+			this.backButton.show();
+			if (this.tutorialStatus == this.tutorialSteps.length - 1) {
+				this.skipButton.hide();
+				this.closeButton.show();
+			} else {
+				this.skipButton.show();
+				this.closeButton.hide();
+			}
+		}
+		
+		//show text
+		this.updateText();
 	},
 	updateText: function() {
+		if (!this.tutorialVisible) return;
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.text.empty();
 		this.text.append(text);
@@ -428,7 +451,37 @@ var TutorialWindow = Window.extend({
 		} else {
 			this.skipButton[0].value = "Skip";
 		}
+	},
+	updateStatusToBackend: function() {
+		ajax({
+			url: 'topology/'+this.editor.topology.id+'/modify',
+		 	data: {attrs: {
+		 					_tutorial_status: this.tutorialStatus
+		 					},
+		 			}
+		});
+	},
+	closeTutorial: function() {
+		var t = this
+		if (confirm("You have completed the tutorial. Do you wish to keep this topology? (\"Cancel\" will delete it)")) {
+			ajax({
+				url: 'topology/'+this.editor.topology.id+'/modify',
+			 	data: {attrs: {
+			 					_tutorial_disabled: true
+			 					},
+			 			}
+			});
+		} else {
+			ajax({
+				url: "topology/"+this.editor.topology.id+"/remove",
+				successFn: function() {
+					t.editor.triggerEvent({component: "topology", object: t.editor.topology, operation: "remove", phase: "end"});
+					window.location = "/topology";
+				}
+			});	
+		}
 	}
+	
 	
 });
 
@@ -493,6 +546,209 @@ var AttributeWindow = Window.extend({
 	}
 });
 
+var PermissionsWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		var t = this;
+
+		this.options = options;
+		this.topology = options.topology;
+		
+		this.userList = $('<div />');
+		this.userListFinder = {};
+		this.div.append(this.userList);
+		this.listCreated = false;
+		
+		this.buttons = $('<div />');
+		if (options.allowChange) {
+			var addbutton = $('<input type="button" value="Add User" />');
+			addbutton.click(function(){
+				t.addNewUser();
+			});
+			this.buttons.append(addbutton);
+		}
+		
+		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
+		closeButton.click(function(){
+			/* if (t.div.getElementsByTagName("select").length > 0) {
+				if (!window.confirm("Are you sure you want to discard all changes?"))
+					return
+				else
+					this.div.empty();
+					this.listCreated = false;
+			} */
+			t.hide();
+		});
+		this.buttons.append(closeButton);
+		
+		this.div.append(this.buttons);
+		
+	},
+	
+	createUserPermList: function() {
+		if (this.listCreated) return;
+		this.listCreated = true;
+		
+		this.userTable = $('<table><tr><th>User</th><th>Permission</th></tr></table>');
+		if (this.options.allowChange) this.userTable.append($('<th />'));
+		this.userList.append(this.userTable);
+		var perm = this.topology.data.permissions;
+		for (u in perm) {
+			if (perm[u] != null)
+				this.addUserToList(u);
+		}
+	},
+	
+	addUserToList: function(username) {
+		var t = this;
+		var tr = $('<tr />');
+		var td_name = $('<td/>');
+		var td_perm = $('<td/>');
+		var td_buttons = $('<td/>');
+		
+		ajax({
+			url:	'account/'+username+'/info',
+			successFn: function(data) {
+				var s = data.realname+' ('+data.id+')'
+				if (data.id == t.options.ownUserId)
+					s = '<img src="/img/user.png" title="This is you!" /> ' + s;
+				td_name.append( s );
+			}
+		});
+
+		tr.append(td_name);
+		tr.append(td_perm);
+		if (this.options.allowChange) tr.append(td_buttons);
+		this.userListFinder[username] = {
+				td_name: td_name,
+				td_perm: td_perm,
+				td_buttons: td_buttons
+		};
+		this.userTable.append(tr);
+		
+		this.backToView(username);
+	},
+	
+	addNewUser: function() {
+		var username = window.prompt("Please enter the user's username")
+		var t = this;
+		if (username) ajax({
+			url:	'account/'+username+'/info',
+			successFn: function(data) {
+				if (!(data.id in t.userListFinder)) {
+					if (window.confirm("Found the user "+ data.realname +"\nIs this correct?")) {
+						t.addUserToList(data.id);
+						t.makePermissionEditable(data.id);
+					}
+				} else
+					window.alert("This user is already in the list.");
+			},
+			errorFn: function(msg) {
+				window.alert("Error: "+msg);
+			}
+		});
+		
+	},
+	
+	removeUserFromList: function(username) {
+		this.userListFinder[username].td_name.parent().remove();
+	},
+	
+	makePermissionEditable: function(username) {
+		if (!this.options.allowChange || this.username == this.options.ownUserId) return;
+		
+		var t = this;
+		td_perm = this.userListFinder[username].td_perm;
+		td_buttons = this.userListFinder[username].td_buttons;
+		permission = this.topology.data.permissions[username];
+		td_perm.empty();
+		td_buttons.empty();
+		var sel_id='permissions_'+username;
+		var sel=$('<select name="sel" id="'+sel_id+'">\
+				<option value="owner">owner</option>\
+				<option value="manager">manager</option>\
+				<option value="user">user</option>\
+				<option value="external">external</option>\
+				</select>');
+		if ((permission == undefined) || (permission == null))
+			permission = 'null';
+		sel.val(permission);
+		td_perm.append(sel);
+		
+		var saveButton = $('<img src="/img/tick.png" title="save" style="cursor:pointer;" />');
+		saveButton.click(function() {
+			var sel = document.getElementById(sel_id);
+			var perm = sel.options[sel.selectedIndex].value;
+			t.setPermission(username, perm);
+		});
+		td_buttons.append(saveButton);
+		
+		var cancelButton = $('<img src="/img/eraser16.png" title="save" style="cursor:pointer;" />');
+		cancelButton.click(function(){
+			t.backToView(username);
+		});
+		td_buttons.append(cancelButton);
+	},
+	
+	setPermission: function(username, permission) {
+		if (!this.options.allowChange || this.username == this.options.ownUserId) return;
+		
+		var t = this;
+		
+		var perm_send = null;
+		if (permission != 'null')
+			perm_send = permission;
+		
+		ajax({
+			url: 'topology/'+this.topology.id+'/permission',
+			data: {user: username, permission: perm_send},
+			successFn: function(){ 
+				t.topology.data.permissions[username]=permission;
+				if (perm_send == null) {
+					t.removeUserFromList(username)
+				} else {
+					t.backToView(username);
+				}
+			},
+			errorFn: function(msg){
+				window.alert("Error while setting permission: "+msg);
+				t.backToView(username);
+			}
+		})
+	},
+	
+	backToView: function(username) {
+		var t = this;
+		
+		var permission = "[no permission]";
+		if (username in this.topology.data.permissions) permission = this.topology.data.permissions[username];
+		
+		var td_perm = this.userListFinder[username].td_perm;
+		var td_buttons = this.userListFinder[username].td_buttons;
+		td_perm.empty();
+		td_buttons.empty();
+		
+		td_perm.append(permission);
+		
+		if (username != this.options.ownUserId) {
+			var editButton = $('<img src="/img/pencil.png" title="change" style="cursor:pointer;" />');
+			editButton.click(function(){
+				t.makePermissionEditable(username);
+			});
+			td_buttons.append(editButton);
+			
+			var removeButton = $('<img src="/img/cross.png" title="change" style="cursor:pointer;" />');
+			removeButton.click(function(){
+				t.setPermission(username,null);
+			})
+			td_buttons.append(removeButton);
+		}
+		
+	}
+	
+	
+});
+
 var Workspace = Class.extend({
 	init: function(container, editor) {
 		this.container = container;
@@ -521,9 +777,24 @@ var Workspace = Class.extend({
 			modal: false, 
 			buttons: {},
 			width:500,
-			tutorialVisible:this.editor.options.beginner_mode,
-			tutorialSource:this.editor.tutorialSource
+			closeOnEscape: false,
+			tutorialVisible:this.editor.options.tutorial,
+			tutorial_status:this.editor.options.tutorial_status,
+			hideCloseButton: true,
+			editor: this.editor
 		});
+    	
+    	this.permissionsWindow = new PermissionsWindow({
+    		autoOpen: false,
+    		draggable: true,
+    		resizable: false,
+    		title: "Permissions",
+    		modal: false,
+    		width: 500,
+    		topology: this.editor.topology,
+    		allowChange: true, //todo: set value depending on user permissions
+    		ownUserId: this.editor.options.userId 
+    	});
     	
     	var t = this;
     	this.editor.listeners.push(function(obj){
@@ -845,21 +1116,26 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
-		if (this.elementCount()) {
-			alert("Please remove all devices before removing this topology.");
-			return;
-		}
-		if (confirm("Are you sure you want to completely remove this topology?")) {
-			this.editor.triggerEvent({component: "topology", object: this, operation: "remove", phase: "begin"});
-			var t = this;
+		if (! confirm("Are you sure you want to completely remove this topology?")) return;
+		var t = this;
+		var removeTopology = function() {
+			t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "begin"});
 			ajax({
-				url: "topology/"+this.id+"/remove",
+				url: "topology/"+t.id+"/remove",
 				successFn: function() {
 					t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "end"});
 					window.location = "/topology";
 				}
-			});
+			});			
 		}
+		if (this.elementCount()) {
+			for (var elId in this.elements) {
+				if (this.elements[elId].parent) continue;
+				this.elements[elId].remove(function(){
+					if (! t.elementCount()) removeTopology();		
+				}, false);
+			}
+		} else removeTopology();
 	},
 	showDebugInfo: function() {
 		var t = this;
@@ -1114,7 +1390,7 @@ var Component = Class.extend({
 	},
 	showDebugInfo: function() {
 		var t = this;
-		ajax({
+		({
 			url: this.component_type+'/'+this.id+'/info',
 		 	data: {},
 		 	successFn: function(result) {
@@ -1193,7 +1469,7 @@ var Component = Class.extend({
 	update: function() {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
-		ajax({
+		({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);
@@ -1265,7 +1541,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
-			this.table.append($("<tr/>").append($("<th colspan=4>Link emulation</th>")));
+			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
 			this.emulation_elements = [];
 			var t = this;
 			var el = new CheckboxElement({
@@ -1302,7 +1578,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
 			this.table.append($('<tr/>')
-				.append($("<th>Direction</th>"))
+				.append($("<td>Direction</td>"))
 				.append($('<td align="middle"/>').append(fromDir).append(dir1))
 				.append($('<td align="middle"/>').append(toDir).append(dir2))
 				.append($('<td>&nbsp;</td>'))
@@ -1328,7 +1604,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
 		if (con.attrEnabled("capturing")) {
-			this.table.append($("<tr/>").append($("<th colspan=4>Packet capturing</th>")));
+			this.table.append($("<tr/>").append($("<th colspan=4><big>Packet capturing</big></th>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
@@ -2471,7 +2747,6 @@ var Editor = Class.extend({
 		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources);
 		this.networks = new NetworkStore(this.options.resources);
-		this.tutorialSource = editor_tutorial;
 		this.buildMenu();
 		this.setMode(Mode.select);
 		var t = this;
@@ -2915,7 +3190,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Delete",
 				name: "topology-remove",
-				icon: "img/eraser16.png",
+				icon: "img/cross.png",
 				toggle: false,
 				small: true,
 				func: function() {
@@ -2929,7 +3204,8 @@ var Editor = Class.extend({
 			toggle: false,
 			small: false,
 			func: function() {
-				alert("Not implemented yet.");
+				t.workspace.permissionsWindow.createUserPermList();
+				t.workspace.permissionsWindow.show();
 			}
 		}));
 
@@ -2974,23 +3250,7 @@ var Editor = Class.extend({
 									this.optionCheckboxes.debug_mode
 								]);
 
-		var tab = this.menu.addTab("Tutorials");
-		var group = tab.addGroup("Tutorials");
-		var tuts = this.tutorialSource.tutorials;
-		for (var i = 0; i<tuts.length; i++) {
-			group.addElement(Menu.button({
-				label: tuts[i].title,
-				icon: tuts[i].icon,
-				toggle: false,
-				small: false,
-				tutID: i,
-				tooltip: tuts[i].description,
-				func: function() { 
-					editor.workspace.tutorialWindow.loadTutorial(this.tutID); 
-					editor.workspace.tutorialWindow.setTutorialVisible(true);
-				}
-			}));
-		}
+		
 
 
 		this.menu.paint();
