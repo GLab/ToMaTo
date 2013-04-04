@@ -19,7 +19,18 @@
     <td>{{account.origin}}</td>
     <td>{{account.realname}}</td>
     <td>{{account.affiliation}}</td>    
-    <td>{{account.flags|join:", "}}</td>
+    <td>
+    	<div class="hoverdescription">
+    		{{account.flags|join:", "}}
+    		<div>
+    			{% for f in account.flags_name %}
+    				<p>
+    					{{f}}
+    				</p>
+    			{% endfor %}
+    		</div>
+    	</div>
+    </td>
     <td><a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a></td>
   </tr>
 {% endfor %}

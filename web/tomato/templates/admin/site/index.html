@@ -29,9 +29,9 @@
 	    
 	    {% if hostManager %}
 	    	<td>
-	    		<a href="{%url site.edit%}?name={{site.name}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		<a href="{%url site.edit site.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
-	    		<a href="{%url site.remove%}?name={{site.name}}" ><img src="/img/cross.png" title="remove" /></a>
+	    		<a href="{%url site.remove site.name%}" ><img src="/img/cross.png" title="remove" /></a>
 			</td>
 	    {% endif %}
 	    

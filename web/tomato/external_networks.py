@@ -57,7 +57,7 @@ def add(api, request):
 
 
 @wrap_rpc
-def remove(api, request):
+def remove(api, request, res_id = None):
     if request.method == 'POST':
         form = RemoveResourceForm(request.POST)
         if form.is_valid():
@@ -69,7 +69,8 @@ def remove(api, request):
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no external network with id '+res_id})
         else:
-            res_id = request.POST['res_id']
+            if not res_id:
+                res_id = request.POST['res_id']
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
@@ -78,7 +79,6 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
-        res_id = request.GET['id']
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
@@ -88,7 +88,7 @@ def remove(api, request):
     
 
 @wrap_rpc
-def edit(api, request):
+def edit(api, request, res_id = None):
     if request.method=='POST':
         form = EditNetworkForm(request.POST)
         if form.is_valid():
@@ -106,7 +106,6 @@ def edit(api, request):
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
-        res_id = request.GET['id']
         if res_id:
             res_info = api.resource_info(res_id)
             origData = res_info['attrs']

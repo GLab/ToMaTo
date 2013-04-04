@@ -99,7 +99,14 @@ class AccountRegisterForm(AccountForm):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("account/index.html", {'user': api.user, 'accounts': api.account_list()})
+    accs = api.account_list()
+    account_flags = api.account_flags()
+    
+    for acc in accs:
+        acc['flags_name'] = []
+        for flag in acc['flags']:
+            acc['flags_name'].append(account_flags[flag])
+    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs})
 
 @wrap_rpc
 def info(api, request, id=None):
