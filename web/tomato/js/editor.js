@@ -1059,7 +1059,7 @@ var Topology = Class.extend({
 		el2 = el2.getConnectTarget(callback);
 		data = data || {};
 		data.attrs = data.attrs || {};
-		obj = this.loadConnection(data, [el1, el2]);
+		obj = this.loadConnection(copy(data, true), [el1, el2]);
 		return obj;
 	},
 	onOptionChanged: function(name) {
@@ -1390,7 +1390,7 @@ var Component = Class.extend({
 	},
 	showDebugInfo: function() {
 		var t = this;
-		({
+		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	data: {},
 		 	successFn: function(result) {
@@ -1469,7 +1469,7 @@ var Component = Class.extend({
 	update: function() {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
-		({
+		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);
@@ -1643,6 +1643,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 var Connection = Component.extend({
 	init: function(topology, data, canvas) {
 		this.component_type = "connection";
+		data.type = data.type || "bridge";
 		this._super(topology, data, canvas);
 		this.elements = [];
 		this.segment = -1;
@@ -1658,6 +1659,9 @@ var Connection = Component.extend({
 	},
 	onClicked: function() {
 		this.editor.onConnectionSelected(this);
+	},
+	isRemovable: function() {
+		return this.actionEnabled("(remove)");
 	},
 	getCenter: function() {
 		if (this.path) return this.path.getPointAtLength(this.path.getTotalLength()/2);
@@ -1687,7 +1691,7 @@ var Connection = Component.extend({
 		this.path.toBack();
 		var pos = this.getAbsPos();
 		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
-		$(this.handle.node).attr("class", "tomato connection removable");
+		$(this.handle.node).attr("class", "tomato connection");
 		this.handle.node.obj = this;
 		var t = this;
 		$(this.handle.node).click(function() {
@@ -1717,6 +1721,7 @@ var Connection = Component.extend({
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
+		this.handle.conditionalClass("removable", this.isRemovable());
 	},
 	calculateSegment: function(els, cons) {
 		if (! els) els = [];
@@ -1814,7 +1819,9 @@ var Connection = Component.extend({
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
 		});
-		for (var i=0; i<t.elements.length; i++) t.elements[i].remove();
+		for (var i=0; i<t.elements.length; i++) 
+			if (t.elements[i].isRemovable())
+				t.elements[i].remove();
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
@@ -1877,13 +1884,13 @@ var createConnectionMenu = function(obj) {
 				}
 			} : null,
 			"sep3": "---",
-			"remove": {
+			"remove": obj.isRemovable() ? {
 				name:'Delete',
 				icon:'remove',
 				callback: function(){
 					obj.remove(null, true);
 				}
-			}
+			} : null
 		}
 	};
 	for (var name in menu.items) {
@@ -1913,7 +1920,10 @@ var Element = Component.extend({
 	isConnectable: function() {
 		if (this.connection) return false;
 		if (! this.caps.children) return false;
-		return jQuery.isEmptyObject(this.caps.children.length);
+		for (var ch in this.caps.children)
+			if (this.caps.children[ch].indexOf(this.data.state) >= 0)
+				return true;
+		return false;
 	},
 	isRemovable: function() {
 		return this.actionEnabled("(remove)");
@@ -2408,13 +2418,11 @@ var IconElement = Element.extend({
 		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
 		this.enableDragging(this.rect);
 		this.enableClick(this.rect);
-		//$(this.rect.node).attr("class", "tomato element selectable");
-    //$(this.rect.node).addClass("tomato element selectable");
 		this.rect.node.obj = this;
-    this.rect.conditionalClass("tomato", true);
-    this.rect.conditionalClass("element", true);
-    this.rect.conditionalClass("selectable", true);
-    this.rect.conditionalClass("connectable", this.isConnectable());
+		this.rect.conditionalClass("tomato", true);
+		this.rect.conditionalClass("element", true);
+		this.rect.conditionalClass("selectable", true);
+		this.rect.conditionalClass("connectable", this.isConnectable());
 		this.rect.conditionalClass("removable", this.isRemovable());
 	},
 	paintRemove: function(){
@@ -2586,6 +2594,10 @@ var ChildElement = Element.extend({
 	paintUpdate: function() {
 		var pos = this.getHandlePos();
 		this.circle.attr({cx: pos.x, cy: pos.y});
+	},
+	updateData: function(data) {
+		this._super(data);
+		if (this.parent && ! this.connection && this.isRemovable()) this.remove();
 	}
 });
 
