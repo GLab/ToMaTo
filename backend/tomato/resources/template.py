@@ -34,6 +34,7 @@ class Template(resources.Resource):
 	label = attributes.attribute("label", str)
 	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
+	# hosts: [TemplateOnHost]
 	
 	TYPE = "template"
 
@@ -101,12 +102,11 @@ class Template(resources.Resource):
 		info = resources.Resource.info(self)
 		if self.torrent_data:
 			del info["attrs"]["torrent_data"]
-		hostsReady = [h.hasTemplate(self.tech, self.name) for h in host.getAll()]
 		info["attrs"]["ready"] = {
 			"backend": self.isReady(),
 			"hosts": {
-					"ready": len(filter(bool, hostsReady)),
-					"total": len(hostsReady)
+					"ready": len(self.hosts.filter(ready=True)),
+					"total": len(self.hosts.all())
 			}
 		} 
 		info["attrs"]["name"] = self.name
@@ -125,7 +125,5 @@ def getPreferred(tech):
 	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
 	fault.check(tmpls, "No template of type %s registered", tech) 
 	return tmpls[0]
-
-from .. import host
 
 resources.TYPES[Template.TYPE] = Template
