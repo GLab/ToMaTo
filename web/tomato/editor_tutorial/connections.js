@@ -34,7 +34,7 @@ var editor_tutorial = [
 				mask = {
 					attrs: {
 						state: "created",
-						type: "external_network"
+						type: "tinc_vpn"
 					},
 					component: "element",
 					operation: "create",
