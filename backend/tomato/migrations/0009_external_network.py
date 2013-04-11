@@ -8,10 +8,12 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         db.rename_table('external_network', 'tomato_external_network')
+        db.send_create_signal('tomato', ['External_Network'])
 
 
     def backwards(self, orm):
         db.rename_table('tomato_external_network', 'external_network')
+        db.send_create_signal('tomato', ['External_Network'])
 
 
     models = {
