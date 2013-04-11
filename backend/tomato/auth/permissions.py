@@ -24,9 +24,9 @@ class Role:
 	owner = "owner" # full topology control, permission changes, topology removal 
 	manager = "manager" # full topology control, no topology delete, no permission changes
 	user = "user" # no destroy/prepare, no topology changes, no permission changes
-	external = "external" # no access at all
+	null = "null" # no access at all
 	
-	RANKING=[owner, manager, user, external]
+	RANKING=[owner, manager, user, null]
 	
 
 class Permissions(models.Model):
@@ -38,7 +38,7 @@ class Permissions(models.Model):
 	def set(self, user, role): #@ReservedAssignment
 		try:
 			entry = self.entries.get(user=user)
-			if role:
+			if role and role != 'null':
 				entry.role = role
 				entry.save()
 			else:
@@ -70,7 +70,7 @@ def _globalRole(user):
 		return Role.manager
 	if user.hasFlag(Flags.GlobalUser):
 		return Role.user
-	return Role.external
+	return Role.null
 	
 	
 
