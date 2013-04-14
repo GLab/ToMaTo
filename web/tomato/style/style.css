@@ -57,7 +57,12 @@ form table th {
 
 
 
-
+#javascriptwarning {
+	background-color:#cccccc;
+	padding:20px;
+	font-weight:bold;
+	text-align:center;
+}
 
 code {font-size:0.9px;color:#0000ff;}
 

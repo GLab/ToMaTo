@@ -16,6 +16,23 @@
 </head>
 <body>
 
+<div id="javascriptwarning">You have disabled Javascript. This may result in incorrect page display, and the editor won't work.</div>
+<script language="JavaScript" type="text/javascript">
+var css = '#javascriptwarning{display:none;}',
+head = document.getElementsByTagName('head')[0],
+style = document.createElement('style');
+
+style.type = 'text/css';
+if (style.styleSheet){
+style.styleSheet.cssText = css;
+} else {
+style.appendChild(document.createTextNode(css));
+}
+
+head.appendChild(style);
+</script>
+
+
 {% block page %}
 <div id="border_top"></div> 
 <div id="page"> 
