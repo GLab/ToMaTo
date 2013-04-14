@@ -19,7 +19,7 @@
 
 from lib import wrap_rpc
 from django.shortcuts import render_to_response, redirect
-import topology_export, os, json
+import os, json
 
 
 #This is a list of available tutorials (values should be self-explaining):
@@ -71,10 +71,5 @@ def loadTutorial(api, request, tut_id):
     top_dict = json.loads(top_str)
     top_dict['topology']['attrs']['_tutorial_id'] = tut_id
     top_dict['topology']['attrs']['_tutorial_status'] = 0
-    
-    top = topology_export.import_topology(api, top_dict)
-    top_id = top[0]
-    if top_id:
-        return redirect("tomato.topology.info", id=top_id)
-    else:
-        return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':top[1]})
+    top_id, _, _ = api.topology_import(top_dict)
+    return redirect("tomato.topology.info", id=top_id)

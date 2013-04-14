@@ -19,7 +19,6 @@
 from django.shortcuts import render_to_response, redirect
 from django import forms
 from django.http import HttpResponse
-import topology_export
 
 import json, re
 
@@ -47,7 +46,25 @@ def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat})	
+	
+	permission_list = {
+			'owner':{	'title': "Owner",
+						'description':"full topology control, permission changes, topology removal"},
+						
+			'manager':{	'title': "Manager",
+						'description':"full topology control, no topology delete, no permission changes"},
+						
+			'user':{	'title': "User",
+						'description':"no destroy/prepare, no topology changes, no permission changes"},
+						
+			'external':{'title': "[no permission]",
+						'description':"no access at all"},
+						
+			'null':{	'title': "[no permission]",
+						'description':"no access at all"}
+		}
+	
+	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat, 'permission_list':permission_list})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
@@ -79,28 +96,20 @@ def import_form(api, request):
 	if request.method=='POST':
 		form = ImportTopologyForm(request.POST,request.FILES)
 		if form.is_valid():
-			f = request.FILES['topologyfile']
-			
+			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
-			res = topology_export.import_topology(api, topology_structure)
-			if res[0]:
-				return redirect("tomato.topology.info", id=res[0])
-			else:
-				return render_to_response("main/error.html",{'user': api.user, 'type':'Import Error','text':top[1]})
+			id_, _, _ = api.topology_import(topology_structure)
+			return redirect("tomato.topology.info", id=id_)
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 	else:
 		form = ImportTopologyForm()
 		return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
 		
-
 @wrap_rpc
 def export(api, request, id):
-	
-	top = topology_export.export(api, id)
-	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3"
-
+	top = api.topology_export(id)
+	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
 	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-	
 	return response
