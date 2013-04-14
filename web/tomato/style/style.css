@@ -379,17 +379,17 @@ div.hoverdescription:hover div.hiddenbox p {
 	background-color:#911a20;
 }
 
-#logo{
+#logo_glab{
 	float:left;
 	width:153px;
 	height:79px; 
 }
 
-#logo-text{
+#logo_tomato{
 	float:left;
 	vertical-align:middle;
 }
-#logo-text img {
+#logo_tomato img {
 	margin-left:20px;
 }
 
