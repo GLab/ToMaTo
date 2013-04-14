@@ -285,7 +285,7 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		var desc = $('<div padding: 0px;><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
 		//desc.append($());
 		this.info.append(' &nbsp; <img src="/img/info.png" />');
 		this.info.append(desc);
@@ -775,7 +775,7 @@ var PermissionsWindow = Window.extend({
 		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div><p>'+ this.permissions[permission_var].description +'</p></div></div>')
+			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
