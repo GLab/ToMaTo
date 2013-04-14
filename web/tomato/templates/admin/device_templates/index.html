@@ -80,10 +80,10 @@
 	    
 	    {% if hostManager %}
 	    	<td>
-	    		<a href="{%url device_templates.edit_data%}?id={{templ.id}}"><img src="/img/page_edit.png" title="edit data" /></a>
-	    		<a href="{%url device_templates.edit_torrent%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="change torrent" /></a>
+	    		<a href="{%url device_templates.edit_data templ.id%}"><img src="/img/page_edit.png" title="edit data" /></a>
+	    		<a href="{%url device_templates.edit_torrent templ.id%}"><img src="/img/cd_edit.png" title="change torrent" /></a>
 	    		&nbsp;
-	    		<a href="{%url device_templates.remove%}?id={{templ.id}}" ><img src="/img/cross.png" title="remove" /></a>
+	    		<a href="{%url device_templates.remove templ.id%}" ><img src="/img/cross.png" title="remove" /></a>
 			</td>
 	    {% endif %}
 	    

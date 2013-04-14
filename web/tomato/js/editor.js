@@ -257,17 +257,52 @@ var ChoiceElement = FormElement.extend({
 	}
 });
 
+var TemplateChoiceElement = ChoiceElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.descriptions = options.descriptions;
+		console.log(this.descriptions);
+		var t = this;
+		this.element.change(function(){
+			t.updateInfoBox();
+		});
+		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		this.element.after(this.info);
+		this.updateInfoBox();
+	},
+	updateInfoBox: function() {
+		
+		var escape_str = function(str) {
+		    var tagsToReplace = {
+		            '&': '&amp;',
+		            '<': '&lt;',
+		            '>': '&gt;',
+		            '\n':'<br />'
+		        };
+		        return str.replace(/[&<>\n]/g, function(tag) {
+		            return tagsToReplace[tag] || tag;
+		        });
+		    };
+		
+		this.info.empty();
+		var desc = $('<div padding: 0px;><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		//desc.append($());
+		this.info.append(' &nbsp; <img src="/img/info.png" />');
+		this.info.append(desc);
+	}
+});
+
 var Window = Class.extend({
 	init: function(options) {
 		log(options);
 		this.options = options;
-		this.options.position = options.position || 'center center';
+		this.options.position = options.position || ['center',200];
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
 			height: options.height || "auto",
-			width: options.width || "auto",
+			width: options.width || "",
 			maxHeight:600,
 			maxWidth:800,
 			title: options.title,
@@ -550,11 +585,13 @@ var AttributeWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
+		
 		var t = this;
 
 		this.options = options;
 		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
+		this.permissions = this.options.permissions;
 		
 		this.userList = $('<div />');
 		this.userListFinder = {};
@@ -579,9 +616,13 @@ var PermissionsWindow = Window.extend({
 		
 		this.div.append(this.buttons);
 		
+		
+		
 	},
 	
 	createUserPermList: function() {
+		var t = this;
+		
 		if (this.listCreated) return;
 		this.listCreated = true;
 		
@@ -618,8 +659,8 @@ var PermissionsWindow = Window.extend({
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' ('+data.id+')'
-				td_name.append(s);
+				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank">'+data.id+'</a>)'
+				td_name.append($(s));
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
@@ -646,7 +687,7 @@ var PermissionsWindow = Window.extend({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
 				if (!(data.id in t.userListFinder)) {
-					if (window.confirm("Found the user "+ data.realname +"\nIs this correct?")) {
+					if (window.confirm("Found the user "+ data.realname + ' (' + data.id +")\nIs this correct?")) {
 						t.addUserToList(data.id);
 						t.makePermissionEditable(data.id);
 					}
@@ -674,12 +715,13 @@ var PermissionsWindow = Window.extend({
 		td_perm.empty();
 		td_buttons.empty();
 		var sel_id='permissions_'+username;
-		var sel=$('<select name="sel" id="'+sel_id+'">\
-				<option value="owner">owner</option>\
-				<option value="manager">manager</option>\
-				<option value="user">user</option>\
-				<option value="external">external</option>\
-				</select>');
+		
+		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
+		for (perm in this.permissions) {
+			if (perm != "null")
+				sel.append($('<option value="'+perm+'">'+this.permissions[perm].title+'</option>'));
+		}
+		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
 		sel.val(permission);
@@ -730,8 +772,11 @@ var PermissionsWindow = Window.extend({
 	backToView: function(username) {
 		var t = this;
 		
-		var permission = "[no permission]";
-		if (username in this.topology.data.permissions) permission = this.topology.data.permissions[username];
+		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
+		if (username in this.topology.data.permissions) {
+			permission_var = this.topology.data.permissions[username];
+			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div><p>'+ this.permissions[permission_var].description +'</p></div></div>')
+		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
 		var td_buttons = this.userListFinder[username].td_buttons;
@@ -803,7 +848,8 @@ var Workspace = Class.extend({
     		width: 500,
     		topology: this.editor.topology,
     		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
-    		ownUserId: this.editor.options.userId 
+    		ownUserId: this.editor.options.userId,
+    		permissions: this.editor.options.permission_list
     	});
     	
     	var t = this;
@@ -1069,7 +1115,7 @@ var Topology = Class.extend({
 		el2 = el2.getConnectTarget(callback);
 		data = data || {};
 		data.attrs = data.attrs || {};
-		obj = this.loadConnection(data, [el1, el2]);
+		obj = this.loadConnection(copy(data, true), [el1, el2]);
 		return obj;
 	},
 	onOptionChanged: function(name) {
@@ -1126,21 +1172,26 @@ var Topology = Class.extend({
 		});
 	},
 	remove: function() {
-		if (this.elementCount()) {
-			alert("Please remove all devices before removing this topology.");
-			return;
-		}
-		if (confirm("Are you sure you want to completely remove this topology?")) {
-			this.editor.triggerEvent({component: "topology", object: this, operation: "remove", phase: "begin"});
-			var t = this;
+		if (! confirm("Are you sure you want to completely remove this topology?")) return;
+		var t = this;
+		var removeTopology = function() {
+			t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "begin"});
 			ajax({
-				url: "topology/"+this.id+"/remove",
+				url: "topology/"+t.id+"/remove",
 				successFn: function() {
 					t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "end"});
 					window.location = "/topology";
 				}
-			});
+			});			
 		}
+		if (this.elementCount()) {
+			for (var elId in this.elements) {
+				if (this.elements[elId].parent) continue;
+				this.elements[elId].remove(function(){
+					if (! t.elementCount()) removeTopology();		
+				}, false);
+			}
+		} else removeTopology();
 	},
 	showDebugInfo: function() {
 		var t = this;
@@ -1395,7 +1446,7 @@ var Component = Class.extend({
 	},
 	showDebugInfo: function() {
 		var t = this;
-		({
+		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	data: {},
 		 	successFn: function(result) {
@@ -1474,7 +1525,7 @@ var Component = Class.extend({
 	update: function() {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
-		({
+		ajax({
 			url: this.component_type+'/'+this.id+'/info',
 		 	successFn: function(result) {
 		 		t.updateData(result);
@@ -1648,6 +1699,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 var Connection = Component.extend({
 	init: function(topology, data, canvas) {
 		this.component_type = "connection";
+		data.type = data.type || "bridge";
 		this._super(topology, data, canvas);
 		this.elements = [];
 		this.segment = -1;
@@ -1663,6 +1715,9 @@ var Connection = Component.extend({
 	},
 	onClicked: function() {
 		this.editor.onConnectionSelected(this);
+	},
+	isRemovable: function() {
+		return this.actionEnabled("(remove)");
 	},
 	getCenter: function() {
 		if (this.path) return this.path.getPointAtLength(this.path.getTotalLength()/2);
@@ -1692,7 +1747,7 @@ var Connection = Component.extend({
 		this.path.toBack();
 		var pos = this.getAbsPos();
 		this.handle = this.canvas.rect(pos.x-5, pos.y-5, 10, 10).attr({fill: "#4040FF", transform: "R"+this.getAngle()});
-		$(this.handle.node).attr("class", "tomato connection removable");
+		$(this.handle.node).attr("class", "tomato connection");
 		this.handle.node.obj = this;
 		var t = this;
 		$(this.handle.node).click(function() {
@@ -1722,6 +1777,7 @@ var Connection = Component.extend({
 		this.path.attr({path: this.getPath()});
 		var pos = this.getAbsPos();
 		this.handle.attr({x: pos.x-5, y: pos.y-5, transform: "R"+this.getAngle()});
+		this.handle.conditionalClass("removable", this.isRemovable());
 	},
 	calculateSegment: function(els, cons) {
 		if (! els) els = [];
@@ -1770,7 +1826,12 @@ var Connection = Component.extend({
 		var host = this.data.attrs.host;
 		var port = this.data.attrs.capture_port;
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
-		new Window({title: "Live capture Information", content: '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", autoShow: true});
+		new Window({
+			title: "Live capture Information", 
+			content: '<p>Host: '+host+'<br />Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", 
+			autoShow: true,
+			width: 600
+		});
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
@@ -1819,7 +1880,9 @@ var Connection = Component.extend({
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
 		});
-		for (var i=0; i<t.elements.length; i++) t.elements[i].remove();
+		for (var i=0; i<t.elements.length; i++) 
+			if (t.elements[i].isRemovable())
+				t.elements[i].remove();
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
@@ -1882,13 +1945,13 @@ var createConnectionMenu = function(obj) {
 				}
 			} : null,
 			"sep3": "---",
-			"remove": {
+			"remove": obj.isRemovable() ? {
 				name:'Delete',
 				icon:'remove',
 				callback: function(){
 					obj.remove(null, true);
 				}
-			}
+			} : null
 		}
 	};
 	for (var name in menu.items) {
@@ -1918,7 +1981,10 @@ var Element = Component.extend({
 	isConnectable: function() {
 		if (this.connection) return false;
 		if (! this.caps.children) return false;
-		return jQuery.isEmptyObject(this.caps.children.length);
+		for (var ch in this.caps.children)
+			if (this.caps.children[ch].indexOf(this.data.state) >= 0)
+				return true;
+		return false;
 	},
 	isRemovable: function() {
 		return this.actionEnabled("(remove)");
@@ -2413,13 +2479,11 @@ var IconElement = Element.extend({
 		this.rect = this.canvas.rect(pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y + 10).attr({opacity: 0.0, fill:"#FFFFFF"});
 		this.enableDragging(this.rect);
 		this.enableClick(this.rect);
-		//$(this.rect.node).attr("class", "tomato element selectable");
-    //$(this.rect.node).addClass("tomato element selectable");
 		this.rect.node.obj = this;
-    this.rect.conditionalClass("tomato", true);
-    this.rect.conditionalClass("element", true);
-    this.rect.conditionalClass("selectable", true);
-    this.rect.conditionalClass("connectable", this.isConnectable());
+		this.rect.conditionalClass("tomato", true);
+		this.rect.conditionalClass("element", true);
+		this.rect.conditionalClass("selectable", true);
+		this.rect.conditionalClass("connectable", this.isConnectable());
 		this.rect.conditionalClass("removable", this.isRemovable());
 	},
 	paintRemove: function(){
@@ -2522,10 +2586,11 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
-		config.special.template = new ChoiceElement({
+		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
+			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2591,6 +2656,10 @@ var ChildElement = Element.extend({
 	paintUpdate: function() {
 		var pos = this.getHandlePos();
 		this.circle.attr({cx: pos.x, cy: pos.y});
+	},
+	updateData: function(data) {
+		this._super(data);
+		if (this.parent && ! this.connection && this.isRemovable()) this.remove();
 	}
 });
 
@@ -2628,6 +2697,7 @@ var Template = Class.extend({
 		this.subtype = options.subtype;
 		this.name = options.name;
 		this.label = options.label || options.name;
+		this.description = options.description || "no description available";
 	},
 	menuButton: function(options) {
 		return Menu.button({

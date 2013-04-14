@@ -65,6 +65,13 @@ class VMElement(elements.Element):
 	def mainElement(self):
 		return self.element
 	
+	def _nextIfaceName(self):
+		ifaces = self.getChildren()
+		num = 0
+		while "eth%d" % num in [iface.name for iface in ifaces]:
+			num += 1
+		return "eth%d" % num	
+	
 	def _profile(self):
 		if self.profile:
 			return self.profile
@@ -177,6 +184,8 @@ class VMElement(elements.Element):
 
 class VMInterface(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
+	name = name_attr.attribute()
 
 	CUSTOM_ACTIONS = {
 		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
@@ -194,6 +203,8 @@ class VMInterface(elements.Element):
 		self.type = self.TYPE
 		self.state = ST_CREATED
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		if not self.name:
+			self.name = self.getParent()._nextIfaceName()
 
 	def mainElement(self):
 		return self.element
