@@ -2180,16 +2180,20 @@ var Element = Component.extend({
 		this.action("upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
-			var iframe = $('<iframe id="upload_target" name="upload_target"/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
+			// iframe.load will be triggered a moment after iframe is added to body
+			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
+			iframe.load(function(){ 
+				iframe.load(function(){
+					iframe.remove();
+					info.hide();
+					el.action("upload_use");
+				});
+				var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
+			});
 			iframe.css("display", "none");
 			$('body').append(iframe);
 			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
-			iframe.load(function(){
-				iframe.remove();
-				info.hide();
-				el.action("upload_use");
-			});
-			var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
 		}});
 	},
 	action_start: function() {

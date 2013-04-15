@@ -18,7 +18,7 @@
 from django.db import models
 import random, sys
 
-from .. import fault, host
+from .. import fault
 from ..lib import db, attributes, util #@UnresolvedImport
 
 TYPES = {}

@@ -53,7 +53,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	CAP_CHILDREN = {"external_network_endpoint": [ST_CREATED]}
 	
 	class Meta:
-		db_table = "external_network"
+		db_table = "tomato_external_network"
 		app_label = 'tomato'
 
 	def init(self, *args, **kwargs):
