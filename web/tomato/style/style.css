@@ -359,7 +359,7 @@ div.hoverdescription:hover div.hiddenbox p {
 #header {
 	height: 80px;
 	margin: 0 auto 10px auto;
-	background:url(spacer_hor.gif) repeat-x left bottom;
+	border-bottom: 1px dotted #aaaaaa;
 	width:100%
 }
 
