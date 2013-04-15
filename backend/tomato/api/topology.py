@@ -231,7 +231,8 @@ def topology_import(data):
 def topology_import_v3(top):
 	top_id = None
 	elementIds = {}   
-	connectionIds = {}   
+	connectionIds = {}
+	errors = [] 
 	try:
 		top_id = topology_create()['id']
 		try:
@@ -241,7 +242,7 @@ def topology_import_v3(top):
 				try:
 					topology_modify(top_id, {key: value})
 				except:
-					print "Failed to set topology attribute %s to %s" % (key, value)
+					errors.append(("topology", None, key, value))
 		elements = top["elements"]
 		elements.sort(key=lambda el: el['id'])
 		for el in elements:
@@ -255,7 +256,7 @@ def topology_import_v3(top):
 					try:
 						element_modify(elId, {key: value})
 					except:
-						print "Failed to set element attribute %s to %s" % (key, value)
+						errors.append(("element", el['id'], key, value))
 		for con in top["connections"]:
 			el1 = elementIds.get(con["elements"][0])
 			el2 = elementIds.get(con["elements"][1])
@@ -268,11 +269,11 @@ def topology_import_v3(top):
 					try:
 						connection_modify(conId, {key: value})
 					except:
-						print "Failed to set connection attribute %s to %s" % (key, value)	
+						errors.append(("connection", con['id'], key, value))
 	except:
 		topology_remove(top_id)
 		raise
-	return (top_id, elementIds.items(), connectionIds.items())
+	return (top_id, elementIds.items(), connectionIds.items(), errors)
 	
 
 def topology_export(id): #@ReservedAssignment

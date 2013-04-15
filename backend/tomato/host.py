@@ -100,7 +100,6 @@ class Host(attributes.Mixin, models.Model):
 	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
 	connectionTypes = attributes.attribute("connection_types", dict, {})
-	templates = attributes.attribute("templates", dict, {})
 	hostInfo = attributes.attribute("info", dict, {})
 	hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
 	accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
@@ -111,6 +110,7 @@ class Host(attributes.Mixin, models.Model):
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	# connections: [HostConnection]
 	# elements: [HostElement]
+	# templates: [TemplateOnHost]
 	
 	class Meta:
 		ordering = ['site', 'address']
@@ -203,6 +203,7 @@ class Host(attributes.Mixin, models.Model):
 	def synchronizeResources(self):
 		if time.time() - self.lastResourcesSync < config.RESOURCES_SYNC_INTERVAL:
 			return
+		from models import TemplateOnHost
 		logging.logMessage("resource_sync begin", category="host", address=self.address)		
 		#TODO: implement for other resources
 		from . import resources
@@ -225,21 +226,32 @@ class Host(attributes.Mixin, models.Model):
 					#update resource
 					self.getProxy().resource_modify(hNet["id"], attrs)
 					logging.logMessage("network update", category="host", address=self.address, network=attrs)				
-		self.templates = {}
+		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
-			self.templates[tpl["attrs"]["tech"]] = self.templates.get(tpl["attrs"]["tech"], {})
-			self.templates[tpl["attrs"]["tech"]][tpl["attrs"]["name"]] = tpl
+			tpls[tpl["attrs"]["tech"]] = tpls.get(tpl["attrs"]["tech"], {})
+			tpls[tpl["attrs"]["tech"]][tpl["attrs"]["name"]] = tpl
 		for tpl in resources.getAll(type="template"):
 			attrs = tpl.attrs.copy()
 			attrs["name"] = tpl.name
 			attrs["tech"] = tpl.tech
-			if not attrs["tech"] in self.templates or not attrs["name"] in self.templates[attrs["tech"]]:
+			try:
+				toh = self.templates.get(template=tpl)
+			except TemplateOnHost.DoesNotExist:
+				toh = TemplateOnHost.objects.create(host=self, template=tpl, ready=False, date=time.time())
+			if not attrs["tech"] in tpls or not attrs["name"] in tpls[attrs["tech"]]:
 				#create resource
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", address=self.address, template=attrs)		
+				toh.ready = False
+				toh.date = time.time()
+				toh.save()  
 			else:
-				hTpl = self.templates[attrs["tech"]][attrs["name"]]
+				hTpl = tpls[attrs["tech"]][attrs["name"]]
 				isAttrs = dict(hTpl["attrs"])
+				if isAttrs["ready"] != toh.ready:
+					toh.ready = isAttrs["ready"]
+					toh.date = time.time()
+					toh.save()  
 				del isAttrs["ready"]
 				del isAttrs["preference"] # we have our own
 				shouldAttrs = dict(attrs)
@@ -256,8 +268,8 @@ class Host(attributes.Mixin, models.Model):
 		self.lastResourcesSync = time.time()
 		self.save()
 
-	def hasTemplate(self, tech, name):
-		return self.templates[tech][name]["attrs"]["ready"] if tech in self.templates and name in self.templates[tech] else False
+	def hasTemplate(self, tpl):
+		return len(self.templates.filter(template=tpl, ready=True))
 
 	def updateAccountingData(self, now):
 		logging.logMessage("accounting_sync begin", category="host", address=self.address)		

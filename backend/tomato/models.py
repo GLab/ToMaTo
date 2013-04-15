@@ -32,3 +32,17 @@ from resources.network import Network #@UnusedImport
 from resources.profile import Profile #@UnusedImport
 from accounting import UsageStatistics, UsageRecord #@UnusedImport
 from link import LinkMeasurement #@UnusedImport
+from host import Host
+
+from django.db import models
+
+class TemplateOnHost(models.Model):
+	host = models.ForeignKey(Host, related_name="templates")
+	template = models.ForeignKey(Template, related_name="hosts")
+	ready = models.BooleanField()
+	date = models.FloatField()
+
+	class Meta:
+		db_table = "tomato_templateonhost"
+		app_label = 'tomato'
+		unique_together=[('host', 'template')]

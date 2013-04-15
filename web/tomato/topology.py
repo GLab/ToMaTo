@@ -98,7 +98,7 @@ def import_form(api, request):
 		if form.is_valid():
 			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
-			id_, _, _ = api.topology_import(topology_structure)
+			id_, _, _, _ = api.topology_import(topology_structure)
 			return redirect("tomato.topology.info", id=id_)
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})

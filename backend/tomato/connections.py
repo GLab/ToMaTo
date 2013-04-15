@@ -23,7 +23,7 @@ from auth.permissions import Permissions, PermissionMixin, Role
 from lib import db, attributes, logging #@UnresolvedImport
 from accounting import UsageStatistics
 from lib.decorators import *
-from . import host
+from host import HostConnection, HostElement, getConnectionCapabilities, getAll as getAllHosts
 
 REMOVE_ACTION = "(remove)"
 
@@ -37,10 +37,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	#elements: set of elements.Element
-	connection1 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
-	connection2 = models.ForeignKey(host.HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
-	connectionElement1 = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
-	connectionElement2 = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
+	connection1 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
+	connection2 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
+	connectionElement1 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
+	connectionElement2 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
 	
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy"]
@@ -92,7 +92,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return self.mainConnection().type if self.mainConnection() else "bridge"
 
 	def _remoteAttrs(self):
-		caps = host.getConnectionCapabilities(self.remoteType())
+		caps = getConnectionCapabilities(self.remoteType())
 		allowed = caps["attrs"].keys() if caps else []
 		attrs = {}
 		reversed = not self._correctDirection() #@ReservedAssignment
@@ -124,7 +124,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			if mcon:
 				direct = mcon.getAllowedAttributes().keys()
 			else:
-				caps = host.getConnectionCapabilities(self.remoteType())
+				caps = getConnectionCapabilities(self.remoteType())
 				direct = caps["attrs"].keys() if caps else []
 		for key in attrs.keys():
 			if key in direct and not key in self.DIRECT_ATTRS_EXCLUDE:
@@ -348,7 +348,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	@classmethod
 	def getCapabilities(cls, type_, host_):
 		if not host_:
-			host_ = host.getAll()[0]
+			host_ = getAllHosts()[0]
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)
 		cap_actions = dict(cls.CUSTOM_ACTIONS)
