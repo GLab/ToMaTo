@@ -183,10 +183,10 @@ a:active, a:hover
  }
 
 #sidemenu h2{
-	padding: 3px 0;
+	padding: 0;
 	margin:5px 0;
 	display:block;
-	background: url(line.gif) repeat-x left bottom;
+	border-bottom:5px solid #9c3036;
 }
 
 #sidemenu ul li {
@@ -375,14 +375,15 @@ div.hoverdescription:hover div.hiddenbox p {
 }
 
 #menu_top a:hover, #menu_top .active a {
-	background: url(line.gif) repeat-x left bottom;
+	border-bottom:5px solid #9c3036;
+	padding-bottom:0px;
 }
 
 #border_top{
 	width:100%;
 	margin-bottom: 6px;
 	height:0.25cm;
-	background-color:#911a20;
+	background-color:9c3036;
 }
 
 #logo_glab{
