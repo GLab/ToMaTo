@@ -103,8 +103,10 @@ function shrinkHeader() {
 	
 }
 
-if (document.height > document.body.clientHeight)
-	shrinkHeader()
+$('body').ready(function(){
+	if (document.height > document.body.clientHeight)
+		shrinkHeader()
+});
 </script>
 
 {% endif %}
