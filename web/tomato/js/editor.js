@@ -1226,6 +1226,14 @@ var Topology = Class.extend({
 		var ta = $('<textarea cols=60 rows=20 class="notes"></textarea>');
 		ta.text(this.data.attrs._notes || "");
 		dialog.append(ta);
+		var openWithEditor_html = $('<input type="checkbox" name="openWithEditor">Open Window with Editor</input>');
+		var openWithEditor = openWithEditor_html[0];
+		if (this.data.attrs._notes_autodisplay) {
+			openWithEditor.checked = true;
+			console.log("check");
+		}
+		dialog.append($('<br/>'))
+		dialog.append(openWithEditor_html);
 		var t = this;
 		dialog.dialog({
 			autoOpen: true,
@@ -1241,6 +1249,7 @@ var Topology = Class.extend({
 				Save: function() {
 		        	dialog.dialog("close");
 			      	t.modify_value("_notes", ta.val());
+			      	t.modify_value("_notes_autodisplay", openWithEditor.checked)
 			    },
 		        Close: function() {
 		        	dialog.dialog("close");
@@ -2835,8 +2844,11 @@ var Editor = Class.extend({
 			successFn: function(data){
 				t.topology.load(data);
 				t.workspace.setBusy(false);
-				if ((data.elements.length == 0) && (t.topology.name() == "Topology #"+t.topology.id))
+				if ((data.elements.length == 0) && (t.topology.name() == "Topology #"+t.topology.id)) {
 					t.topology.initialRenameDialog();
+				} else
+					if (t.topology.data.attrs._notes_autodisplay)
+						t.topology.notesDialog();
 			}
 		});
 	},
