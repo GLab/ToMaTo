@@ -35,7 +35,7 @@
 {% block content %}
 
 
-<div style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
+<div id="editor" style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
 	<h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
 	<div id="menu" style="width:800px;"></div>
 	<div id="workspace" style="width:800px; height:600px;"></div>
@@ -63,4 +63,49 @@
   	userId: "{{user.id}}"
   });
 </script>
+
+{% if optimize_if_small_display %}
+
+<script language="JavaScript" type="text/javascript">
+
+function shrinkHeader() {
+	console.log("shrinking header");
+	
+	var header = document.getElementById("header");
+	header.style.height=35;
+	header.innerHTML = "";
+	header.style.textAlign = "center";
+	
+	var logo = document.createElement('div')
+	logo.innerHTML='<a href="http://german-lab.de/" target="_blank"><img src="/style/glablogo.jpg" height="33" /></a>\
+					  <a href="{%url main.index%}"><img src="/img/tomato_logo.png" height="33" /></a>';
+	logo.style.float = 'left';
+	
+	var top_name_h = document.getElementById("topology_name");
+	top_name_h.style.margin = 0;
+	var top_name = document.createElement('div');
+	top_name.appendChild(top_name_h);
+	
+	var l = document.createElement('div');
+	l.innerHTML = "<a href=\"{%url topology.index%}\" >Back to topology list</a>";
+	l.style.float = "right";
+	l.style['margin-right'] = 20;
+	
+	header.appendChild(logo);
+	header.appendChild(l);
+	header.appendChild(top_name);
+	
+	var border_top = document.getElementById("border_top");
+	border_top.style.backgroundPositionY = -border_top.scrollHeight + 10;
+	border_top.style.height = 8;
+	
+	
+}
+
+if (document.height > document.body.clientHeight)
+	shrinkHeader()
+</script>
+
+{% endif %}
+
 {% endblock %}

@@ -46,7 +46,8 @@ def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat})	
+	optimize_if_small_display = True; #Todo: allow the user to change this
+	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat, 'optimize_if_small_display': optimize_if_small_display})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
