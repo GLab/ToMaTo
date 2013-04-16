@@ -60,7 +60,7 @@ def add(api, request):
         return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
     
 @wrap_rpc
-def remove(api, request):
+def remove(api, request, name=None):
     if request.method == 'POST':
         form = RemoveSiteForm(request.POST)
         if form.is_valid():
@@ -68,7 +68,8 @@ def remove(api, request):
             api.site_remove(name)
             return render_to_response("admin/site/remove_success.html", {'user': api.user, 'name': name})
         else:
-            name = request.POST['name']
+            if not name:
+                name = request.POST['name']
             if name:
                 form = RemoveSiteForm()
                 form.fields["name"].initial = name
@@ -77,7 +78,6 @@ def remove(api, request):
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
-        name = request.GET['name']
         if name:
             form = RemoveSiteForm()
             form.fields["name"].initial = name
@@ -86,7 +86,7 @@ def remove(api, request):
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
 @wrap_rpc
-def edit(api, request):
+def edit(api, request, name=None):
     if request.method=='POST':
         form = EditSiteForm(request.POST)
         if form.is_valid():
@@ -97,7 +97,8 @@ def edit(api, request):
                                                              'latitude':formData['geolocation_latitude']}})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
-            name=request.POST["name"]
+            if not name:
+                name=request.POST["name"]
             if name:
                 form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
                 form.fields["name"].help_text=None
@@ -106,7 +107,6 @@ def edit(api, request):
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
     else:
-        name = request.GET['name']
         if name:
             siteInfo = api.site_info(name)
             siteInfo['geolocation_longitude'] = siteInfo['geolocation'].get('longitude',0)

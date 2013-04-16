@@ -257,17 +257,52 @@ var ChoiceElement = FormElement.extend({
 	}
 });
 
+var TemplateChoiceElement = ChoiceElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.descriptions = options.descriptions;
+		console.log(this.descriptions);
+		var t = this;
+		this.element.change(function(){
+			t.updateInfoBox();
+		});
+		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		this.element.after(this.info);
+		this.updateInfoBox();
+	},
+	updateInfoBox: function() {
+		
+		var escape_str = function(str) {
+		    var tagsToReplace = {
+		            '&': '&amp;',
+		            '<': '&lt;',
+		            '>': '&gt;',
+		            '\n':'<br />'
+		        };
+		        return str.replace(/[&<>\n]/g, function(tag) {
+		            return tagsToReplace[tag] || tag;
+		        });
+		    };
+		
+		this.info.empty();
+		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		//desc.append($());
+		this.info.append(' &nbsp; <img src="/img/info.png" />');
+		this.info.append(desc);
+	}
+});
+
 var Window = Class.extend({
 	init: function(options) {
 		log(options);
 		this.options = options;
-		this.options.position = options.position || 'center center';
+		this.options.position = options.position || ['center',200];
 		this.div = $('<div/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
 			height: options.height || "auto",
-			width: options.width || "auto",
+			width: options.width || "",
 			maxHeight:600,
 			maxWidth:800,
 			title: options.title,
@@ -406,7 +441,6 @@ var TutorialWindow = Window.extend({
 	},
 	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 		//load tutorial
-		this.setTitle("Tutorial");
 		this.tutorialSteps = editor_tutorial
 		
 		//set visible buttons
@@ -433,6 +467,8 @@ var TutorialWindow = Window.extend({
 		var text = this.tutorialSteps[this.tutorialStatus].text;
 		this.text.empty();
 		this.text.append(text);
+
+		this.setTitle("Tutorial [" + (this.tutorialStatus+1) + "/" + this.tutorialSteps.length + "]");
 		
 		//dirty hack: un-set the window's height property
 		this.div[0].style.height = "";
@@ -549,10 +585,13 @@ var AttributeWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
+		
 		var t = this;
 
 		this.options = options;
+		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
+		this.permissions = this.options.permissions;
 		
 		this.userList = $('<div />');
 		this.userListFinder = {};
@@ -560,13 +599,7 @@ var PermissionsWindow = Window.extend({
 		this.listCreated = false;
 		
 		this.buttons = $('<div />');
-		if (options.allowChange) {
-			var addbutton = $('<input type="button" value="Add User" />');
-			addbutton.click(function(){
-				t.addNewUser();
-			});
-			this.buttons.append(addbutton);
-		}
+		
 		
 		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
 		closeButton.click(function(){
@@ -583,13 +616,29 @@ var PermissionsWindow = Window.extend({
 		
 		this.div.append(this.buttons);
 		
+		
+		
 	},
 	
 	createUserPermList: function() {
+		var t = this;
+		
 		if (this.listCreated) return;
 		this.listCreated = true;
 		
-		this.userTable = $('<table><tr><th>User</th><th>Permission</th></tr></table>');
+		if (!this.options.allowChange) {
+			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
+		}
+		
+		if (this.options.allowChange) {
+			var addbutton = $('<input type="button" value="Add User" />');
+			addbutton.click(function(){
+				t.addNewUser();
+			});
+			this.buttons.append(addbutton);
+		}
+		
+		this.userTable = $('<table><tr><th/><th>User</th><th>Permission</th></tr></table>');
 		if (this.options.allowChange) this.userTable.append($('<th />'));
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
@@ -605,21 +654,23 @@ var PermissionsWindow = Window.extend({
 		var td_name = $('<td/>');
 		var td_perm = $('<td/>');
 		var td_buttons = $('<td/>');
+		var td_icon = $('<td/>')
 		
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' ('+data.id+')'
-				if (data.id == t.options.ownUserId)
-					s = '<img src="/img/user.png" title="This is you!" /> ' + s;
-				td_name.append( s );
+				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank">'+data.id+'</a>)'
+				td_name.append($(s));
+				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
 		});
 
+		tr.append(td_icon);
 		tr.append(td_name);
 		tr.append(td_perm);
 		if (this.options.allowChange) tr.append(td_buttons);
 		this.userListFinder[username] = {
+				td_icon: td_icon,
 				td_name: td_name,
 				td_perm: td_perm,
 				td_buttons: td_buttons
@@ -636,7 +687,7 @@ var PermissionsWindow = Window.extend({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
 				if (!(data.id in t.userListFinder)) {
-					if (window.confirm("Found the user "+ data.realname +"\nIs this correct?")) {
+					if (window.confirm("Found the user "+ data.realname + ' (' + data.id +")\nIs this correct?")) {
 						t.addUserToList(data.id);
 						t.makePermissionEditable(data.id);
 					}
@@ -664,12 +715,13 @@ var PermissionsWindow = Window.extend({
 		td_perm.empty();
 		td_buttons.empty();
 		var sel_id='permissions_'+username;
-		var sel=$('<select name="sel" id="'+sel_id+'">\
-				<option value="owner">owner</option>\
-				<option value="manager">manager</option>\
-				<option value="user">user</option>\
-				<option value="external">external</option>\
-				</select>');
+		
+		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
+		for (perm in this.permissions) {
+			if (perm != "null")
+				sel.append($('<option value="'+perm+'">'+this.permissions[perm].title+'</option>'));
+		}
+		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
 		sel.val(permission);
@@ -720,8 +772,11 @@ var PermissionsWindow = Window.extend({
 	backToView: function(username) {
 		var t = this;
 		
-		var permission = "[no permission]";
-		if (username in this.topology.data.permissions) permission = this.topology.data.permissions[username];
+		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
+		if (username in this.topology.data.permissions) {
+			permission_var = this.topology.data.permissions[username];
+			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
+		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
 		var td_buttons = this.userListFinder[username].td_buttons;
@@ -792,8 +847,9 @@ var Workspace = Class.extend({
     		modal: false,
     		width: 500,
     		topology: this.editor.topology,
-    		allowChange: true, //todo: set value depending on user permissions
-    		ownUserId: this.editor.options.userId 
+    		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
+    		ownUserId: this.editor.options.userId,
+    		permissions: this.editor.options.permission_list
     	});
     	
     	var t = this;
@@ -1770,7 +1826,12 @@ var Connection = Component.extend({
 		var host = this.data.attrs.host;
 		var port = this.data.attrs.capture_port;
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
-		new Window({title: "Live capture Information", content: '<p>Host: '+host+'<p>Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", autoShow: true});
+		new Window({
+			title: "Live capture Information", 
+			content: '<p>Host: '+host+'<br />Port: '+port+"</p><p>Start live capture via: <pre>"+cmd+"</pre></p>", 
+			autoShow: true,
+			width: 600
+		});
 	},
 	showConfigWindow: function() {
 		var absPos = this.getAbsPos();
@@ -2529,10 +2590,11 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
-		config.special.template = new ChoiceElement({
+		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
+			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2639,6 +2701,7 @@ var Template = Class.extend({
 		this.subtype = options.subtype;
 		this.name = options.name;
 		this.label = options.label || options.name;
+		this.description = options.description || "no description available";
 	},
 	menuButton: function(options) {
 		return Menu.button({

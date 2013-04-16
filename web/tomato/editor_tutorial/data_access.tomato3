@@ -5,17 +5,13 @@
   "topology": {
     "connections": [
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "elements": [
-          1534, 
-          1535
+          1662, 
+          1663
         ], 
         "type": "bridge", 
         "attrs": {
-          "bandwidth_from": 1000, 
+          "bandwidth_from": 10000, 
           "lossratio_to": 0, 
           "delay_to": 0, 
           "duplicate_from": 0, 
@@ -33,38 +29,29 @@
           "corrupt_from": 0, 
           "capturing": false, 
           "capture_filter": ""
-        }
+        }, 
+        "id": 442
       }
     ], 
     "elements": [
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "openvz_interface", 
+        "id": 1663, 
+        "parent": 1658, 
         "attrs": {
           "ip4address": "10.0.0.1/24"
-        }, 
-        "parent": 1532, 
-        "id": 1535
+        }
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "kvmqm_interface", 
-        "attrs": {}, 
-        "parent": 1533, 
-        "id": 1534
+        "id": 1662, 
+        "parent": 1660, 
+        "attrs": {}
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "kvmqm", 
+        "id": 1660, 
+        "parent": null, 
         "attrs": {
           "profile": "normal", 
           "site": null, 
@@ -74,16 +61,12 @@
             "y": 0.3181818181818182, 
             "x": 0.5666666666666667
           }
-        }, 
-        "parent": null, 
-        "id": 1533
+        }
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "openvz", 
+        "id": 1658, 
+        "parent": null, 
         "attrs": {
           "profile": "normal", 
           "site": null, 
@@ -93,9 +76,7 @@
             "y": 0.3181818181818182, 
             "x": 0.23333333333333334
           }
-        }, 
-        "parent": null, 
-        "id": 1532
+        }
       }
     ], 
     "attrs": {

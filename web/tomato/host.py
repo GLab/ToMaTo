@@ -66,7 +66,7 @@ def add(api, request):
         return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
    
 @wrap_rpc
-def remove(api, request):
+def remove(api, request, address=None):
     if request.method == 'POST':
         form = RemoveHostForm(request.POST)
         if form.is_valid():
@@ -74,14 +74,14 @@ def remove(api, request):
             api.host_remove(address)
             return render_to_response("admin/host/remove_success.html", {'user': api.user, 'address': address})
         else:
-            address=request.POST['address']
+            if not address:
+                address=request.POST['address']
             if address:
                 form.fields["address"].initial = address
                 return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
-        address=request.GET['address']
         if address:
             form = RemoveHostForm()
             form.fields["address"].initial = address
@@ -90,7 +90,7 @@ def remove(api, request):
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
 @wrap_rpc
-def edit(api, request):
+def edit(api, request, address=None):
     if request.method=='POST':
         form = EditHostForm(api, request.POST)
         if form.is_valid():
@@ -98,13 +98,13 @@ def edit(api, request):
             api.host_modify(formData["address"],{'site':formData["site"]})
             return render_to_response("admin/host/edit_success.html", {'user': api.user, 'address': formData["address"]})
         else:
-            address=request.POST["address"]
+            if not address:
+                address=request.POST["address"]
             if address:
                 return render_to_response("admin/host/form.html", {'user': api.user, 'address': address, 'form': form, "edit":True})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
-        address = request.GET['address']
         if address:
             hostinfo=api.host_info(address)
             form = EditHostForm(api, hostinfo)

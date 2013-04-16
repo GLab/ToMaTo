@@ -3,7 +3,7 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of external networks</h1>
+<h1>List of External Networks</h1>
 
 {% if hostManager %}
 	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external network" /></p>
@@ -32,9 +32,9 @@
 	    
 	    {% if hostManager %}
 	    	<td>
-	    		<a href="{%url external_networks.edit%}?id={{netw.id}}"><img src="/img/pencil.png" title="edit" /></a>
+	    		<a href="{%url external_networks.edit netw.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
-	    		<a href="{%url external_networks.remove%}?id={{netw.id}}" ><img src="/img/cross.png" title="remove" /></a>
+	    		<a href="{%url external_networks.remove netw.id%}" ><img src="/img/cross.png" title="remove" /></a>
 			</td>
 	    {% endif %}
 	    

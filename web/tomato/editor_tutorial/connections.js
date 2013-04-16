@@ -10,17 +10,6 @@ var editor_tutorial = [
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						To start, let\'s take a closer look at a connection.</p>\
-					<p class="tutorialExplanation">\
-						Every connection consits of two network interfaces and the connection itself.<br />\
-						An interface is represented by a grey circle at a device. Here you can configure the device\'s network preferences (e.g., ip address).<br />\
-						The connection is represented by a blue square at its center. Here, you can configure the link (e.g., bandwidth, loss rate, etc).</p>\
-					<p class="tutorialExplanation">\
-						The options available to a connection depend on the connected devices. The same is for interfaces.</p>',
-			skip_button: 'Continue'
-			},
-			{
-			text:	'<p class="tutorialExplanation">\
 						Additionally, we have to define some terms:\
 						<ul><li><b>Connection</b>: The connection which you can see in this editor. In this tutorial, "Connection" always refers to the blue square on a connection.</li>\
 						<li><b>Link</b>: The virtualized representation of a connection</li>\
@@ -34,7 +23,7 @@ var editor_tutorial = [
 				mask = {
 					attrs: {
 						state: "created",
-						type: "external_network"
+						type: "tinc_vpn"
 					},
 					component: "element",
 					operation: "create",
@@ -85,6 +74,17 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialCommand">\
 						Don\'t forget the second connection.</p>'
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						Let\'s take a closer look at a connection.</p>\
+					<p class="tutorialExplanation">\
+						Every connection consits of two network interfaces and the connection itself.<br />\
+						An interface is represented by a grey circle at a device. Here you can configure the device\'s network preferences (e.g., ip address).<br />\
+						The connection is represented by a blue square at its center. Here, you can configure the link (e.g., bandwidth, loss rate, etc).</p>\
+					<p class="tutorialExplanation">\
+						The options available to a connection depend on the connected devices. The same is for interfaces.</p>',
+			skip_button: 'Continue'
 			},
 			{
 			trigger:function(obj) { 
@@ -195,16 +195,26 @@ var editor_tutorial = [
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						For the next step, you need a URL to a large file (at least 100MB), or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
+						For the next step, you need a URL to a large file (> ~50MB) or a continuous stream. The faster the respective server, the better; it should be available at >3 MByte/s</p>\
 					<p class="tutorialExplanation">\
 						The default bandwidth is set to 10Mbit/s. You will see this when you download the file (you don\'t need to complete the download; just start it and cancel when you have seen the download speed.</p>\
 					<p class="tutorialExplanation">\
-						You can now change the bandwidth (from internet to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
+						You can now change the bandwidth (from switch to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
 						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
 			skip_button:	"Continue"
 			},
 			{
-			text:'TODO: Packet capturing'
+			text:	'<p class="tutorialExplanation">\
+						Now, let\'s take a look at packet capturing.<br />\
+						Enable packet capturing (mode: "for download", filter expressionÖ "") in the connection\'s settings, and then let the device load a webpage.</p>\
+					<p class="tutorialExplanation">\
+						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
+						The downloaded file can be viewed by any application which supports pcap viewing.</p>\
+					<p class="tutorialExplanation">\
+						If you instead prefer life-viewing using wireshark, set the capture mode to "via network". Then, a different item will appear in the right-click menu ("live capture info"), providing all info you need.</p>\
+					<p class="tutorialExplanation">\
+						The filter expression is the same you would use with tcpdump. (See the tdpdump manpage for more information)</p>',
+			skip_button:	"Continue"
 			},
 			{
 			text:	'<p class="tutorialExplanation">\

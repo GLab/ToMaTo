@@ -6,10 +6,6 @@
     "connections": [], 
     "elements": [
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "openvz", 
         "attrs": {
           "profile": "normal", 
@@ -25,10 +21,6 @@
         "id": 1576
       }, 
       {
-        "debug": {
-          "host_connections": [], 
-          "host_elements": []
-        }, 
         "type": "external_network", 
         "attrs": {
           "kind": "internet", 

@@ -27,7 +27,9 @@
 	display: none;
 }
 #content {
-	margin-left: 3mm;
+	margin-left:0px;
+	margin-right:0px;
+	max-width:none;
 }
 </style>
 {% endblock %}
@@ -60,7 +62,10 @@
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
   	topology: {{top.id}},
-  	userId: "{{user.id}}"
+  	userId: "{{user.id}}",
+  	isGlobalOwner: "{{user.flags.global_owner}}",
+  	permission_list: {{permission_list|safe}}
+  	
   });
 </script>
 
@@ -95,15 +100,13 @@ function shrinkHeader() {
 	header.appendChild(l);
 	header.appendChild(top_name);
 	
-	var border_top = document.getElementById("border_top");
-	border_top.style.backgroundPositionY = -border_top.scrollHeight + 10;
-	border_top.style.height = 8;
-	
 	
 }
 
-if (document.height > document.body.clientHeight)
-	shrinkHeader()
+$('body').ready(function(){
+	if (document.height > document.body.clientHeight)
+		shrinkHeader()
+});
 </script>
 
 {% endif %}

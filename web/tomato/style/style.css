@@ -1,13 +1,23 @@
+@import url(http://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic,700italic&subset=latin,latin-ext,greek-ext,greek);
+
+
 body {
-  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size:0.8em;
+  font-family: "Ubuntu", Arial, Helvetica, sans-serif; font-size:0.8em;
   background-color:#ffffff;
   margin:0px;
+  min-height: 100%;
+  min-width: 780px;
+  position:relative;
 }
 
 h1 {font-size:1.5em;color:#000000;margin-bottom:5mm;}
 h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
 
+
+
+
+/* table design */
 table {
 	font-size: 1.0em;
 	text-align: left;
@@ -33,7 +43,29 @@ table.whitebg tr:nth-child(even) td {
 	background-color: white;
 }
 
+td {
+	vertical-align:top;
+}
+
+th {
+	text-align: left;
+}
+
+form table th {
+	vertical-align:top;
+}
+
+
+
+#javascriptwarning {
+	background-color:#cccccc;
+	padding:20px;
+	font-weight:bold;
+	text-align:center;
+}
+
 code {font-size:0.9px;color:#0000ff;}
+
 pre {
   font-size:14px;
   color:#0000ff;
@@ -46,10 +78,13 @@ tt em {
   font-style: normal;
 }
 
-#nonfooter {
-  min-height: 100%;
-}
 
+
+
+
+
+
+/* link design */
 a:link, a:visited, a:active, a:hover
 {
   text-decoration:underline;
@@ -67,18 +102,16 @@ a:active, a:hover
   color:#f00;
 }
 
+
+
+
+
+
+
+
 #content {
         margin-left: 200px;
         max-width:1260px;
-        /*margin-bottom: 1cm;*/
-}
-
-#page {
-        min-width: 780px;
-        /*max-width: 1260px;*/
-        clear:both;
-        display: block;
-        padding-bottom:55px;
 }
 
 #left {
@@ -86,68 +119,10 @@ a:active, a:hover
         width: 180px;
 }
 
-#header {
-	height: 80px;
-	margin: 0 auto 10px auto;
-	background:url(spacer_hor.gif) repeat-x left bottom;
-	width:100%
-}
 
-#footer-container{
-	text-align:center;
-	width: 100%;
-}
 
-#footer{
-	text-align:center;
-	padding-top:1px;
-	height:52px;
-	width:921px;
-	margin-top:-53px;
-	background:url(footer.png)  no-repeat;
-}
 
-#border_top{
-	width:100%;
-	height:28px;
-	background-repeat:repeat-x;
-	background-image: url(border_top.png);
-}
 
-#logo{
-	float:left;
-	width:153px;
-	height:79px; 
-}
-
-#logo-text{
-	float:left;
-	vertical-align:middle;
-}
-#logo-text img {
-	margin-left:20px;
-}
-
-#logo-text h1{
-	display: inline;
-	vertical-align: top;
-	position: relative;
-	color:#911a20;
-	font-size:40px;
-	margin-left: 10px;
-	font-weight: bold;
-	letter-spacing: 2px;
-	clear: right;
-}
-
-#logo-text h2{
-	display: inline;
-	vertical-align: top;
-	/*top: 10px;
-	position: relative;*/
-	font-size:12px;
-	margin-left: 10px;
-}
 
 #minimenu_top{
 	margin:20px 0px; 
@@ -193,20 +168,7 @@ a:active, a:hover
 	display: inline;
 }
 
-#menu_top a {
-	display: block;
-	float: left;
-	margin-left: 10px;
-	margin-right:20px;
-	padding: 7px;
-	text-decoration: none;
-	font-size: 13px;
-	color: #000000;
-}
 
-#menu_top a:hover, #menu_top .active a {
-	background: url(line.gif) repeat-x left bottom;
-}
 
 #sidemenu {
 	width:180px;
@@ -221,10 +183,11 @@ a:active, a:hover
  }
 
 #sidemenu h2{
-	padding: 3px 0;
+	padding: 0;
+	padding-left:5px;
 	margin:5px 0;
 	display:block;
-	background: url(line.gif) repeat-x left bottom;
+	border-bottom:5px solid #9c3036;
 }
 
 #sidemenu ul li {
@@ -260,14 +223,6 @@ display: inline;
 height: 1%;
 }
 /* workaround Ende */
-
-#legal{
-	font-size:12px;
-	color:#999999;
-	margin-top: 15px;
-	margin-left: 110px;
-	margin-right: 25px;
-}
 
 .clearer {
 	clear:both;
@@ -316,18 +271,6 @@ li.error, li.problem {
 	font-weight: normal;
 }
 
-td {
-	vertical-align:top;
-}
-
-th {
-	text-align: left;
-}
-
-form table th {
-	vertical-align:top;
-}
-
 
 form ul.errorlist {
 	padding: 0;
@@ -358,14 +301,12 @@ p.code {
 	background-color:#eeeeee;
 }
 
-div.licensegroup {
-	padding: 5px;
-	margin: 10px;
-	background-color:#eeeeee;
-}
-div.licensegroup p {
-	margin-top:0px;
-}
+
+
+
+
+
+/* help */
 
 div.helpgroup {
 	padding: 15px;
@@ -377,10 +318,26 @@ div.helpgroup li {
 	margin:4px;
 }
 
-div.hoverdescription div {
+
+
+
+/*
+hoverdescription:
+
+<div class="hoverdescription">
+	This is some text.
+	<div class="hiddenbox">
+		<p>
+			This text is hidden by default, and will be shown when the mouse is hovering on the text above.
+		</p>
+	</div>
+</div>
+ */
+
+div.hoverdescription div.hiddenbox {
 	display:none;
 }
-div.hoverdescription:hover div {
+div.hoverdescription:hover div.hiddenbox {
 	display:inline;
 	position:absolute;
 	margin: 2px;
@@ -388,8 +345,102 @@ div.hoverdescription:hover div {
 	border: 1px solid black;
 	background-color: #ffffff;
 }
-div.hoverdescription:hover div p {
+div.hoverdescription:hover div.hiddenbox p {
 	padding-left:  15px;
 	padding-right: 15px;
 }
 
+
+
+
+
+
+/*header*/
+
+#header {
+	height: 80px;
+	margin: 0 auto 10px auto;
+	border-bottom: 1px dotted #aaaaaa;
+	width:100%
+}
+
+#menu_top a {
+	display: block;
+	float: left;
+	margin-left: 10px;
+	margin-right:20px;
+	padding: 7px;
+	text-decoration: none;
+	font-size: 13px;
+	color: #000000;
+}
+
+#menu_top a:hover, #menu_top .active a {
+	border-bottom:5px solid #9c3036;
+	padding-bottom:0px;
+}
+
+#border_top{
+	width:100%;
+	margin-bottom: 6px;
+	height:0.25cm;
+	background-color:9c3036;
+}
+
+#logo_glab{
+	float:left;
+	width:153px;
+	height:79px; 
+}
+
+#logo_tomato{
+	float:left;
+	vertical-align:middle;
+}
+#logo_tomato img {
+	margin-left:20px;
+}
+
+
+
+
+/*footer*/
+
+footer {
+	border-top: 1px dotted #aaaaaa;
+	width:100%;
+	font-size:12px;
+	color:#999999;
+	text-align:center;
+	position: absolute;
+	bottom:0px;
+}
+
+#content {
+	/*this must be about the height of footer*/
+	margin-bottom:50px;
+}
+
+footer #legal{
+	padding: 5px;
+}
+
+footer #links{
+	padding: 5px;
+}
+footer #links a{
+	margin:7px;
+}
+
+
+
+/* license page */
+
+div.licensegroup {
+	padding: 5px;
+	margin: 10px;
+	background-color:#eeeeee;
+}
+div.licensegroup p {
+	margin-top:0px;
+}

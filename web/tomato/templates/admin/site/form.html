@@ -5,10 +5,10 @@
 {% block content %}
 
 {% if edit %}
-	<h1>Edit site {{name}}</h1>
+	<h1>Edit Site {{name}}</h1>
 	<form action="{%url site.edit%}" method="post">
 {% else %}
-	<h1>Add site</h1>
+	<h1>Add Site</h1>
 	<form action="{%url site.add%}" method="post">
 {% endif %}
 

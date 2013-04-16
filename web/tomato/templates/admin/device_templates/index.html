@@ -3,7 +3,7 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of templates</h1>
+<h1>List of Templates</h1>
 
 {% if hostManager %}
 	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
@@ -52,10 +52,10 @@
 	    	{% if templ.attrs.description %}
 		    	<div class="hoverdescription">
 		    		<img src="/img/info.png" alt="i" />
-		    		<div>
-		    		{% autoescape on %}
-		    		{{ templ.attrs.description|linebreaks }}
-		    		{% endautoescape %}
+		    		<div class="hiddenbox">
+			    		{% autoescape on %}
+			    		{{ templ.attrs.description|linebreaks }}
+			    		{% endautoescape %}
 		    		</div>
 		    	</div>
 		    {% else %}
@@ -80,10 +80,10 @@
 	    
 	    {% if hostManager %}
 	    	<td>
-	    		<a href="{%url device_templates.edit_data%}?id={{templ.id}}"><img src="/img/page_edit.png" title="edit data" /></a>
-	    		<a href="{%url device_templates.edit_torrent%}?id={{templ.id}}"><img src="/img/cd_edit.png" title="change torrent" /></a>
+	    		<a href="{%url device_templates.edit_data templ.id%}"><img src="/img/page_edit.png" title="edit data" /></a>
+	    		<a href="{%url device_templates.edit_torrent templ.id%}"><img src="/img/cd_edit.png" title="change torrent" /></a>
 	    		&nbsp;
-	    		<a href="{%url device_templates.remove%}?id={{templ.id}}" ><img src="/img/cross.png" title="remove" /></a>
+	    		<a href="{%url device_templates.remove templ.id%}" ><img src="/img/cross.png" title="remove" /></a>
 			</td>
 	    {% endif %}
 	    

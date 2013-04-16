@@ -3,7 +3,7 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of hosts</h1>
+<h1>List of Hosts</h1>
 
 {# only show 'add' button when user is authorized #}
 	{% if hostManager %}
@@ -104,9 +104,9 @@
 			
 		    {% if hostManager %}
 		    	<td>
-		    		<a href="{%url host.edit%}?address={{host.address}}"><img src="/img/pencil.png" title="edit" /></a>
+		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
-		    		<a href="{%url host.remove%}?address={{host.address}}" ><img src="/img/cross.png" title="remove" /></a>
+		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
 				</td>
 		    {% endif %}
 	  </tr>

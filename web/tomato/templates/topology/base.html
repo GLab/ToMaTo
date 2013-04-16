@@ -11,17 +11,8 @@
 </style>
 {% endblock %}
 
-{% block menu_top %}
-<ul>
-	{% if user %}
-		<li><a href="{%url account.info%}">My Account</a></li>
-		<li class="active"><a href="{%url topology.index%}">Topologies</a></li>
-		<li><a href="{%url host.index%}">Admin</a></li>
-	{% else %}
-		<li><a href="{%url account.register%}">Register</a></li>
-		<li><a href="{%url topology.index%}">Login</a></li>
-	{% endif %}	
-	<li><a href="{%url main.project%}" target="_help">Project</a></li>
-	<li><a href="{%url main.help%}" target="_help">Help</a></li>
-</ul>
+{% block menu_select %}
+<script language="JavaScript" type="text/javascript">
+document.getElementById("menu_item_topologies").className="active";
+</script>
 {% endblock %}

@@ -7,7 +7,7 @@
 
 <title>G-Lab ToMaTo</title> 
 <meta name="DESCRIPTION" content="German Lab Webpage" /> 
- 
+
 <link href="/style/style.css" rel="stylesheet" type="text/css" /> 
 <link rel="shortcut icon" type="image/x-icon" href="http://www.german-lab.de/favicon.ico" /> 
 
@@ -16,22 +16,34 @@
 </head>
 <body>
 
+<div id="javascriptwarning">You have disabled Javascript. This may result in incorrect page display, and the editor won't work.</div>
+<script language="JavaScript" type="text/javascript">
+var css = '#javascriptwarning{display:none;}',
+head = document.getElementsByTagName('head')[0],
+style = document.createElement('style');
+
+style.type = 'text/css';
+if (style.styleSheet){
+style.styleSheet.cssText = css;
+} else {
+style.appendChild(document.createTextNode(css));
+}
+
+head.appendChild(style);
+</script>
+
+
 {% block page %}
-<div id="nonfooter">
 <div id="border_top"></div> 
 <div id="page"> 
+
 	<div id="header"> 
 		<div id="minimenu_top" class="smallmenu"></div> 
-		<div id="logo">
+		<div id="logo_glab">
 			<a href="http://www.german-lab.de"><img border="0" src="/style/glablogo.jpg" alt="glablogo" /></a>
 		</div> 
-		<!--<div id="logo-text">
-			<h1>ToMaTo</h1>
-			<br/>
-			<h2>Topology management tool</h2>
-		</div>-->
-		<div id="logo-text">
-			<a href="/"><img src="/img/tomato_logo.png" /></a>
+		<div id="logo_tomato">
+			<a href="/"><img src="/style/tomato_logo.png" /></a>
 		</div>
 		
 			
@@ -43,9 +55,21 @@
 			{% endif %}
 			</div>
 		<div id="menu_top">	
-		{% block menu_top %}{% endblock %}
+			<ul>
+				{% if user %}
+					<li id="menu_item_account"><a href="{%url account.info%}">My Account</a></li>
+					<li id="menu_item_topologies"><a href="{%url topology.index%}">Topologies</a></li>
+					<li id="menu_item_admin"><a href="{%url host.index%}">Admin</a></li>
+				{% else %}
+					<li id="menu_item_register"><a href="{%url account.register%}">Register</a></li>
+					<li id="menu_item_login"><a href="{%url topology.index%}">Login</a></li>
+				{% endif %}	
+				<li id="menu_item_help"><a href="{%url main.help%}" target="_help">Help</a></li>
+			</ul>
+		
+		{% block menu_select %}{% endblock %}
 		</div> 
-	</div> 
+	</div>  
  
 	<div id="left"> 
 		{% block left %}{% endblock %}
@@ -56,14 +80,21 @@
 	</div> 
 	<br class="clearer" /> 
 </div> 
-</div>
-<center>
-	<div id="footer"> 
-    	<div id="legal">
-    		Copyright © 2010 <a href="http://www.icsy.de">Integrated Communication Systems Lab</a> of the University of Kaiserslautern, on behalf of the German Lab, see <a href="{%url main.help "license/license"%}">license page</a> for details.  
-    	</div> 
-    </div>
-</center>
-{% endblock %}
+
+
+<footer>
+	
+	<div id="links">
+		<a href="{%url main.project%}">Project</a>  
+   		<a href="{%url main.help "license/license"%}">License</a>
+	</div>
+	
+   	<div id="legal">
+   		Copyright © 2010 <a href="http://www.icsy.de">Integrated Communication Systems Lab</a> of the <a href="http://www.uni-kl.de">University of Kaiserslautern</a>. 
+	</div> 
+	
+</footer>
+
 </body> 
+{% endblock %}
 </html>
