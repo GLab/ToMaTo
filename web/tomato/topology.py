@@ -98,7 +98,19 @@ def import_form(api, request):
 		if form.is_valid():
 			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
-			id_, _, _, _ = api.topology_import(topology_structure)
+			id_, elementIds, connectionIds, errors = api.topology_import(topology_structure)
+
+			if errors != []:
+				str = "Errors occured during import";
+				for i in errors:
+					str = str + "\n " + i
+				t = api.topology_info(id_)
+				if t['attrs'].has_key('_notes'):
+					notes = t['attrs']['_notes']
+					if notes:
+						str = str + "\n__________\nOriginal Notes:\n" + notes
+				api.topology_modify(id_,{'_notes':str,'_notes_autodisplay':True})
+				
 			return redirect("tomato.topology.info", id=id_)
 		else:
 			return render_to_response("topology/import_form.html", {'user': api.user, 'form': form})
