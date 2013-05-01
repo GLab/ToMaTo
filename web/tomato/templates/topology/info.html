@@ -100,12 +100,18 @@ function shrinkHeader() {
 	header.appendChild(l);
 	header.appendChild(top_name);
 	
-	
+}
+
+function removeFooter() {
+	document.getElementsByTagName('footer')[0].remove();
 }
 
 $('body').ready(function(){
-	if (document.height > document.body.clientHeight)
-		shrinkHeader()
+	if (document.height > document.body.clientHeight){
+		removeFooter();
+		if (document.height > document.body.clientHeight)
+			shrinkHeader()
+	}
 });
 </script>
 
