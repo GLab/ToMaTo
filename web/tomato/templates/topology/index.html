@@ -73,11 +73,9 @@
 {% if 'no_topology_create' in user.flags %}
 	<p>You may not create any topologies. Contact the administrator for mor information.</p>
 {% else %}
-	<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new topology" />
+	<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new Topology" />
+	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
 	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
-	<p>
-		<a href="{%url editor_tutorial.index%}">Tutorials</a>
-	</p>
 {% endif %}
 
 {% endblock %}

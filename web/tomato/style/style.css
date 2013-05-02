@@ -1,6 +1,9 @@
+/* Google fonts API - Ubuntu font */
 @import url(http://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic,700italic&subset=latin,latin-ext,greek-ext,greek);
 
 
+
+/* overall design */
 body {
   font-family: "Ubuntu", Arial, Helvetica, sans-serif; font-size:0.8em;
   background-color:#ffffff;
@@ -13,6 +16,37 @@ body {
 h1 {font-size:1.5em;color:#000000;margin-bottom:5mm;}
 h2 {font-size:1.1em;color:#000000;margin-bottom:1mm}
 h3 {font-size:1.0em;color:#000000;}
+img {border: 0;}
+
+
+
+
+
+
+
+
+
+/* link design */
+a:link, a:visited, a:active, a:hover
+{
+  text-decoration:underline;
+  font-weight:normal;
+  font-size:12px;
+}
+
+a:link, a:visited
+{
+	color:#911a20;
+}
+
+a:active, a:hover
+{
+  color:#f00;
+}
+
+
+
+
 
 
 
@@ -56,26 +90,12 @@ form table th {
 }
 
 
-
-#javascriptwarning {
-	background-color:#cccccc;
-	padding:20px;
-	font-weight:bold;
-	text-align:center;
+/* stddev color */
+table td.stddev_high.good_low, table td.stddev_low.good_high {
+	color: red !important;
 }
-
-code {font-size:0.9px;color:#0000ff;}
-
-pre {
-  font-size:14px;
-  color:#0000ff;
-  padding:5px;
-  white-space: pre-wrap;
-}
-
-tt em {
-  color:#0000ff;
-  font-style: normal;
+table td.stddev_high.good_high, table td.stddev_low.good_low {
+	color: green;
 }
 
 
@@ -84,30 +104,9 @@ tt em {
 
 
 
-/* link design */
-a:link, a:visited, a:active, a:hover
-{
-  text-decoration:underline;
-  font-weight:normal;
-  font-size:12px;
-}
-
-a:link, a:visited
-{
-	color:#911a20;
-}
-
-a:active, a:hover
-{
-  color:#f00;
-}
 
 
-
-
-
-
-
+/* positioning */
 
 #content {
         margin-left: 200px;
@@ -124,51 +123,12 @@ a:active, a:hover
 
 
 
-#minimenu_top{
-	margin:20px 0px; 
-	float:right;
-}
-
-#minimenu_bottom{
-	margin:10px 0px; 
-}
-
-.smallmenu{
-    font-size:11px;	
-}
-
-.smallmenu a, .smallmenu a:visited{
-	padding: 10px;
-	text-decoration: none;
-	color: #000000;
-}
-
-.smallmenu a:hover {
-	text-decoration: underline;
-}
-
-#menu_top {
-	float: right;
-}
-
-#menu_userinfo {
-	text-align:right;
-	padding-top: 8px;
-	padding-right: 17px;
-	padding-bottom: 2px;
-}
-
-#menu_top ul {
-	margin: 0;
-	padding: 15px 0 0 0;
-	list-style: none;
-}
-
-#menu_top li {
-	display: inline;
-}
 
 
+
+
+
+/* side menu */
 
 #sidemenu {
 	width:180px;
@@ -211,102 +171,35 @@ a:active, a:hover
 	font-weight:bold;
 }
 
-img {
-	border: 0;
-}
-
 /* IE workaround */
-* html #sidemenu ul li {
-display: inline;
-}
-* html #sidemenu ul li a {
-height: 1%;
-}
+* html #sidemenu ul li {display: inline;}
+* html #sidemenu ul li a {height: 1%;}
 /* workaround Ende */
 
-.clearer {
-	clear:both;
-}
-
-.indent{
-	padding-left:2em;
-}
-
-.align-justify{
-	text-align:justify;
-}
-
-div.tx_sevenpack-list_container { margin: 0; }
-
-.topology_analysis {
-	list-style-type: none;
-}
-.problem, .error{
-	font-weight:bold;
-	color:red;
-}
-.warning {
-	color:red;
-}
-.hint {
-	color:orange;
-}
-
-ul.none {
-	list-style-type: none;
-}
-li.warning, li.error, li.problem {
-	background-repeat: no-repeat;
-	background-position: 0px 0px; 
-	padding-left: 25px;
-	margin-left: -25px;
-}
-li.warning {
-	background-image: url(../icons/warning.png);	
-	color: black;
-}
-li.error, li.problem {
-	background-image: url(../icons/error.png);
-	color:red;
-	font-weight: normal;
-}
-
-
-form ul.errorlist {
-	padding: 0;
-	margin: 0;
-	list-style-type: none;
-}
-
-form ul.errorlist li {
-	font-size:9pt;
-	color:red;
-	font-weight:bold;
-}
-
-div.ui-widget {
-	font-size:1.0em;
-}
-
-table td.stddev_high.good_low, table td.stddev_low.good_high {
-	color: red !important;
-}
-table td.stddev_high.good_high, table td.stddev_low.good_low {
-	color: green;
-}
-
-p.code {
-	padding:2px;
-	margin:0px;
-	background-color:#eeeeee;
-}
 
 
 
 
 
 
-/* help */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* help pages */
 
 div.helpgroup {
 	padding: 15px;
@@ -322,7 +215,9 @@ div.helpgroup li {
 
 
 /*
-hoverdescription:
+hoverdescription
+
+usage example:
 
 <div class="hoverdescription">
 	This is some text.
@@ -362,6 +257,27 @@ div.hoverdescription:hover div.hiddenbox p {
 	margin: 0 auto 10px auto;
 	border-bottom: 1px dotted #aaaaaa;
 	width:100%
+}
+
+#menu_top {
+	float: right;
+}
+
+#menu_userinfo {
+	text-align:right;
+	padding-top: 8px;
+	padding-right: 17px;
+	padding-bottom: 2px;
+}
+
+#menu_top ul {
+	margin: 0;
+	padding: 15px 0 0 0;
+	list-style: none;
+}
+
+#menu_top li {
+	display: inline;
 }
 
 #menu_top a {
@@ -404,6 +320,8 @@ div.hoverdescription:hover div.hiddenbox p {
 
 
 
+
+
 /*footer*/
 
 footer {
@@ -434,6 +352,10 @@ footer #links a{
 
 
 
+
+
+
+
 /* license page */
 
 div.licensegroup {
@@ -443,4 +365,132 @@ div.licensegroup {
 }
 div.licensegroup p {
 	margin-top:0px;
+}
+
+
+
+
+
+
+/* Javascript warning (should be hidden by javascript in html file) */
+#javascriptwarning {
+	background-color:#cccccc;
+	padding:20px;
+	font-weight:bold;
+	text-align:center;
+}
+
+
+
+
+
+/* code blocks */
+pre {
+  font-size:14px;
+  color:#0000ff;
+  padding:5px;
+  white-space: pre-wrap;
+}
+
+
+
+
+
+
+
+
+/* unknown use case */
+
+#minimenu_top{
+	margin:20px 0px; 
+	float:right;
+}
+
+#minimenu_bottom{
+	margin:10px 0px; 
+}
+
+.smallmenu{
+    font-size:11px;	
+}
+
+.smallmenu a, .smallmenu a:visited{
+	padding: 10px;
+	text-decoration: none;
+	color: #000000;
+}
+
+.smallmenu a:hover {
+	text-decoration: underline;
+}
+
+ul.none {
+	list-style-type: none;
+}
+li.warning, li.error, li.problem {
+	background-repeat: no-repeat;
+	background-position: 0px 0px; 
+	padding-left: 25px;
+	margin-left: -25px;
+}
+li.warning {
+	background-image: url(../icons/warning.png);	
+	color: black;
+}
+li.error, li.problem {
+	background-image: url(../icons/error.png);
+	color:red;
+	font-weight: normal;
+}
+
+
+form ul.errorlist {
+	padding: 0;
+	margin: 0;
+	list-style-type: none;
+}
+
+form ul.errorlist li {
+	font-size:9pt;
+	color:red;
+	font-weight:bold;
+}
+
+.clearer {clear:both;}
+.indent{padding-left:2em;}
+.align-justify{text-align:justify;}
+
+div.tx_sevenpack-list_container { margin: 0; }
+
+.topology_analysis {
+	list-style-type: none;
+}
+
+.problem, .error{
+	font-weight:bold;
+	color:red;
+}
+.warning {
+	color:red;
+}
+.hint {
+	color:orange;
+}
+
+div.ui-widget {
+	font-size:1.0em;
+}
+
+p.code {
+	padding:2px;
+	margin:0px;
+	background-color:#eeeeee;
+}
+
+code {font-size:0.9px;color:#0000ff;}
+
+
+tt em {
+  color:#0000ff;
+  font-style: normal;
 }
