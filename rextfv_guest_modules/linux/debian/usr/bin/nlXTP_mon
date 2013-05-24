@@ -1,4 +1,12 @@
 #!/bin/bash
+
+
+# if --background argument given, start in background. otherwise: start in foreground.
+if [ "$1" == "--background" ]; then
+	$0&
+	exit
+fi
+
 source /etc/nlXTP.conf
 
 # check if a file exists which must be executed
