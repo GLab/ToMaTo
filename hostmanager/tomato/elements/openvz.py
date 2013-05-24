@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os.path, sys
+import os.path, sys, datetime
 from django.db import models
 from .. import connections, elements, resources, fault, config
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -328,6 +328,46 @@ class OpenVZ(elements.Element):
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
 		fault.check("0/0" in res, "Image contents not owned by root")
+		
+	#returns whether rextfv is allowed in the current state
+	def _allow_rextfv(self):
+		return self.state != ST_CREATED
+	
+	#nlXTP's running status
+	def _rextfv_run_status(self):
+		status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+		status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+		if status_isAlive:
+			f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+			s = f.read()
+			f.close()
+			timeout=10*60 #seconds
+			now = datetime.datetime.now()
+			alive = datetime.datetime.fromtimestamp(int(s))
+			diff = (now-alive).total_seconds()
+			if diff>timeout:
+				status_isAlive = False
+		return {"done": status_done, "isAlive": status_isAlive}
+	
+	#returns whether the template supports nlXTP auto-execute. - TODO
+	def _nlxtp_template_support(self):
+		return True
+	
+	#The nlXTP directory
+	def _nlxtp_path(self,filename):
+		return os.path.join(self._imagePath(),"mnt","rextfv",filename)
+	
+	#deletes all contents in the nlXTP folder
+	def _clear_nlxtp_contents(self):
+		path.remove(self._nlxtp_path(''), recursive=True)
+		
+	#copies the contents of the archive "filename" to the nlXTP directory
+	def _use_rextfv_archive(self, filename):
+		path.extractArchive(filename, self._nlxtp_path(""))
+		
+	#creates the archive "filename" of  the nlXTP directory
+	def _create_rextfv_archive(self, filename):
+		path.extractArchive(filename, self._nlxtp_path(""))
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -448,17 +488,35 @@ class OpenVZ(elements.Element):
 
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
+	
+	def action_rextfv_upload_grant(self):
+		if self._allow_rextfv():
+			return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.tar.gz"))
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
+	def action_rextfv_upload_use(self):
+		if self._allow_rextfv():
+			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+			self._clear_nlXTP_contents()
+			self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+			self._vzctl("nlXTP_mon",["--background"])
+		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
 		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	def action_rextfv_download_grant(self):
+		if self._allow_rextfv():
+			if os.path.exists(self.dataPath("rextfv.tar.gz")):
+				os.remove(self.dataPath("rextfv.tar.gz"))
+			cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("rextfv.tar.gz"), "-C", self._nlxtp_path(""), "."])
+		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
 		return self._execute(cmd)
