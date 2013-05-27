@@ -365,7 +365,7 @@ class OpenVZ(elements.Element):
 	
 	#deletes all contents in the nlXTP folder
 	def _clear_nlxtp_contents(self):
-		path.remove(self._nlxtp_path('*'), recursive=True)
+		console.log("TODO: clear nlXTP directory")
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
 	def _use_rextfv_archive(self, filename):
