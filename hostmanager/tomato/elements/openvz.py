@@ -118,7 +118,7 @@ Actions:
 		 The uploaded file can be used as the VM image with the upload_use 
 		 action. 
 	*rextfv_upload_grant*, callable in state *prepared* 
-		same as upload_grant, but for use with rextfv.
+		same as upload_grant, but for use with rextfv_upload_use.
 	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
 	*rextfv_upload_use*, callable in state *prepared*
@@ -507,7 +507,7 @@ class OpenVZ(elements.Element):
 	def action_rextfv_upload_use(self):
 		if self._allow_rextfv():
 			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
-			self._clear_nlXTP_contents()
+			self._clear_nlxtp_contents()
 			self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 			self._vzctl("nlXTP_mon",["--background"])
 		
