@@ -117,8 +117,12 @@ Actions:
 		 server (can be requested via host_info) and grant is the grant.
 		 The uploaded file can be used as the VM image with the upload_use 
 		 action. 
+	*rextfv_upload_grant*, callable in state *prepared* 
+		same as upload_grant, but for use with rextfv.
 	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
+	*rextfv_upload_use*, callable in state *prepared*
+		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
 	*download_grant*, callable in state *prepared*
 		 Create/update a grant to download the image for the VM. The created 
 		 grant will be available as an attribute called download_grant. The
@@ -170,7 +174,9 @@ class OpenVZ(elements.Element):
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
 		"upload_grant": [ST_PREPARED],
+		"rextfv_upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
+		"rextfv_upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
 		"execute": [ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
