@@ -131,6 +131,8 @@ Actions:
 		 http://server:port/grant/download where server is the address of this
 		 host, port is the fileserver port of this server (can be requested via
 		 host_info) and grant is the grant.
+	*rextfv_download_grant*, callable in state *prepared* or *started*
+		same as download_grant, but only for the nlXTP folder
 """
 
 ST_CREATED = "created"
