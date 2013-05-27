@@ -510,7 +510,7 @@ class OpenVZ(elements.Element):
 			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
 			self._clear_nlxtp_contents()
 			self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
-			self._vzctl("nlXTP_mon",["--background"])
+			self._execute("nlXTP_mon --background")
 		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
