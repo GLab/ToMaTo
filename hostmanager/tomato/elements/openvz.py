@@ -365,10 +365,11 @@ class OpenVZ(elements.Element):
 	
 	#deletes all contents in the nlXTP folder
 	def _clear_nlxtp_contents(self):
-		path.remove(self._nlxtp_path(''), recursive=True)
+		path.remove(self._nlxtp_path('*'), recursive=True)
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
 	def _use_rextfv_archive(self, filename):
+		cmd.run("mkdir -p "+self._nlxtp_path(""))
 		path.extractArchive(filename, self._nlxtp_path(""))
 		
 	#creates the archive "filename" of  the nlXTP directory
