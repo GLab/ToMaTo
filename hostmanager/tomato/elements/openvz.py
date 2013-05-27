@@ -364,7 +364,7 @@ class OpenVZ(elements.Element):
 	
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
-		return os.path.join(self._imagePath(),"mnt","rextfv",filename)
+		return os.path.join(self._imagePath(),"mnt","nlXTP",filename)
 	
 	#deletes all contents in the nlXTP folder
 	def _clear_nlxtp_contents(self):
