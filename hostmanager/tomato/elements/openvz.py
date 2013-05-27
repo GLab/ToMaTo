@@ -369,7 +369,7 @@ class OpenVZ(elements.Element):
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
 	def _use_rextfv_archive(self, filename):
-		cmd.run("mkdir -p "+self._nlxtp_path(""))
+		print("TODO: create nlXTP directory if not exists")
 		path.extractArchive(filename, self._nlxtp_path(""))
 		
 	#creates the archive "filename" of  the nlXTP directory
