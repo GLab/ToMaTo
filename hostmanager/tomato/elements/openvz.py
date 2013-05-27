@@ -178,6 +178,7 @@ class OpenVZ(elements.Element):
 		"upload_use": [ST_PREPARED],
 		"rextfv_upload_use": [ST_PREPARED,ST_STARTED],
 		"download_grant": [ST_PREPARED],
+		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		"execute": [ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
