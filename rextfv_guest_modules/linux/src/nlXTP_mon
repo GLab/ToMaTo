@@ -27,7 +27,8 @@ echo "starting monitor..."
 
 # start the script, pipe output into the out file
 cd $nlxtp_dir
-bash $(find $nlxtp_dir/auto_exec.* -type f) > $nlxtp_dir/exec_status/out &
+chmod +x $nlxtp_dir/auto_exec.*
+$(find $nlxtp_dir/auto_exec.* -type f) > $nlxtp_dir/exec_status/out &
 auto_exec_pid=$!
 
 # start the "running monitor".
