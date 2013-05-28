@@ -71,5 +71,5 @@ def loadTutorial(api, request, tut_id):
     top_dict = json.loads(top_str)
     top_dict['topology']['attrs']['_tutorial_id'] = tut_id
     top_dict['topology']['attrs']['_tutorial_status'] = 0
-    top_id, _, _ = api.topology_import(top_dict)
+    top_id, _, _, _ = api.topology_import(top_dict)
     return redirect("tomato.topology.info", id=top_id)
