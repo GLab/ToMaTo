@@ -687,8 +687,10 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 	avgCons = cons/len(hosts)
 	for h in hosts:
 		#between -30 and +30 points for element/connection over-/under-population
-		prefs[h] -= max(-20.0, min(10.0*(h.elements.count() - avgEls)/avgEls, 20.0))
-		prefs[h] -= max(-10.0, min(10.0*(h.connections.count() - avgCons)/avgCons, 10.0))
+		if avgEls:
+			prefs[h] -= max(-20.0, min(10.0*(h.elements.count() - avgEls)/avgEls, 20.0))
+		if avgCons:
+			prefs[h] -= max(-10.0, min(10.0*(h.connections.count() - avgCons)/avgCons, 10.0))
 	#STEP 3: calculate preferences based on host location
 	for h in hosts:
 		if h in hostPrefs:
