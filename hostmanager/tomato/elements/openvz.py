@@ -366,20 +366,22 @@ class OpenVZ(elements.Element):
 		
 	#nlXTP's running status
 	def _rextfv_run_status(self):
-		status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-		status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-		if status_isAlive:
-			f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-			s = f.read()
-			f.close()
-			timeout=10*60 #seconds
-			now = datetime.datetime.now()
-			alive = datetime.datetime.fromtimestamp(int(s))
-			diff = (now-alive).total_seconds()
-			if diff>timeout:
-				status_isAlive = False
-		return {"done": status_done, "isAlive": status_isAlive}
-
+		if os.path.exists(self._nlxtp_path("exec_status")):
+			status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+			status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+			if status_isAlive:
+				f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+				s = f.read()
+				f.close()
+				timeout=10*60 #seconds
+				now = datetime.datetime.now()
+				alive = datetime.datetime.fromtimestamp(int(s))
+				diff = (now-alive).total_seconds()
+				if diff>timeout:
+					status_isAlive = False
+			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
+		else:
+			return {"readable": False}
 #####
 
 
