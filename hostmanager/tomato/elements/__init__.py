@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, time, abc, os.path, datetime
+import os, shutil, time, os.path, datetime
 from django.db import models
 
 from ..connections import Connection
@@ -308,22 +308,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		pass
 	
 	
-class RexTFVElement(Element):
 
-	def upcast(self):
-		getattr(self, self.type)
-	
-	@abc.abstractmethod
-	def _nlxtp_path(self,filename):
-		"""return the path to the nlXTP folder"""
-		return
-	
-	@abc.abstractmethod
-	def _allow_rextfv(self):
-		"""returns whether rextfv is allowed in the current state"""
-		return
-	
-	
 	
 
 	
