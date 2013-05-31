@@ -380,10 +380,6 @@ class OpenVZ(elements.Element):
 				status_isAlive = False
 		return {"done": status_done, "isAlive": status_isAlive}
 
-	def info(self):
-		res = super.info()
-		res["rextfv_run_status"] = self._rextfv_run_status()
-		return res
 #####
 
 
@@ -548,6 +544,7 @@ class OpenVZ(elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
+		info["rextfv_run_status"] = self._rextfv_run_status()
 		return info
 
 	def _cputime(self):
