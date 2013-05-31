@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, time
+import os, shutil, time, abc, os.path, datetime
 from django.db import models
 
 from ..connections import Connection
@@ -24,6 +24,7 @@ from ..lib import db, attributes, util, logging #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
 from .. import config
+from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -305,6 +306,57 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		
 	def updateUsage(self, usage, data):
 		pass
+	
+	
+class RexTFVElement(Element):
+	
+	@abc.abstractmethod
+	def _nlxtp_path(self,filename):
+		"""return the path to the nlXTP folder"""
+		return
+	
+	@abc.abstractmethod
+	def _allow_rextfv(self):
+		"""returns whether rextfv is allowed in the current state"""
+		return
+	
+	
+	
+	#deletes all contents in the nlXTP folder
+	def _clear_nlxtp_contents(self):
+		print("TODO: clear nlXTP directory")
+		
+	#copies the contents of the archive "filename" to the nlXTP directory
+	def _use_rextfv_archive(self, filename):
+		print("TODO: create nlXTP directory if not exists")
+		path.extractArchive(filename, self._nlxtp_path(""))
+	
+	#creates the archive "filename" of  the nlXTP directory
+	def _create_rextfv_archive(self, filename):
+		path.extractArchive(filename, self._nlxtp_path(""))
+		
+	#nlXTP's running status
+	def _rextfv_run_status(self):
+		status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+		status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+		if status_isAlive:
+			f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+			s = f.read()
+			f.close()
+			timeout=10*60 #seconds
+			now = datetime.datetime.now()
+			alive = datetime.datetime.fromtimestamp(int(s))
+			diff = (now-alive).total_seconds()
+			if diff>timeout:
+				status_isAlive = False
+		return {"done": status_done, "isAlive": status_isAlive}
+
+	def info(self):
+		res = super.info()
+		res["rextfv_run_status"] = self._rextfv_run_status()
+		return res
+	
+	
 
 def get(id_, **kwargs):
 	try:

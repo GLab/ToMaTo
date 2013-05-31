@@ -139,7 +139,7 @@ ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-class OpenVZ(elements.Element):
+class OpenVZ(elements.RexTFVElement):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -341,43 +341,10 @@ class OpenVZ(elements.Element):
 	#returns whether rextfv is allowed in the current state
 	def _allow_rextfv(self):
 		return self.state != ST_CREATED
-	
-	#nlXTP's running status
-	def _rextfv_run_status(self):
-		status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-		status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-		if status_isAlive:
-			f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-			s = f.read()
-			f.close()
-			timeout=10*60 #seconds
-			now = datetime.datetime.now()
-			alive = datetime.datetime.fromtimestamp(int(s))
-			diff = (now-alive).total_seconds()
-			if diff>timeout:
-				status_isAlive = False
-		return {"done": status_done, "isAlive": status_isAlive}
-	
-	#returns whether the template supports nlXTP auto-execute. - TODO
-	def _nlxtp_template_support(self):
-		return True
-	
+
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
 		return os.path.join(self._imagePath(),"mnt","nlXTP",filename)
-	
-	#deletes all contents in the nlXTP folder
-	def _clear_nlxtp_contents(self):
-		print("TODO: clear nlXTP directory")
-		
-	#copies the contents of the archive "filename" to the nlXTP directory
-	def _use_rextfv_archive(self, filename):
-		print("TODO: create nlXTP directory if not exists")
-		path.extractArchive(filename, self._nlxtp_path(""))
-		
-	#creates the archive "filename" of  the nlXTP directory
-	def _create_rextfv_archive(self, filename):
-		path.extractArchive(filename, self._nlxtp_path(""))
 
 	def onChildAdded(self, interface):
 		self._checkState()
