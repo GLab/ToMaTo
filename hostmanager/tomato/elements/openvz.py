@@ -369,7 +369,7 @@ class OpenVZ(elements.Element):
 		
 	#nlXTP's running status
 	def _rextfv_run_status(self):
-		if (self._nlxtp_path("") is None) and (os.path.exists(self._nlxtp_path("exec_status"))):
+		if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
 			status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
 			status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
 			if status_isAlive:
