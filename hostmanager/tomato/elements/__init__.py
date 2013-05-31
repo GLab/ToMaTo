@@ -309,6 +309,9 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	
 	
 class RexTFVElement(Element):
+
+	def upcast(self):
+		return self
 	
 	@abc.abstractmethod
 	def _nlxtp_path(self,filename):
