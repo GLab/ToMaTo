@@ -353,6 +353,7 @@ class RexTFVElement:
 	def info(self):
 		res = {'attrs':{}}
 		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
+		return res
 
 	
 	
