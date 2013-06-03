@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os.path, sys, datetime
+import os.path, sys, datetime, shutil
 from django.db import models
 from .. import connections, elements, resources, fault, config
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -353,19 +353,18 @@ class OpenVZ(elements.Element):
 
 
 # TODO: move into own superclass:
- 
+
 		#deletes all contents in the nlXTP folder
 	def _clear_nlxtp_contents(self):
-		print("TODO: clear nlXTP directory")
+		folder = self._nlxtp_path("")
+		for the_file in os.listdir(folder):
+			file_path = os.path.join(folder, the_file)
+			shutil.rmtree(file_path)
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
 	def _use_rextfv_archive(self, filename):
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
-		path.extractArchive(filename, self._nlxtp_path(""))
-	
-	#creates the archive "filename" of  the nlXTP directory
-	def _create_rextfv_archive(self, filename):
 		path.extractArchive(filename, self._nlxtp_path(""))
 		
 	#nlXTP's running status
