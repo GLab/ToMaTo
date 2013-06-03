@@ -3,7 +3,8 @@
 
 # if --background argument given, start in background. otherwise: start in foreground.
 if [ "$1" == "--background" ]; then
-	$0&
+	$0 > /dev/null < /dev/null 2>&1 &
+	disown -a
 	exit
 fi
 
