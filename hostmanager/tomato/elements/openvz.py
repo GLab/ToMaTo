@@ -139,7 +139,7 @@ ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-class OpenVZ(elements.Element):
+class OpenVZ(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -182,6 +182,7 @@ class OpenVZ(elements.Element):
 		"download_grant": [ST_PREPARED],
 		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		"execute": [ST_STARTED],
+		"info": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -224,7 +225,10 @@ class OpenVZ(elements.Element):
 		#template: None, default template
 	
 	def _imagePath(self):
-		return "/var/lib/vz/private/%d" % self.vmid
+		if self.state == ST_CREATED:
+			return "/var/lib/vz/root/%d" % self.vmid
+		else:
+			return "/var/lib/vz/private/%d" % self.vmid
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
@@ -354,37 +358,7 @@ class OpenVZ(elements.Element):
 
 # TODO: move into own superclass:
 
-		#deletes all contents in the nlXTP folder
-	def _clear_nlxtp_contents(self):
-		folder = self._nlxtp_path("")
-		for the_file in os.listdir(folder):
-			file_path = os.path.join(folder, the_file)
-			shutil.rmtree(file_path)
-		
-	#copies the contents of the archive "filename" to the nlXTP directory
-	def _use_rextfv_archive(self, filename):
-		if not os.path.exists(self._nlxtp_path("")):
-			os.makedirs(self._nlxtp_path(""))
-		path.extractArchive(filename, self._nlxtp_path(""))
-		
-	#nlXTP's running status
-	def _rextfv_run_status(self):
-		if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
-			status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-			status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-			if status_isAlive:
-				f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-				s = f.read()
-				f.close()
-				timeout=10*60 #seconds
-				now = datetime.datetime.now()
-				alive = datetime.datetime.fromtimestamp(int(s))
-				diff = (now-alive).total_seconds()
-				if diff>timeout:
-					status_isAlive = False
-			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
-		else:
-			return {"readable": False}
+
 #####
 
 
@@ -548,8 +522,8 @@ class OpenVZ(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
+		info.update(elements.RexTFVElement.info(self))
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
-		info["rextfv_run_status"] = self._rextfv_run_status()
 		return info
 
 	def _cputime(self):

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, time, os.path, datetime
+import os, shutil, time, os.path, datetime, abc
 from django.db import models
 
 from ..connections import Connection
@@ -307,9 +307,52 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def updateUsage(self, usage, data):
 		pass
 	
+	def action_info(self):
+		return self.info()
 	
+	
+class RexTFVElement:
+	
+	@abc.abstractmethod
+	def _nlxtp_path(self, filename):
+		"""returns a join of the nlXTP path and the filename"""
+		return
 
-	
+	#deletes all contents in the nlXTP folder
+	def _clear_nlxtp_contents(self):
+		folder = self._nlxtp_path("")
+		for the_file in os.listdir(folder):
+			file_path = os.path.join(folder, the_file)
+			shutil.rmtree(file_path)
+		
+	#copies the contents of the archive "filename" to the nlXTP directory
+	def _use_rextfv_archive(self, filename):
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		path.extractArchive(filename, self._nlxtp_path(""))
+		
+	#nlXTP's running status
+	def _rextfv_run_status(self):
+		if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
+			status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+			status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+			if status_isAlive:
+				f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+				s = f.read()
+				f.close()
+				timeout=10*60 #seconds
+				now = datetime.datetime.now()
+				alive = datetime.datetime.fromtimestamp(int(s))
+				diff = (now-alive).total_seconds()
+				if diff>timeout:
+					status_isAlive = False
+			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
+		else:
+			return {"readable": False}
+		
+	def info(self):
+		res = {'attrs':{}}
+		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
 
 	
 	
