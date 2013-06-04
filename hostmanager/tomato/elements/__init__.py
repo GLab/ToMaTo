@@ -321,9 +321,10 @@ class RexTFVElement:
 	#deletes all contents in the nlXTP folder
 	def _clear_nlxtp_contents(self):
 		folder = self._nlxtp_path("")
-		for the_file in os.listdir(folder):
-			file_path = os.path.join(folder, the_file)
-			shutil.rmtree(file_path)
+		if os.path.exists(folder):
+			for the_file in os.listdir(folder):
+				file_path = os.path.join(folder, the_file)
+				shutil.rmtree(file_path)
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
 	def _use_rextfv_archive(self, filename):
