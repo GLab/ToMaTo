@@ -347,8 +347,10 @@ class RexTFVElement:
 				timeout=10*60 #seconds
 				now = datetime.datetime.now()
 				alive = datetime.datetime.fromtimestamp(int(s))
-				diff = (now-alive).total_seconds()
-				if diff>timeout:
+				print now
+				print alive
+				diff = now-alive
+				if (diff.seconds>timeout) or (diff.days>0):
 					status_isAlive = False
 			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
 		else:
@@ -397,3 +399,4 @@ timeoutTask = util.RepeatedTimer(3600, checkTimeout)
 
 from .. import fault, currentUser, resources
 		
+
