@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os.path, sys, datetime, shutil
+import os.path, sys
 from django.db import models
 from .. import connections, elements, resources, fault, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.util import joinDicts #@UnresolvedImport
 
 DOC="""
 Element type: ``openvz``
@@ -522,7 +523,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info = join(info, elements.RexTFVElement.info(self))
+		info = joinDicts(info, elements.RexTFVElement.info(self))
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		return info
 
@@ -764,19 +765,7 @@ def register(): #pragma: no cover
 		return
 	elements.TYPES[OpenVZ.TYPE] = OpenVZ
 	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
-	
-	
-#TODO: move into shared library
-# Similar to update, but works recursively if a dict would overwrite a dict. e.g. join({a:{b:c}},{a:{d:e}}) == {a:{b:c,d:e}}
-def join(dictA,dictB):
-	if (type(dictA) is dict) and (type(dictB) is dict):
-		A = dictA.copy()
-		for i in dictB.keys():
-			if (i in A) and (type(A[i]) is dict) and (type(dictB[i]) is dict):
-				A[i] = join(A[i],dictB[i])
-			else:
-				A[i] = dictB[i]
-	return A
+
 
 if not config.MAINTENANCE:
 	perlVersion = cmd.getDpkgVersion("perl")
