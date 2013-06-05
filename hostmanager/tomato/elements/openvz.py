@@ -342,10 +342,6 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
 		fault.check("0/0" in res, "Image contents not owned by root")
-		
-	#returns whether rextfv is allowed in the current state
-	def _allow_rextfv(self):
-		return self.state != ST_CREATED
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
@@ -487,8 +483,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
 	
 	def action_rextfv_upload_grant(self):
-		if self._allow_rextfv():
-			return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
+		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
@@ -496,11 +491,10 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
 	def action_rextfv_upload_use(self):
-		if self._allow_rextfv():
-			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
-			self._clear_nlxtp_contents()
-			self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
-			self._execute("nlXTP_mon --background")
+		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+		self._clear_nlxtp_contents()
+		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+		self._execute("nlXTP_mon --background")
 		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
@@ -509,10 +503,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):
-		if self._allow_rextfv():
-			if os.path.exists(self.dataPath("rextfv.tar.gz")):
-				os.remove(self.dataPath("rextfv.tar.gz"))
-			cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("rextfv.tar.gz"), "-C", self._nlxtp_path(""), "."])
+		if os.path.exists(self.dataPath("rextfv.tar.gz")):
+			os.remove(self.dataPath("rextfv.tar.gz"))
+		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("rextfv.tar.gz"), "-C", self._nlxtp_path(""), "."])
 		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
