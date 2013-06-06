@@ -491,8 +491,6 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
 	def action_rextfv_upload_use(self):
-		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
-		self._clear_nlxtp_contents()
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		if self.state == ST_STARTED:
 			self._execute("nlXTP_mon --background")
@@ -504,9 +502,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):
-		if os.path.exists(self.dataPath("rextfv.tar.gz")):
-			os.remove(self.dataPath("rextfv.tar.gz"))
-		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("rextfv.tar.gz"), "-C", self._nlxtp_path(""), "."])
+		self._rextfv_create_archive(self.dataPath("rextfv.tar.gz"))
 		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):

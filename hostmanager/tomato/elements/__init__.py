@@ -20,7 +20,7 @@ from django.db import models
 
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
-from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
 from .. import config
@@ -330,7 +330,10 @@ class RexTFVElement:
 					shutil.rmtree(file_path)
 		
 	#copies the contents of the archive "filename" to the nlXTP directory
-	def _use_rextfv_archive(self, filename):
+	def _use_rextfv_archive(self, filename, keepOldFiles=False):
+		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+		if not keepOldFiles:
+			self._clear_nlxtp_contents()
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
 		path.extractArchive(filename, self._nlxtp_path(""))
@@ -355,6 +358,11 @@ class RexTFVElement:
 			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
 		else:
 			return {"readable": False}
+		
+	def _rextfv_create_archive(self,filename):
+		if os.path.exists(filename):
+			os.remove(filename)
+		cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
 		
 	def info(self):
 		res = {'attrs':{}}
