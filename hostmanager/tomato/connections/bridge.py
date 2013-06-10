@@ -329,10 +329,10 @@ class Bridge(connections.Connection):
 			self._stopEmulation()
 		net.bridgeRemoveInterface(self.bridge, ifname)
 
-	def action_download_grant(self):
+	def action_download_grant(self, limitSize=None):
 		entries = [os.path.join(self.dataPath("capture"), f) for f in path.entries(self.dataPath("capture"))]
 		fault.check(entries, "Nothing captured so far")
-		cmd.run(["tcpslice", "-w", self.dataPath("capture.pcap")] + entries)
+		net.tcpslice(self.dataPath("capture.pcap"), entries, limitSize)
 		return fileserver.addGrant(self.dataPath("capture.pcap"), fileserver.ACTION_DOWNLOAD, repeated=True)
 		
 	def upcast(self):

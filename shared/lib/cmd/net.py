@@ -133,3 +133,22 @@ def ping(dst, count=100, timeout=1.0, totalTimeout=100.0):
 	except:
 		pass
 	return {"transmitted": count, "received": 0, "loss": 1.0}
+
+def tcpslice(outfile, entries, limitSize=None):
+	run(["tcpslice", "-Dw", outfile] + entries)
+	if not limitSize or path.filesize(outfile) < limitSize:
+		return
+	times = run(["tcpslice", "-RDw", "/dev/null"] + entries)
+	times = [line.split() for line in times.splitlines()]
+	minTime = min([float(t[1]) for t in times])
+	maxTime = max([float(t[2]) for t in times])
+	while maxTime - minTime > 1.0:
+		t = (minTime + maxTime)/2.0
+		run(["tcpslice", "-Dw", outfile, str(t)] + entries)
+		size = path.filesize(outfile)
+		if size > limitSize:
+			minTime = t
+		else:
+			maxTime = t
+	run(["tcpslice", "-Dw", outfile, str(maxTime)] + entries)
+	

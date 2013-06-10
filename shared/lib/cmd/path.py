@@ -51,3 +51,6 @@ def extractArchive(src, dst):
 def diskspace(path):
 	out = run(["du", "-sb", path])
 	return int(out.split()[0])
+
+def filesize(path):
+	return os.path.getsize(path)
