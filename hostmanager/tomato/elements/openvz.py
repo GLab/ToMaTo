@@ -271,7 +271,7 @@ class OpenVZ(elements.Element):
 	def _addInterface(self, interface):
 		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_add", interface.name, "--save"])
-		self._vzctl("set", ["--ifname", interface.name, "--host_ifname", self._interfaceName(interface.name), "--save"])
+		self._vzctl("set", ["--ifname", interface.name, "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
 		
 	def _removeInterface(self, interface):
 		assert self.state != ST_CREATED
@@ -599,6 +599,8 @@ class OpenVZ_Interface(elements.Element):
 	ip6address = ip6address_attr.attribute()		
 	use_dhcp_attr = Attr("use_dhcp", desc="Use DHCP", type="bool", default=False)
 	use_dhcp = use_dhcp_attr.attribute()		
+	mac_attr = Attr("mac", desc="MAC Address", type="str")
+	mac = mac_attr.attribute()
 
 	TYPE = "openvz_interface"
 	CAP_ACTIONS = {
@@ -628,6 +630,7 @@ class OpenVZ_Interface(elements.Element):
 		assert isinstance(self.getParent(), OpenVZ)
 		if not self.name:
 			self.name = self.getParent()._nextIfaceName()
+		self.mac = net.randomMac()
 		
 	def _execute(self, cmd):
 		return self.getParent()._execute(cmd)

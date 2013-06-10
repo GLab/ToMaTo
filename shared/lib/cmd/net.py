@@ -19,7 +19,7 @@ from .. import util
 from . import run, CommandError
 from process import killTree
 import path
-import os, re
+import os, re, random
 
 def getIfbCount():
 	def _ifbExists(n):
@@ -152,3 +152,7 @@ def tcpslice(outfile, entries, limitSize=None):
 			maxTime = t
 	run(["tcpslice", "-Dw", outfile, str(maxTime)] + entries)
 	
+def randomMac():
+	bytes = [random.randint(0x00, 0xff) for _ in xrange(6)]
+	bytes[0] = bytes[0] & 0xfc | 0x02 # local and individual
+	return ':'.join(map(lambda x: "%02x" % x, bytes))
