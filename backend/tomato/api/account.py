@@ -62,7 +62,8 @@ def account_info(name=None):
       If the given account does not exist an exception is raised.
     """
     acc = _getAccount(name)
-    return acc.info()
+    showMail = acc == currentUser() or currentUser().hasFlag(Flags.Admin)
+    return acc.info(showMail)
 
 def account_list():
     """
@@ -72,7 +73,7 @@ def account_list():
       A list with information entries of all accounts. Each list entry contains
       exactly the same information as returned by :py:func:`account_info`.
     """
-    return [acc.info() for acc in getAllUsers()]
+    return [acc.info(acc == currentUser() or currentUser().hasFlag(Flags.Admin)) for acc in getAllUsers()]
 
 def account_modify(name=None, attrs={}):
     """
