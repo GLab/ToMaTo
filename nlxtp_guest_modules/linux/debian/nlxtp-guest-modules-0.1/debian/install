@@ -1,0 +1,4 @@
+nlXTP.conf etc
+initscript/nlXTP_daemon /etc/init.d
+nlXTP_daemon /usr/bin
+nlXTP_mon /usr/bin
