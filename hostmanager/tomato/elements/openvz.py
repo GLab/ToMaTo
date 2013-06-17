@@ -284,7 +284,7 @@ class OpenVZ(elements.Element):
 	def _setRam(self):
 		assert self.state != ST_CREATED
 		val = "%dM" % int(self.ram)
-		self._vzctl("set", ["--vmguarpages", val, "--privvmpages", val, "--save"])
+		self._vzctl("set", ["--ram", val, "--swap", val, "--save"])
 	
 	def _setDiskspace(self):
 		assert self.state != ST_CREATED
@@ -701,7 +701,7 @@ def register(): #pragma: no cover
 	if not vzctlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
 		return
-	if not ([3] <= vzctlVersion < [4, 1]):
+	if not ([3, 0, 30] <= vzctlVersion < [4, 1]):
 		print >>sys.stderr, "Warning: OpenVZ not supported on vzctl version %s, disabled" % vzctlVersion
 		return
 	if not vnctermVersion:
