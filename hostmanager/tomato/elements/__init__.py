@@ -318,6 +318,7 @@ class RexTFVElement:
 		"""returns a join of the nlXTP path and the filename"""
 		return
 	
+	#overwrite if needed:
 	def _nlxtp_make_readable(self):
 		return
 	

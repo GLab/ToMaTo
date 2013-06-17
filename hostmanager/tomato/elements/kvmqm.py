@@ -22,6 +22,7 @@ from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.util import joinDicts #@UnresolvedImport
 
 DOC="""
 Element type: ``kvmqm``
@@ -133,7 +134,7 @@ ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-class KVMQM(elements.Element):
+class KVMQM(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -426,12 +427,54 @@ class KVMQM(elements.Element):
 	def action_download_grant(self):
 		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
 		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	
+	
+
+	#The nlXTP directory
+	def _nlxtp_path(self,filename):
+		if self.state != ST_CREATED:
+			return os.path.join(self.dataPath(),"nlxtp","mountpoint",filename)
+		else:
+			return None
+		
+	#The nlXTP device
+	def _nlxtp_device_filename(self):
+		if self.state != ST_CREATED:
+			return os.path.join(self.dataPath(),"nlxtp","device")
+		else:
+			return None
+		
+		
+	def _nlxtp_make_readable(self):
+		if not os.path.exists(self._nlxtp_device_filename()):
+			self._nlxtp_create_device()
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		cmd.run(["mount", "-o", "loop,ro", self._nlxtp_device_filename(), self._nlxtp_path("")])
+	
+	def _nlxtp_make_writeable(self):
+		if not os.path.exists(self._nlxtp_device_filename()):
+			self._nlxtp_create_device()
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		cmd.run(["mount", "-o", "loop,sync", self._nlxtp_device_filename(), self._nlxtp_path("")])
+	
+	def _nlxtp_close(self):
+		cmd.run(["umount", self._nlxtp_path("")])
+		
+	def _nlxtp_create_device(self):
+		cmd.run(["dd", "if=/dev/zero", "of="+self._nlxtp_device_filename(), "bs=1" "count=0", "seek=1G"])
+		cmd.run(["mkfs.vfat",self._nlxtp_device_filename()])
+	
+	
 		
 	def upcast(self):
 		return self
 
 	def info(self):
 		info = elements.Element.info(self)
+		info = joinDicts(info, elements.RexTFVElement.info(self))
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		return info
 
