@@ -23,7 +23,7 @@ def exists(pid):
 
 def kill(pid, force=False):
 	try:
-		run(["kill", str(pid), "-9" if force else "-15"])
+		run(["kill", str(pid), "-s", "9" if force else "15"])
 	except CommandError:
 		pass
 	
