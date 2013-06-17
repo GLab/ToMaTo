@@ -543,7 +543,7 @@ def register(): #pragma: no cover
 	if not qmVersion:
 		print >>sys.stderr, "Warning: KVMQM needs a Proxmox VE host, disabled"
 		return
-	if not ([0, 15, 0] <= qmVersion < [1, 3]):
+	if not ([0, 15, 0] <= qmVersion < [1, 5]):
 		print >>sys.stderr, "Warning: KVMQM not supported on pve-qemu-kvm version %s, disabled" % qmVersion
 		return
 	if not socatVersion:
