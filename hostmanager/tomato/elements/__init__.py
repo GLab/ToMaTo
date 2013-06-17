@@ -20,7 +20,7 @@ from django.db import models
 
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
-from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
 from .. import config
@@ -317,42 +317,75 @@ class RexTFVElement:
 	def _nlxtp_path(self, filename):
 		"""returns a join of the nlXTP path and the filename"""
 		return
+	
+	def _nlxtp_make_readable(self):
+		return
+	
+	def _nlxtp_make_writeable(self):
+		return
+	
+	def _nlxtp_close(self):
+		return
 
-	#deletes all contents in the nlXTP folder
+	#deletes all contents in the nlXTP folder.
 	def _clear_nlxtp_contents(self):
-		folder = self._nlxtp_path("")
-		if os.path.exists(folder):
-			for the_file in os.listdir(folder):
-				file_path = os.path.join(folder, the_file)
-				if os.path.isfile(file_path):
-					os.remove(file_path)
-				else:
-					shutil.rmtree(file_path)
+		self._nlxtp_make_writeable()
+		try:
+			folder = self._nlxtp_path("")
+			if os.path.exists(folder):
+				for the_file in os.listdir(folder):
+					file_path = os.path.join(folder, the_file)
+					if os.path.isfile(file_path):
+						os.remove(file_path)
+					else:
+						shutil.rmtree(file_path)
+		finally:
+			self._nlxtp_close()
 		
-	#copies the contents of the archive "filename" to the nlXTP directory
+	#copies the contents of the archive "filename" to the nlXTP directory.
 	def _use_rextfv_archive(self, filename):
-		if not os.path.exists(self._nlxtp_path("")):
-			os.makedirs(self._nlxtp_path(""))
-		path.extractArchive(filename, self._nlxtp_path(""))
+		self._nlxtp_make_writeable()
+		try:
+			if not os.path.exists(self._nlxtp_path("")):
+				os.makedirs(self._nlxtp_path(""))
+			path.extractArchive(filename, self._nlxtp_path(""))
+		finally:
+			self._nlxtp_close()
 		
-	#nlXTP's running status
+	#copies the contents of the nlXTP directory to the archive.
+	def _create_rextfv_archive(self, filename):
+		self._nlxtp_make_readable()
+		try:
+			if os.path.exists(filename):
+				os.remove(filename)
+			cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+		finally:
+			self._nlxtp_close()
+		
+	#nlXTP's running status.
 	def _rextfv_run_status(self):
-		if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
-			status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-			status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-			if status_isAlive:
-				f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-				s = f.read()
-				f.close()
-				timeout=10*60 #seconds
-				now = datetime.datetime.now()
-				alive = datetime.datetime.fromtimestamp(int(s))
-				diff = (now-alive).total_seconds()
-				if diff>timeout:
-					status_isAlive = False
-			return {"readable": True, "done": status_done, "isAlive": status_isAlive}
-		else:
-			return {"readable": False}
+		self._nlxtp_make_readable()
+		try:
+			if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
+				status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+				status_isAlive = False
+				if not status_done:
+					status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+					if status_isAlive:
+						f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+						s = f.read()
+						f.close()
+						timeout=10*60 #seconds
+						now = datetime.datetime.now()
+						alive = datetime.datetime.fromtimestamp(int(s))
+						diff = (now-alive).total_seconds()
+						if diff>timeout:
+							status_isAlive = False
+				return {"readable": True, "done": status_done, "isAlive": status_isAlive}
+			else:
+				return {"readable": False}
+		finally:
+			self._nlxtp_close()
 		
 	def info(self):
 		res = {'attrs':{}}

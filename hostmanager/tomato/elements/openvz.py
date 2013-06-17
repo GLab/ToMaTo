@@ -503,9 +503,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):
-		if os.path.exists(self.dataPath("rextfv.tar.gz")):
-			os.remove(self.dataPath("rextfv.tar.gz"))
-		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("rextfv.tar.gz"), "-C", self._nlxtp_path(""), "."])
+		self._create_rextfv_archive(self.dataPath("rextfv.tar.gz"))
 		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
