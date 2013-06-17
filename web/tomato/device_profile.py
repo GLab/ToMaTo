@@ -92,7 +92,7 @@ def add(api, request):
             return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
     else:
         form = AddProfileForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False, 'tech':data['tech']})
+        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False})
 
     
 @wrap_rpc
