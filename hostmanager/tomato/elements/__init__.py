@@ -343,9 +343,12 @@ class RexTFVElement:
 			self._nlxtp_close()
 		
 	#copies the contents of the archive "filename" to the nlXTP directory.
-	def _use_rextfv_archive(self, filename):
+	def _use_rextfv_archive(self, filename, keepOldFiles=False):
 		self._nlxtp_make_writeable()
 		try:
+			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+			if not keepOldFiles:
+				self._clear_nlxtp_contents()
 			if not os.path.exists(self._nlxtp_path("")):
 				os.makedirs(self._nlxtp_path(""))
 			path.extractArchive(filename, self._nlxtp_path(""))
@@ -378,8 +381,8 @@ class RexTFVElement:
 						timeout=10*60 #seconds
 						now = datetime.datetime.now()
 						alive = datetime.datetime.fromtimestamp(int(s))
-						diff = (now-alive).total_seconds()
-						if diff>timeout:
+						diff = now-alive
+						if (diff.seconds>timeout) or (diff.days>0):
 							status_isAlive = False
 				return {"readable": True, "done": status_done, "isAlive": status_isAlive}
 			else:
@@ -430,3 +433,4 @@ timeoutTask = util.RepeatedTimer(3600, checkTimeout)
 
 from .. import fault, currentUser, resources
 		
+

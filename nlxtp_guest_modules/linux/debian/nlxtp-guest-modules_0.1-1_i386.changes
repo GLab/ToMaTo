@@ -1,0 +1,31 @@
+Format: 1.8
+Date: Thu, 06 Jun 2013 13:34:25 +0000
+Source: nlxtp-guest-modules
+Binary: nlxtp-guest-modules
+Architecture: source all
+Version: 0.1-1
+Distribution: unstable
+Urgency: low
+Maintainer: root <t_gerhard10@cs.uni-kl.de>
+Changed-By: root <t_gerhard10@cs.uni-kl.de>
+Description: 
+ nlxtp-guest-modules - <insert up to 60 chars description>
+Changes: 
+ nlxtp-guest-modules (0.1-1) unstable; urgency=low
+ .
+   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+Checksums-Sha1: 
+ 71384fc5c2800e9c7400acf60edd2ae16fdb569e 825 nlxtp-guest-modules_0.1-1.dsc
+ 181cea83cd6d360fea87bffcca043b2638eeb231 2700 nlxtp-guest-modules_0.1.orig.tar.gz
+ b63b5b440280c93a146b65a0fd38c4670d6036c1 3024 nlxtp-guest-modules_0.1-1.diff.gz
+ b0604abe82aa75eff77feec617370e6dc9b96f98 4400 nlxtp-guest-modules_0.1-1_all.deb
+Checksums-Sha256: 
+ 56e0c5c125badc7ac05c88ac5c0b834604d1c0beeb0f4b397b5e37c2221ce5d8 825 nlxtp-guest-modules_0.1-1.dsc
+ 18b67a060e184ac24ab41361d541524a48a738037483bc446a0ef4dc541d8330 2700 nlxtp-guest-modules_0.1.orig.tar.gz
+ 1aaadcbbdb920e293a779723d0a20ddb47ff0f4692d5385f667f44d7e4d30bc0 3024 nlxtp-guest-modules_0.1-1.diff.gz
+ 29500146a61690c733c7ef4c94a39c7b32bc6f94c01d1016109cbe0b430c6ca4 4400 nlxtp-guest-modules_0.1-1_all.deb
+Files: 
+ b6fc87260e06f25d0dc9d9d48ba7c0d7 825 unknown extra nlxtp-guest-modules_0.1-1.dsc
+ 99d210607273c8c4b79923832c5da36b 2700 unknown extra nlxtp-guest-modules_0.1.orig.tar.gz
+ d6381cf831e8af13e9d1eb3778f80e95 3024 unknown extra nlxtp-guest-modules_0.1-1.diff.gz
+ e4f329edf8da68bc275697b477ae0e19 4400 unknown extra nlxtp-guest-modules_0.1-1_all.deb

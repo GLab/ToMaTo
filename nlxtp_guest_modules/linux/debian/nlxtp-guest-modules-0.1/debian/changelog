@@ -1,0 +1,5 @@
+nlxtp-guest-modules (0.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- root <t_gerhard10@cs.uni-kl.de>  Thu, 06 Jun 2013 13:34:25 +0000

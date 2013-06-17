@@ -222,7 +222,7 @@ def joinDicts(dictA,dictB):
 		A = dictA.copy()
 		for i in dictB.keys():
 			if (i in A) and (type(A[i]) is dict) and (type(dictB[i]) is dict):
-				A[i] = join(A[i],dictB[i])
+				A[i] = joinDicts(A[i],dictB[i])
 			else:
 				A[i] = dictB[i]
 	return A
