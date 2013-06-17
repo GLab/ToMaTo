@@ -30,6 +30,7 @@ class Flags:
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
+	RestrictedProfiles = "restricted_profiles"
 
 flags = {
 	Flags.Admin: "Admin: Modify all accounts",
@@ -40,7 +41,8 @@ flags = {
 	Flags.GlobalUser: "GlobalUser: User for every topology",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
-	Flags.NewAccount: "NewAccount: Account is new, just a tag"
+	Flags.NewAccount: "NewAccount: Account is new, just a tag",
+	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles"
 }
 
 USER_ATTRS = ["realname", "affiliation", "email", "password"]

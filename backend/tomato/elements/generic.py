@@ -93,7 +93,10 @@ class VMElement(elements.Element):
 		self.site = host.getSite(val)
 
 	def modify_profile(self, val):
-		self.profile = resources.profile.get(self.TYPE, val)
+		profile = resources.profile.get(self.TYPE, val)
+		if profile.restricted and not self.profile == profile:
+			fault.check(currentUser().hasFlag(Flags.RestrictedProfiles), "Profile is restricted")
+		self.profile = profile
 		if self.element:
 			self.element.modify(self._profileAttrs())
 
@@ -249,3 +252,6 @@ class ConnectingElement:
 			if ch.connection:
 				els.update(ch.getConnectedElement().getLocationData(maxDepth=maxDepth-1))
 		return els
+	
+from .. import currentUser
+from ..auth import Flags
