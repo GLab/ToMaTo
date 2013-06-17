@@ -179,7 +179,9 @@ def init():
             profile.getPreferred(tech)
         except:
             print >>sys.stderr, "Adding default profile for %s" % tech
-            create("profile", {"tech": tech, "name": "normal", "label": "Normal", "preference": 10})
+            attrs = {"tech": tech, "name": "normal", "label": "Normal", "preference": 10}
+            attrs.update(profile.DEFAULTS[tech])
+            create("profile", attrs)
     _initPhase = False
 
 _initPhase=False
