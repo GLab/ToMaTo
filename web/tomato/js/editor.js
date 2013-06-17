@@ -1823,7 +1823,7 @@ var Connection = Component.extend({
 		}})
 	},
 	viewCapture: function() {
-		this.action("download_grant", {callback: function(con, res) {
+		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
 			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download"; 
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})

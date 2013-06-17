@@ -276,7 +276,7 @@ class KVMQM(elements.Element):
 
 	def _addInterface(self, interface):
 		assert self.state == ST_PREPARED
-		self._qm("set", ["-net%d" % interface.num, "e1000,bridge=dummy"])
+		self._qm("set", ["-net%d" % interface.num, "e1000=%s,bridge=dummy" % interface.mac])
 
 	def _removeInterface(self, interface):
 		assert self.state == ST_PREPARED
@@ -489,7 +489,9 @@ Actions: None
 class KVMQM_Interface(elements.Element):
 	num_attr = Attr("num", type="int")
 	num = num_attr.attribute()
-
+	mac_attr = Attr("mac", desc="MAC Address", type="str")
+	mac = mac_attr.attribute()
+	
 	TYPE = "kvmqm_interface"
 	CAP_ACTIONS = {
 		elements.REMOVE_ACTION: [ST_CREATED, ST_PREPARED]
@@ -514,6 +516,7 @@ class KVMQM_Interface(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		assert isinstance(self.getParent(), KVMQM)
 		self.num = self.getParent()._nextIfaceNum()
+		self.mac = net.randomMac()
 		
 	def interfaceName(self):
 		if self.state == ST_STARTED:
@@ -540,7 +543,7 @@ def register(): #pragma: no cover
 	if not qmVersion:
 		print >>sys.stderr, "Warning: KVMQM needs a Proxmox VE host, disabled"
 		return
-	if not ([0, 15, 0] <= qmVersion < [1, 3]):
+	if not ([0, 15, 0] <= qmVersion < [1, 5]):
 		print >>sys.stderr, "Warning: KVMQM not supported on pve-qemu-kvm version %s, disabled" % qmVersion
 		return
 	if not socatVersion:

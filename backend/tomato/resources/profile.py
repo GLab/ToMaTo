@@ -20,6 +20,11 @@ from .. import resources, fault
 from ..lib import attributes #@UnresolvedImport
 
 TECHS = ["kvmqm", "openvz", "repy"]
+DEFAULTS = {
+	"kvmqm": {"ram": 512, "cpus": 1, "diskspace": 10240},
+	"openvz": {"ram": 512, "diskspace": 10240},
+	"repy": {"ram": 50, "cpus": 0.25},
+}
 
 class Profile(resources.Resource):
 	tech = models.CharField(max_length=20)

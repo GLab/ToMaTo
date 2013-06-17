@@ -52,7 +52,8 @@ def _buildNetem(bandwidth=None, delay=0.0, jitter=0.0, delay_correlation=0.0, di
 		netem += ["delay", "%fms" % delay, "%fms" % jitter, "%f%%" % delay_correlation]
 	if delay and jitter and distribution:
 		assert distribution in ["uniform", "normal", "pareto", "paretonormal"]
-		netem += ["distribution", str(distribution)]
+		if distribution != "uniform":
+			netem += ["distribution", str(distribution)]
 	if lossratio or loss_correlation:
 		assert 100.0 >= lossratio >= 0.0
 		assert 100.0 >= loss_correlation >= 0.0
