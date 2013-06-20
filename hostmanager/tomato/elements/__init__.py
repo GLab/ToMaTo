@@ -17,6 +17,7 @@
 
 import os, shutil, time, os.path, datetime, abc
 from django.db import models
+from threading import RLock,Lock
 
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
@@ -313,6 +314,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	
 class RexTFVElement:
 	
+	lock = Lock()
+	
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
 		"""returns a join of the nlXTP path and the filename"""
@@ -330,66 +333,73 @@ class RexTFVElement:
 
 	#deletes all contents in the nlXTP folder.
 	def _clear_nlxtp_contents(self):
-		self._nlxtp_make_writeable()
-		try:
-			folder = self._nlxtp_path("")
-			if os.path.exists(folder):
-				for the_file in os.listdir(folder):
-					file_path = os.path.join(folder, the_file)
-					if os.path.isfile(file_path):
-						os.remove(file_path)
-					else:
-						shutil.rmtree(file_path)
-		finally:
-			self._nlxtp_close()
+		with self.lock:
+			self._nlxtp_make_writeable()
+			try:
+				self._clear_nlxtp_contents__already_mounted()
+			finally:
+				self._nlxtp_close()
+	def _clear_nlxtp_contents__already_mounted(self):
+		folder = self._nlxtp_path("")
+		if os.path.exists(folder):
+			for the_file in os.listdir(folder):
+				file_path = os.path.join(folder, the_file)
+				if os.path.isfile(file_path):
+					os.remove(file_path)
+				else:
+					shutil.rmtree(file_path)
+		
 		
 	#copies the contents of the archive "filename" to the nlXTP directory.
 	def _use_rextfv_archive(self, filename, keepOldFiles=False):
-		self._nlxtp_make_writeable()
-		try:
-			fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
-			if not keepOldFiles:
-				self._clear_nlxtp_contents()
-			if not os.path.exists(self._nlxtp_path("")):
-				os.makedirs(self._nlxtp_path(""))
-			path.extractArchive(filename, self._nlxtp_path(""))
-		finally:
-			self._nlxtp_close()
+		with self.lock:
+			self._nlxtp_make_writeable()
+			try:
+				fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+				if not keepOldFiles:
+					self._clear_nlxtp_contents__already_mounted()
+				if not os.path.exists(self._nlxtp_path("")):
+					os.makedirs(self._nlxtp_path(""))
+				path.extractArchive(filename, self._nlxtp_path(""))
+			finally:
+				self._nlxtp_close()
 		
 	#copies the contents of the nlXTP directory to the archive.
 	def _create_rextfv_archive(self, filename):
-		self._nlxtp_make_readable()
-		try:
-			if os.path.exists(filename):
-				os.remove(filename)
-			cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
-		finally:
-			self._nlxtp_close()
+		with self.lock:
+			self._nlxtp_make_readable()
+			try:
+				if os.path.exists(filename):
+					os.remove(filename)
+				cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+			finally:
+				self._nlxtp_close()
 		
 	#nlXTP's running status.
 	def _rextfv_run_status(self):
-		self._nlxtp_make_readable()
-		try:
-			if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
-				status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-				status_isAlive = False
-				if not status_done:
-					status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-					if status_isAlive:
-						f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-						s = f.read()
-						f.close()
-						timeout=10*60 #seconds
-						now = datetime.datetime.now()
-						alive = datetime.datetime.fromtimestamp(int(s))
-						diff = now-alive
-						if (diff.seconds>timeout) or (diff.days>0):
-							status_isAlive = False
-				return {"readable": True, "done": status_done, "isAlive": status_isAlive}
-			else:
-				return {"readable": False}
-		finally:
-			self._nlxtp_close()
+		with self.lock:
+			self._nlxtp_make_readable()
+			try:
+				if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
+					status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+					status_isAlive = False
+					if not status_done:
+						status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+						if status_isAlive:
+							f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+							s = f.read()
+							f.close()
+							timeout=10*60 #seconds
+							now = datetime.datetime.now()
+							alive = datetime.datetime.fromtimestamp(int(s))
+							diff = now-alive
+							if (diff.seconds>timeout) or (diff.days>0):
+								status_isAlive = False
+					return {"readable": True, "done": status_done, "isAlive": status_isAlive}
+				else:
+					return {"readable": False}
+			finally:
+				self._nlxtp_close()
 		
 	def info(self):
 		res = {'attrs':{}}
