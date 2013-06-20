@@ -124,6 +124,7 @@ Actions:
 		Uses a previously uploaded file as the image of the VM. 
 	*rextfv_upload_use*, callable in state *prepared*
 		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
+		Deletes old content from this directory.
 	*download_grant*, callable in state *prepared*
 		 Create/update a grant to download the image for the VM. The created 
 		 grant will be available as an attribute called download_grant. The
