@@ -118,8 +118,13 @@ Actions:
 	 	server (can be requested via host_info) and grant is the grant.
 	 	The uploaded file can be used as the VM image with the upload_use 
 	 	action. 
+	*rextfv_upload_grant*, callable in state *prepared* 
+		same as upload_grant, but for use with rextfv_upload_use.
 	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
+	*rextfv_upload_use*, callable in state *prepared*
+		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
+		Deletes old content from this directory.
 	*download_grant*, callable in state *prepared*
 	 	Create/update a grant to download the image for the VM. The created 
 	 	grant will be available as an attribute called download_grant. The
@@ -128,6 +133,8 @@ Actions:
 	 	http://server:port/grant/download where server is the address of this
 	 	host, port is the fileserver port of this server (can be requested via
 	 	host_info) and grant is the grant.
+	*rextfv_download_grant*, callable in state *prepared* or *started*
+		same as download_grant, but only for the nlXTP folder
 """
 
 ST_CREATED = "created"
@@ -166,8 +173,11 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
 		"upload_grant": [ST_PREPARED],
+		"rextfv_upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
+		"rextfv_upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
+		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -418,15 +428,25 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
+	
+	def action_rextfv_upload_grant(self):
+		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
 		self._checkImage(self._imagePath("uploaded.qcow2"))
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
+	def action_rextfv_upload_use(self):
+		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+		
 	def action_download_grant(self):
 		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
 		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	def action_rextfv_download_grant(self):
+		self._create_rextfv_archive(self.dataPath("rextfv.tar.gz"))
+		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	
 	
