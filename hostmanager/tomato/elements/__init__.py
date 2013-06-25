@@ -315,6 +315,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 class RexTFVElement:
 	
 	lock = Lock()
+	rextfv_max_size = None
 	
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
@@ -355,7 +356,9 @@ class RexTFVElement:
 		with self.lock:
 			self._nlxtp_make_writeable()
 			try:
-				fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+				fault.check(os.path.exists(filename), "No file has been uploaded")
+				if self.rextfv_max_size is not None:
+					fault.check(os.path.getsize(filename) < self.rextfv_max_size, "uploaded file is too large")
 				if not keepOldFiles:
 					self._clear_nlxtp_contents__already_mounted()
 				if not os.path.exists(self._nlxtp_path("")):
@@ -404,6 +407,7 @@ class RexTFVElement:
 	def info(self):
 		res = {'attrs':{}}
 		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
+		res['attrs']['rextfv_max_size'] = self.rextfv_max_size
 		return res
 
 	

@@ -165,6 +165,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	usbtablet = usbtablet_attr.attribute()
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
+	
+	rextfv_max_size = 512000 # depends on _nlxtp_create_device.
 
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
@@ -363,7 +365,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self._checkState()
 		self._qm("create")
 		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
-		args = "-vnc unix:%s,password" % self._vncPath() #disable vnc tls as most clients dont support that
+		args = "-vnc unix:%s,password -fda %s" % (self._vncPath(),self._nlxtp_device_filename()) #disable vnc tls as most clients dont support that; add nlxtp device
 		if qmVersion < [1, 1]:
 			args += " -chardev socket,id=qmp,path=%s,server,nowait -mon chardev=qmp,mode=control" % self._controlPath()
 		self._qm("set", ["-args", args])  
@@ -484,8 +486,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		cmd.run(["umount", self._nlxtp_path("")])
 		
 	def _nlxtp_create_device(self):
-		cmd.run(["dd", "if=/dev/zero", "of="+self._nlxtp_device_filename(), "bs=1" "count=0", "seek=1G"])
-		cmd.run(["mkfs.vfat",self._nlxtp_device_filename()])
+		cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), 524288 ])
 	
 	
 		
