@@ -455,14 +455,10 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
-		if self.state != ST_CREATED:
-			return self.dataPath(os.path.join("nlxtp","mountpoint",filename))
-		else:
-			return None
+		return self.dataPath(os.path.join("nlxtp","mountpoint",filename))
 		
 	#The nlXTP device
 	def _nlxtp_device_filename(self):
-		print "test"
 		return self.dataPath(os.path.join("nlxtp","device"))
 		
 		
@@ -484,6 +480,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		cmd.run(["umount", self._nlxtp_path("")])
 		
 	def _nlxtp_create_device(self):
+		print ["mkfs.vfat","-C", self._nlxtp_device_filename(), 524288 ]
 		cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), 524288 ])
 	
 	

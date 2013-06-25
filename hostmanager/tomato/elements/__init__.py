@@ -405,6 +405,8 @@ class RexTFVElement:
 				self._nlxtp_close()
 		
 	def info(self):
+		if self.state == ST_CREATED:
+			return {}
 		res = {'attrs':{}}
 		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
 		res['attrs']['rextfv_max_size'] = self.rextfv_max_size
