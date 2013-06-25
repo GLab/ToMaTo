@@ -462,10 +462,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		
 	#The nlXTP device
 	def _nlxtp_device_filename(self):
-		if self.state != ST_CREATED:
-			return os.path.join(self.dataPath(),"nlxtp","device")
-		else:
-			return None
+		return os.path.join(self.dataPath(),"nlxtp","device")
 		
 		
 	def _nlxtp_make_readable(self):
