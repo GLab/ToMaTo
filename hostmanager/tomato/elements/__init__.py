@@ -363,7 +363,7 @@ class RexTFVElement:
 					self._clear_nlxtp_contents__already_mounted()
 				if not os.path.exists(self._nlxtp_path("")):
 					os.makedirs(self._nlxtp_path(""))
-				path.extractArchive(filename, self._nlxtp_path(""))
+				path.extractArchive(filename, self._nlxtp_path(""), ["--no-same-owner"])
 			finally:
 				self._nlxtp_close()
 		
