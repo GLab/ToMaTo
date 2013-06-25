@@ -166,7 +166,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
 	
-	rextfv_max_size = 512000 # depends on _nlxtp_create_device.
+	rextfv_max_size = 512000 # depends on _nlxtp_create_device_and_mountpoint.
 
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
@@ -463,25 +463,21 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		
 		
 	def _nlxtp_make_readable(self):
-		if not os.path.exists(self._nlxtp_device_filename()):
-			self._nlxtp_create_device()
-		if not os.path.exists(self._nlxtp_path("")):
-			os.makedirs(self._nlxtp_path(""))
+		self._nlxtp_create_device_and_mountpoint()
 		cmd.run(["mount", "-o", "loop,ro", self._nlxtp_device_filename(), self._nlxtp_path("")])
 	
 	def _nlxtp_make_writeable(self):
-		if not os.path.exists(self._nlxtp_device_filename()):
-			self._nlxtp_create_device()
-		if not os.path.exists(self._nlxtp_path("")):
-			os.makedirs(self._nlxtp_path(""))
+		self._nlxtp_create_device_and_mountpoint()
 		cmd.run(["mount", "-o", "loop,sync", self._nlxtp_device_filename(), self._nlxtp_path("")])
 	
 	def _nlxtp_close(self):
 		cmd.run(["umount", self._nlxtp_path("")])
 		
-	def _nlxtp_create_device(self):
-		print ["mkfs.vfat","-C", self._nlxtp_device_filename(), 524288 ]
-		cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), 524288 ])
+	def _nlxtp_create_device_and_mountpoint(self):
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		if not os.path.exists(self._nlxtp_device_filename()):
+			cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), "524288" ])
 	
 	
 		
