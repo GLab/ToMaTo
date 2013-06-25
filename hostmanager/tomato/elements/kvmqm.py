@@ -456,7 +456,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
 		if self.state != ST_CREATED:
-			return os.path.join(self.dataPath(),"nlxtp","mountpoint",filename)
+			return self.dataPath(os.path.join("nlxtp","mountpoint",filename))
 		else:
 			return None
 		
