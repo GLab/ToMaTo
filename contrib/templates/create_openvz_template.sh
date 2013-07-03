@@ -3,6 +3,11 @@
 # can be automated via:
 # echo -e "precise\n\n\n333\n131.246.112.93\n\n\n" | ./create_debian_openvz_template.sh
 
+if [ $EUID -gt 0 ]; then
+  echo "Must be run as root, trying sudo..."
+  exec sudo "$0" "$@"
+fi
+
 function get() {
   varname="$1"
   msg="$2"

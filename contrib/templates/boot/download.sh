@@ -1,11 +1,11 @@
 #!/bin/bash
 
-for distro in lucid oneiric precise squeeze; do
+for distro in lucid oneiric precise quantal raring saucy squeeze wheezy; do
   case $distro in
-    squeeze)
+    squeeze|wheezy)
       type=debian
       ;;
-    lucid|oneiric|precise)
+    lucid|oneiric|precise|quantal|raring|saucy)
       type=ubuntu
       ;;
   esac
