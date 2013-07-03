@@ -37,3 +37,10 @@ def age(value):
 @register.filter
 def get(h, key):
   return h[key]
+ 
+@register.filter
+def simpletags(value, tags="b a i ul ol li em strong"):
+  import re
+  tags = [re.escape(tag) for tag in tags.split()]
+  pattern = re.compile(r'\[(\/?(%s)(\s+[^\]]*)?/?)\]' % '|'.join(tags))
+  return pattern.sub('<\g<1>>', value)

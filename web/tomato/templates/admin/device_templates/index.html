@@ -53,9 +53,7 @@
 		    	<div class="hoverdescription">
 		    		<img src="/img/info.png" alt="i" />
 		    		<div class="hiddenbox">
-			    		{% autoescape on %}
-			    		{{ templ.attrs.description|linebreaks }}
-			    		{% endautoescape %}
+			    		{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}
 		    		</div>
 		    	</div>
 		    {% else %}
