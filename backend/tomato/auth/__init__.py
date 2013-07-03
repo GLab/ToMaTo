@@ -31,6 +31,9 @@ class Flags:
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
+	Mails = "mails"
+	HostsContact = "hosts_contact"
+	AdminContact = "admin_contact"
 
 flags = {
 	Flags.Admin: "Admin: Modify all accounts",
@@ -42,7 +45,10 @@ flags = {
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
-	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles"
+	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
+	Flags.Mails: "Mails: Can receive mails at all",
+	Flags.HostsContact: "HostsContact: User receives mails about host problems",
+	Flags.AdminContact: "AdminContact: User receives mails to administrators"
 }
 
 USER_ATTRS = ["realname", "affiliation", "email", "password"]
@@ -155,7 +161,7 @@ class User(attributes.Mixin, models.Model):
 		return info
 		
 	def sendMail(self, subject, message):
-		if not self.email:
+		if not self.email or not self.hasFlag(Flags.Mails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
 		subject = config.EMAIL_SUBJECT_TEMPLATE % data

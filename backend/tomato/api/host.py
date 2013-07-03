@@ -15,14 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-def server_info():
-    """
-    undocumented
-    """
-    return {
-        "TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
-    }
-
 def _getSite(name):
     s = host.getSite(name)
     fault.check(s, "Site with name %s does not exist", name)
@@ -127,10 +119,4 @@ def host_connection_owner(hostname, num):
         fault.raise_("Host connection %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
     return hcon.getOwner()
 
-def host_public_key():
-    return host.getPublicKey()
-
-def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
-    return link.getStatistics(siteA, siteB, type, after, before)
-
-from .. import host, fault, config, link
+from .. import host, fault
