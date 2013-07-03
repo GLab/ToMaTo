@@ -84,9 +84,9 @@ class Template(resources.Resource):
 				fp.write(raw)
 
 	def remove(self):
-		if os.path.exists(self.getTorrentPath()):
+		if self.tech and os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
-		if os.path.exists(self.getPath()):
+		if self.tech and os.path.exists(self.getPath()):
 			path.remove(self.getPath(), recursive=True)
 		resources.Resource.remove(self)
 
