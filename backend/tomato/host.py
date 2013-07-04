@@ -22,10 +22,6 @@ from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags, mailFlaggedUsers
 import xmlrpclib, time, hashlib
 
-
-	
-host_update_intervals = [60,60,60,60,120,180,300,300,300,300,600,900,1200,1800,3000,3600] #TODO: move to config, better values
-
 class Site(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=10, unique=True)
 	#hosts: [Host]
@@ -33,7 +29,6 @@ class Site(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	location = attributes.attribute("location", unicode, "")
 	geolocation = attributes.attribute("geolocation", dict, {})
-	
 	
 	class Meta:
 		pass
@@ -423,9 +418,6 @@ class HostElement(attributes.Mixin, models.Model):
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
 	type = attributes.attribute("type", str) #@ReservedAssignment
-	
-	host_update_intervals_position = models.IntegerField()
-	last_sync = models.IntegerField()
 		
 	class Meta:
 		unique_together = (("host", "num"),)
@@ -532,21 +524,6 @@ class HostElement(attributes.Mixin, models.Model):
 				return ("connection", con.id)
 		return (None, None)
 	
-	def tosynchronize(self):
-		if self.host_update_intervals_position is None:
-			self.host_update_intervals_position = 0;
-		else:
-			if self.host_update_intervals_position > len(host_update_intervals):
-				self.host_update_intervals_position = len(host_update_intervals) - 1
-		if self.last_sync is None:
-			self.last_sync = 0;
-			
-		if self.last_sync + host_update_intervals[self.host_update_intervals_position] > time.time():
-			return True
-		
-		return False
-		
-	
 	def synchronize(self):
 		try:
 			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
@@ -555,7 +532,6 @@ class HostElement(attributes.Mixin, models.Model):
 				raise
 		except:
 			logging.logException(host=self.host.address)
-		self.host_update_intervals_position += 1
 		
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
@@ -779,21 +755,17 @@ def synchronize():
 
 _lastComponentSync = time.time()
 
-def synchronizeElements():
-	for hel in HostElement.objects.all():
-		if hel.tosynchronize():
-			hel.synchronize()
-
 def synchronizeComponents():
 	# only run every hour
 	global _lastComponentSync
 	if time.time() - _lastComponentSync < 3600:
 		return
 	_lastComponentSync = time.time()
+	for hel in HostElement.objects.all():
+		hel.synchronize()
 	for hcon in HostConnection.objects.all():
 		hcon.synchronize()
 	
 task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize)
-task2 = util.RepeatedTimer(15,synchronizeElements) #TODO: timeout in config
 
 from . import fault
