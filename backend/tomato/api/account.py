@@ -99,7 +99,7 @@ def account_modify(name=None, attrs={}):
     if acc.name != currentUser().name:
         fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
     acc.modify(attrs)
-    return acc.info()
+    return acc.info(True)
         
 def account_create(username, password, attrs={}, provider=""):
     """
@@ -128,7 +128,7 @@ def account_create(username, password, attrs={}, provider=""):
       This method returns the info dict of the new account.
     """
     user = register(username, password, attrs, provider)
-    return user.info()
+    return user.info(True)
         
 def account_flags():
     """

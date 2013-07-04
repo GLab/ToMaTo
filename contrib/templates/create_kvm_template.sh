@@ -3,6 +3,11 @@
 # can be automated via:
 # echo -e "precise\n\n\n333\n131.246.112.93\n\n\n" | ./create_kvm_template.sh
 
+if [ $EUID -gt 0 ]; then
+  echo "Must be run as root, trying sudo..."
+  exec sudo "$0" "$@"
+fi
+
 function get() {
   varname="$1"
   msg="$2"
@@ -38,9 +43,9 @@ case "$ARCH" in
   *) fail "Unknown architecture: $ARCH"
 esac
 
-get DISTRO "Distribution (squeeze,precise,oneiric,natty,lucid)" oneiric
+get DISTRO "Distribution (nickname)" precise
 case "$DISTRO" in
-  squeeze|lucid|natty|oneiric|precise)
+  squeeze|wheezy|lucid|natty|oneiric|precise|quantal|raring|saucy)
     PRESEED="/$DISTRO.preseed.txt"
     KERNEL="boot/$DISTRO/$ARCH/linux"
     INITRD="boot/$DISTRO/$ARCH/initrd.gz"
@@ -54,11 +59,11 @@ DEST="$DISTRO-$ARCH.qcow2"
 get DEST "Destination" "$DEST"
 [ -f "$DEST" ] && fail "Destination file already exists: $DEST"
 
-KVM="kvm -usbdevice tablet -m 512 -smp sockets=1,cores=1 -nodefaults -vga cirrus -tdf -k de -enable-kvm -net nic,model=e1000 -net tap"
+KVM="kvm -usbdevice tablet -m 512 -smp sockets=1,cores=1 -nodefaults -vga cirrus -tdf -k de -enable-kvm -net nic,model=e1000 -net user"
 if ! [ "$1" == "--observe" ]; then
   KVM="$KVM -display none"
 fi
-APPEND="auto locale=en_US.UTF-8 console-setup/layoutcode=de priority=critical vga=788"
+APPEND="auto locale=en_US.UTF-8 console-keymaps-at/keymap=de keymap=de priority=critical vga=788"
 
 echo
 get DUMMY "Press ENTER to start"

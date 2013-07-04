@@ -23,3 +23,4 @@ from connections import *
 from resources import *
 from docs import *
 from capabilities import *
+from misc import *

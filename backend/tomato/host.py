@@ -373,13 +373,13 @@ class Host(attributes.Mixin, models.Model):
 		if self.problemAge and not problems:
 			if self.problemMailTime == self.problemAge:
 				# problem is resolved and mail has been sent for this problem
-				mailFlaggedUsers(Flags.HostsManager, "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
+				mailFlaggedUsers(Flags.HostsContact, "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - 300):
 			if self.problemMailTime != self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = self.problemAge
-				mailFlaggedUsers(Flags.HostsManager, "Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
+				mailFlaggedUsers(Flags.HostsContact, "Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
 		self.save()
 		
 	def getLoad(self):
@@ -759,17 +759,6 @@ def getConnectionCapabilities(type_):
 		if len(repr(hcaps)) > len(repr(caps)):
 			caps = hcaps
 	return caps
-
-def getPublicKey():
-	lines = []
-	ignore = False
-	with open(config.CERTIFICATE) as key:
-		for line in key:
-			if "PRIVATE" in line:
-				ignore = not ignore
-			elif not ignore:
-				lines.append(line)
-	return "".join(lines)
 
 @db.commit_after
 def synchronizeHost(host):
