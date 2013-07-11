@@ -19,6 +19,8 @@ from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
+from ..util import RepeatedTimer #@UnresolvedImport
+import time
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -34,10 +36,14 @@ class VMElement(elements.Element):
 	profile = models.ForeignKey(r_profile.Profile, null=True)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(r_template.Template, null=True)
+	rextfv_last_started = models.IntegerField()
+	next_sync = models.IntegerField()
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
+		"start": [ST_PREPARED],
+		"rextrv_upload_use": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -52,6 +58,20 @@ class VMElement(elements.Element):
 	
 	class Meta:
 		abstract = True
+		
+	def updateInfo(self):
+		self.element.updateInfo()
+		#calculate next update time:
+		time_passed = self.next_sync - self.rextfv_last_started
+		if time_passed < 60*60*24: #less than one day
+			self.next_sync = self.next_sync + (time_passed / 24)
+		else:
+			self.next_sync = self.next_sync + (60*60*24)
+		self.save()
+		
+	def set_rextfv_last_started(self):
+		self.rextfv_last_started = int(time.time())
+		self.save()
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -60,6 +80,8 @@ class VMElement(elements.Element):
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
+		self.rextfv_last_started = 0
+		self.next_sync = int(time.time())
 		#template: None, default template
 	
 	def mainElement(self):
@@ -163,6 +185,12 @@ class VMElement(elements.Element):
 			self.element.remove()
 			self.element = None
 		self.setState(ST_CREATED, True)
+		
+	def action_rextfv_upload_use(self):
+		self.set_rextfv_last_started()
+		
+	def action_start(self):
+		self.set_rextfv_last_started()
 
 	def after_stop(self):
 		for ch in self.getChildren():
@@ -252,6 +280,13 @@ class ConnectingElement:
 			if ch.connection:
 				els.update(ch.getConnectedElement().getLocationData(maxDepth=maxDepth-1))
 		return els
+	
+	
+def syncAllVMElements():
+	for e in VMElement.objects.filter(next_sync__lte=int(time.time())):
+		e.updateInfo()
+		
+syncTask = RepeatedTimer(5, syncAllVMElements)
 	
 from .. import currentUser
 from ..auth import Flags

@@ -75,6 +75,7 @@ def start():
 	auth.init()
 	resources.init()
 	host.task.start() #@UndefinedVariable
+	elements.generic.syncTask.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
 	auth.task.start() #@UndefinedVariable
 	link.task.start() #@UndefinedVariable
@@ -104,6 +105,7 @@ def stop(*args):
 	rpcserver.stop()
 	auth.task.stop() #@UndefinedVariable
 	host.task.stop() #@UndefinedVariable
+	elements.generic.syncTask.stop() #@UndefinedVariable
 	link.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
 	bittorrent.task.stop() #@UndefinedVariable
