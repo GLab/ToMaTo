@@ -2,7 +2,7 @@ Package: nlxtp-guest-modules
 Version: 0.1-1
 Architecture: all
 Maintainer: root <t_gerhard10@cs.uni-kl.de>
-Installed-Size: 72
+Installed-Size: 76
 Section: unknown
 Priority: extra
 Homepage: <insert the upstream URL, if relevant>

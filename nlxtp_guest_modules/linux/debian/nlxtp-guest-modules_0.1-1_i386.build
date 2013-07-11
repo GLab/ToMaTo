@@ -24,6 +24,7 @@ dpkg-source: warning: newly created empty file 'debian/docs' will not be represe
 dpkg-source: warning: ignoring deletion of file nlXTP_daemon.initscript
 dpkg-source: warning: the diff modifies the following upstream files: 
  initscript/nlXTP_daemon
+ nlXTP_mon
 dpkg-source: info: use the '3.0 (quilt)' format to have separate and documented changes to upstream files, see dpkg-source(1)
 dpkg-source: info: building nlxtp-guest-modules in nlxtp-guest-modules_0.1-1.dsc
  debian/rules build
@@ -84,6 +85,7 @@ dpkg-genchanges: including full source code in upload
 dpkg-buildpackage: full upload (original source is included)
 Now running lintian...
 warning: lintian's authors do not recommend running it with root privileges!
+W: nlxtp-guest-modules source: maintainer-script-lacks-debhelper-token debian/postrm
 W: nlxtp-guest-modules source: dh-make-template-in-source debian/nlxtp-guest-modules.doc-base.EX
 W: nlxtp-guest-modules source: maintainer-script-lacks-debhelper-token debian/postinst
 W: nlxtp-guest-modules source: maintainer-not-full-name root
@@ -95,15 +97,15 @@ W: nlxtp-guest-modules: maintainer-not-full-name root
 E: nlxtp-guest-modules: section-is-dh_make-template
 W: nlxtp-guest-modules: superfluous-clutter-in-homepage <insert the upstream URL, if relevant>
 W: nlxtp-guest-modules: bad-homepage <insert the upstream URL, if relevant>
+W: nlxtp-guest-modules: readme-debian-contains-debmake-template
 E: nlxtp-guest-modules: helper-templates-in-copyright
 E: nlxtp-guest-modules: helper-templates-in-copyright
 W: nlxtp-guest-modules: copyright-has-url-from-dh_make-boilerplate
 E: nlxtp-guest-modules: copyright-contains-dh_make-todo-boilerplate
-W: nlxtp-guest-modules: readme-debian-contains-debmake-template
 W: nlxtp-guest-modules: new-package-should-close-itp-bug
 W: nlxtp-guest-modules: wrong-bug-number-in-closes l3:#nnnn
 W: nlxtp-guest-modules: binary-without-manpage usr/bin/nlXTP_daemon
 W: nlxtp-guest-modules: binary-without-manpage usr/bin/nlXTP_mon
+W: nlxtp-guest-modules: maintainer-script-ignores-errors postrm
 W: nlxtp-guest-modules: maintainer-script-ignores-errors postinst
-E: nlxtp-guest-modules: postrm-does-not-call-updaterc.d-for-init.d-script /etc/init.d/nlXTP_daemon
 Finished running lintian.
