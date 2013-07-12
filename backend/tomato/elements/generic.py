@@ -19,7 +19,7 @@ from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
-from ..util import RepeatedTimer #@UnresolvedImport
+from ..lib import util #@UnresolvedImport
 import time
 
 ST_CREATED = "created"
@@ -286,7 +286,7 @@ def syncAllVMElements():
 	for e in VMElement.objects.filter(next_sync__lte=int(time.time())):
 		e.updateInfo()
 		
-syncTask = RepeatedTimer(5, syncAllVMElements)
+syncTask = util.RepeatedTimer(5, syncAllVMElements)
 	
 from .. import currentUser
 from ..auth import Flags
