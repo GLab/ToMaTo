@@ -2185,6 +2185,13 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	downloadRexTFV: function() {
+		this.action("rextfv_download_grant", {callback: function(el, res) {
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '.tar.gz';
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			window.location.href = url;
+		}})
+	},
 	uploadImage: function() {
 		this.action("upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
@@ -2199,6 +2206,26 @@ var Element = Component.extend({
 					el.action("upload_use");
 				});
 				var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
+			});
+			iframe.css("display", "none");
+			$('body').append(iframe);
+			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+		}});
+	},
+	uploadRexTFV: function() {
+		this.action("rextfv_upload_grant", {callback: function(el, res) {
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var div = $('<div/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
+			// iframe.load will be triggered a moment after iframe is added to body
+			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
+			iframe.load(function(){
+				iframe.load(function(){
+					iframe.remove();
+					info.hide();
+					el.action("rextfv_upload_use");
+				});
+				var info = new Window({title: "Upload RexTFV Archive", content: div, autoShow: true, width:300});
 			});
 			iframe.css("display", "none");
 			$('body').append(iframe);
@@ -2362,11 +2389,25 @@ var createElementMenu = function(obj) {
 					obj.downloadImage();
 				}
 			} : null,
+			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+				name:"Download RexTFV Archive",
+				icon:"folder",
+				callback: function(){
+					obj.downloadRexTFV();
+				}
+			} : null,
 			"upload_image": obj.actionEnabled("upload_grant") ? {
 				name:"Upload image",
 				icon:"drive",
 				callback: function(){
 					obj.uploadImage();
+				}
+			} : null,
+			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+				name:"Upload RexTFV Archive",
+				icon:"folder",
+				callback: function(){
+					obj.uploadRexTFV();
 				}
 			} : null,
 			"sep3": "---",
