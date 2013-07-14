@@ -66,7 +66,7 @@ class VMElement(elements.Element):
 		if time_passed < 60*60*24: #less than one day
 			self.next_sync = self.next_sync + (time_passed / 24)
 		else:
-			self.next_sync = self.next_sync + (60*60*24)
+			self.next_sync = self.next_sync + (60*60)
 		self.save()
 		
 	def set_rextfv_last_started(self):
