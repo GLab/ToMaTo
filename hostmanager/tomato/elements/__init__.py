@@ -294,7 +294,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
 					
 	def info(self):
-		return {
+		res = {
 			"id": self.id,
 			"type": self.type,
 			"parent": self.parent.id if self.hasParent() else None,
@@ -304,6 +304,8 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 		}
+		res['attrs']['rextfv_supported'] = False
+		return res
 		
 	def updateUsage(self, usage, data):
 		pass
@@ -410,6 +412,7 @@ class RexTFVElement:
 		res = {'attrs':{}}
 		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
 		res['attrs']['rextfv_max_size'] = self.rextfv_max_size
+		res['attrs']['rextfv_supported'] = True
 		return res
 
 	
