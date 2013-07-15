@@ -501,7 +501,10 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def action_rextfv_upload_use(self):
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		if self.state == ST_STARTED:
-			self._execute("nlXTP_mon --background")
+			try:
+				self._execute("nlXTP_mon --background")
+			except cmd.CommandError:
+				return "Error executing nlXTP_mon"
 		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
