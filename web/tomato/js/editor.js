@@ -2389,18 +2389,18 @@ var createElementMenu = function(obj) {
 					obj.downloadImage();
 				}
 			} : null,
-			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-				name:"Download RexTFV Archive",
-				icon:"folder",
-				callback: function(){
-					obj.downloadRexTFV();
-				}
-			} : null,
 			"upload_image": obj.actionEnabled("upload_grant") ? {
 				name:"Upload image",
 				icon:"drive",
 				callback: function(){
 					obj.uploadImage();
+				}
+			} : null,
+			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+				name:"Download RexTFV Archive",
+				icon:"folder",
+				callback: function(){
+					obj.downloadRexTFV();
 				}
 			} : null,
 			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
