@@ -21,11 +21,14 @@ from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import util #@UnresolvedImport
 import time
+from openvz import OpenVZ
+from kvmqm import KVMQM
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
+#Important: If a subclass should support RexTFV, add it to syncAllVMElements at the bottom of this file.
 class VMElement(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
 	site_attr = Attr("site", desc="Site", type="str", null=True, states=[ST_CREATED])
@@ -42,8 +45,6 @@ class VMElement(elements.Element):
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
-		"start": [ST_PREPARED],
-		"rextrv_upload_use": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -186,17 +187,15 @@ class VMElement(elements.Element):
 			self.element = None
 		self.setState(ST_CREATED, True)
 		
-	def action_rextfv_upload_use(self):
+	def after_rextfv_upload_use(self):
 		self.set_rextfv_last_started()
 		
-	def action_start(self):
-		self.set_rextfv_last_started()
-
 	def after_stop(self):
 		for ch in self.getChildren():
 			ch.triggerConnectionStop()
 	
 	def after_start(self):
+		self.set_rextfv_last_started()
 		for ch in self.getChildren():
 			ch.triggerConnectionStart()
 
@@ -283,7 +282,9 @@ class ConnectingElement:
 	
 	
 def syncAllVMElements():
-	for e in VMElement.objects.filter(next_sync__lte=int(time.time())):
+	for e in OpenVZ.objects.filter(next_sync__lte=int(time.time())):
+		e.updateInfo()
+	for e in KVMQM.objects.filter(next_sync__lte=int(time.time())):
 		e.updateInfo()
 		
 syncTask = util.RepeatedTimer(5, syncAllVMElements)
