@@ -2398,14 +2398,14 @@ var createElementMenu = function(obj) {
 			} : null,
 			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
 				name:"Download RexTFV Archive",
-				icon:"folder",
+				icon:"rextfv",
 				callback: function(){
 					obj.downloadRexTFV();
 				}
 			} : null,
 			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
 				name:"Upload RexTFV Archive",
-				icon:"folder",
+				icon:"rextfv",
 				callback: function(){
 					obj.uploadRexTFV();
 				}
