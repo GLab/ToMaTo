@@ -21,14 +21,11 @@ from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import util #@UnresolvedImport
 import time
-from openvz import OpenVZ
-from kvmqm import KVMQM
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-#Important: If a subclass should support RexTFV, add it to syncAllVMElements at the bottom of this file.
 class VMElement(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
 	site_attr = Attr("site", desc="Site", type="str", null=True, states=[ST_CREATED])
@@ -279,15 +276,6 @@ class ConnectingElement:
 			if ch.connection:
 				els.update(ch.getConnectedElement().getLocationData(maxDepth=maxDepth-1))
 		return els
-	
-	
-def syncAllVMElements():
-	for e in OpenVZ.objects.filter(next_sync__lte=int(time.time())):
-		e.updateInfo()
-	for e in KVMQM.objects.filter(next_sync__lte=int(time.time())):
-		e.updateInfo()
-		
-syncTask = util.RepeatedTimer(5, syncAllVMElements)
 	
 from .. import currentUser
 from ..auth import Flags
