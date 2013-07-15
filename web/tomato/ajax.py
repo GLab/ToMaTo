@@ -112,3 +112,13 @@ def connection_remove(api, id): #@ReservedAssignment
 def account_info(api, name):
 	res = api.account_info(name)
 	return res
+
+@wrap_json
+def element_rextfv_status(api, id): #@ReservedAssignment
+	info=api.element_info(id)['attrs']
+	res = {}
+	if 'rextfv_max_size' in info:
+		res['rextfv_max_size'] = info['rextfv_max_size']
+	if 'rextfv_run_status' in info:
+		res['rextfv_run_status'] = info['rextfv_run_status']
+	return res

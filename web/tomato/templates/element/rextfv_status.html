@@ -1,0 +1,106 @@
+<html>
+<head>
+<link href="/style/style.css" rel="stylesheet" type="text/css" /> 
+<link rel="shortcut icon" type="image/x-icon" href="http://www.german-lab.de/favicon.ico" />
+<style type="text/css">
+	body {
+		min-width:0px;
+		}
+	div.running {
+		color: green;
+		}
+	div.done {
+		font-weight: bold;
+		color: green;
+		}
+	div.crashed {
+		font-weight: bold;
+		color: red;
+		}
+	div.status {
+		font-size: 40;
+		}
+	div.box {
+		padding: 20px;
+		}
+</style>
+</head>
+<body>
+
+<h1 id="heading">Element {{id}}: RexTFV Status</h1>
+
+<div class="box">
+	<h2>Element Info:</h2>
+	<table>
+		<tr><td>Element Name:</td><td id="element_name" /></tr>
+		<tr><td>Topology:</td><td id="topology_name"></td></tr>
+		<tr><td>RexTFV status available:</td><td id="rextfv_readable" /></tr>
+	</table>
+</div>
+
+<div class="box" id="overall_status_p"></div>
+
+
+<script language="javascript">
+
+ElementID = {{id}};
+
+function doAjaxCall(url,successfn) {
+	var xmlhttp=new XMLHttpRequest();
+	xmlhttp.open("GET",url,true);
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			successfn(JSON.parse(xmlhttp.responseText)['result'])
+	};
+	xmlhttp.send();
+}
+
+function ElementInfoURL(){return "/ajax/element/"+ElementID+"/info"}
+function RexTFVStatusURL(){return "/ajax/element/"+ElementID+"/rextfv_status"}
+function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
+
+function updateRexTFVStatus() {
+	doAjaxCall(RexTFVStatusURL(),function(rextfv_status){
+		s = rextfv_status['rextfv_run_status'];
+		if (s['readable']) {
+			document.getElementById('rextfv_readable').innerHTML = "Yes"
+			document.getElementById('overall_status_p').innerHTML = '<h2>RexTFV Status:</h2><div id="overall_status"></div>';	
+			if (s['isAlive'])
+				document.getElementById('overall_status').innerHTML='<div class="status running">Running</div>'
+			else
+				if (s['done'])
+					document.getElementById('overall_status').innerHTML='<div class="status done">Finished</div>'
+				else
+					document.getElementById('overall_status').innerHTML='<div class="status crashed">Unknown.<br/>Probably Crashed.</div>';
+		} else {
+			document.getElementById('rextfv_readable').innerHTML = "No";
+			document.getElementById('overall_status_p').innerHTML = "";	
+		}
+		
+	})
+}
+
+function initWindow() {
+	doAjaxCall(ElementInfoURL(),function(info){
+		elName = info['attrs']['name'];
+		document.getElementById('heading').innerHTML = "Element "+elName+": RexTFV Status";
+		document.getElementById('element_name').innerHTML = elName;
+		
+		doAjaxCall(TopologyInfoURL(info['topology']),function(topinfo){
+			document.getElementById('topology_name').innerHTML = topinfo['attrs']['name'];
+		});
+		
+		if (info['attrs']['rextfv_supported']) {		
+			updateRexTFVStatus();
+			setInterval(updateRexTFVStatus, 1200);
+		} else
+			document.getElementById('rextfv_readable').innerHTML = "not supported";
+	})
+}
+
+document.onload = initWindow();
+
+</script>
+
+</body>
+</html>

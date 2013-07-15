@@ -38,3 +38,7 @@ def console_novnc(api, request, id): #@ReservedAssignment
 	info=api.element_info(id)
 	top=api.topology_info(info["topology"])
 	return render_to_response("element/console_novnc.html", {'info': info, 'top': top})
+		
+@wrap_rpc
+def rextfv_status(api, request, id): #@ReservedAssignment
+	return render_to_response("element/rextfv_status.html", {'id': id})

@@ -1977,6 +1977,16 @@ var Element = Component.extend({
 		this.children = [];
 		this.connection = null;
 	},
+	rextfvStatusSupport: function() {
+		if ('rextfv_supported' in this.data.attrs)
+			return this.data.attrs.rextfv_supported
+		else
+			return false;
+	},
+	openRexTFVStatusWindow: function() {
+		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "rextfv-status"});
+	},
 	onDragged: function() {
 		if (!this.isMovable()) return;
 		this.modify_value("_pos", this.getPos());
@@ -2408,6 +2418,13 @@ var createElementMenu = function(obj) {
 				icon:"rextfv",
 				callback: function(){
 					obj.uploadRexTFV();
+				}
+			} : null,
+			"rextfv_status": obj.rextfvStatusSupport() ? {
+				name:"RexTFV Status",
+				icon:"rextfv",
+				callback: function(){
+					obj.openRexTFVStatusWindow();
 				}
 			} : null,
 			"sep3": "---",
