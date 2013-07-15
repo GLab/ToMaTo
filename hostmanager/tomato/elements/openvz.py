@@ -351,6 +351,13 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		else:
 			return None
 
+	def _nlxtp_make_readable(self):
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+	
+	def _nlxtp_make_writeable(self):
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
 
 
 
