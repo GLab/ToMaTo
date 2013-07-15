@@ -58,6 +58,9 @@ class VMElement(elements.Element):
 		abstract = True
 		
 	def updateInfo(self):
+		if self.element is None:
+			return
+		
 		self.element.updateInfo()
 		#calculate next update time:
 		time_passed = self.next_sync - self.rextfv_last_started
