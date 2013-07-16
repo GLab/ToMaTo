@@ -36,8 +36,8 @@ class VMElement(elements.Element):
 	profile = models.ForeignKey(r_profile.Profile, null=True)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(r_template.Template, null=True)
-	rextfv_last_started = models.IntegerField(default = 0)
-	next_sync = models.IntegerField(default = 0)
+	rextfv_last_started = models.FloatField(default = 0)
+	next_sync = models.FloatField(default = 0)
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
