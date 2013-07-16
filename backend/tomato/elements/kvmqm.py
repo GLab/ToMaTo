@@ -42,7 +42,6 @@ class KVMQM_Interface(generic.VMInterface):
 
 def syncRexTFV():
 	for e in KVMQM.objects.filter(next_sync__lte=int(time.time())).filter(~Q(next_sync = 0)):
-		print e
 		e.updateInfo()
 rextfv_syncer = util.RepeatedTimer(1, syncRexTFV)
 #don't forget to start/stop this in tomato/__init__.py
