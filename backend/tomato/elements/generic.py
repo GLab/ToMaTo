@@ -63,9 +63,9 @@ class VMElement(elements.Element):
 		
 		self.element.updateInfo()
 		#calculate next update time:
-		time_passed = int(time.time) - self.rextfv_last_started
+		time_passed = int(time.time()) - self.rextfv_last_started
 		if time_passed < 60*60*24: #less than one day
-			self.next_sync = int(time.time) + (time_passed / 24)
+			self.next_sync = int(time.time()) + (time_passed / 24)
 		else:
 			self.next_sync = 0
 		self.save()
