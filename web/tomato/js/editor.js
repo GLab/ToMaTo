@@ -2193,6 +2193,7 @@ var Element = Component.extend({
 			// iframe.load will be triggered a moment after iframe is added to body
 			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
 			iframe.load(function(){ 
+				iframe.off("load");
 				iframe.load(function(){
 					iframe.remove();
 					info.hide();
