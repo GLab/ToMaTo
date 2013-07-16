@@ -83,7 +83,8 @@ function updateRexTFVStatus() {
 function initWindow() {
 	doAjaxCall(ElementInfoURL(),function(info){
 		elName = info['attrs']['name'];
-		document.getElementById('heading').innerHTML = "Element "+elName+": RexTFV Status";
+		document.title = "Element "+elName+": RexTFV Status";
+		document.getElementById('heading').innerHTML = document.title;
 		document.getElementById('element_name').innerHTML = elName;
 		
 		doAjaxCall(TopologyInfoURL(info['topology']),function(topinfo){
