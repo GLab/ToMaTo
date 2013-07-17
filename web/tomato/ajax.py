@@ -115,8 +115,9 @@ def account_info(api, name):
 
 @wrap_json
 def element_rextfv_status(api, id): #@ReservedAssignment
-	info=api.element_info(id)['attrs']
-	res = {}
+	d = api.element_info(id)
+	info=d['attrs']
+	res = {'state': d['state']}
 	if 'rextfv_max_size' in info:
 		res['rextfv_max_size'] = info['rextfv_max_size']
 	if 'rextfv_run_status' in info:
