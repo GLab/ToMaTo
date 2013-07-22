@@ -15,17 +15,17 @@ Changes:
  .
    * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
 Checksums-Sha1: 
- 889f37a5724c078b57c94c7e54858bc64855a584 825 nlxtp-guest-modules_0.1-1.dsc
+ 7d37bb5298b1ae78977f1cc48d06a37bfa991579 825 nlxtp-guest-modules_0.1-1.dsc
  181cea83cd6d360fea87bffcca043b2638eeb231 2700 nlxtp-guest-modules_0.1.orig.tar.gz
- 2c9ca9ed2f8a50c15cb8bed58f52647654fbc7c5 3248 nlxtp-guest-modules_0.1-1.diff.gz
- 6bdb984b4e551a91b6ff27561a83a9bb111d12b2 4438 nlxtp-guest-modules_0.1-1_all.deb
+ b5674ef449ad851e0eea4473c64e0cf74217856c 3218 nlxtp-guest-modules_0.1-1.diff.gz
+ 235f155ada2cc9552df07b3ecfe9b02235071fc2 4440 nlxtp-guest-modules_0.1-1_all.deb
 Checksums-Sha256: 
- bd73eb75dc4d9c6f04d1ed420561d3d2693810f7c8dcb0f7729793a247a8498a 825 nlxtp-guest-modules_0.1-1.dsc
+ 6e171582733d58c954fce551162b4369494980cd7705c4b015c0b12cf8412bf0 825 nlxtp-guest-modules_0.1-1.dsc
  18b67a060e184ac24ab41361d541524a48a738037483bc446a0ef4dc541d8330 2700 nlxtp-guest-modules_0.1.orig.tar.gz
- 2c550509753568269d179d3348108b1cff4f70078a9d2ba9535827aee6691494 3248 nlxtp-guest-modules_0.1-1.diff.gz
- 9e5a8da817e648ff89bf932ec1263153169ee7266f5821952e6e451e528d3691 4438 nlxtp-guest-modules_0.1-1_all.deb
+ e70aa551c08e99a8b94c46e34c1dd0051e5042529bd76a0591212cc146adccf5 3218 nlxtp-guest-modules_0.1-1.diff.gz
+ f2dd52b77d8f41b7d94eef73aab6a9e40f88a29ee44d5dda61c61a672501ec78 4440 nlxtp-guest-modules_0.1-1_all.deb
 Files: 
- fb3defb40922c240c0deb7bc1030926d 825 unknown extra nlxtp-guest-modules_0.1-1.dsc
+ 901d17c9353ac2e1f3ab10913ff7b580 825 unknown extra nlxtp-guest-modules_0.1-1.dsc
  99d210607273c8c4b79923832c5da36b 2700 unknown extra nlxtp-guest-modules_0.1.orig.tar.gz
- 0612f77799ad63fdd1747ccaa7800b62 3248 unknown extra nlxtp-guest-modules_0.1-1.diff.gz
- 55dcf6ef1aacc97400a19c1830afff3a 4438 unknown extra nlxtp-guest-modules_0.1-1_all.deb
+ aa111de3b707ce429914b250006995fe 3218 unknown extra nlxtp-guest-modules_0.1-1.diff.gz
+ aba1e3c71fd5c5910bbbe180c76ecbbe 4440 unknown extra nlxtp-guest-modules_0.1-1_all.deb
