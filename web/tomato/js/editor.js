@@ -2197,7 +2197,7 @@ var Element = Component.extend({
 	},
 	downloadRexTFV: function() {
 		this.action("rextfv_download_grant", {callback: function(el, res) {
-			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '.tar.gz';
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '_rextfv.tar.gz';
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
