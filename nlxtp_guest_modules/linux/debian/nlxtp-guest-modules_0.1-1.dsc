@@ -9,10 +9,10 @@ Standards-Version: 3.8.4
 Build-Depends: debhelper (>= 7.0.50~)
 Checksums-Sha1: 
  181cea83cd6d360fea87bffcca043b2638eeb231 2700 nlxtp-guest-modules_0.1.orig.tar.gz
- b5674ef449ad851e0eea4473c64e0cf74217856c 3218 nlxtp-guest-modules_0.1-1.diff.gz
+ 5d7a188a1903cced266f25ffa2312ef5abecf4be 3175 nlxtp-guest-modules_0.1-1.diff.gz
 Checksums-Sha256: 
  18b67a060e184ac24ab41361d541524a48a738037483bc446a0ef4dc541d8330 2700 nlxtp-guest-modules_0.1.orig.tar.gz
- e70aa551c08e99a8b94c46e34c1dd0051e5042529bd76a0591212cc146adccf5 3218 nlxtp-guest-modules_0.1-1.diff.gz
+ 0d84fbea94e56f5898dec66f09ab3a301bb63af5a19b5fbf97d9f10f992a9cc0 3175 nlxtp-guest-modules_0.1-1.diff.gz
 Files: 
  99d210607273c8c4b79923832c5da36b 2700 nlxtp-guest-modules_0.1.orig.tar.gz
- aa111de3b707ce429914b250006995fe 3218 nlxtp-guest-modules_0.1-1.diff.gz
+ 655e8e1e48645cc6e5524503eb8cb8e3 3175 nlxtp-guest-modules_0.1-1.diff.gz
