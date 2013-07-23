@@ -61,22 +61,26 @@ function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
 
 function updateRexTFVStatus() {
 	doAjaxCall(RexTFVStatusURL(),function(rextfv_status){
-		s = rextfv_status['rextfv_run_status'];
-		if (s['readable']) {
-			document.getElementById('rextfv_readable').innerHTML = "Yes"
-			document.getElementById('overall_status_p').innerHTML = '<h2>RexTFV Status:</h2><div id="overall_status"></div>';	
-			if (s['isAlive'])
-				document.getElementById('overall_status').innerHTML='<div class="status running">Running</div>'
-			else
-				if (s['done'])
-					document.getElementById('overall_status').innerHTML='<div class="status done">Finished</div>'
+		if (rextfv_status['state'] == 'started') {
+			s = rextfv_status['rextfv_run_status'];
+			if (s['readable']) {
+				document.getElementById('rextfv_readable').innerHTML = "Yes"
+				document.getElementById('overall_status_p').innerHTML = '<h2>RexTFV Status:</h2><div id="overall_status"></div>';	
+				if (s['isAlive'])
+					document.getElementById('overall_status').innerHTML='<div class="status running">Running</div>'
 				else
-					document.getElementById('overall_status').innerHTML='<div class="status crashed">Unknown.<br/>Probably Crashed.</div>';
+					if (s['done'])
+						document.getElementById('overall_status').innerHTML='<div class="status done">Finished</div>'
+					else
+						document.getElementById('overall_status').innerHTML='<div class="status crashed">Unknown.<br/>Probably Crashed.</div>';
+			} else {
+				document.getElementById('rextfv_readable').innerHTML = "No (no information)";
+				document.getElementById('overall_status_p').innerHTML = "";	
+			}
 		} else {
-			document.getElementById('rextfv_readable').innerHTML = "No";
-			document.getElementById('overall_status_p').innerHTML = "";	
+			document.getElementById('rextfv_readable').innerHTML = "No (element stopped)";
+			document.getElementById('overall_status_p').innerHTML = "";
 		}
-		
 	})
 }
 
