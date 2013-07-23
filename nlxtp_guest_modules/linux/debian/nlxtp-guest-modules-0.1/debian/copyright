@@ -4,25 +4,23 @@ This work was packaged for Debian by:
 
 It was downloaded from:
 
-    <url://example.com>
+    http://github.com/dswd/ToMaTo
 
 Upstream Author(s):
 
-    <put author's name and email here>
-    <likewise for another author>
+    Integrated Communication Systems Lab, University of Kaiserslautern
 
 Copyright:
 
-    <Copyright (C) YYYY Firstname Lastname>
-    <likewise for another author>
+    <Copyright (C) 2010-2013 University of Kaiserslautern>
 
 License:
 
-    <Put the license of the package here indented by 4 spaces>
+    GNU Affero GPL version 3
 
 The Debian packaging is:
 
-    Copyright (C) 2013 root <t_gerhard10@cs.uni-kl.de>
+    Copyright (C) 2013 Tim Gerhard <t_gerhard10@cs.uni-kl.de>
 
 # Please chose a license for your packaging work. If the program you package
 # uses a mainstream license, using the same license is the safest choice.
