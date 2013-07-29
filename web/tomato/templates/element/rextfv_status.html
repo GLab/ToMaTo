@@ -55,10 +55,12 @@ function doAjaxCall(url,successfn) {
 	xmlhttp.send();
 }
 
+//urls for ajax calls
 function ElementInfoURL(){return "/ajax/element/"+ElementID+"/info"}
 function RexTFVStatusURL(){return "/ajax/element/"+ElementID+"/rextfv_status"}
 function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
 
+//auto-refresh process. timer initited by initWindow().
 function updateRexTFVStatus() {
 	doAjaxCall(RexTFVStatusURL(),function(rextfv_status){
 		if (rextfv_status['state'] == 'started') {
@@ -84,6 +86,7 @@ function updateRexTFVStatus() {
 	})
 }
 
+//called once. fetchis permanent info and starts the auto refresh process.
 function initWindow() {
 	doAjaxCall(ElementInfoURL(),function(info){
 		elName = info['attrs']['name'];
@@ -95,7 +98,7 @@ function initWindow() {
 			document.getElementById('topology_name').innerHTML = topinfo['attrs']['name'];
 		});
 		
-		if (info['attrs']['rextfv_supported']) {		
+		if (info['attrs']['rextfv_supported']) {//this shouldn't be called by the user if not rextfv_supported. However, this can be called by url.
 			updateRexTFVStatus();
 			setInterval(updateRexTFVStatus, 1200);
 		} else
