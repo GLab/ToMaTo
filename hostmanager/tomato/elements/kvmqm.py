@@ -462,22 +462,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		return self.dataPath(os.path.join("nlxtp","device"))
 		
 		
-	def _nlxtp_make_readable(self):
+	def _nlxtp_make_readable(self): #mount device file readonly
 		self._nlxtp_create_device_and_mountpoint()
 		cmd.run(["mount", "-o", "loop,ro", self._nlxtp_device_filename(), self._nlxtp_path("")])
 	
-	def _nlxtp_make_writeable(self):
+	def _nlxtp_make_writeable(self): #mount device file r/w
 		self._nlxtp_create_device_and_mountpoint()
 		cmd.run(["mount", "-o", "loop,sync", self._nlxtp_device_filename(), self._nlxtp_path("")])
 	
-	def _nlxtp_close(self):
+	def _nlxtp_close(self): #unmount device file
 		cmd.run(["umount", self._nlxtp_path("")])
 		
-	def _nlxtp_create_device_and_mountpoint(self):
+	def _nlxtp_create_device_and_mountpoint(self): #if device file or mount point do not exist: create
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
 		if not os.path.exists(self._nlxtp_device_filename()):
-			cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), "524288" ])
+			cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), "524288" ]) # size (last argument) depends on nlxtp_max_size
 	
 	
 		

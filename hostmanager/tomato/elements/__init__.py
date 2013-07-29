@@ -321,10 +321,10 @@ class RexTFVElement:
 	
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
-		"""returns a join of the nlXTP path and the filename"""
+		"""returns a join of the nlXTP path and filename"""
 		return
 	
-	#overwrite if needed:
+	#overwrite if needed. called at the beginning/end of each nlxtp function.:
 	def _nlxtp_make_readable(self):
 		return
 	
@@ -334,7 +334,7 @@ class RexTFVElement:
 	def _nlxtp_close(self):
 		return
 
-	#deletes all contents in the nlXTP folder.
+	#deletes all contents in the nlXTP folder. If needed inside a "with lock" block, call the function below.
 	def _clear_nlxtp_contents(self):
 		with self.lock:
 			self._nlxtp_make_writeable()
@@ -342,7 +342,7 @@ class RexTFVElement:
 				self._clear_nlxtp_contents__already_mounted()
 			finally:
 				self._nlxtp_close()
-	def _clear_nlxtp_contents__already_mounted(self):
+	def _clear_nlxtp_contents__already_mounted(self): #same function, but does not use the lock mechanism. Use if called inside a "with lock"
 		folder = self._nlxtp_path("")
 		if os.path.exists(folder):
 			for the_file in os.listdir(folder):
@@ -381,6 +381,7 @@ class RexTFVElement:
 				self._nlxtp_close()
 		
 	#nlXTP's running status.
+	#conventions: status path: exec_status, done-file: exec_status/done, running-file: exec_status/running
 	def _rextfv_run_status(self):
 		with self.lock:
 			self._nlxtp_make_readable()
@@ -406,7 +407,7 @@ class RexTFVElement:
 			finally:
 				self._nlxtp_close()
 		
-	def info(self):
+	def info(self): #call to get rextfv information. merge with root of Element.info().
 		if self.state == ST_CREATED:
 			return {}
 		res = {'attrs':{}}
