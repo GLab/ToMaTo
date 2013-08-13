@@ -358,6 +358,8 @@ class Host(attributes.Mixin, models.Model):
 			problems.append("Memory full") 
 		if self.componentErrors > 2:
 			problems.append("Multiple component errors")
+		if "dumps" in hi and hi["dumps"] >= 100:
+			problems.append("Lots of error dumps")
 		return problems
 	
 	def checkProblems(self):

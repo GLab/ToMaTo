@@ -18,6 +18,7 @@
 import os, shutil
 from django.db import models
 
+from .. import dump
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, util, logging #@UnresolvedImport
 from ..lib.decorators import *
@@ -103,7 +104,21 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		if not os.path.exists(self.dataPath()):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
+
+	def dump(self, **kwargs):
+		try:
+			data = self.info()
+		except Exception, ex:
+			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
+		dump.dump(connection=data, **kwargs)
 		
+	def dumpException(self, **kwargs):
+		try:
+			data = self.info()
+		except Exception, ex:
+			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
+		dump.dumpException(connection=data, **kwargs)
+
 	def getUsageStatistics(self):
 		if not self.usageStatistics:
 			# only happens during object creation or when object creation failed
@@ -198,6 +213,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		try:
 			for key, value in attrs.iteritems():
 				getattr(self, "modify_%s" % key)(value)
+		except Exception, exc:
+			if fault.unexpectedError(exc):
+				self.dumpException()
 		finally:
 			self.setBusy(False)				
 		self.save()
@@ -236,6 +254,9 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		self.setBusy(True)
 		try:
 			res = getattr(self, "action_%s" % action)(**params)
+		except Exception, exc:
+			if fault.unexpectedError(exc):
+				self.dumpException()
 		finally:
 			self.setBusy(False)
 		self.save()

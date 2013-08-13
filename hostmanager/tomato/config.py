@@ -47,6 +47,11 @@ already include configuration entries for logrotate that have to be adapted
 if this setting is changed.  
 """
 
+DUMP_DIR = "/var/log/tomato/dumps"
+"""
+The location of the dump files thar are created when unexpected errors occur.
+"""
+
 DATA_DIR = "/var/lib/tomato"
 """
 The main data storage location for ToMaTo. All of the data, including templates
