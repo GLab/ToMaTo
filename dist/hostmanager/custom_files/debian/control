@@ -1,0 +1,17 @@
+Source: tomato-hostmanager
+Section: misc
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+
+Package: tomato-hostmanager
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, 
+ python-django (>=1.2), python-django-south (>=0.7), python-psycopg2, postgresql, dbconfig-common,
+ daemon, bittorrent, openssl, ssl-cert
+Recommends: ${misc:Depends}, pve-qemu-kvm, vzctl, vzdump, bridge-utils, iproute,
+ tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.5), vtun,
+ logrotate
+Description: ToMaTo hostmanager
+ ToMaTo hostmanager
