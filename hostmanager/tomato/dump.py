@@ -58,7 +58,7 @@ def dumpException(**kwargs):
 	dump(caller=False, exception={"type": type_.__name__, "value": str(value), "trace": trace}, **kwargs)
 
 def getCount():
-	len(os.listdir(config.DUMP_DIR))
+	return len(os.listdir(config.DUMP_DIR))
 	
 def init():
 	if not os.path.exists(config.DUMP_DIR):

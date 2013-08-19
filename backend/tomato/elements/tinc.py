@@ -63,7 +63,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 	
 	def onChildAdded(self, iface):
 		if self.state == ST_PREPARED:
-			iface.action("create", {})
+			iface.action("prepare", {})
 			self._crossConnect()
 
 	def onChildRemoved(self, iface):

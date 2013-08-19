@@ -34,7 +34,7 @@
 	    <th>Distribution</th>
 	    <th>Python</th>
 	    <th>Kernel</th>
-    <th stddev_column_class="good_high">Info age</th>
+    	<th stddev_column_class="good_high">Info age</th>
 	    <th stddev_column_class="good_high">Uptime</th>
 	    <th stddev_column_class="good_low good_high">Time diff</th>
 	    <th stddev_column_class="good_low">Query time</th>
@@ -50,6 +50,7 @@
 	    <th stddev_column_class="good_high">Free [data]</th>
 	    <th stddev_column_class="good_high">Element types</th>
 	    <th stddev_column_class="good_high">Connection types</th>
+	    <th stddev_column_class="good_low">Dumps</th>
 	    
 	    {% if hostManager %}
 	    	<th />
@@ -102,6 +103,12 @@
 			<td title="{{host.element_types|join:", "}}">{{host.element_types|length}}</td>
 			<td title="{{host.connection_types|join:", "}}">{{host.connection_types|length}}</td>
 			
+			{% if host.host_info %}
+		    	<td>{{host.host_info.dumps}}</td>
+			{% else %}		    	
+			    <td>???</td>
+			{% endif %}
+		    
 		    {% if hostManager %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
@@ -143,6 +150,8 @@
 	  	col += 4;
 	  	columnShow(table, col+0, document.getElementById('features').checked);
 	  	columnShow(table, col+1, document.getElementById('features').checked);
+	  	col += 2;
+	  	columnShow(table, col+0, important);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');
