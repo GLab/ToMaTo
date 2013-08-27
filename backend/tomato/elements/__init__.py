@@ -210,7 +210,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		fault.check(action in self.CUSTOM_ACTIONS, "Unsupported action for %s: %s", (self.type, action))
 		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
 	
-	def action(self, action, params):
+	def action(self, action, params={}):
 		"""
 		Executes the action with the given parameters. This method first
 		checks if the action is possible using checkAction() and then executes

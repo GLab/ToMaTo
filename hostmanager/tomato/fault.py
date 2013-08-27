@@ -42,10 +42,12 @@ def raise_(text, code=UNKNOWN_ERROR):
 def new(text, code=UNKNOWN_ERROR):
 	return Fault(code, text)
 
+def unexpectedError(error):
+	return not isinstance(error, Fault) or error.faultCode in [UNKNOWN_ERROR, INTERNAL_ERROR]
+
 def errors_add(error, trace):
-	if isinstance(error, Fault) and UNKNOWN_ERROR < error.faultCode < INTERNAL_ERROR:
-		return
-	print trace
+	if unexpectedError(error):
+		print trace
 
 def wrap(exc):
 	if isinstance(exc, Fault):

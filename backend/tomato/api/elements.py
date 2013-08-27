@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def _getElement(id_):
+    id_ = int(id_)
     el = elements.get(id_)
     fault.check(el, "Element with id #%d does not exist", id_)
     return el

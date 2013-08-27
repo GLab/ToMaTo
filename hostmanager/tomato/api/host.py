@@ -142,7 +142,8 @@ def host_info():
             },
         },
         "uptime": hostinfo.uptime(),
-        "system": hostinfo.system()
+        "system": hostinfo.system(),
+        "dumps": dump.getCount()
     }
 
 def host_capabilities():
@@ -261,6 +262,6 @@ def host_capabilities():
 def host_ping(dst):
     return net.ping(dst)
 
-from .. import elements, connections, resources, config, fault, currentUser
+from .. import dump, elements, connections, resources, config, fault, currentUser
 from ..lib.cmd import hostinfo, net #@UnresolvedImport
 import time

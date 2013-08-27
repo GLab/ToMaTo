@@ -1,11 +1,19 @@
 PACKAGE=tomato-backend
-_VERSION=2.4.3
-_SUBVERSION=
+ORIG_SOURCE=../../backend
 
-include ../common.mk
+.PHONY: default
+default: build
 
-$(ORIG):
-	mkdir -p tmp/$(DIR)
-	rsync -a ../../backend/ tmp/$(DIR) --filter 'merge files'
-	(cd tmp; tar -czf ../$(ORIG) $(DIR); cd ..)
-	rm -rf tmp
+.PHONY: version
+version:
+	(cd custom_files; dch -n; cd ..)
+	
+.PHONY: build
+build: clean
+	rsync -aL $(ORIG_SOURCE)/ $(PACKAGE)/ --filter 'merge files'
+	rsync -a custom_files/ $(PACKAGE)/
+	(cd $(PACKAGE); debuild -b -us -uc; cd ..)
+	
+.PHONY: clean
+clean:
+	rm -rf $(PACKAGE)

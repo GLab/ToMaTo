@@ -19,6 +19,7 @@ from .. import fault, connections, currentUser #@UnusedImport
 from elements import _getElement
 
 def _getConnection(id_):
+    id_ = int(id_)
     con = connections.get(id_)
     fault.check(con, "Connection with id #%d does not exist", id_)
     return con

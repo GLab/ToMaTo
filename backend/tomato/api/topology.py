@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 def _getTopology(id_):
+	id_ = int(id_)
 	top = topology.get(id_)
 	fault.check(top, "Topology with id #%d does not exist", id_)
 	return top

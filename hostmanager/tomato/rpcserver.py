@@ -20,7 +20,7 @@
 import xmlrpclib, sys, traceback
 
 from . import config, login, api
-from . import fault, currentUser
+from . import dump, fault, currentUser
 from .lib import db, util, rpc, logging #@UnresolvedImport
 
 def logCall(function, args, kwargs):
@@ -35,6 +35,7 @@ def handleError(error, function, args, kwargs):
 			# not a wrong API call
 			fault.errors_add(error, traceback.format_exc())
 		logging.logException()
+		dump.dumpException()
 		return fault.wrap(error)
 
 @db.commit_after

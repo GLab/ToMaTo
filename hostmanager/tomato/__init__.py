@@ -56,7 +56,7 @@ from models import *
 	
 import api
 
-from . import lib, resources, accounting, rpcserver, elements #@UnresolvedImport
+from . import dump, lib, resources, accounting, rpcserver, elements #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import logging #@UnresolvedImport
 
@@ -64,6 +64,7 @@ stopped = threading.Event()
 
 def start():
 	logging.openDefault(config.LOG_FILE)
+	dump.init()
 	db_migrate()
 	resources.init()
 	accounting.task.start() #@UndefinedVariable
