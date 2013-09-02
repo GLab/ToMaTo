@@ -57,9 +57,6 @@ def _display(api, info, tut_id, tut_stat):
 			'user':{	'title': "User",
 						'description':"no destroy/prepare, no topology changes, no permission changes"},
 						
-			'external':{'title': "[no permission]",
-						'description':"no access at all"},
-						
 			'null':{	'title': "[no permission]",
 						'description':"no access at all"}
 		}
