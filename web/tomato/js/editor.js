@@ -719,12 +719,14 @@ var PermissionsWindow = Window.extend({
 		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
 		for (perm in this.permissions) {
 			if (perm != "null")
-				sel.append($('<option value="'+perm+'">'+this.permissions[perm].title+'</option>'));
+				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
+		sel.change(function(){ sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
 		sel.val(permission);
+		sel.change();
 		td_perm.append(sel);
 		
 		var saveButton = $('<img src="/img/tick.png" title="save" style="cursor:pointer;" />');
@@ -735,7 +737,7 @@ var PermissionsWindow = Window.extend({
 		});
 		td_buttons.append(saveButton);
 		
-		var cancelButton = $('<img src="/img/eraser16.png" title="save" style="cursor:pointer;" />');
+		var cancelButton = $('<img src="/img/eraser16.png" title="cancel" style="cursor:pointer;" />');
 		cancelButton.click(function(){
 			t.backToView(username);
 		});
@@ -775,7 +777,8 @@ var PermissionsWindow = Window.extend({
 		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
+			permission = $('<span title="'+this.permissions[permission_var].description+'">'+this.permissions[permission_var].title+'</span>');
+			//permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
@@ -786,13 +789,13 @@ var PermissionsWindow = Window.extend({
 		td_perm.append(permission);
 		
 		if (username != this.options.ownUserId) {
-			var editButton = $('<img src="/img/pencil.png" title="change" style="cursor:pointer;" />');
+			var editButton = $('<img src="/img/pencil.png" title="edit permissions" style="cursor:pointer;" />');
 			editButton.click(function(){
 				t.makePermissionEditable(username);
 			});
 			td_buttons.append(editButton);
 			
-			var removeButton = $('<img src="/img/cross.png" title="change" style="cursor:pointer;" />');
+			var removeButton = $('<img src="/img/cross.png" title="remove from list" style="cursor:pointer;" />');
 			removeButton.click(function(){
 				t.setPermission(username,null);
 			})
