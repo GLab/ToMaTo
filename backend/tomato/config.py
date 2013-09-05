@@ -17,63 +17,71 @@
 
 import os
 
-CERTIFICATE = "../cli/admin.pem"
+CERTIFICATE = "/etc/tomato/backend.pem"
 
-TEMPLATE_PATH = "templates"
-TRACKER_PORT = 8001
+TEMPLATE_PATH = "/var/lib/tomato/templates"
+TRACKER_PORT = 8002
 BITTORRENT_RESTART = 60 * 30
 
-AUTH = [
-	{
-		"name": "",
-		"provider": "internal",
-		"options": {
-				"password_timeout": None,
-				"account_timeout": 60*60*24*365*5, # 5 years
-				"allow_registration": True,
-				"default_flags": ["over_quota", "new_account"]
-		}
-	},
-	{
-		"name": "guest",
-		"provider": "dict",
-		"options": {
-				"users": {
-						"guest": "guest"
-				},
-				"flags": ["no_topology_create", "over_quota"],
-				"hash": None
-		}
-	}
-]
+AUTH = []
 
-LOG_FILE = "main.log"
-
-SERVER = [
-	{
-		"PORT": 8000,
-		"SSL": False,
-		"SSL_OPTS": {
-			"cert_file" : "/etc/tomato/server.cert",
-			"key_file": "/etc/tomato/server.cert",
-		}
+AUTH.append ({
+	"name": "",
+	"provider": "internal",
+	"options": {
+			"password_timeout": None,
+			"account_timeout": 60*60*24*365*5, # 5 years
+			"allow_registration": True,
+			"default_flags": ["over_quota", "new_account"]
 	}
-]
+})
 
-DATABASES = {
-	'default': {
-		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': 'db.sqlite'
+AUTH.append ({
+	"name": "guest",
+	"provider": "dict",
+	"options": {
+			"users": {
+					"guest": "guest"
+			},
+			"flags": ["no_topology_create", "over_quota"],
+			"hash": None
 	}
+})
+
+LOG_FILE = "/var/log/tomato/main.log"
+
+SERVER = []
+
+SERVER.append({
+	"PORT": 8000,
+	"SSL": True,
+	"SSL_OPTS": {
+		"cert_file" : "/etc/tomato/server.cert",
+		"key_file": "/etc/tomato/server.cert",
+	}
+})
+
+SERVER.append({
+	"PORT": 8001,
+	"SSL": False
+})
+
+DATABASES = {}
+
+DATABASES['default'] = {
+	'ENGINE': 'django.db.backends.sqlite3',
+	'NAME': 'db.sqlite'
 }
 
 HOST_UPDATE_INTERVAL = 60
 RESOURCES_SYNC_INTERVAL = 600
 
-EMAIL_FROM = "ToMaTo backend <schwerdel@informatik.uni-kl.de>"
+EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
-EMAIL_HOST = "smtp.uni-kl.de"
+
+# Django mail config
+#EMAIL_HOST = ""
 #EMAIL_PORT =
 #EMAIL_HOST_USER =
 #EMAIL_HOST_PASSWORD =

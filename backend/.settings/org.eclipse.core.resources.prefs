@@ -13,7 +13,6 @@ encoding//tomato/api/resources.py=utf-8
 encoding//tomato/api/topology.py=utf-8
 encoding//tomato/auth/__init__.py=utf-8
 encoding//tomato/auth/dict_provider.py=utf-8
-encoding//tomato/auth/dummy_provider.py=utf-8
 encoding//tomato/auth/htpasswd_provider.py=utf-8
 encoding//tomato/auth/internal_provider.py=utf-8
 encoding//tomato/auth/ldap_provider.py=utf-8

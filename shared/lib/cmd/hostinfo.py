@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from . import run, CommandError, getDpkgVersionStr 
-import platform
+import platform, os, time
+from ... import config
 
 _cache = {}
 def cached(fn):
@@ -77,3 +78,32 @@ def diskinfo(path):
 	out = run(["df", path])
 	data = out.splitlines()[1].split()
 	return {"total": data[1], "used": data[2], "free": data[3]}
+
+def problems():
+	problems = []
+	disk = diskproblems(config.DATA_DIR)
+	if disk:
+		problems.append("Disk: %s" % disk)
+	return problems
+
+def diskproblems(path):
+	testFile = os.path.join(path, ".test")
+	testData = str(time.time())
+	match = False
+	try:
+		with open(testFile, "w") as fp:
+			fp.write(testData)
+	except:
+		return "Failed to write"
+	try:
+		with open(testFile, "r") as fp:
+			match = fp.read() == testData
+	except:
+		return "Failed to read"
+	try:
+		os.unlink(testFile)
+	except:
+		return "Failed to delete"
+	if not match:
+		return "Read wrong data"
+	return None

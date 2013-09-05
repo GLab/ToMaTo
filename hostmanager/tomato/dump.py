@@ -1,5 +1,5 @@
 from datetime import datetime
-import sys, os, gzip, time, json, traceback
+import sys, os, time, json, traceback
 
 from .lib.cmd import run, CommandError #@UnresolvedImport
 from . import config
@@ -43,14 +43,14 @@ def getCaller(self):
 def dump(timestamp=None, caller=None, **kwargs):
 	if not timestamp:
 		timestamp = time.time()
-	filename = os.path.join(config.DUMP_DIR, "%s.json.gz" % timestamp)
+	filename = os.path.join(config.DUMP_DIR, "%s.json" % timestamp)
 	timestr = datetime.strftime(datetime.fromtimestamp(timestamp), "%Y-%m-%dT%H:%M:%S.%f%z")
 	data = {"environment": getEnv(), "timestamp": timestr}
 	if not caller is False:
 		data["caller"] = getCaller()
 	data.update(kwargs)
-	with gzip.open(filename, "wb") as f:
-		json.dump(data, f)
+	with open(filename, "w") as f:
+		json.dump(data, f, indent=2)
 
 def dumpException(**kwargs):
 	(type_, value, trace) = sys.exc_info()

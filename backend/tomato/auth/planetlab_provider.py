@@ -54,12 +54,17 @@ class Provider(AuthProvider):
 					sites = [s["abbreviated_name"] for s in api.GetSites(auth, persons[0]["site_ids"])]
 					if not (set(self.site_filter) & set(sites)):
 						return False
+				flags = []
+				accept = False
 				roles = persons[0]["roles"]
 				for role in roles:
 					if role in self.roles:
-						flags = self.roles[role]
-						return User.create(name=username, email=username, flags=flags)
-				return False
+						flags.append(self.roles[role])
+						accept = True
+				if accept:
+					return User.create(name=username, email=username, flags=flags)
+				else:
+					return False
 			except Exception, errormessage:
 				return False
 		except Exception, errormessage:

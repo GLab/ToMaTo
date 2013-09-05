@@ -106,6 +106,16 @@ class UDP_Tunnel(elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.port = self.getResource("port")
 
+	def _getState(self):
+		return ST_STARTED if self.pid and process.exists(self.pid) else ST_CREATED
+
+	def _checkState(self):
+		savedState = self.state
+		realState = self._getState()
+		if savedState != realState:
+			self.setState(realState, True)
+		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+
 	def _interfaceName(self):
 		return "stap%d" % self.id
 
@@ -146,6 +156,7 @@ class UDP_Tunnel(elements.Element):
 		return info
 
 	def updateUsage(self, usage, data):
+		self._checkState()
 		if self.state == ST_CREATED:
 			return
 		usage.memory = process.memory(self.pid)

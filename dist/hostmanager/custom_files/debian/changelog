@@ -1,3 +1,21 @@
+tomato-hostmanager (0.0.32) unstable; urgency=low
+
+  * Fixed problem with crashed udp tunnels
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Aug 2013 14:51:04 +0200
+
+tomato-hostmanager (0.0.31) unstable; urgency=low
+
+  * Fixed dumps
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Aug 2013 14:34:37 +0200
+
+tomato-hostmanager (0.0.30) unstable; urgency=low
+
+  * Checking for disk problems
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 21 Aug 2013 12:45:11 +0200
+
 tomato-hostmanager (0.0.29) unstable; urgency=low
 
   * Using --ram parameter for openvz

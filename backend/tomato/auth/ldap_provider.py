@@ -44,7 +44,7 @@ class Provider(AuthProvider):
 		bind_pw: The password of the bind user
 		identity_base: The base path for all identities
 		groups: A dict of group/flags pairs where the user DN must be part of 
-		  the group to match and get thne flags.
+		  the group to match and get the flags.
 	"""
 	def parseOptions(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, groups, **kwargs):
 		self.server_uri = server_uri

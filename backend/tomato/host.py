@@ -360,6 +360,8 @@ class Host(attributes.Mixin, models.Model):
 			problems.append("Multiple component errors")
 		if "dumps" in hi and hi["dumps"] >= 100:
 			problems.append("Lots of error dumps")
+		if "problems" in hi:
+			problems += hi["problems"]
 		return problems
 	
 	def checkProblems(self):
@@ -399,6 +401,7 @@ class Host(attributes.Mixin, models.Model):
 			"site": self.site.name,
 			"enabled": self.enabled,
 			"problems": self.problems(),
+			"component_errors": self.componentErrors,
 			"load": self.getLoad(),
 			"element_types": self.elementTypes.keys(),
 			"connection_types": self.connectionTypes.keys(),
@@ -438,6 +441,7 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.address, id=self.num)
 				self.remove()
+			self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -453,6 +457,7 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.address, id=self.num)
 				self.remove()
+			self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()

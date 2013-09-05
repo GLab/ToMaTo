@@ -23,6 +23,7 @@
 	<input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label>
 	<input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label>
 	<input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label>
+	<input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label>
 
 	<table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
 	  <tr>
@@ -50,6 +51,7 @@
 	    <th stddev_column_class="good_high">Free [data]</th>
 	    <th stddev_column_class="good_high">Element types</th>
 	    <th stddev_column_class="good_high">Connection types</th>
+	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
 	    
 	    {% if hostManager %}
@@ -103,6 +105,7 @@
 			<td title="{{host.element_types|join:", "}}">{{host.element_types|length}}</td>
 			<td title="{{host.connection_types|join:", "}}">{{host.connection_types|length}}</td>
 			
+	    	<td>{{host.component_errors}}</td>
 			{% if host.host_info %}
 		    	<td>{{host.host_info.dumps}}</td>
 			{% else %}		    	
@@ -151,7 +154,8 @@
 	  	columnShow(table, col+0, document.getElementById('features').checked);
 	  	columnShow(table, col+1, document.getElementById('features').checked);
 	  	col += 2;
-	  	columnShow(table, col+0, important);
+	  	columnShow(table, col+0, document.getElementById('debug').checked);
+	  	columnShow(table, col+1, document.getElementById('debug').checked);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');

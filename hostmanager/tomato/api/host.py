@@ -94,7 +94,7 @@ def host_info():
           "version": "0.0.6"
         }, 
         "time": 1351253635.747105, 
-        "fileserver_port": 8888, 
+        "fileserver_port": 8888,
         "resources": {
           "cpus_present": {
             "count": 8, 
@@ -132,6 +132,7 @@ def host_info():
         "fileserver_port": config.FILESERVER["PORT"],
         "address": config.PUBLIC_ADDRESS,
         "time": time.time(),
+        "problems": hostinfo.problems(),
         "resources": {
             "cpus_present": hostinfo.cpuinfo(),
             "memory": hostinfo.meminfo(),
