@@ -5,9 +5,9 @@
 *.changes
 *.orig.*
 *.svn
-backend/tomato-backend-*
+backend/tomato-backend*
 hostmanager/tomato-hostmanager*
-web/tomato-web-*
+web/tomato-web*
 meta/tomato-host-proxmox/debian/files
 meta/tomato-host-proxmox/debian/tomato-host-proxmox
 cli/tomato-cli-*

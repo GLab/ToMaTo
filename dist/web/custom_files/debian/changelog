@@ -1,0 +1,146 @@
+tomato-web (3.0) stable; urgency=low
+
+  * Release of version 3
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 17 Sep 2013 09:37:22 +0200
+
+tomato-web (2.4.3) stable; urgency=low
+
+  * Some bugfixes         
+  * Packet capturing filter help
+  * Exposed migrate capability to admins
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 02 May 2012 11:12:07 +0200
+
+tomato-web (2.4.2) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 29 Feb 2012 10:29:11 +0100
+
+tomato-web (2.4.1) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 30 Jan 2012 10:04:01 +0100
+
+tomato-web (2.4) stable; urgency=low
+
+  * Unicode support
+  * Automatic repair functionality
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Nov 2011 10:25:13 +0100
+
+tomato-web (2.3.2) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 27 Sep 2011 14:12:30 +0200
+
+tomato-web (2.3) stable; urgency=low
+
+  * Improved overall error tolerance
+  * Multithreaded backend
+  * Improved resource reservation
+  * Hostserver partial download support
+  * Checking uploaded images
+  * List ordering
+  * Shared SSH connections
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 19 Sep 2011 13:43:15 +0200
+
+tomato-web (2.2.2) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 31 Aug 2011 15:36:17 +0200
+
+tomato-web (2.2.1) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 30 Aug 2011 17:05:39 +0200
+
+tomato-web (2.2) stable; urgency=low
+
+  * More stability, error tolerance and robustnes
+  * Usage of TC instead of dummynet
+  * External VPN access
+  * Advanced topology import/export
+  * Notes on all topology elements
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 30 Aug 2011 13:26:51 +0200
+
+tomato-web (2.1.2) stable; urgency=low
+
+  * Bugfix release
+  * Fixes several bugs found after releasing 2.1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 11 Aug 2011 11:57:53 +0200
+
+tomato-web (2.1.1) stable; urgency=low
+
+  * Bugfix release
+  * Fixes bugs found in the template system directly after releasing 2.1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 10 Aug 2011 11:50:14 +0200
+
+tomato-web (2.1) stable; urgency=low
+
+  * Improved stability and error detection
+  * Programmable repy devices
+  * Improved packet capturing
+  * Timeout notification
+  * Improved template management 
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 10 Aug 2011 10:29:14 +0200
+
+tomato-web (2.0.2) stable; urgency=low
+
+  * Bugfix release
+  * Fixes several bugs found after 2.0.1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 27 Jul 2011 15:11:48 +0200
+
+tomato-web (2.0.0) stable; urgency=low
+
+  * More stability and robustnes
+  * New authentication system
+  * New task system with parallel tasks
+  * More stability and robustness
+  * New database: postgres
+  * New configuration system
+  * Some API changes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 08 Jul 2011 12:43:33 +0200
+
+tomato-web (1.4.1) stable; urgency=low
+
+  * Version bump to 1.4.1
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 05 May 2011 10:54:47 +0200
+
+tomato-web (1.4) stable; urgency=low
+
+  * Version bump to 1.4
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 28 Apr 2011 10:03:43 +0200
+
+tomato-web (1.3.1) stable; urgency=low
+
+  * Version bump to 1.3.1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 07 Apr 2011 11:19:34 +0200
+
+tomato-web (1.3) stable; urgency=low
+
+  * Version bump to 1.3
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 28 Mar 2011 11:54:11 +0200
+
+tomato-web (0.1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Mar 2011 09:29:46 +0100

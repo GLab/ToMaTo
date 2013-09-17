@@ -15,5 +15,14 @@ server_port = "8000"
 # The Realm to use for HTTP authentification
 server_httprealm="G-Lab ToMaTo"
 
+# The username and password of the guest user that is used to create new accounts
+guest_username="guest"
+guest_password="guest"
+
+# Some URLs to external sites
+project_url="http://dswd.github.com/ToMaTo/%s"
+help_url="http://github.com/dswd/ToMaTo/wiki/%s"
+ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
+
 # Template for displaying physical links
 map="generic"

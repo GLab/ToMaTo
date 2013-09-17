@@ -1,0 +1,30 @@
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+
+    DocumentRoot /usr/share/tomato/web/tomato
+
+    <Location "/">
+	SetHandler python-program
+	PythonHandler django.core.handlers.modpython
+	SetEnv DJANGO_SETTINGS_MODULE tomato.settings
+	PythonOption django.root ''
+	PythonDebug On
+	PythonPath "['/usr/share/tomato/web'] + sys.path"
+    </Location>
+
+    <Location "/static">
+	SetHandler none
+    </Location>
+
+    <Location "/style">
+        SetHandler none
+    </Location>
+
+    <Location "/img">
+        SetHandler none
+    </Location>
+
+    <Location "/js">
+        SetHandler none
+    </Location>
+</VirtualHost>

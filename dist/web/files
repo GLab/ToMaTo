@@ -1,5 +1,6 @@
 - .*
-+ */
-+ web.conf.example
 - *~
 - *.pyc
++ tomato
++ web.conf.example
+- /*

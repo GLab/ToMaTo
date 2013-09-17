@@ -69,8 +69,8 @@ SERVER.append({
 DATABASES = {}
 
 DATABASES['default'] = {
-	'ENGINE': 'django.db.backends.sqlite3',
-	'NAME': 'db.sqlite'
+	'ENGINE': 'django.db.backends.postgresql_psycopg2',
+	'NAME': 'tomato'
 }
 
 HOST_UPDATE_INTERVAL = 60
