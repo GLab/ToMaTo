@@ -45,8 +45,8 @@ def remove(path, recursive=False):
 	else:
 		os.remove(path)
 	
-def extractArchive(src, dst):
-	run(["tar", "-axf", src, "-C", dst])
+def extractArchive(src, dst, opts=[]):
+	run(["tar", "-axf", src] + opts + ["-C", dst])
 
 def diskspace(path):
 	out = run(["du", "-sb", path])

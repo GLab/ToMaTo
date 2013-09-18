@@ -215,3 +215,14 @@ def filterDict(filter_, dict_):
 def utcDatetimeToTimestamp(date):
 	td = date - datetime.datetime(1970, 1, 1)
 	return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
+# Similar to update, but works recursively if a dict would overwrite a dict. e.g. join({a:{b:c}},{a:{d:e}}) == {a:{b:c,d:e}}
+def joinDicts(dictA,dictB):
+	if (type(dictA) is dict) and (type(dictB) is dict):
+		A = dictA.copy()
+		for i in dictB.keys():
+			if (i in A) and (type(A[i]) is dict) and (type(dictB[i]) is dict):
+				A[i] = joinDicts(A[i],dictB[i])
+			else:
+				A[i] = dictB[i]
+	return A

@@ -75,6 +75,8 @@ def start():
 	auth.init()
 	resources.init()
 	host.task.start() #@UndefinedVariable
+	elements.kvmqm.rextfv_syncer.start() #@UndefinedVariable
+	elements.openvz.rextfv_syncer.start() #@UndefinedVariable
 	accounting.task.start() #@UndefinedVariable
 	auth.task.start() #@UndefinedVariable
 	link.task.start() #@UndefinedVariable
@@ -104,6 +106,8 @@ def stop(*args):
 	rpcserver.stop()
 	auth.task.stop() #@UndefinedVariable
 	host.task.stop() #@UndefinedVariable
+	elements.kvmqm.rextfv_syncer.stop() #@UndefinedVariable
+	elements.openvz.rextfv_syncer.stop() #@UndefinedVariable
 	link.task.stop() #@UndefinedVariable
 	accounting.task.stop() #@UndefinedVariable
 	bittorrent.task.stop() #@UndefinedVariable

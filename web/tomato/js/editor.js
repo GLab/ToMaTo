@@ -719,12 +719,14 @@ var PermissionsWindow = Window.extend({
 		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
 		for (perm in this.permissions) {
 			if (perm != "null")
-				sel.append($('<option value="'+perm+'">'+this.permissions[perm].title+'</option>'));
+				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
 		}
+		sel.change(function(){ sel[0].title = t.permissions[sel[0].value].description });
 		
 		if ((permission == undefined) || (permission == null))
 			permission = 'null';
 		sel.val(permission);
+		sel.change();
 		td_perm.append(sel);
 		
 		var saveButton = $('<img src="/img/tick.png" title="save" style="cursor:pointer;" />');
@@ -735,7 +737,7 @@ var PermissionsWindow = Window.extend({
 		});
 		td_buttons.append(saveButton);
 		
-		var cancelButton = $('<img src="/img/eraser16.png" title="save" style="cursor:pointer;" />');
+		var cancelButton = $('<img src="/img/eraser16.png" title="cancel" style="cursor:pointer;" />');
 		cancelButton.click(function(){
 			t.backToView(username);
 		});
@@ -775,7 +777,8 @@ var PermissionsWindow = Window.extend({
 		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
 		if (username in this.topology.data.permissions) {
 			permission_var = this.topology.data.permissions[username];
-			permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
+			permission = $('<span title="'+this.permissions[permission_var].description+'">'+this.permissions[permission_var].title+'</span>');
+			//permission = $('<div class="hoverdescription">'+this.permissions[permission_var].title+'<div class="hiddenbox"><p>'+ this.permissions[permission_var].description +'</p></div></div>')
 		}
 		
 		var td_perm = this.userListFinder[username].td_perm;
@@ -786,13 +789,13 @@ var PermissionsWindow = Window.extend({
 		td_perm.append(permission);
 		
 		if (username != this.options.ownUserId) {
-			var editButton = $('<img src="/img/pencil.png" title="change" style="cursor:pointer;" />');
+			var editButton = $('<img src="/img/pencil.png" title="edit permissions" style="cursor:pointer;" />');
 			editButton.click(function(){
 				t.makePermissionEditable(username);
 			});
 			td_buttons.append(editButton);
 			
-			var removeButton = $('<img src="/img/cross.png" title="change" style="cursor:pointer;" />');
+			var removeButton = $('<img src="/img/cross.png" title="remove from list" style="cursor:pointer;" />');
 			removeButton.click(function(){
 				t.setPermission(username,null);
 			})
@@ -1977,6 +1980,16 @@ var Element = Component.extend({
 		this.children = [];
 		this.connection = null;
 	},
+	rextfvStatusSupport: function() {
+		if ('rextfv_supported' in this.data.attrs)
+			return this.data.attrs.rextfv_supported
+		else
+			return false;
+	},
+	openRexTFVStatusWindow: function() {
+		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
+		this.triggerEvent({operation: "rextfv-status"});
+	},
 	onDragged: function() {
 		if (!this.isMovable()) return;
 		this.modify_value("_pos", this.getPos());
@@ -2185,6 +2198,13 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	downloadRexTFV: function() {
+		this.action("rextfv_download_grant", {callback: function(el, res) {
+			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '_rextfv.tar.gz';
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			window.location.href = url;
+		}})
+	},
 	uploadImage: function() {
 		this.action("upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
@@ -2200,6 +2220,27 @@ var Element = Component.extend({
 					el.action("upload_use");
 				});
 				var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
+			});
+			iframe.css("display", "none");
+			$('body').append(iframe);
+			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+		}});
+	},
+	uploadRexTFV: function() {
+		this.action("rextfv_upload_grant", {callback: function(el, res) {
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var div = $('<div/>');
+			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
+			// iframe.load will be triggered a moment after iframe is added to body
+			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
+			iframe.load(function(){ 
+				iframe.off("load");
+				iframe.load(function(){
+					iframe.remove();
+					info.hide();
+					el.action("rextfv_upload_use");
+				});
+				var info = new Window({title: "Upload RexTFV Archive", content: div, autoShow: true, width:300});
 			});
 			iframe.css("display", "none");
 			$('body').append(iframe);
@@ -2368,6 +2409,27 @@ var createElementMenu = function(obj) {
 				icon:"drive",
 				callback: function(){
 					obj.uploadImage();
+				}
+			} : null,
+			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+				name:"Download RexTFV Archive",
+				icon:"rextfv",
+				callback: function(){
+					obj.downloadRexTFV();
+				}
+			} : null,
+			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+				name:"Upload RexTFV Archive",
+				icon:"rextfv",
+				callback: function(){
+					obj.uploadRexTFV();
+				}
+			} : null,
+			"rextfv_status": obj.rextfvStatusSupport() ? {
+				name:"RexTFV Status",
+				icon:"rextfv",
+				callback: function(){
+					obj.openRexTFVStatusWindow();
 				}
 			} : null,
 			"sep3": "---",

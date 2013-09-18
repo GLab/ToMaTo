@@ -21,6 +21,7 @@ from .. import connections, elements, resources, fault, config
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.util import joinDicts #@UnresolvedImport
 
 DOC="""
 Element type: ``openvz``
@@ -117,8 +118,13 @@ Actions:
 		 server (can be requested via host_info) and grant is the grant.
 		 The uploaded file can be used as the VM image with the upload_use 
 		 action. 
+	*rextfv_upload_grant*, callable in state *prepared* 
+		same as upload_grant, but for use with rextfv_upload_use.
 	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
+	*rextfv_upload_use*, callable in state *prepared*
+		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
+		Deletes old content from this directory.
 	*download_grant*, callable in state *prepared*
 		 Create/update a grant to download the image for the VM. The created 
 		 grant will be available as an attribute called download_grant. The
@@ -127,13 +133,15 @@ Actions:
 		 http://server:port/grant/download where server is the address of this
 		 host, port is the fileserver port of this server (can be requested via
 		 host_info) and grant is the grant.
+	*rextfv_download_grant*, callable in state *prepared* or *started*
+		same as download_grant, but only for the nlXTP folder
 """
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-class OpenVZ(elements.Element):
+class OpenVZ(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -170,9 +178,13 @@ class OpenVZ(elements.Element):
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
 		"upload_grant": [ST_PREPARED],
+		"rextfv_upload_grant": [ST_PREPARED,ST_STARTED],
 		"upload_use": [ST_PREPARED],
+		"rextfv_upload_use": [ST_PREPARED,ST_STARTED],
 		"download_grant": [ST_PREPARED],
+		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		"execute": [ST_STARTED],
+		"info": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -215,7 +227,10 @@ class OpenVZ(elements.Element):
 		#template: None, default template
 	
 	def _imagePath(self):
-		return "/var/lib/vz/private/%d" % self.vmid
+		if self.state == ST_CREATED:
+			return "/var/lib/vz/root/%d" % self.vmid
+		else:
+			return "/var/lib/vz/private/%d" % self.vmid
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
@@ -328,6 +343,24 @@ class OpenVZ(elements.Element):
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
 		fault.check("0/0" in res, "Image contents not owned by root")
+
+	#The nlXTP directory
+	def _nlxtp_path(self,filename):
+		if self.state != ST_CREATED:
+			return os.path.join(self._imagePath(),"mnt","nlXTP",filename)
+		else:
+			return None
+
+	def _nlxtp_make_readable(self): #if directory does not exist: create it
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+	def _nlxtp_make_writeable(self):
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+
+
+
+
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -448,17 +481,32 @@ class OpenVZ(elements.Element):
 
 	def action_upload_grant(self):
 		return fileserver.addGrant(self.dataPath("uploaded.tar.gz"), fileserver.ACTION_UPLOAD)
+	
+	def action_rextfv_upload_grant(self):
+		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.tar.gz"))
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
+	def action_rextfv_upload_use(self):
+		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+		if self.state == ST_STARTED:
+			try:
+				self._execute("nlXTP_mon --background")
+			except cmd.CommandError:
+				return "Error executing nlXTP_mon"
+		
 	def action_download_grant(self):
 		if os.path.exists(self.dataPath("download.tar.gz")):
 			os.remove(self.dataPath("download.tar.gz"))
 		cmd.run(["tar", "--numeric-owner", "-czvf", self.dataPath("download.tar.gz"), "-C", self._imagePath(), "."])
 		return fileserver.addGrant(self.dataPath("download.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	def action_rextfv_download_grant(self):
+		self._create_rextfv_archive(self.dataPath("rextfv.tar.gz"))
+		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
 		return self._execute(cmd)
@@ -468,6 +516,7 @@ class OpenVZ(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
+		info = joinDicts(info, elements.RexTFVElement.info(self))
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		return info
 
@@ -712,6 +761,7 @@ def register(): #pragma: no cover
 		return
 	elements.TYPES[OpenVZ.TYPE] = OpenVZ
 	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
+
 
 if not config.MAINTENANCE:
 	perlVersion = cmd.getDpkgVersion("perl")

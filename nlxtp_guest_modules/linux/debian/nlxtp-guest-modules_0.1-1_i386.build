@@ -1,0 +1,108 @@
+ dpkg-buildpackage -rfakeroot -D -us -uc
+dpkg-buildpackage: warning: using a gain-root-command while being root
+dpkg-buildpackage: export CFLAGS from dpkg-buildflags (origin: vendor): -g -O2
+dpkg-buildpackage: export CPPFLAGS from dpkg-buildflags (origin: vendor): 
+dpkg-buildpackage: export CXXFLAGS from dpkg-buildflags (origin: vendor): -g -O2
+dpkg-buildpackage: export FFLAGS from dpkg-buildflags (origin: vendor): -g -O2
+dpkg-buildpackage: export LDFLAGS from dpkg-buildflags (origin: vendor): 
+dpkg-buildpackage: source package nlxtp-guest-modules
+dpkg-buildpackage: source version 0.1-1
+dpkg-buildpackage: source changed by root <t_gerhard10@cs.uni-kl.de>
+ dpkg-source --before-build nlxtp-guest-modules-0.1
+dpkg-buildpackage: host architecture i386
+ fakeroot debian/rules clean
+dh clean 
+   dh_testdir
+   dh_auto_clean
+   dh_clean
+ dpkg-source -b nlxtp-guest-modules-0.1
+dpkg-source: info: using source format `1.0'
+dpkg-source: info: building nlxtp-guest-modules using existing nlxtp-guest-modules_0.1.orig.tar.gz
+dpkg-source: info: building nlxtp-guest-modules in nlxtp-guest-modules_0.1-1.diff.gz
+dpkg-source: warning: executable mode 0755 of 'initscript/nlXTP_daemon' will not be represented in diff
+dpkg-source: warning: newly created empty file 'debian/docs' will not be represented in diff
+dpkg-source: warning: ignoring deletion of file nlXTP_daemon.initscript
+dpkg-source: warning: the diff modifies the following upstream files: 
+ initscript/nlXTP_daemon
+ nlXTP_mon
+dpkg-source: info: use the '3.0 (quilt)' format to have separate and documented changes to upstream files, see dpkg-source(1)
+dpkg-source: info: building nlxtp-guest-modules in nlxtp-guest-modules_0.1-1.dsc
+ debian/rules build
+dh build 
+   dh_testdir
+   dh_auto_configure
+   dh_auto_build
+   dh_auto_test
+ fakeroot debian/rules binary
+dh binary 
+   dh_testroot
+   dh_prep
+   dh_installdirs
+   dh_auto_install
+   dh_install
+   dh_installdocs
+   dh_installchangelogs
+   dh_installexamples
+   dh_installman
+   dh_installcatalogs
+   dh_installcron
+   dh_installdebconf
+   dh_installemacsen
+   dh_installifupdown
+   dh_installinfo
+   dh_pysupport
+   dh_installinit
+   dh_installmenu
+   dh_installmime
+   dh_installmodules
+   dh_installlogcheck
+   dh_installlogrotate
+   dh_installpam
+   dh_installppp
+   dh_installudev
+   dh_installwm
+   dh_installxfonts
+   dh_bugfiles
+   dh_lintian
+   dh_gconf
+   dh_icons
+   dh_perl
+   dh_usrlocal
+   dh_link
+   dh_compress
+   dh_fixperms
+   dh_strip
+   dh_makeshlibs
+   dh_shlibdeps
+   dh_installdeb
+   dh_gencontrol
+   dh_md5sums
+   dh_builddeb
+dpkg-deb: building package `nlxtp-guest-modules' in `../nlxtp-guest-modules_0.1-1_all.deb'.
+ dpkg-genchanges  >../nlxtp-guest-modules_0.1-1_i386.changes
+dpkg-genchanges: including full source code in upload
+ dpkg-source --after-build nlxtp-guest-modules-0.1
+dpkg-buildpackage: full upload (original source is included)
+Now running lintian...
+warning: lintian's authors do not recommend running it with root privileges!
+W: nlxtp-guest-modules source: maintainer-script-lacks-debhelper-token debian/postrm
+W: nlxtp-guest-modules source: dh-make-template-in-source debian/nlxtp-guest-modules.doc-base.EX
+W: nlxtp-guest-modules source: maintainer-script-lacks-debhelper-token debian/postinst
+W: nlxtp-guest-modules source: maintainer-not-full-name root
+W: nlxtp-guest-modules source: superfluous-clutter-in-homepage <insert the upstream URL, if relevant>
+W: nlxtp-guest-modules source: bad-homepage <insert the upstream URL, if relevant>
+W: nlxtp-guest-modules source: ancient-standards-version 3.8.4 (current is 3.9.1)
+E: nlxtp-guest-modules: description-is-dh_make-template
+W: nlxtp-guest-modules: maintainer-not-full-name root
+E: nlxtp-guest-modules: section-is-dh_make-template
+W: nlxtp-guest-modules: superfluous-clutter-in-homepage <insert the upstream URL, if relevant>
+W: nlxtp-guest-modules: bad-homepage <insert the upstream URL, if relevant>
+W: nlxtp-guest-modules: binary-without-manpage usr/bin/nlXTP_daemon
+W: nlxtp-guest-modules: binary-without-manpage usr/bin/nlXTP_mon
+W: nlxtp-guest-modules: maintainer-script-ignores-errors postrm
+W: nlxtp-guest-modules: maintainer-script-ignores-errors postinst
+W: nlxtp-guest-modules: new-package-should-close-itp-bug
+W: nlxtp-guest-modules: wrong-bug-number-in-closes l3:#nnnn
+E: nlxtp-guest-modules: copyright-contains-dh_make-todo-boilerplate
+W: nlxtp-guest-modules: readme-debian-contains-debmake-template
+Finished running lintian.

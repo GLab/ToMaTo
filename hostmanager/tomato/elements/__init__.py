@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, time
+import os, shutil, time, os.path, datetime, abc
 from django.db import models
+from threading import RLock,Lock
 
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
-from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
 from .. import config, dump
+from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -314,7 +316,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		return dict([(key, value.info()) for (key, value) in cls.CAP_ATTRS.iteritems()])
 					
 	def info(self):
-		return {
+		res = {
 			"id": self.id,
 			"type": self.type,
 			"parent": self.parent.id if self.hasParent() else None,
@@ -324,9 +326,120 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 		}
+		res['attrs']['rextfv_supported'] = False
+		return res
 		
 	def updateUsage(self, usage, data):
 		pass
+	
+	def action_info(self):
+		return self.info()
+	
+	
+class RexTFVElement:
+	
+	lock = Lock()
+	rextfv_max_size = None
+	
+	@abc.abstractmethod
+	def _nlxtp_path(self, filename):
+		"""returns a join of the nlXTP path and filename"""
+		return
+	
+	#overwrite if needed. called at the beginning/end of each nlxtp function.:
+	def _nlxtp_make_readable(self):
+		return
+	
+	def _nlxtp_make_writeable(self):
+		return
+	
+	def _nlxtp_close(self):
+		return
+
+	#deletes all contents in the nlXTP folder. If needed inside a "with lock" block, call the function below.
+	def _clear_nlxtp_contents(self):
+		with self.lock:
+			self._nlxtp_make_writeable()
+			try:
+				self._clear_nlxtp_contents__already_mounted()
+			finally:
+				self._nlxtp_close()
+	def _clear_nlxtp_contents__already_mounted(self): #same function, but does not use the lock mechanism. Use if called inside a "with lock"
+		folder = self._nlxtp_path("")
+		if os.path.exists(folder):
+			for the_file in os.listdir(folder):
+				file_path = os.path.join(folder, the_file)
+				if os.path.isfile(file_path):
+					os.remove(file_path)
+				else:
+					shutil.rmtree(file_path)
+		
+		
+	#copies the contents of the archive "filename" to the nlXTP directory.
+	def _use_rextfv_archive(self, filename, keepOldFiles=False):
+		with self.lock:
+			self._nlxtp_make_writeable()
+			try:
+				fault.check(os.path.exists(filename), "No file has been uploaded")
+				if self.rextfv_max_size is not None:
+					fault.check(os.path.getsize(filename) < self.rextfv_max_size, "uploaded file is too large")
+				if not keepOldFiles:
+					self._clear_nlxtp_contents__already_mounted()
+				if not os.path.exists(self._nlxtp_path("")):
+					os.makedirs(self._nlxtp_path(""))
+				path.extractArchive(filename, self._nlxtp_path(""), ["--no-same-owner"])
+			finally:
+				self._nlxtp_close()
+		
+	#copies the contents of the nlXTP directory to the archive.
+	def _create_rextfv_archive(self, filename):
+		with self.lock:
+			self._nlxtp_make_readable()
+			try:
+				if os.path.exists(filename):
+					os.remove(filename)
+				cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+			finally:
+				self._nlxtp_close()
+		
+	#nlXTP's running status.
+	#conventions: status path: exec_status, done-file: exec_status/done, running-file: exec_status/running
+	def _rextfv_run_status(self):
+		with self.lock:
+			self._nlxtp_make_readable()
+			try:
+				if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
+					status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
+					status_isAlive = False
+					if not status_done:
+						status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
+						if status_isAlive:
+							f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
+							s = f.read()
+							f.close()
+							timeout=10*60 #seconds
+							now = datetime.datetime.now()
+							alive = datetime.datetime.fromtimestamp(int(s))
+							diff = now-alive
+							if (diff.seconds>timeout) or (diff.days>0):
+								status_isAlive = False
+					return {"readable": True, "done": status_done, "isAlive": status_isAlive}
+				else:
+					return {"readable": False}
+			finally:
+				self._nlxtp_close()
+		
+	def info(self): #call to get rextfv information. merge with root of Element.info().
+		if self.state == ST_CREATED:
+			return {}
+		res = {'attrs':{}}
+		res['attrs']['rextfv_run_status'] = self._rextfv_run_status()
+		res['attrs']['rextfv_max_size'] = self.rextfv_max_size
+		res['attrs']['rextfv_supported'] = True
+		return res
+
+	
+	
 
 def get(id_, **kwargs):
 	try:
@@ -363,3 +476,4 @@ timeoutTask = util.RepeatedTimer(3600, checkTimeout)
 
 from .. import fault, currentUser, resources
 		
+

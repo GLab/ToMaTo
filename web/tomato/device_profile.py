@@ -81,9 +81,11 @@ def add(api, request):
             if formData['diskspace'] and (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
             if formData['cpus']:
-                data['cpus'] = formData['cpus']
+                data['cpus'] = formData['cpus'] 
             if formData['restricted']:
                 data['restricted'] = formData['restricted']
+            else:
+                data['restricted'] = False
             
             api.resource_create('profile',data)
            
@@ -148,6 +150,8 @@ def edit(api, request, res_id=None):
                 data['diskspace'] = formData['diskspace']
             if formData['restricted']:
                 data['restricted'] = formData['restricted']
+            else:
+                data['restricted'] = False
             
             if api.resource_info(formData['res_id'])['type'] == 'profile':
                 api.resource_modify(formData["res_id"],data)

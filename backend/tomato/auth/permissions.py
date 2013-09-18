@@ -28,6 +28,21 @@ class Role:
 	
 	RANKING=[owner, manager, user, null]
 	
+def role_descriptions():
+	return {
+		Role.owner:	{	'title': "Owner",
+						'description':"full topology control, permission changes, topology removal"},
+					
+		Role.manager:{	'title': "Manager",
+						'description':"full topology control, no topology delete, no permission changes"},
+					
+		Role.user:	{	'title': "User",
+						'description':"no destroy/prepare, no topology changes, no permission changes"},
+					
+		Role.null:	{	'title': "[no permission]",
+						'description':"no access at all"}
+	}
+	
 
 class Permissions(models.Model):
 

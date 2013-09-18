@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from ..auth import permissions
+
 def _getTopology(id_):
 	id_ = int(id_)
 	top = topology.get(id_)
@@ -31,6 +33,9 @@ def topology_create():
 	  topology id that is needed for further manipulation of that object.
 	"""
 	return topology.create().info()
+
+def topology_permissions():
+	return permissions.role_descriptions()
 
 def topology_remove(id): #@ReservedAssignment
 	"""

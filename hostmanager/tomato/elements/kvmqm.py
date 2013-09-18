@@ -22,6 +22,7 @@ from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.util import joinDicts #@UnresolvedImport
 
 DOC="""
 Element type: ``kvmqm``
@@ -117,8 +118,13 @@ Actions:
 	 	server (can be requested via host_info) and grant is the grant.
 	 	The uploaded file can be used as the VM image with the upload_use 
 	 	action. 
+	*rextfv_upload_grant*, callable in state *prepared* 
+		same as upload_grant, but for use with rextfv_upload_use.
 	*upload_use*, callable in state *prepared*
 		Uses a previously uploaded file as the image of the VM. 
+	*rextfv_upload_use*, callable in state *prepared*
+		Uses a previously uploaded archive to insert into the VM's nlXTP directory.
+		Deletes old content from this directory.
 	*download_grant*, callable in state *prepared*
 	 	Create/update a grant to download the image for the VM. The created 
 	 	grant will be available as an attribute called download_grant. The
@@ -127,13 +133,15 @@ Actions:
 	 	http://server:port/grant/download where server is the address of this
 	 	host, port is the fileserver port of this server (can be requested via
 	 	host_info) and grant is the grant.
+	*rextfv_download_grant*, callable in state *prepared* or *started*
+		same as download_grant, but only for the nlXTP folder
 """
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
-class KVMQM(elements.Element):
+class KVMQM(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
 	websocket_port_attr = Attr("websocket_port", type="int")
@@ -157,6 +165,8 @@ class KVMQM(elements.Element):
 	usbtablet = usbtablet_attr.attribute()
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
 	template = models.ForeignKey(template.Template, null=True)
+	
+	rextfv_max_size = 512000 # depends on _nlxtp_create_device_and_mountpoint.
 
 	TYPE = "kvmqm"
 	CAP_ACTIONS = {
@@ -165,8 +175,11 @@ class KVMQM(elements.Element):
 		"start": [ST_PREPARED],
 		"stop": [ST_STARTED],
 		"upload_grant": [ST_PREPARED],
+		"rextfv_upload_grant": [ST_PREPARED],
 		"upload_use": [ST_PREPARED],
+		"rextfv_upload_use": [ST_PREPARED],
 		"download_grant": [ST_PREPARED],
+		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -352,7 +365,7 @@ class KVMQM(elements.Element):
 		self._checkState()
 		self._qm("create")
 		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
-		args = "-vnc unix:%s,password" % self._vncPath() #disable vnc tls as most clients dont support that
+		args = "-vnc unix:%s,password -fda %s" % (self._vncPath(),self._nlxtp_device_filename()) #disable vnc tls as most clients dont support that; add nlxtp device
 		if qmVersion < [1, 1]:
 			args += " -chardev socket,id=qmp,path=%s,server,nowait -mon chardev=qmp,mode=control" % self._controlPath()
 		self._qm("set", ["-args", args])  
@@ -417,21 +430,63 @@ class KVMQM(elements.Element):
 		
 	def action_upload_grant(self):
 		return fileserver.addGrant(self._imagePath("uploaded.qcow2"), fileserver.ACTION_UPLOAD)
+	
+	def action_rextfv_upload_grant(self):
+		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
 		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
 		self._checkImage(self._imagePath("uploaded.qcow2"))
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
+	def action_rextfv_upload_use(self):
+		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
+		
 	def action_download_grant(self):
 		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
 		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	def action_rextfv_download_grant(self):
+		self._create_rextfv_archive(self.dataPath("rextfv.tar.gz"))
+		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
+	
+	
+	
+
+	#The nlXTP directory
+	def _nlxtp_path(self,filename):
+		return self.dataPath(os.path.join("nlxtp","mountpoint",filename))
+		
+	#The nlXTP device
+	def _nlxtp_device_filename(self):
+		return self.dataPath(os.path.join("nlxtp","device"))
+		
+		
+	def _nlxtp_make_readable(self): #mount device file readonly
+		self._nlxtp_create_device_and_mountpoint()
+		cmd.run(["mount", "-o", "loop,ro", self._nlxtp_device_filename(), self._nlxtp_path("")])
+	
+	def _nlxtp_make_writeable(self): #mount device file r/w
+		self._nlxtp_create_device_and_mountpoint()
+		cmd.run(["mount", "-o", "loop,sync", self._nlxtp_device_filename(), self._nlxtp_path("")])
+	
+	def _nlxtp_close(self): #unmount device file
+		cmd.run(["umount", self._nlxtp_path("")])
+		
+	def _nlxtp_create_device_and_mountpoint(self): #if device file or mount point do not exist: create
+		if not os.path.exists(self._nlxtp_path("")):
+			os.makedirs(self._nlxtp_path(""))
+		if not os.path.exists(self._nlxtp_device_filename()):
+			cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), "524288" ]) # size (last argument) depends on nlxtp_max_size
+	
+	
 		
 	def upcast(self):
 		return self
 
 	def info(self):
 		info = elements.Element.info(self)
+		info = joinDicts(info, elements.RexTFVElement.info(self))
 		info["attrs"]["template"] = self.template.upcast().name if self.template else None
 		return info
 

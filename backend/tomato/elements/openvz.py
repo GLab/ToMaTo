@@ -16,7 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import elements
-import generic
+import generic, time
+from ..lib import util #@UnresolvedImport
+from django.db.models import Q
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
@@ -37,6 +39,12 @@ class OpenVZ_Interface(generic.VMInterface):
 	class Meta:
 		db_table = "tomato_openvz_interface"
 		app_label = 'tomato'
+		
+def syncRexTFV():
+	for e in OpenVZ.objects.filter(next_sync__lte=int(time.time())).filter(~Q(next_sync = 0)):
+		e.updateInfo()		
+rextfv_syncer = util.RepeatedTimer(1, syncRexTFV)
+#don't forget to start/stop this in tomato/__init__.py
 	
 elements.TYPES[OpenVZ.TYPE] = OpenVZ
 elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface

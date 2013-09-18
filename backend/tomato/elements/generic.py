@@ -19,6 +19,8 @@ from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib import util #@UnresolvedImport
+import time
 
 ST_CREATED = "created"
 ST_PREPARED = "prepared"
@@ -34,6 +36,8 @@ class VMElement(elements.Element):
 	profile = models.ForeignKey(r_profile.Profile, null=True)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(r_template.Template, null=True)
+	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
+	next_sync = models.FloatField(default = 0) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -52,6 +56,25 @@ class VMElement(elements.Element):
 	
 	class Meta:
 		abstract = True
+		
+	#for every subclass which supports RexTFV: create a process which calls this function on every VMElement with  0 != next_sync < time.time()
+	def updateInfo(self): 
+		if self.element is None:
+			return
+		
+		self.element.updateInfo()
+		#calculate next update time:
+		time_passed = int(time.time()) - self.rextfv_last_started
+		if time_passed < 60*60*24: #less than one day
+			self.next_sync = int(time.time()) + (time_passed / 24)
+		else: # more than one day:
+			self.next_sync = 0 #the process which syncs everything every hour is still active. do nothing more.
+		self.save()
+		
+	def set_rextfv_last_started(self):
+		self.rextfv_last_started = int(time.time())
+		self.next_sync = int(time.time()) + 1 #make sure sync process will be triggered.
+		self.save()
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
@@ -60,6 +83,8 @@ class VMElement(elements.Element):
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()
+		self.rextfv_last_started = 0
+		self.next_sync = 0
 		#template: None, default template
 	
 	def mainElement(self):
@@ -163,12 +188,16 @@ class VMElement(elements.Element):
 			self.element.remove()
 			self.element = None
 		self.setState(ST_CREATED, True)
-
+		
+	def after_rextfv_upload_use(self):
+		self.set_rextfv_last_started()
+		
 	def after_stop(self):
 		for ch in self.getChildren():
 			ch.triggerConnectionStop()
 	
 	def after_start(self):
+		self.set_rextfv_last_started()
 		for ch in self.getChildren():
 			ch.triggerConnectionStart()
 
