@@ -216,6 +216,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		except Exception, exc:
 			if fault.unexpectedError(exc):
 				self.dumpException()
+			raise				
 		finally:
 			self.setBusy(False)				
 		self.save()
@@ -257,6 +258,7 @@ class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Mod
 		except Exception, exc:
 			if fault.unexpectedError(exc):
 				self.dumpException()
+			raise
 		finally:
 			self.setBusy(False)
 		self.save()

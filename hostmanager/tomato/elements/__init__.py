@@ -182,6 +182,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		except Exception, exc:
 			if fault.unexpectedError(exc):
 				self.dumpException()
+			raise
 		finally:
 			self.setBusy(False)				
 		self.save()
@@ -223,6 +224,7 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 		except Exception, exc:
 			if fault.unexpectedError(exc):
 				self.dumpException()
+			raise
 		finally:
 			self.setBusy(False)
 		self.save()
