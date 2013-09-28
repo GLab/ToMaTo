@@ -1,0 +1,108 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Device Configuration Window</h1>
+
+<h2>Introduction</h2>
+<p>Here you can set specific parameters for your device.</p>
+
+<h2>Values</h2>
+<table><th>
+<td>Key</td>
+<td>KVM</td>
+<td>OpenVZ</td>
+<td></td>
+
+<tr>
+<td>Name</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The on-screen name of the device. Will not affect your experiment.</td>
+</tr>
+
+<tr>
+<td>Site</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The <a href="{%url main.help 'architecture/site'%}">site</a> on which the device will be created.
+Note that the network connection between different sites is the Internet.</td>
+</tr>
+
+<tr>
+<td>Profile</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The device profile for this device. This will set the device's performance.</td>
+</tr>
+
+<tr>
+<td>Template</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The device template to be used when preparing the device.
+This determines the device's operating system if you don't change the disk image after preparing.</td>
+</tr>
+
+<tr>
+<td>Segment Separation</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>Only affects the editor's presentation of links, when 'colorify segments' is enabled.</td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The device's hostname (as in /etc/hostname)</td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+</table>
+
+<h3>Hostname</h3>
+
+<h3>IPv6 gateway, IPv4 gateway</h3>
+The device's network gateway configuration
+<h3>Root password</h3>
+The root password for this device
+
+<h2>KVM-Only Values</h2>
+<h3>USB tablet mouse mode</h3>
+??? TODO
+<h3>Keyboard language</h3>
+The keyboard language which will be used when establishing a VNC connection. (TODO: correct?)
+
+<h2>See Also</h2>
+<ul>
+<li><a href="{%url main.help 'blank'%}">Page Name</a></li>
+</ul>
+
+{% endblock %}
