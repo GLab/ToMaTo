@@ -7,11 +7,12 @@
 <p>Here you can set specific parameters for your device.</p>
 
 <h2>Values</h2>
-<table><th>
-<td>Key</td>
-<td>KVM</td>
-<td>OpenVZ</td>
-<td></td>
+<table><tr>
+<th>Key</th>
+<th>KVM</th>
+<th>OpenVZ</th>
+<th></th>
+</tr>
 
 <tr>
 <td>Name</td>
@@ -32,14 +33,14 @@ Note that the network connection between different sites is the Internet.</td>
 <td>Profile</td>
 <td><img src="/img/tick.png" title="yes" /></td>
 <td><img src="/img/tick.png" title="yes" /></td>
-<td>The device profile for this device. This will set the device's performance.</td>
+<td>The <a href="{%url main.help 'system/device_profile'}">device profile</a> for this device. This will set the device's performance.</td>
 </tr>
 
 <tr>
 <td>Template</td>
 <td><img src="/img/tick.png" title="yes" /></td>
 <td><img src="/img/tick.png" title="yes" /></td>
-<td>The device template to be used when preparing the device.
+<td>The <a href="{%url main.help 'system/device_template'}">device template</a> to be used when preparing the device.
 This determines the device's operating system if you don't change the disk image after preparing.</td>
 </tr>
 
@@ -58,51 +59,40 @@ This determines the device's operating system if you don't change the disk image
 </tr>
 
 <tr>
-<td>Hostname</td>
+<td>IPv6 Gateway</td>
 <td><img src="/img/cross.png" title="no" /></td>
 <td><img src="/img/tick.png" title="yes" /></td>
 <td></td>
 </tr>
 
 <tr>
-<td>Hostname</td>
+<td>IPv4 Gateway</td>
 <td><img src="/img/cross.png" title="no" /></td>
 <td><img src="/img/tick.png" title="yes" /></td>
 <td></td>
 </tr>
 
 <tr>
-<td>Hostname</td>
+<td>Root Password</td>
 <td><img src="/img/cross.png" title="no" /></td>
 <td><img src="/img/tick.png" title="yes" /></td>
-<td></td>
+<td>The device's root password</td>
 </tr>
 
 <tr>
-<td>Hostname</td>
-<td><img src="/img/cross.png" title="no" /></td>
+<td>USB Tablet Mouse Mode</td>
 <td><img src="/img/tick.png" title="yes" /></td>
-<td></td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td>??? TODO</td>
+</tr>
+
+<tr>
+<td>Keyboard Language</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td>The device's keyboard language</td>
 </tr>
 
 </table>
-
-<h3>Hostname</h3>
-
-<h3>IPv6 gateway, IPv4 gateway</h3>
-The device's network gateway configuration
-<h3>Root password</h3>
-The root password for this device
-
-<h2>KVM-Only Values</h2>
-<h3>USB tablet mouse mode</h3>
-??? TODO
-<h3>Keyboard language</h3>
-The keyboard language which will be used when establishing a VNC connection. (TODO: correct?)
-
-<h2>See Also</h2>
-<ul>
-<li><a href="{%url main.help 'blank'%}">Page Name</a></li>
-</ul>
 
 {% endblock %}
