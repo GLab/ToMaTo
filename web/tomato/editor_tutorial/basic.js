@@ -191,7 +191,7 @@ var editor_tutorial = [
 					text:	'<p class="tutorialExplanation">\
 								Since you have a topology now, you can run it.</p>\
 							<p class="tutorialExplanation">\
-								To get started, the devices and connections must be created on the server.\
+								To get started, the devices and connections must be created on the servers.\
 								<i>Note: If you don\'t have the permissions to run topologies (yet), you can skip to the last step of this tutorial.</i></p>\
 							<p class="tutorialCommand">\
 								Click on \'Prepare\' under \'Topology control\'.</p>'
@@ -248,11 +248,140 @@ var editor_tutorial = [
 								Please open a console for one of your two devices.
 					},
 					{
-						text: "TODO: playing around with the connection"
-					},
-					{
-						text: "TODO: upload a rextfv archive."
-					}
+						text:	'<p class="tutorialExplanation">\
+									You can now play around with these two devices.</p>\
+								<p class="tutorialExplanation">\
+									If you are done, you can disconnect all shells and continue the tutorial.</p>',
+						skip_button: 'Continue'
+						},
+						{
+						trigger:function(obj) {
+							
+							mask = {
+								action: "stop",
+								component: "element",
+								operation: "action",
+								phase: "begin"
+							};
+							return compareToMask(obj,mask);
+							
+						  },
+						text:	'<p class="tutorialCommand">\
+									To stop the devices, press the \'Stop\' button in the top menu.</p>'
+						},
+						{
+						text: '<p class="tutorialExplanation">\
+									The devices are stopped when you see the prepared (<img src="/img/prepared.png" />) icon again.</p>\
+								<p class="tutorialExplanation">\
+									Devices will not be stopped by closing the window etc, but only when you stop them (although there might be other cases where a stop may be forced by the system or administrators).</p>',
+						skip_button: 'Continue',
+						help_page: 'prepare'
+						},
+						{
+						trigger:function(obj) {
+							
+							mask = {
+								action: "destroy",
+								component: "element",
+								operation: "action",
+								phase: "begin"
+							};
+							return compareToMask(obj,mask);
+							
+						  },
+						text:	'<p class="tutorialCommand">\
+									To destroy the devices, click the \'destroy\' button.</p>'
+						},
+						{
+						text: '<p class="tutorialExplanation">\
+									You have now destroyed the devices and connections. This means, you have undone the preparation.</p>\
+								<p class="tutorialExplanation">\
+									You can also start, stop, prepare and destroy individual devices in their right-click menu.</p>',
+						skip_button: 'Continue',
+						help_page: 'prepare'
+						},
+						{
+						trigger:function(obj) {
+							
+							mask = {
+								component: "connection",
+								operation: "remove",
+								phase: "end"
+							};
+							return compareToMask(obj,mask);
+							
+						  },
+						text:	'<p class="tutorialExplanation">\
+									To finish the tutorial, let\'s clean up.</p>\
+								<p class="tutorialCommand">\
+									To delete the connection, right-click the connection (the square on the line) and select \'delete\'.</p>'
+						},
+						{
+						trigger:function(obj) {
+							
+							mask_openvz = {
+								object: { data: {
+									type: "openvz"
+								}},
+								component: "element",
+								operation: "remove",
+								phase: "end"
+							};
+							
+							mask_kvmqm = {
+								object: { data: {
+									type: "kvmqm"
+								}},
+								component: "element",
+								operation: "remove",
+								phase: "end"
+							};
+							
+							return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
+							
+						  },
+						text:	'<p class="tutorialExplanation">\
+									To delete devices or connections, you can also use the \'delete\' mode from the \'Modes\' group in the menu.</p>\
+								<p class="tutorialExplanation">\
+									When you delete a device, you also delete all its connections.</p>\
+								<p class="tutorialCommand">\
+									Now, delete both devices.</p>'
+						},
+						{
+						trigger:function(obj) {
+							
+							mask_openvz = {
+								object: { data: {
+									type: "openvz"
+								}},
+								component: "element",
+								operation: "remove",
+								phase: "end"
+							};
+							
+							mask_kvmqm = {
+								object: { data: {
+									type: "kvmqm"
+								}},
+								component: "element",
+								operation: "remove",
+								phase: "end"
+							};
+							
+							return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
+							
+						  },
+						text:	'<p class="tutorialCommand">\
+									Delete the other device.</p>'
+						},
+						{
+						text:	'<p class="tutorialExplanation">\
+									Congratulations, you have successfully completed the basic tutorial.</p>\
+								<p class="tutorialExplanation">\
+									To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them by clicking the "Tutorials" link in the topology list.</p>\
+								<p class="tutorialExplanation">\
+									You can find a button to delete this topology in the "Topology" tab.'
+						}
 		];
 		
 

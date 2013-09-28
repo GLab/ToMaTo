@@ -63,7 +63,7 @@ var editor_tutorial = [
 						
 					  },
 					text:	'<p class="tutorialExplanation">\
-								You will need more devices to get a whole topology. This time, let\'s create a KVM device.</p>\
+								You will need more devices to get a real topology. This time, let\'s create a KVM device.</p>\
 							<p class="tutorialCommand">\
 								Click KVM (green screen) in Common elements in the menu above, and the place it in the editor by\
 								clicking somewhere into the white.</p>'
@@ -88,7 +88,45 @@ var editor_tutorial = [
 								To connect them, right-Click on one of them, select Connect, and then left-click on the other one.</p>'
 					},
 					{
-						text: "TODO: show the config menu, configure ip addresses"
+					trigger:function(obj) {
+						mask = {
+							component: "element",
+							object: {
+								parent: {
+									component_type: "element"
+								}
+							},
+							operation: "attribute-dialog"
+						};
+						return compareToMask(obj,mask);
+					  },
+					text:	'<p class="tutorialExplanation">\
+								The network interfaces are represented as grey circles.</p>\
+							<p class="tutorialCommand">\
+								Open the network interface configuration of the openvz device by right-clicking on its network interface, configure</p>'
+					},
+					text:	'<p class="tutorialCommand">\
+								Here you could set the IP address. We don\'t need this in this tutorial, so just close the configuration window.</p>',
+					skip_button: "Continue"
+					},
+					{
+					trigger:function(obj) {
+						mask = {
+							component: "element",
+							operation: "attribute-dialog",
+						};
+						return compareToMask(obj,mask);
+					  },
+					text:	'<p class="tutorialExplanation">\
+								Now, let\'s take a look at the device\'s configuration.</p>\
+							<p class="tutorialCommand">\
+								Open the device configuration of the openvz device by right-clicking on it, configure</p>'
+					},
+					{
+					text:	'<p class="tutorialExplanation">\
+								You can specify some parameters for your device. E.g., you can select an operating system from the template list.</p>\
+							<p class="tutorialExplanation">\
+								Click the help button if you want to know more.</p>'
 					},
 					{
 					trigger:function(obj) {
@@ -155,145 +193,17 @@ var editor_tutorial = [
 						return compareToMask(obj,mask);
 						
 					  },
-					text:	'<p class="tutorialCommand">\
-								To access the devices via command line, right-click the device, Console, NoVNC</p>\
-							<p class="tutorialExplanation">\
-								You can also use one of the other options, but then you\'ll need to press the \'Skip\' button to continue this tutorial.</p>'
-					},
-					{
 					text:	'<p class="tutorialExplanation">\
-								You can now play around with these two devices.</p>\
-							<p class="tutorialExplanation">\
-								If you are done, you can disconnect all shells and continue the tutorial.</p>',
-					skip_button: 'Continue'
-					},
-					{
-					trigger:function(obj) {
-						
-						mask = {
-							action: "stop",
-							component: "element",
-							operation: "action",
-							phase: "begin"
-						};
-						return compareToMask(obj,mask);
-						
-					  },
-					text:	'<p class="tutorialCommand">\
-								To stop the devices, press the \'Stop\' button in the top menu.</p>'
-					},
-					{
-					text: '<p class="tutorialExplanation">\
-								The devices are stopped when you see the prepared (<img src="/img/prepared.png" />) icon again.</p>\
-							<p class="tutorialExplanation">\
-								Devices will not be stopped by closing the window etc, but only when you stop them (although there might be other cases where a stop may be forced by the system or administrators).</p>',
-					skip_button: 'Continue',
-					help_page: 'prepare'
-					},
-					{
-					trigger:function(obj) {
-						
-						mask = {
-							action: "destroy",
-							component: "element",
-							operation: "action",
-							phase: "begin"
-						};
-						return compareToMask(obj,mask);
-						
-					  },
-					text:	'<p class="tutorialCommand">\
-								To destroy the devices, click the \'destroy\' button.</p>'
-					},
-					{
-					text: '<p class="tutorialExplanation">\
-								You have now destroyed the devices and connections. This means, you have undone the preparation.</p>\
-							<p class="tutorialExplanation">\
-								You can also start, stop, prepare and destroy individual devices in their right-click menu.</p>',
-					skip_button: 'Continue',
-					help_page: 'prepare'
-					},
-					{
-					trigger:function(obj) {
-						
-						mask = {
-							component: "connection",
-							operation: "remove",
-							phase: "end"
-						};
-						return compareToMask(obj,mask);
-						
-					  },
-					text:	'<p class="tutorialExplanation">\
-								To finish the tutorial, let\'s clean up.</p>\
+								To access the devices\' command line, right-click the device, Console, and select your preferred way to establish a VNC connection.\
+								if you are unsure, choose NoVNC.</p>\
 							<p class="tutorialCommand">\
-								To delete the connection, right-click the connection (the square on the line) and select \'delete\'.</p>'
+								Please open a console for one of your two devices.
 					},
 					{
-					trigger:function(obj) {
-						
-						mask_openvz = {
-							object: { data: {
-								type: "openvz"
-							}},
-							component: "element",
-							operation: "remove",
-							phase: "end"
-						};
-						
-						mask_kvmqm = {
-							object: { data: {
-								type: "kvmqm"
-							}},
-							component: "element",
-							operation: "remove",
-							phase: "end"
-						};
-						
-						return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
-						
-					  },
-					text:	'<p class="tutorialExplanation">\
-								To delete devices or connections, you can also use the \'delete\' mode from the \'Modes\' group in the menu.</p>\
-							<p class="tutorialExplanation">\
-								When you delete a device, you also delete all its connections.</p>\
-							<p class="tutorialCommand">\
-								Now, delete both devices.</p>'
+						text: "TODO: playing around with the connection"
 					},
 					{
-					trigger:function(obj) {
-						
-						mask_openvz = {
-							object: { data: {
-								type: "openvz"
-							}},
-							component: "element",
-							operation: "remove",
-							phase: "end"
-						};
-						
-						mask_kvmqm = {
-							object: { data: {
-								type: "kvmqm"
-							}},
-							component: "element",
-							operation: "remove",
-							phase: "end"
-						};
-						
-						return compareToMask(obj,mask_openvz) || compareToMask(obj,mask_kvmqm);
-						
-					  },
-					text:	'<p class="tutorialCommand">\
-								Delete the other device.</p>'
-					},
-					{
-					text:	'<p class="tutorialExplanation">\
-								Congratulations, you have successfully completed the basic tutorial.</p>\
-							<p class="tutorialExplanation">\
-								To get the most out of this tool, we recommend you to walk through the additional tutorials. You can find them by clicking the "Tutorials" link in the topology list.</p>\
-							<p class="tutorialExplanation">\
-								You can find a button to delete this topology in the "Topology" tab.'
+						text: "TODO: upload a rextfv archive."
 					}
 		];
 		
