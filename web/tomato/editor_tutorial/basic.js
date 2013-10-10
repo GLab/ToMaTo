@@ -245,7 +245,7 @@ var editor_tutorial = [
 								To access the devices\' command line, right-click the device, Console, and select your preferred way to establish a VNC connection.\
 								if you are unsure, choose NoVNC.</p>\
 							<p class="tutorialCommand">\
-								Please open a console for one of your two devices.
+								Please open a console for one of your two devices.',
 					},
 					{
 						text:	'<p class="tutorialExplanation">\
