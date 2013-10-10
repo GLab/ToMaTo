@@ -52,8 +52,10 @@ var editor_tutorial = [
 						
 						mask = {
 							attrs: {
-								state: "created",
-								type: "kvmqm"
+								attrs: {
+									mode: "switch"
+								},
+								type: "tinc_vpn"
 							},
 							component: "element",
 							operation: "create",
@@ -63,9 +65,9 @@ var editor_tutorial = [
 						
 					  },
 					text:	'<p class="tutorialExplanation">\
-								You will need more devices to get a real topology. This time, let\'s create a KVM device.</p>\
+								You will need more devices to get a real topology. This time, let\'s create a switch.</p>\
 							<p class="tutorialCommand">\
-								Click KVM (green screen) in Common elements in the menu above, and the place it in the editor by\
+								Click on the Switch button in Common elements in the menu above, and the place it in the editor by\
 								clicking somewhere into the white.</p>'
 					},
 					{
@@ -83,9 +85,17 @@ var editor_tutorial = [
 						
 					  },
 					text:	'<p class="tutorialExplanation">\
-								By now, the two devices don\'t have any network connection.</p>\
+								By now, the two elements don\'t have any network connection.</p>\
 							<p class="tutorialCommand">\
 								To connect them, right-Click on one of them, select Connect, and then left-click on the other one.</p>'
+					},
+					{
+					text:	'<p class="tutorialExplanation">\
+								Please expand your topology like this:\
+								<img src="/editor_tutorial/conference.png"/></p>\
+							<p class="tutorialExplanation">\
+								Click on "Continue" when you are done.</p>',
+					skip_button:"Continue"
 					},
 					{
 					trigger:function(obj) {
@@ -101,10 +111,11 @@ var editor_tutorial = [
 						return compareToMask(obj,mask);
 					  },
 					text:	'<p class="tutorialExplanation">\
-								The network interfaces are represented as grey circles.</p>\
+								Network interfaces are represented as grey circles.</p>\
 							<p class="tutorialCommand">\
 								Open the network interface configuration of the openvz device by right-clicking on its network interface, configure</p>'
 					},
+					{
 					text:	'<p class="tutorialCommand">\
 								Here you could set the IP address. We don\'t need this in this tutorial, so just close the configuration window.</p>',
 					skip_button: "Continue"
@@ -126,7 +137,8 @@ var editor_tutorial = [
 					text:	'<p class="tutorialExplanation">\
 								You can specify some parameters for your device. E.g., you can select an operating system from the template list.</p>\
 							<p class="tutorialExplanation">\
-								Click the help button if you want to know more.</p>'
+								Click the help button if you want to know more.</p>',
+					skip_button: "Continue"
 					},
 					{
 					trigger:function(obj) {
@@ -197,13 +209,10 @@ var editor_tutorial = [
 								To access the devices\' command line, right-click the device, Console, and select your preferred way to establish a VNC connection.\
 								if you are unsure, choose NoVNC.</p>\
 							<p class="tutorialCommand">\
-								Please open a console for one of your two devices.
+								Please open a console for one of your OpenVZ devices.'
 					},
 					{
-						text: "TODO: playing around with the connection"
-					},
-					{
-						text: "TODO: upload a rextfv archive."
+						text: "TODO: playing around with the program"
 					}
 		];
 		
