@@ -32,7 +32,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	CAP_ATTRS = ["name"]
 	
 	class Meta:
-		pass
+		ordering = ['-id']
 	
 	def init(self, owner, attrs={}):
 		self.attrs = {}
