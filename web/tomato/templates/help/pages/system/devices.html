@@ -4,18 +4,28 @@
 <h1>Devices</h1>
 
 <h2>Introduction</h2>
-<p>A device is a virtual machine based on either <a href="{%url main.help 'kvm'%}">KVM</a> or <a href="{%url main.help 'openvz'%}">OpenVZ</a> or <a href="{%url main.help 'repy'%}">RePy.</a></p>
-<p>Every device is based on a <a href="{%url main.help 'device_templates'%}">device template</a>, and associated to a <a href="{%url main.help 'device_profile'%}">device profile</a> for resource management.</p>
-<p>Since a topology is a network of <a href="{%url main.help 'connection'%}">connected</p> devices, devices are the core functionality of ToMaTo.</p>
 
-<h2>Preparation</h2>
-<p>Before a device can be run, it must first be prepared. 
-This involves allocation of diskspace, 
-deployment of the template and all the configuration which has to be done on its <a href="{%url main.help 'host'%}">host</a>.</p>
-<p>ToMaTo uses load balancing to deploy devices on several hosts.</p>
-<p>Devices can be destroyed to undo the preparation.</p>
 
-<h2>Run</h2>
-<p>A running device uses resources as specified by its device profile.</p>
+<h2>States</h2>
+<h3>Created</h3>
+<p>A device which is created does not exist as a virtual machine yet.
+"created" means the device is defined in a topology. It also doesn't have a disk image.</p>
+
+<h3>Prepared</h3>
+<p>A prepared device does exist as a virtual machine with its own disk image.</p>
+<p>When becoming prepared, the disk image will be created from the set <a href="{%url main.help 'system/device_template'%}">template</a>.
+This disk image will be deleted when the device gets destroyed.</p>
+<p>A prepared device is not running.</p>
+
+<h3>Started</h3>
+<p>A started device is a running virtual machine.</p>
+
+
+
+<h2>Editor</h2>
+<p>Devices are represented by computer icons.</p>
+<p>You can determine the state of a device by its attached icon. A created device does not have an icon attached to it; a prepared device has a <img src="/img/prepared.png"/> and a started device has a <img src="/img/started.png"/> on it.
+
+
 
 {% endblock %}

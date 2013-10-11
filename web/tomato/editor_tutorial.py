@@ -40,10 +40,16 @@ tutorials = [
                              'icon': "/img/download.png"
                             },
                             {
-                            'id':   "connections",
-                            'name': "Using Connections",
-                            'desc': "Learn everything about connections. (currently under construction)",
-                            'icon': "/img/connect32.png"
+                             'id':   "connections",
+                             'name': "Using Connections",
+                             'desc': "Learn everything about connections. (currently under construction)",
+                             'icon': "/img/connect32.png"
+                            },
+                            {
+                             'id':   "conference",
+                             'name': "GEC18 Conference Tutorial",
+                             'desc': "Get to know ToMaTo",
+                             'icon': "/img/connect32.png"
                             }
                             #===================================================
                             # {

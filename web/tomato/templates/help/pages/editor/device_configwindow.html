@@ -1,0 +1,98 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Device Configuration Window</h1>
+
+<h2>Introduction</h2>
+<p>Here you can set specific parameters for your device.</p>
+
+<h2>Values</h2>
+<table><tr>
+<th>Key</th>
+<th>KVM</th>
+<th>OpenVZ</th>
+<th></th>
+</tr>
+
+<tr>
+<td>Name</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The on-screen name of the device. Will not affect your experiment.</td>
+</tr>
+
+<tr>
+<td>Site</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The <a href="{%url main.help 'architecture/site'%}">site</a> on which the device will be created.
+Note that the network connection between different sites is the Internet.</td>
+</tr>
+
+<tr>
+<td>Profile</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The <a href="{%url main.help 'system/device_profile'}">device profile</a> for this device. This will set the device's performance.</td>
+</tr>
+
+<tr>
+<td>Template</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The <a href="{%url main.help 'system/device_template'}">device template</a> to be used when preparing the device.
+This determines the device's operating system if you don't change the disk image after preparing.</td>
+</tr>
+
+<tr>
+<td>Segment Separation</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>Only affects the editor's presentation of links, when 'colorify segments' is enabled.</td>
+</tr>
+
+<tr>
+<td>Hostname</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The device's hostname (as in /etc/hostname)</td>
+</tr>
+
+<tr>
+<td>IPv6 Gateway</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+<tr>
+<td>IPv4 Gateway</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td></td>
+</tr>
+
+<tr>
+<td>Root Password</td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td>The device's root password</td>
+</tr>
+
+<tr>
+<td>USB Tablet Mouse Mode</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td>??? TODO</td>
+</tr>
+
+<tr>
+<td>Keyboard Language</td>
+<td><img src="/img/tick.png" title="yes" /></td>
+<td><img src="/img/cross.png" title="no" /></td>
+<td>The device's keyboard language</td>
+</tr>
+
+</table>
+
+{% endblock %}
