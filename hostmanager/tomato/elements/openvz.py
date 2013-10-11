@@ -184,7 +184,6 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		"download_grant": [ST_PREPARED],
 		"rextfv_download_grant": [ST_PREPARED,ST_STARTED],
 		"execute": [ST_STARTED],
-		"info": [ST_PREPARED,ST_STARTED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CAP_NEXT_STATE = {
@@ -227,10 +226,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		#template: None, default template
 	
 	def _imagePath(self):
-		if self.state == ST_CREATED:
-			return "/var/lib/vz/root/%d" % self.vmid
-		else:
-			return "/var/lib/vz/private/%d" % self.vmid
+		return "/var/lib/vz/private/%d" % self.vmid
 
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy

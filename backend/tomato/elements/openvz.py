@@ -18,7 +18,6 @@
 from .. import elements
 import generic, time
 from ..lib import util #@UnresolvedImport
-from django.db.models import Q
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
@@ -41,7 +40,7 @@ class OpenVZ_Interface(generic.VMInterface):
 		app_label = 'tomato'
 		
 def syncRexTFV():
-	for e in OpenVZ.objects.filter(next_sync__lte=int(time.time())).filter(~Q(next_sync = 0)):
+	for e in OpenVZ.objects.filter(next_sync_gt=0.0, next_sync__lte=time.time()):
 		e.updateInfo()		
 rextfv_syncer = util.RepeatedTimer(1, syncRexTFV)
 #don't forget to start/stop this in tomato/__init__.py

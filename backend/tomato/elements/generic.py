@@ -37,7 +37,7 @@ class VMElement(elements.Element):
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	template = models.ForeignKey(r_template.Template, null=True)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
-	next_sync = models.FloatField(default = 0) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
+	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
@@ -56,6 +56,7 @@ class VMElement(elements.Element):
 	
 	class Meta:
 		abstract = True
+		
 		
 	#for every subclass which supports RexTFV: create a process which calls this function on every VMElement with  0 != next_sync < time.time()
 	def updateInfo(self): 

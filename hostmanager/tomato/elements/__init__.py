@@ -332,9 +332,6 @@ class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model)
 	def updateUsage(self, usage, data):
 		pass
 	
-	def action_info(self):
-		return self.info()
-	
 	
 class RexTFVElement:
 	
@@ -408,24 +405,19 @@ class RexTFVElement:
 		with self.lock:
 			self._nlxtp_make_readable()
 			try:
-				if (self._nlxtp_path("") is not None) and (os.path.exists(self._nlxtp_path("exec_status"))):
-					status_done = os.path.exists(self._nlxtp_path(os.path.join("exec_status","done")))
-					status_isAlive = False
-					if not status_done:
-						status_isAlive = os.path.exists(self._nlxtp_path(os.path.join("exec_status","running")))
-						if status_isAlive:
-							f = open(self._nlxtp_path(os.path.join("exec_status","running")), 'r')
-							s = f.read()
-							f.close()
-							timeout=10*60 #seconds
-							now = datetime.datetime.now()
-							alive = datetime.datetime.fromtimestamp(int(s))
-							diff = now-alive
-							if (diff.seconds>timeout) or (diff.days>0):
-								status_isAlive = False
-					return {"readable": True, "done": status_done, "isAlive": status_isAlive}
-				else:
+				if (self._nlxtp_path("") is None) or (not os.path.exists(self._nlxtp_path("exec_status"))):
 					return {"readable": False}
+				if os.path.exists(self._nlxtp_path(os.path.join("exec_status","done"))):
+					return {"readable": True, "done": True, "isAlive": False}
+				if not os.path.exists(self._nlxtp_path(os.path.join("exec_status","running"))):
+					return {"readable": True, "done": False, "isAlive": False}
+				with open(self._nlxtp_path(os.path.join("exec_status","running")), 'r') as f:
+					timestamp = f.read()
+				timeout=10*60 #seconds
+				diff = time.time() - int(timestamp)
+				if diff > timeout:
+					return {"readable": True, "done": False, "isAlive": False}
+				return {"readable": True, "done": False, "isAlive": True}
 			finally:
 				self._nlxtp_close()
 		
