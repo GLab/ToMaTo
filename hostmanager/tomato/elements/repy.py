@@ -242,6 +242,8 @@ class Repy(elements.Element):
 
 	def modify_args(self, val):
 		self.args = val
+		if not isinstance(val, list):
+			self.args = val.split()
 
 	def modify_template(self, tmplName):
 		self.template = resources.template.get(self.TYPE, tmplName)
@@ -254,7 +256,8 @@ class Repy(elements.Element):
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR)
+			net.ifUp(ifName)
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))

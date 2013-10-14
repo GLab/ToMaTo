@@ -79,7 +79,7 @@ class IPv4Header(Header):
     self.dst = p[16:20]
     self.options = []
     for i in range(5, ihl):
-        h.options.append(p[4*i:4*i+4])
+        self.options.append(p[4*i:4*i+4])
     hlen = 4 * ihl
     self.payload = p[hlen:]
     self.checksum_correct = ip_checksum(p[0:hlen]) == 0
