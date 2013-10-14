@@ -1507,9 +1507,16 @@ var Component = Class.extend({
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
 		var settings = this.configWindowSettings();
+		
+		var helpTarget = undefined;
+		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
+			helpTarget = "/help/editor/configwindow_"+this.data.type;
+		}
+		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
 			width: "600",
+			helpTarget:helpTarget,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -2910,6 +2917,7 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
+		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
 		var t = this;
 		this.workspace.setBusy(true);
 		ajax ({
