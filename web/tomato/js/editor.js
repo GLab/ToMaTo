@@ -368,7 +368,7 @@ var TutorialWindow = Window.extend({
 	init: function(options) {
 			this._super(options);
 			if (options.hideCloseButton)
-				$(".ui-dialog-titlebar-close").hide();
+				$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
 			
 			if (!options.tutorialVisible)
 				return;
@@ -594,6 +594,7 @@ var AttributeWindow = Window.extend({
 
 var PermissionsWindow = Window.extend({
 	init: function(options) {
+		options.modal = true;
 		this._super(options);
 		
 		var t = this;
@@ -603,6 +604,8 @@ var PermissionsWindow = Window.extend({
 		this.topology = options.topology;
 		this.permissions = this.options.permissions;
 		
+		this.editingList = {};
+		
 		this.userList = $('<div />');
 		this.userListFinder = {};
 		this.div.append(this.userList);
@@ -610,9 +613,8 @@ var PermissionsWindow = Window.extend({
 		
 		this.buttons = $('<div />');
 		
-		
-		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
-		closeButton.click(function(){
+		this.closeButton = $('<input type="button" value="Close" style="float:right;" />');
+		this.closeButton.click(function(){
 			/* if (t.div.getElementsByTagName("select").length > 0) {
 				if (!window.confirm("Are you sure you want to discard all changes?"))
 					return
@@ -622,12 +624,32 @@ var PermissionsWindow = Window.extend({
 			} */
 			t.hide();
 		});
-		this.buttons.append(closeButton);
+		this.buttons.append(this.closeButton);
 		
 		this.div.append(this.buttons);
 		
 		
 		
+	},
+	
+	disableClose: function() {
+		this.closeButton.attr("disabled",true);
+		$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
+	},
+	enableClose: function() {
+		this.closeButton.attr("disabled",false);
+		$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).show();
+	},
+	checkEnableDisableClose: function() {
+		var disable = false;
+		for (i in this.editingList) {
+			disable = disable || this.editingList[i];
+		}
+		if (disable) {
+			this.disableClose();
+		} else {
+			this.enableClose();
+		}
 	},
 	
 	createUserPermList: function() {
@@ -752,6 +774,9 @@ var PermissionsWindow = Window.extend({
 			t.backToView(username);
 		});
 		td_buttons.append(cancelButton);
+		
+		this.editingList[username] = true;
+		this.checkEnableDisableClose();
 	},
 	
 	setPermission: function(username, permission) {
@@ -810,6 +835,8 @@ var PermissionsWindow = Window.extend({
 				t.setPermission(username,null);
 			})
 			td_buttons.append(removeButton);
+			this.editingList[username] = false;
+			this.checkEnableDisableClose();
 		}
 		
 	}
