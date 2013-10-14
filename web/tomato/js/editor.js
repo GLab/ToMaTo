@@ -318,6 +318,26 @@ var Window = Class.extend({
 		this.setPosition(options.position);
 		if (options.content) this.div.append(options.content);
 		if (options.autoShow) this.show();
+		
+
+		
+		this.helpButton = $("<div class=\"windowHelp\"></div>");
+		this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
+		var t = this;
+		this.helpLink.click(function(){
+			window.open(t.helpLinkTarget,'_help');
+		});
+		this.helpButton.append(this.helpLink);
+		this.helpLinkTarget="/help";
+
+		this.div.append(this.helpButton);
+		
+		if(!options.helpTarget) {
+			this.helpButton.hide();
+		} else {
+			this.helpLinkTarget = options.helpTarget;
+		}
+		
 	},
 	setTitle: function(title) {
 		this.div.dialog("option", "title", title);
@@ -370,20 +390,10 @@ var TutorialWindow = Window.extend({
 			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
 			this.buttons.append(this.closeButton);
 			
-			this.helpButton = $("<div class=\"tutorialHelp\"></div>");
-			this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
-			var t = this;
-			this.helpLink.click(function(){
-				window.open(t.helpLinkTarget,'_help');
-			});
-			this.helpButton.append(this.helpLink);
-			this.helpLinkTarget="/help/";
-			
 			this.closeButton.click(function() {
 				t.setTutorialVisible(false);
 			});
 			
-			this.add(this.helpButton);
 			this.add(this.text);
 			this.add(this.buttons);
 			
