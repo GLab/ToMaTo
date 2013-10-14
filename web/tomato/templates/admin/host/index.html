@@ -6,7 +6,7 @@
 <h1>List of Hosts</h1>
 
 {# only show 'add' button when user is authorized #}
-	{% if hostManager %}
+	{% if host_list|length > 10 and hostManager %}
 		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
 	{% endif %}
 
