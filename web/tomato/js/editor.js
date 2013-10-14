@@ -705,11 +705,12 @@ var PermissionsWindow = Window.extend({
 				td_icon: td_icon,
 				td_name: td_name,
 				td_perm: td_perm,
-				td_buttons: td_buttons
+				td_buttons: td_buttons,
+				tr: tr
 		};
 		this.userTable.append(tr);
 		
-		this.backToView(username);
+		this.drawView(username);
 	},
 	
 	addNewUser: function() {
@@ -734,7 +735,10 @@ var PermissionsWindow = Window.extend({
 	},
 	
 	removeUserFromList: function(username) {
-		this.userListFinder[username].td_name.parent().remove();
+		this.userListFinder[username].tr.remove();
+		this.editingList[username] = false;
+		this.checkEnableDisableClose();
+		delete this.userListFinder[username];
 	},
 	
 	makePermissionEditable: function(username) {
@@ -792,7 +796,11 @@ var PermissionsWindow = Window.extend({
 			url: 'topology/'+this.topology.id+'/permission',
 			data: {user: username, permission: perm_send},
 			successFn: function(){ 
-				t.topology.data.permissions[username]=permission;
+				if (permission != null) {
+					t.topology.data.permissions[username]=permission;
+				} else {
+					delete t.topology.data.permissions[username];
+				}
 				if (perm_send == null) {
 					t.removeUserFromList(username)
 				} else {
@@ -807,6 +815,13 @@ var PermissionsWindow = Window.extend({
 	},
 	
 	backToView: function(username) {
+		if (username in this.topology.data.permissions && this.topology.data.permissions != null) {
+			this.drawView(username);
+		} else {
+			this.removeUserFromList(username);
+		}
+	},
+	drawView: function(username) {
 		var t = this;
 		
 		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
