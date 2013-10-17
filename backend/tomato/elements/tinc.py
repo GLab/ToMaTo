@@ -116,7 +116,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 
 	def action_start(self):
 		for ch in self.getChildren():
-			if ch.state == ST_PREPARED:
+			if ch.state != ST_STARTED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 

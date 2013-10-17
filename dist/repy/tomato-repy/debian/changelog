@@ -1,3 +1,9 @@
+tomato-repy (0.7) unstable; urgency=low
+
+  * Fixed struct error
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 16 Oct 2013 14:47:41 +0200
+
 tomato-repy (0.6) unstable; urgency=low
 
   * Fixed problem with echo

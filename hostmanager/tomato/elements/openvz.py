@@ -693,7 +693,7 @@ class OpenVZ_Interface(elements.Element):
 		assert self.state == ST_STARTED
 		if not self.use_dhcp:
 			return
-		for cmd_ in ["/sbin/dhclient", "/sbin/dhcpcd"]:
+		for cmd_ in ["/sbin/dhclient -nw", "/sbin/dhcpcd"]:
 			try:
 				return self._execute("[ -e %s ] && %s %s" % (cmd_, cmd_, self.name))
 			except cmd.CommandError, err:
