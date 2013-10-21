@@ -1555,6 +1555,8 @@ var Component = Class.extend({
 			helpTarget = "/help/editor/configwindow_"+this.data.type;
 		}
 		
+		console.log('opening config window for type '+this.data.type);
+		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
 			width: "600",
@@ -1666,6 +1668,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
+		options.helpTarget = "/help/editor/configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
