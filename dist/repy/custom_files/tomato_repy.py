@@ -44,6 +44,10 @@ class ExceptionValue(namespace.ValueProcessor):
             raise RepyArgumentError("Invalid type %s" % type(val))
     def copy(self, val):
         return val
+
+def echo(s):
+    sys.stdout.write(str(s)+"\n")
+    sys.stdout.flush()
     
 def build_context(quiet):
     import traceback, emultap, emulstruct, time
@@ -66,12 +70,22 @@ def build_context(quiet):
             'args' : [],
             'return' : namespace.Float()
         },
+        'echo': {
+            'func': echo,
+            'args': [namespace.NonCopiedVarArgs()],
+            'return': None,
+        }
     })
     namespace.USERCONTEXT_WRAPPER_INFO.update(emultap.METHODS)
     namespace.USERCONTEXT_WRAPPER_INFO.update(emulstruct.METHODS)
     if quiet:
         namespace.USERCONTEXT_WRAPPER_INFO.update({
             'log': {
+                'func': lambda s: None,
+                'args': [namespace.NonCopiedVarArgs()],
+                'return': None,
+            },
+            'echo': {
                 'func': lambda s: None,
                 'args': [namespace.NonCopiedVarArgs()],
                 'return': None,

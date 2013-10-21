@@ -46,10 +46,10 @@ tutorials = [
                              'icon': "/img/connect32.png"
                             },
                             {
-                             'id':   "conference",
-                             'name': "GEC18 Conference Tutorial",
+                             'id':   "chat",
+                             'name': "Chat Tutorial",
                              'desc': "Get to know ToMaTo",
-                             'icon': "/img/connect32.png"
+                             'icon': "/img/user32.png"
                             }
                             #===================================================
                             # {

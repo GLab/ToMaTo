@@ -101,7 +101,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 				if reversed:
 					if key.endswith("_from"):
 						key = key[:-5] + "_to"
-					if key.endswith("_to"):
+					elif key.endswith("_to"):
 						key = key[:-3] + "_from"
 				attrs[key] = value
 		return attrs
@@ -162,10 +162,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 					else:
 						directAttrs[key] = value
 			if directAttrs:
+				self.setAttributes(directAttrs)					
 				mcon = self.mainConnection()
 				if mcon:
-					mcon.modify(directAttrs)
-				self.setAttributes(directAttrs)					
+					mcon.modify(self._remoteAttrs())
 		except Exception, exc:
 			self.onError(exc)
 			raise

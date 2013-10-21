@@ -1,3 +1,9 @@
+tomato-backend (3.0.2) stable; urgency=low
+
+  * Fixed problem with link emulation direction
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 14 Oct 2013 16:09:30 +0200
+
 tomato-backend (3.0.1) stable; urgency=low
 
   * Added RexTFV
