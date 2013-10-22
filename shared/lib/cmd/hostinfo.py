@@ -81,9 +81,10 @@ def diskinfo(path):
 
 def problems():
 	problems = []
-	disk = diskproblems(config.DATA_DIR)
-	if disk:
-		problems.append("Disk: %s" % disk)
+	for disk in [config.DATA_DIR]:
+		probs = diskproblems(disk)  
+		if probs:
+			problems.append("Disk: %s on %s" % (probs, disk))
 	return problems
 
 def diskproblems(path):

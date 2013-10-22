@@ -1948,6 +1948,9 @@ var Connection = Component.extend({
 		 		if (callback) callback(t);
 		 		t.topology.onUpdate();
 				t.triggerEvent({operation: "remove", phase: "end"});
+				for (var i=0; i<t.elements.length; i++) 
+					if (t.elements[i].isRemovable())
+						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -1955,9 +1958,6 @@ var Connection = Component.extend({
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
 		});
-		for (var i=0; i<t.elements.length; i++) 
-			if (t.elements[i].isRemovable())
-				t.elements[i].remove();
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
@@ -2423,20 +2423,6 @@ var createElementMenu = function(obj) {
 				name:"Console",
 				icon:"console",
 				items: {
-					"console_info": {
-						name:"VNC Information",
-						icon:"info",
-						callback: function(){
-							obj.showVNCinfo();
-						}
-					},
-					"console_link": {
-						name:"vnc:// link",
-						icon:"console",
-						callback: function(){
-							obj.openVNCurl();
-						}
-					},
 					"console_novnc": {
 						name:"NoVNC (HTML5+JS)",
 						icon:"novnc",
@@ -2451,6 +2437,20 @@ var createElementMenu = function(obj) {
 							obj.openConsole();
 						}
 					}, 
+					"console_link": {
+						name:"vnc:// link",
+						icon:"console",
+						callback: function(){
+							obj.openVNCurl();
+						}
+					},
+					"console_info": {
+						name:"VNC Information",
+						icon:"info",
+						callback: function(){
+							obj.showVNCinfo();
+						}
+					},
 				}
 			} : null,
 			"usage": {

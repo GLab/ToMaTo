@@ -204,8 +204,8 @@ class Tinc(elements.Element):
 			con.disconnectInterface(self._interfaceName())
 		cmd.runUnchecked(["tincd", "-k", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(ST_CREATED)
-		if os.path.exists(self.path):
-			shutil.rmtree(self.path)
+		if path.exists(self.path):
+			path.remove(self.path, recursive=True)
 
 	def upcast(self):
 		return self

@@ -22,7 +22,7 @@ function compareToMask (obj,mask) {
 	
 	//now, for every property in mask, compare it to the same property in obj.
 	//(check if the property exists in the object)
-	res = true;
+	var res = true;
 	for (var key in mask) {
 		if (!(key in obj))
 			return false;

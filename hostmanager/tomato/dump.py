@@ -25,7 +25,7 @@ def getEnv():
 	data = {}
 	for name, cmd in envCmds.iteritems():
 		try:
-			data[name] = run(cmd)
+			data[name] = run(cmd).splitlines()
 		except CommandError, err:
 			data[name] = str(err)
 	return data

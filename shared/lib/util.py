@@ -199,7 +199,7 @@ def timediffstr(date1, date2):
 	d2 = datetime.datetime.fromtimestamp(date2)
 	return str(d2-d1)
 
-def waitFor(conditionFn, maxWait=5, waitStep=0.1):
+def waitFor(conditionFn, maxWait=10, waitStep=0.25):
 	#wait up to 5 sec for interface to appear
 	waited = 0
 	while waited < maxWait and not conditionFn():

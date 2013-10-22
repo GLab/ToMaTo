@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil
+import os, shutil, threading
 from django.db import models
 
 from ..connections import Connection
@@ -29,6 +29,20 @@ from .. import config
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
+
+LOCKS = {}
+LOCKS_LOCK = threading.RLock()
+
+def getLock(obj):
+	with LOCKS_LOCK:
+		if not obj.id in LOCKS:
+			LOCKS[obj.id] = threading.RLock()
+		return LOCKS[obj.id]
+	
+def removeLock(obj):
+	with LOCKS_LOCK:
+		with getLock(obj):
+			del LOCKS[obj.id]
 
 class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
@@ -82,12 +96,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving
 
-	def isBusy(self):
-		return hasattr(self, "_busy") and self._busy
-	
-	def setBusy(self, busy):
-		self._busy = busy
-		
 	def upcast(self):
 		"""
 		This method returns an instance of this element with the highest order
@@ -138,7 +146,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@type attrs: dict
 		"""
 		self.checkRole(Role.manager)
-		fault.check(not self.isBusy(), "Object is busy")
 		mel = self.mainElement()
 		direct = []
 		if self.DIRECT_ATTRS:
@@ -168,10 +175,13 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		
 		@param attrs: Attributes to change
 		@type attrs: dict
-		"""		
+		"""
+		with getLock(self):
+			return self._modify(attrs)
+			
+	def _modify(self, attrs):
 		self.checkModify(attrs)
 		logging.logMessage("modify", category="element", id=self.id, attrs=attrs)
-		self.setBusy(True)
 		try:
 			directAttrs = {}
 			for key, value in attrs.iteritems():
@@ -190,8 +200,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		except Exception, exc:
 			self.onError(exc)
 			raise
-		finally:
-			self.setBusy(False)
 		self.save()
 		logging.logMessage("info", category="element", id=self.id, info=self.info())			
 	
@@ -207,7 +215,6 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.checkRole(Role.manager)
 		if action in ["prepare", "start", "upload_grant"]:
 			fault.check(not currentUser().hasFlag(Flags.OverQuota), "Over quota")
-		fault.check(not self.isBusy(), "Object is busy")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
@@ -235,9 +242,12 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		@param params: Parameters for the action
 		@type params: dict
 		"""
+		with getLock(self):
+			return self._action(action, params)
+		
+	def _action(self, action, params):
 		self.checkAction(action)
 		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
-		self.setBusy(True)
 		try:
 			if action in self.CUSTOM_ACTIONS:
 				res = getattr(self, "action_%s" % action)(**params)
@@ -253,15 +263,12 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		except Exception, exc:
 			self.onError(exc)
 			raise
-		finally:
-			self.setBusy(False)
 		self.save()
 		logging.logMessage("action end", category="element", id=self.id, action=action, params=params, result=res)
 		logging.logMessage("info", category="element", id=self.id, info=self.info())					
 		return res
 
 	def checkRemove(self, recurse=True):
-		fault.check(not self.isBusy(), "Object is busy")
 		self.checkRole(Role.manager)
 		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
 		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
@@ -278,6 +285,11 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		self.save()
 
 	def remove(self, recurse=True):
+		with getLock(self):
+			self._remove(recurse)
+		removeLock(self)
+			
+	def _remove(self, recurse):
 		self.checkRemove(recurse)
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)

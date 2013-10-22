@@ -17,7 +17,7 @@ var editor_tutorial = [
 	},
 	{
 		text: '<p class="tutorialExplanation">As first step we add a virtual machine to the topology. This virtual machine will use OpenVZ technology since we only want to run a simple program on it.<br/>\
-Click on the blue icon on the right of the menu and then click into the work space to position that element. You can later move it by dragging the icon in the work space.<br/>\
+Click on the blue computer icon on the right of the menu and then click into the work space to position that element. You can later move it by dragging the icon in the work space.<br/>\
 You can move this tutorial window if it covers your work space.</p>\
 <br/><b>Task: Add an OpenVZ virtual machine to your topology</b>',
 		trigger: function(event) {
@@ -49,7 +49,7 @@ You can also change the name your virtual machine and its hostname if you want t
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we need a chat partner, so we add another node to the topology. This time we give it the right template right from the start. To do this, open the <i>Devices</i> tab in the menu, scroll to the right and select the <i>Chat Tutorial Node</i> from the menu.</p>\
+		text: '<p class="tutorialExplanation">Now we need a chat partner, so we add another node to the topology. This time we give it the right template right from the start. To do this, open the <i>Devices</i> tab in the menu and select the <i>Chat Tutorial Node</i> from the menu.</p>\
 <br/><b>Task: Add another virtual machine using the <i>Chat Tutorial Node</i> template</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
@@ -282,7 +282,7 @@ This chat agent will send a message every 3 seconds.</p>\
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">After a few seconds you should see the periodic messages from the sender agent. If you open the VNC console of the monitor agent you should see all chat messages.<br/>\
+		text: '<p class="tutorialExplanation">Start the chat clients again and after a few seconds you should see the periodic messages from the sender agent. If you open the VNC console of the monitor agent you should see all chat messages.<br/>\
 Note that you can not type any text into the consoles of these agents as the Repy technology is not interactive.</p>\
 <br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
@@ -328,8 +328,7 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 				component: "connection",
 				phase: "end",
 				attrs: {
-					capturing: true,
-					capture_mode: "file"
+					capturing: true
 				}
 			});
 		}
@@ -387,8 +386,9 @@ You know how to do this from the earlier tutorial parts.</p>\
 	},
 	{
 		text: '<p class="tutorialExplanation">When your topology is connected to the Internet, you can reach the Internet from the connected VMs.<br/>\
-Check that by typing <tt>ping www.google.com</tt> into the console of one of the VMs.<br/>\
-If you do not get a reply, you might need to obtain a network address first by running <tt>dhclient eth0</tt>.</p>\
+Check that by typing the following into the console of one of the VMs: <pre><tt>ping www.google.com</tt></pre><br/>\
+If you do not get a reply, you might need to obtain a network address first by running the following: <pre><tt>dhclient eth0</tt></pre></p><br/>\
+You can use this connection to exchange files with your nodes and to use external services.\
 <br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
 	},
