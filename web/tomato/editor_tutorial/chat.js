@@ -34,7 +34,7 @@ You can move this tutorial window if it covers your work space.</p>\
 	{
 		text: '<p class="tutorialExplanation">For this chat tutorial we have a special template that contains the chat client. Currently your virtual machine has the default template, which is a plain debian installation. As your virtual machine is not yet started, we can still change its template.<br/>\
 Right-click on the virtual machine icon in your work space and select <i>configure</i> to open the attribute window of this element.<br/>\
-Change the template to <i>Chat Tutorial Node</i> and click <i>save</i> to apply the change.<br/>\
+Change the template to <i>Chat Tutorial Node</i> and click on <i>Save</i> to apply the change.<br/>\
 You can also change the name your virtual machine and its hostname if you want to.</p>\
 <br/><b>Task: Change the template of the virtual machine to <i>Chat Tutorial Node</i></b>',
 		trigger: function(event) {
@@ -348,7 +348,8 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 	},
 	{
  		text: '<p class="tutorialExplanation">Have a look at the packets and try to figure out how they are encoded and what the fields could mean.</p>\
-<br/><b>Click on continue when you are done</b>',
+<br/><b>Click on continue when you are done</b>\
+ 			<br/>It might happen that your pop-up blocker prevents the Cloudshark window from opening. You should disable the blocker for ToMaTo.',
 		skip_button: 'Continue'
 	},
 	{
@@ -393,7 +394,7 @@ If you do not get a reply, you might need to obtain a network address first by r
 	},
 	{
 		text: '<p class="tutorialExplanation">Now we are at the end of the tutorial, I hope you enjoyed it.</p>\
-<p class="tutorialExplanation">If you want, you can start a chat client on one of the VMs and maybe someone answers.</p>\
+<p class="tutorialExplanation">If you want to, you can start a chat client on one of the VMs and maybe someone answers.</p>\
 <br/><b>Click on continue when you are finished</b>',
 		skip_button: 'Continue'
 	},

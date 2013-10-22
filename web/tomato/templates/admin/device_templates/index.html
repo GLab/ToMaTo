@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of Templates</h1>
 
-{% if hostManager %}
+{% if templ_list|length > 10 and hostManager %}
 	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
 {% endif %}
 

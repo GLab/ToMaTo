@@ -318,6 +318,26 @@ var Window = Class.extend({
 		this.setPosition(options.position);
 		if (options.content) this.div.append(options.content);
 		if (options.autoShow) this.show();
+		
+
+		
+		this.helpButton = $("<div class=\"windowHelp\"></div>");
+		this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
+		var t = this;
+		this.helpLink.click(function(){
+			window.open(t.helpLinkTarget,'_help');
+		});
+		this.helpButton.append(this.helpLink);
+		this.helpLinkTarget="/help";
+
+		this.div.append(this.helpButton);
+		
+		if(!options.helpTarget) {
+			this.helpButton.hide();
+		} else {
+			this.helpLinkTarget = options.helpTarget;
+		}
+		
 	},
 	setTitle: function(title) {
 		this.div.dialog("option", "title", title);
@@ -348,7 +368,7 @@ var TutorialWindow = Window.extend({
 	init: function(options) {
 			this._super(options);
 			if (options.hideCloseButton)
-				$(".ui-dialog-titlebar-close").hide();
+				$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
 			
 			if (!options.tutorialVisible)
 				return;
@@ -370,20 +390,10 @@ var TutorialWindow = Window.extend({
 			this.closeButton = $("<input type=\"button\" value=\"Close Tutorial\" />");
 			this.buttons.append(this.closeButton);
 			
-			this.helpButton = $("<div class=\"tutorialHelp\"></div>");
-			this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
-			var t = this;
-			this.helpLink.click(function(){
-				window.open(t.helpLinkTarget,'_help');
-			});
-			this.helpButton.append(this.helpLink);
-			this.helpLinkTarget="/help/";
-			
 			this.closeButton.click(function() {
 				t.setTutorialVisible(false);
 			});
 			
-			this.add(this.helpButton);
 			this.add(this.text);
 			this.add(this.buttons);
 			
@@ -584,6 +594,7 @@ var AttributeWindow = Window.extend({
 
 var PermissionsWindow = Window.extend({
 	init: function(options) {
+		options.modal = true;
 		this._super(options);
 		
 		var t = this;
@@ -593,6 +604,8 @@ var PermissionsWindow = Window.extend({
 		this.topology = options.topology;
 		this.permissions = this.options.permissions;
 		
+		this.editingList = {};
+		
 		this.userList = $('<div />');
 		this.userListFinder = {};
 		this.div.append(this.userList);
@@ -600,9 +613,8 @@ var PermissionsWindow = Window.extend({
 		
 		this.buttons = $('<div />');
 		
-		
-		var closeButton = $('<input type="button" value="Close" style="float:right;" />');
-		closeButton.click(function(){
+		this.closeButton = $('<input type="button" value="Close" style="float:right;" />');
+		this.closeButton.click(function(){
 			/* if (t.div.getElementsByTagName("select").length > 0) {
 				if (!window.confirm("Are you sure you want to discard all changes?"))
 					return
@@ -612,12 +624,32 @@ var PermissionsWindow = Window.extend({
 			} */
 			t.hide();
 		});
-		this.buttons.append(closeButton);
+		this.buttons.append(this.closeButton);
 		
 		this.div.append(this.buttons);
 		
 		
 		
+	},
+	
+	disableClose: function() {
+		this.closeButton.attr("disabled",true);
+		$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).hide();
+	},
+	enableClose: function() {
+		this.closeButton.attr("disabled",false);
+		$(this.div.parent()[0].getElementsByClassName("ui-dialog-titlebar-close")).show();
+	},
+	checkEnableDisableClose: function() {
+		var disable = false;
+		for (i in this.editingList) {
+			disable = disable || this.editingList[i];
+		}
+		if (disable) {
+			this.disableClose();
+		} else {
+			this.enableClose();
+		}
 	},
 	
 	createUserPermList: function() {
@@ -673,11 +705,12 @@ var PermissionsWindow = Window.extend({
 				td_icon: td_icon,
 				td_name: td_name,
 				td_perm: td_perm,
-				td_buttons: td_buttons
+				td_buttons: td_buttons,
+				tr: tr
 		};
 		this.userTable.append(tr);
 		
-		this.backToView(username);
+		this.drawView(username);
 	},
 	
 	addNewUser: function() {
@@ -702,7 +735,10 @@ var PermissionsWindow = Window.extend({
 	},
 	
 	removeUserFromList: function(username) {
-		this.userListFinder[username].td_name.parent().remove();
+		this.userListFinder[username].tr.remove();
+		this.editingList[username] = false;
+		this.checkEnableDisableClose();
+		delete this.userListFinder[username];
 	},
 	
 	makePermissionEditable: function(username) {
@@ -742,6 +778,9 @@ var PermissionsWindow = Window.extend({
 			t.backToView(username);
 		});
 		td_buttons.append(cancelButton);
+		
+		this.editingList[username] = true;
+		this.checkEnableDisableClose();
 	},
 	
 	setPermission: function(username, permission) {
@@ -757,7 +796,11 @@ var PermissionsWindow = Window.extend({
 			url: 'topology/'+this.topology.id+'/permission',
 			data: {user: username, permission: perm_send},
 			successFn: function(){ 
-				t.topology.data.permissions[username]=permission;
+				if (permission != null) {
+					t.topology.data.permissions[username]=permission;
+				} else {
+					delete t.topology.data.permissions[username];
+				}
 				if (perm_send == null) {
 					t.removeUserFromList(username)
 				} else {
@@ -772,6 +815,13 @@ var PermissionsWindow = Window.extend({
 	},
 	
 	backToView: function(username) {
+		if (username in this.topology.data.permissions && this.topology.data.permissions != null) {
+			this.drawView(username);
+		} else {
+			this.removeUserFromList(username);
+		}
+	},
+	drawView: function(username) {
 		var t = this;
 		
 		var permission = '<div class="hoverdescription">'+this.permissions['null'].title+'</div>';
@@ -800,6 +850,8 @@ var PermissionsWindow = Window.extend({
 				t.setPermission(username,null);
 			})
 			td_buttons.append(removeButton);
+			this.editingList[username] = false;
+			this.checkEnableDisableClose();
 		}
 		
 	}
@@ -1497,9 +1549,18 @@ var Component = Class.extend({
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
 		var settings = this.configWindowSettings();
+		
+		var helpTarget = undefined;
+		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
+			helpTarget = "/help/editor/configwindow_"+this.data.type;
+		}
+		
+		console.log('opening config window for type '+this.data.type);
+		
 		this.configWindow = new AttributeWindow({
 			title: "Attributes",
 			width: "600",
+			helpTarget:helpTarget,
 			buttons: {
 				Save: function() {
 					t.configWindow.hide();
@@ -1607,6 +1668,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
+		options.helpTarget = "/help/editor/configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
@@ -2912,6 +2974,7 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
+		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
 		var t = this;
 		this.workspace.setBusy(true);
 		ajax ({

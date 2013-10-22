@@ -6,6 +6,11 @@
 <h1>List of Sites</h1>
 
 {% if site_list %}
+
+	{% if site_list|length > 10 and hostManager %}
+		<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add site" /></p>
+	{% endif %}
+
 	<script src="/js/enhancetable.js"></script>
 	
 	

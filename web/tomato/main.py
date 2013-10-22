@@ -19,6 +19,8 @@
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
+from django.template import TemplateDoesNotExist
+from django.template.response import TemplateResponse
 
 from lib import *
 import xmlrpclib, settings
@@ -27,10 +29,13 @@ def index(request):
 	return render_to_response("main/start.html")
 
 def help(request, page=""):
-	if page=="":
-		return render_to_response("help/index.html")
-	else:
-		return render_to_response("help/pages/"+page+".html")
+	try:
+		if page=="":
+			return render_to_response("help/index.html")
+		else:
+			return render_to_response("help/pages/"+page+".html")
+	except TemplateDoesNotExist:
+		return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)

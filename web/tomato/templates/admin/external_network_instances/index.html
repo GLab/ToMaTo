@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of External Network Instances</h1>
 
-{% if hostManager %}
+{% if netwI_list|length > 10 and hostManager %}
 	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external network" /></p>
 {% endif %}
 

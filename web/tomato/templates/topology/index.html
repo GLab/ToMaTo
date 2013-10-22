@@ -7,6 +7,14 @@
 
 
 {% if top_list %}
+
+{% if top_list|length > 10 and 'no_topology_create' in user.flags %}
+	<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new Topology" />
+	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
+	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
+	<div style="height:0.3cm;">&nbsp;</div>
+{% endif %}
+
 <script src="/js/enhancetable.js"></script>
 <table class="sortable,filterable,stddevcolor">
   <tr>
