@@ -1,3 +1,21 @@
+tomato-hostmanager (3.0.3) unstable; urgency=low
+
+  * Fixed the fix :-(
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 13:26:31 +0200
+
+tomato-hostmanager (3.0.2) unstable; urgency=low
+
+  * Fixed repy template selection
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 13:05:28 +0200
+
+tomato-hostmanager (3.0.1) unstable; urgency=low
+
+  * Some bugfixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 17 Oct 2013 16:58:53 +0200
+
 tomato-hostmanager (0.0.33) unstable; urgency=low
 
   * Fixed problems with repy

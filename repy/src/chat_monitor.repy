@@ -1,0 +1,25 @@
+
+#include <util/net.repy>
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer4/udp.repy>
+#include <util/date.repy>
+
+def chatmonitor(src, pkt):
+  eth = EthernetHeader(pkt)
+  if eth.type != ETHERNET_TYPE_IP:
+    return
+  ip = IPv4Header(eth.payload)
+  if ip.protocol != IP_PROTOCOL_UDP:
+    return
+  udp = UdpHeader(ip.payload)
+  if udp.src != 5000 or udp.dst != 5000:
+    return
+  uniqueid, seqnum, timestamp, msg = udp.payload.split("|")
+  ip = ipToStr(ip.src)
+  date = "%04d-%02d-%02d %02d:%02d:%02d" % datetime(float(timestamp))
+  echo("%s %s[%s]: %s" % (date, ip, seqnum, msg))
+
+echo("")
+echo("Chat Tutorial Monitor - waiting for messages...")
+run_forever(chatmonitor)

@@ -1672,6 +1672,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
 		if (con.attrEnabled("capturing")) {
+			var t = this;
 			this.table.append($("<tr/>").append($("<th colspan=4><big>Packet capturing</big></th>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
@@ -2411,26 +2412,32 @@ var createElementMenu = function(obj) {
 					obj.uploadImage();
 				}
 			} : null,
-			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-				name:"Download RexTFV Archive",
+			"rextfv": obj.actionEnabled("rextfv_download_grant") || obj.actionEnabled("rextfv_upload_grant") || obj.rextfvStatusSupport() ? {
+				name:"Executable archive",
 				icon:"rextfv",
-				callback: function(){
-					obj.downloadRexTFV();
-				}
-			} : null,
-			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-				name:"Upload RexTFV Archive",
-				icon:"rextfv",
-				callback: function(){
-					obj.uploadRexTFV();
-				}
-			} : null,
-			"rextfv_status": obj.rextfvStatusSupport() ? {
-				name:"RexTFV Status",
-				icon:"rextfv",
-				callback: function(){
-					obj.openRexTFVStatusWindow();
-				}
+				items: { 
+					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+						name:"Download Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.downloadRexTFV();
+						}
+					} : null,
+					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+						name:"Upload Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.uploadRexTFV();
+						}
+					} : null,
+					"rextfv_status": obj.rextfvStatusSupport() ? {
+						name:"Status",
+						icon:"rextfv",
+						callback: function(){
+							obj.openRexTFVStatusWindow();
+						}
+					} : null,
+				},
 			} : null,
 			"sep3": "---",
 			"configure": {
@@ -2458,7 +2465,12 @@ var createElementMenu = function(obj) {
 		}
 	};
 	for (var name in menu.items) {
-		if (! menu.items[name]) delete menu.items[name]; 
+		if (! menu.items[name]) {
+			delete menu.items[name];
+			continue;
+		}
+		var menu2 = menu.items[name];
+		if (menu2.items) for (var name2 in menu2.items) if (! menu2.items[name2]) delete menu2.items[name2]; 
 	}
 	return menu;
 };

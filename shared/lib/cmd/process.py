@@ -63,10 +63,16 @@ def jiffiesPerSecond():
 	return jiffies / seconds / cpus
 	
 def cputime(pid):
-	with open("/proc/%d/stat" % pid) as fp:
-		jiffies = sum(map(int, fp.readline().split()[13:17]))
-	return jiffies/jiffiesPerSecond()
+	try:
+		with open("/proc/%d/stat" % pid) as fp:
+			jiffies = sum(map(int, fp.readline().split()[13:17]))
+		return jiffies/jiffiesPerSecond()
+	except:
+		return 0
 
 def memory(pid):
-	with open("/proc/%d/stat" % pid) as fp:
-		return int(fp.readline().split()[23]) * 4096
+	try:
+		with open("/proc/%d/stat" % pid) as fp:
+			return int(fp.readline().split()[23]) * 4096
+	except:
+		return 0

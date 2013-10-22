@@ -1,3 +1,9 @@
+tomato-backend (3.0.3) stable; urgency=low
+
+  * Some more fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 15:20:08 +0200
+
 tomato-backend (3.0.2) stable; urgency=low
 
   * Fixed problem with link emulation direction

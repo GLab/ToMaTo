@@ -162,7 +162,10 @@ class UDP_Tunnel(elements.Element):
 		usage.memory = process.memory(self.pid)
 		cputime = process.cputime(self.pid)
 		usage.updateContinuous("cputime", cputime, data)
-		traffic = sum(net.trafficInfo(self.interfaceName()))
+		try:
+			traffic = sum(net.trafficInfo(self.interfaceName()))
+		except: #Tunnel just quit
+			traffic = 0
 		usage.updateContinuous("traffic", traffic, data)
 
 if not config.MAINTENANCE:

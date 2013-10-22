@@ -1,3 +1,15 @@
+tomato-web (3.0.2) stable; urgency=low
+
+  * Fixed tutorial name
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 15:20:35 +0200
+
+tomato-web (3.0.1) stable; urgency=low
+
+  * Some bugfixes, new tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 17 Oct 2013 15:39:24 +0200
+
 tomato-web (3.0) stable; urgency=low
 
   * Release of version 3

@@ -282,7 +282,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def _addInterface(self, interface):
 		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_add", interface.name, "--save"])
-		self._vzctl("set", ["--ifname", interface.name, "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
+		self._vzctl("set", ["--ifname", interface.name, "--bridge", "dummy", "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
 		
 	def _removeInterface(self, interface):
 		assert self.state != ST_CREATED

@@ -122,6 +122,11 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 				attrs[key] = value
 		return attrs
 
+	def checkState(self):
+		if self.mainElement():
+			self.state = self.mainElement().state
+			self.save()
+
 	def checkModify(self, attrs):
 		"""
 		Checks whether the attribute change can succeed before changing the
@@ -205,6 +210,11 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		fault.check(not self.isBusy(), "Object is busy")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
+			if mel and action in mel.getAllowedActions():
+				return
+			if mel:
+				mel.updateInfo()
+				self.checkState()
 			if mel and action in mel.getAllowedActions():
 				return
 		fault.check(action in self.CUSTOM_ACTIONS, "Unsupported action for %s: %s", (self.type, action))

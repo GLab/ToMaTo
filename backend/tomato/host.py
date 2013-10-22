@@ -262,6 +262,10 @@ class Host(attributes.Mixin, models.Model):
 					if isAttrs["torrent_data_hash"] == shouldAttrs["torrent_data_hash"]:
 						#only send torrent data when needed
 						del attrs["torrent_data"]
+					else:
+						toh.ready = False
+						toh.date = time.time()
+						toh.save()  						
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", address=self.address, template=attrs)		
 		logging.logMessage("resource_sync end", category="host", address=self.address)		
@@ -599,6 +603,7 @@ class HostConnection(attributes.Mixin, models.Model):
 	def updateInfo(self):
 		try:
 			self.attrs = self.host.getProxy().connection_info(self.num)
+			self.state = self.attrs["state"]
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.address, id=self.num)

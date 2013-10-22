@@ -62,12 +62,12 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		self.save()
 	
 	def onChildAdded(self, iface):
-		if self.state == ST_PREPARED:
+		if self.state == ST_PREPARED: #self is correct
 			iface.action("prepare", {})
 			self._crossConnect()
 
 	def onChildRemoved(self, iface):
-		if self.state == ST_PREPARED:
+		if iface.state == ST_PREPARED: #iface is correct
 			iface.action("destroy", {})
 			self._crossConnect()
 
@@ -139,6 +139,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	peers_attr = Attr("peers", desc="Peers", default=[], states=[ST_CREATED, ST_PREPARED])
 	peers = peers_attr.attribute()
 	
+	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy", elements.REMOVE_ACTION]
 	CUSTOM_ACTIONS = {
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
@@ -155,7 +156,6 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 
 	TYPE = "tinc_endpoint"
 	HOST_TYPE = "tinc"
-	DIRECT_ATTRS_EXCLUDE = []
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
