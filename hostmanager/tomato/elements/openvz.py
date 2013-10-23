@@ -439,6 +439,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def action_start(self):
 		self._checkState()
+		if not net.bridgeExists("dummy"):
+			net.bridgeCreate("dummy")
+		net.ifUp("dummy")
 		self._vzctl("start") #not using --wait since this might hang
 		self.setState(ST_STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")

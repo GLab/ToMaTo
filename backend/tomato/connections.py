@@ -45,7 +45,7 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
-class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
@@ -246,10 +246,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 
 	def remove(self):
 		with getLock(self):
-			self._remove()
+			self._removeLocked()
 		removeLock(self)
 			
-	def _remove(self):
+	def _removeLocked(self):
 		self.checkRemove()
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)		
@@ -291,7 +291,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return id1 < id2
 		
 	def _start(self):
-		el1, el2 = self.getElements()
+		if self.state == ST_STARTED:
+			return
+		els = self.getElements()
+		assert len(els) == 2, "Connection %s has %d connections" % (self, len(els))
+		el1, el2 = els
 		el1, el2 = el1.mainElement(), el2.mainElement()
 		fault.check(el1 and el2, "Can not connect unprepared element")
 		# First create connection, then set attributes
@@ -356,12 +360,21 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		for el in self.getElements():
 			if not el.readyToConnect():
 				return
+		# This is very important
+		# To avoid race conditions where two elements are started at the same time and then trigger
+		# the connection start at the same time, a lock is used to guarantee that only one instance
+		# of _start runs at the same time.
+		# To avoid the case that the second element uses old connection data and runs _start again,
+		# the object is fetched freshly from the database. 
 		with getLock(self):
-			self._start()
+			obj = Connection.objects.get(id=self.id)
+			obj._start()
 		
 	def triggerStop(self):
+		# This is very important, see the comment on triggerStart 
 		with getLock(self):
-			self._stop()
+			obj = Connection.objects.get(id=self.id)
+			obj._stop()
 		
 	@classmethod
 	def getCapabilities(cls, type_, host_):

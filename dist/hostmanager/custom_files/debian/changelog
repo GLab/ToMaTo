@@ -1,3 +1,9 @@
+tomato-hostmanager (3.0.4) unstable; urgency=low
+
+  * More fixes, especially for KVMQM
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 11:21:37 +0200
+
 tomato-hostmanager (3.0.3) unstable; urgency=low
 
   * Fixed the fix :-(

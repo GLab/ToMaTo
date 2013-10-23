@@ -44,7 +44,7 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
-class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
 	type = models.CharField(max_length=30, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
@@ -286,10 +286,10 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 
 	def remove(self, recurse=True):
 		with getLock(self):
-			self._remove(recurse)
+			self._removeLocked(recurse)
 		removeLock(self)
 			
-	def _remove(self, recurse):
+	def _removeLocked(self, recurse):
 		self.checkRemove(recurse)
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)
@@ -338,7 +338,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		if not self.connection:
 			return None
 		els = self.connection.getElements()
-		assert len(els) == 2
+		assert len(els) == 2, "Connection %s has %d elements" % (self, len(els))
 		if self.id == els[0].id:
 			return els[1]
 		if self.id == els[1].id:
