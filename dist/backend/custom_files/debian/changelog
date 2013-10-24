@@ -1,3 +1,9 @@
+tomato-backend (3.0.8) stable; urgency=low
+
+  * Detecting problems with host synchronization
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:30:30 +0200
+
 tomato-backend (3.0.7) stable; urgency=low
 
   * Some last fixes for tutorial

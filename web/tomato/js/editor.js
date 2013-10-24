@@ -2681,7 +2681,7 @@ var VPNElement = IconElement.extend({
 var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.kind + "32.png";
+		this.iconUrl = "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
 		this.iconSize = {x: 32, y:32};
 	},
 	configWindowSettings: function() {

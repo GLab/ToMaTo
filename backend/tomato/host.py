@@ -336,6 +336,8 @@ class Host(attributes.Mixin, models.Model):
 		hi = self.hostInfo
 		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
 			problems.append("Old info age, host unreachable?")
+		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
+			problems.append("Host is not synchronized")
 		if not hi:
 			problems.append("Node info is missing")
 			return problems
