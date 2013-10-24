@@ -139,7 +139,10 @@ class ResourceInstance(db.ChangesetMixin, attributes.Mixin, models.Model):
 def get(id_, **kwargs):
     try:
         el = Resource.objects.get(id=id_, **kwargs)
-        return el.upcast()
+        try:
+            return el.upcast()
+        except:
+            return el
     except:
         return None
 

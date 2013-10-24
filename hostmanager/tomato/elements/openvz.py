@@ -473,7 +473,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			process.killTree(self.vncpid)
 			del self.vncpid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self._vzctl("stop")
 		self.setState(ST_PREPARED, True)

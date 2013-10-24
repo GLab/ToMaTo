@@ -209,9 +209,9 @@ class Host(attributes.Mixin, models.Model):
 		from . import resources
 		hostNets = {}
 		for net in self.getProxy().resource_list("network"):
-			hostNets[(net["attrs"]["kind"], net["attrs"]["bridge"])] = net
+			hostNets[net["attrs"]["bridge"]] = net
 		for net in self.networks.all():
-			key = (net.getKind(), net.bridge)
+			key = net.bridge
 			attrs = net.attrs.copy()
 			attrs["bridge"] = net.bridge
 			attrs["kind"] = net.getKind()

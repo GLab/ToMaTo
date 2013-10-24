@@ -286,7 +286,7 @@ class Repy(elements.Element):
 			process.kill(self.pid)
 			del self.pid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self.setState(ST_PREPARED, True)
 		

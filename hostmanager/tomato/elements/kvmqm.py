@@ -423,7 +423,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			process.kill(self.vncpid)
 			del self.vncpid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
 		self.setState(ST_PREPARED, True)
