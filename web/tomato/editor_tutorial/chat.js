@@ -294,7 +294,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		skip_button: 'Continue'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will add a latency of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a latency of 2000 ms on one of the directions.</p>\
+		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
 <br/><b>Task: Add 2 seconds delay to one link</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
