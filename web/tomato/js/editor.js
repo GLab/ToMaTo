@@ -1615,7 +1615,10 @@ var Component = Class.extend({
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
-		for (var name in attrs) this.data.attrs[name] = attrs[name];
+		for (var name in attrs) {
+			if (this.attrEnabled(name)) this.data.attrs[name] = attrs[name];
+			else delete attrs[name];
+		}
 		this.triggerEvent({operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
 		ajax({
