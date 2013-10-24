@@ -100,6 +100,18 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	def remoteType(self):
 		return self.mainConnection().type if self.mainConnection() else "bridge"
 
+	def _adaptAttrs(self, attrs):
+		tmp = {}
+		reversed = not self._correctDirection() #@ReservedAssignment
+		for key, value in attrs.iteritems():
+			if reversed:
+				if key.endswith("_from"):
+					key = key[:-5] + "_to"
+				elif key.endswith("_to"):
+					key = key[:-3] + "_from"
+			tmp[key] = value
+		return tmp
+
 	def _remoteAttrs(self):
 		caps = getConnectionCapabilities(self.remoteType())
 		allowed = caps["attrs"].keys() if caps else []
@@ -107,12 +119,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		reversed = not self._correctDirection() #@ReservedAssignment
 		for key, value in self.attrs.iteritems():
 			if key in allowed:
-				if reversed:
-					if key.endswith("_from"):
-						key = key[:-5] + "_to"
-					elif key.endswith("_to"):
-						key = key[:-3] + "_from"
 				attrs[key] = value
+		attrs = self._adaptAttrs(attrs)
 		return attrs
 
 	def checkModify(self, attrs):
@@ -216,7 +224,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		@type params: dict
 		"""
 		with getLock(self):
-			return self._action(self, action, params)
+			return self._action(action, params)
 			
 	def _action(self, action, params):
 		self.checkAction(action)
@@ -373,8 +381,12 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	def triggerStop(self):
 		# This is very important, see the comment on triggerStart 
 		with getLock(self):
-			obj = Connection.objects.get(id=self.id)
-			obj._stop()
+			try:
+				obj = Connection.objects.get(id=self.id)
+				obj._stop()
+			except Connection.DoesNotExist:
+				# Other end of connection deleted the connection, no need to stop it
+				pass
 		
 	@classmethod
 	def getCapabilities(cls, type_, host_):
@@ -425,7 +437,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
 		mcon = self.mainConnection()
 		if mcon:
-			info["attrs"].update(mcon.attrs["attrs"])
+			info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
 		return info
 
 		

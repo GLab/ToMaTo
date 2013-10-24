@@ -1949,7 +1949,7 @@ var Connection = Component.extend({
 		 		t.topology.onUpdate();
 				t.triggerEvent({operation: "remove", phase: "end"});
 				for (var i=0; i<t.elements.length; i++) 
-					if (t.elements[i].isRemovable())
+					if (t.elements[i].isRemovable() && t.topology.elements[t.elements[i].id])
 						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {

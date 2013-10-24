@@ -1,3 +1,15 @@
+tomato-backend (3.0.6) stable; urgency=low
+
+  * Fully fixed version for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 10:30:05 +0200
+
+tomato-backend (3.0.5) stable; urgency=low
+
+  * Fixed version for tutorial rc1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 14:14:14 +0200
+
 tomato-backend (3.0.4) stable; urgency=low
 
   * Some more fixes
