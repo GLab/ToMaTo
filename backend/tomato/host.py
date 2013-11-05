@@ -23,7 +23,7 @@ from auth import Flags, mailFlaggedUsers
 import xmlrpclib, time, hashlib
 
 class Site(attributes.Mixin, models.Model):
-	name = models.CharField(max_length=10, unique=True)
+	name = models.CharField(max_length=50, unique=True)
 	#hosts: [Host]
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
