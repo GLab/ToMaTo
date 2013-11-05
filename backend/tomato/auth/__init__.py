@@ -263,6 +263,9 @@ def login(username, password):
 	stored.loggedIn()
 	return stored
 
+def remove(user):
+	user.delete()
+
 def register(username, password, attrs={}, provider=""):
 	for prov in providers:
 		if not prov.getName() == provider:
