@@ -1491,7 +1491,7 @@ var Component = Class.extend({
 		return (action in this.caps.actions) && (this.caps.actions[action].indexOf(this.data.state) >= 0); 
 	},
 	attrEnabled: function(attr) {
-		return (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
+		return (attr[0] == "_") || (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
