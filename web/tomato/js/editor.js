@@ -261,13 +261,15 @@ var TemplateChoiceElement = ChoiceElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.descriptions = options.descriptions;
-		console.log(this.descriptions);
+		this.nlXTPsupport = options.nlXTPsupport;
+		console.log(this.nlXTPsupport);
 		var t = this;
 		this.element.change(function(){
 			t.updateInfoBox();
 		});
 		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
 		this.element.after(this.info);
+		
 		this.updateInfoBox();
 	},
 	updateInfoBox: function() {
@@ -285,9 +287,18 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;"><table></table></p></div>');
+		if (this.descriptions[this.getValue()]) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
+			this.info.append(' &nbsp; <img src="/img/info.png" />');
+		}
+		
+		if (!this.nlXTPsupport[this.getValue()]) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			this.info.append(' &nbsp; <img src="/img/error.png" />');
+		}
+		
 		//desc.append($());
-		this.info.append(' &nbsp; <img src="/img/info.png" />');
 		this.info.append(desc);
 	}
 });
@@ -2744,6 +2755,7 @@ var VMElement = IconElement.extend({
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
 			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
+			nlXTPsupport: createMap(this.editor.templates.getAll(this.data.type), "name", "nlXTP_installed"),
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2851,6 +2863,7 @@ var Template = Class.extend({
 		this.name = options.name;
 		this.label = options.label || options.name;
 		this.description = options.description || "no description available";
+		this.nlXTP_installed = options.nlXTP_installed || false;
 	},
 	menuButton: function(options) {
 		return Menu.button({
