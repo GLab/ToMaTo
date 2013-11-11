@@ -2044,7 +2044,7 @@ var Element = Component.extend({
 	},
 	rextfvStatusSupport: function() {
 		if ('rextfv_supported' in this.data.attrs)
-			return this.data.attrs.rextfv_supported
+			return this.data.attrs.rextfv_supported && this.data.attrs.rextfv_run_status.readable;
 		else
 			return false;
 	},
