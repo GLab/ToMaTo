@@ -1,5 +1,9 @@
 {% extends "admin/base.html" %}
 
+{% block header %}
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+{% endblock %}
+
 {% load tomato %}
 
 {% block content %}
@@ -12,7 +16,30 @@
 	<form action="{%url site.add%}" method="post">
 {% endif %}
 
+	<script type="text/javascript">
 	
+		function fillCoordinates() {
+			var address = document.getElementById("id_description").value;
+			var addr=address.replace(" ","+");
+			$.ajax({
+				type: "GET",
+				async: true,
+				url: "http://maps.googleapis.com/maps/api/geocode/json?sensor=false&address="+addr,
+				success: function(res) {
+					var ret = res.results[0];
+					if(ret) {
+						loc = ret.geometry.location
+						document.getElementById("id_geolocation_latitude").value = loc.lat;
+						document.getElementById("id_geolocation_longitude").value = loc.lng;
+						console.log(loc);
+					} else {
+						alert("Could not find a location for "+address)
+					}
+				}
+			});
+		}
+	
+	</script>
 
 		<table class="whitebg">
 			{{form.as_table}}
@@ -20,6 +47,14 @@
 			<tr>
 				<td />
 				<td align="right">
+				
+					<input type="button" onClick="fillCoordinates();" value="Fetch Geolocation from Description" />
+				
+				</td>
+			</tr>
+			<tr>
+				<td />
+				<td>
 					
 					{% if edit %}
 						<input type="submit" value="Save" />
@@ -31,6 +66,8 @@
 				</td>
 			</tr>
 		</table>
+		
+		
 	
 </form>
 
