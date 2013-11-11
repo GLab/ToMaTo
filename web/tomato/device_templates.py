@@ -30,7 +30,7 @@ class TemplateForm(forms.Form):
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
-	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", required=False)
+	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
