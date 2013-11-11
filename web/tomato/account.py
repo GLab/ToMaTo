@@ -91,6 +91,8 @@ class AccountChangeForm(AccountForm):
             
 
 class AccountRegisterForm(AccountForm):
+    aup = forms.BooleanField(label="", help_text='I accept the <a href="/help/license/aup">terms and conditions</a>', required=True)
+    
     def __init__(self, data=None):
         AccountForm.__init__(self, data)
         self.fields["password"].required = True
@@ -114,7 +116,8 @@ def info(api, request, id=None):
     if id:
         user = api.account_info(id)
     else:
-        id = user["id"]            
+        id = user["id"]     
+               
     if request.method=='POST':
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
@@ -141,6 +144,7 @@ def register(request):
             del data["password"]
             del data["password2"]
             del data["name"]
+            del data["aup"]
             api = getGuestApi()
             try:
                 api.account_create(username, password=password, attrs=data)
