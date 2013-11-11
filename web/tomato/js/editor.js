@@ -287,7 +287,13 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;"><table></table></p></div>');
+		
+		var d = $('<div class="hiddenbox"></div>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var desc = $('<table></table>');
+		p.append(desc);
+		d.append(p);
+		
 		if (this.descriptions[this.getValue()]) {
 			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
 			this.info.append(' &nbsp; <img src="/img/info.png" />');
@@ -299,7 +305,7 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		}
 		
 		//desc.append($());
-		this.info.append(desc);
+		this.info.append(d);
 	}
 });
 
