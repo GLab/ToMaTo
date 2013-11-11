@@ -179,7 +179,8 @@ class Repy(elements.Element):
 		self.vncport = self.getResource("port")
 		self.websocket_port = self.getResource("port")
 		self.vncpassword = cmd.randomPassword()
-		self.modify_template("") #use default template
+		if not self.template:
+			self.modify_template("") #use default template
 		self._setProfile()
 
 	def _getState(self):
@@ -212,6 +213,8 @@ class Repy(elements.Element):
 		return "eth%d" % num
 
 	def _useImage(self, path_):
+		if path.exists(self.dataPath("program.repy")):
+			path.remove(self.dataPath("program.repy"), recursive=True)
 		path.copy(path_, self.dataPath("program.repy"))
 
 	def _setProfile(self):
@@ -283,7 +286,7 @@ class Repy(elements.Element):
 			process.kill(self.pid)
 			del self.pid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self.setState(ST_PREPARED, True)
 		

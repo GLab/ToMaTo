@@ -1,3 +1,45 @@
+tomato-hostmanager (3.0.7) unstable; urgency=low
+
+  * Some last fixes for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:20:33 +0200
+
+tomato-hostmanager (3.0.6) unstable; urgency=low
+
+  * Fully fixed version for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 10:30:34 +0200
+
+tomato-hostmanager (3.0.5) unstable; urgency=low
+
+  * Fixed version for tutorial rc1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 14:14:41 +0200
+
+tomato-hostmanager (3.0.4) unstable; urgency=low
+
+  * More fixes, especially for KVMQM
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 11:21:37 +0200
+
+tomato-hostmanager (3.0.3) unstable; urgency=low
+
+  * Fixed the fix :-(
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 13:26:31 +0200
+
+tomato-hostmanager (3.0.2) unstable; urgency=low
+
+  * Fixed repy template selection
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 13:05:28 +0200
+
+tomato-hostmanager (3.0.1) unstable; urgency=low
+
+  * Some bugfixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 17 Oct 2013 16:58:53 +0200
+
 tomato-hostmanager (0.0.33) unstable; urgency=low
 
   * Fixed problems with repy

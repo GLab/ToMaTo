@@ -27,4 +27,8 @@
     <Location "/js">
         SetHandler none
     </Location>
+
+    <Location "/editor_tutorial">
+        SetHandler none
+    </Location>
 </VirtualHost>

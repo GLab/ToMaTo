@@ -34,7 +34,7 @@ ST_STARTED = "started"
 TYPES = {}
 REMOVE_ACTION = "(remove)"
 
-class Element(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	owner = models.CharField(max_length=20, validators=[db.nameValidator])
 	parent = models.ForeignKey('self', null=True, related_name='children')

@@ -282,7 +282,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def _addInterface(self, interface):
 		assert self.state != ST_CREATED
 		self._vzctl("set", ["--netif_add", interface.name, "--save"])
-		self._vzctl("set", ["--ifname", interface.name, "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
+		self._vzctl("set", ["--ifname", interface.name, "--bridge", "dummy", "--mac", interface.mac, "--host_ifname", self._interfaceName(interface.name), "--mac_filter",  "off", "--save"])
 		
 	def _removeInterface(self, interface):
 		assert self.state != ST_CREATED
@@ -439,6 +439,9 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def action_start(self):
 		self._checkState()
+		if not net.bridgeExists("dummy"):
+			net.bridgeCreate("dummy")
+		net.ifUp("dummy")
 		self._vzctl("start") #not using --wait since this might hang
 		self.setState(ST_STARTED, True)
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
@@ -470,7 +473,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			process.killTree(self.vncpid)
 			del self.vncpid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self._vzctl("stop")
 		self.setState(ST_PREPARED, True)

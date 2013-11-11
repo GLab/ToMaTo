@@ -130,6 +130,22 @@ def account_create(username, password, attrs={}, provider=""):
     user = register(username, password, attrs, provider)
     return user.info(True)
         
+def account_remove(name=None):
+    """
+    Deletes the given account from the database. Note that this does not remove
+    the entry in any external user database. Thus the user can still login 
+    which will create a new account.
+    
+    Parameter *name*:
+	  This field must contain the user name of the account to be removed.
+    
+    Return value:
+      This method returns nothing if the account has been deleted.
+    """
+    acc = _getAccount(name)
+    fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
+    remove(acc)
+        
 def account_flags():
     """
     Returns the dict of all account flags and their short descriptions.
@@ -140,4 +156,4 @@ def account_flags():
     return flags
         
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, flags, Flags, register
+from ..auth import getUser, getAllUsers, flags, Flags, register, remove

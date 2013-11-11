@@ -17,6 +17,7 @@
 
 from .. import elements, host, fault
 import generic
+from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
 class Repy(generic.VMElement):
 	TYPE = "repy"
@@ -25,6 +26,12 @@ class Repy(generic.VMElement):
 		"repy_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
 	PROFILE_ATTRS = ["ram", "diskspace", "cpus", "bandwidth"]
+	DIRECT_ACTIONS_EXCLUDE = ["prepare", "destroy", elements.REMOVE_ACTION]
+	CUSTOM_ACTIONS = {
+		"prepare": [ST_CREATED],
+		"destroy": [ST_PREPARED],
+		elements.REMOVE_ACTION: [ST_CREATED],
+	}
 	class Meta:
 		db_table = "tomato_repy"
 		app_label = 'tomato'

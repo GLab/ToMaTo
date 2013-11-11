@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+import threading
 
 from topology import Topology
 from auth import Flags
@@ -30,7 +31,21 @@ REMOVE_ACTION = "(remove)"
 ST_CREATED = "created"
 ST_STARTED = "started"
 
-class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+LOCKS = {}
+LOCKS_LOCK = threading.RLock()
+
+def getLock(obj):
+	with LOCKS_LOCK:
+		if not obj.id in LOCKS:
+			LOCKS[obj.id] = threading.RLock()
+		return LOCKS[obj.id]
+	
+def removeLock(obj):
+	with LOCKS_LOCK:
+		with getLock(obj):
+			del LOCKS[obj.id]
+
+class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
@@ -76,12 +91,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def canConnect(cls, el1, el2):
 		return el1.CAP_CONNECTABLE and el2.CAP_CONNECTABLE
 		
-	def isBusy(self):
-		return hasattr(self, "_busy") and self._busy
-	
-	def setBusy(self, busy):
-		self._busy = busy
-		
 	def upcast(self):
 		return self
 	
@@ -91,6 +100,18 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	def remoteType(self):
 		return self.mainConnection().type if self.mainConnection() else "bridge"
 
+	def _adaptAttrs(self, attrs):
+		tmp = {}
+		reversed = not self._correctDirection() #@ReservedAssignment
+		for key, value in attrs.iteritems():
+			if reversed:
+				if key.endswith("_from"):
+					key = key[:-5] + "_to"
+				elif key.endswith("_to"):
+					key = key[:-3] + "_from"
+			tmp[key] = value
+		return tmp
+
 	def _remoteAttrs(self):
 		caps = getConnectionCapabilities(self.remoteType())
 		allowed = caps["attrs"].keys() if caps else []
@@ -98,12 +119,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		reversed = not self._correctDirection() #@ReservedAssignment
 		for key, value in self.attrs.iteritems():
 			if key in allowed:
-				if reversed:
-					if key.endswith("_from"):
-						key = key[:-5] + "_to"
-					elif key.endswith("_to"):
-						key = key[:-3] + "_from"
 				attrs[key] = value
+		attrs = self._adaptAttrs(attrs)
 		return attrs
 
 	def checkModify(self, attrs):
@@ -117,7 +134,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type attrs: dict
 		"""
 		self.checkRole(Role.manager)
-		fault.check(not self.isBusy(), "Object is busy")
 		mcon = self.mainConnection()
 		direct = []
 		if self.DIRECT_ATTRS:
@@ -148,9 +164,12 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""		
+		with getLock(self):
+			return self._modify(attrs)
+			
+	def _modify(self, attrs):
 		self.checkModify(attrs)
 		logging.logMessage("modify", category="connection", id=self.id, attrs=attrs)		
-		self.setBusy(True)
 		try:
 			directAttrs = {}
 			for key, value in attrs.iteritems():
@@ -169,8 +188,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		except Exception, exc:
 			self.onError(exc)
 			raise
-		finally:
-			self.setBusy(False)
 		self.save()
 		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
 	
@@ -184,7 +201,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@type action: str
 		"""
 		self.checkRole(Role.manager)
-		fault.check(not self.isBusy(), "Object is busy")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mcon = self.mainConnection()
 			if mcon and action in mcon.getAllowedActions():
@@ -207,9 +223,12 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		@param params: Parameters for the action
 		@type params: dict
 		"""
+		with getLock(self):
+			return self._action(action, params)
+			
+	def _action(self, action, params):
 		self.checkAction(action)
 		logging.logMessage("action start", category="connection", id=self.id, action=action, params=params)
-		self.setBusy(True)
 		try:
 			if action in self.CUSTOM_ACTIONS:
 				res = getattr(self, "action_%s" % action)(**params)
@@ -221,8 +240,6 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		except Exception, exc:
 			self.onError(exc)
 			raise
-		finally:
-			self.setBusy(False)
 		self.save()
 		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
 		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
@@ -234,13 +251,20 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 
 	def checkRemove(self):
 		self.checkRole(Role.manager)
-		fault.check(not self.isBusy(), "Object is busy")
 
 	def remove(self):
+		with getLock(self):
+			self._removeLocked()
+		removeLock(self)
+			
+	def _removeLocked(self):
 		self.checkRemove()
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)		
 		self.triggerStop()
+		for el in self.getElements():
+			el.connection = None
+			el.save()
 		self.elements.clear() #Important, otherwise elements will be deleted
 		#self.totalUsage will be deleted automatically
 		#not deleting permissions, the object belongs to the topology
@@ -275,7 +299,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		return id1 < id2
 		
 	def _start(self):
-		el1, el2 = self.getElements()
+		if self.state == ST_STARTED:
+			return
+		els = self.getElements()
+		assert len(els) == 2, "Connection %s has %d connections" % (self, len(els))
+		el1, el2 = els
 		el1, el2 = el1.mainElement(), el2.mainElement()
 		fault.check(el1 and el2, "Can not connect unprepared element")
 		# First create connection, then set attributes
@@ -340,10 +368,25 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		for el in self.getElements():
 			if not el.readyToConnect():
 				return
-		self._start()
+		# This is very important
+		# To avoid race conditions where two elements are started at the same time and then trigger
+		# the connection start at the same time, a lock is used to guarantee that only one instance
+		# of _start runs at the same time.
+		# To avoid the case that the second element uses old connection data and runs _start again,
+		# the object is fetched freshly from the database. 
+		with getLock(self):
+			obj = Connection.objects.get(id=self.id)
+			obj._start()
 		
 	def triggerStop(self):
-		self._stop()
+		# This is very important, see the comment on triggerStart 
+		with getLock(self):
+			try:
+				obj = Connection.objects.get(id=self.id)
+				obj._stop()
+			except Connection.DoesNotExist:
+				# Other end of connection deleted the connection, no need to stop it
+				pass
 		
 	@classmethod
 	def getCapabilities(cls, type_, host_):
@@ -394,7 +437,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
 		mcon = self.mainConnection()
 		if mcon:
-			info["attrs"].update(mcon.attrs["attrs"])
+			info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
 		return info
 
 		

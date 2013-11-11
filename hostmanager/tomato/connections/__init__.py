@@ -74,7 +74,7 @@ Bridge concept interface:
 """
 
 
-class Connection(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	owner = models.CharField(max_length=20, validators=[db.nameValidator])
 	state = models.CharField(max_length=20, validators=[db.nameValidator])

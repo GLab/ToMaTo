@@ -1,5 +1,5 @@
 from datetime import datetime
-import sys, os, time, json, traceback
+import sys, os, time, json, traceback, hashlib
 
 from .lib.cmd import run, CommandError #@UnresolvedImport
 from . import config
@@ -25,7 +25,7 @@ def getEnv():
 	data = {}
 	for name, cmd in envCmds.iteritems():
 		try:
-			data[name] = run(cmd)
+			data[name] = run(cmd).splitlines()
 		except CommandError, err:
 			data[name] = str(err)
 	return data
@@ -55,7 +55,9 @@ def dump(timestamp=None, caller=None, **kwargs):
 def dumpException(**kwargs):
 	(type_, value, trace) = sys.exc_info()
 	trace = traceback.extract_tb(trace) if trace else None
-	dump(caller=False, exception={"type": type_.__name__, "value": str(value), "trace": trace}, **kwargs)
+	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
+	exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
+	dump(caller=False, exception=exception, excid=exception_id, **kwargs)
 
 def getCount():
 	return len(os.listdir(config.DUMP_DIR))

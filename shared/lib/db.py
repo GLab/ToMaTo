@@ -101,16 +101,6 @@ class CommaSeparatedListField(models.TextField):
 			value = "," + (",".join(value)) + ","
 		return super(CommaSeparatedListField, self).get_db_prep_save(value)
 
-class ReloadMixin:
-	def reload(self): #@ReservedAssignment
-		from_db = self.__class__.objects.get(pk=self.pk)
-		fields = self.__class__._meta.get_all_field_names()
-		for field in fields:
-			try:
-				setattr(self, field, getattr(from_db, field)) #update this instances info from returned Model
-			except:
-				continue
-
 def commit_after(fn):
 	def call(*args, **kwargs):
 		try:

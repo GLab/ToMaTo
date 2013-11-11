@@ -423,7 +423,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			process.kill(self.vncpid)
 			del self.vncpid
 		if self.websocket_pid:
-			process.kill(self.websocket_pid)
+			process.killTree(self.websocket_pid)
 			del self.websocket_pid
 		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
 		self.setState(ST_PREPARED, True)
@@ -607,6 +607,9 @@ def register(): #pragma: no cover
 	if not tcpserverVersion:
 		print >>sys.stderr, "Warning: KVMQM needs ucspi-tcp, disabled"
 		return
+	if not dosfstoolsVersion:
+		print >>sys.stderr, "Warning: KVMQM needs dosfstools, disabled"
+		return
 	elements.TYPES[KVMQM.TYPE] = KVMQM
 	elements.TYPES[KVMQM_Interface.TYPE] = KVMQM_Interface
 
@@ -615,4 +618,5 @@ if not config.MAINTENANCE:
 	websockifyVersion = cmd.getDpkgVersion("websockify")
 	socatVersion = cmd.getDpkgVersion("socat")
 	qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
+	dosfstoolsVersion = cmd.getDpkgVersion("dosfstools")
 	register()

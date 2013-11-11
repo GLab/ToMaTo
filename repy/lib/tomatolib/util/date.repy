@@ -1,0 +1,37 @@
+#ifndef date_loaded
+#define date_loaded
+
+def isLeapYear(year):
+  return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+def datetime(time):
+  time = int(time)
+  monthLengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  time, seconds = divmod(time, 60)
+  time, minutes = divmod(time, 60)
+  time, hours = divmod(time, 24)
+  years, days = divmod(time, 365)
+  years += 1970
+  days += 1
+  for y in xrange(1970, years):
+    if isLeapYear(y):
+      days -= 1
+  if days < 1:
+    days += 365
+    if isLeapYear(years):
+      days += 1
+    years -= 1
+  months = 1
+  for m in monthLengths:
+    if days <= m:
+      break
+    months += 1
+    days -= m
+  if isLeapYear(years) and months > 2:
+    days -= 1
+    if days < 1:
+      days += 29
+      months -= 1
+  return years, months, days, hours, minutes, seconds
+  
+#endif

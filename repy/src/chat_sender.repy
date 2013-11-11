@@ -1,0 +1,26 @@
+
+#include <util/net.repy>
+#include <layer2/ethernet.repy>
+#include <layer3/ipv4.repy>
+#include <layer4/udp.repy>
+#include <util/parse_args.repy>
+#include <util/mac_util.repy>
+
+seqNum = 1
+
+defaults = {"ip":"10.0.0.100", "mac": mac_to_str(random_mac())}
+options = parse_args(defaults)
+
+echo("")
+echo("Chat Tutorial Sender - sending messages every 3 seconds")
+
+while True:
+  msg = "%s|%d|%d|Message %d" % (options["mac"], seqNum, int(time()), seqNum)
+  udp = UdpHeader(src=5000, dst=5000, payload=msg)
+  ip = IPv4Header(src=strToIp(options["ip"]), dst=IP_GLOBAL_BROADCAST, protocol=IP_PROTOCOL_UDP, payload=udp.encode())
+  eth = EthernetHeader(src=str_to_mac(options["mac"]), dst=ETHERNET_GLOBAL_BROADCAST, type=ETHERNET_TYPE_IP, payload=ip.encode())
+  echo("Sending message #%d" % seqNum)
+  for dev in tuntap_list():
+    tuntap_send(dev, eth.encode())
+  seqNum += 1
+  sleep(3)

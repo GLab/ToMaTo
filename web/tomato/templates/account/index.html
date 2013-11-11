@@ -11,7 +11,9 @@
     <th>Full name</th>
     <th>Affiliation</th>
     <th>Flags</th>
+{% if "admin" in user.flags %}
     <th></th>
+{% endif %}
   </tr>
 {% for account in accounts %}
   <tr>
@@ -22,7 +24,7 @@
     <td>
     	<div class="hoverdescription">
     		{{account.flags|join:", "}}
-    		<div>
+    		<div class="hiddenbox">
     			{% for f in account.flags_name %}
     				<p>
     					{{f}}
@@ -31,7 +33,11 @@
     		</div>
     	</div>
     </td>
-    <td><a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a></td>
+{% if "admin" in user.flags %}
+    <td>
+      <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
+    </td>
+{% endif %}
   </tr>
 {% endfor %}
 </table>

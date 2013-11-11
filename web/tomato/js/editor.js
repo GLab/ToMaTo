@@ -1491,7 +1491,7 @@ var Component = Class.extend({
 		return (action in this.caps.actions) && (this.caps.actions[action].indexOf(this.data.state) >= 0); 
 	},
 	attrEnabled: function(attr) {
-		return (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
+		return (attr[0] == "_") || (attr in this.caps.attrs) && (! this.caps.attrs[attr].states || this.caps.attrs[attr].states.indexOf(this.data.state) >= 0);
 	},
 	setData: function(data) {
 		this.data = data;
@@ -1615,7 +1615,10 @@ var Component = Class.extend({
 	},
 	modify: function(attrs) {
 		this.setBusy(true);
-		for (var name in attrs) this.data.attrs[name] = attrs[name];
+		for (var name in attrs) {
+			if (this.attrEnabled(name)) this.data.attrs[name] = attrs[name];
+			else delete attrs[name];
+		}
 		this.triggerEvent({operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
 		ajax({
@@ -1734,6 +1737,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
 		if (con.attrEnabled("capturing")) {
+			var t = this;
 			this.table.append($("<tr/>").append($("<th colspan=4><big>Packet capturing</big></th>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
@@ -1947,6 +1951,9 @@ var Connection = Component.extend({
 		 		if (callback) callback(t);
 		 		t.topology.onUpdate();
 				t.triggerEvent({operation: "remove", phase: "end"});
+				for (var i=0; i<t.elements.length; i++) 
+					if (t.elements[i].isRemovable() && t.topology.elements[t.elements[i].id])
+						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {
 		 		alert(error);
@@ -1954,9 +1961,6 @@ var Connection = Component.extend({
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
 		});
-		for (var i=0; i<t.elements.length; i++) 
-			if (t.elements[i].isRemovable())
-				t.elements[i].remove();
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
@@ -2422,20 +2426,6 @@ var createElementMenu = function(obj) {
 				name:"Console",
 				icon:"console",
 				items: {
-					"console_info": {
-						name:"VNC Information",
-						icon:"info",
-						callback: function(){
-							obj.showVNCinfo();
-						}
-					},
-					"console_link": {
-						name:"vnc:// link",
-						icon:"console",
-						callback: function(){
-							obj.openVNCurl();
-						}
-					},
 					"console_novnc": {
 						name:"NoVNC (HTML5+JS)",
 						icon:"novnc",
@@ -2450,6 +2440,20 @@ var createElementMenu = function(obj) {
 							obj.openConsole();
 						}
 					}, 
+					"console_link": {
+						name:"vnc:// link",
+						icon:"console",
+						callback: function(){
+							obj.openVNCurl();
+						}
+					},
+					"console_info": {
+						name:"VNC Information",
+						icon:"info",
+						callback: function(){
+							obj.showVNCinfo();
+						}
+					},
 				}
 			} : null,
 			"usage": {
@@ -2473,26 +2477,32 @@ var createElementMenu = function(obj) {
 					obj.uploadImage();
 				}
 			} : null,
-			"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-				name:"Download RexTFV Archive",
+			"rextfv": obj.actionEnabled("rextfv_download_grant") || obj.actionEnabled("rextfv_upload_grant") || obj.rextfvStatusSupport() ? {
+				name:"Executable archive",
 				icon:"rextfv",
-				callback: function(){
-					obj.downloadRexTFV();
-				}
-			} : null,
-			"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-				name:"Upload RexTFV Archive",
-				icon:"rextfv",
-				callback: function(){
-					obj.uploadRexTFV();
-				}
-			} : null,
-			"rextfv_status": obj.rextfvStatusSupport() ? {
-				name:"RexTFV Status",
-				icon:"rextfv",
-				callback: function(){
-					obj.openRexTFVStatusWindow();
-				}
+				items: { 
+					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+						name:"Download Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.downloadRexTFV();
+						}
+					} : null,
+					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+						name:"Upload Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.uploadRexTFV();
+						}
+					} : null,
+					"rextfv_status": obj.rextfvStatusSupport() ? {
+						name:"Status",
+						icon:"rextfv",
+						callback: function(){
+							obj.openRexTFVStatusWindow();
+						}
+					} : null,
+				},
 			} : null,
 			"sep3": "---",
 			"configure": {
@@ -2520,7 +2530,12 @@ var createElementMenu = function(obj) {
 		}
 	};
 	for (var name in menu.items) {
-		if (! menu.items[name]) delete menu.items[name]; 
+		if (! menu.items[name]) {
+			delete menu.items[name];
+			continue;
+		}
+		var menu2 = menu.items[name];
+		if (menu2.items) for (var name2 in menu2.items) if (! menu2.items[name2]) delete menu2.items[name2]; 
 	}
 	return menu;
 };
@@ -2666,7 +2681,7 @@ var VPNElement = IconElement.extend({
 var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.kind + "32.png";
+		this.iconUrl = "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
 		this.iconSize = {x: 32, y:32};
 	},
 	configWindowSettings: function() {

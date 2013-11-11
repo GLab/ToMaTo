@@ -57,7 +57,7 @@ def take(type_, owner):
 from ..elements import Element
 from ..connections import Connection
 
-class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     attrs = db.JSONField()
     numStart = attributes.attribute("num_start", int)
@@ -113,7 +113,7 @@ class Resource(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model
             "attrs": self.attrs.copy(),
         }
     
-class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
+class ResourceInstance(db.ChangesetMixin, attributes.Mixin, models.Model):
     type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
     num = models.IntegerField()
     ownerElement = models.ForeignKey(Element, null=True)
@@ -139,7 +139,10 @@ class ResourceInstance(db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, mode
 def get(id_, **kwargs):
     try:
         el = Resource.objects.get(id=id_, **kwargs)
-        return el.upcast()
+        try:
+            return el.upcast()
+        except:
+            return el
     except:
         return None
 

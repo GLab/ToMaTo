@@ -11,13 +11,14 @@ var editor_tutorial = [
 	{
 		text: '<h2>ToMaTo Chat Tutorial</h2>\
 <p class="tutorialExplanation">In this tutorial you will learn the basics of the Topology Management Tool in a simple scenario using a text-based chat client.</p>\
+<p class="tutorialExplanation">Please read the full explanations of a step before working on it.</p>\
 <h3>First part</h3>\
 <p class="tutorialExplanation">In this part we will fill our topology with two virtual machines, connect them and test the chat client.</p>',
 		skip_button: 'Start tutorial'
 	},
 	{
 		text: '<p class="tutorialExplanation">As first step we add a virtual machine to the topology. This virtual machine will use OpenVZ technology since we only want to run a simple program on it.<br/>\
-Click on the blue icon on the right of the menu and then click into the work space to position that element. You can later move it by dragging the icon in the work space.<br/>\
+Click on the blue computer icon on the right of the menu and then click into the work space to position that element. You can later move it by dragging the icon in the work space.<br/>\
 You can move this tutorial window if it covers your work space.</p>\
 <br/><b>Task: Add an OpenVZ virtual machine to your topology</b>',
 		trigger: function(event) {
@@ -49,7 +50,7 @@ You can also change the name your virtual machine and its hostname if you want t
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we need a chat partner, so we add another node to the topology. This time we give it the right template right from the start. To do this, open the <i>Devices</i> tab in the menu, scroll to the right and select the <i>Chat Tutorial Node</i> from the menu.</p>\
+		text: '<p class="tutorialExplanation">Now we need a chat partner, so we add another node to the topology. This time we give it the right template right from the start. To do this, open the <i>Devices</i> tab in the menu and select the <i>Chat Tutorial Node</i> from the menu.</p>\
 <br/><b>Task: Add another virtual machine using the <i>Chat Tutorial Node</i> template</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
@@ -89,7 +90,7 @@ You can also change the name your virtual machine and its hostname if you want t
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">For bigger topologies, this would be a lot of work. Therefore you can start, stop, prepare and destroy all of the topology elements at once using the buttons in the menu.<br/>\
+		text: '<p class="tutorialExplanation">For bigger topologies, this would be a lot of work. Therefore you can start, stop, prepare and destroy all of the topology elements at once using the buttons in the tag <i>Home</i> of the menu.<br/>\
 These buttons are smart and know the states of the elements. If you select <i>start</i>, elements that are already running will not be touched and those that are not yet prepared will be prepared before they are started.</p>\
 <br/><b>Task: Start the other VM</b>',
 		trigger: function(event) {
@@ -119,8 +120,8 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">Now you can test the chat client. Type <i>chat</i> into the console to start the software. This software will send every line that you type to all connected nodes using UDP broadcast. All received lines will be displayed together with a timestamp, a sequence number and the senders IP address.<br/>\
-To quit the software type <i>ctrl-c (Control-C)</i>.</p>\
+		text: '<p class="tutorialExplanation">Now you can test the chat client. Type <i>chat</i> into the consoles to start the software. This software will send every line that you type to all connected nodes using UDP broadcast. All received lines will be displayed together with a timestamp, a sequence number and the senders IP address.<br/>\
+To quit the software type <i>ctrl-c (Control-C)</i>. You can close the consoles when you are finished.</p>\
 <br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
 	},
@@ -282,7 +283,7 @@ This chat agent will send a message every 3 seconds.</p>\
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">After a few seconds you should see the periodic messages from the sender agent. If you open the VNC console of the monitor agent you should see all chat messages.<br/>\
+		text: '<p class="tutorialExplanation">Start the chat clients again and after a few seconds you should see the periodic messages from the sender agent. If you open the VNC console of the monitor agent you should see all chat messages.<br/>\
 Note that you can not type any text into the consoles of these agents as the Repy technology is not interactive.</p>\
 <br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
@@ -293,7 +294,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		skip_button: 'Continue'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will add a latency of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a latency of 2000 ms on one of the directions.</p>\
+		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
 <br/><b>Task: Add 2 seconds delay to one link</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
@@ -320,7 +321,7 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 		skip_button: 'Continue'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will have a look at how the packets of our chat client look like. Open the attribute window of a conection again and activate packet capturing. Please keep the mode at <i>for download</i> and do not apply a filter.</p>\
+		text: '<p class="tutorialExplanation">Now we will have a look at how the packets of our chat client look like. Open the attribute window of a connection again and activate packet capturing. Please keep the mode at <i>for download</i> and do not apply a filter.</p>\
 <br/><b>Task: Enable packet capturing for one link</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
@@ -328,8 +329,7 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 				component: "connection",
 				phase: "end",
 				attrs: {
-					capturing: true,
-					capture_mode: "file"
+					capturing: true
 				}
 			});
 		}
@@ -348,20 +348,20 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 	},
 	{
  		text: '<p class="tutorialExplanation">Have a look at the packets and try to figure out how they are encoded and what the fields could mean.</p>\
-<br/><b>Click on continue when you are done</b>\
- 			<br/>It might happen that your pop-up blocker prevents the Cloudshark window from opening. You should disable the blocker for ToMaTo.',
+<p class="tutorialExplanation">It might happen that your pop-up blocker prevents the Cloudshark window from opening. You should disable the blocker for ToMaTo.</p>\
+<br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
 	},
 	{
 		text: '<h3>Fourth part</h3>\
-<p class="tutorialExplanation">Ok, now you have seen most of the features of ToMaTo. The only important thing that is missing now is external connectivity.<br/>\
+<p class="tutorialExplanation">Ok, now you have seen some of the features of ToMaTo. The only important thing that is missing now is external connectivity.<br/>\
 In this part we will open our topology to the Internet.</p>',
 		skip_button: 'Continue'
 	},
 	{
-		text: '<p class="tutorialExplanation">Add an external network from the menu to the topology. In the attribute window you can select the type of network that you want but Internet is the default.<br/>\
-This external network is an openeing of your topology. Whatever is connected to this element is connected to that network, i.e. to the Internet in our case.</p>\
-<br/><b>Task: Add an Internet external network to your topology</b>',
+		text: '<p class="tutorialExplanation">Select the Internet from the menu and add it to the topology. In the attribute window you can select the type of external network that you want but Internet is the default.<br/>\
+This external network is an opening of your topology. Whatever is connected to this element is connected to that network, i.e. to the Internet in our case.</p>\
+<br/><b>Task: Add an <i>Internet</i> external network to your topology</b>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
@@ -387,14 +387,15 @@ You know how to do this from the earlier tutorial parts.</p>\
 	},
 	{
 		text: '<p class="tutorialExplanation">When your topology is connected to the Internet, you can reach the Internet from the connected VMs.<br/>\
-Check that by typing <tt>ping www.google.com</tt> into the console of one of the VMs.<br/>\
-If you do not get a reply, you might need to obtain a network address first by running <tt>dhclient eth0</tt>.</p>\
+Check that by typing the following into the console of one of the VMs: <pre><tt>ping www.google.com</tt></pre><br/>\
+If you do not get a reply, you might need to obtain a network address first by running the following: <pre><tt>dhclient eth0</tt></pre><br/>\
+If you see high latencies or lost packets, you might still have link emulation enabled.</br>\
+You can use this connection to exchange files with your nodes and to use external services.</p><br/>\
 <br/><b>Click on continue when you are done</b>',
 		skip_button: 'Continue'
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we are at the end of the tutorial, I hope you enjoyed it.</p>\
-<p class="tutorialExplanation">If you want to, you can start a chat client on one of the VMs and maybe someone answers.</p>\
+		text: '<p class="tutorialExplanation">If you want to, you can start a chat client on one of the VMs and maybe someone answers.</p>\
 <br/><b>Click on continue when you are finished</b>',
 		skip_button: 'Continue'
 	},
@@ -410,12 +411,15 @@ If you do not get a reply, you might need to obtain a network address first by r
 				phase: "end"
 			});
 			if (match) tutorial_data.tmp++;
-			if (tutorial_data.tmp >= 6) {
+			if (tutorial_data.tmp >= 5) {
 				tutorial_data.tmp = 0;
 				return true;
 			}
 			return false;
 		}
+	},
+	{
+		text: '<p class="tutorialExplanation">Now we are at the end of the tutorial, I hope you enjoyed it.</p>'
 	}
 ];    
 

@@ -27,10 +27,16 @@ import os, json
 # - a tut desc file in ./editor_tutorial/'id'.js
 # - a topology file in ./editor_tutorial/'id'.tomato3
 tutorials = [
+							{
+							 'id':   "chat",
+							 'name': "Chat Tutorial",
+							 'desc': "Get an overview over ToMaTo and its major features in a scenario using a text-based chat client.",
+							 'icon': "/img/user32.png"
+							},
                             {
                              'id':   "basic",
                              'name': "Beginner Tutorial",
-                             'desc': "Recommended for new users. Teaches the basics about how to use ToMaTo's editor.",
+                             'desc': "Teaches the basics about how to use ToMaTo's editor.",
                              'icon': "/img/user32.png"
                             },
                             {
@@ -44,12 +50,6 @@ tutorials = [
                              'name': "Using Connections",
                              'desc': "Learn everything about connections. (currently under construction)",
                              'icon': "/img/connect32.png"
-                            },
-                            {
-                             'id':   "chat",
-                             'name': "Chat Tutorial",
-                             'desc': "Get to know ToMaTo",
-                             'icon': "/img/user32.png"
                             }
                             #===================================================
                             # {

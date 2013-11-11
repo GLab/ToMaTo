@@ -67,6 +67,9 @@ class Template(resources.Resource):
 		self.preference = val
 
 	def modify_torrent_data(self, val):
+		if val != self.torrent_data:
+			if os.path.exists(self.getPath()):
+				path.remove(self.getPath(), recursive=True)
 		self.torrent_data = val
 		if self.name and self.tech:
 			with open(self.getTorrentPath(), "w") as fp:

@@ -84,8 +84,9 @@ def remove(api, request, res_id = None):
         if form.is_valid():
             res_id = form.cleaned_data["res_id"]
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'network_instance':
+                label = api.resource_info(res_id)['attrs']['host']
                 api.resource_remove(res_id)
-                return render_to_response("admin/external_network_instances/remove_success.html", {'user': api.user, 'label':api.resource_info(res_id)['attrs']['host']})
+                return render_to_response("admin/external_network_instances/remove_success.html", {'user': api.user, 'label': label})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no external network instance with id '+res_id})
         else:

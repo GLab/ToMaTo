@@ -23,7 +23,7 @@ from auth import Flags, mailFlaggedUsers
 import xmlrpclib, time, hashlib
 
 class Site(attributes.Mixin, models.Model):
-	name = models.CharField(max_length=10, unique=True)
+	name = models.CharField(max_length=50, unique=True)
 	#hosts: [Host]
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
@@ -209,9 +209,9 @@ class Host(attributes.Mixin, models.Model):
 		from . import resources
 		hostNets = {}
 		for net in self.getProxy().resource_list("network"):
-			hostNets[(net["attrs"]["kind"], net["attrs"]["bridge"])] = net
+			hostNets[net["attrs"]["bridge"]] = net
 		for net in self.networks.all():
-			key = (net.getKind(), net.bridge)
+			key = net.bridge
 			attrs = net.attrs.copy()
 			attrs["bridge"] = net.bridge
 			attrs["kind"] = net.getKind()
@@ -262,6 +262,10 @@ class Host(attributes.Mixin, models.Model):
 					if isAttrs["torrent_data_hash"] == shouldAttrs["torrent_data_hash"]:
 						#only send torrent data when needed
 						del attrs["torrent_data"]
+					else:
+						toh.ready = False
+						toh.date = time.time()
+						toh.save()  						
 					self.getProxy().resource_modify(hTpl["id"], attrs)
 					logging.logMessage("template update", category="host", address=self.address, template=attrs)		
 		logging.logMessage("resource_sync end", category="host", address=self.address)		
@@ -332,6 +336,8 @@ class Host(attributes.Mixin, models.Model):
 		hi = self.hostInfo
 		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
 			problems.append("Old info age, host unreachable?")
+		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
+			problems.append("Host is not synchronized")
 		if not hi:
 			problems.append("Node info is missing")
 			return problems
@@ -599,6 +605,7 @@ class HostConnection(attributes.Mixin, models.Model):
 	def updateInfo(self):
 		try:
 			self.attrs = self.host.getProxy().connection_info(self.num)
+			self.state = self.attrs["state"]
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.address, id=self.num)

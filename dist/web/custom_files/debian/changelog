@@ -1,3 +1,45 @@
+tomato-web (3.0.7) stable; urgency=low
+
+  * Fixed wrong external network icon
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:29:59 +0200
+
+tomato-web (3.0.6) stable; urgency=low
+
+  * Some last fixes for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:20:06 +0200
+
+tomato-web (3.0.5) stable; urgency=low
+
+  * Fully fixed version for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 10:29:32 +0200
+
+tomato-web (3.0.4) stable; urgency=low
+
+  * Fixed version for tutorial rc1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 14:13:36 +0200
+
+tomato-web (3.0.3) stable; urgency=low
+
+  * Some fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 22 Oct 2013 12:14:26 +0200
+
+tomato-web (3.0.2) stable; urgency=low
+
+  * Fixed tutorial name
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 15:20:35 +0200
+
+tomato-web (3.0.1) stable; urgency=low
+
+  * Some bugfixes, new tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 17 Oct 2013 15:39:24 +0200
+
 tomato-web (3.0) stable; urgency=low
 
   * Release of version 3

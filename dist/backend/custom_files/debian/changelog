@@ -1,3 +1,39 @@
+tomato-backend (3.0.8) stable; urgency=low
+
+  * Detecting problems with host synchronization
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:30:30 +0200
+
+tomato-backend (3.0.7) stable; urgency=low
+
+  * Some last fixes for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 15:19:24 +0200
+
+tomato-backend (3.0.6) stable; urgency=low
+
+  * Fully fixed version for tutorial
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Oct 2013 10:30:05 +0200
+
+tomato-backend (3.0.5) stable; urgency=low
+
+  * Fixed version for tutorial rc1
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Oct 2013 14:14:14 +0200
+
+tomato-backend (3.0.4) stable; urgency=low
+
+  * Some more fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 22 Oct 2013 12:13:57 +0200
+
+tomato-backend (3.0.3) stable; urgency=low
+
+  * Some more fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 18 Oct 2013 15:20:08 +0200
+
 tomato-backend (3.0.2) stable; urgency=low
 
   * Fixed problem with link emulation direction
