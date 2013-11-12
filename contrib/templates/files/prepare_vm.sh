@@ -16,7 +16,7 @@ VMTYPE=""
 if [ -d /proc/vz ]; then
   VMTYPE="openvz"
 fi
-if lspci -v | fgrep -q Qemu; then
+if dmesg | fgrep -q QEMU; then
   VMTYPE="kvm"
 fi
 if [ -z "$VMTYPE" ]; then
@@ -33,7 +33,7 @@ case "$ISSUE" in
   Debian*6.0*)
     DISTRO="debian_6"
     ;;
-  Debian*7.0*)
+  Debian*7*)
     DISTRO="debian_7"
     ;;
   Ubuntu*10.04*)
@@ -92,7 +92,9 @@ esac
 echo "Disabling services..."
 case $DISTRO in
   ubuntu*)
-    service ssh stop
+    service rsyslog stop || true
+    update-rc.d -f rsyslog remove
+    service ssh stop || true
     update-rc.d -f ssh remove
     echo "manual" > /etc/init/ssh.override
     cat <<EOF >/usr/local/bin/ssh-enable
@@ -106,7 +108,9 @@ EOF
     chmod +x /usr/local/bin/ssh-enable
     ;;
   debian*)
-    /etc/init.d/ssh stop
+    /etc/init.d/rsyslog stop || true
+    update-rc.d -f rsyslog remove
+    /etc/init.d/ssh stop || true
     update-rc.d -f ssh remove
     cat <<EOF >/usr/local/bin/ssh-enable
 #!/bin/bash
@@ -139,7 +143,11 @@ echo "Auto-login on consoles..."
 case $DISTRO in
   ubuntu*|debian*)
     apt-get install -y mingetty
-    sed -i -e 's/\/sbin\/getty 38400/\/sbin\/mingetty --autologin root --noclear/g' /etc/inittab
+    for file in /etc/inittab /etc/init/tty1.conf; do
+      if [ -f "$file" ]; then
+        sed -i -e 's/\/sbin\/getty 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
+      fi
+    done
     ;;
 esac
 
@@ -178,26 +186,35 @@ esac
 echo "Setting keyboard..."
 case $DISTRO in
   ubuntu*|debian*)
+    case $DISTRO in
+      ubuntu_1004)
+        PACKAGE="console-setup"
+        ;;
+      *)
+        PACKAGE="keyboard-configuration"
+        ;;
+    esac
+    debconf-set-selections <<EOF
+debconf $PACKAGE/modelcode string pc105
+debconf $PACKAGE/variantcode string nodeadkeys
+debconf $PACKAGE/model select Generic 105-key (Intl) PC
+debconf $PACKAGE/compose select No compose key
+debconf $PACKAGE/layout select Germany
+debconf $PACKAGE/layoutcode string de
+debconf $PACKAGE/xkb-keymap string de
+debconf $PACKAGE/variant select Germany - Eliminate dead keys
+debconf $PACKAGE/altgr select The default for the keyboard layout
+debconf $PACKAGE/unsupported_layout string true
+debconf $PACKAGE/unsupported_config_options string true
+EOF
+    apt-get install -y $PACKAGE
     cat <<EOF >/etc/default/keyboard
 XKBMODEL="pc105"
 XKBLAYOUT="de"
 XKBVARIANT="nodeadkeys"
 XKBOPTIONS=""
 EOF
-    debconf-set-selections <<EOF
-debconf keyboard-configuration/modelcode string pc105
-debconf keyboard-configuration/variantcode string nodeadkeys
-debconf keyboard-configuration/model select Generic 105-key (Intl) PC
-debconf keyboard-configuration/compose select No compose key
-debconf keyboard-configuration/layout select Germany
-debconf keyboard-configuration/layoutcode string de
-debconf keyboard-configuration/xkb-keymap string de
-debconf keyboard-configuration/variant select Germany - Eliminate dead keys
-debconf keyboard-configuration/altgr select The default for the keyboard layout
-debconf keyboard-configuration/unsupported_layout string true
-debconf keyboard-configuration/unsupported_config_options string true
-EOF
-    dpkg-reconfigure -f noninteractive keyboard-configuration
+    dpkg-reconfigure -f noninteractive $PACKAGE
     ;;
   *)
     fail "$DISTRO unsupported"
@@ -205,13 +222,14 @@ esac
 
 # SSH keys
 echo "Removing SSH keys and adding script for recreation..."
-rm -f /etc/ssh/ssh_host_{dsa,rsa}_key{,.pub}
+rm -f /etc/ssh/ssh_host_{ecdsa,dsa,rsa}_key{,.pub}
 case $DISTRO in
   debian_5|ubuntu*)
     cat <<EOF >/etc/rc2.d/S15ssh_gen_host_keys
 #!/bin/bash
 ssh-keygen -f /etc/ssh/ssh_host_rsa_key -t rsa -N ''
 ssh-keygen -f /etc/ssh/ssh_host_dsa_key -t dsa -N ''
+ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key -t ecdsa -N ''
 rm -f \$0
 EOF
     chmod a+x /etc/rc2.d/S15ssh_gen_host_keys
@@ -230,6 +248,7 @@ EOF
 ### END INIT INFO
 ssh-keygen -f /etc/ssh/ssh_host_rsa_key -t rsa -N ""
 ssh-keygen -f /etc/ssh/ssh_host_dsa_key -t dsa -N ""
+ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key -t ecdsa -N ""
 insserv -r /etc/init.d/ssh_gen_host_keys
 rm -f \$0
 EOF
@@ -245,7 +264,7 @@ if [ "$VMTYPE" == "openvz" ]; then
   echo "OpenVZ specific changes..."
 
   case $DISTRO in
-    debian*)
+    debian_*)
       sed -i -e '/getty/d' /etc/inittab
       ;;
     ubuntu*)
