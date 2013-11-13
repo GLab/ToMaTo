@@ -89,6 +89,7 @@ var Menu = Class.extend({
 });
 
 Menu.button = function(options) {
+	var container = $('<div class="hoverdescription" style="display:inline;"></div>');
 	var html = $('<button class="ui-ribbon-element ui-ribbon-control ui-button"/>');
 	if (options.toggle) {
 		html.addClass("ui-button-toggle");
@@ -117,7 +118,13 @@ Menu.button = function(options) {
 		this.toggleClass("ui-button-checked ui-state-highlight", value);
 	}
 	if (options.checked) html.setChecked(true);
-	return html
+	container.append(html);
+	
+	if (options.hiddenboxHTML) {
+		container.append($('<div class="hiddenbox" style="overflow:auto;">'+options.hiddenboxHTML+'</div>'));
+	}
+	return html;
+	//return container;   //TODO: tooltip is bound to scrolling container. free it and return container instad of 'html'
 };
 
 Menu.checkbox = function(options) {
@@ -2872,6 +2879,14 @@ var Template = Class.extend({
 		this.nlXTP_installed = options.nlXTP_installed || false;
 	},
 	menuButton: function(options) {
+		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
+					'<tr><td><img src="/img/info.png"></td><td>'+this.description+'</td></tr>';
+		if (!this.nlXTP_installed) {
+			hb = hb + '<tr><td><img src="/img/error.png" /></td>'+
+				'<td>No nlXTP guest modules are installed. Executable archives will not auto-execute and status '+
+				'will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
+		}
+		hb = hb + "</tbody></table></p>";
 		return Menu.button({
 			name: options.name || (this.type + "-" + this.name),
 			label: options.label || this.label || (this.type + "-" + this.name),
@@ -2879,7 +2894,8 @@ var Template = Class.extend({
 			toggle: true,
 			toggleGroup: options.toggleGroup,
 			small: options.small,
-			func: options.func
+			func: options.func,
+			hiddenboxHTML: hb
 		});
 	}
 });
