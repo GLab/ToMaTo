@@ -1,3 +1,9 @@
+tomato-hostmanager (3.0.8) unstable; urgency=low
+
+  * Small fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 13 Nov 2013 12:41:31 +0100
+
 tomato-hostmanager (3.0.7) unstable; urgency=low
 
   * Some last fixes for tutorial
