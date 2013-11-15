@@ -1,0 +1,121 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Terms and Conditions</h1>
+
+By using the testbed you accept the following rules and conditions.
+
+
+<h2>General rules</h2>
+
+The following activities/experiments are prohibited on the testbed:
+<ul><li> 
+  Anything that is unlawful. Be aware that you must abide by...
+  <ul><li>
+   your local laws,
+  </li><li>
+   the laws of the country of the platform provider (Germany),
+  </li><li>
+   the laws of all of the countries of the resource providers.
+  </li></ul>
+  </li><li>
+ Commercial activities that have not been accepted by the platform provider. This especially includes selling the resources that are provided in any way.
+  </li><li>
+ Hacking/Denial of Service attempts on external services, platform infrastructure or other experiments.
+  </li></ul>
+Do not share your account credentials; use topology permissions for shared experiments.
+
+
+<h3>Communication is key</h3>
+
+When experiments show strange behavior, administrators have to decide whether this is expected behavior or an experiment that ran out of control.
+Without enough information about your experiment, administrators might come to the wrong conclusion and terminate it.
+You can prevent this from happening if you...
+<ul>
+<li>ask before you do something that might not be allowed.</li>
+<li>provide a good description of your experiment.</li>
+<li>keep your supervisor informed about your experiment.</li>
+<li>inform administrators in advance of strage behavior.</li>
+<li>are reachable during critical phases of your experiment.</li>
+</ul>
+
+
+<h3>Be fair to others</h3>
+
+Try to minimize your resource footprint as much as you can.
+Try your experiment at small scale first and increase the size when it worked.
+Shut down your experiment when you are not working on it.
+Try not to interfere with other experiments or normal network operation.
+
+
+<h2>Internet rules</h2>
+
+On public external networks (i.e. the Internet) additional rules apply.
+
+<h3>Address dicipline</h3>
+
+Obtain IP addresses via DHCP and only use these addresses.
+Do not try to spoof addresses.
+Do not run a DHCP server or interfere in any way with DHCP functionality
+Only use addresses as long as you need them and limit your topology to one public IPv4 address
+
+<h3>Security</h3>
+
+Secure all services that you run on publically reachable nodes.
+Do not run SSH with the default password.
+Please note that under certain jurisdictions (e.g. Germany, "Störerhaftung") you can be hold liable for damage that is done by others using resources that you are responsible for.
+By using a public address, you agree to free the platform provider and the resource providers from this kind of liabilty by taking over both the control as well as the responsibility over the resources of your topology.
+
+<h3>Prohibited services</h3>
+
+The following services are in general prohibited and must not be provided to an external network.
+<ul>
+<li>DHCP servers (clients are ok)</li>
+<li>Telnet</li>
+<li>FTP</li>
+<li>Filesharing networks (e.g. Bittorrent)</li>
+</ul>
+
+
+<h3>Access restrictions</h3>
+
+Do not access any content via public external networks that you do not normally have access to with your own pc.
+This especially applies to websites hosting research papers and campus internal services.
+
+
+<h2>Consequences</h2>
+
+Depending on the severity and urgency of the case the following actions may be taken immediatly even without prior warning.
+<ul>
+<li>Termination of the topology or parts of it with the risk of data loss and damages to running experiments</li>
+<li>Account termination</li>
+<li>Notice to site supervisors/authorities</li>
+<li>Legal consequences</li>
+</ul>
+
+<h2>Exceptions to rules</h2>
+
+In certain cases, exceptions to these rules are possible when they are crucial to an experiment.
+Please contact administrators before planning an experiment if you need an exception to one of these rules.
+
+
+<h2>Privacy</h2>
+
+By using the platform you allow the platform provider to collect and keep the following data:
+<ul>
+<li>The resource usage of your topology and all its components is collected and stored as long as your topology exists. The platform provider may store this data longer if it is neccesary for platform operations.</li>
+<li>Your actions on your topology and all components are logged and stored for two years for debugging reasons.</li>
+<li>All data that you enter into your topology (also disk images) are stored as long as needed to execute the requested operations.</li>
+</ul>
+Please note that administrators can access all of your data for debugging or troubleshooting reasons.
+
+
+<h2>Warranty</h2>
+
+This testbed is provided on the basis of best effort, thus no guarantees are given on resource availability.
+The software is provided as is, there are no guarantees on availability, usability or support.
+Data stored in the topology might be lost due to node failures, please create backups of all valuable data.
+The providers of the testbed and the testbed resources are not liable in case of data loss or damages of any kind.
+
+
+{% endblock %}

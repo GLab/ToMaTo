@@ -49,16 +49,21 @@
 	    </td>
 	    
 	    <td>
+	    
+	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
+		    	<img src="/img/error.png" title="no nlXTP guest modules" style="float:left;" />
+		    {%endif%}
+	    
 	    	{% if templ.attrs.description %}
-		    	<div class="hoverdescription">
+		    	<div class="hoverdescription" style="float:left;">
 		    		<img src="/img/info.png" alt="i" />
 		    		<div class="hiddenbox">
 			    		{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}
 		    		</div>
 		    	</div>
-		    {% else %}
-		    	-
 		    {% endif %}
+		    
+		    
 	    </td>
 	    
 	    <td>

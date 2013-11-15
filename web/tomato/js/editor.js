@@ -89,6 +89,7 @@ var Menu = Class.extend({
 });
 
 Menu.button = function(options) {
+	var container = $('<div class="hoverdescription" style="display:inline;"></div>');
 	var html = $('<button class="ui-ribbon-element ui-ribbon-control ui-button"/>');
 	if (options.toggle) {
 		html.addClass("ui-button-toggle");
@@ -117,7 +118,13 @@ Menu.button = function(options) {
 		this.toggleClass("ui-button-checked ui-state-highlight", value);
 	}
 	if (options.checked) html.setChecked(true);
-	return html
+	container.append(html);
+	
+	if (options.hiddenboxHTML) {
+		container.append($('<div class="hiddenbox" style="overflow:auto;">'+options.hiddenboxHTML+'</div>'));
+	}
+	return html;
+	//return container;   //TODO: tooltip is bound to scrolling container. free it and return container instad of 'html'
 };
 
 Menu.checkbox = function(options) {
@@ -261,13 +268,15 @@ var TemplateChoiceElement = ChoiceElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.descriptions = options.descriptions;
-		console.log(this.descriptions);
+		this.nlXTPsupport = options.nlXTPsupport;
+		console.log(this.nlXTPsupport);
 		var t = this;
 		this.element.change(function(){
 			t.updateInfoBox();
 		});
 		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
 		this.element.after(this.info);
+		
 		this.updateInfoBox();
 	},
 	updateInfoBox: function() {
@@ -285,10 +294,25 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		var desc = $('<div class="hiddenbox"><p style="margin:4px; border:0px; padding:0px; color:black;">'+escape_str(this.descriptions[this.getValue()])+'</p></div>');
+		
+		var d = $('<div class="hiddenbox"></div>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var desc = $('<table></table>');
+		p.append(desc);
+		d.append(p);
+		
+		if (this.descriptions[this.getValue()]) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
+			this.info.append(' &nbsp; <img src="/img/info.png" />');
+		}
+		
+		if (!this.nlXTPsupport[this.getValue()]) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			this.info.append(' &nbsp; <img src="/img/error.png" />');
+		}
+		
 		//desc.append($());
-		this.info.append(' &nbsp; <img src="/img/info.png" />');
-		this.info.append(desc);
+		this.info.append(d);
 	}
 });
 
@@ -2048,7 +2072,7 @@ var Element = Component.extend({
 	},
 	rextfvStatusSupport: function() {
 		if ('rextfv_supported' in this.data.attrs)
-			return this.data.attrs.rextfv_supported
+			return this.data.attrs.rextfv_supported && this.data.attrs.rextfv_run_status.readable;
 		else
 			return false;
 	},
@@ -2744,6 +2768,7 @@ var VMElement = IconElement.extend({
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
 			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
+			nlXTPsupport: createMap(this.editor.templates.getAll(this.data.type), "name", "nlXTP_installed"),
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2851,8 +2876,17 @@ var Template = Class.extend({
 		this.name = options.name;
 		this.label = options.label || options.name;
 		this.description = options.description || "no description available";
+		this.nlXTP_installed = options.nlXTP_installed || false;
 	},
 	menuButton: function(options) {
+		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
+					'<tr><td><img src="/img/info.png"></td><td>'+this.description+'</td></tr>';
+		if (!this.nlXTP_installed) {
+			hb = hb + '<tr><td><img src="/img/error.png" /></td>'+
+				'<td>No nlXTP guest modules are installed. Executable archives will not auto-execute and status '+
+				'will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
+		}
+		hb = hb + "</tbody></table></p>";
 		return Menu.button({
 			name: options.name || (this.type + "-" + this.name),
 			label: options.label || this.label || (this.type + "-" + this.name),
@@ -2860,7 +2894,8 @@ var Template = Class.extend({
 			toggle: true,
 			toggleGroup: options.toggleGroup,
 			small: options.small,
-			func: options.func
+			func: options.func,
+			hiddenboxHTML: hb
 		});
 	}
 });
