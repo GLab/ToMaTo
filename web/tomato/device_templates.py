@@ -30,6 +30,7 @@ class TemplateForm(forms.Form):
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
+	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
@@ -79,7 +80,8 @@ def add(api, request):
 											'tech': formData['tech'],
 											'restricted': formData['restricted'],
 											'torrent_data':torrent_data,
-											'description':formData['description']})
+											'description':formData['description'],
+											'nlXTP_installed':formData['nlXTP_installed']})
 			return render_to_response("admin/device_templates/add_success.html", {'user': api.user, 'label': formData['label']})
 		else:
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -166,7 +168,8 @@ def edit_data(api, request, res_id=None):
 														'restricted': formData['restricted'],
 														'subtype':formData['subtype'],
 														'preference':formData['preference'],
-														'description':formData['description']})
+														'description':formData['description'],
+											'nlXTP_installed':formData['nlXTP_installed']})
 				return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})

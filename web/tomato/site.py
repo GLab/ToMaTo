@@ -27,7 +27,7 @@ class SiteForm(forms.Form):
     description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
-    geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if East",label="Geolocation: Latitude")
+    geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",label="Geolocation: Latitude")
     
 class EditSiteForm(SiteForm):
     def __init__(self, *args, **kwargs):
