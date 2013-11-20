@@ -336,6 +336,8 @@ class Host(attributes.Mixin, models.Model):
 		hi = self.hostInfo
 		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
 			problems.append("Old info age, host unreachable?")
+		if problems:
+			return problems
 		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
 			problems.append("Host is not synchronized")
 		if not hi:
@@ -396,7 +398,7 @@ class Host(attributes.Mixin, models.Model):
 			return -1
 		res = hi["resources"]; cpus = res["cpus_present"]; disks = res["diskspace"]
 		load = []
-		load.append(res["loadavg"][2] / cpus["count"])
+		load.append(res["loadavg"][1] / cpus["count"])
 		load.append(float(res["memory"]["used"]) / int(res["memory"]["total"]))
 		load.append(float(disks["data"]["used"]) / int(disks["data"]["total"]))
 		return min(max(load), 1.0)

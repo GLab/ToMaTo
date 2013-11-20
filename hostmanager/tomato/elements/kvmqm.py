@@ -595,6 +595,9 @@ class KVMQM_Interface(elements.Element):
 KVMQM_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
+	if not os.path.exists("/dev/kvm"):
+		print >>sys.stderr, "Warning: KVMQM needs /dev/kvm, disabled"
+		return
 	if not qmVersion:
 		print >>sys.stderr, "Warning: KVMQM needs a Proxmox VE host, disabled"
 		return

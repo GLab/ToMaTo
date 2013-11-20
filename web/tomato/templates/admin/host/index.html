@@ -85,7 +85,7 @@
 			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.count}}</td>
 			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.system.processor}}</td>
 			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
-			    <td title="{{host.host_info.resources.loadavg}}" enhancetable_customkey="{{host.host_info.resources.loadavg|slice:"2:3"|first|div:host.host_info.resources.cpus_present.count}}">{{host.host_info.resources.loadavg|slice:"2:3"|first|percentage:host.host_info.resources.cpus_present.count}}</td>
+			    <td title="{{host.host_info.resources.loadavg}}" enhancetable_customkey="{{host.host_info.resources.loadavg|slice:"1:2"|first|div:host.host_info.resources.cpus_present.count}}">{{host.host_info.resources.loadavg|slice:"1:2"|first|percentage:host.host_info.resources.cpus_present.count}}</td>
 			
 			    <td enhancetable_customkey="{{host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</nobr></td>
 			    <td enhancetable_customkey="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used}}" title="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|mult:1024|filesizeformat}}</nobr></td>
