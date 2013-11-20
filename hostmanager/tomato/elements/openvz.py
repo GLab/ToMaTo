@@ -746,6 +746,9 @@ class OpenVZ_Interface(elements.Element):
 OpenVZ_Interface.__doc__ = DOC_IFACE
 
 def register(): #pragma: no cover
+	if not os.path.exists("/dev/vzctl"):
+		print >>sys.stderr, "Warning: OpenVZ needs /dev/vzctl, disabled"
+		return	
 	if not vzctlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs a Proxmox VE host, disabled"
 		return
