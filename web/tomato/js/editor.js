@@ -89,7 +89,6 @@ var Menu = Class.extend({
 });
 
 Menu.button = function(options) {
-	var container = $('<div class="hoverdescription" style="display:inline;"></div>');
 	var html = $('<button class="ui-ribbon-element ui-ribbon-control ui-button"/>');
 	if (options.toggle) {
 		html.addClass("ui-button-toggle");
@@ -118,13 +117,8 @@ Menu.button = function(options) {
 		this.toggleClass("ui-button-checked ui-state-highlight", value);
 	}
 	if (options.checked) html.setChecked(true);
-	container.append(html);
 	
-	if (options.hiddenboxHTML) {
-		container.append($('<div class="hiddenbox" style="overflow:auto;">'+options.hiddenboxHTML+'</div>'));
-	}
 	return html;
-	//return container;   //TODO: tooltip is bound to scrolling container. free it and return container instad of 'html'
 };
 
 Menu.checkbox = function(options) {
