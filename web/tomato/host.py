@@ -24,6 +24,7 @@ from admin_common import is_hostManager
 class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
+    enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
     def __init__(self, api, *args, **kwargs):
         super(HostForm, self).__init__(*args, **kwargs)
         self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
@@ -57,7 +58,7 @@ def add(api, request):
         form = HostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_create(formData["address"],formData["site"])
+            api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"]})
             return render_to_response("admin/host/add_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -95,7 +96,7 @@ def edit(api, request, address=None):
         form = EditHostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_modify(formData["address"],{'site':formData["site"]})
+            api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"]})
             return render_to_response("admin/host/edit_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             if not address:
@@ -109,6 +110,7 @@ def edit(api, request, address=None):
             hostinfo=api.host_info(address)
             form = EditHostForm(api, hostinfo)
             form.fields["site"].initial = hostinfo["site"]
+            form.fields["enabled"].initial = hostinfo["enabled"]
             return render_to_response("admin/host/form.html", {'user': api.user, 'address': address, 'form': form, "edit":True})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
