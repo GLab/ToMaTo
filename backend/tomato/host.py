@@ -131,7 +131,7 @@ class Site(attributes.Mixin, models.Model):
 			"description": self.description,
 			"location": self.location,
 			"geolocation": self.geolocation,
-			"organization": self.organization
+			"organization": self.organization.name
 		}
 
 	def __str__(self):
@@ -155,7 +155,7 @@ def createSite(name, organization, description=""):
 	logging.logMessage("create", category="site", name=name, description=description)		
 	site = Site(name=name, organization=getOrganization(organization))
 	site.save()
-	site.init({"description": description, "organization": organization})
+	site.init({"description": description})
 	return site
 
 def _connect(address, port):
