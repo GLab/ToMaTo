@@ -150,12 +150,12 @@ def getSite(name, **kwargs):
 def getAllSites(**kwargs):
 	return list(Site.objects.filter(**kwargs))
 	
-def createSite(name, description=""):
+def createSite(name, organization, description=""):
 	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
 	logging.logMessage("create", category="site", name=name, description=description)		
 	site = Site(name=name)
 	site.save()
-	site.init({"description": description})
+	site.init({"description": description, "organization": organization})
 	return site
 
 def _connect(address, port):

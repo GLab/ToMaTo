@@ -65,11 +65,11 @@ def organization_remove(name):
     orga = _getOrganization(name)
     orga.remove()
 
-def site_create(name, description=""):
+def site_create(name, organization, description=""):
     """
     undocumented
     """
-    s = host.createSite(name, description)
+    s = host.createSite(name, organization, description)
     return s.info()
 
 def site_info(name):
