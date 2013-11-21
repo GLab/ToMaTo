@@ -22,8 +22,75 @@ from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags, mailFlaggedUsers
 import xmlrpclib, time, hashlib
 
+class Organization(attributes.Mixin, models.Model):
+	name = models.CharField(max_length=50, unique=True)
+	attrs = db.JSONField()
+	description = attributes.attribute("description", unicode, "")
+	homepage_url = attributes.attribute("homepage_url", unicode, "")
+	image_url = attributes.attribute("image_url", unicode, "")
+	
+	class Meta:
+		pass
+	
+	def init(self, attrs):
+		self.modify(attrs)
+		
+	def modify(self,attrs):
+		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
+		for key, value in attrs.iteritems():
+			if key == "description":
+				self.description = value
+			elif key == "homepage_url":
+				self.homepage_url = value
+			elif key == "image_url":
+				self.image_url = value
+			else:
+				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
+		self.save()
+		
+	def remove(self):
+		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(not self.sites.all(), "Organization still has sites")
+		fault.check(not self.accounts.all(), "Organization still has users")
+		logging.logMessage("remove", category="organization", name=self.name)
+		self.delete()
+		
+	def info(self):
+		return {
+			"name": self.name,
+			"description": self.description,
+			"homepage_url": self.homepage_url,
+			"image_url": self.image_url
+		}
+
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return "Organization(%s)" % self.name
+	
+def getOrganization(name, **kwargs):
+	try:
+		return Organization.objects.get(name=name, **kwargs)
+	except Organization.DoesNotExist:
+		return None
+
+def getAllOrganizations(**kwargs):
+	return list(Organization.objects.filter(**kwargs))
+	
+def createOrganization(name, description=""):
+	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+	logging.logMessage("create", category="site", name=name, description=description)		
+	organization = Organization(name=name)
+	organization.save()
+	organization.init({"description": description})
+	return organization
+		
+
 class Site(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
+	organization = models.ForeignKey(Organization, null=False, related_name="sites")
 	#hosts: [Host]
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
@@ -46,6 +113,8 @@ class Site(attributes.Mixin, models.Model):
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
+			elif key == "organization":
+				self.organization = getOrganization(value)
 			else:
 				fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -61,7 +130,8 @@ class Site(attributes.Mixin, models.Model):
 			"name": self.name,
 			"description": self.description,
 			"location": self.location,
-			"geolocation": self.geolocation
+			"geolocation": self.geolocation,
+			"organization": self.organization
 		}
 
 	def __str__(self):

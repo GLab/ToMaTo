@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+def _getOrganization(name):
+    o = host.getOrganization(name)
+    fault.check(o, "Site with name %s does not exist", name)
+    return o
+
 def _getSite(name):
     s = host.getSite(name)
     fault.check(s, "Site with name %s does not exist", name)
@@ -24,6 +29,41 @@ def _getHost(address):
     h = host.get(address=address)
     fault.check(h, "Host with address %s does not exist", address)
     return h
+
+def organization_create(name, description=""):
+    """
+    undocumented
+    """
+    o = host.createOrganization(name, description)
+    return o.info()
+
+def organization_info(name):
+    """
+    undocumented
+    """
+    orga = _getOrganization(name)
+    return orga.info()
+
+def organization_list():
+    """
+    undocumented
+    """
+    return [o.info() for o in host.getAllOrganizations()]
+
+def organization_modify(name, attrs):
+    """
+    undocumented
+    """
+    orga = _getOrganization(name)
+    orga.modify(attrs)
+    return orga.info()
+
+def organization_remove(name):
+    """
+    undocumented
+    """
+    orga = _getOrganization(name)
+    orga.remove()
 
 def site_create(name, description=""):
     """
