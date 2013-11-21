@@ -1,0 +1,34 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Executable Archives</h1>
+
+<h2>Introduction</h2>
+<p>An executable archive is an easy way to transmit data or execute scripts.</p>
+
+<h2>Structure</h2>
+<p>An executable archive is a .tar.gz file.</p>
+<p>Every device has an nlXTP-directory (usually located at /mnt/nlXTP).
+When uploading an archive, the contents of this directory are overwritten.
+When downloading an archive, the downloaded file contains this directory.</p>
+<p>After uploading, if the archive
+<ul><li>contains a script matching auto_exec.sh in its root and</li>
+<li>does not contain a directory called exec_status in its root,</li></ul>
+the script will be executed (note: the script should start with a shebang line.).
+The output of this execution will be saved at exec_status/out inside the nlXTP directory.
+Status information are available for this execution.</p>
+<p>If the device is not started while uploading, the execution will be delayed until the device will be started the next time.</p>
+
+<h2>Use cases</h2>
+<p>An executable archive can transmit data or execute commands.
+It can also execute operations on the transmitted data, so it can be viewed as a function with attached resources.</p>
+
+<h2>Guest modules</h2>
+<p>Main article: <a href="/help/rextfv/guestmodules">Guest Modules</a></p>
+<p>For executable archives to work properly, the devices must be configured.</p>
+<p>On KVM devices, the nlXTP directory is a floppy disk which must be mounted on the right place.
+On OpenVZ devices, no mount configuration is necessary to access the uploaded data.</p>
+<p>Auto-execution and execution status are only available iff the guest modules are installed.
+However, the directory is still available (upload and download) without guest modules.</p>
+
+{% endblock %}
