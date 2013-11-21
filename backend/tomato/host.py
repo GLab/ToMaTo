@@ -153,7 +153,7 @@ def getAllSites(**kwargs):
 def createSite(name, organization, description=""):
 	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
 	logging.logMessage("create", category="site", name=name, description=description)		
-	site = Site(name=name)
+	site = Site(name=name, organization=organization)
 	site.save()
 	site.init({"description": description, "organization": organization})
 	return site
