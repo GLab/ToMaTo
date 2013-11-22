@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>List of Organizations</h1>
+
+{% if organization_list %}
+
+	{% if organization_list|length > 10 and hostManager %}
+		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
+	{% endif %}
+
+	<script src="/js/enhancetable.js"></script>
+	
+	
+	<table class="sortable,filterable">
+	  <tr>
+	    <th>Name</th>
+	    <th>Description</th>
+	    
+	    {% if hostManager %}
+	    	<th />
+	    {% endif %}
+	    
+	  </tr>
+	  
+	{% for organization in organization_list %}
+	  <tr>
+	    <td>{{organization.name}}</td>
+	    <td>{{organization.description}}</td>
+	    
+	    {% if hostManager %}
+	    	<td>
+	    		<a href="{%url organization.edit organization.name%}"><img src="/img/pencil.png" title="edit" /></a>
+	    		&nbsp;
+	    		<a href="{%url organization.remove organization.name%}" ><img src="/img/cross.png" title="remove" /></a>
+			</td>
+	    {% endif %}
+	    
+	  </tr>
+	{% endfor %}
+	
+	</table>
+{% else %}
+	No organization
+{% endif %}
+
+{% if hostManager %}
+	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
+{% endif %}
+
+{% endblock %}
