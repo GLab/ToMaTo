@@ -19,8 +19,6 @@ import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
 from .. import config, fault, currentUser
-from ..host import Organization
-from tomato.host import getOrganization
 
 class Flags:
 	Admin = "admin"
@@ -57,6 +55,7 @@ USER_ATTRS = ["realname", "affiliation", "email", "password"]
 ADMIN_ATTRS = ["flags", "origin", "name"]
 
 class User(attributes.Mixin, models.Model):
+	from ..host import Organization
 	name = models.CharField(max_length=255)
 	origin = models.CharField(max_length=50)
 	organization = models.ForeignKey(Organization, null=False, related_name="users")
@@ -78,6 +77,7 @@ class User(attributes.Mixin, models.Model):
 
 	@classmethod	
 	def create(cls, name, organization, **kwargs):
+		from ..host import getOrganization
 		user = User(name=name,organization=getOrganization(organization))
 		user.attrs = kwargs
 		user.last_login = time.time()
@@ -140,6 +140,7 @@ class User(attributes.Mixin, models.Model):
 			self.storePassword(password)
 
 	def modify(self, attrs):
+		from ..host import getOrganization
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key.startswith("_"):
