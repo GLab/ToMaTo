@@ -17,7 +17,7 @@
 
 def _getOrganization(name):
     o = host.getOrganization(name)
-    fault.check(o, "Site with name %s does not exist", name)
+    fault.check(o, "Organization with name %s does not exist", name)
     return o
 
 def _getSite(name):
