@@ -55,8 +55,10 @@ USER_ATTRS = ["realname", "affiliation", "email", "password"]
 ADMIN_ATTRS = ["flags", "origin", "name"]
 
 class User(attributes.Mixin, models.Model):
+	from ..host import Organization
 	name = models.CharField(max_length=255)
 	origin = models.CharField(max_length=50)
+	organization = models.ForeignKey(Organization, null=False, related_name="users")
 	attrs = db.JSONField()
 	password = models.CharField(max_length=250, null=True)
 	password_time = models.FloatField(null=True)
@@ -74,8 +76,11 @@ class User(attributes.Mixin, models.Model):
 		ordering=["name", "origin"]
 
 	@classmethod	
-	def create(cls, name, **kwargs):
-		user = User(name=name)
+	def create(cls, name, organization, **kwargs):
+		from ..host import getOrganization
+		orga = getOrganization(organization);
+		fault.check(orga, "No organization with name %s" % organization)
+		user = User(name=name,organization=orga)
 		user.attrs = kwargs
 		user.last_login = time.time()
 		return user
@@ -137,10 +142,16 @@ class User(attributes.Mixin, models.Model):
 			self.storePassword(password)
 
 	def modify(self, attrs):
+		from ..host import getOrganization
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key.startswith("_"):
 				self.attrs[key] = value
+				continue
+			if key=="organization":
+				orga = getOrganization(value);
+				fault.check(orga, "No organization with name %s" % value)
+				self.organization=orga
 				continue
 			fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
 			if hasattr(self, "modify_%s" % key):
@@ -153,6 +164,7 @@ class User(attributes.Mixin, models.Model):
 		info = {
 			"name": self.name,
 			"origin": self.origin,
+			"organization": self.organization.name,
 			"id": "%s@%s" % (self.name, self.origin) 
 		}
 		info.update(self.attrs)
@@ -184,7 +196,7 @@ class Provider:
 		pass
 	def canRegister(self):
 		return False
-	def register(self, username, password, attrs):
+	def register(self, username, password, organization, attrs):
 		raise Exception("not supported")
 	def canChangePassword(self):
 		return False
@@ -266,12 +278,12 @@ def login(username, password):
 def remove(user):
 	user.delete()
 
-def register(username, password, attrs={}, provider=""):
+def register(username, password, organization, attrs={}, provider=""):
 	for prov in providers:
 		if not prov.getName() == provider:
 			continue
 		fault.check(prov.canRegister(), "Provider can not register users")
-		user = prov.register(username, password, attrs)
+		user = prov.register(username, password, organization, attrs)
 		user.modify(attrs)
 		return user
 	fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
