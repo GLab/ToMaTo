@@ -54,7 +54,7 @@ def add(api, request):
         form = SiteForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.site_create(formData["name"],formData["description"])
+            api.site_create(formData["name"],formData['organization'],formData["description"])
             api.site_modify(formData["name"],{"location": formData["location"],
                                               'geolocation':{'longitude':formData['geolocation_longitude'],
                                                              'latitude':formData['geolocation_latitude']},
