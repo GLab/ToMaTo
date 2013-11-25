@@ -25,3 +25,12 @@ class RemoveResourceForm(forms.Form):
     
 def is_hostManager(account_info):
     return 'hosts_manager' in account_info['flags']
+
+    
+def organization_name_list(api):
+    l = api.organization_list()
+    res = []
+    for organization in l:
+        res.append((organization["name"],organization["description"] or organization["name"]))
+    res.sort()
+    return res

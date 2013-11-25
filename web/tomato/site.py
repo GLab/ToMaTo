@@ -20,7 +20,7 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager
+from admin_common import is_hostManager, organization_name_list
 
 class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
@@ -42,14 +42,7 @@ class EditSiteForm(SiteForm):
 class RemoveSiteForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
-    
-def organization_name_list(api):
-    l = api.organization_list()
-    res = []
-    for organization in l:
-        res.append((organization["name"],organization["description"] or organization["name"]))
-    res.sort()
-    return res
+
 
 @wrap_rpc
 def index(api, request):

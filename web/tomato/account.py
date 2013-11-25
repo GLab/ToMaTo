@@ -23,6 +23,7 @@ from django.shortcuts import render_to_response
 from django.http import Http404
 from django import forms
 from django.core.urlresolvers import reverse
+from admin_common import organization_name_list
 
 from lib import wrap_rpc, getapi, getGuestApi
 import xmlrpclib
@@ -62,11 +63,15 @@ class AccountForm(forms.Form):
     name = forms.CharField(label="Account name", max_length=50)
     password = forms.CharField(label="Password", widget=forms.PasswordInput, required=False)
     password2 = forms.CharField(label="Password (repeated)", widget=forms.PasswordInput, required=False)
+    organization = forms.CharField(max_length=50)
     origin = forms.CharField(label="Origin", widget=forms.HiddenInput, required=False)
     realname = forms.CharField(label="Full name")
     affiliation = forms.CharField()
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
+    def __init__(self, api, *args, **kwargs):
+        super(AccountForm, self).__init__(*args, **kwargs)
+        self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
         
     def clean_password(self):
         if self.data.get('password') != self.data.get('password2'):
@@ -79,7 +84,7 @@ class AccountForm(forms.Form):
 
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
-        AccountForm.__init__(self, data)
+        AccountForm.__init__(self, api, data)
         flags = api.account_flags().items()
         self.fields["name"].widget = FixedText()
         del self.fields["origin"]
@@ -93,8 +98,8 @@ class AccountChangeForm(AccountForm):
 class AccountRegisterForm(AccountForm):
     aup = forms.BooleanField(label="", help_text='I accept the <a href="/help/license/aup">terms and conditions</a>', required=True)
     
-    def __init__(self, data=None):
-        AccountForm.__init__(self, data)
+    def __init__(self, api, data=None):
+        AccountForm.__init__(self, api, data)
         self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
@@ -136,9 +141,10 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, user)
     return render_to_response("account/info.html", {'user': api.user, "account": user, "form": form})
     
-def register(request):
+@wrap_rpc
+def register(api, request):
     if request.method=='POST':
-        form = AccountRegisterForm(request.REQUEST)
+        form = AccountRegisterForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
             username = data["name"]
@@ -155,13 +161,13 @@ def register(request):
             except:
                 form._errors["name"] = form.error_class(["This name is already taken"])
     else:
-        form = AccountRegisterForm() 
+        form = AccountRegisterForm(api) 
     return render_to_response("account/register.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, username=None):
     if request.method == 'POST':
-        form = AccountRemoveForm(request.POST)
+        form = AccountRemoveForm(api, request.POST)
         if form.is_valid():
             username = form.cleaned_data["username"]
             api.account_remove(username)
@@ -176,7 +182,7 @@ def remove(api, request, username=None):
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if username:
-            form = AccountRemoveForm()
+            form = AccountRemoveForm(api)
             form.fields["username"].initial = username
             return render_to_response("account/remove_confirm.html", {'user': api.user, 'username': username, 'form': form})
         else:
