@@ -78,7 +78,9 @@ class User(attributes.Mixin, models.Model):
 	@classmethod	
 	def create(cls, name, organization, **kwargs):
 		from ..host import getOrganization
-		user = User(name=name,organization=getOrganization(organization))
+		orga = getOrganization(organization);
+		fault.check(orga, "No organization with name %s" % organization)
+		user = User(name=name,organization=orga)
 		user.attrs = kwargs
 		user.last_login = time.time()
 		return user
@@ -147,7 +149,9 @@ class User(attributes.Mixin, models.Model):
 				self.attrs[key] = value
 				continue
 			if key=="organization":
-				self.organization=getOrganization(value)
+				orga = getOrganization(value);
+				fault.check(orga, "No organization with name %s" % value)
+				self.organization=orga
 				continue
 			fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
 			if hasattr(self, "modify_%s" % key):

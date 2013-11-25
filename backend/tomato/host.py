@@ -28,6 +28,8 @@ class Organization(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
 	image_url = attributes.attribute("image_url", unicode, "")
+	#sites: [Site]
+	#users: [User]
 	
 	class Meta:
 		pass
@@ -36,7 +38,7 @@ class Organization(attributes.Mixin, models.Model):
 		self.modify(attrs)
 		
 	def modify(self,attrs):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(currentUser().hasFlag(Flags.Admin), "Not enough permissions")
 		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "description":
@@ -50,9 +52,9 @@ class Organization(attributes.Mixin, models.Model):
 		self.save()
 		
 	def remove(self):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(currentUser().hasFlag(Flags.Admin), "Not enough permissions")
 		fault.check(not self.sites.all(), "Organization still has sites")
-		fault.check(not self.accounts.all(), "Organization still has users")
+		fault.check(not self.users.all(), "Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.delete()
 		
@@ -114,7 +116,9 @@ class Site(attributes.Mixin, models.Model):
 			elif key == "geolocation":
 				self.geolocation = value
 			elif key == "organization":
-				self.organization = getOrganization(value)
+				orga = getOrganization(value);
+				fault.check(orga, "No organization with name %s" % value)
+				self.organization = orga
 			else:
 				fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -152,8 +156,12 @@ def getAllSites(**kwargs):
 	
 def createSite(name, organization, description=""):
 	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
-	logging.logMessage("create", category="site", name=name, description=description)		
-	site = Site(name=name, organization=getOrganization(organization))
+	logging.logMessage("create", category="site", name=name, description=description)	
+		
+	orga = getOrganization(organization);
+	fault.check(orga, "No organization with name %s" % organization)
+	site = Site(name=name, organization=orga)
+	
 	site.save()
 	site.init({"description": description})
 	return site
