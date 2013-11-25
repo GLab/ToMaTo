@@ -155,7 +155,7 @@ def register(api, request):
             del data["aup"]
             api = getGuestApi()
             try:
-                api.account_create(username, password=password, attrs=data)
+                api.account_create(username, password=password, organization=data["organization"], attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:
@@ -167,7 +167,7 @@ def register(api, request):
 @wrap_rpc
 def remove(api, request, username=None):
     if request.method == 'POST':
-        form = AccountRemoveForm(api, request.POST)
+        form = AccountRemoveForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data["username"]
             api.account_remove(username)
@@ -182,7 +182,7 @@ def remove(api, request, username=None):
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if username:
-            form = AccountRemoveForm(api)
+            form = AccountRemoveForm()
             form.fields["username"].initial = username
             return render_to_response("account/remove_confirm.html", {'user': api.user, 'username': username, 'form': form})
         else:
