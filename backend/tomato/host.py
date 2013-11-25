@@ -19,7 +19,7 @@ from django.db import models
 from . import config, currentUser, starttime
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
-from auth import Flags, mailFlaggedUsers
+from auth import Flags
 import xmlrpclib, time, hashlib
 
 class Organization(attributes.Mixin, models.Model):
@@ -441,6 +441,7 @@ class Host(attributes.Mixin, models.Model):
 		return problems
 	
 	def checkProblems(self):
+		from auth import mailFlaggedUsers
 		problems = self.problems()
 		if problems and not self.problemAge:
 			# a brand new problem, wait until it is stable
