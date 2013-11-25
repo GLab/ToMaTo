@@ -39,9 +39,9 @@ class Provider(AuthProvider):
 		return True
 	def changePassword(self, username, password):
 		pass # password in user record will be changed by auth
-	def register(self, username, password, attrs):
+	def register(self, username, password, organization, attrs):
 		fault.check(self.getUsers(name=username).count()==0, "Username already exists")
-		user = User.create(name=username, flags=self.default_flags)
+		user = User.create(name=username, organization=organization, flags=self.default_flags)
 		user.save()
 		user.storePassword(password)
 		user.modify(attrs)
