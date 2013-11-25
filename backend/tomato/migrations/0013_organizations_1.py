@@ -59,6 +59,11 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.related.ForeignKey')(default=default_org.id, related_name='sites', to=orm['tomato.Organization']),
                       keep_default=False)
 
+        # Adding field 'User.organization'
+        db.add_column('tomato_user', 'organization',
+                      self.gf('django.db.models.fields.related.ForeignKey')(default=default_org.id, related_name='users', to=orm['tomato.Organization']),
+                      keep_default=False)
+
 
         # Changing field 'KVMQM.site'
         db.alter_column('tomato_kvmqm', 'site_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Site'], null=True, on_delete=models.SET_NULL))
@@ -114,7 +119,7 @@ class Migration(SchemaMigration):
         db.alter_column('tomato_tinc_endpoint', 'element_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.HostElement'], null=True))
         # Deleting field 'Site.organization'
         db.delete_column('tomato_site', 'organization_id')
-
+        db.delete_column('tomato_user', 'organization_id')
 
         # Changing field 'KVMQM.site'
         db.alter_column('tomato_kvmqm', 'site_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.Site'], null=True))

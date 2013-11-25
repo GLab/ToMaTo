@@ -101,7 +101,7 @@ def account_modify(name=None, attrs={}):
     acc.modify(attrs)
     return acc.info(True)
         
-def account_create(username, password, attrs={}, provider=""):
+def account_create(username, password, organization, attrs={}, provider=""):
     """
     This method will create a new account in a provider that supports this.
     
@@ -127,7 +127,7 @@ def account_create(username, password, attrs={}, provider=""):
     Return value:
       This method returns the info dict of the new account.
     """
-    user = register(username, password, attrs, provider)
+    user = register(username, password, organization, attrs, provider)
     return user.info(True)
         
 def account_remove(name=None):
