@@ -1,5 +1,7 @@
 {% extends "admin/base.html" %}
 
+{% load tomato %}
+
 {% block content %}
 <h1>Account List</h1>
 
@@ -12,7 +14,7 @@
     <th>Full name</th>
     <th>Affiliation</th>
     <th>Flags</th>
-{% if "admin" in user.flags %}
+{% if "global_admin" in user.flags or "orga_admin" in user.flags %}
     <th></th>
 {% endif %}
   </tr>
@@ -35,7 +37,7 @@
     		</div>
     	</div>
     </td>
-{% if "admin" in user.flags %}
+{% if user|args:account.organization|call:"isAdmin" %}
     <td>
       <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
     </td>

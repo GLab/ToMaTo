@@ -19,7 +19,6 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager
 
 class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
@@ -50,7 +49,7 @@ def site_name_list(api):
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-        return render_to_response("admin/host/index.html", {'user': api.user, 'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
+        return render_to_response("admin/host/index.html", {'user': api.user, 'host_list': api.host_list(), 'sites': sites})
 
 @wrap_rpc
 def add(api, request):
@@ -79,14 +78,14 @@ def remove(api, request, address=None):
                 address=request.POST['address']
             if address:
                 form.fields["address"].initial = address
-                return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if address:
             form = RemoveHostForm()
             form.fields["address"].initial = address
-            return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 

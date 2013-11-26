@@ -47,7 +47,7 @@ class ServerProxy(object):
 
 def getGuestApi():
 	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, guest_username, guest_password, server_host, server_port), allow_none=True )
-	api.user = api.account_info()
+	api.user = UserObj(api)
 	return api
 
 def getapi(request):
@@ -58,7 +58,7 @@ def getapi(request):
 	username = urllib.quote_plus(username)
 	password = urllib.quote_plus(password)
 	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
-	api.user = api.account_info()
+	api.user = UserObj(api)
 	return api
 
 class HttpResponseNotAuthorized(HttpResponse):
@@ -123,3 +123,27 @@ class wrap_json:
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}))				
 		except xmlrpclib.Fault, f:
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))
+
+class UserObj:
+	def __init__(self, api):
+		self._api = api
+		self.data = api.account_info()
+		self.name = self.data["name"]
+		self.flags = self.data["flags"]
+		self.origin = self.data["origin"]
+		self.organization = self.data["organization"]
+	def isAdmin(self, orgaName=None):
+		if "global_admin" in self.flags:
+			return True
+		if "orga_admin" in self.flags and self.organization == orgaName:
+			return True
+		return False
+	def isHostManager(self, orgaName=None):
+		if "global_host_manager" in self.flags:
+			return True
+		if "orga_host_manager" in self.flags and self.organization == orgaName:
+			return True
+		return False
+	def isHostManagerForSite(self, site):
+		orga = self._api.site_info(site)["organization"]
+		return self.isHostManager(orga)

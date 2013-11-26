@@ -8,7 +8,7 @@
 
 {% if profile_list %}
 
-	{% if profile_list|length > 10 and hostManager %}
+	{% if profile_list|length > 10 and user.isHostManager %}
 		<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
 	{% endif %}
 
@@ -24,7 +24,7 @@
 		<th>Preference</th>
 	    <th>Restricted</th>
 		
-		{% if hostManager %}
+		{% if user.isHostManager %}
 			<th />
 		{% endif %}
 		
@@ -60,7 +60,7 @@
 		    {% endif %}
 	    </td>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<td>
 	    		<a href="{%url device_profile.edit profile.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -76,7 +76,7 @@
 	No profiles
 {% endif %}
 
-{% if hostManager %}
+{% if user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
 {% endif %}
 

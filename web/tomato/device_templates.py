@@ -22,7 +22,7 @@
 from django import forms
 from lib import *
 import base64
-from admin_common import RemoveResourceForm, is_hostManager
+from admin_common import RemoveResourceForm
 
 class TemplateForm(forms.Form):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -62,7 +62,7 @@ def index(api, request):
 			return c
 		return cmp(a["name"], b["name"])
 	templ_list.sort(_cmp)
-	return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
+	return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list})
 
 
 @wrap_rpc
@@ -108,14 +108,14 @@ def remove(api, request, res_id=None):
 			if res_id:
 				form = RemoveResourceForm()
 				form.fields["res_id"].initial = res_id
-				return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+				return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			form = RemoveResourceForm()
 			form.fields["res_id"].initial = res_id
-			return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+			return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 	

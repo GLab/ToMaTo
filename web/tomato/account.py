@@ -89,7 +89,7 @@ class AccountChangeForm(AccountForm):
         self.fields["name"].widget = FixedText()
         del self.fields["origin"]
         self.fields["flags"].choices = flags
-        if "admin" in api.user.get("flags", []):
+        if api.user.isAdmin(data["organization"]):
             self.fields["flags"].widget = forms.widgets.CheckboxSelectMultiple(choices=flags)
         else:
             self.fields["flags"].widget = AccountFlagList(api)
@@ -119,7 +119,7 @@ def index(api, request):
 
 @wrap_rpc
 def info(api, request, id=None):
-    user = api.user
+    user = api.user.data
     if id:
         user = api.account_info(id)
     else:
@@ -129,7 +129,7 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
-            if not "admin" in api.user["flags"]:
+            if api.user.isAdmin(data["organization"]):
                 del data["flags"]
             del data["name"]
             del data["password2"]

@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of Templates</h1>
 
-{% if templ_list|length > 10 and hostManager %}
+{% if templ_list|length > 10 and user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
 {% endif %}
 
@@ -22,7 +22,7 @@
 	    <th>Description</th>
 	    <th>Ready</th>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<th />
 	    {% endif %}
 	    
@@ -99,7 +99,7 @@
 		    {% endif %}
 	    </td>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<td>
 	    		<a href="{%url device_templates.edit_data templ.id%}"><img src="/img/page_edit.png" title="edit data" /></a>
 	    		<a href="{%url device_templates.edit_torrent templ.id%}"><img src="/img/cd_edit.png" title="change torrent" /></a>
@@ -115,7 +115,7 @@
 	No templates
 {% endif %}
 
-{% if hostManager %}
+{% if user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
 {% endif %}
 

@@ -210,18 +210,6 @@ DATABASES['default'] = {
 	'NAME': 'tomato'
 }
 
-# Use a hostserver to host templates
-# HOST: host of the hostserver
-# PORT: port of the hostserver
-# BASEDIR: basedir of the hostserver
-# SECRET_KEY: the secret key of the hostserver
-#TEMPLATE_HOSTSERVER = {
-#        'HOST': "",
-#        'PORT': 8080,
-#        'BASEDIR': "/data",
-#        'SECRET_KEY': "secret",
-#}
-
 
 # Main log file
 LOG_FILE = "/var/log/tomato/main.log"

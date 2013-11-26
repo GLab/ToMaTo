@@ -62,8 +62,7 @@ def account_info(name=None):
       If the given account does not exist an exception is raised.
     """
     acc = _getAccount(name)
-    showMail = acc == currentUser() or currentUser().hasFlag(Flags.Admin)
-    return acc.info(showMail)
+    return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
 def account_list():
     """
@@ -73,7 +72,7 @@ def account_list():
       A list with information entries of all accounts. Each list entry contains
       exactly the same information as returned by :py:func:`account_info`.
     """
-    return [acc.info(acc == currentUser() or currentUser().hasFlag(Flags.Admin)) for acc in getAllUsers()]
+    return [acc.info(currentUser() == acc or currentUser().isAdminOf(acc)) for acc in getAllUsers()]
 
 def account_modify(name=None, attrs={}):
     """
@@ -96,8 +95,8 @@ def account_modify(name=None, attrs={}):
       reflected in this dict.
     """
     acc = _getAccount(name)
-    if acc.name != currentUser().name:
-        fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
+    if acc != currentUser():
+        fault.check(currentUser().isAdminOf(acc), "No permissions")
     acc.modify(attrs)
     return acc.info(True)
         
@@ -143,7 +142,7 @@ def account_remove(name=None):
       This method returns nothing if the account has been deleted.
     """
     acc = _getAccount(name)
-    fault.check(currentUser().hasFlag(Flags.Admin), "No permissions")
+    fault.check(currentUser().isAdminOf(acc), "No permissions")
     remove(acc)
         
 def account_flags():
@@ -156,4 +155,4 @@ def account_flags():
     return flags
         
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, flags, Flags, register, remove
+from ..auth import getUser, getAllUsers, flags, register, remove

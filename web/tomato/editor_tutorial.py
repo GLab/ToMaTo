@@ -65,7 +65,7 @@ tutorials = [
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("topology/editor_tutorials_list.html",{'tutorials':tutorials, 'user':api.account_info()})
+    return render_to_response("topology/editor_tutorials_list.html",{'tutorials':tutorials, 'user':api.user})
 
 
 @wrap_rpc
