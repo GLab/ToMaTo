@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
+import json
 
 substitutions = [('admin', 'global_admin'),
 				 ('hosts_manager', 'global_host_manager'),
@@ -16,23 +17,27 @@ class Migration(DataMigration):
 
 	def forwards(self, orm):
 		for user in orm["tomato.user"].objects.all():
-			flags = set(user.attrs["flags"])
+			attrs = json.loads(user.attrs)
+			flags = set(attrs["flags"])
 			for old, new in substitutions:
 				if old in flags:
 					flags.remove(old)
 					flags.add(new)
-			user.attrs["flags"] = list(flags)
+			attrs["flags"] = list(flags)
+			user.attrs = json.dumps(attrs)
 			user.save()
 
 
 	def backwards(self, orm):
 		for user in orm["tomato.user"].objects.all():
-			flags = set(user.attrs["flags"])
+			attrs = json.loads(user.attrs)
+			flags = set(attrs["flags"])
 			for old, new in substitutions:
 				if new in flags:
 					flags.remove(new)
 					flags.add(old)
-			user.attrs["flags"] = list(flags)
+			attrs["flags"] = list(flags)
+			user.attrs = json.dumps(attrs)
 			user.save()
 
 
