@@ -3399,19 +3399,6 @@ var Editor = Class.extend({
 				attrs: {kind: "internet"}
 			}))
 		}));
-		group.addElement(Menu.button({
-			label: "OpenFlow",
-			name: "net-openflow",
-			icon: "img/openflow32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "openflow"}
-			}))
-		}));
-
 
 		var tab = this.menu.addTab("Topology");
 
