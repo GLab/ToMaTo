@@ -20,7 +20,6 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager
 
 class OrganizationForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
@@ -39,7 +38,7 @@ class RemoveOrganizationForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("admin/organization/index.html", {'user': api.user, 'organization_list': api.organization_list(), 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/organization/index.html", {'user': api.user, 'organization_list': api.organization_list()})
 
 @wrap_rpc
 def add(api, request):
@@ -72,7 +71,7 @@ def remove(api, request, name=None):
             if name:
                 form = RemoveOrganizationForm()
                 form.fields["name"].initial = name
-                return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -80,7 +79,7 @@ def remove(api, request, name=None):
         if name:
             form = RemoveOrganizationForm()
             form.fields["name"].initial = name
-            return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     

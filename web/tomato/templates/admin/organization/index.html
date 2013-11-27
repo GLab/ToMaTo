@@ -7,7 +7,7 @@
 
 {% if organization_list %}
 
-	{% if organization_list|length > 10 and hostManager %}
+	{% if organization_list|length > 10 and user.isAdmin %}
 		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 	{% endif %}
 
@@ -15,22 +15,22 @@
 	
 	
 	<table class="sortable,filterable">
-	  <tr>
+	  <thead><tr>
 	    <th>Name</th>
 	    <th>Description</th>
 	    
-	    {% if hostManager %}
+	    {% if user.isAdmin or "orga_admin" in user.flags %}
 	    	<th />
 	    {% endif %}
 	    
-	  </tr>
+	  </tr></thead>
 	  
 	{% for organization in organization_list %}
 	  <tr>
 	    <td>{{organization.name}}</td>
 	    <td>{{organization.description}}</td>
 	    
-	    {% if hostManager %}
+	    {% if user|args:organization.name|call:"isAdmin" %}
 	    	<td>
 	    		<a href="{%url organization.edit organization.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -46,7 +46,7 @@
 	No organization
 {% endif %}
 
-{% if hostManager %}
+{% if user.isAdmin %}
 	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 {% endif %}
 

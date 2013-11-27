@@ -23,10 +23,6 @@ from django import forms
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     
-def is_hostManager(account_info):
-    return 'hosts_manager' in account_info['flags']
-
-    
 def organization_name_list(api):
     l = api.organization_list()
     res = []
