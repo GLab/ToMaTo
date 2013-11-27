@@ -17,27 +17,39 @@ class Migration(DataMigration):
 
 	def forwards(self, orm):
 		for user in orm["tomato.user"].objects.all():
-			attrs = json.loads(user.attrs)
+			if isinstance(user.attrs, basestring):
+				attrs = json.loads(user.attrs)
+			else:
+				attrs = user.attrs
 			flags = set(attrs["flags"])
 			for old, new in substitutions:
 				if old in flags:
 					flags.remove(old)
 					flags.add(new)
 			attrs["flags"] = list(flags)
-			user.attrs = json.dumps(attrs)
+			if isinstance(user.attrs, basestring):
+				user.attrs = json.dumps(attrs)
+			else:
+				user.attrs = attrs
 			user.save()
 
 
 	def backwards(self, orm):
 		for user in orm["tomato.user"].objects.all():
-			attrs = json.loads(user.attrs)
+			if isinstance(user.attrs, basestring):
+				attrs = json.loads(user.attrs)
+			else:
+				attrs = user.attrs
 			flags = set(attrs["flags"])
 			for old, new in substitutions:
 				if new in flags:
 					flags.remove(new)
 					flags.add(old)
 			attrs["flags"] = list(flags)
-			user.attrs = json.dumps(attrs)
+			if isinstance(user.attrs, basestring):
+				user.attrs = json.dumps(attrs)
+			else:
+				user.attrs = attrs
 			user.save()
 
 

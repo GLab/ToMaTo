@@ -513,6 +513,7 @@ class Host(attributes.Mixin, models.Model):
 		return {
 			"address": self.address,
 			"site": self.site.name,
+			"organization": self.site.organization.name,
 			"enabled": self.enabled,
 			"problems": self.problems(),
 			"component_errors": self.componentErrors,

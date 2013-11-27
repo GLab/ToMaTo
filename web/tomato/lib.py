@@ -144,6 +144,3 @@ class UserObj:
 		if "orga_host_manager" in self.flags and self.organization == orgaName:
 			return True
 		return False
-	def isHostManagerForSite(self, site):
-		orga = self._api.site_info(site)["organization"]
-		return self.isHostManager(orga)

@@ -114,7 +114,7 @@
 			    <td>???</td>
 			{% endif %}
 		    
-		    {% if user|args:host.site|call:"isHostManagerForSite" %}
+		    {% if user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
