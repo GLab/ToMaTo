@@ -172,7 +172,7 @@ class User(attributes.Mixin, models.Model):
 	def isAdminOf(self, user):
 		if self.hasFlag(Flags.GlobalAdmin):
 			return True
-		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization
+		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization and not user.hasFlag(Flags.GlobalAdmin)
 
 	def can_modify(self, attr, value):
 		if attr.startswith("_"):
@@ -181,6 +181,9 @@ class User(attributes.Mixin, models.Model):
 			return True
 		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
+			if user == self and attr == "flags" and not Flags.GlobalAdmin in value:
+				# Admins must not delete their own admin flag
+				return False
 			return True
 		if user.isAdminOf(self):
 			if attr in ["name"]:
