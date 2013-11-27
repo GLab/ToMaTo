@@ -181,6 +181,10 @@ class User(attributes.Mixin, models.Model):
 			return True
 		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
+			if user == self and attr == "flags":
+				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value)) 
+				if Flags.GlobalAdmin in changedFlags:
+					return False
 			return True
 		if user.isAdminOf(self):
 			if attr in ["name"]:
