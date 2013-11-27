@@ -1,5 +1,9 @@
 // http://marijnhaverbeke.nl/uglifyjs
 
+var settings = {
+	childElementDistance: 25,
+}
+
 var ajax = function(options) {
 	var t = this;
 	$.ajax({
@@ -1826,6 +1830,11 @@ var Connection = Component.extend({
 	getPath: function() {
 		var pos1 = this.elements[0].getAbsPos();
 		var pos2 = this.elements[1].getAbsPos();
+		var diff = {x: pos1.x - pos2.x, y: pos1.y - pos2.y};
+		var length = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+		var norm = {x: diff.x/length, y: diff.y/length};
+		pos1 = {x: pos1.x - norm.x * settings.childElementDistance, y: pos1.y - norm.y * settings.childElementDistance};
+		pos2 = {x: pos2.x + norm.x * settings.childElementDistance, y: pos2.y + norm.y * settings.childElementDistance};
 		var path = "M"+pos1.x+" "+pos1.y+"L"+pos2.x+" "+pos2.y;
 		//TODO: use bezier loop for very short connections
 		return path;
@@ -2641,9 +2650,9 @@ var IconElement = Element.extend({
 	},
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
-		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2, this.iconSize.x, this.iconSize.y);
-		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2+5, this.data.attrs.name);
-		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-10, 16, 16);
+		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
+		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
+		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
 		//hide icon below rect to disable special image actions on some browsers
@@ -2665,10 +2674,10 @@ var IconElement = Element.extend({
 	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
-		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2});
-		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-10});
-		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2+5});
-		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2+5, text: this.data.attrs.name});
+		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
+		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
 		this.updateStateIcon();
 		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.conditionalClass("connectable", this.isConnectable());
@@ -2803,7 +2812,7 @@ var ChildElement = Element.extend({
 		var xd = cpos.x - ppos.x;
 		var yd = cpos.y - ppos.y;
 		var magSquared = (xd * xd + yd * yd);
-		var mag = 14.0 / Math.sqrt(magSquared);
+		var mag = settings.childElementDistance / Math.sqrt(magSquared);
 		return {x: ppos.x + (xd * mag), y: ppos.y + (yd * mag)};
 	},
 	isEndpoint: function() {
