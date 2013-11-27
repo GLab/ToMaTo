@@ -172,7 +172,7 @@ class User(attributes.Mixin, models.Model):
 	def isAdminOf(self, user):
 		if self.hasFlag(Flags.GlobalAdmin):
 			return True
-		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization
+		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization and not self.hasFlag(Flags.GlobalAdmin)
 
 	def can_modify(self, attr, value):
 		if attr.startswith("_"):
