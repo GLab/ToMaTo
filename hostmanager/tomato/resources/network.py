@@ -17,10 +17,13 @@
 
 from django.db import models
 from .. import resources
+from ..user import User
+
 
 class Network(resources.Resource):
+	owner = models.ForeignKey(User, related_name='networks')
 	kind = models.CharField(max_length=50)
-	bridge = models.CharField(max_length=20, unique=True)
+	bridge = models.CharField(max_length=20)
 	preference = models.IntegerField(default=0)
 	
 	TYPE = "network"
@@ -28,6 +31,7 @@ class Network(resources.Resource):
 	class Meta:
 		db_table = "tomato_network"
 		app_label = 'tomato'
+		unique_together = (("bridge", "owner"))
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE

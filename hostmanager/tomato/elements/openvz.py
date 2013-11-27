@@ -17,7 +17,8 @@
 
 import os.path, sys
 from django.db import models
-from .. import connections, elements, resources, fault, config
+from .. import connections, elements, fault, config
+from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
@@ -169,7 +170,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	gateway6_attr = Attr("gateway6", desc="IPv6 gateway", type="str")
 	gateway6 = gateway6_attr.attribute()		
 	template_attr = Attr("template", desc="Template", states=[ST_CREATED, ST_PREPARED], type="str", null=True)
-	template = models.ForeignKey(resources.Resource, null=True)
+	template = models.ForeignKey(template.Template, null=True)
 
 	TYPE = "openvz"
 	CAP_ACTIONS = {
@@ -265,7 +266,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	def _template(self):
 		if self.template:
 			return self.template.upcast()
-		pref = resources.template.getPreferred(self.TYPE)
+		pref = template.getPreferred(self.TYPE)
 		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
 		return pref
 
@@ -406,7 +407,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			self._setGateways()
 	
 	def modify_template(self, tmplName):
-		self.template = resources.template.get(self.TYPE, tmplName)
+		self.template = template.get(self.TYPE, tmplName)
 		if self.state == ST_PREPARED:
 			self._useImage(self._template().getPath())
 

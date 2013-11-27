@@ -19,6 +19,7 @@ import os, shutil
 from django.db import models
 
 from .. import dump
+from ..user import User
 from ..accounting import UsageStatistics
 from ..lib import db, attributes, util, logging #@UnresolvedImport
 from ..lib.decorators import *
@@ -76,7 +77,7 @@ Bridge concept interface:
 
 class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
-	owner = models.CharField(max_length=20, validators=[db.nameValidator])
+	owner = models.ForeignKey(User, related_name='connections')
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='connection')
 	attrs = db.JSONField()

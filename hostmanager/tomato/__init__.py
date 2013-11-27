@@ -48,7 +48,9 @@ def setCurrentUser(user):
 def login(credentials, sslCert):
 	if not sslCert:
 		return False
-	setCurrentUser(sslCert.get_subject().commonName)
+	username = sslCert.get_subject().commonName
+	user, _ = User.objects.get_or_create(name=username)
+	setCurrentUser(user)
 	return bool(sslCert)
 
 
@@ -66,7 +68,6 @@ def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
-	resources.init()
 	accounting.task.start() #@UndefinedVariable
 	bittorrent.startClient(config.TEMPLATE_DIR)
 	bittorrent.task.start() #@UndefinedVariable

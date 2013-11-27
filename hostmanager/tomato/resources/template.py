@@ -17,6 +17,7 @@
 
 from django.db import models
 from .. import resources, fault, config
+from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent, path #@UnresolvedImport
 import os, base64, hashlib
@@ -28,6 +29,7 @@ PATTERNS = {
 }
 
 class Template(resources.Resource):
+	owner = models.ForeignKey(User, related_name='templates')
 	tech = models.CharField(max_length=20)
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
@@ -38,20 +40,22 @@ class Template(resources.Resource):
 	class Meta:
 		db_table = "tomato_template"
 		app_label = 'tomato'
+		unique_together = (("tech", "name", "owner"))
 	
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["name", "tech", "torrent_data"]:
 			fault.check(attr in attrs, "Template needs attribute %s", attr) 
+		self.modify_tech(attrs["tech"])
 		resources.Resource.init(self, *args, **kwargs)
-		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
 	def upcast(self):
 		return self
 	
 	def getPath(self):
-		return os.path.join(config.TEMPLATE_DIR, PATTERNS[self.tech] % self.name)
+		hash = hashlib.md5(self.torrent_data or "").hexdigest()
+		return os.path.join(config.TEMPLATE_DIR, PATTERNS[self.tech] % hash)
 	
 	def getTorrentPath(self):
 		return self.getPath() + ".torrent"
@@ -70,6 +74,8 @@ class Template(resources.Resource):
 		if val != self.torrent_data:
 			if os.path.exists(self.getPath()):
 				path.remove(self.getPath(), recursive=True)
+			if os.path.exists(self.getTorrentPath()):
+				path.remove(self.getTorrentPath())
 		self.torrent_data = val
 		if self.name and self.tech:
 			with open(self.getTorrentPath(), "w") as fp:
@@ -104,13 +110,15 @@ class Template(resources.Resource):
 
 def get(tech, name):
 	try:
-		return Template.objects.get(tech=tech, name=name)
+		return Template.objects.get(tech=tech, name=name, owner=currentUser())
 	except:
 		return None
 	
 def getPreferred(tech):
-	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
+	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
 	fault.check(tmpls, "No template of type %s registered", tech) 
 	return tmpls[0]
 
 resources.TYPES[Template.TYPE] = Template
+
+from .. import currentUser

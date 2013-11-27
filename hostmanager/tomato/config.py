@@ -111,14 +111,6 @@ Note: for backwards compatibility, the list can be omitted and instead a
 single dict containing one server entry can be assigned to this field.
 """
 
-ADMIN_USERS = []
-"""
-A list of administrative users names. If a users certificate has a 
-*common name* that is listed in this cofiguration field, it is granted
-special permissions.
-See :doc:`backends` for more information about backend authentication. 
-"""
-
 DATABASES = None
 DATABASE = {
    'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -160,6 +152,11 @@ BITTORRENT_RESTART = 60 * 30 # 30 minutes
 """
 This field defines how often the bittorrent client should be restarted.
 """
+
+RESOURCES = {
+	'port': xrange(6000, 7000),
+	'vmid': xrange(1000, 2000)
+}
 
 
 import socket

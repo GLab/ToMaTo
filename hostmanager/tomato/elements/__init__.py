@@ -19,6 +19,7 @@ import os, shutil, time, os.path, datetime, abc
 from django.db import models
 from threading import RLock,Lock
 
+from ..user import User
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
 from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
@@ -36,7 +37,7 @@ REMOVE_ACTION = "(remove)"
 
 class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
-	owner = models.CharField(max_length=20, validators=[db.nameValidator])
+	owner = models.ForeignKey(User, related_name='elements')
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
