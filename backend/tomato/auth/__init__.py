@@ -209,7 +209,7 @@ class User(attributes.Mixin, models.Model):
 				self.attrs[key] = value
 		self.save()
 	
-	def info(self, showMail):
+	def info(self, includeInfos):
 		info = {
 			"name": self.name,
 			"origin": self.origin,
@@ -217,8 +217,9 @@ class User(attributes.Mixin, models.Model):
 			"id": "%s@%s" % (self.name, self.origin) 
 		}
 		info.update(self.attrs)
-		if not showMail:
+		if not includeInfos:
 			info["email"] = "*** hidden ***"
+			info["flags"] = "*** hidden ***"
 		return info
 		
 	def sendMail(self, subject, message):
