@@ -72,7 +72,12 @@ def account_list():
       A list with information entries of all accounts. Each list entry contains
       exactly the same information as returned by :py:func:`account_info`.
     """
-    return [acc.info(currentUser() == acc or currentUser().isAdminOf(acc)) for acc in getAllUsers()]
+    if currentUser().hasFlag(Flags.GlobalAdmin):
+        return [acc.info(True) for acc in getAllUsers()]
+    elif currentUser().hasFlag(Flags.OrgaAdmin):
+        return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization)]
+    else:
+        fault.raise_("Not enough permissions")
 
 def account_modify(name=None, attrs={}):
     """
@@ -155,4 +160,4 @@ def account_flags():
     return flags
         
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, flags, register, remove
+from ..auth import getUser, getAllUsers, flags, register, remove, Flags
