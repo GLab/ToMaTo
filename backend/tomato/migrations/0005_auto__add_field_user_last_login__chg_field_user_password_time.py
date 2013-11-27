@@ -12,10 +12,7 @@ class Migration(SchemaMigration):
         db.add_column('tomato_user', 'last_login', self.gf('django.db.models.fields.FloatField')(default=1352370115.345284), keep_default=False)
 
         # Changing field 'User.password_time'
-        try:
-            db.alter_column('tomato_user', 'password_time', self.gf('django.db.models.fields.FloatField')(null=True))
-        except:
-            db.execute("ALTER TABLE tomato_user ALTER password_time TYPE float USING 0.0;")
+        db.execute("ALTER TABLE tomato_user ALTER password_time TYPE float USING 0.0;")
 
     def backwards(self, orm):
         
