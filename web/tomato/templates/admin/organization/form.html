@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+
+{% block header %}
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+{% endblock %}
+
+{% load tomato %}
+
+{% block content %}
+
+{% if edit %}
+	<h1>Edit Organization {{name}}</h1>
+	<form action="{%url organization.edit%}" method="post">
+{% else %}
+	<h1>Add Organization</h1>
+	<form action="{%url organization.add%}" method="post">
+{% endif %}
+
+		<table class="whitebg">
+			{{form.as_table}}
+	
+			<tr>
+				<td />
+				<td>
+					
+					{% if edit %}
+						<input type="submit" value="Save" />
+					{% else %}
+						<input type="submit" value="Add" />
+					{% endif %}
+					
+					<input type="button" onclick="history.back()" value="Cancel" />
+				</td>
+			</tr>
+		</table>
+		
+		
+	
+</form>
+
+{% endblock %}

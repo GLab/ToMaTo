@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Success</h1>
+
+<p>Successfully removed the organization {{name}}.</p>
+<p><a href="{%url organization.index%}">Back to list</a></p>
+
+{% endblock %}

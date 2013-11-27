@@ -21,49 +21,72 @@ from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
 from .. import config, fault, currentUser
 
 class Flags:
-	Admin = "admin"
 	Debug = "debug"
-	HostsManager = "hosts_manager"
-	GlobalOwner = "global_owner"
-	GlobalManager = "global_manager"
-	GlobalUser = "global_user"	
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
 	Mails = "mails"
-	HostsContact = "hosts_contact"
-	AdminContact = "admin_contact"
+	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
+	GlobalHostManager = "global_host_manager"
+	GlobalToplOwner = "global_topl_owner"
+	GlobalToplManager = "global_topl_manager"
+	GlobalToplUser = "global_topl_user"	
+	GlobalHostContact = "global_host_contact"
+	GlobalAdminContact = "global_admin_contact"
+	OrgaAdmin = "orga_admin" #nicht "global-" rechte vergeben für eigene user (auch nicht debug)
+	OrgaHostManager = "orga_host_manager" # eigene orga, hosts und sites verwalten
+	OrgaToplOwner = "orga_topl_owner"
+	OrgaToplManager = "orga_topl_manager"
+	OrgaToplUser = "orga_topl_user"	
+	OrgaHostContact = "orga_host_contact"
+	OrgaAdminContact = "orga_admin_contact"
 
 flags = {
-	Flags.Admin: "Admin: Modify all accounts",
 	Flags.Debug: "Debug: See everything",
-	Flags.HostsManager: "HostsManager: Can manage all hosts and sites",
-	Flags.GlobalOwner: "GlobalOwner: Owner for every topology",
-	Flags.GlobalManager: "GlobalManager: Manager for every topology",
-	Flags.GlobalUser: "GlobalUser: User for every topology",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
 	Flags.Mails: "Mails: Can receive mails at all",
-	Flags.HostsContact: "HostsContact: User receives mails about host problems",
-	Flags.AdminContact: "AdminContact: User receives mails to administrators"
+	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
+	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
+	Flags.GlobalToplOwner: "GlobalToplOwner: Owner for every topology",
+	Flags.GlobalToplManager: "GlobalToplManager: Manager for every topology",
+	Flags.GlobalToplUser: "GlobalToplUser: User for every topology",
+	Flags.GlobalHostContact: "GlobalHostContact: User receives mails about host problems",
+	Flags.GlobalAdminContact: "GlobalAdminContact: User receives mails to administrators",
+	Flags.OrgaAdmin: "OrgaAdmin: Modify all accounts of a specific organization",
+	Flags.OrgaHostManager: "OrgaHostsManager: Can manage all hosts and sites of a specific organization",
+	Flags.OrgaToplOwner: "OrgaToplOwner: Owner for every topology of a specific organization",
+	Flags.OrgaToplManager: "OrgaToplManager: Manager for every topology of a specific organization",
+	Flags.OrgaToplUser: "OrgaToplUser: User for every topology of a specific organization",
+	Flags.OrgaHostContact: "OrgaHostContact: User receives mails about host problems of a specific organization",
+	Flags.OrgaAdminContact: "OrgaAdminContact: User receives mails to a specific organization"
 }
 
-USER_ATTRS = ["realname", "affiliation", "email", "password"]
-ADMIN_ATTRS = ["flags", "origin", "name"]
+orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
+						Flags.RestrictedProfiles, Flags.Mails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
+						Flags.OrgaHostContact, Flags.OrgaAdminContact]
+global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
+global_tech_flags = [Flags.GlobalHostManager, Flags.GlobalHostContact]
+orga_pi_flags = [Flags.OrgaAdmin, Flags.OrgaToplOwner, Flags.OrgaAdminContact]
+orga_tech_flags = [Flags.OrgaHostManager, Flags.OrgaHostContact]
+
+USER_ATTRS = ["realname", "email", "password"]
 
 class User(attributes.Mixin, models.Model):
+	from ..host import Organization
 	name = models.CharField(max_length=255)
 	origin = models.CharField(max_length=50)
+	organization = models.ForeignKey(Organization, null=False, related_name="users")
 	attrs = db.JSONField()
 	password = models.CharField(max_length=250, null=True)
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
 	
 	realname = attributes.attribute("realname", unicode)
-	affiliation = attributes.attribute("affiliation", unicode)
 	email = attributes.attribute("email", unicode)
 	flags = attributes.attribute("flags", list, [])
 
@@ -74,8 +97,11 @@ class User(attributes.Mixin, models.Model):
 		ordering=["name", "origin"]
 
 	@classmethod	
-	def create(cls, name, **kwargs):
-		user = User(name=name)
+	def create(cls, name, organization, **kwargs):
+		from ..host import getOrganization
+		orga = getOrganization(organization);
+		fault.check(orga, "No organization with name %s" % organization)
+		user = User(name=name,organization=orga)
 		user.attrs = kwargs
 		user.last_login = time.time()
 		return user
@@ -136,13 +162,44 @@ class User(attributes.Mixin, models.Model):
 			prov.changePassword(self.name, password)
 			self.storePassword(password)
 
+	def modify_organization(self, value):
+		from ..host import getOrganization
+		orga = getOrganization(value);
+		fault.check(orga, "No organization with name %s" % value)
+		self.organization=orga
+		
+
+	def isAdminOf(self, user):
+		if self.hasFlag(Flags.GlobalAdmin):
+			return True
+		return self.hasFlag(Flags.OrgaAdmin) and self.organization == user.organization
+
+	def can_modify(self, attr, value):
+		if attr.startswith("_"):
+			return True
+		if attr in USER_ATTRS:
+			return True
+		user = currentUser()
+		if user.hasFlag(Flags.GlobalAdmin):
+			return True
+		if user.isAdminOf(self):
+			if attr in ["name"]:
+				return True
+			if attr == "flags":
+				changedFlags = (set(value) - set(self.flags)) | (set(self.flags) - set(value)) 
+				for flag in changedFlags:
+					if not flag in orga_admin_changeable:
+						return False
+				return True
+		return False
+
 	def modify(self, attrs):
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.iteritems():
+			fault.check(self.can_modify(key, value), "No permission to change attribute %s", key)
 			if key.startswith("_"):
 				self.attrs[key] = value
 				continue
-			fault.check(key in USER_ATTRS or (key in ADMIN_ATTRS and currentUser().hasFlag(Flags.Admin)), "No permission to change attribute %s", key)
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
 			else:
@@ -153,6 +210,7 @@ class User(attributes.Mixin, models.Model):
 		info = {
 			"name": self.name,
 			"origin": self.origin,
+			"organization": self.organization.name,
 			"id": "%s@%s" % (self.name, self.origin) 
 		}
 		info.update(self.attrs)
@@ -185,7 +243,7 @@ class Provider:
 		pass
 	def canRegister(self):
 		return False
-	def register(self, username, password, attrs):
+	def register(self, username, password, organization, attrs):
 		raise Exception("not supported")
 	def canChangePassword(self):
 		return False
@@ -224,12 +282,18 @@ def getUser(name):
 	except User.MultipleObjectsReturned:
 		fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
 
+def getFilteredUsers(filterfn):
+	return filter(filterfn, getAllUsers())
+
 def getFlaggedUsers(flag):
-	return filter(lambda user: user.hasFlag(flag), getAllUsers())
+	return getFilteredUsers(lambda user: user.hasFlag(flag))
+
+def mailFilteredUsers(filterfn, subject, message):
+	for user in getFilteredUsers(filterfn):
+		user.sendMail(subject, message)
 
 def mailFlaggedUsers(flag, subject, message):
-	for user in getFlaggedUsers(flag):
-		user.sendMail(subject, message)
+	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message)
 
 def getAllUsers():
 	return User.objects.all()
@@ -267,12 +331,12 @@ def login(username, password):
 def remove(user):
 	user.delete()
 
-def register(username, password, attrs={}, provider=""):
+def register(username, password, organization, attrs={}, provider=""):
 	for prov in providers:
 		if not prov.getName() == provider:
 			continue
 		fault.check(prov.canRegister(), "Provider can not register users")
-		user = prov.register(username, password, attrs)
+		user = prov.register(username, password, organization, attrs)
 		user.modify(attrs)
 		return user
 	fault.raise_("No provider named %s" % provider, fault.USER_ERROR)

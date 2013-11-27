@@ -62,6 +62,7 @@ enhancetable = {
     var words = filter.value.toLowerCase().split(" ");
     var table = filter.table;
     var ele;
+    var customkey;
     for (var r = 1; r < table.rows.length; r++){
       ele = table.rows[r].innerHTML.replace(/<[^>]+>/g,"");
       var displayStyle = 'none';
@@ -69,6 +70,16 @@ enhancetable = {
         if (ele.toLowerCase().indexOf(words[i])>=0) displayStyle = '';
         else {
           displayStyle = 'none';
+          children = table.rows[r].children;
+          for (var j = 0; j < children.length; j++) {
+        	  customkey = children[j].attributes.enhancetable_customkey;
+        	  if(customkey) {
+        		  if (customkey.nodeValue.toLowerCase().indexOf(words[i])>=0) {
+            		  displayStyle='';
+            		  break;
+        		  }
+        	  }
+          }
           break;
         }
       }
@@ -263,7 +274,7 @@ enhancetable = {
     for (var i=0; i<table.tBodies[0].rows.length; i++) {
       text = enhancetable.getInnerText(table.tBodies[0].rows[i].cells[column]);
       if (text != '') {
-        if (text.match(/^-?[�$�]?[ ]*\d?[,.]?\d?[ ]*%?$/)) {
+        if (text.match(/^-?[ ]*\d*[,.]?\d*[ ]*%?$/)) {
           return enhancetable.sort_numeric;
         }
         // check for a date: dd/mm/yyyy or dd/mm/yy 

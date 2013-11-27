@@ -26,7 +26,7 @@ class Role:
 	user = "user" # no destroy/prepare, no topology changes, no permission changes
 	null = "null" # no access at all
 	
-	RANKING=[owner, manager, user, null]
+	RANKING=[null, user, manager, owner]
 	
 def role_descriptions():
 	return {
@@ -78,33 +78,46 @@ class PermissionEntry(models.Model):
 	
 	
 	
-def _globalRole(user):
-	if user.hasFlag(Flags.GlobalOwner):
-		return Role.owner
-	if user.hasFlag(Flags.GlobalManager):
-		return Role.manager
-	if user.hasFlag(Flags.GlobalUser):
-		return Role.user
-	return Role.null
-	
-	
-
 class PermissionMixin:
 	#permissions: Permissions
 	
 	def getRole(self, user=None):
 		if not user:
 			user = currentUser()
-		globalRole = _globalRole(user)
+		role = Role.null
+		# Global permissions, thats easy
+		if user.hasFlag(Flags.GlobalToplUser):
+			role = Role.user
+		if user.hasFlag(Flags.GlobalToplManager):
+			role = Role.manager
+		if user.hasFlag(Flags.GlobalToplOwner):
+			role = Role.owner
+
+		# User specific role
 		try:
-			role = self.permissions.entries.get(user=user).role
-			return role if Role.RANKING.index(globalRole) >= Role.RANKING.index(role) else globalRole
+			role2 = self.permissions.entries.get(user=user).role
+			if Role.RANKING.index(role2) > Role.RANKING.index(role):
+				role = role2
 		except PermissionEntry.DoesNotExist:
-			return globalRole
+			pass
+		
+		# Organization role
+		orgaRole = Role.null
+		if user.hasFlag(Flags.OrgaToplUser):
+			orgaRole = Role.user
+		if user.hasFlag(Flags.OrgaToplManager):
+			orgaRole = Role.manager
+		if user.hasFlag(Flags.OrgaToplOwner):
+			orgaRole = Role.owner
+		if Role.RANKING.index(orgaRole) > Role.RANKING.index(role):
+			if self.permissions.entries.filter(role=Role.owner, user__organization=user.organization).exists():
+				role = orgaRole
+				
+		return role
 	
 	def hasRole(self, role=Role.user, *args, **kwargs):
 		r = self.getRole(*args, **kwargs)
-		return Role.RANKING.index(r) <= Role.RANKING.index(role)		
+		return Role.RANKING.index(r) >= Role.RANKING.index(role)		
 	
 	def checkRole(self, *args, **kwargs):
 		fault.check(self.hasRole(*args, **kwargs), "Not enough permissions")

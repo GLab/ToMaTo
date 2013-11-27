@@ -89,7 +89,6 @@ var Menu = Class.extend({
 });
 
 Menu.button = function(options) {
-	var container = $('<div class="hoverdescription" style="display:inline;"></div>');
 	var html = $('<button class="ui-ribbon-element ui-ribbon-control ui-button"/>');
 	if (options.toggle) {
 		html.addClass("ui-button-toggle");
@@ -118,13 +117,8 @@ Menu.button = function(options) {
 		this.toggleClass("ui-button-checked ui-state-highlight", value);
 	}
 	if (options.checked) html.setChecked(true);
-	container.append(html);
 	
-	if (options.hiddenboxHTML) {
-		container.append($('<div class="hiddenbox" style="overflow:auto;">'+options.hiddenboxHTML+'</div>'));
-	}
 	return html;
-	//return container;   //TODO: tooltip is bound to scrolling container. free it and return container instad of 'html'
 };
 
 Menu.checkbox = function(options) {
@@ -1410,7 +1404,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>Topology "'+obj.name()+'"</span>',
+				html:'<span>'+obj.name()+'<br />Topology #'+obj.id+'</span>',
 				type:"html"
 			},
 			"actions": {
@@ -1996,7 +1990,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>Connection '+obj.name()+'</span>', type:"html"
+				html:'<span>'+obj.name()+"<br />Connection #"+obj.id+'</span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -2409,7 +2403,7 @@ var createElementMenu = function(obj) {
 	var menu = {
 		callback: function(key, options) {},
 		items: {
-			"header": {html:'<span>Element '+obj.name()+'</span>', type:"html"},
+			"header": {html:'<span>'+obj.name()+"<br />Element #"+obj.id+'</span>', type:"html"},
 			"connect": obj.isConnectable() ? {
 				name:'Connect',
 				icon:'connect',
@@ -3399,19 +3393,6 @@ var Editor = Class.extend({
 				attrs: {kind: "internet"}
 			}))
 		}));
-		group.addElement(Menu.button({
-			label: "OpenFlow",
-			name: "net-openflow",
-			icon: "img/openflow32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "openflow"}
-			}))
-		}));
-
 
 		var tab = this.menu.addTab("Topology");
 

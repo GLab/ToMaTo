@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Success</h1>
+
+<p>Successfully added the organization {{name}}.</p>
+<p><a href="{%url organization.index%}">Back to list</a></p>
+<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add another organization" /></p>
+
+{% endblock %}

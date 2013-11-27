@@ -23,6 +23,7 @@ from django.shortcuts import render_to_response
 from django.http import Http404
 from django import forms
 from django.core.urlresolvers import reverse
+from admin_common import organization_name_list
 
 from lib import wrap_rpc, getapi, getGuestApi
 import xmlrpclib
@@ -62,11 +63,15 @@ class AccountForm(forms.Form):
     name = forms.CharField(label="Account name", max_length=50)
     password = forms.CharField(label="Password", widget=forms.PasswordInput, required=False)
     password2 = forms.CharField(label="Password (repeated)", widget=forms.PasswordInput, required=False)
+    organization = forms.CharField(max_length=50)
     origin = forms.CharField(label="Origin", widget=forms.HiddenInput, required=False)
     realname = forms.CharField(label="Full name")
     affiliation = forms.CharField()
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
+    def __init__(self, api, *args, **kwargs):
+        super(AccountForm, self).__init__(*args, **kwargs)
+        self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
         
     def clean_password(self):
         if self.data.get('password') != self.data.get('password2'):
@@ -79,12 +84,12 @@ class AccountForm(forms.Form):
 
 class AccountChangeForm(AccountForm):
     def __init__(self, api, data=None):
-        AccountForm.__init__(self, data)
+        AccountForm.__init__(self, api, data)
         flags = api.account_flags().items()
         self.fields["name"].widget = FixedText()
         del self.fields["origin"]
         self.fields["flags"].choices = flags
-        if "admin" in api.user.get("flags", []):
+        if api.user.isAdmin(data["organization"]):
             self.fields["flags"].widget = forms.widgets.CheckboxSelectMultiple(choices=flags)
         else:
             self.fields["flags"].widget = AccountFlagList(api)
@@ -93,8 +98,8 @@ class AccountChangeForm(AccountForm):
 class AccountRegisterForm(AccountForm):
     aup = forms.BooleanField(label="", help_text='I accept the <a href="/help/license/aup">terms and conditions</a>', required=True)
     
-    def __init__(self, data=None):
-        AccountForm.__init__(self, data)
+    def __init__(self, api, data=None):
+        AccountForm.__init__(self, api, data)
         self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
@@ -114,7 +119,7 @@ def index(api, request):
 
 @wrap_rpc
 def info(api, request, id=None):
-    user = api.user
+    user = api.user.data
     if id:
         user = api.account_info(id)
     else:
@@ -124,7 +129,7 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
-            if not "admin" in api.user["flags"]:
+            if api.user.isAdmin(data["organization"]):
                 del data["flags"]
             del data["name"]
             del data["password2"]
@@ -136,9 +141,10 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, user)
     return render_to_response("account/info.html", {'user': api.user, "account": user, "form": form})
     
-def register(request):
+@wrap_rpc
+def register(api, request):
     if request.method=='POST':
-        form = AccountRegisterForm(request.REQUEST)
+        form = AccountRegisterForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
             username = data["name"]
@@ -149,13 +155,13 @@ def register(request):
             del data["aup"]
             api = getGuestApi()
             try:
-                api.account_create(username, password=password, attrs=data)
+                api.account_create(username, password=password, organization=data["organization"], attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:
                 form._errors["name"] = form.error_class(["This name is already taken"])
     else:
-        form = AccountRegisterForm() 
+        form = AccountRegisterForm(api) 
     return render_to_response("account/register.html", {"form": form})
 
 @wrap_rpc

@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of External Networks</h1>
 
-{% if netw_list|length > 10 and hostManager %}
+{% if netw_list|length > 10 and user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external network" /></p>
 {% endif %}
 
@@ -19,7 +19,7 @@
 	  	<th>Kind</th>
 	    <th>Preference</th>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<th />
 	    {% endif %}
 	    
@@ -30,7 +30,7 @@
 	  	<td>{{netw.attrs.kind}}</td>
 	  	<td>{{netw.attrs.preference}}</td>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<td>
 	    		<a href="{%url external_networks.edit netw.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -45,7 +45,7 @@
 	No external networks
 {% endif %}
 
-{% if hostManager %}
+{% if user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external networks" /></p>
 {% endif %}
 

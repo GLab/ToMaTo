@@ -6,8 +6,10 @@
 <h1>List of Hosts</h1>
 
 {# only show 'add' button when user is authorized #}
-	{% if host_list|length > 10 and hostManager %}
+	{% if host_list|length > 10 %}
+	{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
+	{% endif %}
 	{% endif %}
 
 
@@ -54,7 +56,7 @@
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
 	    
-	    {% if hostManager %}
+	    {% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 	    	<th />
 	    {% endif %}
 	  </tr>
@@ -112,7 +114,7 @@
 			    <td>???</td>
 			{% endif %}
 		    
-		    {% if hostManager %}
+		    {% if user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
@@ -173,7 +175,7 @@
 	No hosts
 {% endif %}
 
-{% if hostManager %}
+{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
 {% endif %}
 

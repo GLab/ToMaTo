@@ -7,7 +7,7 @@
 
 {% if site_list %}
 
-	{% if site_list|length > 10 and hostManager %}
+	{% if site_list|length > 10 and user.isAdmin %}
 		<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add site" /></p>
 	{% endif %}
 
@@ -19,8 +19,9 @@
 	    <th>Name</th>
 	    <th>Description</th>
 	    <th>Location</th>
+	    <th>Organization</th>
 	    
-	    {% if hostManager %}
+	    {% if user.isAdmin or "orga_admin" in user.flags %}
 	    	<th />
 	    {% endif %}
 	    
@@ -31,8 +32,9 @@
 	    <td>{{site.name}}</td>
 	    <td>{{site.description}}</td>
 	    <td>{{site.location}}</td>
+	    <td>{{site.organization}}</td>
 	    
-	    {% if hostManager %}
+	    {% if user|args:site.organization|call:"isAdmin" %}
 	    	<td>
 	    		<a href="{%url site.edit site.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -48,7 +50,7 @@
 	No sites
 {% endif %}
 
-{% if hostManager %}
+{% if user.isAdmin %}
 	<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add site" /></p>
 {% endif %}
 

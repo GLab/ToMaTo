@@ -19,11 +19,88 @@ from django.db import models
 from . import config, currentUser, starttime
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
-from auth import Flags, mailFlaggedUsers
+from auth import Flags
 import xmlrpclib, time, hashlib
+
+class Organization(attributes.Mixin, models.Model):
+	name = models.CharField(max_length=50, unique=True)
+	attrs = db.JSONField()
+	description = attributes.attribute("description", unicode, "")
+	homepage_url = attributes.attribute("homepage_url", unicode, "")
+	image_url = attributes.attribute("image_url", unicode, "")
+	#sites: [Site]
+	#users: [User]
+	
+	class Meta:
+		pass
+	
+	def init(self, attrs):
+		self.modify(attrs)
+		
+	def checkPermissions(self):
+		user = currentUser()
+		if user.hasFlag(Flags.GlobalAdmin):
+			return True
+		if user.hasFlag(Flags.OrgaAdmin) and user.organization == self:
+			return True
+		return False
+		
+	def modify(self,attrs):
+		fault.check(self.checkPermissions(), "Not enough permissions")
+		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
+		for key, value in attrs.iteritems():
+			if key == "description":
+				self.description = value
+			elif key == "homepage_url":
+				self.homepage_url = value
+			elif key == "image_url":
+				self.image_url = value
+			else:
+				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
+		self.save()
+		
+	def remove(self):
+		fault.check(self.checkPermissions(), "Not enough permissions")
+		fault.check(not self.sites.all(), "Organization still has sites")
+		fault.check(not self.users.all(), "Organization still has users")
+		logging.logMessage("remove", category="organization", name=self.name)
+		self.delete()
+		
+	def info(self):
+		return {
+			"name": self.name,
+			"description": self.description,
+			"homepage_url": self.homepage_url,
+			"image_url": self.image_url
+		}
+
+	def __str__(self):
+		return self.name
+
+	def __repr__(self):
+		return "Organization(%s)" % self.name
+	
+def getOrganization(name, **kwargs):
+	try:
+		return Organization.objects.get(name=name, **kwargs)
+	except Organization.DoesNotExist:
+		return None
+
+def getAllOrganizations(**kwargs):
+	return list(Organization.objects.filter(**kwargs))
+	
+def createOrganization(name, description=""):
+	fault.check(currentUser().hasFlag(Flags.GlobalAdmin), "Not enough permissions")
+	logging.logMessage("create", category="site", name=name, description=description)		
+	organization = Organization(name=name)
+	organization.save()
+	organization.init({"description": description})
+	return organization
+		
 
 class Site(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
+	organization = models.ForeignKey(Organization, null=False, related_name="sites")
 	#hosts: [Host]
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
@@ -36,8 +113,16 @@ class Site(attributes.Mixin, models.Model):
 	def init(self, attrs):
 		self.modify(attrs)
 
+	def checkPermissions(self):
+		user = currentUser()
+		if user.hasFlag(Flags.GlobalHostManager):
+			return True
+		if user.hasFlag(Flags.OrgaHostManager) and user.organization == self.organization:
+			return True
+		return False
+		
 	def modify(self, attrs):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(self.checkPermissions(), "Not enough permissions")
 		logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "description":
@@ -46,12 +131,16 @@ class Site(attributes.Mixin, models.Model):
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
+			elif key == "organization":
+				orga = getOrganization(value);
+				fault.check(orga, "No organization with name %s" % value)
+				self.organization = orga
 			else:
 				fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
 		self.save()
 
 	def remove(self):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(self.checkPermissions(), "Not enough permissions")
 		fault.check(not self.hosts.all(), "Site still has hosts")
 		logging.logMessage("remove", category="site", name=self.name)
 		self.delete()
@@ -61,7 +150,8 @@ class Site(attributes.Mixin, models.Model):
 			"name": self.name,
 			"description": self.description,
 			"location": self.location,
-			"geolocation": self.geolocation
+			"geolocation": self.geolocation,
+			"organization": self.organization.name
 		}
 
 	def __str__(self):
@@ -80,10 +170,18 @@ def getSite(name, **kwargs):
 def getAllSites(**kwargs):
 	return list(Site.objects.filter(**kwargs))
 	
-def createSite(name, description=""):
-	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
-	logging.logMessage("create", category="site", name=name, description=description)		
-	site = Site(name=name)
+def createSite(name, organization, description=""):
+	orga = getOrganization(organization);
+	fault.check(orga, "No organization with name %s" % organization)
+
+	user = currentUser()
+	fault.check(user.hasFlag(Flags.GlobalHostManager) 
+			or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
+			"Not enough permissions")
+	logging.logMessage("create", category="site", name=name, description=description)	
+	
+	site = Site(name=name, organization=orga)
+	
 	site.save()
 	site.init({"description": description})
 	return site
@@ -310,15 +408,18 @@ class Host(attributes.Mixin, models.Model):
 			nets.append(None)
 		return nets
 	
+	def checkPermissions(self):
+		return self.site.checkPermissions()
+	
 	def remove(self):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(self.checkPermissions(), "Not enough permissions")
 		fault.check(not self.elements.all(), "Host still has active elements")
 		fault.check(not self.connections.all(), "Host still has active connections")
 		logging.logMessage("remove", category="host", name=self.address)
 		self.delete()
 
 	def modify(self, attrs):
-		fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+		fault.check(self.checkPermissions(), "Not enough permissions")
 		logging.logMessage("modify", category="host", name=self.address, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "site":
@@ -373,6 +474,7 @@ class Host(attributes.Mixin, models.Model):
 		return problems
 	
 	def checkProblems(self):
+		from auth import mailFilteredUsers
 		problems = self.problems()
 		if problems and not self.problemAge:
 			# a brand new problem, wait until it is stable
@@ -380,13 +482,17 @@ class Host(attributes.Mixin, models.Model):
 		if self.problemAge and not problems:
 			if self.problemMailTime == self.problemAge:
 				# problem is resolved and mail has been sent for this problem
-				mailFlaggedUsers(Flags.HostsContact, "Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
+				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+					or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
+					"Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - 300):
 			if self.problemMailTime != self.problemAge:
 				# problem exists and no mail has been sent so far
 				self.problemMailTime = self.problemAge
-				mailFlaggedUsers(Flags.HostsContact, "Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
+				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+					or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
+					"Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
 		self.save()
 		
 	def getLoad(self):
@@ -407,6 +513,7 @@ class Host(attributes.Mixin, models.Model):
 		return {
 			"address": self.address,
 			"site": self.site.name,
+			"organization": self.site.organization.name,
 			"enabled": self.enabled,
 			"problems": self.problems(),
 			"component_errors": self.componentErrors,
@@ -667,7 +774,10 @@ def getAll(**kwargs):
 	return list(Host.objects.filter(**kwargs))
 	
 def create(address, site, attrs={}):
-	fault.check(currentUser().hasFlag(Flags.HostsManager), "Not enough permissions")
+	user = currentUser()
+	fault.check(user.hasFlag(Flags.GlobalHostManager) 
+		or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
+		"Not enough permissions")
 	host = Host(address=address, site=site)
 	host.init(attrs)
 	host.save()

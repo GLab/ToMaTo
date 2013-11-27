@@ -168,14 +168,14 @@ def site_site_connections(api):
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.account_info()})
+	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user})
 
 
 @wrap_rpc
 def details_link(api, request, src, dst):
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.account_info()});
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
 
 @wrap_rpc
 def details_site(api, request, site):
 	
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.account_info()});
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});
