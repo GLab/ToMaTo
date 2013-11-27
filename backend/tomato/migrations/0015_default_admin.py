@@ -11,7 +11,10 @@ class Migration(DataMigration):
 		try:
 			default_org = orm["tomato.organization"].objects.get(name="default")
 		except:
-			default_org = orm["tomato.organization"].objects.all()[0]
+			try:
+				default_org = orm["tomato.organization"].objects.all()[0]
+			except:
+				default_org = orm["tomato.organization"].objects.create(name="default", attrs='{"description":"Default organization"}')
 		if Users.objects.count() == 0:
 			Users.objects.create(
 				name="admin",
