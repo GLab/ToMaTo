@@ -332,6 +332,8 @@ def login(username, password):
 	return stored
 
 def remove(user):
+	if user == currentUser() and user.hasFlag(Flags.GlobalAdmin):
+		fault.raise_("Admins must not delete themselves", fault.USER_ERROR)
 	user.delete()
 
 def register(username, password, organization, attrs={}, provider=""):
