@@ -90,6 +90,9 @@ class Template(resources.Resource):
 
 	def isReady(self):
 		try:
+			if not os.path.exists(self.getTorrentPath()):
+				self.torrent_data = ""
+				self.save()
 			path = self.getPath()
 			size = os.path.getsize(path)
 			bsize = bittorrent.fileSize(base64.b64decode(self.torrent_data))
