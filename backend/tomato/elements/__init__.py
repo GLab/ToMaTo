@@ -467,8 +467,12 @@ def create(top, type_, parent=None, attrs={}):
 	top.checkRole(Role.manager)	
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	el = TYPES[type_]()
-	el.init(top, parent, attrs)
-	el.save()
+	try:
+		el.init(top, parent, attrs)
+		el.save()
+	except:
+		el.remove()
+		raise
 	if parent:
 		parent.onChildAdded(el)
 	logging.logMessage("create", category="element", id=el.id)	

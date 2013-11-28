@@ -164,8 +164,12 @@ def create(type_, attrs={}):
         res = TYPES[type_]()
     else:
         res = Resource(type=type_)
-    res.init(attrs)
-    res.save()
+    try:
+        res.init(attrs)
+        res.save()
+    except:
+        res.remove()
+        raise
     logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
     logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())
     return res

@@ -166,8 +166,12 @@ def create(type_, attrs={}):
         res = TYPES[type_]()
     else:
         res = Resource(type=type_)
-    res.init(attrs)
-    res.save()
+    try:
+        res.init(attrs)
+        res.save()
+    except:
+        res.remove()
+        raise
     return res
 
 def init():
