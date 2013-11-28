@@ -49,7 +49,7 @@ if this setting is changed.
 
 DUMP_DIR = "/var/log/tomato/dumps"
 """
-The location of the dump files thar are created when unexpected errors occur.
+The location of the dump files that are created when unexpected errors occur.
 """
 
 DATA_DIR = "/var/lib/tomato"
@@ -123,7 +123,7 @@ The only actively supported database at this time is PostgresQL but other
 real databases should work as well. SQLite is known not to work due to its
 limited concurrency capabilities. See :doc:`/docs/databases` for information
 about selecting and maintaining databases.
-Please note that only one data base is supported. 
+Please note that only one database is supported. 
 """
 
 FILESERVER = {
@@ -145,7 +145,8 @@ containing the following fields:
 
 MAX_TIMEOUT = 30*24*60*60 # 30 days
 """
-This field defines the maximum timeout value which also is the default timeout.
+This field defines the maximum element timeout value which also is the default
+timeout.
 """
 
 BITTORRENT_RESTART = 60 * 30 # 30 minutes
@@ -157,7 +158,11 @@ RESOURCES = {
 	'port': xrange(6000, 7000),
 	'vmid': xrange(1000, 2000)
 }
-
+"""
+This dictionary defines the resources that the hostmanager can use. The default
+will work for most systems. If the hostmanager shares the host with other 
+systems that also need those resources, these entries might need to be adapted.
+"""
 
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
