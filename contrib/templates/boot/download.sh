@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for distro in lucid oneiric precise quantal raring saucy squeeze wheezy; do
+while read distro; do
   case $distro in
     squeeze|wheezy)
       type=debian
@@ -15,4 +15,4 @@ for distro in lucid oneiric precise quantal raring saucy squeeze wheezy; do
       wget -c ftp://ftp.uni-kl.de/pub/linux/$type/dists/$distro/main/installer-$arch/current/images/netboot/$type-installer/$arch/$file -O $distro/$arch/$file
     done
   done
-done
+done < ../distros.build.txt
