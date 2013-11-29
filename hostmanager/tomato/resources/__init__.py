@@ -145,7 +145,7 @@ def create(type_, attrs={}):
 		res.init(attrs)
 		res.save()
 	except:
-		res.delete()
+		res.remove()
 		raise
 	logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
 	logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())

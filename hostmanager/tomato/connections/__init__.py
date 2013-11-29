@@ -337,8 +337,12 @@ def create(el1, el2, type_=None, attrs={}):
 	if type_:
 		fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 		con = TYPES[type_]()
-		con.init(el1, el2, attrs)
-		con.save()
+		try:
+			con.init(el1, el2, attrs)
+			con.save()
+		except:
+			con.remove()
+			raise
 		logging.logMessage("create", category="connection", id=con.id)	
 		logging.logMessage("info", category="connection", id=con.id, info=con.info())	
 		return con

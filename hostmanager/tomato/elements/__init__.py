@@ -448,8 +448,12 @@ def create(type_, parent=None, attrs={}):
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	fault.check(not parent or parent.owner == currentUser(), "Parent element belongs to different user")
 	el = TYPES[type_]()
-	el.init(parent, attrs)
-	el.save()
+	try:
+		el.init(parent, attrs)
+		el.save()
+	except:
+		el.remove()
+		raise
 	if parent:
 		parent.onChildAdded(el)
 	logging.logMessage("create", category="element", id=el.id)	
