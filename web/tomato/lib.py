@@ -46,8 +46,8 @@ class ServerProxy(object):
 		return _call
 
 def getGuestApi():
-	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, guest_username, guest_password, server_host, server_port), allow_none=True )
-	api.user = UserObj(api)
+	api = ServerProxy('%s://%s:%s' % (server_protocol, server_host, server_port), allow_none=True )
+	api.user = None
 	return api
 
 def getapi(request):
@@ -76,7 +76,7 @@ class wrap_rpc:
 		try:
 			api = getapi(request)
 			if api is None:
-				return HttpResponseNotAuthorized()
+				api = getGuestApi()
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
 			import traceback

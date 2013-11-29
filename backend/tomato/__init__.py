@@ -53,9 +53,9 @@ def setCurrentUser(user):
 	_currentUser.user = user
 
 def login(credentials, sslCert):
-	user = auth.login(*credentials)
+	user = auth.login(*credentials) if credentials else None
 	setCurrentUser(user)
-	return user
+	return user or not credentials
 
 starttime = None
 
