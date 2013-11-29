@@ -98,6 +98,12 @@ MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 ERROR_NOTIFY = []
 
+import socket
+_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+_socket.connect(("8.8.8.8",80))
+PUBLIC_ADDRESS = _socket.getsockname()[0]
+_socket.close()
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
