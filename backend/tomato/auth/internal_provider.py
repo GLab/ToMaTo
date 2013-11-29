@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..auth import User, Provider as AuthProvider, mailFlaggedUsers
+from ..auth import User, Provider as AuthProvider, mailFilteredUsers, Flags
 from ..import fault
 
 class Provider(AuthProvider):
@@ -46,7 +46,9 @@ class Provider(AuthProvider):
 		user.storePassword(password)
 		user.modify(attrs)
 		user.save()
-		mailFlaggedUsers("admin", "User registration", "A new user '%s' has registered an account." % username)
+		mailFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
+					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
+		            "User registration", "A new user '%s' has registered an account." % username)
 		return user
 		
 def init(**kwargs):
