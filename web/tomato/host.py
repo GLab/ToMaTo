@@ -63,7 +63,7 @@ def add(api, request):
             return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
         form = HostForm(api)
-        return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
+        return render_to_response("admin/host/form.html", {'user': api.user, 'public_key': api.host_public_key(), 'form': form, "edit":False})
    
 @wrap_rpc
 def remove(api, request, address=None):

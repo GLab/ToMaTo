@@ -87,7 +87,7 @@ def add(api, request):
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
 	else:
 		form = AddTemplateForm
-		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
+		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False})
    
 
 @wrap_rpc
