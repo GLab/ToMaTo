@@ -128,7 +128,7 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
-            if api.user.isAdmin(data["organization"]):
+            if not api.user.isAdmin(data["organization"]):
                 del data["flags"]
             del data["name"]
             del data["password2"]
