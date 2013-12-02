@@ -405,19 +405,35 @@ class RexTFVElement:
 		with self.lock:
 			self._nlxtp_make_readable()
 			try:
+				
+				# no nlXTP dir or no status dir - unreadable
 				if (self._nlxtp_path("") is None) or (not os.path.exists(self._nlxtp_path("exec_status"))):
 					return {"readable": False}
+				
+				# evaluate custom status
+				customstat = None
+				if (os.path.exists(self._nlxtp_path(os.path.join("exec_status","custom")))):
+					with open(self._nlxtp_path(os.path.join("exec_status","custom")),"r") as f:
+						customstat = f.read()
+						
+				# done file exists => not running
 				if os.path.exists(self._nlxtp_path(os.path.join("exec_status","done"))):
-					return {"readable": True, "done": True, "isAlive": False}
+					return {"readable": True, "done": True, "isAlive": False, "custom":customstat}
+				
+				# when we're here, done file does not exist. if no running file exists, status is unreadable
+				#    (unknown state: if monitor has started, there's always a running or done file
 				if not os.path.exists(self._nlxtp_path(os.path.join("exec_status","running"))):
-					return {"readable": True, "done": False, "isAlive": False}
+					return {"readable": False}
+				
+				# when we're here, both running and done file exist.
+				# now, check the timestamp in the file.
 				with open(self._nlxtp_path(os.path.join("exec_status","running")), 'r') as f:
 					timestamp = f.read()
 				timeout=10*60 #seconds
 				diff = time.time() - int(timestamp)
-				if diff > timeout:
-					return {"readable": True, "done": False, "isAlive": False}
-				return {"readable": True, "done": False, "isAlive": True}
+				if diff > timeout: # timeout occured.
+					return {"readable": True, "done": False, "isAlive": False, "custom":customstat}
+				return {"readable": True, "done": False, "isAlive": True, "custom":customstat}
 			finally:
 				self._nlxtp_close()
 		
