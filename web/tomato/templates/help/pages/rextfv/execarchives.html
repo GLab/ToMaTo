@@ -31,4 +31,19 @@ On OpenVZ devices, no mount configuration is necessary to access the uploaded da
 <p>Auto-execution and execution status are only available iff the guest modules are installed.
 However, the directory is still available (upload and download) without guest modules.</p>
 
+<h2>Guest Functions</h2>
+<p>The guest modules come with guest functions to make interacting with nlXTP easier for users.</p>
+<p>To make them available, the start script must be a bash script. Use
+<pre>eval "$nlXTP_guest_functions"</pre> to make them available in a bash script, and pass this variable to callees so they can eval them.</p>
+
+<h3>Custom Status (since version 0.2)</h3>
+<p>It is possible to set a user-specified String as status. 
+This status can be used for scripting purposes. If it is properly formatted, an interpreter can read it as it is written.
+It can also be accessed by the web in the RexTFV status window.</p>
+<p>To set a custom status, use the guest function "nlXTP_setstatus". This is a bash command which takes any number of argument and writes them as the new status.</p>
+
+<h3>Guest module version (since version 0.2)</h3>
+<p>If you need to know the guest modules version, use the command "nlXTP_guest_version".
+This sets the current version as custom status.</p>
+
 {% endblock %}
