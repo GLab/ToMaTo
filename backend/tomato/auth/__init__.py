@@ -225,6 +225,7 @@ class User(attributes.Mixin, models.Model):
 	def sendMail(self, subject, message):
 		if not self.email or not self.hasFlag(Flags.Mails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
+			return
 		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
 		subject = config.EMAIL_SUBJECT_TEMPLATE % data
 		message = config.EMAIL_MESSAGE_TEMPLATE % data

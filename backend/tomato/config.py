@@ -36,18 +36,6 @@ AUTH.append ({
 	}
 })
 
-AUTH.append ({
-	"name": "guest",
-	"provider": "dict",
-	"options": {
-			"users": {
-					"guest": "guest"
-			},
-			"flags": ["no_topology_create", "over_quota"],
-			"hash": None
-	}
-})
-
 LOG_FILE = "/var/log/tomato/main.log"
 
 SERVER = []

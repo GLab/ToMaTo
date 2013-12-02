@@ -25,11 +25,13 @@ from lib import db, util, rpc, logging #@UnresolvedImport
 
 
 def logCall(function, args, kwargs):
-	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
+	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
 	if isinstance(error, xmlrpclib.Fault):
+		fault.errors_add(error, traceback.format_exc())
+	elif isinstance(error, rpc.ErrorUnauthorized):
 		fault.errors_add(error, traceback.format_exc())
 	else:
 		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
