@@ -31,9 +31,14 @@ def link_statistics(siteA, siteB, type=None, after=None, before=None): #@Reserve
 	return link.getStatistics(siteA, siteB, type, after, before)
 
 def mailAdmins(subject, text):
+	if not currentUser():
+		raise ErrorUnauthorized()
 	misc.mailAdmins(subject, text)
 	
 def mailUser(user, subject, text):
+	if not currentUser():
+		raise ErrorUnauthorized()
 	misc.mailUser(user, subject, text)
 
-from .. import misc, config, link
+from .. import misc, config, link, currentUser
+from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
