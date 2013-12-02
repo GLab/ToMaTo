@@ -38,7 +38,7 @@ class AddTemplateForm(TemplateForm):
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
-		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile']
+		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile', 'nlXTP_installed']
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
