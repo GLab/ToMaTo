@@ -90,7 +90,7 @@ class wrap_rpc:
 				etype = "RPC protocol error"
 				ecode = e.errcode
 				etext = e.errmsg
-				if ecode == 401:
+				if ecode == 401 or ecode == 403:
 					return HttpResponseNotAuthorized()
 			elif isinstance(e, xmlrpclib.Fault):
 				etype = "RPC call error"
