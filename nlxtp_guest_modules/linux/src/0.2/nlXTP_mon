@@ -29,11 +29,18 @@ fi
 echo "starting monitor..."
 
 
+# can be evaluated to a bash function by calling
+# eval "$nlxtp_setstatus"
+# use to set the custom status. Takes any number of arguments and
+# passes them to the host as custom status.
+nlxtp_setstatus="function nlxtp_setstatus {
+	echo \$@ > $nlxtp_dir/exec_status/custom
+};"
 
 # start the script, pipe output into the out file
 cd $nlxtp_dir
 chmod +x $nlxtp_dir/auto_exec.sh
-nlxtp_dir=$nlxtp_dir $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
+nlxtp_dir=$nlxtp_dir nlxtp_setstatus=$nlxtp_setstatus $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
 auto_exec_pid=$!
 
 # start the "running monitor".
