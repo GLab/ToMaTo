@@ -17,7 +17,7 @@
 
 import os, sys
 from django.db import models
-from .. import connections, elements, resources, fault, config
+from .. import connections, elements, fault, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import util, cmd #@UnresolvedImport
@@ -201,7 +201,7 @@ class Repy(elements.Element):
 	def _template(self):
 		if self.template:
 			return self.template.upcast()
-		pref = resources.template.getPreferred(self.TYPE)
+		pref = template.getPreferred(self.TYPE)
 		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
 		return pref
 				
@@ -249,7 +249,7 @@ class Repy(elements.Element):
 			self.args = val.split()
 
 	def modify_template(self, tmplName):
-		self.template = resources.template.get(self.TYPE, tmplName)
+		self.template = template.get(self.TYPE, tmplName)
 		self._useImage(self._template().getPath())
 
 	def action_start(self):

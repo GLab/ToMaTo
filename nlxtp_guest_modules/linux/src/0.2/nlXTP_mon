@@ -1,6 +1,7 @@
 #!/bin/bash
 
 
+nlXTP_guest_modules_version="0.2"
 
 
 # if --background argument given, start in background. otherwise: start in foreground.
@@ -29,11 +30,24 @@ fi
 echo "starting monitor..."
 
 
+# can be evaluated to a bash function by calling
+# eval "$nlxtp_setstatus"
+# use to set the custom status. Takes any number of arguments and
+# passes them to the host as custom status.
+nlXTP_guest_functions="
+function nlXTP_setstatus {
+	echo -n \$@ > $nlxtp_dir/exec_status/custom
+};
+
+function nlXTP_guest_version {
+	nlXTP_setstatus $nlXTP_guest_modules_version
+};
+"
 
 # start the script, pipe output into the out file
 cd $nlxtp_dir
 chmod +x $nlxtp_dir/auto_exec.sh
-nlxtp_dir=$nlxtp_dir $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
+nlxtp_dir=$nlxtp_dir nlXTP_guest_functions=$nlXTP_guest_functions $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
 auto_exec_pid=$!
 
 # start the "running monitor".

@@ -17,21 +17,6 @@ AUTH.append ({
 	}
 })
 
-AUTH.append ({
-	"name": "guest",
-	"provider": "dict",
-	"options": {
-			"users": {
-					"guest": "guest",
-					# Only uncomment this for a short time to create an actual account
-					#"admin": "CHANGEME" 
-			},
-			"flags": ["no_topology_create", "over_quota"],
-			"hash": None
-	}
-})
-
-
 # Htpasswd auth provider
 #  This auth provider uses a .htpasswd file as an authentication backend.
 #  It reads the user credentials from the given file and compares the them to

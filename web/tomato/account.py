@@ -66,7 +66,6 @@ class AccountForm(forms.Form):
     organization = forms.CharField(max_length=50)
     origin = forms.CharField(label="Origin", widget=forms.HiddenInput, required=False)
     realname = forms.CharField(label="Full name")
-    affiliation = forms.CharField()
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
     def __init__(self, api, *args, **kwargs):
@@ -129,7 +128,7 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
-            if api.user.isAdmin(data["organization"]):
+            if not api.user.isAdmin(data["organization"]):
                 del data["flags"]
             del data["name"]
             del data["password2"]
@@ -149,13 +148,15 @@ def register(api, request):
             data = form.cleaned_data
             username = data["name"]
             password = data["password"]
+            organization=data["organization"]
             del data["password"]
             del data["password2"]
             del data["name"]
             del data["aup"]
+            del data["organization"]
             api = getGuestApi()
             try:
-                api.account_create(username, password=password, organization=data["organization"], attrs=data)
+                api.account_create(username, password=password, organization=organization, attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:

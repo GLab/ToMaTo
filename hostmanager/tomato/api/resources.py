@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-def _checkAdmin():
-    fault.check(currentUser() in config.ADMIN_USERS, "Method only allowed for admin users")
-
 def _getResource(id_):
     res = resources.get(id_)
     fault.check(res, "No such resource: id=%d", id_, code=fault.UNKNOWN_OBJECT)
@@ -52,7 +49,6 @@ def resource_create(type, attrs={}): #@ReservedAssignment
     Exceptions:
       Various other exceptions can be raised, depending on the given type.
     """
-    _checkAdmin()
     attrs = dict(attrs)
     res = resources.create(type, attrs)
     return res.info()
@@ -81,7 +77,6 @@ def resource_modify(id, attrs): #@ReservedAssignment
       exist* is raised.
       Various other exceptions can be raised, depending on the resource type. 
     """
-    _checkAdmin()
     res = _getResource(int(id))
     res.modify(attrs)
     return res.info()
@@ -101,7 +96,6 @@ def resource_remove(id): #@ReservedAssignment
       exist* is raised.
       Various other exceptions can be raised, depending on the resource type. 
     """
-    _checkAdmin()
     res = _getResource(int(id))
     res.remove()
 

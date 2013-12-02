@@ -18,7 +18,7 @@
 
 def _getAccount(name):
 	acc = currentUser()
-	if name and name != acc.name:
+	if name and (not acc or name != acc.name):
 		acc = getUser(name)
 	fault.check(acc, "No such user")
 	return acc
@@ -61,6 +61,8 @@ def account_info(name=None):
 	Exceptions:
 	  If the given account does not exist an exception is raised.
 	"""
+	if not currentUser():
+		raise ErrorUnauthorized()
 	acc = _getAccount(name)
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
@@ -72,6 +74,8 @@ def account_list():
 	  A list with information entries of all accounts. Each list entry contains
 	  exactly the same information as returned by :py:func:`account_info`.
 	"""
+	if not currentUser():
+		raise ErrorUnauthorized()
 	if currentUser().hasFlag(Flags.GlobalAdmin):
 		return [acc.info(True) for acc in getAllUsers()]
 	elif currentUser().hasFlag(Flags.OrgaAdmin):
@@ -99,6 +103,8 @@ def account_modify(name=None, attrs={}):
 	  This method returns the info dict of the account. All changes will be 
 	  reflected in this dict.
 	"""
+	if not currentUser():
+		raise ErrorUnauthorized()
 	acc = _getAccount(name)
 	if acc != currentUser():
 		fault.check(currentUser().isAdminOf(acc), "No permissions")
@@ -146,6 +152,8 @@ def account_remove(name=None):
 	Return value:
 	  This method returns nothing if the account has been deleted.
 	"""
+	if not currentUser():
+		raise ErrorUnauthorized()
 	acc = _getAccount(name)
 	fault.check(currentUser().isAdminOf(acc), "No permissions")
 	if acc == currentUser() and acc.hasFlag(Flags.GlobalAdmin):
@@ -163,3 +171,4 @@ def account_flags():
 		
 from .. import fault, currentUser
 from ..auth import getUser, getAllUsers, flags, register, remove, Flags
+from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport

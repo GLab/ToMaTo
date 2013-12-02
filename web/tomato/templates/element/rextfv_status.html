@@ -23,6 +23,10 @@
 	div.box {
 		padding: 20px;
 		}
+	pre {
+		border: 1px solid black;
+		padding:2px;
+		}
 </style>
 </head>
 <body>
@@ -39,6 +43,11 @@
 </div>
 
 <div class="box" id="overall_status_p"></div>
+
+<div class="box">
+	<b>Custom Status:</b>
+	<pre id="custom_status"></pre>
+</div>
 
 
 <script language="javascript">
@@ -75,6 +84,11 @@ function updateRexTFVStatus() {
 						document.getElementById('overall_status').innerHTML='<div class="status done">Finished</div>'
 					else
 						document.getElementById('overall_status').innerHTML='<div class="status crashed">Unknown.<br/>Probably Crashed.</div>';
+				if (s['custom']) {
+					document.getElementById('custom_status').innerHTML = s['custom'];
+				} else {
+					document.getElementById('custom_status').innerHTML = "None";
+				}
 			} else {
 				document.getElementById('rextfv_readable').innerHTML = "No (no information)";
 				document.getElementById('overall_status_p').innerHTML = "";	
@@ -86,7 +100,7 @@ function updateRexTFVStatus() {
 	})
 }
 
-//called once. fetchis permanent info and starts the auto refresh process.
+//called once. fetches permanent info and starts the auto refresh process.
 function initWindow() {
 	doAjaxCall(ElementInfoURL(),function(info){
 		elName = info['attrs']['name'];

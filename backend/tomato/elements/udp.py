@@ -28,6 +28,7 @@ class UDP_Endpoint(elements.Element):
 	connect = connect_attr.attribute()
 	
 	CUSTOM_ACTIONS = {
+		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
@@ -103,6 +104,11 @@ class UDP_Endpoint(elements.Element):
 			self.element.remove()
 			self.element = None
 		self.setState(ST_CREATED, True)
+
+	def action_stop(self):
+		if self.element:
+			self.element.action("stop")
+		self.setState(ST_PREPARED, True)
 
 	def upcast(self):
 		return self

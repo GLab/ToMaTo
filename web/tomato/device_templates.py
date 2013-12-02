@@ -38,7 +38,7 @@ class AddTemplateForm(TemplateForm):
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
-		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile']
+		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile', 'nlXTP_installed']
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -87,7 +87,7 @@ def add(api, request):
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
 	else:
 		form = AddTemplateForm
-		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
+		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False})
    
 
 @wrap_rpc

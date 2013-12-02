@@ -416,6 +416,11 @@ class Host(attributes.Mixin, models.Model):
 		fault.check(not self.elements.all(), "Host still has active elements")
 		fault.check(not self.connections.all(), "Host still has active connections")
 		logging.logMessage("remove", category="host", name=self.address)
+		try:
+			for res in self.getProxy().resource_list():
+				self.getProxy().resource_remove(res["id"])
+		except:
+			pass
 		self.delete()
 
 	def modify(self, attrs):

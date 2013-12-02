@@ -40,6 +40,7 @@ class VMElement(elements.Element):
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	
 	CUSTOM_ACTIONS = {
+		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
@@ -190,6 +191,11 @@ class VMElement(elements.Element):
 			self.element = None
 		self.setState(ST_CREATED, True)
 		
+	def action_stop(self):
+		if self.element:
+			self.element.action("stop")
+		self.setState(ST_PREPARED, True)
+
 	def after_rextfv_upload_use(self):
 		self.set_rextfv_last_started()
 		

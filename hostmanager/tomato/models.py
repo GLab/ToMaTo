@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-
 from elements import Element #@UnusedImport
 from elements.kvmqm import KVMQM, KVMQM_Interface #@UnusedImport
 from elements.openvz import OpenVZ, OpenVZ_Interface #@UnusedImport
@@ -30,3 +29,4 @@ from resources import Resource, ResourceInstance #@UnusedImport
 from resources.template import Template #@UnusedImport
 from resources.network import Network #@UnusedImport
 from accounting import UsageStatistics, UsageRecord #@UnusedImport
+from user import User #@UnusedImport

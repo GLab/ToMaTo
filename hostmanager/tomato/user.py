@@ -15,30 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-def server_info():
-	"""
-	undocumented
-	"""
-	return {
-		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
-	}
+from django.db import models
 
-
-def host_public_key():
-	return misc.getPublicKey()
-
-def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
-	return link.getStatistics(siteA, siteB, type, after, before)
-
-def mailAdmins(subject, text):
-	if not currentUser():
-		raise ErrorUnauthorized()
-	misc.mailAdmins(subject, text)
-	
-def mailUser(user, subject, text):
-	if not currentUser():
-		raise ErrorUnauthorized()
-	misc.mailUser(user, subject, text)
-
-from .. import misc, config, link, currentUser
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+class User(models.Model):
+	name = models.CharField(max_length=20, unique=True) #@ReservedAssignment
+	# elements: [Element]
+	# connections: [Connection]
+	# templates: [Template]
+	# networks: [Network]
