@@ -132,6 +132,7 @@ class UserObj:
 		self.flags = self.data["flags"]
 		self.origin = self.data["origin"]
 		self.organization = self.data["organization"]
+		self.realname = self.data["realname"]
 	def isAdmin(self, orgaName=None):
 		if "global_admin" in self.flags:
 			return True
