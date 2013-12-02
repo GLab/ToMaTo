@@ -18,7 +18,7 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser
+from .. import config, fault, currentUser, setCurrentUser
 
 class Flags:
 	Debug = "debug"
@@ -341,7 +341,7 @@ def register(username, password, organization, attrs={}, provider=""):
 			continue
 		fault.check(prov.canRegister(), "Provider can not register users")
 		user = prov.register(username, password, organization, attrs)
-		user.modify(attrs)
+		setCurrentUser(user)
 		return user
 	fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
 
