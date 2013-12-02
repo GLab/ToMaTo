@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..auth import User, Provider as AuthProvider, mailFilteredUsers, Flags
-from ..import fault
+from .. import fault, setCurrentUser 
 
 class Provider(AuthProvider):
 	def parseOptions(self, allow_registration=True, default_flags=["over_quota"], **kwargs):
@@ -43,6 +43,7 @@ class Provider(AuthProvider):
 		fault.check(self.getUsers(name=username).count()==0, "Username already exists")
 		user = User.create(name=username, organization=organization, flags=self.default_flags)
 		user.save()
+		setCurrentUser(user)
 		user.storePassword(password)
 		user.modify(attrs)
 		user.save()
