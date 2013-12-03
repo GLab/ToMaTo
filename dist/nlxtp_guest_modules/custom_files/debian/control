@@ -1,15 +1,14 @@
 Source: nlxtp-guest-modules
-Section: unknown
 Priority: extra
-Maintainer: root <t_gerhard10@cs.uni-kl.de>
+Maintainer: Tim Gerhard <t_gerhard10@cs.uni-kl.de>
 Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.8.4
-Homepage: <insert the upstream URL, if relevant>
+Homepage: http://tomato-lab.org
 #Vcs-Git: git://git.debian.org/collab-maint/nlxtp-guest-modules.git
 #Vcs-Browser: http://git.debian.org/?p=collab-maint/nlxtp-guest-modules.git;a=summary
 
 Package: nlxtp-guest-modules
 Architecture: all
 Depends: ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: Guest modules for nlXTP in the ToMaTo lab.
+ This enables support for executable archives in the ToMaTo-lab.

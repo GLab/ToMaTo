@@ -1,3 +1,0 @@
-#!/bin/bash
-update-rc.d -f nlXTP_daemon remove
-
