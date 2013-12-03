@@ -41,6 +41,7 @@ case "$ISSUE" in
     ;;
 esac
 
+cp -a /prepare_vm_files /target
 cp /prepare_vm.sh /target
 
 # Registering prepare_vm.sh for start upon next boot
@@ -51,6 +52,7 @@ case $DISTRO in
 sleep 5
 /prepare_vm.sh
 rm -f /prepare_vm.sh
+rm -f /prepare_vm_files
 rm -f \$0
 if [ -f /etc/init.d/grub-common ]; then
   # fix for ubuntu waiting forever at boot due to fail state
@@ -76,6 +78,7 @@ sleep 5
 /prepare_vm.sh
 insserv -r /etc/init.d/prepare_vm
 rm -f /prepare_vm.sh
+rm -f /prepare_vm_files
 rm -f \$0
 shutdown -h now
 EOF
