@@ -86,8 +86,6 @@ def site_info(name):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	site = _getSite(name)
 	return site.info()
 
@@ -95,8 +93,6 @@ def site_list():
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	return [s.info() for s in host.getAllSites()]
 
 def site_modify(name, attrs):

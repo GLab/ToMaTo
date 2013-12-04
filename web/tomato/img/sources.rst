@@ -120,6 +120,8 @@ Icons
 * ``java-applet.png``
   Source: http://www.allantgroup.com/images/ico-java.png
 * ``openflow32.png``
+* ``map_site_icon.ong??
+  Source: http://mapicons.nicolasmollet.com/markers/stores/computers-electronics/computers/?custom_color=265bb2
 
   
 Unknown source

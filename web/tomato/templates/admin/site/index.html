@@ -7,7 +7,7 @@
 
 {% if site_list %}
 
-	{% if site_list|length > 10 and user.isAdmin %}
+	{% if site_list|length > 10 and user and user.isAdmin %}
 		<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add site" /></p>
 	{% endif %}
 
@@ -34,7 +34,7 @@
 	    <td>{{site.location}}</td>
 	    <td>{{site.organization}}</td>
 	    
-	    {% if user|args:site.organization|call:"isAdmin" %}
+	    {% if user and user|args:site.organization|call:"isAdmin" %}
 	    	<td>
 	    		<a href="{%url site.edit site.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -50,7 +50,7 @@
 	No sites
 {% endif %}
 
-{% if user.isAdmin %}
+{% if user and user.isAdmin %}
 	<p><input type="button" onClick="window.location='{%url site.add%}'" value="Add site" /></p>
 {% endif %}
 
