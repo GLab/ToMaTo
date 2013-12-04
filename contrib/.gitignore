@@ -1,5 +1,5 @@
-*.tar.gz
-*.qcow2
+templates/*.tar.gz
+templates/*.qcow2
 templates/files/prepare_vm.sh
 templates/prepare_vm.sh
 templates/boot/*/i386
