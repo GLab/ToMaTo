@@ -2508,18 +2508,18 @@ var createElementMenu = function(obj) {
 				name:"Executable archive",
 				icon:"rextfv",
 				items: { 
-					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-						name:"Download Archive",
-						icon:"rextfv",
-						callback: function(){
-							obj.downloadRexTFV();
-						}
-					} : null,
 					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
 						name:"Upload Archive",
 						icon:"rextfv",
 						callback: function(){
 							obj.uploadRexTFV();
+						}
+					} : null,
+					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+						name:"Download Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.downloadRexTFV();
 						}
 					} : null,
 					"rextfv_status": obj.rextfvStatusSupport() ? {
