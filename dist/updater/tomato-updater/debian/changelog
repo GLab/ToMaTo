@@ -1,0 +1,6 @@
+tomato-updater (3.0) stable; urgency=low
+
+  * Initial version
+  * Daily updates installed tomato-host-proxmox, tomato-hostmanager and tomato-repy packages
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 04 Dec 2013 16:50:27 +0100

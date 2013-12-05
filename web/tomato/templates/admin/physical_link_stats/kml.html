@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<kml xmlns='http://www.opengis.net/kml/2.2'>
+	<Document>
+		<name>ToMaTo Map</name>
+		<description></description>
+{% for site in sites %}
+		<Placemark>
+			<styleUrl>#site</styleUrl>
+			<name>{{site.displayName}}, {{site.location}} ({{site.name}})</name>
+			<description><![CDATA[
+<a href="/link_stats/{{site.name}}">Statistics for intra-site traffic</a>
+]]></description>
+			<Point><coordinates>{{site.geolocation.longitude}},{{site.geolocation.latitude}}</coordinates></Point>
+		</Placemark>
+{% endfor %}
+		<Style id='site'>
+			<LabelStyle>
+				<color>ff000000</color>
+				<scale>1.5</scale>
+			</LabelStyle>
+			<IconStyle>
+				<gx:labelVisibility>1</gx:labelVisibility>
+				<scale>1.0</scale>
+				<Icon>
+					<href>/img/map_site_icon.png</href>
+				</Icon>
+				<hotSpot x="0.5" y="0.0" xunits="fraction" yunits="fraction"/>
+			</IconStyle>
+		</Style>
+{% for link in links %}
+		<Placemark>
+			<styleUrl>#link_{{link.src}}_{{link.dst}}</styleUrl>
+			<name>Link between {{link.src_data.name}} and {{link.dst_data.name}}</name>
+			<description><![CDATA[
+{{link.src_data.name}}: {{link.src_data.displayName}}, {{link.src_data.location}}<br/>
+{{link.dst_data.name}}: {{link.dst_data.displayName}}, {{link.dst_data.location}}<br/>
+<br/>
+<a href="/link_stats/{{link.src_data.name}}/{{link.dst_data.name}}">Link statistics</a>
+]]></description>
+			<LineString>
+				<tessellate>0</tessellate>
+				<coordinates>{{link.src_data.geolocation.longitude}},{{link.src_data.geolocation.latitude}} {{link.dst_data.geolocation.longitude}},{{link.dst_data.geolocation.latitude}}</coordinates>
+			</LineString>
+		</Placemark>
+		<Style id='link_{{link.src}}_{{link.dst}}'>
+			<LineStyle>
+				<color>{{link.color}}</color>
+				<width>4</width>
+			</LineStyle>
+		</Style>
+{% endfor %}
+	</Document>
+</kml>

@@ -7,7 +7,7 @@
 
 {% if organization_list %}
 
-	{% if organization_list|length > 10 and user.isAdmin %}
+	{% if organization_list|length > 10 and user and user.isAdmin %}
 		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 	{% endif %}
 
@@ -30,7 +30,7 @@
 	    <td>{{organization.name}}</td>
 	    <td>{{organization.description}}</td>
 	    
-	    {% if user|args:organization.name|call:"isAdmin" %}
+	    {% if user and user|args:organization.name|call:"isAdmin" %}
 	    	<td>
 	    		<a href="{%url organization.edit organization.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -46,7 +46,7 @@
 	No organization
 {% endif %}
 
-{% if user.isAdmin %}
+{% if user and user.isAdmin %}
 	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 {% endif %}
 
