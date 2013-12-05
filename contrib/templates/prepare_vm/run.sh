@@ -323,6 +323,15 @@ EOF
   ln -s /proc/mounts /etc/mtab
 fi
 
+echo "Installing nlXTP guest modules..."
+case $DISTRO in
+  debian*|ubuntu*)
+    dpkg -i nlxtp-guest-modules*.deb
+    ;;
+  *)
+    fail "$DISTRO unsupported"
+esac
+
 echo "Cleanup..."
 case $DISTRO in
   debian*|ubuntu*)
