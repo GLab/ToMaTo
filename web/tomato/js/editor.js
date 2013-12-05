@@ -2074,10 +2074,7 @@ var Element = Component.extend({
 		this.connection = null;
 	},
 	rextfvStatusSupport: function() {
-		if ('rextfv_supported' in this.data.attrs)
-			return this.data.attrs.rextfv_supported && this.data.attrs.rextfv_run_status.readable;
-		else
-			return false;
+		return 'rextfv_supported';
 	},
 	openRexTFVStatusWindow: function() {
 		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
