@@ -357,6 +357,10 @@ case $DISTRO in
   *)
     fail "$DISTRO unsupported"
 esac
+if [ "$VMTYPE" == "kvm" ]; then
+  mkdir -p /mnt/nlXTP
+  echo "/dev/fd0 /mnt/nlXTP auto defaults,sync,nofail 0 0" >> /etc/fstab
+fi
 
 echo "Cleanup..."
 case $DISTRO in
