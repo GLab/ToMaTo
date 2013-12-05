@@ -102,7 +102,7 @@ case $DISTRO in
 set -e
 echo "Please select a secure root password"
 passwd root
-rm /etc/init/mountall.override
+rm /etc/init/ssh.override
 service ssh start
 EOF
     chmod +x /usr/local/bin/ssh-enable
@@ -313,6 +313,32 @@ end script
 EOF
       # mountall is too smart and detects that / is strange
       echo "manual" > /etc/init/mountall.override
+      cat <<EOF >/etc/init.d/openvz
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          openvz
+# Required-Start:    
+# Required-Stop:     
+# Default-Start:     1 2 3 4 5
+# Default-Stop:      0 6
+# Short-Description: OpenVZ Fix
+# Description:       Fix for OpenVZ
+### END INIT INFO
+do_mount(){
+  SRC="\$1"; DST="\$2"; TYPE="\$3"
+  mkdir -p \$DST
+  mount -t \$TYPE \$SRC \$DST
+}
+case "\$1" in
+  start)
+    do_mount devpts /dev/pts devpts
+    do_mount varrun \$(readlink -m /var/run) tmpfs
+    do_mount varlock \$(readlink -m /var/lock) tmpfs
+  ;;
+esac
+EOF
+      chmod +x /etc/init.d/openvz
+      update-rc.d openvz start 20 1 2 3 4 5 . stop 20 0 6 .
       ;;
     *)
       fail "$DISTRO unsupported"
