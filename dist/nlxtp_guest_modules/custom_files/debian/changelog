@@ -1,3 +1,10 @@
+nlxtp-guest-modules (0.3) unstable; urgency=low
+
+  * changed exported names prefix to "archive_"
+  * no need to eval a string anymore
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 05 Dec 2013 10:21:53 +0100
+
 nlxtp-guest-modules (0.2-1) unstable; urgency=low
 
   * added custom status functionality and guest functions
