@@ -2,6 +2,19 @@
 
 {% load tomato %}
 
+{% block header %}
+
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
+<link type="text/css" href="/style/ui.ribbon.css" rel="stylesheet" />
+<script>
+  $(function() {
+    $( ".datepicker" ).datepicker();
+  });
+</script>
+
+{% endblock %}
+
 {% block content %}
 
 {# check whether this form is for editing or adding #}

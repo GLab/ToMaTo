@@ -31,7 +31,7 @@ class TemplateForm(forms.Form):
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
-	creation_date = forms.DateField(required=True);
+	creation_date = forms.DateField(required=True,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
@@ -43,11 +43,10 @@ class AddTemplateForm(TemplateForm):
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	creation_date = forms.DateField(required=True)
 	
 class ChangeTemplateTorrentForm(forms.Form):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	creation_date = forms.DateField(required=True);
+	creation_date = forms.DateField(required=True,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
 	
 
