@@ -23,6 +23,7 @@ from django import forms
 from lib import *
 import base64
 from admin_common import RemoveResourceForm
+import datetime
 
 class TemplateForm(forms.Form):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -90,8 +91,8 @@ def add(api, request):
 		else:
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
 	else:
-		form = AddTemplateForm
-		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False})
+		form = AddTemplateForm({'creation_date':datetime.date.today()})
+		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False, 'hide_errors':True})
    
 
 @wrap_rpc
@@ -156,9 +157,9 @@ def edit_torrent(api, request, res_id=None):
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm()
+			form = ChangeTemplateTorrentForm({'creation_date':datetime.date.today()})
 			form.fields['res_id'].initial = res_id
-			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
+			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide errors':True})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
