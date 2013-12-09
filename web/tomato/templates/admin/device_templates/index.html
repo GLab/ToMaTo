@@ -20,6 +20,7 @@
 	    <th>Subtype</th>
 	    <th>Preference</th>
 	    <th>Description</th>
+	    <th>Creation Date</th>
 	    <th>Ready</th>
 	    
 	    {% if user.isHostManager %}
@@ -83,6 +84,8 @@
 		    
 		    
 	    </td>
+	    
+	    <td>{{templ.attrs.creation_date}}</td>
 	    
 	    <td>
 		    {% if templ.attrs.ready.backend %}
