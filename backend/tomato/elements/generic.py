@@ -217,6 +217,7 @@ class VMElement(elements.Element):
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
+		info["attrs"]["host_problems"] = self.element.host.problems() if self.element else None
 		info["attrs"]["host_fileserver_port"] = self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
 		return info
 
