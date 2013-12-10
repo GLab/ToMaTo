@@ -2625,6 +2625,17 @@ var IconElement = Element.extend({
 		this.paintUpdate();
 	},
 	updateStateIcon: function() {
+		
+		//set 'host has problems' icon if host has problems
+		if (this.data.attrs.host_problems && this.data.attrs.host_problems.length != 0) {
+			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
+			this.errIcon.attr({'src':'/img/error.png'});
+		} else {
+			this.errIcon.attr({'title':''});
+			this.errIcon.attr({'src':'/img/pixel.png'})
+		}
+		
+		//set state icon
 		if (this.busy) {
 			this.stateIcon.attr({src: "img/loading.gif", opacity: 1.0});
 			return;			
@@ -2650,6 +2661,7 @@ var IconElement = Element.extend({
 		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
 		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
+		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
 		//hide icon below rect to disable special image actions on some browsers
@@ -2673,6 +2685,7 @@ var IconElement = Element.extend({
 		var pos = this.getAbsPos();
 		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
+		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
 		this.updateStateIcon();
