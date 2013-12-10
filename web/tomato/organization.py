@@ -22,10 +22,10 @@ from django import forms
 from lib import *
 
 class OrganizationForm(forms.Form):
-    name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
+    name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
     description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
-    homepage_url = forms.CharField(max_length=255, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
-    image_url = forms.CharField(max_length=255, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
+    homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
+    image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
     
 class EditOrganizationForm(OrganizationForm):
     def __init__(self, *args, **kwargs):
@@ -81,7 +81,7 @@ def remove(api, request, name=None):
             form.fields["name"].initial = name
             return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request, name=None):
@@ -106,8 +106,8 @@ def edit(api, request, name=None):
             
     else:
         if name:
-            siteInfo = api.site_info(name)
-            form = EditOrganizationForm(siteInfo)
+            orgaInfo = api.organization_info(name)
+            form = EditOrganizationForm(orgaInfo)
             return render_to_response("admin/organization/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
