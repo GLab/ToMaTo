@@ -95,13 +95,15 @@ class AccountChangeForm(AccountForm):
             
 
 class AccountRegisterForm(AccountForm):
-    aup = forms.BooleanField(label="", help_text='I accept the <a href="/help/license/aup">terms and conditions</a>', required=True)
+    aup = forms.BooleanField(label="", required=True)
     
     def __init__(self, api, data=None):
         AccountForm.__init__(self, api, data)
         self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
+        self.fields['aup'].help_text = 'I accept the <a href="'+ api.aup_url() +'" target="_blank">terms and conditions</a>'
+        
 
 class AccountRemoveForm(forms.Form):
     username = forms.CharField(max_length=250, widget=forms.HiddenInput)
