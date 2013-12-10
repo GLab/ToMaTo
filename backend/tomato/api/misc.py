@@ -27,6 +27,9 @@ def server_info():
 def host_public_key():
 	return misc.getPublicKey()
 
+def aup_url():
+	return misc.getAUPurl()
+
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
 	return link.getStatistics(siteA, siteB, type, after, before)
 
