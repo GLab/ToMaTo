@@ -11,6 +11,8 @@
 <link href="/style/style.css" rel="stylesheet" type="text/css" /> 
 <link rel="shortcut icon" type="image/x-icon" href="http://www.german-lab.de/favicon.ico" />
 
+{% load tomato %}
+
 {% block header %}
 {% endblock %}
 </head>
@@ -87,7 +89,7 @@ head.appendChild(style);
 	<div id="links">
 		<a href="{%url main.project%}">Project</a>  
    		<a href="{%url main.help "license/license"%}">License</a>
-   		<a href="{%url main.help "license/aup"%}">Terms and Conditions</a>
+   		<a href="{% aupurl %}">Terms and Conditions</a>
 	</div>
 	
    	<div id="legal">
