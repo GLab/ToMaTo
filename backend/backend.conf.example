@@ -28,13 +28,15 @@ AUTH.append ({
 #  The auth provider takes the following options:
 #    file: The path of the .htpasswd file
 #    flags: The flags that an authorized user should get
+#    organization: The organization that the users belong to
 #
 #AUTH.append({
 #	"name": "htpasswd",
 #	"provider": "htpasswd",
 #	"options": {
 #		"file": "/etc/tomato/users.passwd",
-#		"flags": []
+#		"flags": [],
+#       "organization": ""
 #	}
 #})
 
@@ -62,6 +64,7 @@ AUTH.append ({
 #    identity_base: The base path for all identities
 #    groups: This is a dict structure that assigns an array of flags (values)
 #            to LDAP group names (keys).
+#    organization: The organization that the users belong to
 #
 #AUTH.append({
 #    "name": "glab_ldap",
@@ -75,7 +78,8 @@ AUTH.append ({
 #        "groups": {
 #            "cn=users,ou=projectstructure,ou=groups,dc=german-lab,dc=de": [],
 #            "cn=tomato,ou=management,ou=groups,dc=german-lab,dc=de": ["admin"]
-#        }
+#        },
+#        "organization": ""
 #    }
 #})
 
@@ -101,6 +105,7 @@ AUTH.append ({
 #              in DATABASES, defaults to "default"
 #    hash: The hash method use for passwords, defaults to "sha1"
 #    flags: The flags that an authorized user should get
+#    organization: The organization that the users belong to
 #
 #AUTH.append({
 #    "name": "sql",
@@ -109,7 +114,8 @@ AUTH.append ({
 #        "database": "users",
 #        "query": "SELECT * FROM users WHERE username = :username and password = :password", 
 #        "hash": "sha1",
-#        "flags": []
+#        "flags": [],
+#        "organization": ""
 #    }
 #})
 
@@ -125,6 +131,7 @@ AUTH.append ({
 #                 access.
 #    roles: This is a dict structure that assigns an array of flags (values)
 #           to PlanetLab roles (keys).
+#    organization: The organization that the users belong to
 #
 #AUTH.append({
 #    "name": "planetlab",
@@ -134,7 +141,8 @@ AUTH.append ({
 #        "site_filter": None,
 #        "roles": {
 #            "user": [],
-#        }
+#        },
+#        "organization": ""
 #    }
 #})
 
@@ -154,12 +162,14 @@ AUTH.append ({
 #    secret: The secret key to use for user login, default to None
 #    hash: The hash method use for passwords, defaults to "sha1"
 #    flags: The flags that an authorized user should get
+#    organization: The organization that the users belong to
 #
 #AUTH.append({
 #    "name": "ticket",
 #    "provider": "ticket",
 #    "options": {
-#        "secret": "secret"
+#        "secret": "secret",
+#        "organization": ""
 #    }
 #})
 

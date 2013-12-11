@@ -45,14 +45,16 @@ class Provider(AuthProvider):
 		identity_base: The base path for all identities
 		groups: A dict of group/flags pairs where the user DN must be part of 
 		  the group to match and get the flags.
+		organization: The organization that the users belong to
 	"""
-	def parseOptions(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, groups, **kwargs):
+	def parseOptions(self, server_uri, server_cert, bind_dn, bind_pw, identity_base, groups, organization=None, **kwargs):
 		self.server_uri = server_uri
 		self.server_cert = server_cert
 		self.bind_dn = bind_dn
 		self.bind_pw = bind_pw
 		self.identity_base = identity_base
 		self.groups = groups
+		self.organization = getOrganization(organization)
 
 	def _ldap_conn(self):
 		ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -75,7 +77,7 @@ class Provider(AuthProvider):
 			return False
 		for group, flags in self.groups.iteritems():
 			if self._is_in_group(userdn, group):
-				return User.create(name=username, flags=flags, email=email)
+				return User.create(name=username, flags=flags, email=email, organization=self.organization)
 		return False
 		
 	def _get_user(self, user):
@@ -127,3 +129,5 @@ class Provider(AuthProvider):
 
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization
