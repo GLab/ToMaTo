@@ -33,9 +33,9 @@ class VMElement(elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
 	profile_attr = Attr("profile", desc="Profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	profile = models.ForeignKey(r_profile.Profile, null=True)
+	profile = models.ForeignKey(r_profile.Profile, null=True, on_delete=models.SET_NULL)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	template = models.ForeignKey(r_template.Template, null=True)
+	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	
