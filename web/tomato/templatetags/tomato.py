@@ -24,7 +24,7 @@ def minus(value, arg):
 	return float(value or "0.0") - float(arg or "0.0")
 
 @register.filter
-def percentage(value, maxval):
+def percentage(value, maxval=1.0):
 	return "%.2f %%" % (float(value or "0.0") / float(maxval or "0.0") * 100.0)
 
 @register.filter
