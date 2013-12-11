@@ -32,7 +32,7 @@ class TemplateForm(forms.Form):
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
-	creation_date = forms.DateField(required=True,widget=forms.TextInput(attrs={'class': 'datepicker'}));
+	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
@@ -47,7 +47,7 @@ class EditTemplateForm(TemplateForm):
 	
 class ChangeTemplateTorrentForm(forms.Form):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	creation_date = forms.DateField(required=True,widget=forms.TextInput(attrs={'class': 'datepicker'}))
+	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
 	
 
@@ -157,8 +157,7 @@ def edit_torrent(api, request, res_id=None):
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm({'creation_date':datetime.date.today()})
-			form.fields['res_id'].initial = res_id
+			form = ChangeTemplateTorrentForm({'res_id': res_id, 'creation_date':datetime.date.today()})
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide errors':True})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
