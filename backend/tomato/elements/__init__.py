@@ -49,7 +49,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 	type = models.CharField(max_length=30, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	parent = models.ForeignKey('self', null=True, related_name='children')
-	connection = models.ForeignKey(Connection, null=True, related_name='elements')
+	connection = models.ForeignKey(Connection, null=True, on_delete=models.SET_NULL, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
