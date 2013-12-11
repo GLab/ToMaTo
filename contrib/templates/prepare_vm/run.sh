@@ -145,7 +145,7 @@ case $DISTRO in
     apt-get install -y mingetty
     for file in /etc/inittab /etc/init/tty1.conf; do
       if [ -f "$file" ]; then
-        sed -i -e 's/\/sbin\/getty 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
+        sed -i -e 's/\/sbin\/getty\( -8\)\? 38400/\/sbin\/mingetty --autologin root --noclear/g' "$file"
       fi
     done
     ;;
@@ -189,9 +189,27 @@ case $DISTRO in
     case $DISTRO in
       ubuntu_1004)
         PACKAGE="console-setup"
+        cat <<EOF >/etc/default/console-setup
+VERBOSE_OUTPUT=no
+ACTIVE_CONSOLES="/dev/tty[1-6]"
+CHARMAP="UTF-8"
+CODESET="Lat15"
+FONTFACE="VGA"
+FINTSIZE="16"
+XKBMODEL="pc105"
+XKBLAYOUT="de"
+XKBVARIANT="nodeadkeys"
+XKBOPTIONS=""
+EOF
         ;;
       *)
         PACKAGE="keyboard-configuration"
+        cat <<EOF >/etc/default/keyboard
+XKBMODEL="pc105"
+XKBLAYOUT="de"
+XKBVARIANT="nodeadkeys"
+XKBOPTIONS=""
+EOF
         ;;
     esac
     debconf-set-selections <<EOF
@@ -208,12 +226,6 @@ debconf $PACKAGE/unsupported_layout string true
 debconf $PACKAGE/unsupported_config_options string true
 EOF
     apt-get install -y $PACKAGE
-    cat <<EOF >/etc/default/keyboard
-XKBMODEL="pc105"
-XKBLAYOUT="de"
-XKBVARIANT="nodeadkeys"
-XKBOPTIONS=""
-EOF
     dpkg-reconfigure -f noninteractive $PACKAGE
     ;;
   *)
@@ -259,6 +271,16 @@ EOF
     fail "$DISTRO unsupported"
 esac
 
+echo "Applying distro-specific changes..."
+case $DISTRO in
+  ubuntu*)
+    echo "Ubuntu: Disabling network wait"
+    sed -i -e 's/sleep/#sleep/g' /etc/init/failsafe.conf
+    echo "Ubuntu: Disabling boot splash"
+    sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"/GRUB_CMDLINE_LINUX_DEFAULT="noplymouth"/g' /etc/default/grub
+    update-grub
+    ;;
+esac
 
 if [ "$VMTYPE" == "openvz" ]; then
   echo "OpenVZ specific changes..."
@@ -373,4 +395,6 @@ esac
 
 echo
 echo "Done. Please reboot VM to use it"
-echo "Size inside VM: $(du -shx / | cut -f1)"
+if [ "$VMTYPE" == "openvz" ]; then
+  echo "Size inside VM: $(du -shx / | cut -f1)"
+fi
