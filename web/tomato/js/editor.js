@@ -2,6 +2,16 @@
 
 var settings = {
 	childElementDistance: 25,
+	defaultTemplates: {
+		openvz: {
+			name: "debian-7.0_x86_64",
+			label: "Debian 7.0 (OpenVZ)"
+		},
+		kvmqm: {
+			name: "debian-7.0_x86_64",
+			label: "Debian 7.0 (KVM)"
+		}
+	}
 }
 
 var ajax = function(options) {
@@ -3227,18 +3237,18 @@ var Editor = Class.extend({
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		var tmpl = t.templates.get("openvz", "debian-6.0_x86");
+		var tmpl = t.templates.get("openvz", settings.defaultTemplates.openvz.name);
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
-			label: "Debian 6.0 (OpenVZ)",
+			label: settings.defaultTemplates.openvz.label,
 			toggleGroup: toggleGroup,
 			small: false,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
 		}));
-		var tmpl = t.templates.get("kvmqm", "debian-6.0_x86");
+		var tmpl = t.templates.get("kvmqm", settings.defaultTemplates.kvmqm.name);
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
-			label: "Debian 6.0 (KVM)",
+			label: settings.defaultTemplates.kvmqm.label,
 			toggleGroup: toggleGroup,
 			small: false,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
