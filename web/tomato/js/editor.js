@@ -246,6 +246,10 @@ var CheckboxElement = FormElement.extend({
 var ChoiceElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
+		
+		this.descriptions = options.descriptions;
+		this.showDescriptions = (this.descriptions != undefined)
+		
 		this.element = $('<select class="form-element" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
@@ -255,6 +259,16 @@ var ChoiceElement = FormElement.extend({
 		this.choices = options.choices || {};
 		this.setChoices(this.choices);
 		if (options.value != null) this.setValue(options.value);
+		
+		if (this.showDescriptions) {
+			this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			this.element.after(this.info);
+			
+			var t = this;
+			this.element.change(function(){
+				t.updateInfoBox();
+			});
+		}
 	},
 	setChoices: function(choices) {
 		this.element.find("option").remove();
@@ -269,21 +283,45 @@ var ChoiceElement = FormElement.extend({
 		for (var i=0; i < options.length; i++) {
 			$(options[i]).attr({selected: options[i].value == value + ""});
 		}
+	},
+	updateInfoBox: function() {
+		
+		var escape_str = function(str) {
+		    var tagsToReplace = {
+		            '&': '&amp;',
+		            '<': '&lt;',
+		            '>': '&gt;',
+		            '\n':'<br />'
+		        };
+		        return str.replace(/[&<>\n]/g, function(tag) {
+		            return tagsToReplace[tag] || tag;
+		        });
+		    };
+		
+		this.info.empty();
+		
+		var d = $('<div class="hiddenbox"></div>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var desc = $('<table></table>');
+		p.append(desc);
+		d.append(p);
+		
+		if (this.descriptions[this.getValue()]) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
+			this.info.append(' &nbsp; <img src="/img/info.png" />');
+		}
+		
+		this.info.append(d);
+		
 	}
 });
 
 var TemplateChoiceElement = ChoiceElement.extend({
 	init: function(options) {
 		this._super(options);
-		this.descriptions = options.descriptions;
 		this.nlXTPsupport = options.nlXTPsupport;
+		this.showDescriptions = false;
 		console.log(this.nlXTPsupport);
-		var t = this;
-		this.element.change(function(){
-			t.updateInfoBox();
-		});
-		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
-		this.element.after(this.info);
 		
 		this.updateInfoBox();
 	},
@@ -2807,6 +2845,7 @@ var VMElement = IconElement.extend({
 		config.special.profile = new ChoiceElement({
 			label: "Profile",
 			name: "profile",
+			descriptions: createMap(this.editor.profiles.getAll(this.data.type), "name", "description"),
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile")

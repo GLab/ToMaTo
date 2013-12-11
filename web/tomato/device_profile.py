@@ -31,24 +31,25 @@ class ProfileForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     cpus = forms.FloatField(label = "number of CPUs")
+    description = forms.CharField(widget = forms.Textarea, required=False)
 
 
 class EditOpenVZForm(ProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     def __init__(self, *args, **kwargs):
         super(EditOpenVZForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference', 'description']
 
 class EditRePyForm(ProfileForm):
     def __init__(self, *args, **kwargs):
         super(EditRePyForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference', 'description']
 
 class EditKVMqmForm(ProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     def __init__(self, *args, **kwargs):
         super(EditKVMqmForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
     
     
 class AddProfileForm(ProfileForm):
@@ -58,7 +59,7 @@ class AddProfileForm(ProfileForm):
     cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy, OpenVZ: float number; KVMqm: integer number")
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
 
 @wrap_rpc
 def index(api, request):
@@ -77,7 +78,8 @@ def add(api, request):
                  'name': formData['name'],
                  'ram':formData['ram'],
                  'label':formData['label'],
-                 'preference':formData['preference']}
+                 'preference':formData['preference'],
+                 'description':formData['description']}
             if formData['diskspace'] and (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
             if formData['cpus']:
@@ -145,7 +147,8 @@ def edit(api, request, res_id=None):
             data={'cpus':formData['cpus'],
 				 'ram':formData['ram'],
                  'label':formData['label'],
-                 'preference':formData['preference']}
+                 'preference':formData['preference'],
+                 'description':formData['description']}
             if (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
             if formData['restricted']:
