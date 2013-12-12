@@ -206,6 +206,7 @@ class Host(attributes.Mixin, models.Model):
 	componentErrors = attributes.attribute("componentErrors", int, 0)
 	problemAge = attributes.attribute("problem_age", float, 0)
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
+	availability = attributes.attribute("availability", float, 1.0)
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -235,6 +236,7 @@ class Host(attributes.Mixin, models.Model):
 		
 	def update(self):
 		before = time.time()
+		self.availability *= config.HOST_AVAILABILITY_FACTOR
 		self.hostInfo = self._info()
 		after = time.time()
 		self.hostInfoTimestamp = (before+after)/2.0
@@ -244,6 +246,8 @@ class Host(attributes.Mixin, models.Model):
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
 		self.componentErrors = max(0, self.componentErrors/2)
+		if not self.problems():
+			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
 		self.save()
 		logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)		
 		logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)		
@@ -527,6 +531,7 @@ class Host(attributes.Mixin, models.Model):
 			"connection_types": self.connectionTypes.keys(),
 			"host_info": self.hostInfo.copy() if self.hostInfo else None,
 			"host_info_timestamp": self.hostInfoTimestamp,
+			"availability": self.availability
 		}
 		
 	def __str__(self):

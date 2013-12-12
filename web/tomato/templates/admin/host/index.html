@@ -55,6 +55,7 @@
 	    <th stddev_column_class="good_high">Connection types</th>
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
+	    <th stddev_column_class="good_high">Availability</th>
 	    
 	    {% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 	    	<th />
@@ -114,6 +115,8 @@
 			    <td>???</td>
 			{% endif %}
 		    
+		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>
+		    
 		    {% if user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
@@ -137,7 +140,7 @@
 	  	col += 4;
 	  	columnShow(table, col+0, document.getElementById('timing').checked);
 	  	columnShow(table, col+1, document.getElementById('timing').checked);
-	  	columnShow(table, col+2, document.getElementById('timing').checked || important);
+	  	columnShow(table, col+2, document.getElementById('timing').checked);
 	  	columnShow(table, col+3, document.getElementById('timing').checked);
 	  	col += 4;
 	  	columnShow(table, col+0, document.getElementById('cpu').checked || important);
@@ -158,6 +161,7 @@
 	  	col += 2;
 	  	columnShow(table, col+0, document.getElementById('debug').checked);
 	  	columnShow(table, col+1, document.getElementById('debug').checked);
+	  	columnShow(table, col+2, document.getElementById('debug').checked || important);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');
