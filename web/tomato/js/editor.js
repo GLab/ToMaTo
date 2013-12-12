@@ -2777,10 +2777,9 @@ var VMElement = IconElement.extend({
 		
 		
 		var templateInfo = {};
-		var tdesc = createMap(this.editor.templates.getAll(this.data.type), "name", "description");
-		var tnlxtp =createMap(this.editor.templates.getAll(this.data.type), "name", "nlXTP_installed");
-		
-		for (val in tdesc) {
+		var templates = this.editor.templates.getAll(this.data.type);
+
+		for (var i=0; i<templates.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
 			var d = $('<div class="hiddenbox"></div>');
 			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
@@ -2788,40 +2787,43 @@ var VMElement = IconElement.extend({
 			p.append(desc);
 			d.append(p);
 			
+			t=templates[i];
 			
-			if (tdesc[val]) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+tdesc[val]+'</td></tr>'));
+			if (t.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
 				info.append(' &nbsp; <img src="/img/info.png" />');
 			}
 			
-			if (!tnlxtp[val]) {
+			if (!t.nlXTPsupport) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
 				info.append('&nbsp;<img src="/img/error.png" />');
 			}
 			
 			info.append(d);
 			
-			templateInfo[val] = info;
+			templateInfo[t.name] = info;
 		}
 		
 		
 		var profileInfo = {};
-		var pdesc = createMap(this.editor.profiles.getAll(this.data.type), "name", "description");
-		for (val in pdesc) {
+		var profiles = this.editor.profiles.getAll(this.data.type);
+		for (var i=0; i<templates.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
 			var d = $('<div class="hiddenbox"></div>');
 			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
 			var desc = $('<table></table>');
 			p.append(desc);
 			d.append(p);
+			
+			prof = profiles[i];
 
-			if (pdesc[val]) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+pdesc[val]+'</td></tr>'));
+			if (prof.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+prof.description+'</td></tr>'));
 				info.append(' &nbsp; <img src="/img/info.png" />');
 			}
 			
 			info.append(d);
-			profileInfo[val] = info;
+			profileInfo[prof.name] = info;
 		}
 		
 		config.special.template = new TemplateChoiceElement({
