@@ -2842,7 +2842,7 @@ var VMElement = IconElement.extend({
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
-			label: "Profile",
+			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
