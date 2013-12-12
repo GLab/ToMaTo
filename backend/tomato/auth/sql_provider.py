@@ -42,13 +42,15 @@ class Provider(AuthProvider):
 		flags: A list of flags to assign
 		database: The database backend to use, as configured in the config
 		          in DATABASES, defaults to "default"
+		organization: The organization that the users belong to
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def parseOptions(self, query, database="default", flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, query, organization=None, database="default", flags=[], hash="sha1", **kwargs): #@ReservedAssignment
 		self.hash = hash
 		self.database = database
 		self.query = query
 		self.flags = flags
+		self.organization = getOrganization(organization)
 	
 	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
@@ -61,8 +63,10 @@ class Provider(AuthProvider):
 		cursor = connections[self.database].cursor()
 		cursor.execute(self.query, {"username":username, "password":password})
 		if cursor.fetchone():
-			return User.create(name=username, flags=self.flags)
+			return User.create(name=username, flags=self.flags, organization=self.organization)
 		return False
 
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization

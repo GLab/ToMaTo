@@ -106,13 +106,18 @@ def _measure():
 		for siteB in host.getAllSites():
 			if siteA.id > siteB.id:
 				continue
-			hostA = random.choice(siteA.hosts.all())
+			choices = list(siteA.hosts.all())
+			hostA = None
+			while choices and (not hostA or hostA.problems()):
+				hostA = random.choice(choices)
 			choices = list(siteB.hosts.all())
 			if hostA in choices:
 				choices.remove(hostA)
-			if not choices:
+			hostB = None
+			while choices and (not hostB or hostB.problems()):
+				hostB = random.choice(choices)
+			if not hostB:
 				continue
-			hostB = random.choice(choices)
 			begin = time.time()
 			res = hostA.getProxy().host_ping(hostB.address)
 			end = time.time()

@@ -63,6 +63,7 @@ DATABASES['default'] = {
 }
 
 HOST_UPDATE_INTERVAL = 60
+HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
 RESOURCES_SYNC_INTERVAL = 600
 
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
@@ -107,3 +108,6 @@ except:
 
 if not isinstance(SERVER, list):
 	SERVER = [SERVER]
+	
+import math
+HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)

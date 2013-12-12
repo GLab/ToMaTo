@@ -15,7 +15,7 @@ All of the following commands must be issued as **root**.
   ToMaTo has its own repository for debian packages that needs to be added in order
   to install its packages. ::
 
-    echo 'deb http://dswd.github.com/ToMaTo/repository/deb stable main' > /etc/apt/sources.list.d/tomato.list
+    echo 'deb http://packages.tomato-lab.org/deb stable main' > /etc/apt/sources.list.d/tomato.list
   
 
 2. Accepting the repository key
@@ -24,7 +24,7 @@ All of the following commands must be issued as **root**.
   otherwise the Debian package manager will complain on every update that the package
   is unauthorized. ::
   
-    wget http://dswd.github.com/ToMaTo/repository/key.gpg -O - | apt-key add -
+    wget http://packages.tomato-lab.org/key.gpg -O - | apt-key add -
 
 
 3. Updating the package lists
@@ -42,6 +42,14 @@ All of the following commands must be issued as **root**.
 
   During the configuration phase of this package, dialogs will appear and propmt for
   information. All of these prompts can be answered by pressing *enter*.
+
+5. Optional: Install the Updater package
+
+  ::
+  
+    apt-get install tomato-updater
+    
+  This package will add a cronjob that keeps your ToMaTo installation automatically up-to-date.
 
 
 
