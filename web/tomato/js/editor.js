@@ -2807,6 +2807,7 @@ var VMElement = IconElement.extend({
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
+		
 		for (var i=0; i<templates.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
 			var d = $('<div class="hiddenbox"></div>');
@@ -2816,10 +2817,23 @@ var VMElement = IconElement.extend({
 			d.append(p);
 			
 			prof = profiles[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
 
 			if (prof.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+prof.description+'</td></tr>'));
-				info.append(' &nbsp; <img src="/img/info.png" />');
+				desc.append($('<tr><td style="background:white;"></td><td style="background:white;">'+prof.description+'</td></tr>'));
+			}
+			
+			if (prof.cpus) {
+				desc.append($('<tr><td style="background:white;">CPUs</td><td style="background:white;">'+prof.cpus+'</td></tr>'));
+			}
+			
+			if (prof.ram) {
+				desc.append($('<tr><td style="background:white;">RAM</td><td style="background:white;">'+prof.ram+' MB</td></tr>'));
+			}
+			
+			if (prof.diskspace) {
+				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
 			}
 			
 			info.append(d);
@@ -3000,6 +3014,9 @@ var Profile = Class.extend({
 		this.label = options.label || options.name;
 		this.restricted = options.restricted;
 		this.description = options.description;
+		this.diskspace = options.diskspace;
+		this.cpus = options.cpus;
+		this.ram = options.ram;
 	}
 });
 
