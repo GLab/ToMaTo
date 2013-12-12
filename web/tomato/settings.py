@@ -46,7 +46,7 @@ MEDIA_ROOT = ''
 MEDIA_URL = ''
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '!c)j0q+*w!x3&+(+4dpylr*@4+08e-m&3*who(3y$6gol)8$63'
+SECRET_KEY = 'not needed'
 
 # List of callables that know how to import templates from various sources.
 if DJANGO_VERSION < (1,4):
