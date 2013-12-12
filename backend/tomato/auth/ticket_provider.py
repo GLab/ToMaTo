@@ -36,11 +36,13 @@ class Provider(AuthProvider):
 		secret: The secret key to use for user login, defaults to None
 		flags: The list of flags that users get.
 	    hash: The hash method use for passwords, defaults to "sha1"
+		organization: The organization that the users belong to
 	"""
-	def parseOptions(self, secret, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, secret, organization=None, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
 		self.hash = hash
 		self.secret = secret
 		self.flags = flags
+		self.organization = getOrganization(organization)
 	
 	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
@@ -49,8 +51,10 @@ class Provider(AuthProvider):
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		if self._hash(self.hash, username + self.secret) == password:
-			return User.create(name=username, flags=self.flags)
+			return User.create(name=username, flags=self.flags, organization=self.organization)
 		return False
 
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization

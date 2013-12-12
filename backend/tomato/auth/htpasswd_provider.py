@@ -30,11 +30,13 @@ class Provider(AuthProvider):
 	
 	The auth provider takes the following options:
 		file: The path of the .htpasswd file
+		organization: The organization that the users belong to
 		flags: The flags to assign to all users
 	"""
-	def parseOptions(self, file, flags=[], **kwargs): #@ReservedAssignment
+	def parseOptions(self, file, organization=None, flags=[], **kwargs): #@ReservedAssignment
 		self.file = file
 		self.flags = flags
+		self.organization = getOrganization(organization)
 	
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		lines = [l.rstrip().split(':', 1) for l in file(self.file).readlines()]
@@ -44,7 +46,9 @@ class Provider(AuthProvider):
 		hashedPassword = lines[0][1]
 		if not hashedPassword == crypt.crypt(password, hashedPassword[:2]):
 			return None
-		return User.create(name=username, flags=self.flags)
+		return User.create(name=username, flags=self.flags, organization=self.organization)
 	
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization
