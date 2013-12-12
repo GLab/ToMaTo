@@ -17,7 +17,7 @@
           mapTypeId: google.maps.MapTypeId.ROADMAP
         }
         var map = new google.maps.Map(map_canvas, map_options);
-        var src = document.location.protocol + '//{{public_address}}:' + document.location.port + '/map.kml';
+        var src = document.location.protocol + '//' + document.location.host + '/map.kml';
         src = src + '?' + (new Date().getTime()); // No google, you may not cache this file
         var kmlLayer = new google.maps.KmlLayer(src, {
           suppressInfoWindows: false,
