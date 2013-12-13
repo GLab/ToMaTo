@@ -108,14 +108,22 @@ def _measure():
 				continue
 			choices = list(siteA.hosts.all())
 			hostA = None
-			while choices and (not hostA or hostA.problems()):
+			while choices and not hostA:
 				hostA = random.choice(choices)
+				if hostA.problems():
+					choices.remove(hostA)
+					hostA = None
+			if not hostA:
+				continue
 			choices = list(siteB.hosts.all())
 			if hostA in choices:
 				choices.remove(hostA)
 			hostB = None
-			while choices and (not hostB or hostB.problems()):
+			while choices and not hostB:
 				hostB = random.choice(choices)
+				if hostB.problems():
+					choices.remove(hostB)
+					hostB = None
 			if not hostB:
 				continue
 			begin = time.time()
@@ -123,7 +131,7 @@ def _measure():
 			end = time.time()
 			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.address, hostB=hostB.address, result=res)
 			LinkMeasurement.objects.create(siteA=siteA, siteB=siteB, begin=begin, end=end, type=TYPES[0], loss=res["loss"], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"])
-		
+	
 def _removeOld():
 	for siteA in host.getAllSites():
 		for siteB in host.getAllSites():
