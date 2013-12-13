@@ -56,6 +56,8 @@ class Organization(attributes.Mixin, models.Model):
 				self.homepage_url = value
 			elif key == "image_url":
 				self.image_url = value
+			elif key == "description_text":
+				self.description_text = value
 			else:
 				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -72,7 +74,8 @@ class Organization(attributes.Mixin, models.Model):
 			"name": self.name,
 			"description": self.description,
 			"homepage_url": self.homepage_url,
-			"image_url": self.image_url
+			"image_url": self.image_url,
+			"description_text": self.description_text
 		}
 
 	def __str__(self):
@@ -133,6 +136,8 @@ class Site(attributes.Mixin, models.Model):
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
+			elif key == "description_text":
+				self.description_text = value
 			elif key == "organization":
 				orga = getOrganization(value);
 				fault.check(orga, "No organization with name %s" % value)
@@ -153,7 +158,8 @@ class Site(attributes.Mixin, models.Model):
 			"description": self.description,
 			"location": self.location,
 			"geolocation": self.geolocation,
-			"organization": self.organization.name
+			"organization": self.organization.name,
+			"description_text": self.description_text
 		}
 
 	def __str__(self):
@@ -438,6 +444,8 @@ class Host(attributes.Mixin, models.Model):
 				self.site = getSite(value)
 			elif key == "enabled":
 				self.enabled = value
+			elif key == "description_text":
+				self.description_text = value
 			else:
 				fault.raise_("Unknown host attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -545,7 +553,8 @@ class Host(attributes.Mixin, models.Model):
 			"connection_types": self.connectionTypes.keys(),
 			"host_info": self.hostInfo.copy() if self.hostInfo else None,
 			"host_info_timestamp": self.hostInfoTimestamp,
-			"availability": self.availability
+			"availability": self.availability,
+			"description_text": self.description_text
 		}
 		
 	def __str__(self):
