@@ -2722,9 +2722,35 @@ var ExternalNetworkElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "kind"];
+		
+		var networkInfo = {};
+		var networks = this.editor.networks.all();
+		
+		for (var i=0; i<networks.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			net = networks[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (net.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+net.description+'</td></tr>'));
+			
+			}
+			
+			info.append(d);
+			networkInfo[net.kind] = info;
+		}
+		
 		config.special.kind = new ChoiceElement({
 			label: "Network kind",
 			name: "kind",
+			info: networkInfo,
 			choices: createMap(this.editor.networks.all(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
@@ -2839,6 +2865,7 @@ var VMElement = IconElement.extend({
 			info.append(d);
 			profileInfo[prof.name] = info;
 		}
+		
 		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
