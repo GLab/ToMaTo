@@ -17,6 +17,7 @@
 	<table class="sortable,filterable">
 	  <thead><tr>
 	    <th>Name</th>
+	    <th>Label</th>
 	    <th>Description</th>
 	    
 	    {% if user.isAdmin or "orga_admin" in user.flags %}
@@ -29,6 +30,15 @@
 	  <tr>
 	    <td>{{organization.name}}</td>
 	    <td>{{organization.description}}</td>
+	    
+	    <td>{% if organization.description_text %}
+		<div class="hoverdescription">
+			<img src="/img/info.png" alt="i" />
+			<div class="hiddenbox">
+				{{ organization.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
+			</div>
+		</div>
+		{%endif%}</td>
 	    
 	    {% if user and user|args:organization.name|call:"isAdmin" %}
 	    	<td>
