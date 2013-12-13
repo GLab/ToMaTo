@@ -19,8 +19,8 @@
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
-	    <th>Description</th>
 	    <th>Creation Date</th>
+	    <th>Description</th>
 	    <th>Ready</th>
 	    
 	    {% if user.isHostManager %}
@@ -48,6 +48,10 @@
 		    	<img src="/img/error.png" title="restricted" />
 		    {% endif %}
 	    </td>
+	    
+	    
+	    
+	    <td>{{templ.attrs.creation_date}}</td>
 	    
 	    <td>
 	    
@@ -84,8 +88,6 @@
 		    
 		    
 	    </td>
-	    
-	    <td>{{templ.attrs.creation_date}}</td>
 	    
 	    <td>
 		    {% if templ.attrs.ready.backend %}
