@@ -9,17 +9,27 @@ class Migration(DataMigration):
 	def forwards(self, orm):
 		Users = orm["tomato.user"].objects
 		for obj in orm["tomato.element"].objects.all():
-			obj.owner = Users.get_or_create(name=obj.owner_str)
+			obj.owner = Users.get_or_create(name=obj.owner_str)[0]
+			obj.save()
 		for obj in orm["tomato.connection"].objects.all():
-			obj.owner = Users.get_or_create(name=obj.owner_str)
+			obj.owner = Users.get_or_create(name=obj.owner_str)[0]
+			obj.save()
 		try:
 			default_user = Users.all()[0]
 		except:
 			default_user = Users.create(name="default")
 		for obj in orm["tomato.network"].objects.all():
 			obj.owner = default_user
+			obj.save()
 		for obj in orm["tomato.template"].objects.all():
 			obj.owner = default_user
+			obj.save()
+		templates = set()
+		for obj in orm["tomato.template"].objects.all():
+			ident = (obj.owner, obj.tech, obj.name)
+			if ident in templates:
+				obj.delete()
+			templates.add(ident)
 
 	def backwards(self, orm):
 		pass
