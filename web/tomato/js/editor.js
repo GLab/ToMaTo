@@ -2867,6 +2867,43 @@ var VMElement = IconElement.extend({
 		}
 		
 		
+		var siteInfo = {};
+		var sites = this.editor.sites;
+		
+		for (var i=0; i<sites.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			site = sites[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (site.description_text) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
+			}
+			
+			var hostinfo_l = '<tr><td style="background:white;"><img src="/img/server.png" /></td><td style="background:white;"><h3>Hosted By:</h3>';
+			var hostinfo_r = '</td></tr>';
+			if (site.organization.homepage_url) {
+				hostinfo_l = hostinfo_l + '<a href="' + site.organization.homepage_url + '">';
+				hostinfo_r = '</a>' + hostinfo_r;
+			}
+			if (site.organization.image_url) {
+				hostinfo_l = hostinfo_l + '<img src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
+			} else {
+				hostinfo_l = hostinfo_l + site.organization.description;
+			}
+			desc.append($(hostinfo_l + hostinfo_r));
+			
+			info.append(d);
+			siteInfo[site.name] = info;
+		}
+		
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
@@ -2878,6 +2915,7 @@ var VMElement = IconElement.extend({
 		config.special.site = new ChoiceElement({
 			label: "Site",
 			name: "site",
+			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
