@@ -28,6 +28,7 @@ class Organization(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
 	image_url = attributes.attribute("image_url", unicode, "")
+	description_text = attributes.attribute("description_text", unicode, "")
 	#sites: [Site]
 	#users: [User]
 	
@@ -106,6 +107,7 @@ class Site(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	location = attributes.attribute("location", unicode, "")
 	geolocation = attributes.attribute("geolocation", dict, {})
+	description_text = attributes.attribute("description_text", unicode, "")
 	
 	class Meta:
 		pass
@@ -207,6 +209,7 @@ class Host(attributes.Mixin, models.Model):
 	problemAge = attributes.attribute("problem_age", float, 0)
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
+	description_text = attributes.attribute("description_text", unicode, "")
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
