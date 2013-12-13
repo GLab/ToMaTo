@@ -2834,7 +2834,7 @@ var VMElement = IconElement.extend({
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
 		
-		for (var i=0; i<templates.length; i++) {
+		for (var i=0; i<profiles.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
 			var d = $('<div class="hiddenbox"></div>');
 			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
