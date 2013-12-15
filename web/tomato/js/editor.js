@@ -2830,8 +2830,8 @@ var VMElement = IconElement.extend({
 			}
 			
 			if (!t.nlXTPsupport) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-				info.append('&nbsp;<img src="/img/error.png" />');
+				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+				info.append('&nbsp;<img src="/img/warning16.png" />');
 			}
 			
 			info.append(d);
