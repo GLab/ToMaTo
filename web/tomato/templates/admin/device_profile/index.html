@@ -22,6 +22,7 @@
 		<th>RAM</th>
 		<th>CPUs</th>
 		<th>Preference</th>
+		<th>Description</th>
 	    <th>Restricted</th>
 		
 		{% if user.isHostManager %}
@@ -53,6 +54,15 @@
 		<td>{{profile.attrs.ram}} MB</td>
 		<td>{{profile.attrs.cpus}}</td>
 		<td>{{profile.attrs.preference}}</td>
+		
+		<td>{% if profile.attrs.description %}
+		<div class="hoverdescription">
+			<img src="/img/info.png" alt="i" />
+			<div class="hiddenbox">
+				{{ profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}
+			</div>
+		</div>
+		{%endif%}</td>
 		
 	    <td>
 		    {% if profile.attrs.restricted %}

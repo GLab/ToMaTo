@@ -246,6 +246,10 @@ var CheckboxElement = FormElement.extend({
 var ChoiceElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
+		
+		this.infoboxes = options.info;
+		this.showInfo = (this.infoboxes != undefined);
+		
 		this.element = $('<select class="form-element" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
@@ -255,6 +259,19 @@ var ChoiceElement = FormElement.extend({
 		this.choices = options.choices || {};
 		this.setChoices(this.choices);
 		if (options.value != null) this.setValue(options.value);
+		
+		if (this.showInfo) {
+			this.info = $('<div style="display: inline;"></div>');
+			this.element.after(this.info);
+			
+			var t = this;
+			this.element.change(function(){
+				t.updateInfoBox();
+			});
+			
+			this.updateInfoBox();
+		}
+		
 	},
 	setChoices: function(choices) {
 		this.element.find("option").remove();
@@ -269,23 +286,6 @@ var ChoiceElement = FormElement.extend({
 		for (var i=0; i < options.length; i++) {
 			$(options[i]).attr({selected: options[i].value == value + ""});
 		}
-	}
-});
-
-var TemplateChoiceElement = ChoiceElement.extend({
-	init: function(options) {
-		this._super(options);
-		this.descriptions = options.descriptions;
-		this.nlXTPsupport = options.nlXTPsupport;
-		console.log(this.nlXTPsupport);
-		var t = this;
-		this.element.change(function(){
-			t.updateInfoBox();
-		});
-		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
-		this.element.after(this.info);
-		
-		this.updateInfoBox();
 	},
 	updateInfoBox: function() {
 		
@@ -302,25 +302,13 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		
-		var d = $('<div class="hiddenbox"></div>');
-		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
-		var desc = $('<table></table>');
-		p.append(desc);
-		d.append(p);
-		
-		if (this.descriptions[this.getValue()]) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
-			this.info.append(' &nbsp; <img src="/img/info.png" />');
-		}
-		
-		if (!this.nlXTPsupport[this.getValue()]) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-			this.info.append(' &nbsp; <img src="/img/error.png" />');
-		}
-		
-		//desc.append($());
-		this.info.append(d);
+		this.info.append(this.infoboxes[this.getValue()]);
+	}
+});
+
+var TemplateChoiceElement = ChoiceElement.extend({
+	init: function(options) {
+		this._super(options);
 	}
 });
 
@@ -2786,12 +2774,77 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
+		
+		
+		var templateInfo = {};
+		var templates = this.editor.templates.getAll(this.data.type);
+
+		for (var i=0; i<templates.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			t=templates[i];
+			
+			if (t.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+				info.append(' &nbsp; <img src="/img/info.png" />');
+			}
+			
+			if (!t.nlXTPsupport) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+				info.append('&nbsp;<img src="/img/error.png" />');
+			}
+			
+			info.append(d);
+			
+			templateInfo[t.name] = info;
+		}
+		
+		
+		var profileInfo = {};
+		var profiles = this.editor.profiles.getAll(this.data.type);
+		
+		for (var i=0; i<templates.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			prof = profiles[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (prof.description) {
+				desc.append($('<tr><td style="background:white;"></td><td style="background:white;">'+prof.description+'</td></tr>'));
+			}
+			
+			if (prof.cpus) {
+				desc.append($('<tr><td style="background:white;">CPUs</td><td style="background:white;">'+prof.cpus+'</td></tr>'));
+			}
+			
+			if (prof.ram) {
+				desc.append($('<tr><td style="background:white;">RAM</td><td style="background:white;">'+prof.ram+' MB</td></tr>'));
+			}
+			
+			if (prof.diskspace) {
+				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
+			}
+			
+			info.append(d);
+			profileInfo[prof.name] = info;
+		}
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
-			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
-			nlXTPsupport: createMap(this.editor.templates.getAll(this.data.type), "name", "nlXTP_installed"),
+			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
@@ -2805,8 +2858,9 @@ var VMElement = IconElement.extend({
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
-			label: "Profile",
+			label: "Performance Profile",
 			name: "profile",
+			info: profileInfo,
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile")
@@ -2959,6 +3013,10 @@ var Profile = Class.extend({
 		this.name = options.name;
 		this.label = options.label || options.name;
 		this.restricted = options.restricted;
+		this.description = options.description;
+		this.diskspace = options.diskspace;
+		this.cpus = options.cpus;
+		this.ram = options.ram;
 	}
 });
 

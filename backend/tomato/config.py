@@ -81,6 +81,7 @@ TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('tomato', 'south')
+SECRET_KEY = 'not needed'
 
 DISABLE_TRANSACTION_MANAGEMENT = True
 
