@@ -2815,9 +2815,18 @@ var VMElement = IconElement.extend({
 			
 			t=templates[i];
 			
-			if (t.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+			if (t.description || t.creation_date) {
+
 				info.append(' &nbsp; <img src="/img/info.png" />');
+			
+				if (t.description) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+				}
+				
+				if (t.creation_date) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
+				}
+				
 			}
 			
 			if (!t.nlXTPsupport) {
@@ -3019,6 +3028,7 @@ var Template = Class.extend({
 		this.label = options.label || options.name;
 		this.description = options.description || "no description available";
 		this.nlXTP_installed = options.nlXTP_installed || false;
+		this.creation_date = options.creation_date;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
