@@ -9,6 +9,8 @@ import urllib2
 # internet connection seems broken?
 # support more packet managers
 # allow upgrade queryer
+# check authentication/authorization before starting
+# timeout for "waiting for script to finish"
 
 config={
 	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
