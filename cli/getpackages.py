@@ -8,6 +8,7 @@ import urllib2
 # better output
 # internet connection seems broken?
 # support more packet managers
+# allow upgrade queryer
 
 config={
 	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
