@@ -456,7 +456,7 @@ class Host(attributes.Mixin, models.Model):
 			problems.append("Manually disabled")
 		hi = self.hostInfo
 		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
-			problems.append("Old info age, host unreachable?")
+			problems.append("Host unreachable")
 		if problems:
 			return problems
 		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
