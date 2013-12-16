@@ -5,7 +5,6 @@ import urllib2
 
 #TODO:
 # be a better command-line tool. currently everything is set in last line.
-# instead of having a forced site in get_topology_json, allow changes like the template
 # better output
 # internet connection seems broken?
 # support more packet managers
