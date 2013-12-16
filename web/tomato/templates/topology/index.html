@@ -85,5 +85,13 @@
 	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
 	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
 {% endif %}
+{% if 'global_topl_owner' in user.flags or 'global_topl_manager' in user.flags or 'global_topl_user' in user.flags or 'orga_topl_owner' in user.flags or 'orga_topl_manager' in user.flags or 'orga_topl_user' in user.flags %}
+  {% if showall %}
+	<input type="button" onClick="window.location='{%url topology.index%}'" value="Show personal topologies" />
+  {% else %}
+	<input type="button" onClick="window.location='{%url topology.index_all%}'" value="Show all topologies" />
+  {% endif %}
+{% endif%}
+
 
 {% endblock %}

@@ -27,9 +27,12 @@ from lib import wrap_rpc
 class ImportTopologyForm(forms.Form):
 	topologyfile  = forms.FileField(label="Topology File")	
 	
+def index_all(request):
+	return index(request, showall=True)
+	
 @wrap_rpc
-def index(api, request):
-	toplist=api.topology_list()
+def index(api, request, showall=False):
+	toplist=api.topology_list(showAll=showall)
 	tut_in_top_list = False
 	for top in toplist:
 		tut_in_top_list_old = tut_in_top_list
@@ -40,7 +43,7 @@ def index(api, request):
 			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
 			if top['attrs']['tutorial_disabled']:
 				tut_in_top_list = tut_in_top_list_old
-	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist, 'tut_in_top_list':tut_in_top_list})
+	return render_to_response("topology/index.html", {'user': api.user, 'top_list': toplist, 'showall': showall, 'tut_in_top_list':tut_in_top_list})
 
 def _display(api, info, tut_id, tut_stat):
 	caps = api.capabilities()
