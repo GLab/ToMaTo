@@ -2,42 +2,37 @@
 
 {% load tomato %}
 
+{% block header %}
+    <style>
+      #map_canvas {
+        width: 800px;
+        height: 600px;
+        border: 1px solid black;
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script>
+      function initialize() {
+        var map_canvas = document.getElementById('map_canvas');
+        var map_options = {
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        }
+        var map = new google.maps.Map(map_canvas, map_options);
+        var src = document.location.protocol + '//' + document.location.host + '/map.kml';
+        src = src + '?' + (new Date().getTime()); // No google, you may not cache this file
+        var kmlLayer = new google.maps.KmlLayer(src, {
+          suppressInfoWindows: false,
+          preserveViewport: false,
+          map: map
+        });
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
+{% endblock %}
+
 {% block content %}
 
-
-<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
-<script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
-<script language="JavaScript" type="text/javascript" src="/js/raphael.js"></script>
-<script language="JavaScript" type="text/javascript" src="/js/util.js"></script>
-<script language="JavaScript" type="text/javascript" src="/js/map.js"></script>
-
-
-
-<h1>Physical Link Stats</h1>
-
-
-<div id="map" style="width:450px;height:600px;"></div>
-
-<script>
-$("head").append($('<link href="/style/jquery-ui.css" rel="stylesheet" type="text/css" />'));
-map = new Map({x:450, y:600}, "/img/Germany_location_map.svg", {west: 5.5, east: 15.5, north: 55.1, south:47.1});
-
-
-
-{% for site in site_location_list %}
-	map.addSite( "{{site.name}}", "{{site.displayName}}" , {lat: {{site.geolocation.latitude}} , long: {{site.geolocation.longitude}} });
-{% endfor %}
-
-
-
-
-{% for l in connections %}
-	map.addConnection("{{l.src}}", "{{l.dst}}", {
-						color: "{{l.color}}"
-						});
-{% endfor %}
-
-</script>
-	
+    <h1>Physical Link Stats</h1>
+    <div id="map_canvas"></div>
 
 {% endblock %}

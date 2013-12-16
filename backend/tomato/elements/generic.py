@@ -33,13 +33,14 @@ class VMElement(elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
 	name = name_attr.attribute()
 	profile_attr = Attr("profile", desc="Profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	profile = models.ForeignKey(r_profile.Profile, null=True)
+	profile = models.ForeignKey(r_profile.Profile, null=True, on_delete=models.SET_NULL)
 	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
-	template = models.ForeignKey(r_template.Template, null=True)
+	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	
 	CUSTOM_ACTIONS = {
+		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
@@ -190,6 +191,11 @@ class VMElement(elements.Element):
 			self.element = None
 		self.setState(ST_CREATED, True)
 		
+	def action_stop(self):
+		if self.element:
+			self.element.action("stop")
+		self.setState(ST_PREPARED, True)
+
 	def after_rextfv_upload_use(self):
 		self.set_rextfv_last_started()
 		
@@ -211,6 +217,7 @@ class VMElement(elements.Element):
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
+		info["attrs"]["host_problems"] = self.element.host.problems() if self.element else None
 		info["attrs"]["host_fileserver_port"] = self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
 		return info
 

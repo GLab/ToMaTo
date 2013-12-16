@@ -33,14 +33,16 @@ class Provider(AuthProvider):
 		api_uri: The PLCAPI URI, i.e.: https://host:port/PLCAPI/
 		site_filter: A site abbreviation or list of site abbreviations to allow
 		             access.
+		organization: The organization that the users belong to
 		roles: ...
 	"""
-	def parseOptions(self, api_uri, site_filter=None, roles={"user": []}, **kwargs):
+	def parseOptions(self, api_uri, organization=None, site_filter=None, roles={"user": []}, **kwargs):
 		self.api_uri = api_uri
 		self.site_filter = site_filter
 		if isinstance(self.site_filter, str):
 			self.site_filter = [self.site_filter]
 		self.roles = roles
+		self.organization = getOrganization(organization)
 		
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
 		try:
@@ -62,7 +64,7 @@ class Provider(AuthProvider):
 						flags.append(self.roles[role])
 						accept = True
 				if accept:
-					return User.create(name=username, email=username, flags=flags)
+					return User.create(name=username, email=username, flags=flags, organization=self.organization)
 				else:
 					return False
 			except Exception, errormessage:
@@ -73,3 +75,5 @@ class Provider(AuthProvider):
 	
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization

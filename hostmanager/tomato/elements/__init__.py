@@ -19,6 +19,7 @@ import os, shutil, time, os.path, datetime, abc
 from django.db import models
 from threading import RLock,Lock
 
+from ..user import User
 from ..connections import Connection
 from ..accounting import UsageStatistics, Usage
 from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
@@ -36,7 +37,7 @@ REMOVE_ACTION = "(remove)"
 
 class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
-	owner = models.CharField(max_length=20, validators=[db.nameValidator])
+	owner = models.ForeignKey(User, related_name='elements')
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, related_name='elements')
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='element')
@@ -405,19 +406,35 @@ class RexTFVElement:
 		with self.lock:
 			self._nlxtp_make_readable()
 			try:
+				
+				# no nlXTP dir or no status dir - unreadable
 				if (self._nlxtp_path("") is None) or (not os.path.exists(self._nlxtp_path("exec_status"))):
 					return {"readable": False}
+				
+				# evaluate custom status
+				customstat = None
+				if (os.path.exists(self._nlxtp_path(os.path.join("exec_status","custom")))):
+					with open(self._nlxtp_path(os.path.join("exec_status","custom")),"r") as f:
+						customstat = f.read()
+						
+				# done file exists => not running
 				if os.path.exists(self._nlxtp_path(os.path.join("exec_status","done"))):
-					return {"readable": True, "done": True, "isAlive": False}
+					return {"readable": True, "done": True, "isAlive": False, "custom":customstat}
+				
+				# when we're here, done file does not exist. if no running file exists, status is unreadable
+				#    (unknown state: if monitor has started, there's always a running or done file
 				if not os.path.exists(self._nlxtp_path(os.path.join("exec_status","running"))):
-					return {"readable": True, "done": False, "isAlive": False}
+					return {"readable": False}
+				
+				# when we're here, both running and done file exist.
+				# now, check the timestamp in the file.
 				with open(self._nlxtp_path(os.path.join("exec_status","running")), 'r') as f:
 					timestamp = f.read()
 				timeout=10*60 #seconds
 				diff = time.time() - int(timestamp)
-				if diff > timeout:
-					return {"readable": True, "done": False, "isAlive": False}
-				return {"readable": True, "done": False, "isAlive": True}
+				if diff > timeout: # timeout occured.
+					return {"readable": True, "done": False, "isAlive": False, "custom":customstat}
+				return {"readable": True, "done": False, "isAlive": True, "custom":customstat}
 			finally:
 				self._nlxtp_close()
 		
@@ -447,8 +464,12 @@ def create(type_, parent=None, attrs={}):
 	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
 	fault.check(not parent or parent.owner == currentUser(), "Parent element belongs to different user")
 	el = TYPES[type_]()
-	el.init(parent, attrs)
-	el.save()
+	try:
+		el.init(parent, attrs)
+		el.save()
+	except:
+		el.remove()
+		raise
 	if parent:
 		parent.onChildAdded(el)
 	logging.logMessage("create", category="element", id=el.id)	

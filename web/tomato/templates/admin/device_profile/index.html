@@ -8,7 +8,7 @@
 
 {% if profile_list %}
 
-	{% if profile_list|length > 10 and hostManager %}
+	{% if profile_list|length > 10 and user.isHostManager %}
 		<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
 	{% endif %}
 
@@ -22,9 +22,9 @@
 		<th>RAM</th>
 		<th>CPUs</th>
 		<th>Preference</th>
-	    <th>Restricted</th>
+		<th>Description</th>
 		
-		{% if hostManager %}
+		{% if user.isHostManager %}
 			<th />
 		{% endif %}
 		
@@ -54,13 +54,33 @@
 		<td>{{profile.attrs.cpus}}</td>
 		<td>{{profile.attrs.preference}}</td>
 		
-	    <td>
-		    {% if profile.attrs.restricted %}
-		    	<img src="/img/tick.png" title="restricted" />
+		<td>
+		<div class="hoverdescription">
+		
+			{% if profile.attrs.description %}
+				<img src="/img/info.png" alt="i" />
+			{% endif %}
+			
+			{% if profile.attrs.restricted %}
+		    	<img src="/img/warning16.png" />
 		    {% endif %}
+			
+			<div class="hiddenbox"><table>
+				{% if profile.attrs.description %}
+					<tr><td><img src="/img/info.png" /></td><td>{{ profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td></tr>
+				{% endif %}
+				
+				{% if profile.attrs.restricted %}
+					<tr><td><img src="/img/warning16.png" /></td><td>This profile is restricted. It can only be used by users with the "Restricted Profiles" flag.</td></tr>
+				{% endif %}
+				
+				
+			</table></div>
+		</div>
+		    
 	    </td>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<td>
 	    		<a href="{%url device_profile.edit profile.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -76,7 +96,7 @@
 	No profiles
 {% endif %}
 
-{% if hostManager %}
+{% if user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
 {% endif %}
 

@@ -1,0 +1,6 @@
+- logs
+- .*
++ */
++ nlXTP_mon
++ nlXTP_daemon
++ nlXTP.conf

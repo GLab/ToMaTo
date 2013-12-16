@@ -2,6 +2,25 @@
 
 {% load tomato %}
 
+{% block header %}
+
+<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
+<link type="text/css" href="/style/jquery-ui.css" rel="stylesheet" />
+<script>
+  $(function() {
+    $( ".datepicker" ).datepicker();
+  });
+</script>
+
+{% if hide_errors %}
+<style type="text/css">
+	ul.errorlist {display:none;}
+</style>
+{%endif%}
+
+{% endblock %}
+
 {% block content %}
 
 {# check whether this form is for editing or adding #}
@@ -41,4 +60,10 @@
 		
 	</form>
 
+    {% if not edit %}
+	<h2>Tracker URL</h2>
+	The torrent tracker of this backend is:
+	<pre><tt>{{tracker_url}}</tt></pre>
+	{% endif %}
+	
 {% endblock %}

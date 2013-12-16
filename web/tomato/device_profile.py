@@ -21,7 +21,7 @@
 
 from django import forms
 from lib import *
-from admin_common import RemoveResourceForm, is_hostManager
+from admin_common import RemoveResourceForm
 
 class ProfileForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this template")
@@ -31,24 +31,25 @@ class ProfileForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
     cpus = forms.FloatField(label = "number of CPUs")
+    description = forms.CharField(widget = forms.Textarea, required=False)
 
 
 class EditOpenVZForm(ProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     def __init__(self, *args, **kwargs):
         super(EditOpenVZForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference', 'description']
 
 class EditRePyForm(ProfileForm):
     def __init__(self, *args, **kwargs):
         super(EditRePyForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference', 'description']
 
 class EditKVMqmForm(ProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     def __init__(self, *args, **kwargs):
         super(EditKVMqmForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
     
     
 class AddProfileForm(ProfileForm):
@@ -58,12 +59,12 @@ class AddProfileForm(ProfileForm):
     cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy, OpenVZ: float number; KVMqm: integer number")
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference']
+        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
 
 @wrap_rpc
 def index(api, request):
     profile_list = api.resource_list('profile')
-    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list, 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list})
 
 
 @wrap_rpc
@@ -77,7 +78,8 @@ def add(api, request):
                  'name': formData['name'],
                  'ram':formData['ram'],
                  'label':formData['label'],
-                 'preference':formData['preference']}
+                 'preference':formData['preference'],
+                 'description':formData['description']}
             if formData['diskspace'] and (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
             if formData['cpus']:
@@ -116,7 +118,7 @@ def remove(api, request, res_id=None):
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -124,7 +126,7 @@ def remove(api, request, res_id=None):
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
@@ -145,7 +147,8 @@ def edit(api, request, res_id=None):
             data={'cpus':formData['cpus'],
 				 'ram':formData['ram'],
                  'label':formData['label'],
-                 'preference':formData['preference']}
+                 'preference':formData['preference'],
+                 'description':formData['description']}
             if (formData['tech'] != 'repy'):
                 data['diskspace'] = formData['diskspace']
             if formData['restricted']:

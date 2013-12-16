@@ -91,7 +91,7 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
     
     def modify(self, attrs):
         if not _initPhase:
-            fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")        
+            fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")        
         for key, value in attrs.iteritems():
             if hasattr(self, "modify_%s" % key):
                 getattr(self, "modify_%s" % key)(value)
@@ -106,7 +106,7 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
         self.numCount = val
 
     def remove(self):
-        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")
+        fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")
         self.delete()    
     
     def info(self):
@@ -161,13 +161,17 @@ def _addResourceRange(type_, start, count):
 
 def create(type_, attrs={}):
     if not _initPhase:
-        fault.check(currentUser().hasFlag(Flags.HostsManager), "Method only allowed for admin users")    
+        fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")    
     if type_ in TYPES:
         res = TYPES[type_]()
     else:
         res = Resource(type=type_)
-    res.init(attrs)
-    res.save()
+    try:
+        res.init(attrs)
+        res.save()
+    except:
+        res.remove()
+        raise
     return res
 
 def init():

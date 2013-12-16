@@ -46,7 +46,7 @@ MEDIA_ROOT = ''
 MEDIA_URL = ''
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '!c)j0q+*w!x3&+(+4dpylr*@4+08e-m&3*who(3y$6gol)8$63'
+SECRET_KEY = 'not needed'
 
 # List of callables that know how to import templates from various sources.
 if DJANGO_VERSION < (1,4):
@@ -100,12 +100,9 @@ server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
-guest_username="guest"
-guest_password="guest"
 project_url="http://dswd.github.com/ToMaTo/%s"
 help_url="http://github.com/dswd/ToMaTo/wiki/%s"
 ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
-map="generic"
 
 try:
     import sys

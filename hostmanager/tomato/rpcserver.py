@@ -24,7 +24,7 @@ from . import dump, fault, currentUser
 from .lib import db, util, rpc, logging #@UnresolvedImport
 
 def logCall(function, args, kwargs):
-	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser())
+	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
 
 @db.commit_after
 def handleError(error, function, args, kwargs):

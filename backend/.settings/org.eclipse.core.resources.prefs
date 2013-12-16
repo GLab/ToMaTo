@@ -51,6 +51,7 @@ encoding//tomato/lib/util.py=utf-8
 encoding//tomato/link.py=utf-8
 encoding//tomato/log.py=utf-8
 encoding//tomato/migrations/0005_auto__add_field_user_last_login__chg_field_user_password_time.py=utf-8
+encoding//tomato/migrations/0014_organizations_2.py=utf-8
 encoding//tomato/misc.py=utf-8
 encoding//tomato/resources/__init__.py=utf-8
 encoding//tomato/resources/network.py=utf-8

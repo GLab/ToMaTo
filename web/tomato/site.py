@@ -20,11 +20,12 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager, organization_name_list
+from admin_common import organization_name_list
 
 class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
-    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     organization = forms.CharField(max_length=50)
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
@@ -46,7 +47,7 @@ class RemoveSiteForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("admin/site/index.html", {'user': api.user, 'site_list': api.site_list(), 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/site/index.html", {'user': api.user, 'site_list': api.site_list()})
 
 @wrap_rpc
 def add(api, request):
@@ -54,11 +55,12 @@ def add(api, request):
         form = SiteForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.site_create(formData["name"],formData["description"])
+            api.site_create(formData["name"],formData['organization'],formData["description"])
             api.site_modify(formData["name"],{"location": formData["location"],
                                               'geolocation':{'longitude':formData['geolocation_longitude'],
                                                              'latitude':formData['geolocation_latitude']},
-                                              'organization':formData['organization']})
+                                              'organization':formData['organization'],
+                                              'description_text':formData['description_text']})
             return render_to_response("admin/site/add_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -80,7 +82,7 @@ def remove(api, request, name=None):
             if name:
                 form = RemoveSiteForm()
                 form.fields["name"].initial = name
-                return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -88,7 +90,7 @@ def remove(api, request, name=None):
         if name:
             form = RemoveSiteForm()
             form.fields["name"].initial = name
-            return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
@@ -102,7 +104,8 @@ def edit(api, request, name=None):
                                               'location':formData["location"],
                                               'geolocation':{'longitude':formData['geolocation_longitude'],
                                                              'latitude':formData['geolocation_latitude']},
-                                              'organization':formData['organization']})
+                                              'organization':formData['organization'],
+                                              'description_text':formData['description_text']})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             if not name:

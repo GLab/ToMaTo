@@ -38,6 +38,9 @@ try:
 except ImportError:
 	import StringIO
 
+class ErrorUnauthorized():
+	pass
+
 def gzip_encode(data): #from xmlrpclib
 	"""data -> gzip encoded data
 	
@@ -123,7 +126,7 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		credentials = self.getCredentials()
 		sslCert = self.getSSLCertificate()
 		if not self.server.checkAuth(credentials, sslCert):
-			self.send_error(401)
+			self.send_error(403)
 			return self.finish()
 		(method, args, kwargs) = self.getRpcRequest()
 		func = self.server.findMethod(method)
@@ -133,6 +136,9 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		try:
 			ret = self.server.execute(func, args, kwargs)
 			self.send((ret,))
+		except ErrorUnauthorized:
+			self.send_error(403 if (credentials or sslCert) else 401)
+			return self.finish()
 		except Exception, err:
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))

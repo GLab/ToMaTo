@@ -66,7 +66,6 @@ class AccountForm(forms.Form):
     organization = forms.CharField(max_length=50)
     origin = forms.CharField(label="Origin", widget=forms.HiddenInput, required=False)
     realname = forms.CharField(label="Full name")
-    affiliation = forms.CharField()
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
     def __init__(self, api, *args, **kwargs):
@@ -89,20 +88,22 @@ class AccountChangeForm(AccountForm):
         self.fields["name"].widget = FixedText()
         del self.fields["origin"]
         self.fields["flags"].choices = flags
-        if "admin" in api.user.get("flags", []):
+        if api.user.isAdmin(data["organization"]):
             self.fields["flags"].widget = forms.widgets.CheckboxSelectMultiple(choices=flags)
         else:
             self.fields["flags"].widget = AccountFlagList(api)
             
 
 class AccountRegisterForm(AccountForm):
-    aup = forms.BooleanField(label="", help_text='I accept the <a href="/help/license/aup">terms and conditions</a>', required=True)
+    aup = forms.BooleanField(label="", required=True)
     
     def __init__(self, api, data=None):
         AccountForm.__init__(self, api, data)
         self.fields["password"].required = True
         del self.fields["flags"]
         del self.fields["origin"]
+        self.fields['aup'].help_text = 'I accept the <a href="'+ api.aup_url() +'" target="_blank">terms and conditions</a>'
+        
 
 class AccountRemoveForm(forms.Form):
     username = forms.CharField(max_length=250, widget=forms.HiddenInput)
@@ -119,7 +120,7 @@ def index(api, request):
 
 @wrap_rpc
 def info(api, request, id=None):
-    user = api.user
+    user = api.user.data
     if id:
         user = api.account_info(id)
     else:
@@ -129,7 +130,7 @@ def info(api, request, id=None):
         form = AccountChangeForm(api, request.REQUEST)
         if form.is_valid():
             data = form.cleaned_data
-            if not "admin" in api.user["flags"]:
+            if not api.user.isAdmin(data["organization"]):
                 del data["flags"]
             del data["name"]
             del data["password2"]
@@ -149,13 +150,15 @@ def register(api, request):
             data = form.cleaned_data
             username = data["name"]
             password = data["password"]
+            organization=data["organization"]
             del data["password"]
             del data["password2"]
             del data["name"]
             del data["aup"]
+            del data["organization"]
             api = getGuestApi()
             try:
-                api.account_create(username, password=password, organization=data["organization"], attrs=data)
+                api.account_create(username, password=password, organization=organization, attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:

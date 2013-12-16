@@ -1,0 +1,19 @@
+nlxtp-guest-modules (0.3) unstable; urgency=low
+
+  * changed exported names prefix to "archive_"
+  * no need to eval a string anymore
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 05 Dec 2013 10:21:53 +0100
+
+nlxtp-guest-modules (0.2-1) unstable; urgency=low
+
+  * added custom status functionality and guest functions
+  * changed start script filename to auto_exec.sh
+
+ -- Tim Gerhard <t_gerhard10@cs.uni-kl.de>  Thu, 02 Dec 2013 15:21:25 +0000
+
+nlxtp-guest-modules (0.1-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Tim Gerhard <t_gerhard10@cs.uni-kl.de>  Thu, 06 Jun 2013 13:34:25 +0000

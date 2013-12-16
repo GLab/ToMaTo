@@ -32,13 +32,15 @@ class Provider(AuthProvider):
 	The auth provider takes the following options:
 		users: The dict containing username: passsword pairs for normal users,
 		       defaults to {}
+		organization: The organization that the users belong to
 		flags: A list of flags to assign to all users
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def parseOptions(self, users={}, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, users={}, organization=None, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
 		self.users = users
 		self.flags = flags
 		self.hash = hash
+		self.organization = getOrganization(organization)
 	
 	def _hash(self, hash, data): #@ReservedAssignment
 		h = hashlib.new(hash)
@@ -49,8 +51,10 @@ class Provider(AuthProvider):
 		if self.hash:
 			password = self._hash(self.hash, password)
 		if username in self.users and self.users[username] == password:
-			return User.create(name=username, flags=self.flags)
+			return User.create(name=username, flags=self.flags, organization=self.organization)
 		return False
 
 def init(**kwargs):
 	return Provider(**kwargs)
+
+from ..host import getOrganization

@@ -18,6 +18,7 @@
 import os
 
 CERTIFICATE = "/etc/tomato/backend.pem"
+AUP_URL = "http://tomato-lab.org/aup"
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"
 TRACKER_PORT = 8002
@@ -33,18 +34,6 @@ AUTH.append ({
 			"account_timeout": 60*60*24*365*5, # 5 years
 			"allow_registration": True,
 			"default_flags": ["over_quota", "new_account"]
-	}
-})
-
-AUTH.append ({
-	"name": "guest",
-	"provider": "dict",
-	"options": {
-			"users": {
-					"guest": "guest"
-			},
-			"flags": ["no_topology_create", "over_quota"],
-			"hash": None
 	}
 })
 
@@ -74,6 +63,7 @@ DATABASES['default'] = {
 }
 
 HOST_UPDATE_INTERVAL = 60
+HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
 RESOURCES_SYNC_INTERVAL = 600
 
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
@@ -91,12 +81,19 @@ TIME_ZONE = 'Europe/Berlin'
 LANGUAGE_CODE = 'de-de'
 
 INSTALLED_APPS = ('tomato', 'south')
+SECRET_KEY = 'not needed'
 
 DISABLE_TRANSACTION_MANAGEMENT = True
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
 ERROR_NOTIFY = []
+
+import socket
+_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+_socket.connect(("8.8.8.8",80))
+PUBLIC_ADDRESS = _socket.getsockname()[0]
+_socket.close()
 
 try:
 	import sys
@@ -112,3 +109,6 @@ except:
 
 if not isinstance(SERVER, list):
 	SERVER = [SERVER]
+	
+import math
+HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)

@@ -1,15 +1,64 @@
 # ToMaTo hostmanager config file 
 
+
+# The location of the logfile. All relevant logging information will be written 
+# to this file.
+# Note that as this file can become large over time, it is highly recommended to
+# use a tool like *logrotate* to compress it regularly. The ToMaTo packages 
+# already include configuration entries for logrotate that have to be adapted
+# if this setting is changed.  
 LOG_FILE = "/var/log/tomato/main.json.log"
 
+
+# The location of the dump files that are created when unexpected errors occur.
+DUMP_DIR = "/var/log/tomato/dumps"
+
+
+# The main data storage location for ToMaTo. All of the data, including templates
+# and disk images, will be stored in subfolders of this directory. It is very 
+# important that this directory has enough free space to store the data 
+# (100 GiB or more). For Proxmox VE installations this directory is automatically
+# moved (and symlinked) to the big data partition of Proxmox.
 DATA_DIR = "/var/lib/tomato"
 
+
+# The main directory for templates (i.e. ready-to use stock disk images). If this
+# field is set to ``None`` (the default), the template directory will be a 
+# subdirectory of the data directory.
 TEMPLATE_DIR = os.path.join(DATA_DIR, "templates")
 
-# Configuration for the XML-RPC server
-# PORT: Which TCP port to use
-# SSL: Whether to use SSL
-# SSL_OPTS: Private and CA key file if SSL is being used
+
+# This field defines where and how to start the API server. It is a list of 
+# server entries where each server entry is a dict containing the following
+# values:
+#
+#   ``PORT`` (default: ``8000``)
+#      The port number of the API server. This defaults to 8000. If several
+#      server entries are configured, each one needs its own free port number.
+#   
+#   ``SSL`` (default: ``True``)
+#      Whether SSL should be used or not. Since the authentication uses SSL
+#      client certificates, this setting must be ``True``.
+#   
+#   ``SSL_OPTS``
+#      This dict contains the following options for the SSL usage:
+#      
+#      ``key_file``, ``cert_file`` (default: ``'/etc/tomato/server.cert'``)
+#         The paths of the files containing the private key and the SSL 
+#         certificate for the server in PEM format.
+#         If one file contains both information, these fields can point to the
+#         same file.
+#         The package will automatically create a self-signed certificate in the
+#         default location.
+#      
+#      ``client_certs`` (default: ``'/etc/tomato/client_certs'``)
+#         The path to the directory where all accepted client (i.e. backend) 
+#         certificates are stored. See :doc:`backends` for information about
+#         backend authentication. 
+#     
+#     
+# Note: for backwards compatibility, the list can be omitted and instead a 
+# single dict containing one server entry can be assigned to this field.
 SERVER = {
   "PORT": 8000,
   "SSL": True,
@@ -20,9 +69,14 @@ SERVER = {
   }
 }
 
-ADMIN_USERS = ["admin"]
 
-# See the django database manual for help
+# The database to use for ToMaTo. The contents are the same as for
+# `Django <http://docs.djangoproject.com/en/dev/ref/databases>`_.
+# The only actively supported database at this time is PostgresQL but other
+# real databases should work as well. SQLite is known not to work due to its
+# limited concurrency capabilities. See :doc:`/docs/databases` for information
+# about selecting and maintaining databases.
+# Please note that only one database is supported. 
 DATABASES = {
   'default': {
     'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -34,18 +88,25 @@ DATABASES = {
 #  }
 }
 
+# This field defines where to start the :doc:`fileserver`. It is a dict 
+# containing the following fields:
+#
+#   ``PORT`` (default: ``8888``)
+#      The port number of the fileserver. This must be set to a free TCP port.
+#   
+#   ``PATH`` (default: ``None``)
+#      The path of the directory containing all files stored for download and 
+#      after upload. If this field is set to ``None`` (the default), the 
+#      fileserver directory will be a subdirectory of the data directory.
 FILESERVER = {
   'PORT': 8888,
   'PATH': os.path.join(DATA_DIR, "files"),
 }
 
-# PUBLIC_ADDRESS = ""
-
-# Path to store temporary files in
-LOCAL_TMP_DIR = "/tmp/tomato"
-
-# Directory for logfiles
-LOG_DIR = "/var/log/tomato"
-
-# Path to store topology-specific configuration files in
-REMOTE_DIR = "/root/tomato"
+# This dictionary defines the resources that the hostmanager can use. The default
+# will work for most systems. If the hostmanager shares the host with other 
+# systems that also need those resources, these entries might need to be adapted.
+RESOURCES = {
+	'port': xrange(6000, 7000),
+	'vmid': xrange(1000, 2000)
+}

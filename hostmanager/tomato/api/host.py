@@ -17,9 +17,6 @@
 
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
 
-def _checkAdmin():
-    fault.check(currentUser() in config.ADMIN_USERS, "Method only allowed for admin users")
-
 def host_info():
     """
     Retrieves general information about the host.

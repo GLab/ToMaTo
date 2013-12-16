@@ -1,0 +1,51 @@
+#!/bin/bash
+
+
+nlXTP_guest_modules_version="0.3"
+
+
+# if --background argument given, start in background. otherwise: start in foreground.
+if [ "$1" == "--background" ]; then
+	$0 > /dev/null < /dev/null 2>&1 &
+	disown -a
+	exit
+fi
+
+source /etc/nlXTP.conf
+
+# check if a file exists which must be executed
+if [ ! -e $nlxtp_dir/auto_exec.sh ]; then
+	echo "no auto_exec.sh detected. Exiting."
+	exit
+fi
+
+# check if this script isn't running and hasn't run in another instance
+if [ -d $nlxtp_dir/exec_status ]; then
+	echo "exec_status detected. Exiting."
+	exit
+else
+	mkdir $nlxtp_dir/exec_status
+fi
+
+echo "starting monitor..."
+
+
+# start the script, pipe output into the out file
+cd $nlxtp_dir
+chmod +x $nlxtp_dir/auto_exec.sh
+nlxtp_dir=$nlxtp_dir archive_dir=$nlxtp_dir archive_version=$nlXTP_guest_modules_version archive_setstatus="() { echo -n \"\$@\" > $nlxtp_dir/exec_status/custom; }" $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
+auto_exec_pid=$!
+
+# start the "running monitor".
+# to be able to react immediately to a process end, do this in a different thread.
+(
+while ps -p $auto_exec_pid > /dev/null; do
+	date +%s > $nlxtp_dir/exec_status/running
+	sleep $nlxtp_mon_check_interval
+done
+)&
+
+# wait for process to end, and then do what nlXTP specifies.
+wait $auto_exec_pid
+rm $nlxtp_dir/exec_status/running
+touch "$nlxtp_dir/exec_status/done"

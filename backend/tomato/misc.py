@@ -29,9 +29,12 @@ def getPublicKey():
 				lines.append(line)
 	return "".join(lines)
 
+def getAUPurl():
+	return config.AUP_URL
+
 def mailAdmins(subject, text):
 	user = currentUser()
-	mailFlaggedUsers(Flags.AdminContact, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text))
+	mailFlaggedUsers(Flags.GlobalAdminContact, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text))
 	
 def mailUser(user, subject, text):
 	from_ = currentUser()

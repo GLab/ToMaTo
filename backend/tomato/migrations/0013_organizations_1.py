@@ -50,7 +50,7 @@ class Migration(SchemaMigration):
         # Changing field 'Tinc_Endpoint.element'
         db.alter_column('tomato_tinc_endpoint', 'element_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['tomato.HostElement'], null=True, on_delete=models.SET_NULL))
         
-        orm["tomato.organization"].objects.create(name="default", attrs='{"description":""}')
+        orm["tomato.organization"].objects.create(name="default", attrs='{"description":"Default organization"}')
         
         default_org = orm["tomato.organization"].objects.get(name="default")
         

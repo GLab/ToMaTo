@@ -1,3 +1,0 @@
-#!/bin/bash
-update-rc.d nlXTP_daemon defaults
-

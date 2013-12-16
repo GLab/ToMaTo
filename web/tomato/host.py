@@ -19,12 +19,12 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager
 
 class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     def __init__(self, api, *args, **kwargs):
         super(HostForm, self).__init__(*args, **kwargs)
         self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
@@ -50,7 +50,7 @@ def site_name_list(api):
 @wrap_rpc
 def index(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-        return render_to_response("admin/host/index.html", {'user': api.user, 'host_list': api.host_list(), 'sites': sites, 'hostManager': is_hostManager(api.account_info())})
+        return render_to_response("admin/host/index.html", {'user': api.user, 'host_list': api.host_list(), 'sites': sites})
 
 @wrap_rpc
 def add(api, request):
@@ -58,13 +58,16 @@ def add(api, request):
         form = HostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"]})
+            api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"],'description_text':formData['description_text']})
             return render_to_response("admin/host/add_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
     else:
         form = HostForm(api)
-        return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
+        if api.site_list():
+            return render_to_response("admin/host/form.html", {'user': api.user, 'public_key': api.host_public_key(), 'form': form, "edit":False})
+        else:
+            return render_to_response("admin/host/error_no_site.html", {'user': api.user})
    
 @wrap_rpc
 def remove(api, request, address=None):
@@ -79,14 +82,14 @@ def remove(api, request, address=None):
                 address=request.POST['address']
             if address:
                 form.fields["address"].initial = address
-                return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if address:
             form = RemoveHostForm()
             form.fields["address"].initial = address
-            return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/host/remove_confirm.html", {'user': api.user, 'address': address, 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
@@ -96,7 +99,7 @@ def edit(api, request, address=None):
         form = EditHostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"]})
+            api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
             return render_to_response("admin/host/edit_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             if not address:

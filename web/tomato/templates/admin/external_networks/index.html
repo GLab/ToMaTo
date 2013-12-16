@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of External Networks</h1>
 
-{% if netw_list|length > 10 and hostManager %}
+{% if netw_list|length > 10 and user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external network" /></p>
 {% endif %}
 
@@ -18,8 +18,9 @@
 	    <th>Label</th>
 	  	<th>Kind</th>
 	    <th>Preference</th>
+	  	<th>Description</th>
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<th />
 	    {% endif %}
 	    
@@ -29,8 +30,18 @@
 	  	<td>{{netw.attrs.label}}</td>
 	  	<td>{{netw.attrs.kind}}</td>
 	  	<td>{{netw.attrs.preference}}</td>
+	  	
+	  	<td>{% if netw.attrs.description %}
+		<div class="hoverdescription">
+			<img src="/img/info.png" alt="i" />
+			<div class="hiddenbox">
+				{{ netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}
+			</div>
+		</div>
+		{%endif%}</td>
+	  	
 	    
-	    {% if hostManager %}
+	    {% if user.isHostManager %}
 	    	<td>
 	    		<a href="{%url external_networks.edit netw.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -45,7 +56,7 @@
 	No external networks
 {% endif %}
 
-{% if hostManager %}
+{% if user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_networks.add%}'" value="Add external networks" /></p>
 {% endif %}
 

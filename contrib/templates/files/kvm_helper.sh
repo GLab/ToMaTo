@@ -12,7 +12,7 @@ case "$ISSUE" in
   Debian*6.0*)
     DISTRO="debian_6"
     ;;
-  Debian*7.0*)
+  Debian*7*)
     DISTRO="debian_7"
     ;;
   Ubuntu*10.04*)

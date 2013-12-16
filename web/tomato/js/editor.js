@@ -1,5 +1,19 @@
 // http://marijnhaverbeke.nl/uglifyjs
 
+var settings = {
+	childElementDistance: 25,
+	defaultTemplates: {
+		openvz: {
+			name: "debian-7.0_x86_64",
+			label: "Debian 7.0 (OpenVZ)"
+		},
+		kvmqm: {
+			name: "debian-7.0_x86_64",
+			label: "Debian 7.0 (KVM)"
+		}
+	}
+}
+
 var ajax = function(options) {
 	var t = this;
 	$.ajax({
@@ -232,6 +246,10 @@ var CheckboxElement = FormElement.extend({
 var ChoiceElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
+		
+		this.infoboxes = options.info;
+		this.showInfo = (this.infoboxes != undefined);
+		
 		this.element = $('<select class="form-element" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
@@ -241,6 +259,19 @@ var ChoiceElement = FormElement.extend({
 		this.choices = options.choices || {};
 		this.setChoices(this.choices);
 		if (options.value != null) this.setValue(options.value);
+		
+		if (this.showInfo) {
+			this.info = $('<div style="display: inline;"></div>');
+			this.element.after(this.info);
+			
+			var t = this;
+			this.element.change(function(){
+				t.updateInfoBox();
+			});
+			
+			this.updateInfoBox();
+		}
+		
 	},
 	setChoices: function(choices) {
 		this.element.find("option").remove();
@@ -255,23 +286,6 @@ var ChoiceElement = FormElement.extend({
 		for (var i=0; i < options.length; i++) {
 			$(options[i]).attr({selected: options[i].value == value + ""});
 		}
-	}
-});
-
-var TemplateChoiceElement = ChoiceElement.extend({
-	init: function(options) {
-		this._super(options);
-		this.descriptions = options.descriptions;
-		this.nlXTPsupport = options.nlXTPsupport;
-		console.log(this.nlXTPsupport);
-		var t = this;
-		this.element.change(function(){
-			t.updateInfoBox();
-		});
-		this.info = $('<div class="hoverdescription" style="display: inline;"></div>');
-		this.element.after(this.info);
-		
-		this.updateInfoBox();
 	},
 	updateInfoBox: function() {
 		
@@ -288,25 +302,13 @@ var TemplateChoiceElement = ChoiceElement.extend({
 		    };
 		
 		this.info.empty();
-		
-		var d = $('<div class="hiddenbox"></div>');
-		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
-		var desc = $('<table></table>');
-		p.append(desc);
-		d.append(p);
-		
-		if (this.descriptions[this.getValue()]) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.descriptions[this.getValue()]+'</td></tr>'));
-			this.info.append(' &nbsp; <img src="/img/info.png" />');
-		}
-		
-		if (!this.nlXTPsupport[this.getValue()]) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-			this.info.append(' &nbsp; <img src="/img/error.png" />');
-		}
-		
-		//desc.append($());
-		this.info.append(d);
+		this.info.append(this.infoboxes[this.getValue()]);
+	}
+});
+
+var TemplateChoiceElement = ChoiceElement.extend({
+	init: function(options) {
+		this._super(options);
 	}
 });
 
@@ -1826,6 +1828,11 @@ var Connection = Component.extend({
 	getPath: function() {
 		var pos1 = this.elements[0].getAbsPos();
 		var pos2 = this.elements[1].getAbsPos();
+		var diff = {x: pos1.x - pos2.x, y: pos1.y - pos2.y};
+		var length = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+		var norm = {x: diff.x/length, y: diff.y/length};
+		pos1 = {x: pos1.x - norm.x * settings.childElementDistance, y: pos1.y - norm.y * settings.childElementDistance};
+		pos2 = {x: pos2.x + norm.x * settings.childElementDistance, y: pos2.y + norm.y * settings.childElementDistance};
 		var path = "M"+pos1.x+" "+pos1.y+"L"+pos2.x+" "+pos2.y;
 		//TODO: use bezier loop for very short connections
 		return path;
@@ -2065,10 +2072,7 @@ var Element = Component.extend({
 		this.connection = null;
 	},
 	rextfvStatusSupport: function() {
-		if ('rextfv_supported' in this.data.attrs)
-			return this.data.attrs.rextfv_supported && this.data.attrs.rextfv_run_status.readable;
-		else
-			return false;
+		return 'rextfv_supported';
 	},
 	openRexTFVStatusWindow: function() {
 		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
@@ -2499,18 +2503,18 @@ var createElementMenu = function(obj) {
 				name:"Executable archive",
 				icon:"rextfv",
 				items: { 
-					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-						name:"Download Archive",
-						icon:"rextfv",
-						callback: function(){
-							obj.downloadRexTFV();
-						}
-					} : null,
 					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
 						name:"Upload Archive",
 						icon:"rextfv",
 						callback: function(){
 							obj.uploadRexTFV();
+						}
+					} : null,
+					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+						name:"Download Archive",
+						icon:"rextfv",
+						callback: function(){
+							obj.downloadRexTFV();
 						}
 					} : null,
 					"rextfv_status": obj.rextfvStatusSupport() ? {
@@ -2619,6 +2623,17 @@ var IconElement = Element.extend({
 		this.paintUpdate();
 	},
 	updateStateIcon: function() {
+		
+		//set 'host has problems' icon if host has problems
+		if (this.data.attrs.host_problems && this.data.attrs.host_problems.length != 0) {
+			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
+			this.errIcon.attr({'src':'/img/error.png'});
+		} else {
+			this.errIcon.attr({'title':''});
+			this.errIcon.attr({'src':'/img/pixel.png'})
+		}
+		
+		//set state icon
 		if (this.busy) {
 			this.stateIcon.attr({src: "img/loading.gif", opacity: 1.0});
 			return;			
@@ -2641,9 +2656,10 @@ var IconElement = Element.extend({
 	},
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
-		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2, this.iconSize.x, this.iconSize.y);
-		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2+5, this.data.attrs.name);
-		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-10, 16, 16);
+		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
+		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
+		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
+		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
 		//hide icon below rect to disable special image actions on some browsers
@@ -2665,10 +2681,11 @@ var IconElement = Element.extend({
 	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
-		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2});
-		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-10});
-		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2+5});
-		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2+5, text: this.data.attrs.name});
+		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
+		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
+		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
 		this.updateStateIcon();
 		$(this.rect.node).attr("class", "tomato element selectable");
 		this.rect.conditionalClass("connectable", this.isConnectable());
@@ -2705,9 +2722,35 @@ var ExternalNetworkElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "kind"];
+		
+		var networkInfo = {};
+		var networks = this.editor.networks.all();
+		
+		for (var i=0; i<networks.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			net = networks[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (net.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+net.description+'</td></tr>'));
+			
+			}
+			
+			info.append(d);
+			networkInfo[net.kind] = info;
+		}
+		
 		config.special.kind = new ChoiceElement({
 			label: "Network kind",
 			name: "kind",
+			info: networkInfo,
 			choices: createMap(this.editor.networks.all(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
@@ -2757,18 +2800,131 @@ var VMElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
+		
+		
+		var templateInfo = {};
+		var templates = this.editor.templates.getAll(this.data.type);
+
+		for (var i=0; i<templates.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			t=templates[i];
+			
+			if (t.description || t.creation_date) {
+
+				info.append(' &nbsp; <img src="/img/info.png" />');
+			
+				if (t.description) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+				}
+				
+				if (t.creation_date) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
+				}
+				
+			}
+			
+			if (!t.nlXTPsupport) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+				info.append('&nbsp;<img src="/img/warning16.png" />');
+			}
+			
+			info.append(d);
+			
+			templateInfo[t.name] = info;
+		}
+		
+		
+		var profileInfo = {};
+		var profiles = this.editor.profiles.getAll(this.data.type);
+		
+		for (var i=0; i<profiles.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			prof = profiles[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (prof.description) {
+				desc.append($('<tr><td style="background:white;"></td><td style="background:white;">'+prof.description+'</td></tr>'));
+			}
+			
+			if (prof.cpus) {
+				desc.append($('<tr><td style="background:white;">CPUs</td><td style="background:white;">'+prof.cpus+'</td></tr>'));
+			}
+			
+			if (prof.ram) {
+				desc.append($('<tr><td style="background:white;">RAM</td><td style="background:white;">'+prof.ram+' MB</td></tr>'));
+			}
+			
+			if (prof.diskspace) {
+				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
+			}
+			
+			info.append(d);
+			profileInfo[prof.name] = info;
+		}
+		
+		
+		var siteInfo = {};
+		var sites = this.editor.sites;
+		
+		for (var i=0; i<sites.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			site = sites[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (site.description_text) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
+			}
+			
+			var hostinfo_l = '<tr><td style="background:white;"><img src="/img/server.png" /></td><td style="background:white;"><h3>Hosted By:</h3>';
+			var hostinfo_r = '</td></tr>';
+			if (site.organization.homepage_url) {
+				hostinfo_l = hostinfo_l + '<a href="' + site.organization.homepage_url + '">';
+				hostinfo_r = '</a>' + hostinfo_r;
+			}
+			if (site.organization.image_url) {
+				hostinfo_l = hostinfo_l + '<img style="max-width:8cm;max-height:8cm;" src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
+			} else {
+				hostinfo_l = hostinfo_l + site.organization.description;
+			}
+			desc.append($(hostinfo_l + hostinfo_r));
+			
+			info.append(d);
+			siteInfo[site.name] = info;
+		}
+		
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
 			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
-			descriptions: createMap(this.editor.templates.getAll(this.data.type), "name", "description"),
-			nlXTPsupport: createMap(this.editor.templates.getAll(this.data.type), "name", "nlXTP_installed"),
+			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
 			disabled: !this.attrEnabled("template")
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
 			name: "site",
+			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
@@ -2776,8 +2932,9 @@ var VMElement = IconElement.extend({
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
-			label: "Profile",
+			label: "Performance Profile",
 			name: "profile",
+			info: profileInfo,
 			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile")
@@ -2803,7 +2960,7 @@ var ChildElement = Element.extend({
 		var xd = cpos.x - ppos.x;
 		var yd = cpos.y - ppos.y;
 		var magSquared = (xd * xd + yd * yd);
-		var mag = 14.0 / Math.sqrt(magSquared);
+		var mag = settings.childElementDistance / Math.sqrt(magSquared);
 		return {x: ppos.x + (xd * mag), y: ppos.y + (yd * mag)};
 	},
 	isEndpoint: function() {
@@ -2871,6 +3028,7 @@ var Template = Class.extend({
 		this.label = options.label || options.name;
 		this.description = options.description || "no description available";
 		this.nlXTP_installed = options.nlXTP_installed || false;
+		this.creation_date = options.creation_date;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -2930,6 +3088,10 @@ var Profile = Class.extend({
 		this.name = options.name;
 		this.label = options.label || options.name;
 		this.restricted = options.restricted;
+		this.description = options.description;
+		this.diskspace = options.diskspace;
+		this.cpus = options.cpus;
+		this.ram = options.ram;
 	}
 });
 
@@ -3208,18 +3370,18 @@ var Editor = Class.extend({
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		var tmpl = t.templates.get("openvz", "debian-6.0_x86");
+		var tmpl = t.templates.get("openvz", settings.defaultTemplates.openvz.name);
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
-			label: "Debian 6.0 (OpenVZ)",
+			label: settings.defaultTemplates.openvz.label,
 			toggleGroup: toggleGroup,
 			small: false,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
 		}));
-		var tmpl = t.templates.get("kvmqm", "debian-6.0_x86");
+		var tmpl = t.templates.get("kvmqm", settings.defaultTemplates.kvmqm.name);
 		if (tmpl)
 		 group.addElement(tmpl.menuButton({
-			label: "Debian 6.0 (KVM)",
+			label: settings.defaultTemplates.kvmqm.label,
 			toggleGroup: toggleGroup,
 			small: false,
 			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
@@ -3393,19 +3555,6 @@ var Editor = Class.extend({
 				attrs: {kind: "internet"}
 			}))
 		}));
-		group.addElement(Menu.button({
-			label: "OpenFlow",
-			name: "net-openflow",
-			icon: "img/openflow32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "openflow"}
-			}))
-		}));
-
 
 		var tab = this.menu.addTab("Topology");
 

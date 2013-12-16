@@ -19,12 +19,14 @@
 
 from django import forms
 from lib import *
-from admin_common import RemoveResourceForm, is_hostManager
+from admin_common import RemoveResourceForm
 
 class NetworkForm(forms.Form):
     kind = forms.CharField(label="Kind",max_length=255)
     label = forms.CharField(max_length=255,label="Label",help_text="Visible Name")
     preference = forms.IntegerField(label="Preference", help_text="The item with the highest preference will be the default one. An integer number.")
+    description = forms.CharField(widget = forms.Textarea, required=False)
+    
    
 class EditNetworkForm(NetworkForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -36,7 +38,7 @@ class EditNetworkForm(NetworkForm):
 @wrap_rpc
 def index(api, request):
     netw_list = api.resource_list('network')
-    return render_to_response("admin/external_networks/index.html", {'user': api.user, 'netw_list': netw_list, 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/external_networks/index.html", {'user': api.user, 'netw_list': netw_list})
 
 @wrap_rpc
 def add(api, request):
@@ -46,7 +48,8 @@ def add(api, request):
             formData = form.cleaned_data
             api.resource_create('network',{'kind':formData['kind'],
                                            'label':formData['label'],
-                                           'preference':formData['preference']})
+                                           'preference':formData['preference'],
+                                           'description':formData['description']})
            
             return render_to_response("admin/external_networks/add_success.html", {'user': api.user, 'label': formData["label"]})
         else:
@@ -74,7 +77,7 @@ def remove(api, request, res_id = None):
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/external_networks/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/external_networks/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -82,7 +85,7 @@ def remove(api, request, res_id = None):
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/external_networks/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/external_networks/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
         else:
             return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
@@ -95,7 +98,8 @@ def edit(api, request, res_id = None):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'network':
                 api.resource_modify(formData["res_id"],{'label':formData['label'],
-                                                        'preference':formData['preference']})
+                                                        'preference':formData['preference'],
+                                                        'description':formData['description']})
                 return render_to_response("admin/external_networks/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id']})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})

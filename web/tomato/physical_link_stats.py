@@ -38,7 +38,8 @@ def site_location_list(api):
 	for i in l:
 		r.append({'name':i['name'],
 				  'geolocation':get_site_location(i['name'],api),
-				  'displayName':i['description']
+				  'displayName':i['description'],
+				  'location':i['location']
 				  })
 	return r
 
@@ -129,7 +130,7 @@ class Site_site_stats:
 			if (pa['src'] == src and pa['dst'] == dst) or (pa['src'] == dst and pa['dst'] == src):
 				p = pa
 		if p == None or not (p['laststat'].has_key('delay_avg') and p['laststat'].has_key('loss')): #in case nothing was found
-			return '#000000'
+			return (0.2, 0.2, 0.7)
 		
 		delay = p['laststat']['delay_avg']
 		loss  = p['laststat']['loss']
@@ -144,7 +145,8 @@ class Site_site_stats:
 
 		factor = max(delay_avg_factor, loss_factor)
 		factor = max(min((factor+2.0)/5.0, 1.0), 0.0); #normalize -2..3 -> 0..1
-		return "hsl(" + str((1.0-factor)/3.0) + ",1.0,0.4)";
+		import colorsys
+		return colorsys.hsv_to_rgb((1.0-factor)/3.0,1.0,0.7)
 		
 
 def site_site_connections(api):
@@ -168,14 +170,29 @@ def site_site_connections(api):
 
 @wrap_rpc
 def index(api, request):
-	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.account_info()})
+	_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	_socket.connect(("8.8.8.8",80))
+	PUBLIC_ADDRESS = _socket.getsockname()[0]
+	_socket.close()
+	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
 
+@wrap_rpc
+def kml(api, request):
+	sites = site_location_list(api)
+	sitemap = {}
+	for site in sites:
+		sitemap[site["name"]] = site
+	links = site_site_connections(api)
+	for link in links:
+		link["src_data"] = sitemap[link["src"]]
+		link["dst_data"] = sitemap[link["dst"]]
+		link["color"] = "ff%02x%02x%02x" % tuple(reversed([r * 256 for r in link["color"]]))
+	return render_to_response("admin/physical_link_stats/kml.html",{'sites': sites,'links': links,'user':api.user})
 
 @wrap_rpc
 def details_link(api, request, src, dst):
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.account_info()});
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
 
 @wrap_rpc
 def details_site(api, request, site):
-	
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.account_info()});
+	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});

@@ -6,8 +6,10 @@
 <h1>List of Hosts</h1>
 
 {# only show 'add' button when user is authorized #}
-	{% if host_list|length > 10 and hostManager %}
+	{% if host_list|length > 10 %}
+	{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
+	{% endif %}
 	{% endif %}
 
 
@@ -53,10 +55,12 @@
 	    <th stddev_column_class="good_high">Connection types</th>
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
+	    <th stddev_column_class="good_high">Availability</th>
+	    <th />
 	    
-	    {% if hostManager %}
-	    	<th />
-	    {% endif %}
+	    {% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
+        	<th />
+        {% endif %}
 	  </tr>
 	  
 		{% for host in host_list %}
@@ -68,6 +72,7 @@
 			{% endif %}
 			
 	    	<td>{{host.address}}</td>
+	    	
 	    	<td title="{{sites|get:host.site}}">{{host.site}}</td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
@@ -112,13 +117,26 @@
 			    <td>???</td>
 			{% endif %}
 		    
-		    {% if hostManager %}
+		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>
+		    
+		    <td>
+			    {% if host.description_text %}
+					<div class="hoverdescription"" style="display:inline;">
+						<img src="/img/info.png" alt="i" /> &nbsp;
+						<div class="hiddenbox" style="float:left;">
+							{{ host.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
+						</div>
+					</div>
+				{%endif%}
+			</td>
+			    
+		    {% if user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
 		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
-				</td>
-		    {% endif %}
+		    	</td>
+			{% endif %}
 	  </tr>
 	{% endfor %}
 	</table>
@@ -135,7 +153,7 @@
 	  	col += 4;
 	  	columnShow(table, col+0, document.getElementById('timing').checked);
 	  	columnShow(table, col+1, document.getElementById('timing').checked);
-	  	columnShow(table, col+2, document.getElementById('timing').checked || important);
+	  	columnShow(table, col+2, document.getElementById('timing').checked);
 	  	columnShow(table, col+3, document.getElementById('timing').checked);
 	  	col += 4;
 	  	columnShow(table, col+0, document.getElementById('cpu').checked || important);
@@ -156,6 +174,7 @@
 	  	col += 2;
 	  	columnShow(table, col+0, document.getElementById('debug').checked);
 	  	columnShow(table, col+1, document.getElementById('debug').checked);
+	  	columnShow(table, col+2, document.getElementById('debug').checked || important);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');
@@ -173,7 +192,7 @@
 	No hosts
 {% endif %}
 
-{% if hostManager %}
+{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
 	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
 {% endif %}
 

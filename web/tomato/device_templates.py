@@ -22,7 +22,8 @@
 from django import forms
 from lib import *
 import base64
-from admin_common import RemoveResourceForm, is_hostManager
+from admin_common import RemoveResourceForm
+import datetime
 
 class TemplateForm(forms.Form):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -31,6 +32,7 @@ class TemplateForm(forms.Form):
 	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
+	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="/help/admin/torrents" target="_blank">Help</a>')
@@ -38,13 +40,14 @@ class AddTemplateForm(TemplateForm):
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
-		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'torrentfile']
+		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'nlXTP_installed', 'creation_date', 'torrentfile']
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
 	
 class ChangeTemplateTorrentForm(forms.Form):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
 	
 
@@ -62,7 +65,7 @@ def index(api, request):
 			return c
 		return cmp(a["name"], b["name"])
 	templ_list.sort(_cmp)
-	return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list, 'hostManager': is_hostManager(api.account_info())})
+	return render_to_response("admin/device_templates/index.html", {'user': api.user, 'templ_list': templ_list})
 
 
 @wrap_rpc
@@ -71,6 +74,7 @@ def add(api, request):
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():
 			formData = form.cleaned_data
+			creation_date = str(formData['creation_date'])
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
 			api.resource_create('template',{'name':formData['name'],
@@ -81,13 +85,14 @@ def add(api, request):
 											'restricted': formData['restricted'],
 											'torrent_data':torrent_data,
 											'description':formData['description'],
-											'nlXTP_installed':formData['nlXTP_installed']})
+											'nlXTP_installed':formData['nlXTP_installed'],
+											'creation_date':creation_date})
 			return render_to_response("admin/device_templates/add_success.html", {'user': api.user, 'label': formData['label']})
 		else:
 			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
 	else:
-		form = AddTemplateForm
-		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'form': form, "edit":False})
+		form = AddTemplateForm({'creation_date':datetime.date.today()})
+		return render_to_response("admin/device_templates/form.html", {'user': api.user, 'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False, 'hide_errors':True})
    
 
 @wrap_rpc
@@ -108,14 +113,14 @@ def remove(api, request, res_id=None):
 			if res_id:
 				form = RemoveResourceForm()
 				form.fields["res_id"].initial = res_id
-				return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+				return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			form = RemoveResourceForm()
 			form.fields["res_id"].initial = res_id
-			return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'hostManager': is_hostManager(api.account_info()), 'form': form})
+			return render_to_response("admin/device_templates/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 	
@@ -136,8 +141,10 @@ def edit_torrent(api, request, res_id=None):
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
 			res_info = api.resource_info(formData['res_id'])
+			creation_date = str(formData['creation_date'])
 			if res_info['type'] == 'template':
-				api.resource_modify(formData["res_id"],{'torrent_data':torrent_data})
+				api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
+														'creation_date':creation_date})
 				return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': res_info['attrs']['label'], 'res_id': formData['res_id'], 'edited_data': True})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
@@ -150,9 +157,8 @@ def edit_torrent(api, request, res_id=None):
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm()
-			form.fields['res_id'].initial = res_id
-			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False})
+			form = ChangeTemplateTorrentForm({'res_id': res_id, 'creation_date':datetime.date.today()})
+			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide errors':True})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
@@ -163,13 +169,15 @@ def edit_data(api, request, res_id=None):
 		form = EditTemplateForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
+			creation_date = str(formData['creation_date'])
 			if api.resource_info(formData['res_id'])['type'] == 'template':
 				api.resource_modify(formData["res_id"],{'label':formData['label'],
 														'restricted': formData['restricted'],
 														'subtype':formData['subtype'],
 														'preference':formData['preference'],
 														'description':formData['description'],
-											'nlXTP_installed':formData['nlXTP_installed']})
+														'creation_date':creation_date,
+														'nlXTP_installed':formData['nlXTP_installed']})
 				return render_to_response("admin/device_templates/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
 			else:
 				return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})

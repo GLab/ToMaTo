@@ -33,5 +33,11 @@
 			</tr>
 		</table>
 	</form>
+	
+	{% if not edit %}
+	<h2>Public key</h2>
+	The public key of this backend is:
+	<pre><tt>{{public_key}}</tt></pre>
+	{% endif %}
 
 {% endblock %}

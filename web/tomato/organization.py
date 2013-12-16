@@ -20,13 +20,13 @@
 
 from django import forms
 from lib import *
-from admin_common import is_hostManager
 
 class OrganizationForm(forms.Form):
-    name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
-    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
-    homepage_url = forms.CharField(max_length=255, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
-    image_url = forms.CharField(max_length=255, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
+    name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
+    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
+    image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
 class EditOrganizationForm(OrganizationForm):
     def __init__(self, *args, **kwargs):
@@ -39,7 +39,7 @@ class RemoveOrganizationForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("admin/organization/index.html", {'user': api.user, 'organization_list': api.organization_list(), 'hostManager': is_hostManager(api.account_info())})
+    return render_to_response("admin/organization/index.html", {'user': api.user, 'organization_list': api.organization_list()})
 
 @wrap_rpc
 def add(api, request):
@@ -49,7 +49,8 @@ def add(api, request):
             formData = form.cleaned_data
             api.organization_create(formData["name"],formData["description"])
             api.organization_modify(formData["name"],{"homepage_url": formData["homepage_url"],
-                                              'image_url':formData['image_url']
+                                              'image_url':formData['image_url'],
+                                              'description_text':formData['description_text']
                                               })
             return render_to_response("admin/organization/add_success.html", {'user': api.user, 'name': formData["name"]})
         else:
@@ -72,7 +73,7 @@ def remove(api, request, name=None):
             if name:
                 form = RemoveOrganizationForm()
                 form.fields["name"].initial = name
-                return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+                return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -80,9 +81,9 @@ def remove(api, request, name=None):
         if name:
             form = RemoveOrganizationForm()
             form.fields["name"].initial = name
-            return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'hostManager': is_hostManager(api.account_info()), 'form': form})
+            return render_to_response("admin/organization/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request, name=None):
@@ -92,7 +93,8 @@ def edit(api, request, name=None):
             formData = form.cleaned_data
             api.organization_modify(formData["name"],{"description": formData["description"],
                                                       "homepage_url": formData["homepage_url"],
-                                                      'image_url':formData['image_url']
+                                                      'image_url':formData['image_url'],
+                                                      'description_text':formData['description_text']
                                                       })
             return render_to_response("admin/organization/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
@@ -107,8 +109,8 @@ def edit(api, request, name=None):
             
     else:
         if name:
-            siteInfo = api.site_info(name)
-            form = EditOrganizationForm(siteInfo)
+            orgaInfo = api.organization_info(name)
+            form = EditOrganizationForm(orgaInfo)
             return render_to_response("admin/organization/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
