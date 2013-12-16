@@ -3,7 +3,7 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of Topologies</h1>
+<h1>List of {% if showall %} all {%endif%}Topologies</h1>
 
 
 {% if top_list %}
@@ -13,6 +13,10 @@
 	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
 	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
 	<div style="height:0.3cm;">&nbsp;</div>
+{% endif %}
+
+{% if showall %}
+	<p><b>Showing topologies of other users. Access for administrative issues only!</b></p>
 {% endif %}
 
 <script src="/js/enhancetable.js"></script>
