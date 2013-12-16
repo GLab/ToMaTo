@@ -145,7 +145,7 @@ var editor_tutorial = [
 								You just created a KVM device.\
 								KVM devices can be identified by a green screen.\
 								Contrary to OpenVZ, KVM devices run completely separated from their host systems.\
-								This means that you can modify the kernel and/or use any system which supports the host\'s processor architecture.</p>',
+								This means that you can modify the kernel and/or use any operating system.</p>',
 					help_page:'system/kvm',
 					skip_button:'continue'
 					},
