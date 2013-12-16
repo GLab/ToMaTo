@@ -2902,7 +2902,7 @@ var VMElement = IconElement.extend({
 				hostinfo_r = '</a>' + hostinfo_r;
 			}
 			if (site.organization.image_url) {
-				hostinfo_l = hostinfo_l + '<img src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
+				hostinfo_l = hostinfo_l + '<img style="max-width:8cm;max-height:8cm;" src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
 			} else {
 				hostinfo_l = hostinfo_l + site.organization.description;
 			}
