@@ -24,7 +24,8 @@ from admin_common import organization_name_list
 
 class SiteForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
-    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     organization = forms.CharField(max_length=50)
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
@@ -58,7 +59,8 @@ def add(api, request):
             api.site_modify(formData["name"],{"location": formData["location"],
                                               'geolocation':{'longitude':formData['geolocation_longitude'],
                                                              'latitude':formData['geolocation_latitude']},
-                                              'organization':formData['organization']})
+                                              'organization':formData['organization'],
+                                              'description_text':formData['description_text']})
             return render_to_response("admin/site/add_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -102,7 +104,8 @@ def edit(api, request, name=None):
                                               'location':formData["location"],
                                               'geolocation':{'longitude':formData['geolocation_longitude'],
                                                              'latitude':formData['geolocation_latitude']},
-                                              'organization':formData['organization']})
+                                              'organization':formData['organization'],
+                                              'description_text':formData['description_text']})
             return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
             if not name:

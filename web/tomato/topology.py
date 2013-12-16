@@ -49,6 +49,11 @@ def _display(api, info, tut_id, tut_stat):
 	optimize_if_small_display = True; #Todo: allow the user to change this
 	permission_list = api.topology_permissions()
 	
+	for s in sites:
+		orga = api.organization_info(s['organization'])
+		del s['organization']
+		s['organization'] = orga
+	
 	return render_to_response("topology/info.html", {'user': api.user, 'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat, 'permission_list':permission_list, 'optimize_if_small_display': optimize_if_small_display})	
 
 @wrap_rpc

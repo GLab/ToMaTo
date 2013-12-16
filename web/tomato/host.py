@@ -24,6 +24,7 @@ class HostForm(forms.Form):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     def __init__(self, api, *args, **kwargs):
         super(HostForm, self).__init__(*args, **kwargs)
         self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
@@ -57,7 +58,7 @@ def add(api, request):
         form = HostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"]})
+            api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"],'description_text':formData['description_text']})
             return render_to_response("admin/host/add_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             return render_to_response("admin/host/form.html", {'user': api.user, 'form': form, "edit":False})
@@ -98,7 +99,7 @@ def edit(api, request, address=None):
         form = EditHostForm(api, request.POST)
         if form.is_valid():
             formData = form.cleaned_data
-            api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"]})
+            api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
             return render_to_response("admin/host/edit_success.html", {'user': api.user, 'address': formData["address"]})
         else:
             if not address:

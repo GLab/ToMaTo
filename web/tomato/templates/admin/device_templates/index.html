@@ -19,8 +19,8 @@
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
-	    <th>Description</th>
 	    <th>Creation Date</th>
+	    <th>Description</th>
 	    <th>Ready</th>
 	    
 	    {% if user.isHostManager %}
@@ -49,13 +49,17 @@
 		    {% endif %}
 	    </td>
 	    
+	    
+	    
+	    <td>{{templ.attrs.creation_date}}</td>
+	    
 	    <td>
 	    
 	    
 	    <div class="hoverdescription" style="float:left;">
 	    
 	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
-		    	<img src="/img/error.png" alt="!"/>
+		    	<img src="/img/warning16.png" alt="!"/>
 		    {%endif%}
 	    
 	    	{% if templ.attrs.description %}		    	
@@ -65,7 +69,7 @@
     		<div class="hiddenbox"><table>
     		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 	    		<tr>
-		    		<td><img src="/img/error.png" /></td>
+		    		<td><img src="/img/warning16.png" /></td>
 		    		<td>nlXTP Guest Modules not installed</td>
 	    		</tr>
     		{%endif%}
@@ -84,8 +88,6 @@
 		    
 		    
 	    </td>
-	    
-	    <td>{{templ.attrs.creation_date}}</td>
 	    
 	    <td>
 		    {% if templ.attrs.ready.backend %}

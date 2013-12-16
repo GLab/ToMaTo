@@ -2722,9 +2722,35 @@ var ExternalNetworkElement = IconElement.extend({
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "kind"];
+		
+		var networkInfo = {};
+		var networks = this.editor.networks.all();
+		
+		for (var i=0; i<networks.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			net = networks[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (net.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+net.description+'</td></tr>'));
+			
+			}
+			
+			info.append(d);
+			networkInfo[net.kind] = info;
+		}
+		
 		config.special.kind = new ChoiceElement({
 			label: "Network kind",
 			name: "kind",
+			info: networkInfo,
 			choices: createMap(this.editor.networks.all(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
@@ -2789,14 +2815,23 @@ var VMElement = IconElement.extend({
 			
 			t=templates[i];
 			
-			if (t.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+			if (t.description || t.creation_date) {
+
 				info.append(' &nbsp; <img src="/img/info.png" />');
+			
+				if (t.description) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+				}
+				
+				if (t.creation_date) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
+				}
+				
 			}
 			
 			if (!t.nlXTPsupport) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/error.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-				info.append('&nbsp;<img src="/img/error.png" />');
+				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+				info.append('&nbsp;<img src="/img/warning16.png" />');
 			}
 			
 			info.append(d);
@@ -2808,7 +2843,7 @@ var VMElement = IconElement.extend({
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
 		
-		for (var i=0; i<templates.length; i++) {
+		for (var i=0; i<profiles.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
 			var d = $('<div class="hiddenbox"></div>');
 			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
@@ -2840,6 +2875,44 @@ var VMElement = IconElement.extend({
 			profileInfo[prof.name] = info;
 		}
 		
+		
+		var siteInfo = {};
+		var sites = this.editor.sites;
+		
+		for (var i=0; i<sites.length; i++) {
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			site = sites[i];
+			
+			info.append(' &nbsp; <img src="/img/info.png" />');
+
+			if (site.description_text) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
+			}
+			
+			var hostinfo_l = '<tr><td style="background:white;"><img src="/img/server.png" /></td><td style="background:white;"><h3>Hosted By:</h3>';
+			var hostinfo_r = '</td></tr>';
+			if (site.organization.homepage_url) {
+				hostinfo_l = hostinfo_l + '<a href="' + site.organization.homepage_url + '">';
+				hostinfo_r = '</a>' + hostinfo_r;
+			}
+			if (site.organization.image_url) {
+				hostinfo_l = hostinfo_l + '<img style="max-width:8cm;max-height:8cm;" src="' + site.organization.image_url + '" title="' + site.organization.description + '" />';
+			} else {
+				hostinfo_l = hostinfo_l + site.organization.description;
+			}
+			desc.append($(hostinfo_l + hostinfo_r));
+			
+			info.append(d);
+			siteInfo[site.name] = info;
+		}
+		
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
@@ -2851,6 +2924,7 @@ var VMElement = IconElement.extend({
 		config.special.site = new ChoiceElement({
 			label: "Site",
 			name: "site",
+			info: siteInfo,
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
@@ -2954,6 +3028,7 @@ var Template = Class.extend({
 		this.label = options.label || options.name;
 		this.description = options.description || "no description available";
 		this.nlXTP_installed = options.nlXTP_installed || false;
+		this.creation_date = options.creation_date;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
