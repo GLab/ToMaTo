@@ -31,6 +31,10 @@
   </tr>
  
 
+<script src="/js/enhancetable.js"></script>
+<script src="/js/jquery.js"></script>
+<script src="/js/loading_popup.js"></script>
+
   
 {% for top in top_list %}
   <tr>
@@ -49,7 +53,7 @@
     	margin-left:17px;
     {% endif %}
     ">
-    	<a href="{%url topology.info top.id%}">{{top.attrs.name}}</a></td>
+    	<a href="{% url topology.info top.id %}" onclick="loadbusy();">{{top.attrs.name}}</a></td>
     </div>
     
     <td>
