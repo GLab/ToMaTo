@@ -158,7 +158,7 @@ def edit_torrent(api, request, res_id=None):
 		if res_id:
 			res_info = api.resource_info(res_id)
 			form = ChangeTemplateTorrentForm({'res_id': res_id, 'creation_date':datetime.date.today()})
-			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide errors':True})
+			return render_to_response("admin/device_templates/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide_errors':True})
 		else:
 			return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
