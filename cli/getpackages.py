@@ -12,7 +12,7 @@ import re
 # allow upgrade queryer
 # check authentication/authorization before starting
 # timeout for "waiting for script to finish"
-# better error handling than brute-force try-until-success
+# better error handling than brute-force try-until-success. Understand ^C
 
 config={
 	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
