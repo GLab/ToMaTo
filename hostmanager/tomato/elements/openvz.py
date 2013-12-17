@@ -457,7 +457,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			interface._configure() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
-		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; done'" % (self.vncport, self.vncpassword, self.vmid))
+		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'" % (self.vncport, self.vncpassword, self.vmid))
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
