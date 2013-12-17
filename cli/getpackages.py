@@ -12,6 +12,7 @@ import re
 # allow upgrade queryer
 # check authentication/authorization before starting
 # timeout for "waiting for script to finish"
+# better error handling than brute-force try-until-success
 
 config={
 	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
@@ -163,7 +164,7 @@ class packetman_urlgetter:
 #packages: packages to be installed by archive
 #site: site to host the element on. None to let ToMaTo choose.
 def create_package(conn,templates,tech,filename,packages,site=None):
-	def get_workingdir():
+    def get_workingdir():
 		tmpdir = config['tmpdir']
 		workingdir = str(random.randint(10000,99999))
 		while os.path.isdir(os.path.join(tmpdir,progname_short()+'_'+workingdir)):
@@ -172,7 +173,7 @@ def create_package(conn,templates,tech,filename,packages,site=None):
 		os.makedirs(workingdir)
 		return workingdir
 	
-	def create_query_archive(list):
+    def create_query_archive(list):
 		#create working dir and filenames
 		wdir = get_workingdir()
 		geturls_archive=os.path.join(wdir,'geturls.tar.gz')
@@ -192,7 +193,7 @@ def create_package(conn,templates,tech,filename,packages,site=None):
 
 		return geturls_archive
 
-	def query_packageinfo(conn,template,tech,packages,site):
+    def query_packageinfo(conn,template,tech,packages,site):
 		res=None
 		#first, create the rextfv archive which will fetch the package info
 		print 'creating query archive'
@@ -264,7 +265,7 @@ def create_package(conn,templates,tech,filename,packages,site=None):
 		return res
 
 	
-	def create_result(filename,infos):
+    def create_result(filename,infos):
 		wdir = get_workingdir()
 		pacdir = os.path.join(wdir,'packages')
 		os.makedirs(pacdir)
@@ -299,22 +300,33 @@ def create_package(conn,templates,tech,filename,packages,site=None):
 
 		with tarfile.open(filename,'w:gz') as tar:
 			tar.add(wdir,arcname='.')
+            
+    infos = []
+    
+    print templates
+    
+    for template in templates:
+        print "querying packets for template "+template
+        finished_current = False
+        while not finished_current:
+            try:
+                infos.append(query_packageinfo(conn,template,tech,packages,site))
+                finished_current = True
+            except KeyboardInterrupt:
+                sys.exit(0)
+            except:
+                continue
 
-	infos = []
-	for template in templates:
-		print "running for template "+template
-		#query info about packages
-		infos.append(query_packageinfo(conn,template,tech,packages,site))
+            
+    
+    
+    
+                #infos.append(query_packageinfo(conn,template,tech,packages,site))
 
 	#create result package
-	create_result(filename,infos)
+    create_result(filename,infos)
 
-	return infos
-
-
+    return infos
 
 
-def test_conn():
-	return tomato.getConnection(username='sometestuser',password='test',hostname='master.tomato-lab.org',port='8001',ssl=False)
 
-print create_package(test_conn(),['debian-6.0_x86','debian-7.0_x86'],'openvz','/home/sylar/INSTALLER.rextfv.tar.gz',['apt-rdepends'],site='ukl')
