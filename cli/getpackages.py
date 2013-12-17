@@ -303,7 +303,6 @@ def create_package(conn,templates,tech,filename,packages,site=None):
             
     infos = []
     
-    print templates
     
     for template in templates:
         print "querying packets for template "+template
