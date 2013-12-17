@@ -2328,7 +2328,7 @@ var Element = Component.extend({
 					info.hide();
 					el.action("rextfv_upload_use");
 				});
-				var info = new Window({title: "Upload RexTFV Archive", content: div, autoShow: true, width:300});
+				var info = new Window({title: "Upload Executable Archive", content: div, autoShow: true, width:300});
 			});
 			iframe.css("display", "none");
 			$('body').append(iframe);
