@@ -265,7 +265,7 @@ class Repy(elements.Element):
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
 		net.freeTcpPort(self.vncport)				
-		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
+		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; sleep 1; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")

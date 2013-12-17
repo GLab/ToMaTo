@@ -22,7 +22,7 @@
 		<th>RAM</th>
 		<th>CPUs</th>
 		<th>Preference</th>
-	    <th>Restricted</th>
+		<th>Description</th>
 		
 		{% if user.isHostManager %}
 			<th />
@@ -54,10 +54,30 @@
 		<td>{{profile.attrs.cpus}}</td>
 		<td>{{profile.attrs.preference}}</td>
 		
-	    <td>
-		    {% if profile.attrs.restricted %}
-		    	<img src="/img/tick.png" title="restricted" />
+		<td>
+		<div class="hoverdescription">
+		
+			{% if profile.attrs.description %}
+				<img src="/img/info.png" alt="i" />
+			{% endif %}
+			
+			{% if profile.attrs.restricted %}
+		    	<img src="/img/warning16.png" />
 		    {% endif %}
+			
+			<div class="hiddenbox"><table>
+				{% if profile.attrs.description %}
+					<tr><td><img src="/img/info.png" /></td><td>{{ profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td></tr>
+				{% endif %}
+				
+				{% if profile.attrs.restricted %}
+					<tr><td><img src="/img/warning16.png" /></td><td>This profile is restricted. It can only be used by users with the "Restricted Profiles" flag.</td></tr>
+				{% endif %}
+				
+				
+			</table></div>
+		</div>
+		    
 	    </td>
 	    
 	    {% if user.isHostManager %}

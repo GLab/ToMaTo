@@ -25,6 +25,8 @@ class NetworkForm(forms.Form):
     kind = forms.CharField(label="Kind",max_length=255)
     label = forms.CharField(max_length=255,label="Label",help_text="Visible Name")
     preference = forms.IntegerField(label="Preference", help_text="The item with the highest preference will be the default one. An integer number.")
+    description = forms.CharField(widget = forms.Textarea, required=False)
+    
    
 class EditNetworkForm(NetworkForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -46,7 +48,8 @@ def add(api, request):
             formData = form.cleaned_data
             api.resource_create('network',{'kind':formData['kind'],
                                            'label':formData['label'],
-                                           'preference':formData['preference']})
+                                           'preference':formData['preference'],
+                                           'description':formData['description']})
            
             return render_to_response("admin/external_networks/add_success.html", {'user': api.user, 'label': formData["label"]})
         else:
@@ -95,7 +98,8 @@ def edit(api, request, res_id = None):
             formData = form.cleaned_data
             if api.resource_info(formData['res_id'])['type'] == 'network':
                 api.resource_modify(formData["res_id"],{'label':formData['label'],
-                                                        'preference':formData['preference']})
+                                                        'preference':formData['preference'],
+                                                        'description':formData['description']})
                 return render_to_response("admin/external_networks/edit_success.html", {'user': api.user, 'label': formData["label"], 'res_id': formData['res_id']})
             else:
                 return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})

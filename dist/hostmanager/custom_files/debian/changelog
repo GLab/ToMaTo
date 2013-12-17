@@ -1,3 +1,11 @@
+tomato-hostmanager (3.1) unstable; urgency=low
+
+  * Complete separation of different backends (also templates and networks)
+  * No admin backend any more
+  * Templates are now named after their hash value
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 13 Dec 2013 09:45:00 +0100
+
 tomato-hostmanager (3.0.8) unstable; urgency=low
 
   * Small fixes

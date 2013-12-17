@@ -56,10 +56,11 @@
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
 	    <th stddev_column_class="good_high">Availability</th>
+	    <th />
 	    
 	    {% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
-	    	<th />
-	    {% endif %}
+        	<th />
+        {% endif %}
 	  </tr>
 	  
 		{% for host in host_list %}
@@ -71,6 +72,7 @@
 			{% endif %}
 			
 	    	<td>{{host.address}}</td>
+	    	
 	    	<td title="{{sites|get:host.site}}">{{host.site}}</td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
@@ -117,13 +119,24 @@
 		    
 		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>
 		    
+		    <td>
+			    {% if host.description_text %}
+					<div class="hoverdescription"" style="display:inline;">
+						<img src="/img/info.png" alt="i" /> &nbsp;
+						<div class="hiddenbox" style="float:left;">
+							{{ host.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
+						</div>
+					</div>
+				{%endif%}
+			</td>
+			    
 		    {% if user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
 		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
-				</td>
-		    {% endif %}
+		    	</td>
+			{% endif %}
 	  </tr>
 	{% endfor %}
 	</table>

@@ -28,6 +28,7 @@ class Organization(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
 	image_url = attributes.attribute("image_url", unicode, "")
+	description_text = attributes.attribute("description_text", unicode, "")
 	#sites: [Site]
 	#users: [User]
 	
@@ -55,6 +56,8 @@ class Organization(attributes.Mixin, models.Model):
 				self.homepage_url = value
 			elif key == "image_url":
 				self.image_url = value
+			elif key == "description_text":
+				self.description_text = value
 			else:
 				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -71,7 +74,8 @@ class Organization(attributes.Mixin, models.Model):
 			"name": self.name,
 			"description": self.description,
 			"homepage_url": self.homepage_url,
-			"image_url": self.image_url
+			"image_url": self.image_url,
+			"description_text": self.description_text
 		}
 
 	def __str__(self):
@@ -106,6 +110,7 @@ class Site(attributes.Mixin, models.Model):
 	description = attributes.attribute("description", unicode, "")
 	location = attributes.attribute("location", unicode, "")
 	geolocation = attributes.attribute("geolocation", dict, {})
+	description_text = attributes.attribute("description_text", unicode, "")
 	
 	class Meta:
 		pass
@@ -131,6 +136,8 @@ class Site(attributes.Mixin, models.Model):
 				self.location = value
 			elif key == "geolocation":
 				self.geolocation = value
+			elif key == "description_text":
+				self.description_text = value
 			elif key == "organization":
 				orga = getOrganization(value);
 				fault.check(orga, "No organization with name %s" % value)
@@ -151,7 +158,8 @@ class Site(attributes.Mixin, models.Model):
 			"description": self.description,
 			"location": self.location,
 			"geolocation": self.geolocation,
-			"organization": self.organization.name
+			"organization": self.organization.name,
+			"description_text": self.description_text
 		}
 
 	def __str__(self):
@@ -207,6 +215,7 @@ class Host(attributes.Mixin, models.Model):
 	problemAge = attributes.attribute("problem_age", float, 0)
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
+	description_text = attributes.attribute("description_text", unicode, "")
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -435,6 +444,8 @@ class Host(attributes.Mixin, models.Model):
 				self.site = getSite(value)
 			elif key == "enabled":
 				self.enabled = value
+			elif key == "description_text":
+				self.description_text = value
 			else:
 				fault.raise_("Unknown host attribute: %s" % key, fault.USER_ERROR)
 		self.save()
@@ -445,7 +456,7 @@ class Host(attributes.Mixin, models.Model):
 			problems.append("Manually disabled")
 		hi = self.hostInfo
 		if time.time() - max(self.hostInfoTimestamp, starttime) > 2 * config.HOST_UPDATE_INTERVAL + 300:
-			problems.append("Old info age, host unreachable?")
+			problems.append("Host unreachable")
 		if problems:
 			return problems
 		if time.time() - max(self.lastResourcesSync, starttime) > 2 * config.RESOURCES_SYNC_INTERVAL + 300:
@@ -489,19 +500,30 @@ class Host(attributes.Mixin, models.Model):
 			# a brand new problem, wait until it is stable
 			self.problemAge = time.time()
 		if self.problemAge and not problems:
-			if self.problemMailTime == self.problemAge:
+			if self.problemMailTime >= self.problemAge:
 				# problem is resolved and mail has been sent for this problem
 				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 					or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
 					"Host %s: Problems resolved" % self, "Problems on host %s have been resolved." % self)
 			self.problemAge = 0
 		if problems and (self.problemAge < time.time() - 300):
-			if self.problemMailTime != self.problemAge:
+			if self.problemMailTime < self.problemAge:
 				# problem exists and no mail has been sent so far
-				self.problemMailTime = self.problemAge
+				self.problemMailTime = time.time()
 				mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 					or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
 					"Host %s: Problems" % self, "Host %s has the following problems:\n\n%s" % (self, ", ".join(problems)))
+			if self.problemAge < time.time() - 6*60*60:
+				# persistent problem older than 6h
+				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
+					self.problemMailTime = time.time()
+					from django.template.defaultfilters import timesince
+					import datetime
+					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
+					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
+						or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
+						"Host %s: Problems persist" % self, "Host %s has the following problems since %s:\n\n%s" % (self, duration, ", ".join(problems)))
+					
 		self.save()
 		
 	def getLoad(self):
@@ -531,7 +553,8 @@ class Host(attributes.Mixin, models.Model):
 			"connection_types": self.connectionTypes.keys(),
 			"host_info": self.hostInfo.copy() if self.hostInfo else None,
 			"host_info_timestamp": self.hostInfoTimestamp,
-			"availability": self.availability
+			"availability": self.availability,
+			"description_text": self.description_text
 		}
 		
 	def __str__(self):

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, signal, time
+import os, sys, signal, time, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
@@ -95,14 +95,24 @@ def reload_(*args):
 	#stopRPCserver()
 	#startRPCserver()
 
-def forceStop(*args):
-	print >>sys.stderr, "Force stopping..."
-	sys.exit(1)
+def _stopHelper():
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Stopping takes long, waiting some more time..."
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Ok last change, killing process in 10 seconds..."
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Killing process..."
+	process.kill(os.getpid(), force=True)
 
 def stop(*args):
 	print >>sys.stderr, "Shutting down..."
-	signal.alarm(30)
-	signal.signal(signal.SIGALRM, forceStop)
+	thread.start_new_thread(_stopHelper, ())
 	rpcserver.stop()
 	auth.task.stop() #@UndefinedVariable
 	host.task.stop() #@UndefinedVariable

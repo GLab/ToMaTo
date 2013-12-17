@@ -184,7 +184,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	top = _getTopology(id)
 	return top.info(full)
 
-def topology_list(full=False): #@ReservedAssignment
+def topology_list(full=False, showAll=False): #@ReservedAssignment
 	"""
 	Retrieves information about all topologies the user can access.
 
@@ -198,7 +198,10 @@ def topology_list(full=False): #@ReservedAssignment
 	"""
 	if not currentUser():
 		raise ErrorUnauthorized()
-	tops = topology.getAll()
+	if showAll:
+		tops = topology.getAll()
+	else:
+		tops = topology.getAll(permissions__entries__user=currentUser())
 	return [top.info(full) for top in filter(lambda t:t.hasRole("user"), tops)]
 
 def topology_permission(id, user, role): #@ReservedAssignment

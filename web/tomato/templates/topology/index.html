@@ -3,7 +3,7 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of Topologies</h1>
+<h1>List of {% if showall %} all {%endif%}Topologies</h1>
 
 
 {% if top_list %}
@@ -13,6 +13,10 @@
 	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
 	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
 	<div style="height:0.3cm;">&nbsp;</div>
+{% endif %}
+
+{% if showall %}
+	<p><b>Showing topologies of other users. Access for administrative issues only!</b></p>
 {% endif %}
 
 <script src="/js/enhancetable.js"></script>
@@ -30,6 +34,8 @@
     <th></th>
   </tr>
  
+<script src="/js/jquery.js"></script>
+<script src="/js/loading_popup.js"></script>
 
   
 {% for top in top_list %}
@@ -49,7 +55,7 @@
     	margin-left:17px;
     {% endif %}
     ">
-    	<a href="{%url topology.info top.id%}">{{top.attrs.name}}</a></td>
+    	<a href="{% url topology.info top.id %}" onclick="loadbusy();">{{top.attrs.name}}</a></td>
     </div>
     
     <td>
@@ -81,9 +87,19 @@
 {% if 'no_topology_create' in user.flags %}
 	<p>You may not create any topologies. Contact the administrator for mor information.</p>
 {% else %}
-	<input type="button" onClick="window.location='{%url topology.create%}'" value="Create new Topology" />
+	<input type="button" onClick="loadbusy();window.location='{%url topology.create%}'" value="Create new Topology" />
 	<input type="button" onClick="window.location='{%url editor_tutorial.index%}'" value="Start Tutorial">
 	<input type="button" onClick="window.location='{%url topology.import_form%}'" value="Import from file" />
 {% endif %}
+
+{% if 'global_topl_owner' in user.flags or 'global_topl_manager' in user.flags or 'global_topl_user' in user.flags or 'orga_topl_owner' in user.flags or 'orga_topl_manager' in user.flags or 'orga_topl_user' in user.flags %}
+  <br /><br />
+  {% if showall %}
+	<input type="button" onClick="window.location='{%url topology.index%}'" value="Show personal topologies" />
+  {% else %}
+	<input type="button" onClick="window.location='{%url topology.index_all%}'" value="Show all topologies" />
+  {% endif %}
+{% endif%}
+
 
 {% endblock %}

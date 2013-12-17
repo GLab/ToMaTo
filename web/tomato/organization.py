@@ -23,9 +23,10 @@ from lib import *
 
 class OrganizationForm(forms.Form):
     name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
-    description = forms.CharField(max_length=255, help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
+    description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
     image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
+    description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
     
 class EditOrganizationForm(OrganizationForm):
     def __init__(self, *args, **kwargs):
@@ -48,7 +49,8 @@ def add(api, request):
             formData = form.cleaned_data
             api.organization_create(formData["name"],formData["description"])
             api.organization_modify(formData["name"],{"homepage_url": formData["homepage_url"],
-                                              'image_url':formData['image_url']
+                                              'image_url':formData['image_url'],
+                                              'description_text':formData['description_text']
                                               })
             return render_to_response("admin/organization/add_success.html", {'user': api.user, 'name': formData["name"]})
         else:
@@ -91,7 +93,8 @@ def edit(api, request, name=None):
             formData = form.cleaned_data
             api.organization_modify(formData["name"],{"description": formData["description"],
                                                       "homepage_url": formData["homepage_url"],
-                                                      'image_url':formData['image_url']
+                                                      'image_url':formData['image_url'],
+                                                      'description_text':formData['description_text']
                                                       })
             return render_to_response("admin/organization/edit_success.html", {'user': api.user, 'name': formData["name"]})
         else:
