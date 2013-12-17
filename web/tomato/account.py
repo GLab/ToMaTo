@@ -137,7 +137,7 @@ def index(api, request, filter_flags=None):
         acc['flags_name'] = []
         for flag in acc['flags']:
             acc['flags_name'].append(account_flags[flag])
-    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs, 'show_flags':False, 'show_reason':True})
+    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs, 'show_flags':show_flags, 'show_reason':show_reason})
 
 @wrap_rpc
 def info(api, request, id=None):
