@@ -43,9 +43,14 @@ print "saving result to "+output_dir
 
 conn = get_connection_from_params()
 
+pnr = 1
 for p in packages:
-	print "_____________________________________"
-	print "building "+p['name']
-	print ""
-	create_package(conn,templates,'openvz',os.path.join(output_dir,'install_'+p['name']+'.tar.gz'),p['packets'],site='ukl')
+	try:
+		print " ____________________________________"
+		print "(" + str(pnr) + "/" + str(len(packages)) + ") building "+p['name']
+		print " "
+		create_package(conn,templates,'openvz',os.path.join(output_dir,'install_'+p['name']+'.tar.gz'),p['packets'],site='ukl')
+	except:
+		print "error. continuing with next package"
+		continue
 	print ""

@@ -302,18 +302,20 @@ def create_package(conn,templates,tech,filename,packages,site=None):
 			tar.add(wdir,arcname='.')
             
     infos = []
-    
-    
+
+    tnr = 1
     for template in templates:
-        print "querying packets for template "+template
+        print "  ("+str(tnr)+"/"+str(len(templates))+") querying packets for template "+template
         finished_current = False
         while not finished_current:
             try:
                 infos.append(query_packageinfo(conn,template,tech,packages,site))
                 finished_current = True
-            except KeyboardInterrupt:
-                sys.exit(0)
+                tnr = tnr + 1
             except:
+                print ""
+                print "There was an error. Retrying..."
+                print ""
                 continue
 
             
