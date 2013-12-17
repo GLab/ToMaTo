@@ -2,6 +2,7 @@ import tomato,lib
 import shutil, os, random
 import tarfile, json, time
 import urllib2
+import re
 
 #TODO:
 # be a better command-line tool. currently everything is set in last line.
@@ -156,10 +157,12 @@ class packetman_urlgetter:
 
 
 #conn: a connection to tomato
-#template, tech: target template and tech the archive shall be created with
+#templates: target templates to get packages for. This is a list of templates.
+#tech: the tech to use when running the query. use 'openvz' if possible.
 #filename: output of the final rextfv archive
 #packages: packages to be installed by archive
-def create_package(conn,template,tech,filename,packages,site=None):
+#site: site to host the element on. None to let ToMaTo choose.
+def create_package(conn,templates,tech,filename,packages,site=None):
 	def get_workingdir():
 		tmpdir = config['tmpdir']
 		workingdir = str(random.randint(10000,99999))
@@ -192,7 +195,7 @@ def create_package(conn,template,tech,filename,packages,site=None):
 	def query_packageinfo(conn,template,tech,packages,site):
 		res=None
 		#first, create the rextfv archive which will fetch the package info
-		print 'creating query archive...'
+		print 'creating query archive'
 		f1=create_query_archive(packages)
 
 		#create the fetcher topology
@@ -215,7 +218,6 @@ def create_package(conn,template,tech,filename,packages,site=None):
 			grant = t.element_action('rextfv_upload_grant')
 			#with open(f1,"r") as file:
 			lib.upload(get_upload_url(conn,el,grant),f1)
-			print get_upload_url(conn,el,grant)
 			print 'using upload'
 			t.element_action('rextfv_upload_use')
 
@@ -236,9 +238,10 @@ def create_package(conn,template,tech,filename,packages,site=None):
 			targetfile = os.path.join(wdir,'res.tar.gz')
 			grant = t.element_action('rextfv_download_grant')
 			
-			custominfo_splitted = elinfo['attrs']['rextfv_run_status']['custom'].split(".",1)
+			custominfo_splitted = elinfo['attrs']['rextfv_run_status']['custom'].split(".",2)
 			ident = custominfo_splitted[0]
-			lines = custominfo_splitted[1]
+			os_id = custominfo_splitted[1]
+			lines = custominfo_splitted[2]
 			
 			def interpret_lines_aptget(lines_string):
 				lines = lines_string.splitlines()
@@ -252,58 +255,61 @@ def create_package(conn,template,tech,filename,packages,site=None):
 			
 			if ident == "aptget":
 				res = interpret_lines_aptget(lines)
+				res['os_id'] = os_id
 			
 
 		finally:
 			t.clean_up()
 		
-		print ""
-		print res
-		print ""
 		return res
 
 	
-	def create_result(filename,info):
-		#create working dir and filenames
+	def create_result(filename,infos):
 		wdir = get_workingdir()
-		installorderfile = os.path.join(wdir,'installorder')
 		pacdir = os.path.join(wdir,'packages')
 		os.makedirs(pacdir)
-		
 		#copy unconfigured archive
 		with tarfile.open(config['rextfv-archive'],'r:gz') as tar:
 			tar.extractall(wdir)
-	
-		#TODO: load all packages into pacdir
-		ordstruct = []
-		for i in range(len(info['order'])):
-			ordstruct.append({
-				'filename':info['order'][i],
-				'url':info['urls'][i]
-			})
+			
+		#fetch all packages
+		for info in infos:
+			#create dirs and filenames
+			installorderfile = os.path.join(wdir,'installorder_'+info['os_id'])
 		
-		with open(installorderfile,'w+') as installfile:
-			for pac in ordstruct:
-				print 'fetching '+pac['filename']
-				with open(os.path.join(pacdir,pac['filename']),'w+') as file:
-					import re
-					pac['url'] = re.sub("^'","",pac['url'])
-					pac['url'] = re.sub("'$","",pac['url'])
-					print pac['url']
-					response = urllib2.urlopen(pac['url'])
-					file.write(response.read())
+			#TODO: load all packages into pacdir
+			ordstruct = []
+			for i in range(len(info['order'])):
+				ordstruct.append({
+					'filename':info['order'][i],
+					'url':info['urls'][i]
+				})
+			
+			with open(installorderfile,'w+') as installfile:
+				for pac in ordstruct:
+					pacfilename = os.path.join(pacdir,pac['filename'])
+					if not os.path.exists(pacfilename):
+						print 'fetching '+pac['filename']
+						with open(pacfilename,'w+') as file:
+							pac['url'] = re.sub("^'","",pac['url'])
+							pac['url'] = re.sub("'$","",pac['url'])
+							response = urllib2.urlopen(pac['url'])
+							file.write(response.read())
 					installfile.write(pac['filename']+'\n')
 
 		with tarfile.open(filename,'w:gz') as tar:
 			tar.add(wdir,arcname='.')
 
-	#query info about packages
-	info = query_packageinfo(conn,template,tech,packages,site)
+	infos = []
+	for template in templates:
+		print "running for template "+template
+		#query info about packages
+		infos.append(query_packageinfo(conn,template,tech,packages,site))
 
 	#create result package
-	create_result(filename,info)
+	create_result(filename,infos)
 
-	return info
+	return infos
 
 
 
@@ -311,4 +317,4 @@ def create_package(conn,template,tech,filename,packages,site=None):
 def test_conn():
 	return tomato.getConnection(username='sometestuser',password='test',hostname='master.tomato-lab.org',port='8001',ssl=False)
 
-print create_package(test_conn(),'debian-6.0_x86','openvz','/home/sylar/INSTALLER.rextfv.tar.gz',['apt-rdepends'],site='ukl')
+print create_package(test_conn(),['debian-6.0_x86','debian-7.0_x86'],'openvz','/home/sylar/INSTALLER.rextfv.tar.gz',['apt-rdepends'],site='ukl')
