@@ -24,6 +24,9 @@ from django.http import Http404
 from django import forms
 from django.core.urlresolvers import reverse
 from admin_common import organization_name_list
+from django.utils.safestring import mark_safe
+from django.utils.encoding import force_unicode
+from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, getGuestApi
 import xmlrpclib
@@ -44,25 +47,26 @@ class FixedList(forms.MultipleHiddenInput):
             return value
         else:
             return [value]
+
+CategoryTranslationDict = {
+           'manager_user_global':'Global User Management',
+           'manager_user_orga':'Organization-Internal User Management',
+           'manager_host_global':'Global Host Management',
+           'manager_host_orga':'Organization-Internal Host Management',
+           'user':'User',
+           'other':'Other'
+        }
             
-class AccountFlagList(FixedList):
+class AccountFlagFixedList(FixedList):
     api = None
     def render(self, name, value, attrs=None):
         
         print value
         
         FlagTranslationDict = self.api.account_flags()
-        CategoryTranslationDict = {
-                                   'manager_user_global':'Global User Management',
-                                   'manager_user_orga':'Organization-Internal User Management',
-                                   'manager_host_global':'Global Host Management',
-                                   'manager_host_orga':'Organization-Internal Host Management',
-                                   'user':'User',
-                                   'other':'Other'
-        }
         categories = self.api.account_flag_categories()
         
-        final_string = ""
+        output = []
         isFirst = True
         for cat in categories.keys():
             foundOne = False
@@ -70,21 +74,66 @@ class AccountFlagList(FixedList):
                 if v in value:
                     if not foundOne:
                         if not isFirst:
-                            final_string = final_string + '</ul>'
+                            output.append('</ul>')
                         else:
                             isFirst = False
-                        final_string = final_string + '<ul><b>' + CategoryTranslationDict.get(cat,cat) + '</b>'
+                        output.append('<ul>')
+                        output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
                         foundOne = True
-                    final_string = final_string + '<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>'
-        if final_string == "":
-            final_string = "None"
+                    output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+        if output == []:
+            output = ['None']
             
             
-        return forms.MultipleHiddenInput.render(self, name, value) + final_string
+        return forms.MultipleHiddenInput.render(self, name, value) + mark_safe(u'\n'.join(output))
     
     def __init__(self, api, *args, **kwargs):
-        super(AccountFlagList, self).__init__(*args, **kwargs)
+        super(AccountFlagFixedList, self).__init__(*args, **kwargs)
         self.api = api
+        
+
+class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
+    api = None
+    def render(self, name, value, attrs=None):
+        if value is None: value = []
+        has_id = attrs and 'id' in attrs
+        final_attrs = self.build_attrs(attrs, name=name)
+        str_values = set([force_unicode(v) for v in value])
+    
+        FlagTranslationDict = self.api.account_flags()
+        categories = self.api.account_flag_categories()
+        
+        output = ['<ul>']
+        isFirst = True
+        for cat in categories.keys():
+            foundOne = False
+            for v in categories[cat]:
+                if not foundOne:
+                    if not isFirst:
+                        output.append('<br />')
+                    else:
+                        isFirst = False
+                    output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
+                    foundOne = True
+                    
+                if has_id:
+                    final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
+                    label_for = u' for="%s"' % final_attrs['id']
+                else:
+                    label_for = ''
+                    
+                cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
+                option_value = force_unicode(v)
+                rendered_cb = cb.render(name, option_value)
+                option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
+                output.append(u'<li style="margin-left:20px;"><label%s>%s %s</label></li>' % (label_for, rendered_cb, option_label))
+        output.append('</ul>')
+        return mark_safe(u'\n'.join(output))
+    
+    def __init__(self, api, *args, **kwargs):
+        super(AccountFlagCheckboxList, self).__init__(*args, **kwargs)
+        self.api = api
+        self.choices = api.account_flags().items()
     
 class AccountForm(forms.Form):
     name = forms.CharField(label="Account name", max_length=50)
@@ -116,9 +165,9 @@ class AccountChangeForm(AccountForm):
         del self.fields["origin"]
         self.fields["flags"].choices = flags
         if api.user.isAdmin(data["organization"]):
-            self.fields["flags"].widget = forms.widgets.CheckboxSelectMultiple(choices=flags)
+            self.fields["flags"].widget = AccountFlagCheckboxList(api)
         else:
-            self.fields["flags"].widget = AccountFlagList(api)
+            self.fields["flags"].widget = AccountFlagFixedList(api)
             
 
 class AccountRegisterForm(AccountForm):
