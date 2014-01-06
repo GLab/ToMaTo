@@ -23,14 +23,14 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialExplanation">\
 						Currently, your topology does only exist as a "plan". This means, that devices do not have any hard drive images or similar.</p>\
-					<p> class ="tutorialExplanation">\
+					<p class ="tutorialExplanation">\
 						When you prepare the devices, those images will be created from the templates.</p>\
 					<p class="tutorialCommand">\
 						Prepare your topology\'s devices.</p>'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						Wait for both devices to be prepared. Then press "Continue" button.</p>',
+						Wait for both devices to be prepared. Then press the "Continue" button.</p>',
 			skip_button: "Continue"
 			},
 			{
@@ -104,7 +104,7 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialExplanation">\
 						The easiest way to transmit files to or from your devices is the internet.</p>\
-					<p> class ="tutorialExplanation">\
+					<p class ="tutorialExplanation">\
 						Devices don\'t have an internet connection by default. To connect them, the first thing you need to do is to create an internet interface</p>\
 					<p class="tutorialCommand">\
 						Add an "Internet" to your topology. You can find it in the "Home" tab.</p>',

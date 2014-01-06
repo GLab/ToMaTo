@@ -37,7 +37,7 @@ var editor_tutorial = [
 						If you want to connect multiple devices to the same network, you need a switch.</p>\
 					<p class="tutorialExplanation">\
 						It is not possible to turn on link emulation on a connection which connects anything with the Internet.\
-						To be able to do this, we can use a switch</p>\
+						To be able to do this, we can use a switch.</p>\
 					<p class="tutorialCommand">\
 						Add a switch to your topology, and connect it to both the Internet and your device.</p>'
 			},
@@ -115,7 +115,6 @@ var editor_tutorial = [
 						The best way to determine the direction of the column is to look at the small graphic. It has the same orientation as the link in the editor, and the red arrow is the direction.</p>\
 					<p class="tutorialExplanation">\
 						Bandwidth and delay should be self-explaining. By setting a jitter, you can simulate a jitter in the delay (it will be normally distributed by a standard deviation of the set jitter).<br />\
-						TODO: explain distribution\
 						Loss ratio, duplication ratio and corruption ratio should also be self-explaining.</p>',
 			skip_button: "Continue"
 			},
@@ -150,7 +149,7 @@ var editor_tutorial = [
 				
 			  },
 			text:	'<p class="tutorialCommand">\
-						Make sure DHCP is enabled. The close this dialog and start your topology.'
+						Make sure DHCP is enabled. Then close this dialog and start your topology.'
 			},
 			{
 			trigger:function(obj) {
@@ -164,7 +163,7 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialExplanation">\
 						While your topology is being started, let me explain what happens:<br />\
-						All devices connected to a switch connected to to the internet will have a direct connection to the internet (no NAT router or similar). TODO: Is this correct?<br />\
+						All devices connected to a switch connected to to the internet will have a direct connection to the internet (no NAT router or similar).<br />\
 						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
 					<p class="tutorialCommand>\
 						When the topology is running, open a console connection to the device.</p>'
@@ -206,14 +205,14 @@ var editor_tutorial = [
 			{
 			text:	'<p class="tutorialExplanation">\
 						Now, let\'s take a look at packet capturing.<br />\
-						Enable packet capturing (mode: "for download", filter expressionÖ "") in the connection\'s settings, and then let the device load a webpage.</p>\
+						Enable packet capturing (mode: "for download", filter expression "") in the connection\'s settings, and then let the device load a webpage.</p>\
 					<p class="tutorialExplanation">\
 						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
 						The downloaded file can be viewed by any application which supports pcap viewing.</p>\
 					<p class="tutorialExplanation">\
 						If you instead prefer life-viewing using wireshark, set the capture mode to "via network". Then, a different item will appear in the right-click menu ("live capture info"), providing all info you need.</p>\
 					<p class="tutorialExplanation">\
-						The filter expression is the same you would use with tcpdump. (See the tdpdump manpage for more information)</p>',
+						The filter expression is the same you would use with tcpdump. (See the tcpdump manpage for more information)</p>',
 			skip_button:	"Continue"
 			},
 			{
