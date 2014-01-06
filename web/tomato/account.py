@@ -68,6 +68,7 @@ class AccountForm(forms.Form):
     realname = forms.CharField(label="Full name")
     email = forms.EmailField()
     flags = forms.MultipleChoiceField(required=False)
+    _reason = forms.CharField(widget = forms.Textarea, required=False, label="Reason for Registering")
     def __init__(self, api, *args, **kwargs):
         super(AccountForm, self).__init__(*args, **kwargs)
         self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
