@@ -23,7 +23,7 @@ var editor_tutorial = [
 			  },
 			text:	'<p class="tutorialExplanation">\
 						Currently, your topology does only exist as a "plan". This means, that devices do not have any hard drive images or similar.</p>\
-					<p> class ="tutorialExplanation">\
+					<p class ="tutorialExplanation">\
 						When you prepare the devices, those images will be created from the templates.</p>\
 					<p class="tutorialCommand">\
 						Prepare your topology\'s devices.</p>'
