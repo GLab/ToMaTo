@@ -691,6 +691,7 @@ class HostElement(attributes.Mixin, models.Model):
 			
 	def after_upload_use(self):
 		self.custom_template = True
+		self.save()
 		
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")

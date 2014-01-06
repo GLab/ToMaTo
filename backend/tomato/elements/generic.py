@@ -208,6 +208,10 @@ class VMElement(elements.Element):
 		for ch in self.getChildren():
 			ch.triggerConnectionStart()
 
+	def after_upload_use(self):
+		if self.element:
+			self.element.after_upload_use()
+
 	def upcast(self):
 		return self
 
