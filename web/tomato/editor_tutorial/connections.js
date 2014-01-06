@@ -115,7 +115,6 @@ var editor_tutorial = [
 						The best way to determine the direction of the column is to look at the small graphic. It has the same orientation as the link in the editor, and the red arrow is the direction.</p>\
 					<p class="tutorialExplanation">\
 						Bandwidth and delay should be self-explaining. By setting a jitter, you can simulate a jitter in the delay (it will be normally distributed by a standard deviation of the set jitter).<br />\
-						TODO: explain distribution\
 						Loss ratio, duplication ratio and corruption ratio should also be self-explaining.</p>',
 			skip_button: "Continue"
 			},
