@@ -168,7 +168,13 @@ def account_flags():
 	  A list of all available account flags.
 	"""
 	return flags
+
+def account_flag_categories():
+	"""
+	Returns a dict which puts flags into different categories
+	"""
+	return categories
 		
 from .. import fault, currentUser
-from ..auth import getUser, getAllUsers, flags, register, remove, Flags
+from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
 from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
