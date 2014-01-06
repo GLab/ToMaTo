@@ -49,12 +49,39 @@ class AccountFlagList(FixedList):
     api = None
     def render(self, name, value, attrs=None):
         
-        translationDict = self.api.account_flags()
-        value_show = []
-        for v in value:
-            value_show.append(translationDict.get(v,v))
+        print value
+        
+        FlagTranslationDict = self.api.account_flags()
+        CategoryTranslationDict = {
+                                   'manager_user_global':'Global User Management',
+                                   'manager_user_orga':'Organization-Internal User Management',
+                                   'manager_host_global':'Global Host Management',
+                                   'manager_host_orga':'Organization-Internal Host Management',
+                                   'user':'User',
+                                   'other':'Other'
+        }
+        categories = self.api.account_flag_categories()
+        
+        final_string = ""
+        isFirst = True
+        for cat in categories.keys():
+            foundOne = False
+            for v in categories[cat]:
+                if v in value:
+                    if not foundOne:
+                        if not isFirst:
+                            final_string = final_string + '</ul>'
+                        else:
+                            isFirst = False
+                        final_string = final_string + '<ul><b>' + CategoryTranslationDict.get(cat,cat) + '</b>'
+                        foundOne = True
+                    final_string = final_string + '<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>'
+        if final_string == "":
+            final_string = "None"
             
-        return forms.MultipleHiddenInput.render(self, name, value) + "<br />".join(value_show)
+            
+        return forms.MultipleHiddenInput.render(self, name, value) + final_string
+    
     def __init__(self, api, *args, **kwargs):
         super(AccountFlagList, self).__init__(*args, **kwargs)
         self.api = api
