@@ -2913,13 +2913,22 @@ var VMElement = IconElement.extend({
 		}
 		
 		
+		var templateChoices = {};
+		if (this.data.attrs.custom_template) {
+			templateChoices[this.data.attrs.template] = "Custom Image";
+			templateInfo = {}
+			templateInfo[this.data.attrs.template] = '<div class="hoverdescription" style="display:inline;"> &nbsp; <img src="/img/info.png" /><div class="hiddenbox"><p>You have uploaded a custom image.</p></div></div>';
+		} else {
+			templateChoices = createMap(this.editor.templates.getAll(this.data.type), "name", "label");
+		}
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
-			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
+			choices: templateChoices,
 			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
-			disabled: !this.attrEnabled("template")
+			disabled: !(this.attrEnabled("template") && this.data.state == "created")
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
