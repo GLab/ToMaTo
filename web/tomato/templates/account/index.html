@@ -13,10 +13,19 @@
     <th>Organization</th>
     <th>Full name</th>
     <th>Affiliation</th>
-    <th>Flags</th>
-{% if "global_admin" in user.flags or "orga_admin" in user.flags %}
-    <th></th>
-{% endif %}
+    
+    {% if show_flags %}
+    	<th>Flags</th>
+    {% endif %}
+    
+    {% if show_reason %}
+    	<th>Reason for Registering</th>
+    {% endif %}
+    
+    
+	{% if "global_admin" in user.flags or "orga_admin" in user.flags %}
+	    <th></th>
+	{% endif %}
   </tr>
 {% for account in accounts %}
   <tr>
@@ -25,23 +34,40 @@
     <td>{{account.organization}}</td>
     <td>{{account.realname}}</td>
     <td>{{account.affiliation}}</td>    
-    <td>
-    	<div class="hoverdescription">
-    		{{account.flags|join:", "}}
-    		<div class="hiddenbox">
-    			{% for f in account.flags_name %}
-    				<p>
-    					{{f}}
-    				</p>
-    			{% endfor %}
-    		</div>
-    	</div>
-    </td>
-{% if user|args:account.organization|call:"isAdmin" %}
-    <td>
-      <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
-    </td>
-{% endif %}
+    
+    {% if show_flags %}
+	    <td>
+	    	<div class="hoverdescription">
+	    		{{account.flags|join:", "}}
+	    		<div class="hiddenbox">
+	    			{% for f in account.flags_name %}
+	    				<p>
+	    					{{f}}
+	    				</p>
+	    			{% endfor %}
+	    		</div>
+	    	</div>
+	    </td>
+	{% endif %}
+	    
+	{% if show_reason %}
+	    <td>
+	    	{% if account.reason %}
+		    	<div class="hoverdescription">
+		    		<img src="/img/info.png" />
+		    		<div class="hiddenbox">
+		    			{{ account.reason|linebreaks|escape|simpletags:"b i em strong"|safe }}
+		    		</div>
+		    	</div>
+		    {% endif %}
+	    </td>
+	{% endif %}
+	    
+	{% if user|args:account.organization|call:"isAdmin" %}
+	    <td>
+	      <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
+	    </td>
+	{% endif %}
   </tr>
 {% endfor %}
 </table>

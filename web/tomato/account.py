@@ -108,16 +108,37 @@ class AccountRegisterForm(AccountForm):
 
 class AccountRemoveForm(forms.Form):
     username = forms.CharField(max_length=250, widget=forms.HiddenInput)
+    
+def index_newaccounts(request):
+    return index(request, filter_flags=['new_account'])
 
 @wrap_rpc
-def index(api, request):
+def index(api, request, filter_flags=None):
     accs = api.account_list()
     account_flags = api.account_flags()
+    show_reason = False
+    show_flags = True
+    
+    if filter_flags:
+        acclist_new = []
+        for acc in accs:
+            flag_matches = False
+            for flag in filter_flags:
+                if flag in acc['flags']:
+                    flag_matches = True
+            if flag_matches:
+                if '_reason' in acc.keys():
+                    acc['reason'] = acc['_reason']
+                acclist_new.append(acc)
+        accs = acclist_new
+        show_reason = True
+        show_flags = False
+    
     for acc in accs:
         acc['flags_name'] = []
         for flag in acc['flags']:
             acc['flags_name'].append(account_flags[flag])
-    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs})
+    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs, 'show_flags':show_flags, 'show_reason':show_reason})
 
 @wrap_rpc
 def info(api, request, id=None):
