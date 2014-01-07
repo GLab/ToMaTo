@@ -24,6 +24,9 @@ from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 
+DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
+			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
+
 DOC="""
 Element type: ``openvz``
 
@@ -699,9 +702,9 @@ class OpenVZ_Interface(elements.Element):
 		assert self.state == ST_STARTED
 		if not self.use_dhcp:
 			return
-		for cmd_ in ["/sbin/dhclient -nw", "/sbin/dhcpcd"]:
+		for cmd_ in DHCP_CMDS:
 			try:
-				return self._execute("[ -e %s ] && %s %s" % (cmd_, cmd_, self.name))
+				return self._execute(cmd_ % self.name)
 			except cmd.CommandError, err:
 				if err.errorCode != 8:
 					return
