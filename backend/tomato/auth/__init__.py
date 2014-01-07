@@ -65,6 +65,41 @@ flags = {
 	Flags.OrgaAdminContact: "OrgaAdminContact: User receives mails to a specific organization"
 }
 
+categories = {
+	'manager_user_global': [
+						Flags.GlobalAdmin,
+						Flags.GlobalToplOwner,
+						Flags.GlobalToplManager,
+						Flags.GlobalToplUser,
+						Flags.GlobalAdminContact
+						],
+	'manager_user_orga': [
+						Flags.OrgaAdmin,
+						Flags.OrgaToplOwner,
+						Flags.OrgaToplManager,
+						Flags.OrgaToplUser,
+						Flags.OrgaAdminContact
+						],
+	'manager_host_global': [
+						Flags.GlobalHostManager,
+						Flags.GlobalHostContact
+						],
+	'manager_host_orga': [
+						Flags.OrgaHostManager,
+						Flags.OrgaHostContact
+						],
+	'user': [
+						Flags.NoTopologyCreate,
+						Flags.OverQuota,
+						Flags.RestrictedProfiles,
+						Flags.NewAccount
+						],
+	'other': [
+						Flags.Debug,
+						Flags.Mails
+						]
+	}
+
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
 						Flags.RestrictedProfiles, Flags.Mails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
