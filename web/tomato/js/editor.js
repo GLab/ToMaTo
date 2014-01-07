@@ -2294,6 +2294,10 @@ var Element = Component.extend({
 		}})
 	},
 	uploadImage: function() {
+		if (window.location.protocol == 'https:') { //TODO: fix this.
+			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			return;
+		}
 		this.action("upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
@@ -2315,6 +2319,10 @@ var Element = Component.extend({
 		}});
 	},
 	uploadRexTFV: function() {
+		if (window.location.protocol == 'https:') { //TODO: fix this.
+			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			return;
+		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
