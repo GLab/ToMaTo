@@ -16,24 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.http import HttpResponse, Http404, HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
 from django.template import TemplateDoesNotExist
 from django.template.response import TemplateResponse
+from django import forms
 
-from lib import *
-import xmlrpclib, settings
+from lib import getapi
+import settings
 
 def index(request):
-	return render_to_response("main/start.html")
+	return render(request, "main/start.html")
 
 def help(request, page=""):
 	try:
 		if page=="":
-			return render_to_response("help/index.html")
+			return render(request, "help/index.html")
 		else:
-			return render_to_response("help/pages/"+page+".html")
+			return render(request, "help/pages/"+page+".html")
 	except TemplateDoesNotExist:
 		return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
@@ -43,8 +44,34 @@ def ticket(request, page=""):
 def project(request, page=""):
 	return HttpResponseRedirect(settings.project_url % page)
 
+class LoginForm(forms.Form):
+	username = forms.CharField(max_length=255)
+	password = forms.CharField(max_length=255, widget=forms.PasswordInput)
+
+def login(request):
+	if request.method == 'POST':
+		form = LoginForm(request.POST)
+		if not form.is_valid():
+			return render(request, "main/login.html", {'form': form})
+		formData = form.cleaned_data
+		request.session["auth"] = formData["username"] + ":" + formData["password"]
+		api = getapi(request)
+		if not api.user: #login failed
+			del request.session["auth"]
+			return render(request, "main/login.html", {'form': form, 'message': 'login failed'})
+		request.session["user"] = api.user
+		forward = reverse("tomato.main.index")
+		if "forward_url" in request.session:
+			forward = request.session["forward_url"]
+			del request.session["forward_url"]
+		return HttpResponseRedirect(forward)
+	else:
+		form = LoginForm()
+		return render(request, "main/login.html", {'form': form})
+
 def logout(request):
 	if "auth" in request.session:
 		del request.session["auth"]
-	return HttpResponseNotAuthorized(code=401, text="You have been logged out.")
-
+	if "user" in request.session:
+		del request.session["user"]
+	return redirect("tomato.main.index")

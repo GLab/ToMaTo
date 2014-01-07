@@ -18,8 +18,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from django.shortcuts import render
 from django import forms
-from lib import *
+
+from lib import wrap_rpc
 from admin_common import organization_name_list
 
 class SiteForm(forms.Form):
@@ -47,7 +49,7 @@ class RemoveSiteForm(forms.Form):
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("admin/site/index.html", {'user': api.user, 'site_list': api.site_list()})
+    return render(request, "admin/site/index.html", {'site_list': api.site_list()})
 
 @wrap_rpc
 def add(api, request):
@@ -61,12 +63,12 @@ def add(api, request):
                                                              'latitude':formData['geolocation_latitude']},
                                               'organization':formData['organization'],
                                               'description_text':formData['description_text']})
-            return render_to_response("admin/site/add_success.html", {'user': api.user, 'name': formData["name"]})
+            return render(request, "admin/site/add_success.html", {'name': formData["name"]})
         else:
-            return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
+            return render(request, "admin/site/form.html", {'form': form, "edit":False})
     else:
         form = SiteForm(api)
-        return render_to_response("admin/site/form.html", {'user': api.user, 'form': form, "edit":False})
+        return render(request, "admin/site/form.html", {'form': form, "edit":False})
     
 @wrap_rpc
 def remove(api, request, name=None):
@@ -75,24 +77,24 @@ def remove(api, request, name=None):
         if form.is_valid():
             name = form.cleaned_data["name"]
             api.site_remove(name)
-            return render_to_response("admin/site/remove_success.html", {'user': api.user, 'name': name})
+            return render(request, "admin/site/remove_success.html", {'name': name})
         else:
             if not name:
                 name = request.POST['name']
             if name:
                 form = RemoveSiteForm()
                 form.fields["name"].initial = name
-                return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
+                return render(request, "admin/site/remove_confirm.html", {'name': name, 'form': form})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if name:
             form = RemoveSiteForm()
             form.fields["name"].initial = name
-            return render_to_response("admin/site/remove_confirm.html", {'user': api.user, 'name': name, 'form': form})
+            return render(request, "admin/site/remove_confirm.html", {'name': name, 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request, name=None):
@@ -106,16 +108,16 @@ def edit(api, request, name=None):
                                                              'latitude':formData['geolocation_latitude']},
                                               'organization':formData['organization'],
                                               'description_text':formData['description_text']})
-            return render_to_response("admin/site/edit_success.html", {'user': api.user, 'name': formData["name"]})
+            return render(request, "admin/site/edit_success.html", {'name': formData["name"]})
         else:
             if not name:
                 name=request.POST["name"]
             if name:
                 form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
                 form.fields["name"].help_text=None
-                return render_to_response("admin/site/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
+                return render(request, "admin/site/form.html", {'name': name, 'form': form, "edit":True})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
     else:
         if name:
@@ -124,6 +126,6 @@ def edit(api, request, name=None):
             siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
             del siteInfo['geolocation']
             form = EditSiteForm(api, siteInfo)
-            return render_to_response("admin/site/form.html", {'user': api.user, 'name': name, 'form': form, "edit":True})
+            return render(request, "admin/site/form.html", {'name': name, 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})

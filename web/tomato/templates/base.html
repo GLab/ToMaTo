@@ -50,22 +50,23 @@ head.appendChild(style);
 		
 			
 			<div id="menu_userinfo">
-			{% if user %}
-			Logged in as {{user.realname}}.
+			{% if request.session.user %}
+			Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
+			
 			{% else %}
 			&nbsp;
 			{% endif %}
 			</div>
 		<div id="menu_top">	
 			<ul>
-				{% if user %}
+				{% if request.session.user %}
 					<li id="menu_item_account"><a href="{%url account.info%}">My Account</a></li>
 					<li id="menu_item_topologies"><a href="{%url topology.index%}">Topologies</a></li>
 					<li id="menu_item_admin"><a href="{%url host.index%}">Admin</a></li>
 				{% else %}
 					<li id="menu_item_register"><a href="{%url account.register%}">Register</a></li>
-					<li id="menu_item_login"><a href="{%url topology.index%}">Login</a></li>
-				{% endif %}	
+					<li id="menu_item_login"><a href="{%url main.login%}">Login</a></li>
+				{% endif %}
 				<li id="menu_item_help"><a href="{%url main.help%}" target="_help">Help</a></li>
 			</ul>
 		

@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from django.shortcuts import render
 
-from lib import *
-import math
+from lib import wrap_rpc
+import math, socket
 	
 
 def get_site_location(site_name,api):
@@ -174,7 +175,7 @@ def index(api, request):
 	_socket.connect(("8.8.8.8",80))
 	PUBLIC_ADDRESS = _socket.getsockname()[0]
 	_socket.close()
-	return render_to_response("admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
+	return render(request, "admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
 
 @wrap_rpc
 def kml(api, request):
@@ -187,12 +188,12 @@ def kml(api, request):
 		link["src_data"] = sitemap[link["src"]]
 		link["dst_data"] = sitemap[link["dst"]]
 		link["color"] = "ff%02x%02x%02x" % tuple(reversed([r * 256 for r in link["color"]]))
-	return render_to_response("admin/physical_link_stats/kml.html",{'sites': sites,'links': links,'user':api.user})
+	return render(request, "admin/physical_link_stats/kml.html",{'sites': sites,'links': links,'user':api.user})
 
 @wrap_rpc
 def details_link(api, request, src, dst):
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
+	return render(request, "admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
 
 @wrap_rpc
 def details_site(api, request, site):
-	return render_to_response("admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});
+	return render(request, "admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});

@@ -5,7 +5,7 @@
 {% block content %}
 <h1>List of External Network Instances</h1>
 
-{% if netwI_list|length > 10 and user.isHostManager %}
+{% if netwI_list|length > 10 and request.session.user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external network" /></p>
 {% endif %}
 
@@ -19,7 +19,7 @@
 	  	<th>Bridge</th>
 	    <th>Network</th>
 	    
-	    {% if user.isHostManager %}
+	    {% if request.session.user.isHostManager %}
 	    	<th />
 	    {% endif %}
 	    
@@ -30,7 +30,7 @@
 	  	<td>{{netwI.attrs.bridge}}</td>
 	  	<td>{{netwI.attrs.network}}</td>
 	    
-	    {% if user.isHostManager %}
+	    {% if request.session.user.isHostManager %}
 	    	<td>
 	    		<a href="{%url external_network_instances.edit netwI.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -45,7 +45,7 @@
 	No external network instances
 {% endif %}
 
-{% if user.isHostManager %}
+{% if request.session.user.isHostManager %}
 	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external networks" /></p>
 {% endif %}
 

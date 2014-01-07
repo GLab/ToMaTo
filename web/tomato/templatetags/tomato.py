@@ -2,13 +2,13 @@ import datetime, time
 
 from django.template.defaultfilters import timesince
 from django import template
-from ..lib import getGuestApi
+from ..lib import getapi
 
 register = template.Library()
 
 @register.simple_tag
 def aupurl():
-	api = getGuestApi()
+	api = getapi()
 	return api.aup_url()
 
 @register.filter

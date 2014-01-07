@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-
+from django.shortcuts import render
 from django import forms
-from lib import *
+from lib import wrap_rpc
 from admin_common import RemoveResourceForm
 
 class NetworkInstanceForm(forms.Form):
@@ -56,7 +56,7 @@ def host_list(api):
 @wrap_rpc
 def index(api, request):
     netwI_list = api.resource_list('network_instance')
-    return render_to_response("admin/external_network_instances/index.html", {'user': api.user, 'netwI_list': netwI_list})
+    return render(request, "admin/external_network_instances/index.html", {'netwI_list': netwI_list})
 
 @wrap_rpc
 def add(api, request):
@@ -69,12 +69,12 @@ def add(api, request):
                                            'network':formData['network'],
                                            'kind':formData['network']})
            
-            return render_to_response("admin/external_network_instances/add_success.html", {'user': api.user, 'label': formData["host"]})
+            return render(request, "admin/external_network_instances/add_success.html", {'label': formData["host"]})
         else:
-            return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False})
+            return render(request, "admin/external_network_instances/form.html", {'form': form, "edit":False})
     else:
         form = NetworkInstanceForm(api)
-        return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'form': form, "edit":False,})
+        return render(request, "admin/external_network_instances/form.html", {'form': form, "edit":False,})
     
    
 @wrap_rpc
@@ -86,26 +86,26 @@ def remove(api, request, res_id = None):
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'network_instance':
                 label = api.resource_info(res_id)['attrs']['host']
                 api.resource_remove(res_id)
-                return render_to_response("admin/external_network_instances/remove_success.html", {'user': api.user, 'label': label})
+                return render(request, "admin/external_network_instances/remove_success.html", {'label': label})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no external network instance with id '+res_id})
+                return render(request, "main/error.html",{'type':'invalid id','text':'There is no external network instance with id '+res_id})
         else:
             if not res_id:
                 res_id = request.POST['res_id']
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/external_network_instances/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+                return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/external_network_instances/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+            return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 
 @wrap_rpc
@@ -119,21 +119,21 @@ def edit(api, request, res_id = None):
                                                         'bridge':formData['bridge'],
                                                         'network':formData['network'],
                                                         'kind':formData['network']}) 
-                return render_to_response("admin/external_network_instances/edit_success.html", {'user': api.user, 'label': formData["host"], 'res_id': formData['res_id']})
+                return render(request, "admin/external_network_instances/edit_success.html", {'label': formData["host"], 'res_id': formData['res_id']})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network instance.'})
+                return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network instance.'})
         else:
             host = request.POST["host"]
             if host:
-                return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'label': host, 'form': form, "edit":True})
+                return render(request, "admin/external_network_instances/form.html", {'label': host, 'form': form, "edit":True})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if res_id:
             res_info = api.resource_info(res_id)
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditNetworkInstanceForm(api, origData)
-            return render_to_response("admin/external_network_instances/form.html", {'user': api.user, 'label': res_info['attrs']['host'], 'form': form, "edit":True})
+            return render(request, "admin/external_network_instances/form.html", {'label': res_info['attrs']['host'], 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

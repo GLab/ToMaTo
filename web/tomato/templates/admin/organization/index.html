@@ -7,7 +7,7 @@
 
 {% if organization_list %}
 
-	{% if organization_list|length > 10 and user and user.isAdmin %}
+	{% if organization_list|length > 10 and request.session.user and request.session.user.isAdmin %}
 		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 	{% endif %}
 
@@ -20,7 +20,7 @@
 	    <th>Label</th>
 	    <th>Description</th>
 	    
-	    {% if user.isAdmin or "orga_admin" in user.flags %}
+	    {% if request.session.user.isAdmin or "orga_admin" in request.session.user.flags %}
 	    	<th />
 	    {% endif %}
 	    
@@ -40,7 +40,7 @@
 		</div>
 		{%endif%}</td>
 	    
-	    {% if user and user|args:organization.name|call:"isAdmin" %}
+	    {% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
 	    	<td>
 	    		<a href="{%url organization.edit organization.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
@@ -56,7 +56,7 @@
 	No organization
 {% endif %}
 
-{% if user and user.isAdmin %}
+{% if request.session.user and request.session.user.isAdmin %}
 	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
 {% endif %}
 

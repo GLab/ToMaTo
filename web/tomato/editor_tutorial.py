@@ -18,7 +18,7 @@
 
 
 from lib import wrap_rpc
-from django.shortcuts import render_to_response, redirect
+from django.shortcuts import render, redirect
 import os, json
 
 
@@ -65,7 +65,7 @@ tutorials = [
 
 @wrap_rpc
 def index(api, request):
-    return render_to_response("topology/editor_tutorials_list.html",{'tutorials':tutorials, 'user':api.user})
+    return render(request, "topology/editor_tutorials_list.html",{'tutorials':tutorials})
 
 
 @wrap_rpc

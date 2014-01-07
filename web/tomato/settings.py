@@ -30,8 +30,6 @@ TIME_ZONE = 'Europe/Berlin'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-US'
 
-SITE_ID = 1
-
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
@@ -46,7 +44,8 @@ MEDIA_ROOT = ''
 MEDIA_URL = ''
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'not needed'
+import random
+SECRET_KEY = str(random.random())
 
 # List of callables that know how to import templates from various sources.
 if DJANGO_VERSION < (1,4):
