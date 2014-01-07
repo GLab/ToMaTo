@@ -1,3 +1,12 @@
+tomato-backend (3.1) stable; urgency=low
+
+  * Organizations         
+  * Better support for executable archives
+  * Hostmanagers can be fully shared between backends
+  * New sites map based on google maps
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 07 Jan 2014 14:01:53 +0100
+
 tomato-backend (3.0.9) stable; urgency=low
 
   * Same fixes
