@@ -2,7 +2,7 @@
 import sys, os, tarfile, random, shutil, glob
 
 
-autoexecfilename='auto_exec.*'
+autoexecfilename='auto_exec.sh'
 statusdirname='exec_status'
 tmpdir = '/tmp'
 
@@ -59,7 +59,7 @@ for i in range(0,len(infiles)):
 			f.write('ln -s $nlxtp_dir/'+statusdirname+' $nlxtp_dir/'+str(i)+'/'+statusdirname+'\n')
 			f.write('cd $nlxtp_dir/'+str(i)+'\n')
 			f.write('chmod +x $nlxtp_dir/'+str(i)+'/'+autoexecfilename+'\n')
-			f.write('nlxtp_dir=$nlxtp_dir/'+str(i)+' $(find $nlxtp_dir/'+str(i)+'/'+autoexecfilename+' -type f)\n')
+			f.write('nlxtp_dir=$nlxtp_dir/'+str(i)+' archive_dir=$archive_dir/'+str(i)+' archive_version=$archive_version archive_setstatus="() { echo -n \"\$@\" > $nlxtp_dir/exec_status/custom; }" $archive_dir/'+str(i)+'/'+autoexecfilename+'\n')
 		else:
 			print '                 will not be auto-executed (status path exists).'
 			f.write('echo found status path. aborting...\n')
