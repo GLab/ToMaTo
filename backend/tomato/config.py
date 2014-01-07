@@ -78,7 +78,7 @@ EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  y
 #EMAIL_USE_TLS
 
 TIME_ZONE = 'Europe/Berlin'
-LANGUAGE_CODE = 'de-de'
+LANGUAGE_CODE = 'en-us'
 
 INSTALLED_APPS = ('tomato', 'south')
 SECRET_KEY = 'not needed'
