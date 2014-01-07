@@ -571,7 +571,7 @@ class HostElement(attributes.Mixin, models.Model):
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
 	type = attributes.attribute("type", str) #@ReservedAssignment
-	custom_template = models.BooleanField(default=False) #is set to true after an image has been uploaded
+	custom_template = attributes.attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 		
 	class Meta:
 		unique_together = (("host", "num"),)
