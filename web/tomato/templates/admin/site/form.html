@@ -24,7 +24,7 @@
 			$.ajax({
 				type: "GET",
 				async: true,
-				url: "http://maps.googleapis.com/maps/api/geocode/json?sensor=false&address="+addr,
+				url: "//maps.googleapis.com/maps/api/geocode/json?sensor=false&address="+addr,
 				success: function(res) {
 					var ret = res.results[0];
 					if(ret) {

@@ -2890,6 +2890,11 @@ var VMElement = IconElement.extend({
 			site = sites[i];
 			
 			info.append(' &nbsp; <img src="/img/info.png" />');
+			
+			if (this.data.attrs.host_site && (this.data.attrs.site == null)) {
+				info.append(' &nbsp; <img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
+				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
+			}
 
 			if (site.description_text) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
@@ -2937,7 +2942,7 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.site || this.caps.attrs.site["default"],
+			value: this.data.attrs.host_site || this.data.attrs.site || this.caps.attrs.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({

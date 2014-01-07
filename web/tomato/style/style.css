@@ -236,13 +236,18 @@ div.hoverdescription:hover div.hiddenbox {
 	display:inline;
 	position:absolute;
 	margin: 2px;
-	margin-left: 10px;
+	margin-left: 0px;
+	margin-top: 0px;
 	border: 1px solid black;
 	background-color: #ffffff;
 }
 div.hoverdescription:hover div.hiddenbox p {
 	padding-left:  15px;
 	padding-right: 15px;
+}
+div.hoverdescription:hover div.hiddenbox td p {
+	padding-left: 0px;
+	padding-right: 0px;
 }
 
 
