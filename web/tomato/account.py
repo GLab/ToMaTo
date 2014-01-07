@@ -18,9 +18,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.http import Http404
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from django import forms
 from django.core.urlresolvers import reverse
 from admin_common import organization_name_list
@@ -28,8 +27,7 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 
-from lib import wrap_rpc, getapi, getGuestApi
-import xmlrpclib
+from lib import wrap_rpc, getapi
 
 class FixedText(forms.HiddenInput):
     is_hidden = False
@@ -214,7 +212,7 @@ def index(api, request, filter_flags=None):
         acc['flags_name'] = []
         for flag in acc['flags']:
             acc['flags_name'].append(account_flags[flag])
-    return render_to_response("account/index.html", {'user': api.user, 'accounts': accs, 'show_flags':show_flags, 'show_reason':show_reason})
+    return render(request, "account/index.html", {'accounts': accs, 'show_flags':show_flags, 'show_reason':show_reason})
 
 @wrap_rpc
 def info(api, request, id=None):
@@ -238,7 +236,7 @@ def info(api, request, id=None):
             return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
     else:
         form = AccountChangeForm(api, user)
-    return render_to_response("account/info.html", {'user': api.user, "account": user, "form": form})
+    return render(request, "account/info.html", {"account": user, "form": form})
     
 @wrap_rpc
 def register(api, request):
@@ -254,16 +252,18 @@ def register(api, request):
             del data["name"]
             del data["aup"]
             del data["organization"]
-            api = getGuestApi()
+            api = getapi()
             try:
                 api.account_create(username, password=password, organization=organization, attrs=data)
                 request.session["auth"] = "%s:%s" % (username, password)
+                api = getapi(request)
+                request.session["user"] = api.user  
                 return HttpResponseRedirect(reverse("tomato.account.info"))
             except:
                 form._errors["name"] = form.error_class(["This name is already taken"])
     else:
         form = AccountRegisterForm(api) 
-    return render_to_response("account/register.html", {"form": form})
+    return render(request, "account/register.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, username=None):
@@ -278,13 +278,13 @@ def remove(api, request, username=None):
                 username=request.POST['username']
             if username:
                 form.fields["username"].initial = username
-                return render_to_response("account/remove_confirm.html", {'user': api.user, 'username': username, 'form': form})
+                return render(request, "account/remove_confirm.html", {'username': username, 'form': form})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if username:
             form = AccountRemoveForm()
             form.fields["username"].initial = username
-            return render_to_response("account/remove_confirm.html", {'user': api.user, 'username': username, 'form': form})
+            return render(request, "account/remove_confirm.html", {'username': username, 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No username specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No username specified. Have you followed a valid link?'})

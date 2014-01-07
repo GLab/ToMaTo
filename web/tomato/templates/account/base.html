@@ -2,7 +2,7 @@
 
 {% block menu_select %}
 <script language="JavaScript" type="text/javascript">
-{% if user %}
+{% if request.session.user %}
 document.getElementById("menu_item_account").className="active";
 {% else %}
 document.getElementById("menu_item_register").className="active";
@@ -14,12 +14,11 @@ document.getElementById("menu_item_register").className="active";
 <div id="sidemenu">
 	<h2>Account</h2>
 	<ul>
-		{% if user %}
+		{% if request.session.user %}
 			<li><a href="{%url account.info%}">My Account</a></li>
 		{% else %}
 			<li><a href="{%url account.register%}">Register</a></li>
 		{% endif %}	
-		<li><a href="{%url main.logout%}" target="_logout" onclick="alert('Please cancel the following dialog and close the new page.'); return true">Force logout</a></li>
 	</ul>
 </div>
 {% endblock %}

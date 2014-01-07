@@ -1,0 +1,13 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h1>Login to ToMaTo</h1>
+
+{{message}}
+
+<form method="POST" action="{% url main.login %}">
+{{form.as_p}}
+<input type="submit" value="Login"/>
+</form>
+
+{% endblock %}

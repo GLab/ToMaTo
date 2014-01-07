@@ -17,20 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.http import HttpResponse
-from django.shortcuts import render_to_response
+from django.shortcuts import render, redirect
 import xmlrpclib, json, urllib, socket
-from settings import *
-import tags
+import settings 
 
 def getauth(request):
 	auth = request.session.get("auth")
-	if request.META.has_key("HTTP_AUTHORIZATION"):
-		authstr=request.META["HTTP_AUTHORIZATION"]
-		(authmeth, auth) = authstr.split(' ',1)
-		if 'basic' != authmeth.lower():
-			return None
-		auth = auth.strip().decode('base64')
-		request.session["auth"] = auth
 	if not auth:
 		return None
 	username, password = auth.split(':',1)
@@ -45,29 +37,27 @@ class ServerProxy(object):
 			return call_proxy(args, kwargs)
 		return _call
 
-def getGuestApi():
-	api = ServerProxy('%s://%s:%s' % (server_protocol, server_host, server_port), allow_none=True )
-	api.user = None
+def getapi(request=None):
+	auth=None
+	if request:
+		auth=getauth(request)
+	if auth:
+		(username, password) = auth
+		username = urllib.quote_plus(username)
+		password = urllib.quote_plus(password)
+	try:
+		if auth:
+			api = ServerProxy('%s://%s:%s@%s:%s' % (settings.server_protocol, username, password, settings.server_host, settings.server_port), allow_none=True )
+			api.user = UserObj(api)
+		else:
+			api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port), allow_none=True )
+			api.user = None
+	except:
+		api = ServerProxy('%s://%s:%s' % (settings.server_protocol, settings.server_host, settings.server_port), allow_none=True )
+		api.user = None
+	if request:
+		request.session.user = api.user
 	return api
-
-def getapi(request):
-	auth=getauth(request)
-	if not auth:
-		return None
-	(username, password) = auth
-	username = urllib.quote_plus(username)
-	password = urllib.quote_plus(password)
-	api = ServerProxy('%s://%s:%s@%s:%s' % (server_protocol, username, password, server_host, server_port), allow_none=True )
-	api.user = UserObj(api)
-	return api
-
-class HttpResponseNotAuthorized(HttpResponse):
-	status_code = 401
-	def __init__(self, code=401, text=""):
-		HttpResponse.__init__(self)
-		self.status_code = code
-		self['WWW-Authenticate'] = 'Basic realm="%s"' % server_httprealm
-		self.write(text)
 
 class wrap_rpc:
 	def __init__(self, fun):
@@ -75,8 +65,6 @@ class wrap_rpc:
 	def __call__(self, request, *args, **kwargs):
 		try:
 			api = getapi(request)
-			if api is None:
-				api = getGuestApi()
 			return self.fun(api, request, *args, **kwargs)
 		except Exception, e:
 			import traceback
@@ -90,8 +78,9 @@ class wrap_rpc:
 				etype = "RPC protocol error"
 				ecode = e.errcode
 				etext = e.errmsg
-				if ecode == 401 or ecode == 403:
-					return HttpResponseNotAuthorized()
+				if ecode in [401, 403]:
+					request.session['forward_url'] = request.build_absolute_uri()
+					return redirect("tomato.main.login")
 			elif isinstance(e, xmlrpclib.Fault):
 				etype = "RPC call error"
 				ecode = e.faultCode
@@ -100,7 +89,7 @@ class wrap_rpc:
 				etype = e.__class__.__name__
 				ecode = ""
 				etext = e.message
-			return render_to_response("main/error.html", {'type': etype, 'code': ecode, 'text': etext})
+			return render(request, "main/error.html", {'type': etype, 'code': ecode, 'text': etext})
 		
 class wrap_json:
 	def __init__(self, fun):
@@ -108,8 +97,6 @@ class wrap_json:
 	def __call__(self, request, *args, **kwargs):
 		try:
 			api = getapi(request)
-			if api is None:
-				return HttpResponseNotAuthorized()
 			data = json.loads(request.REQUEST["data"]) if request.REQUEST.has_key("data") else {}
 			data.update(kwargs)
 			try:
@@ -126,7 +113,6 @@ class wrap_json:
 
 class UserObj:
 	def __init__(self, api):
-		self._api = api
 		self.data = api.account_info()
 		self.name = self.data["name"]
 		self.flags = self.data["flags"]

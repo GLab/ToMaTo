@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 import json
 
@@ -25,4 +25,4 @@ from lib import wrap_rpc
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
 	usage=api.connection_usage(id)
-	return render_to_response("main/usage.html", {'usage': json.dumps(usage), 'name': 'Connection #%d' % int(id)})
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Connection #%d' % int(id)})

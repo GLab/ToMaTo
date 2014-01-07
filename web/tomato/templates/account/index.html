@@ -23,7 +23,7 @@
     {% endif %}
     
     
-	{% if "global_admin" in user.flags or "orga_admin" in user.flags %}
+	{% if "global_admin" in request.session.user.flags or "orga_admin" in request.session.user.flags %}
 	    <th></th>
 	{% endif %}
   </tr>
@@ -63,7 +63,7 @@
 	    </td>
 	{% endif %}
 	    
-	{% if user|args:account.organization|call:"isAdmin" %}
+	{% if request.session.user|args:account.organization|call:"isAdmin" %}
 	    <td>
 	      <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
 	    </td>

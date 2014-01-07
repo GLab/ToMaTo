@@ -7,7 +7,7 @@
 
 {# only show 'add' button when user is authorized #}
 	{% if host_list|length > 10 %}
-	{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
+	{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
 		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
 	{% endif %}
 	{% endif %}
@@ -58,7 +58,7 @@
 	    <th stddev_column_class="good_high">Availability</th>
 	    <th />
 	    
-	    {% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
+	    {% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
         	<th />
         {% endif %}
 	  </tr>
@@ -130,7 +130,7 @@
 				{%endif%}
 			</td>
 			    
-		    {% if user|args:host.organization|call:"isHostManager" %}
+		    {% if request.session.user|args:host.organization|call:"isHostManager" %}
 		    	<td>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		&nbsp;
@@ -192,7 +192,7 @@
 	No hosts
 {% endif %}
 
-{% if "global_host_manager" in user.flags or "orga_host_manager" in user.flags %}
+{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
 	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
 {% endif %}
 

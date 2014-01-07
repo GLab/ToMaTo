@@ -20,7 +20,9 @@
 
 
 from django import forms
-from lib import *
+from django.shortcuts import render
+
+from lib import wrap_rpc
 from admin_common import RemoveResourceForm
 
 class ProfileForm(forms.Form):
@@ -64,7 +66,7 @@ class AddProfileForm(ProfileForm):
 @wrap_rpc
 def index(api, request):
     profile_list = api.resource_list('profile')
-    return render_to_response("admin/device_profile/index.html", {'user': api.user, 'profile_list': profile_list})
+    return render(request, "admin/device_profile/index.html", {'profile_list': profile_list})
 
 
 @wrap_rpc
@@ -91,12 +93,12 @@ def add(api, request):
             
             api.resource_create('profile',data)
            
-            return render_to_response("admin/device_profile/add_success.html", {'user': api.user, 'label': formData["label"],'tech':data['tech']})
+            return render(request, "admin/device_profile/add_success.html", {'label': formData["label"],'tech':data['tech']})
         else:
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False})
+            return render(request, "admin/device_profile/form.html", {'form': form, "edit":False})
     else:
         form = AddProfileForm
-        return render_to_response("admin/device_profile/form.html", {'user': api.user, 'form': form, "edit":False})
+        return render(request, "admin/device_profile/form.html", {'form': form, "edit":False})
 
     
 @wrap_rpc
@@ -109,26 +111,26 @@ def remove(api, request, res_id=None):
                 label = api.resource_info(res_id)['attrs']['label']
                 tech = api.resource_info(res_id)['attrs']['tech']
                 api.resource_remove(res_id)
-                return render_to_response("admin/device_profile/remove_success.html", {'user': api.user, 'label':label, 'tech':tech})
+                return render(request, "admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'There is no device profile with id '+res_id})
+                return render(request, "main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             if not res_id:
                 res_id = request.POST['res_id']
             if res_id:
                 form = RemoveResourceForm()
                 form.fields["res_id"].initial = res_id
-                return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
+                return render(request, "admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if res_id:
             form = RemoveResourceForm()
             form.fields["res_id"].initial = res_id
-            return render_to_response("admin/device_profile/remove_confirm.html", {'user': api.user, 'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
+            return render(request, "admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
 @wrap_rpc
 def edit(api, request, res_id=None):
@@ -158,15 +160,15 @@ def edit(api, request, res_id=None):
             
             if api.resource_info(formData['res_id'])['type'] == 'profile':
                 api.resource_modify(formData["res_id"],data)
-                return render_to_response("admin/device_profile/edit_success.html", {'user': api.user, 'label': formData["label"],'tech':'repy'})
+                return render(request, "admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
+                return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
         else:
             label = request.POST["label"]
             if label:
-                return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': label, 'tech':'repy', 'form': form, "edit":True})
+                return render(request, "admin/device_profile/form.html", {'label': label, 'tech':'repy', 'form': form, "edit":True})
             else:
-                return render_to_response("main/error.html",{'user': api.user, 'type':'Transmission Error','text':'There was a problem transmitting your data.'})
+                return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if res_id:
             res_info = api.resource_info(res_id)
@@ -179,6 +181,6 @@ def edit(api, request, res_id=None):
                     form = EditOpenVZForm(origData)
                 else:
                     form = EditKVMqmForm(origData)
-            return render_to_response("admin/device_profile/form.html", {'user': api.user, 'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
+            return render(request, "admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
         else:
-            return render_to_response("main/error.html",{'user': api.user, 'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+            return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})

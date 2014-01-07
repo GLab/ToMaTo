@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 import json
 
@@ -25,20 +25,20 @@ from lib import wrap_rpc
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
 	usage=api.element_usage(id)
-	return render_to_response("main/usage.html", {'usage': json.dumps(usage), 'name': 'Element #%d' % int(id)})
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Element #%d' % int(id)})
 
 @wrap_rpc
 def console(api, request, id): #@ReservedAssignment
 	info=api.element_info(id)
 	top=api.topology_info(info["topology"])
-	return render_to_response("element/console.html", {'info': info, 'top': top})
+	return render(request, "element/console.html", {'info': info, 'top': top})
 
 @wrap_rpc
 def console_novnc(api, request, id): #@ReservedAssignment
 	info=api.element_info(id)
 	top=api.topology_info(info["topology"])
-	return render_to_response("element/console_novnc.html", {'info': info, 'top': top})
+	return render(request, "element/console_novnc.html", {'info': info, 'top': top})
 		
 @wrap_rpc
 def rextfv_status(api, request, id): #@ReservedAssignment
-	return render_to_response("element/rextfv_status.html", {'id': id})
+	return render(request, "element/rextfv_status.html", {'id': id})
