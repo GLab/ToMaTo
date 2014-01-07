@@ -208,6 +208,10 @@ class VMElement(elements.Element):
 		for ch in self.getChildren():
 			ch.triggerConnectionStart()
 
+	def after_upload_use(self):
+		if self.element:
+			self.element.after_upload_use()
+
 	def upcast(self):
 		return self
 
@@ -218,6 +222,8 @@ class VMElement(elements.Element):
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
 		info["attrs"]["host_problems"] = self.element.host.problems() if self.element else None
+		info["attrs"]["custom_template"] = self.element.custom_template if self.element else False
+		info["attrs"]["host_site"] = self.element.host.site.name if self.element else None
 		info["attrs"]["host_fileserver_port"] = self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
 		return info
 

@@ -2294,6 +2294,10 @@ var Element = Component.extend({
 		}})
 	},
 	uploadImage: function() {
+		if (window.location.protocol == 'https:') { //TODO: fix this.
+			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			return;
+		}
 		this.action("upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
@@ -2315,6 +2319,10 @@ var Element = Component.extend({
 		}});
 	},
 	uploadRexTFV: function() {
+		if (window.location.protocol == 'https:') { //TODO: fix this.
+			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			return;
+		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
@@ -2890,6 +2898,11 @@ var VMElement = IconElement.extend({
 			site = sites[i];
 			
 			info.append(' &nbsp; <img src="/img/info.png" />');
+			
+			if (this.data.attrs.host_site && (this.data.attrs.site == null)) {
+				info.append(' &nbsp; <img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
+				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
+			}
 
 			if (site.description_text) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+site.description_text+'</td></tr>'));
@@ -2913,13 +2926,22 @@ var VMElement = IconElement.extend({
 		}
 		
 		
+		var templateChoices = {};
+		if (this.data.attrs.custom_template) {
+			templateChoices[this.data.attrs.template] = "Custom Image";
+			templateInfo = {}
+			templateInfo[this.data.attrs.template] = '<div class="hoverdescription" style="display:inline;"> &nbsp; <img src="/img/info.png" /><div class="hiddenbox"><p>You have uploaded a custom image.</p></div></div>';
+		} else {
+			templateChoices = createMap(this.editor.templates.getAll(this.data.type), "name", "label");
+		}
+		
 		config.special.template = new TemplateChoiceElement({
 			label: "Template",
 			name: "template",
-			choices: createMap(this.editor.templates.getAll(this.data.type), "name", "label"),
+			choices: templateChoices,
 			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
-			disabled: !this.attrEnabled("template")
+			disabled: !(this.attrEnabled("template") && this.data.state == "created")
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
@@ -2928,7 +2950,7 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.site || this.caps.attrs.site["default"],
+			value: this.data.attrs.host_site || this.data.attrs.site || this.caps.attrs.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({

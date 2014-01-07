@@ -571,6 +571,7 @@ class HostElement(attributes.Mixin, models.Model):
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
 	type = attributes.attribute("type", str) #@ReservedAssignment
+	custom_template = attributes.attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 		
 	class Meta:
 		unique_together = (("host", "num"),)
@@ -687,6 +688,10 @@ class HostElement(attributes.Mixin, models.Model):
 				raise
 		except:
 			logging.logException(host=self.host.address)
+			
+	def after_upload_use(self):
+		self.custom_template = True
+		self.save()
 		
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
