@@ -1,7 +1,18 @@
 import tomato,lib
 import shutil, os, random
 import tarfile, json, time
-import urllib
+import urllib2
+import re
+
+#TODO:
+# be a better command-line tool. currently everything is set in last line.
+# better output
+# internet connection seems broken?
+# support more packet managers
+# allow upgrade queryer
+# check authentication/authorization before starting
+# timeout for "waiting for script to finish"
+# better error handling than brute-force try-until-success. Understand ^C
 
 config={
 	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
@@ -15,7 +26,7 @@ def progname_short():
 	return "rextfv-packetmanager"
 		
 
-def get_topology_json(tech,template):
+def get_topology_json(tech,template,site):
 	attrs={'name':"tmp_"+progname_short()}
 	file_info={'version':3}
 	connections=[{
@@ -61,7 +72,7 @@ def get_topology_json(tech,template):
 					"y": 0.12545454545454546, 
 					"x": 0.30399999999999999
 				}, 
-				"site": None, 
+				"site": site, 
 				"template": template, 
 				"name": "openvz1"
 			}, 
@@ -79,14 +90,14 @@ def get_topology_json(tech,template):
 
 
 
-def get_upload_url(conn,element,grant,filename):
+def get_upload_url(conn,element,grant):
 	elinfo=conn.element_info(element)
 	return "http://%(hostname)s:%(port)s/%(grant)s/upload" % \
 		{	"hostname":elinfo['attrs']['host'],
 			"port":elinfo['attrs']['host_fileserver_port'],
 			"grant":grant }
 		
-def get_download_url(conn,element,grant,filename):
+def get_download_url(conn,element,grant):
 	elinfo=conn.element_info(element)
 	return "http://%(hostname)s:%(port)s/%(grant)s/download" % \
 		{	"hostname":elinfo['attrs']['host'],
@@ -109,25 +120,27 @@ class packetman_urlgetter:
 				return True
 		return False
 
-	def create_target_topology(self,tech,template):
+	def create_target_topology(self,tech,template,site):
 		if not self._template_exists(tech,template):
 			return {"success":False, "message":"template does not exist"}
-		res=self.conn.topology_import(get_topology_json(tech,template))
+		res=self.conn.topology_import(get_topology_json(tech,template,site))
 		self.target_topology=res[0]
 		for i in res:
 			if type(i) is list:
-				if len(i) == 2:
-					if i[0]==2312:
-						self.target_element=i[1]
+				for j in i:
+					if type(j) is list:
+						if len(j) == 2:
+							if j[0]==2312:
+								self.target_element=j[1]
 		return {"success":True}
 
 	def topology_action(self,action):
 		if self.target_topology:
-			self.conn.topology_action(self.target_topology,action)
+			return self.conn.topology_action(self.target_topology,action)
 
 	def element_action(self,action):
 		if self.target_element:
-			self.conn.element_action(self.target_element,action)
+			return self.conn.element_action(self.target_element,action)
 
 	def get_target(self):
 		return {
@@ -145,11 +158,13 @@ class packetman_urlgetter:
 
 
 #conn: a connection to tomato
-#template, tech: target template and tech the archive shall be created with
+#templates: target templates to get packages for. This is a list of templates.
+#tech: the tech to use when running the query. use 'openvz' if possible.
 #filename: output of the final rextfv archive
 #packages: packages to be installed by archive
-def create_package(conn,template,tech,filename,packages):
-	def get_workingdir():
+#site: site to host the element on. None to let ToMaTo choose.
+def create_package(conn,templates,tech,filename,packages,site=None):
+    def get_workingdir():
 		tmpdir = config['tmpdir']
 		workingdir = str(random.randint(10000,99999))
 		while os.path.isdir(os.path.join(tmpdir,progname_short()+'_'+workingdir)):
@@ -158,19 +173,19 @@ def create_package(conn,template,tech,filename,packages):
 		os.makedirs(workingdir)
 		return workingdir
 	
-	def create_query_archive(archive_config):
+    def create_query_archive(list):
 		#create working dir and filenames
 		wdir = get_workingdir()
 		geturls_archive=os.path.join(wdir,'geturls.tar.gz')
-		pacsjsonfile = os.path.join(wdir,'pacs.json')
+		packetlistfile = os.path.join(wdir,'toinstall')
 
 		#copy unconfigured archive
 		with tarfile.open(config['rextfv-archive'],'r:gz') as tar:
 			tar.extractall(wdir)
 	
 		#write config file
-		with open(pacsjsonfile,'w+') as json_out:
-			json.dump(archive_config,json_out)
+		with open(packetlistfile,'w+') as f:
+			f.write(" ".join(list))
 
 		#pack archive
 		with tarfile.open(geturls_archive,'w:gz') as tar:
@@ -178,20 +193,17 @@ def create_package(conn,template,tech,filename,packages):
 
 		return geturls_archive
 
-	def query_packageinfo(conn,template,tech,packages):
+    def query_packageinfo(conn,template,tech,packages,site):
 		res=None
 		#first, create the rextfv archive which will fetch the package info
-		print 'creating query archive...'
-		f1=create_query_archive({
-			'paclist':packages,
-			'mode':'get_urls'
-		})
+		print 'creating query archive'
+		f1=create_query_archive(packages)
 
 		#create the fetcher topology
 		t = packetman_urlgetter(conn)
 		try:
 			print 'creating topology'
-			err = t.create_target_topology(tech,template)
+			err = t.create_target_topology(tech,template,site)
 			if not err['success']:
 				print 'Error: '+err['message']
 				return
@@ -205,8 +217,10 @@ def create_package(conn,template,tech,filename,packages):
 			#upload query archive
 			print 'uploading query archive'
 			grant = t.element_action('rextfv_upload_grant')
-			with open(f1,"r") as file:
-				lib.upload(get_upload_url(conn,el,grant),file)
+			#with open(f1,"r") as file:
+			lib.upload(get_upload_url(conn,el,grant),f1)
+			print 'using upload'
+			t.element_action('rextfv_upload_use')
 
 			#start topology, wait for rextfv to finish
 			print 'starting topology'
@@ -220,16 +234,30 @@ def create_package(conn,template,tech,filename,packages):
 				elinfo = conn.element_info(el)
 
 			#download and read result ---- TODO: if this becomes easier by better rextfv integration of json into rextfv_run_status, use this way instead
-			print 'downloading query result'
+			print 'fetching query result'
 			wdir = get_workingdir()
 			targetfile = os.path.join(wdir,'res.tar.gz')
 			grant = t.element_action('rextfv_download_grant')
-			with open(targetfile,'w+') as file:
-				lib.download(get_download_url(conn,el,grant),file)
-			with tarfile.open(targetfile,'r:gz') as tar:
-				tar.extractall(wdir)
-			with open(os.path.join(wdir,'result.json','r')) as f:
-				res = json.load(f)
+			
+			custominfo_splitted = elinfo['attrs']['rextfv_run_status']['custom'].split(".",2)
+			ident = custominfo_splitted[0]
+			os_id = custominfo_splitted[1]
+			lines = custominfo_splitted[2]
+			
+			def interpret_lines_aptget(lines_string):
+				lines = lines_string.splitlines()
+				urlList = []
+				order = []
+				for line in lines:
+					l = line.split()
+					urlList.append(l[0])
+					order.append(l[1])
+				return { 'urls':urlList, 'order':order}
+			
+			if ident == "aptget":
+				res = interpret_lines_aptget(lines)
+				res['os_id'] = os_id
+			
 
 		finally:
 			t.clean_up()
@@ -237,53 +265,69 @@ def create_package(conn,template,tech,filename,packages):
 		return res
 
 	
-	def create_result(filename,info):
-		#create working dir and filenames
+    def create_result(filename,infos):
 		wdir = get_workingdir()
-		pacsjsonfile = os.path.join(wdir,'pacs.json')
 		pacdir = os.path.join(wdir,'packages')
 		os.makedirs(pacdir)
-		
 		#copy unconfigured archive
 		with tarfile.open(config['rextfv-archive'],'r:gz') as tar:
 			tar.extractall(wdir)
-	
-		#TODO: load all packages into pacdir
-		ordstruct = []
-		for i in range(len(info['order'])):
-			ordstruct.append({
-				'filename':info['order'][i],
-				'url':info['urls'][i]
-			})
+			
+		#fetch all packages
+		for info in infos:
+			#create dirs and filenames
+			installorderfile = os.path.join(wdir,'installorder_'+info['os_id'])
 		
-		for pac in ordstruct:
-			print 'fetching '+pac['filename']
-			with open(os.path.join(pacdir,pac['filename'])) as file:
-				urllib.urlretrieve(pac['url'], file)
-
-		#write config file
-		archive_config={
-			'mode':'install',
-			'order':info['order']
-		}
-		with open(pacsjsonfile,'w+') as json_out:
-			json.dump(archive_config,json_out)
+			#TODO: load all packages into pacdir
+			ordstruct = []
+			for i in range(len(info['order'])):
+				ordstruct.append({
+					'filename':info['order'][i],
+					'url':info['urls'][i]
+				})
+			
+			with open(installorderfile,'w+') as installfile:
+				for pac in ordstruct:
+					pacfilename = os.path.join(pacdir,pac['filename'])
+					if not os.path.exists(pacfilename):
+						print 'fetching '+pac['filename']
+						with open(pacfilename,'w+') as file:
+							pac['url'] = re.sub("^'","",pac['url'])
+							pac['url'] = re.sub("'$","",pac['url'])
+							response = urllib2.urlopen(pac['url'])
+							file.write(response.read())
+					installfile.write(pac['filename']+'\n')
 
 		with tarfile.open(filename,'w:gz') as tar:
 			tar.add(wdir,arcname='.')
+            
+    infos = []
 
-	#query info about packages
-	info = query_packageinfo(conn,template,tech,packages)
+    tnr = 1
+    for template in templates:
+        print "  ("+str(tnr)+"/"+str(len(templates))+") querying packets for template "+template
+        finished_current = False
+        while not finished_current:
+            try:
+                infos.append(query_packageinfo(conn,template,tech,packages,site))
+                finished_current = True
+                tnr = tnr + 1
+            except:
+                print ""
+                print "There was an error. Retrying..."
+                print ""
+                continue
+
+            
+    
+    
+    
+                #infos.append(query_packageinfo(conn,template,tech,packages,site))
 
 	#create result package
-	create_result(filename,info)
+    create_result(filename,infos)
 
-	return info
-
-
+    return infos
 
 
-def test_conn():
-	return tomato.getConnection(username='root',password='test',hostname='131.246.112.102',port='8000',ssl=False)
 
-print create_package(test_conn(),'debian-6.0_x86','openvz','/home/sylar/INSTALLER.rextfv.tar.gz',['apt-rdepends'])
