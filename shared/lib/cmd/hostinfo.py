@@ -65,6 +65,10 @@ def hostmanagerVersion():
 	return getDpkgVersionStr("tomato-hostmanager")
 
 @cached
+def updaterVersion():
+	return getDpkgVersionStr("tomato-updater")
+
+@cached
 def system():
 	pve_ver = getDpkgVersionStr("pve-manager")
 	return {
