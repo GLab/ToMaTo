@@ -52,7 +52,6 @@ head.appendChild(style);
 			<div id="menu_userinfo">
 			{% if request.session.user %}
 			Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
-			
 			{% else %}
 			&nbsp;
 			{% endif %}

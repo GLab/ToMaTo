@@ -47,6 +47,7 @@ def project(request, page=""):
 class LoginForm(forms.Form):
 	username = forms.CharField(max_length=255)
 	password = forms.CharField(max_length=255, widget=forms.PasswordInput)
+	long_session = forms.BooleanField(required=False, label="Remember me")
 
 def login(request):
 	if request.method == 'POST':
@@ -60,6 +61,7 @@ def login(request):
 			del request.session["auth"]
 			return render(request, "main/login.html", {'form': form, 'message': 'login failed'})
 		request.session["user"] = api.user
+		request.session.set_expiry(3600*24*14 if formData["long_session"] else 3600)
 		forward = reverse("tomato.main.index")
 		if "forward_url" in request.session:
 			forward = request.session["forward_url"]
