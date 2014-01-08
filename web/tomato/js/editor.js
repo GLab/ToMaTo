@@ -622,6 +622,7 @@ var TemplateWindow = Window.extend({
 			this.disabled = true;
 		}
 		
+		this.value = this.element.data.attrs.template;
 
 		this.choices = editor.templates.getAll(this.element.data.type);
 		this.div.append(this.getList());
@@ -641,22 +642,26 @@ var TemplateWindow = Window.extend({
 		}
 		saveButton.click(function() {
 			t.save();
+			t.hide();
 		});
 		buttons.append(saveButton);
 		
 		this.div.append(buttons);
 	},
 	getValue: function() {
-		return $("input:radio[name='template']:checked").val();
+		return this.value;
 	},
 	save: function() {
-		this.element.changeTemplate(this.getValue(), this);
+		this.element.changeTemplate(this.getValue());
 	},
 	getList: function() {
 		var form = $("<form></form>");
 		var table = $("<table></table>");
+		var ths = this;
+		
 		for(var i=0; i<this.choices.length; i++) {
-			t = this.choices[i];
+			var t = this.choices[i];
+			
 			
 			//build hiddenbox
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
@@ -696,11 +701,16 @@ var TemplateWindow = Window.extend({
 			
 			if (this.disabled) {
 				radio.prop("disabled",true);
+			} else {
+				radio.change(function() {
+					ths.value = this.value;
+				});
 			}
 			
 			if (t.name == this.element.data.attrs.template) {
 				radio.prop("checked","checked");
 			}
+			
 			td_option.append(radio);
 			td_option.append(t.label);
 			
@@ -713,6 +723,7 @@ var TemplateWindow = Window.extend({
 			table.append(tr);
 		}
 		form.append(table);
+		
 		return form;
 	}
 });
@@ -2398,15 +2409,8 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
-	changeTemplate: function(tmplName, windowToHide) {
-		var callbackFun = function(){};
-		if (windowToClose != null) {
-			callbackFun = function() {
-				windowToHide.hide();
-			}
-		}
+	changeTemplate: function(tmplName) {
 		this.action("change_template", {
-			callback: callbackFun, 
 			params:{
 				tmplName: tmplName
 				}
