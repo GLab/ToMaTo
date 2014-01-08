@@ -21,7 +21,7 @@ from ..lib import util #@UnresolvedImport
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
 		"openvz_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}

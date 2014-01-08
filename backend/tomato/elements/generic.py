@@ -52,7 +52,7 @@ class VMElement(elements.Element):
 		"profile": profile_attr,
 		"template": template_attr,
 	}
-	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "diskspace", "cpus", "timeout", "template"]
 	CAP_PARENT = [None]
 	DEFAULT_ATTRS = {}
 	

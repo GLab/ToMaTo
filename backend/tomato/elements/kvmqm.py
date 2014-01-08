@@ -21,7 +21,7 @@ from ..lib import util #@UnresolvedImport
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"
-	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout"]
+	DIRECT_ATTRS_EXCLUDE = ["ram", "cpus", "timeout", "template"]
 	CAP_CHILDREN = {
 		"kvmqm_interface": [generic.ST_CREATED, generic.ST_PREPARED],
 	}
