@@ -34,7 +34,7 @@ class VMElement(elements.Element):
 	name = name_attr.attribute()
 	profile_attr = Attr("profile", desc="Profile", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
 	profile = models.ForeignKey(r_profile.Profile, null=True, on_delete=models.SET_NULL)
-	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED, ST_PREPARED])
+	template_attr = Attr("template", desc="Template", type="str", null=True, states=[ST_CREATED])
 	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
@@ -43,6 +43,7 @@ class VMElement(elements.Element):
 		"stop": [ST_STARTED],
 		"prepare": [ST_CREATED],
 		"destroy": [ST_PREPARED],
+		"change_template": [ST_CREATED, ST_PREPARED],
 		elements.REMOVE_ACTION: [ST_CREATED],
 	}
 	CUSTOM_ATTRS = {
@@ -165,6 +166,9 @@ class VMElement(elements.Element):
 					iface._remove()
 				self.element = None
 			self.save()
+			
+	def action_change_template(self, tmplName):
+		self.modify_template(tmplName)
 
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
