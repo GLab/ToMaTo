@@ -1,0 +1,131 @@
+.nav {
+  margin-bottom: 40pt;
+}
+
+.nav-tabs.nav-justified > .active > a:hover,
+.nav-tabs.nav-justified > .active > a:focus {
+  border-bottom: 1px solid #9c3036;
+}
+
+.nav-justified > .active > a,
+.nav-justified > .active > a:hover,
+.nav-justified > .active > a:focus {
+  border-bottom: 3px solid #9c3036;
+}
+
+.nav-justified > li:first-child > a {
+  border-radius: 5px 5px 3px 3px;
+}
+
+.nav-justified > li:last-child.active > a {
+  border-bottom: 3px solid #9c3036;
+}
+
+
+.table {
+	border: 1px solid #c0c0c0;
+}
+.table > tbody > tr > td {
+	font-size:10pt;
+}
+
+.carousel-inner .item {
+  padding-bottom: 150px;
+  text-align: center;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+.carousel-inner .item img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.carousel-control {
+  width: 20px !important;
+}
+
+.carousel-inner .carousel-caption, .carousel-control {
+  color: #000 !important;
+}
+
+.carousel-indicators li {
+  border: 1px solid #000 !important;
+}
+
+.carousel-indicators li.active {
+  background-color: #000 !important;
+}
+
+.carousel-control.left {
+  background-image: none !important;
+}
+
+.carousel-control.right {
+  right: 0;
+  left: auto;
+  background-image: none !important;
+}
+
+#sites img {
+  height: 4em;
+}
+
+.skip-xs {
+  height: 1em;
+}
+
+.skip-sm {
+  height: 2em;
+}
+
+.skip-md {
+  height: 4em;
+}
+
+.skip-lg {
+  height: 6em;
+}
+
+
+
+
+
+
+/*
+hoverdescription
+
+usage example:
+
+<div class="hoverdescription">
+	This is some text.
+	<div class="hiddenbox">
+		<p>
+			This text is hidden by default, and will be shown when the mouse is hovering on the text above.
+		</p>
+	</div>
+</div>
+ */
+
+
+div.hoverdescription div.hiddenbox {
+	display:none;
+	font-size: 10pt;
+}
+div.hoverdescription:hover div.hiddenbox {
+	display:inline;
+	position:absolute;
+	margin: 2px;
+	margin-left: 0px;
+	margin-top: 0px;
+	border: 1px solid black;
+	background-color: #ffffff;
+}
+div.hoverdescription:hover div.hiddenbox p {
+	padding-left:  15px;
+	padding-right: 15px;
+}
+div.hoverdescription:hover div.hiddenbox td p {
+	padding-left: 0px;
+	padding-right: 0px;
+}
