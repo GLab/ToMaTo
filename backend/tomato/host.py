@@ -627,7 +627,9 @@ class HostElement(attributes.Mixin, models.Model):
 			self.host.getProxy().element_remove(self.num)
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNKNOWN_OBJECT:
-				raise
+				self.host.incrementErrors()
+		except:
+			self.host.incrementErrors()
 		self.usageStatistics.delete()
 		self.delete()
 
@@ -680,6 +682,7 @@ class HostElement(attributes.Mixin, models.Model):
 		try:
 			if not self.topology_element and not self.topology_connection:
 				self.remove()
+				return
 			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNSUPPORTED_ATTRIBUTE:
@@ -742,7 +745,9 @@ class HostConnection(attributes.Mixin, models.Model):
 			self.host.getProxy().connection_remove(self.num)
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNKNOWN_OBJECT:
-				raise
+				self.host.incrementErrors()
+		except:
+			self.host.incrementErrors()
 		self.usageStatistics.delete()
 		self.delete()
 		
@@ -790,6 +795,7 @@ class HostConnection(attributes.Mixin, models.Model):
 		try:
 			if not self.topology_element and not self.topology_connection:
 				self.remove()
+				return
 			self.updateInfo()
 		except:
 			logging.logException(host=self.host.address)
