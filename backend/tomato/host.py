@@ -421,6 +421,10 @@ class Host(attributes.Mixin, models.Model):
 			nets.append(None)
 		return nets
 	
+	def getTopologyElements(self):
+		from elements import Element
+		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
+	
 	def checkPermissions(self):
 		return self.site.checkPermissions()
 	
