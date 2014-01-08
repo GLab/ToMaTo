@@ -622,12 +622,14 @@ var TemplateWindow = Window.extend({
 			this.disabled = true;
 		}
 		
-		this.value = this.element.data.attrs.template;
-
-		this.choices = editor.templates.getAll(this.element.data.type);
-		this.div.append(this.getList());
+		var table = $('<table></table>');
 		
-		var buttons = $('<div style="text-align:right;" />');
+		this.value = this.element.data.attrs.template;
+		this.choices = editor.templates.getAll(this.element.data.type);
+		
+		table.append(this.getList());
+		
+		var buttons = $('<div colspan="2" style="text-align:right;"></div>');
 		
 		var cancelButton = $('<input type="button" value="Cancel" />');
 		var t = this;
@@ -646,6 +648,7 @@ var TemplateWindow = Window.extend({
 		});
 		buttons.append(saveButton);
 		
+		this.div.append(table);
 		this.div.append(buttons);
 	},
 	getValue: function() {
@@ -656,7 +659,6 @@ var TemplateWindow = Window.extend({
 	},
 	getList: function() {
 		var form = $("<form></form>");
-		var table = $("<table></table>");
 		var ths = this;
 		
 		for(var i=0; i<this.choices.length; i++) {
@@ -709,10 +711,10 @@ var TemplateWindow = Window.extend({
 			
 			if (t.name == this.element.data.attrs.template) {
 				radio.prop("checked","checked");
-			}
+			}name
 			
 			td_option.append(radio);
-			td_option.append(t.label);
+			td_option.append($('<label for="'+t.name+'">'+t.label+'</label>'));
 			
 			var td_info = $('<td />');
 			td_info.append(info);
@@ -720,9 +722,8 @@ var TemplateWindow = Window.extend({
 			tr.append(td_option);
 			tr.append(td_info);
 			
-			table.append(tr);
+			form.append(tr);
 		}
-		form.append(table);
 		
 		return form;
 	}
