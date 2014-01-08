@@ -566,6 +566,8 @@ class Host(attributes.Mixin, models.Model):
 class HostElement(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="elements")
 	num = models.IntegerField(null=False) #not id, since this is reserved
+	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_elements")
+	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_elements")
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	connection = attributes.attribute("connection", int)
@@ -670,18 +672,10 @@ class HostElement(attributes.Mixin, models.Model):
 		self.usageStatistics.importRecords(data)
 		self.usageStatistics.removeOld()
 		
-	def getOwner(self):
-		from . import elements, connections
-		for el in elements.getAll():
-			if self in el.getHostElements():
-				return ("element", el.id)
-		for con in connections.getAll():
-			if self in el.getHostElements():
-				return ("connection", con.id)
-		return (None, None)
-	
 	def synchronize(self):
 		try:
+			if not self.topology_element and not self.topology_connection:
+				self.remove()
 			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNSUPPORTED_ATTRIBUTE:
@@ -696,6 +690,8 @@ class HostElement(attributes.Mixin, models.Model):
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
 	num = models.IntegerField(null=False) #not id, since this is reserved
+	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_connections")
+	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_connections")
 	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	elements = attributes.attribute("elements", list)
@@ -786,18 +782,10 @@ class HostConnection(attributes.Mixin, models.Model):
 		self.usageStatistics.importRecords(data)
 		self.usageStatistics.removeOld()
 
-	def getOwner(self):
-		from . import elements, connections
-		for el in elements.getAll():
-			if self in el.getHostConnections():
-				return ("element", el.id)
-		for con in connections.getAll():
-			if self in el.getHostConnections():
-				return ("connection", con.id)
-		return (None, None)
-
 	def synchronize(self):
 		try:
+			if not self.topology_element and not self.topology_connection:
+				self.remove()
 			self.updateInfo()
 		except:
 			logging.logException(host=self.host.address)

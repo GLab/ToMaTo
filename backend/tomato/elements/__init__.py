@@ -53,6 +53,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
+	#host_elements: [host.HostElement]
+	#host_connections: [host.HostConnections]
 	
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = []
