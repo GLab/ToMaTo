@@ -125,6 +125,7 @@ def host_info():
     return {
         "hostmanager": {
             "version": hostinfo.hostmanagerVersion(),
+            "updater": hostinfo.updaterVersion()
         },
         "fileserver_port": config.FILESERVER["PORT"],
         "address": config.PUBLIC_ADDRESS,

@@ -1,3 +1,9 @@
+tomato-hostmanager (3.1.2) unstable; urgency=low
+
+  * Include version of updater (if installed) in host info
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 08 Jan 2014 12:22:13 +0100
+
 tomato-hostmanager (3.1.1) unstable; urgency=low
 
   * Fixed idle loops

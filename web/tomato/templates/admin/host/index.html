@@ -77,7 +77,7 @@
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
 			{% if host.host_info %}
-			    <td>{{host.host_info.hostmanager.version}}</td>
+			    <td>{{host.host_info.hostmanager.version}}{% if host.host_info.hostmanager.updater %} <img src="/img/refresh.png" title="Updater installed: {{host.host_info.hostmanager.updater}}"/>{% endif %}</td>
 			    <td>{{host.host_info.system.distribution|join:" "}}</td>
 			    <td>{{host.host_info.system.python}}</td>
 			    <td>{{host.host_info.system.kernel}}</td>
