@@ -6,7 +6,7 @@
 <h1>List of External Network Instances</h1>
 
 {% if netwI_list|length > 10 and request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external network" /></p>
+	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external network" class="btn btn-default" /></p>
 {% endif %}
 
 {% if netwI_list %}
@@ -46,7 +46,7 @@
 {% endif %}
 
 {% if request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external networks" /></p>
+	<p><input type="button" onClick="window.location='{%url external_network_instances.add%}'" value="Add external networks" class="btn btn-default" /></p>
 {% endif %}
 
 {% endblock %}

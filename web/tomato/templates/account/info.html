@@ -3,10 +3,10 @@
 {% block content %}
 <h1>Account {{account.name}}</h1>
 
-<form action="{%url account.info account.id%}" method="POST">
-<table>
+<form action="{%url account.info account.id%}" class="form-group" method="POST">
+<table class="table table-striped">
 {{form.as_table}}
 </table>
-<input type="submit" value="Save"/>
+<input type="submit" value="Save" class="btn btn-default"/>
 </form>
 {% endblock %}

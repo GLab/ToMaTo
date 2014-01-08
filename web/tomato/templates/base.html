@@ -8,7 +8,6 @@
 <title>G-Lab ToMaTo</title> 
 <meta name="DESCRIPTION" content="German Lab Webpage" /> 
 
-<!--  <link href="/style/style.css" rel="stylesheet" type="text/css" /> -->
 <link rel="shortcut icon" type="image/x-icon" href="//www.german-lab.de/favicon.ico" />
 <!-- Bootstrap core CSS -->
 <link href="/style/bootstrap.min.css" rel="stylesheet">
@@ -28,6 +27,8 @@
 <![endif]-->
 {% load tomato %}
 
+<script src="/js/jquery.js"></script>
+<script src="/js/dropdown.js"></script>
 {% block header %}
 {% endblock %}
 </head>
@@ -51,13 +52,26 @@ head.appendChild(style);
 
 
 {% block page %}
-<script src="/js/jquery.js"></script>
-<script src="/js/dropdown.js"></script>
 
 <div class="container">
 	<div class="masthead">
+		<table style="width:100%">
+		<tr>
+		<td>
         <img src="/style/glablogo.jpg" alt="GermanLab" class="img-rounded">
         <img src="/style/tomato_logo.png" alt="ToMaTo" class="img-rounded">
+        </td>
+        <td style="text-align: right;vertical-align:bottom;">
+        <small>
+                        {% if request.session.user %}
+                        Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
+                        {% else %}
+                        &nbsp;
+                        {% endif %}
+        </small>
+        </td>
+        </tr>
+        </table>
         <ul class="nav nav-justified">
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>

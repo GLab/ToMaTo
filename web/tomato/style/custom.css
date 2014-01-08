@@ -129,3 +129,15 @@ div.hoverdescription:hover div.hiddenbox td p {
 	padding-left: 0px;
 	padding-right: 0px;
 }
+
+.form-group > table > tbody > tr > td > ul {
+	margin-left:0pt;
+	padding-left:0pt;
+	margin-bottom: 10pt;
+}
+.form-group > table > tbody > tr > td > ul > li {
+	list-style-type: none;
+}
+.form-group > table > tbody > tr > td > ul > li > label {
+	font-weight: normal;
+}

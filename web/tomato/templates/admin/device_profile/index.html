@@ -9,7 +9,7 @@
 {% if profile_list %}
 
 	{% if profile_list|length > 10 and request.session.user.isHostManager %}
-		<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
+		<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile"  class="btn btn-default"/></p>
 	{% endif %}
 
 	<script src="/js/enhancetable.js"></script>
@@ -97,7 +97,7 @@
 {% endif %}
 
 {% if request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" /></p>
+	<p><input type="button" onClick="window.location='{%url device_profile.add%}'" value="Add profile" class="btn btn-default" /></p>
 {% endif %}
 
 
