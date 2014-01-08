@@ -76,3 +76,11 @@ def memory(pid):
 			return int(fp.readline().split()[23]) * 4096
 	except:
 		return 0
+	
+class IoPolicy:
+	Idle = 3
+	BestEffort = 2
+	Realtime = 1
+
+def ionice(pid, policy, priority=4):
+	run(["ionice", "-c", str(policy), "-n", str(priority), "-p", str(pid)])
