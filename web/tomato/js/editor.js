@@ -2617,48 +2617,54 @@ var createElementMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
-			"change_template": obj.actionEnabled("change_template") ? {
-				name:"Change Template",
-				icon:"drive",
-				callback: function() {
-					obj.showTemplateWindow();
-				}
-			} : null,
-			"download_image": obj.actionEnabled("download_grant") ? {
-				name:"Download image",
-				icon:"drive",
-				callback: function(){
-					obj.downloadImage();
-				}
-			} : null,
-			"upload_image": obj.actionEnabled("upload_grant") ? {
-				name:"Upload image",
-				icon:"drive",
-				callback: function(){
-					obj.uploadImage();
+			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) ? { 
+				name: "Disk image",
+				icon: "drive",
+				items: {
+					"change_template": obj.actionEnabled("change_template") ? {
+						name:"Change Template",
+						icon:"drive",
+						callback: function() {
+							obj.showTemplateWindow();
+						}
+					} : null,
+					"download_image": obj.actionEnabled("download_grant") ? {
+						name:"Download own image",
+						icon:"download",
+						callback: function(){
+							obj.downloadImage();
+						}
+					} : null,
+					"upload_image": obj.actionEnabled("upload_grant") ? {
+						name:"Upload own image",
+						icon:"upload",
+						callback: function(){
+							obj.uploadImage();
+						}
+					} : null,
 				}
 			} : null,
 			"rextfv": obj.actionEnabled("rextfv_download_grant") || obj.actionEnabled("rextfv_upload_grant") || obj.rextfvStatusSupport() ? {
 				name:"Executable archive",
 				icon:"rextfv",
-				items: { 
-					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-						name:"Upload Archive",
-						icon:"rextfv",
-						callback: function(){
-							obj.uploadRexTFV();
-						}
-					} : null,
+				items: {
 					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
 						name:"Download Archive",
-						icon:"rextfv",
+						icon:"download",
 						callback: function(){
 							obj.downloadRexTFV();
 						}
 					} : null,
+					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+						name:"Upload Archive",
+						icon:"upload",
+						callback: function(){
+							obj.uploadRexTFV();
+						}
+					} : null,
 					"rextfv_status": obj.rextfvStatusSupport() ? {
 						name:"Status",
-						icon:"rextfv",
+						icon:"info",
 						callback: function(){
 							obj.openRexTFVStatusWindow();
 						}
