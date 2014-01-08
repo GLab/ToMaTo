@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from ..lib.decorators import cached #@UnresolvedImport
+
+@cached(300)
 def server_info():
 	"""
 	undocumented
@@ -23,10 +26,11 @@ def server_info():
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
 	}
 
-
+@cached(300)
 def host_public_key():
 	return misc.getPublicKey()
 
+@cached(300)
 def aup_url():
 	return misc.getAUPurl()
 

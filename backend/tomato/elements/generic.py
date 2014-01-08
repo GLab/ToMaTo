@@ -65,7 +65,10 @@ class VMElement(elements.Element):
 		if self.element is None:
 			return
 		
-		self.element.updateInfo()
+		try:
+			self.element.updateInfo()
+		except:
+			pass
 		#calculate next update time:
 		time_passed = int(time.time()) - self.rextfv_last_started
 		if time_passed < 60*60*24: #less than one day

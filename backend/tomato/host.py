@@ -244,8 +244,9 @@ class Host(attributes.Mixin, models.Model):
 		self.save()
 		
 	def update(self):
-		before = time.time()
 		self.availability *= config.HOST_AVAILABILITY_FACTOR
+		self.save()
+		before = time.time()
 		self.hostInfo = self._info()
 		after = time.time()
 		self.hostInfoTimestamp = (before+after)/2.0

@@ -44,9 +44,6 @@
 	    <td>{{templ.attrs.subtype}}</td>
 	    <td>
 	    	{{templ.attrs.preference}}
-		    {% if templ.attrs.restricted %}
-		    	<img src="/img/error.png" title="restricted" />
-		    {% endif %}
 	    </td>
 	    
 	    
@@ -57,7 +54,7 @@
 	    
 	    
 	    <div class="hoverdescription" style="float:left;">
-	    
+	 
 	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {%endif%}
@@ -66,6 +63,10 @@
 		    	<img src="/img/info.png" alt="i" />
 		    {%endif%}
 		    
+		    {% if templ.attrs.restricted %}
+		    	<img src="/img/lock.png" />
+			{% endif %}
+			
     		<div class="hiddenbox"><table>
     		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 	    		<tr>
@@ -80,6 +81,14 @@
 	    			<td>{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	    		</tr>
 	    	{%endif%}
+	    	
+		    {% if templ.attrs.restricted %}
+				<tr>
+					<td><img src="/img/lock.png" /></td>
+					<td>This template is restricted.</td>
+				</tr>
+			{% endif %}
+			
     		</table></div>
 		    		
 		    
