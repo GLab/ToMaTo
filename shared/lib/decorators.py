@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import time
+
 """
 Synchronization decorator
   This decorator can be used to synchronize method calls. Synchronization is relative to 
@@ -194,6 +196,30 @@ def retryOnError(errorFilter=None, maxRetries=5, waitBetween=0.5, waitIncrease=2
 		call.__doc__ = fn.__doc__
 		call.__dict__.update(fn.__dict__)
 		return call
+	return wrap
+
+
+class CachedMethod:
+	def __init__(self, timeout, fn):
+		self.timeout = timeout
+		self.fn = fn
+		self.time = None
+		self.cache = None
+		self.__name__ = fn.__name__
+		self.__doc__ = fn.__doc__
+	def __call__(self, *args, **kwargs):
+		import time
+		if self.time and self.time + self.timeout > time.time():
+			return self.cache
+		self.cache = self.fn(*args, **kwargs)
+		self.time = time.time()
+		return self.cache
+		
+def cached(timeout):
+	def wrap(fn):
+		_cache = None
+		_time = None
+		return CachedMethod(timeout, fn)
 	return wrap
 
 import util
