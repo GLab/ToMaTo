@@ -612,6 +612,111 @@ var AttributeWindow = Window.extend({
 	}
 });
 
+var TemplateWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		this.element = options.element;
+		if (options.disabled == undefined || options.disabled == null) {
+			this.disabled = false;
+		} else {
+			this.disabled = true;
+		}
+		
+
+		this.choices = editor.templates.getAll(this.element.data.type);
+		this.div.append(this.getList());
+		
+		var buttons = $('<div style="text-align:right;" />');
+		
+		var cancelButton = $('<input type="button" value="Cancel" />');
+		var t = this;
+		cancelButton.click(function() {
+			t.hide();
+		});
+		buttons.append(cancelButton);
+		
+		var saveButton = $('<input type="button" value="Save" />');
+		if (this.disabled) {
+			saveButton.prop("disabled",true);
+		}
+		saveButton.click(function() {
+			t.save();
+		});
+		buttons.append(saveButton);
+		
+		this.div.append(buttons);
+	},
+	getValue: function() {
+		return $("input:radio[name='template']:checked").val();
+	},
+	save: function() {
+		this.element.changeTemplate(this.getValue(), this);
+	},
+	getList: function() {
+		var form = $("<form></form>");
+		var table = $("<table></table>");
+		for(var i=0; i<this.choices.length; i++) {
+			t = this.choices[i];
+			
+			//build hiddenbox
+			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+			var d = $('<div class="hiddenbox"></div>');
+			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+			var desc = $('<table></table>');
+			p.append(desc);
+			d.append(p);
+			
+			if (t.description || t.creation_date) {
+
+				info.append(' &nbsp; <img src="/img/info.png" />');
+			
+				if (t.description) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
+				}
+				
+				if (t.creation_date) {
+					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
+				}
+				
+			}
+			
+			if (!t.nlXTP_installed) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+				info.append('&nbsp;<img src="/img/warning16.png" />');
+			}
+			
+			info.append(d);
+			
+
+			//build template list entry
+			var tr = $("<tr></tr>");
+			
+			var td_option = $('<td />');
+			var radio = $('<input type="radio" name="template" value="'+t.name+'" />');
+			
+			if (this.disabled) {
+				radio.prop("disabled",true);
+			}
+			
+			if (t.name == this.element.data.attrs.template) {
+				radio.prop("checked","checked");
+			}
+			td_option.append(radio);
+			td_option.append(t.label);
+			
+			var td_info = $('<td />');
+			td_info.append(info);
+			
+			tr.append(td_option);
+			tr.append(td_info);
+			
+			table.append(tr);
+		}
+		form.append(table);
+		return form;
+	}
+});
+
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		options.modal = true;
@@ -2293,6 +2398,21 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	changeTemplate: function(tmplName, windowToHide) {
+		var callbackFun = function(){};
+		if (windowToClose != null) {
+			callbackFun = function() {
+				windowToHide.hide();
+			}
+		}
+		this.action("change_template", {
+			callback: callbackFun, 
+			params:{
+				tmplName: tmplName
+				}
+			}
+		);
+	},
 	uploadImage: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
@@ -2493,6 +2613,13 @@ var createElementMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
+			"change_template": obj.actionEnabled("change_template") ? {
+				name:"Change Template",
+				icon:"drive",
+				callback: function() {
+					obj.showTemplateWindow();
+				}
+			} : null,
 			"download_image": obj.actionEnabled("download_grant") ? {
 				name:"Download image",
 				icon:"drive",
@@ -2804,6 +2931,13 @@ var VMElement = IconElement.extend({
 	},
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
+	},
+	showTemplateWindow: function() {
+		var window = new TemplateWindow({
+			element: this,
+			width: 300
+		});
+		window.show();
 	},
 	configWindowSettings: function() {
 		var config = this._super();
