@@ -5,9 +5,11 @@
 
 {{message}}
 
-<form method="POST" action="{% url main.login %}">
+<form method="POST" class="form-group" action="{% url main.login %}">
+<table class="table">
 {{form.as_p}}
-<input type="submit" value="Login"/>
+</table>
+<input type="submit" value="Login" class="btn btn-default"/>
 </form>
 
 {% endblock %}

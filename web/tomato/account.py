@@ -124,7 +124,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
                 option_value = force_unicode(v)
                 rendered_cb = cb.render(name, option_value)
                 option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
-                output.append(u'<li style="margin-left:20px;"><label%s>%s %s</label></li>' % (label_for, rendered_cb, option_label))
+                output.append(u'<li><label%s>%s %s</label></li>' % (label_for, rendered_cb, option_label))
         output.append('</ul>')
         return mark_safe(u'\n'.join(output))
     

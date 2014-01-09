@@ -8,7 +8,7 @@
 {# only show 'add' button when user is authorized #}
 	{% if host_list|length > 10 %}
 	{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
-		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
+		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" class="btn btn-default" /></p>
 	{% endif %}
 	{% endif %}
 
@@ -27,7 +27,7 @@
 	<input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label>
 	<input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label>
 
-	<table id="table" class="sortable,filterable,stddevcolor" stddev_threshold="1.5">
+	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5">
 	  <tr>
 	    <th>&nbsp;</th>
 	    <th>Address</th>
@@ -193,7 +193,7 @@
 {% endif %}
 
 {% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
-	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" /></p>
+	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" class="btn btn-default" /></p>
 {% endif %}
 
 {% endblock %}
