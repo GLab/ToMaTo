@@ -2647,7 +2647,7 @@ var createElementMenu = function(obj) {
 				items: {
 					"change_template": obj.actionEnabled("change_template") ? {
 						name:"Change Template",
-						icon:"drive",
+						icon:"edit",
 						callback: function() {
 							obj.showTemplateWindow();
 						}
