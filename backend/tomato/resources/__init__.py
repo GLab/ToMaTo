@@ -170,10 +170,8 @@ def create(type_, attrs={}):
 		res.init(attrs)
 		res.save()
 	except:
-		try:
+		if res.id:
 			res.remove()
-		except:
-			pass
 		raise
 	return res
 
