@@ -18,11 +18,7 @@
 	  <thead><tr>
 	    <th>Name</th>
 	    <th>Label</th>
-	    <th>Description</th>
-	    
-	    {% if request.session.user.isAdmin or "orga_admin" in request.session.user.flags %}
-	    	<th />
-	    {% endif %}
+	    <th class="icononly" />
 	    
 	  </tr></thead>
 	  
@@ -31,22 +27,26 @@
 	    <td>{{organization.name}}</td>
 	    <td>{{organization.description}}</td>
 	    
-	    <td>{% if organization.description_text %}
+	    <td class="icononly">
+	    
+	    {% if organization.description_text %}
 		<div class="hoverdescription">
 			<img src="/img/info.png" alt="i" />
 			<div class="hiddenbox">
 				{{ organization.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
 			</div>
 		</div>
-		{%endif%}</td>
+		{%endif%}
 	    
 	    {% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
-	    	<td>
+	    	<span width="16">&nbsp;</span>
 	    		<a href="{%url organization.edit organization.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
 	    		<a href="{%url organization.remove organization.name%}" ><img src="/img/cross.png" title="remove" /></a>
-			</td>
+			
 	    {% endif %}
+	    
+	    </td>
 	    
 	  </tr>
 	{% endfor %}

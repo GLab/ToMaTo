@@ -16,7 +16,7 @@
 	
 	<table class="sortable,filterable table table-striped">
 	  <tr>
-		<th>Tech</th>
+		<th class="icononly">Tech</th>
 		<th>Label</th>
 		<th>Disk Space</th>
 		<th>RAM</th>
@@ -28,7 +28,7 @@
 	{% for profile in profile_list %}
 	  <tr>
 		
-		<td enhancetable_customkey="{{profile.attrs.tech}}" align="right">
+		<td class="icononly" enhancetable_customkey="{{profile.attrs.tech}}" align="right">
 			{% if profile.attrs.tech == 'kvmqm' %}
 				<img src="/img/kvm16.png" title="KVM" />
 			{% else %}{% if profile.attrs.tech == 'openvz' %}
