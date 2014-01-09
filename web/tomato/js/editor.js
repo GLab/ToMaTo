@@ -619,8 +619,10 @@ var TemplateWindow = Window.extend({
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
 		} else {
-			this.disabled = true;
+			this.disabled = options.disabled;
 		}
+		
+		this.disable_restricted = !(editor.allowRestrictedTemplates);
 		
 		var table = $('<table></table>');
 		
@@ -665,34 +667,6 @@ var TemplateWindow = Window.extend({
 			var t = this.choices[i];
 			
 			
-			//build hiddenbox
-			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
-			var d = $('<div class="hiddenbox"></div>');
-			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
-			var desc = $('<table></table>');
-			p.append(desc);
-			d.append(p);
-			
-			if (t.description || t.creation_date) {
-
-				info.append(' &nbsp; <img src="/img/info.png" />');
-			
-				if (t.description) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
-				}
-				
-				if (t.creation_date) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
-				}
-				
-			}
-			
-			if (!t.nlXTP_installed) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-				info.append('&nbsp;<img src="/img/warning16.png" />');
-			}
-			
-			info.append(d);
 			
 
 			//build template list entry
@@ -709,6 +683,10 @@ var TemplateWindow = Window.extend({
 				});
 			}
 			
+			if (this.disable_restricted && t.restricted) {
+				radio.prop("disabled",true);
+			}
+			
 			if (t.name == this.element.data.attrs.template) {
 				radio.prop("checked","checked");
 			}name
@@ -717,7 +695,7 @@ var TemplateWindow = Window.extend({
 			td_option.append($('<label for="'+t.name+'">'+t.label+'</label>'));
 			
 			var td_info = $('<td />');
-			td_info.append(info);
+			td_info.append(t.infobox());
 			
 			tr.append(td_option);
 			tr.append(td_info);
@@ -1040,7 +1018,7 @@ var Workspace = Class.extend({
     		width: 500,
     		topology: this.editor.topology,
     		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
-    		ownUserId: this.editor.options.userId,
+    		ownUserId: this.editor.options.user.id,
     		permissions: this.editor.options.permission_list
     	});
     	
@@ -2618,7 +2596,7 @@ var createElementMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
-			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) ? { 
+			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) || obj.actionEnabled("change_template") ? { 
 				name: "Disk image",
 				icon: "drive",
 				items: {
@@ -3196,6 +3174,7 @@ var Template = Class.extend({
 		this.description = options.description || "no description available";
 		this.nlXTP_installed = options.nlXTP_installed || false;
 		this.creation_date = options.creation_date;
+		this.restricted = options.restricted;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3216,6 +3195,49 @@ var Template = Class.extend({
 			func: options.func,
 			hiddenboxHTML: hb
 		});
+	},
+	infobox: function() {
+		var restricted_icon = "/img/lock_open.png";
+		var restricted_text = "You have the permission to use this restricted template.";
+		if (!editor.allowRestrictedTemplates) {
+			restricted_icon = "/img/lock.png";
+			restricted_text = "This template is restricted. Contact an administrator if you want to get access to restricted templates.";
+		}
+		
+		var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		var d = $('<div class="hiddenbox"></div>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var desc = $('<table></table>');
+		p.append(desc);
+		d.append(p);
+		
+		if (this.description || this.creation_date) {
+
+			info.append(' &nbsp; <img src="/img/info.png" />');
+		
+			if (this.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));
+			}
+			
+			if (this.creation_date) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+this.creation_date+'</td></tr>'));
+			}
+			
+		}
+		
+		if (!this.nlXTP_installed) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			info.append('&nbsp;<img src="/img/warning16.png" />');
+		}
+		
+		if (this.restricted) {
+			desc.append($('<tr><td style="background:white;"><img src="'+restricted_icon+'" /></td><td style="background:white;">'+restricted_text+'</td></tr>'));
+			info.append('&nbsp;<img src="'+restricted_icon+'" />');
+		}
+		
+		info.append(d);
+		
+		return info;
 	}
 });
 
@@ -3335,6 +3357,14 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
+		
+		this.allowRestrictedTemplates= false;
+		this.allowRestrictedProfiles = false;
+		for (var i=0; i<this.options.user.flags.length; i++) {
+			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
+			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedTemplates= true;
+		}
+		
 		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
 		var t = this;
 		this.workspace.setBusy(true);

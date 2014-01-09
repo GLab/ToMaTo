@@ -63,7 +63,7 @@
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
   	topology: {{top.id}},
-  	userId: "{{user.id}}",
+  	user: {{request.session.user.data|safe}},
   	isGlobalOwner: "{{user.flags.global_owner}}",
   	permission_list: {{permission_list|safe}}
   	
