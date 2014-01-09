@@ -21,9 +21,9 @@
 function loadbusy() {
 	var busyloader = $('\
 			<div style="background:#c0c0c0;\
-						filter:alpha(opacity=80); /* IE */ \
-						-moz-opacity: 0.80; /* Mozilla */ \
-						opacity: 0.80; /* Opera */ \
+						filter:alpha(opacity=75); /* IE */ \
+						-moz-opacity: 0.75; /* Mozilla */ \
+						opacity: 0.75; /* Opera */ \
 						position:absolute;\
 						top:0;\
 						left:0;\
@@ -31,21 +31,14 @@ function loadbusy() {
 						height:' + Math.max($(document).height(),$(window).height(),/* For opera: */document.documentElement.clientHeight) + 'px;\
 						z-index:11;">\
 						</div>\
-				<div style="background:white;\
-					border: 1px solid black;\
-					padding: 1cm;\
+				<div class="panel panel-default" style="background:white;\
 					position:absolute;\
-					top: 50%;\
-					left: 50%;\
-					width:400px;\
-					height:150px;\
-					margin-top:-75px;\
-					margin-left: -200px;\
+					top: 35%;\
+					left: 35%;\
 					font-size: 30px;\
 					text-align:center;\
 					z-index:12;">\
-					<p>Loading Topology Editor...</p>\
-					<img src="/img/loading_big.gif" alt="loading..."/>\
+					<div class="panel-body"><h1>Loading Topology Editor</h1><img src="/img/loading_big.gif" alt="loading..."/>\</div>\
 				</div>\
 			');
 	$('body').append(busyloader);

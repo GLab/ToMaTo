@@ -6,14 +6,14 @@
 <h1>List of Templates</h1>
 
 {% if templ_list|length > 10 and request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
+	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" class="btn btn-default" /></p>
 {% endif %}
 
 {% if templ_list %}
 	<script src="/js/enhancetable.js"></script>
 	
 	
-	<table class="sortable,filterable">
+	<table class="sortable,filterable table table-striped">
 	  <tr>
 	  	<th>Tech</th>
 	    <th>Label</th>
@@ -130,7 +130,7 @@
 {% endif %}
 
 {% if request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" /></p>
+	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" class="btn btn-default" /></p>
 {% endif %}
 
 {% endblock %}

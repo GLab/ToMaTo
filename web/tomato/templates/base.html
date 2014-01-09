@@ -8,11 +8,27 @@
 <title>G-Lab ToMaTo</title> 
 <meta name="DESCRIPTION" content="German Lab Webpage" /> 
 
-<link href="/style/style.css" rel="stylesheet" type="text/css" /> 
 <link rel="shortcut icon" type="image/x-icon" href="//www.german-lab.de/favicon.ico" />
+<!-- Bootstrap core CSS -->
+<link href="/style/bootstrap.min.css" rel="stylesheet">
 
+<!-- Custom styles for this template -->
+<link href="/style/justified-nav.css" rel="stylesheet">
+
+<link href="/style/custom.css" rel="stylesheet">
+
+<!-- Just for debugging purposes. Don't actually copy this line! -->
+<!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
 {% load tomato %}
 
+<script src="/js/jquery.js"></script>
+<script src="/js/dropdown.js"></script>
 {% block header %}
 {% endblock %}
 </head>
@@ -36,67 +52,75 @@ head.appendChild(style);
 
 
 {% block page %}
-<div id="border_top"></div> 
-<div id="page"> 
 
-	<div id="header"> 
-		<div id="minimenu_top" class="smallmenu"></div> 
-		<div id="logo_glab">
-			<a href="//www.german-lab.de"><img border="0" src="/style/glablogo.jpg" alt="glablogo" /></a>
-		</div> 
-		<div id="logo_tomato">
-			<a href="/"><img src="/style/tomato_logo.png" /></a>
-		</div>
-		
-			
-			<div id="menu_userinfo">
+<div class="container">
+	<div class="masthead">
+		<table style="width:100%">
+		<tr>
+		<td>
+        <img src="/style/glablogo.jpg" alt="GermanLab" class="img-rounded">
+        <img src="/style/tomato_logo.png" alt="ToMaTo" class="img-rounded">
+        </td>
+        <td style="text-align: right;vertical-align:bottom;">
+        <small>
+                        {% if request.session.user %}
+                        Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
+                        {% else %}
+                        &nbsp;
+                        {% endif %}
+        </small>
+        </td>
+        </tr>
+        </table>
+        <ul class="nav nav-justified">
 			{% if request.session.user %}
-			Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
-			{% else %}
-			&nbsp;
-			{% endif %}
-			</div>
-		<div id="menu_top">	
-			<ul>
-				{% if request.session.user %}
-					<li id="menu_item_account"><a href="{%url account.info%}">My Account</a></li>
-					<li id="menu_item_topologies"><a href="{%url topology.index%}">Topologies</a></li>
-					<li id="menu_item_admin"><a href="{%url host.index%}">Admin</a></li>
+				<li><a href="{%url account.info%}">My Account</a></li>
+				<li><a href="{%url topology.index%}">Topologies</a></li>
+				<li class="dropdown">
+			        <a href="{%url host.index%}" class="dropdown-toggle" data-toggle="dropdown">Admin <b class="caret"></b></a>
+			        <ul class="dropdown-menu">
+						<li><a href="{%url host.index%}">Hosts</a></li>
+						<li><a href="{%url site.index%}">Sites</a></li>
+						<li><a href="{%url organization.index%}">Organizations</a></li>
+
+						<li role="presentation" class="divider"></li>
+						<li><a href="{%url device_templates.index%}">Templates</a></li>
+						<li><a href="{%url device_profile.index%}">Device profiles</a></li>
+
+						<li role="presentation" class="divider"></li>
+						<li><a href="{%url external_networks.index%}">External networks</a></li>
+						<li><a href="{%url external_network_instances.index%}">External network instances</a></li>
+			
+						<li role="presentation" class="divider"></li>
+						<li><a href="{%url account.index%}">Account list</a></li>
+						<li><a href="{%url account.index_newaccounts%}">Open User Registrations</a></li>
+						<li><a href="{%url topology.index_all%}">All Topologies</a></li>
+
+						<li role="presentation" class="divider"></li>
+						<li><a href="{%url physical_link_stats.index%}">Physical links</a></li>
+						<li><a href="{.%url main.resource_usage_by_user%}">Resource usage</a></li>
+				    </ul>
 				{% else %}
-					<li id="menu_item_register"><a href="{%url account.register%}">Register</a></li>
-					<li id="menu_item_login"><a href="{%url main.login%}">Login</a></li>
+					<li><a href="{%url account.register%}">Register</a></li>
+					<li><a href="{%url main.login%}">Login</a></li>
 				{% endif %}
 				<li id="menu_item_help"><a href="{%url main.help%}" target="_help">Help</a></li>
-			</ul>
-		
-		{% block menu_select %}{% endblock %}
-		</div> 
-	</div>  
- 
-	<div id="left"> 
-		{% block left %}{% endblock %}
-	</div> 
- 
-	<div id="content">
-		{% block content %}{% endblock %}
-	</div> 
-	<br class="clearer" /> 
-</div> 
+        </ul>
+      </div>
 
+      {% block content %}
 
-<footer>
-	
-	<div id="links">
-		<a href="{%url main.project%}">Project</a>  
+	  {% endblock %}      
+
+      <!-- Site footer -->
+      <div class="footer">		
+      	<a href="{%url main.project%}">Project</a>  
    		<a href="{%url main.help "license/license"%}">License</a>
    		<a href="{% aupurl %}">Terms and Conditions</a>
-	</div>
-	
-   	<div id="legal">
-   		Copyright © 2010 <a href="http://www.icsy.de">Integrated Communication Systems Lab</a> of the <a href="http://www.uni-kl.de">University of Kaiserslautern</a>. 
-	</div> 
-	
-</footer>
+        <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern, <a href="{{ site.baseurl }}/contact">Impressum</a></p>
+      </div>
+
+    </div> <!-- /container -->
 
 </body> 
 {% endblock %}

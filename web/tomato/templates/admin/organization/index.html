@@ -8,13 +8,13 @@
 {% if organization_list %}
 
 	{% if organization_list|length > 10 and request.session.user and request.session.user.isAdmin %}
-		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
+		<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" class="btn btn-default" /></p>
 	{% endif %}
 
 	<script src="/js/enhancetable.js"></script>
 	
 	
-	<table class="sortable,filterable">
+	<table class="sortable,filterable table table-striped">
 	  <thead><tr>
 	    <th>Name</th>
 	    <th>Label</th>
@@ -57,7 +57,7 @@
 {% endif %}
 
 {% if request.session.user and request.session.user.isAdmin %}
-	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" /></p>
+	<p><input type="button" onClick="window.location='{%url organization.add%}'" value="Add organization" class="btn btn-default" /></p>
 {% endif %}
 
 {% endblock %}
