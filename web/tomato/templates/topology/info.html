@@ -1,4 +1,5 @@
 {% extends "topology/base.html" %}
+{% load tomato %}
 
 {% block header %}
 <base href="/"/>
@@ -63,7 +64,7 @@
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 
   	topology: {{top.id}},
-  	user: {{request.session.user.data|safe}},
+  	user: {{request.session.user.data|jsonify}},
   	isGlobalOwner: "{{user.flags.global_owner}}",
   	permission_list: {{permission_list|safe}}
   	
