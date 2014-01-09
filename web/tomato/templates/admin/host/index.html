@@ -56,11 +56,7 @@
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
 	    <th stddev_column_class="good_high">Availability</th>
-	    <th />
-	    
-	    {% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
-        	<th />
-        {% endif %}
+	    <th class="icononly" />
 	  </tr>
 	  
 		{% for host in host_list %}
@@ -119,7 +115,7 @@
 		    
 		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>
 		    
-		    <td>
+		    <td class="icononly">
 			    {% if host.description_text %}
 					<div class="hoverdescription"" style="display:inline;">
 						<img src="/img/info.png" alt="i" /> &nbsp;
@@ -128,14 +124,13 @@
 						</div>
 					</div>
 				{%endif%}
-			</td>
-			    
 		    {% if request.session.user|args:host.organization|call:"isHostManager" %}
-		    	<td><nobr>
+		    <span width=16;></span>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
 		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
-		    	</nobr></td>
+		    	
 			{% endif %}
+			</td>
 	  </tr>
 	{% endfor %}
 	</table>
