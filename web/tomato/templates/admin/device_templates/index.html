@@ -54,26 +54,26 @@
 	    
 	    
 	    <div class="hoverdescription" style="float:left;">
-	 
-	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
-		    	<img src="/img/warning16.png" alt="!"/>
-		    {%endif%}
 	    
 	    	{% if templ.attrs.description %}		    	
 		    	<img src="/img/info.png" alt="i" />
+		    {% else %}
+		    	<img src="/img/invisible16.png" alt="!"/>
+		    {%endif%}
+	 
+	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
+		    	<img src="/img/warning16.png" alt="!"/>
+		    {% else %}
+		    	<img src="/img/invisible16.png" alt="!"/>
 		    {%endif%}
 		    
 		    {% if templ.attrs.restricted %}
 		    	<img src="/img/lock.png" />
+		    {% else %}
+		    	<img src="/img/invisible16.png" alt="!"/>
 			{% endif %}
 			
     		<div class="hiddenbox"><table>
-    		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
-	    		<tr>
-		    		<td><img src="/img/warning16.png" /></td>
-		    		<td>nlXTP Guest Modules not installed</td>
-	    		</tr>
-    		{%endif%}
     		
     		{% if templ.attrs.description %}
     			<tr>
@@ -81,6 +81,13 @@
 	    			<td>{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	    		</tr>
 	    	{%endif%}
+	    	
+    		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
+	    		<tr>
+		    		<td><img src="/img/warning16.png" /></td>
+		    		<td>nlXTP Guest Modules not installed</td>
+	    		</tr>
+    		{%endif%}
 	    	
 		    {% if templ.attrs.restricted %}
 				<tr>

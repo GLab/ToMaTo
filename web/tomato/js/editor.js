@@ -3215,23 +3215,29 @@ var Template = Class.extend({
 			info.append(' &nbsp; <img src="/img/info.png" />');
 		
 			if (this.description) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));	
 			}
 			
 			if (this.creation_date) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+this.creation_date+'</td></tr>'));
 			}
 			
+		} else {
+			info.append(' &nbsp; <img src="/img/invisible16.png" />');
 		}
 		
 		if (!this.nlXTP_installed) {
 			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
 			info.append('&nbsp;<img src="/img/warning16.png" />');
+		} else {
+			info.append(' &nbsp; <img src="/img/invisible16.png" />');
 		}
 		
 		if (this.restricted) {
 			desc.append($('<tr><td style="background:white;"><img src="'+restricted_icon+'" /></td><td style="background:white;">'+restricted_text+'</td></tr>'));
 			info.append('&nbsp;<img src="'+restricted_icon+'" />');
+		} else {
+			info.append(' &nbsp; <img src="/img/invisible16.png" />');
 		}
 		
 		info.append(d);
