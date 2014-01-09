@@ -88,8 +88,14 @@
 }
 
 
+table th {
+  font-size: 12px;
+}
 
-
+.table th, .table td {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
 
 
 /*
