@@ -58,19 +58,19 @@
 	    	{% if templ.attrs.description %}		    	
 		    	<img src="/img/info.png" alt="i" />
 		    {% else %}
-		    	<img src="/img/invisible16.png" alt="!"/>
+		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 	 
 	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {% else %}
-		    	<img src="/img/invisible16.png" alt="!"/>
+		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
 		    {% if templ.attrs.restricted %}
 		    	<img src="/img/lock.png" />
 		    {% else %}
-		    	<img src="/img/invisible16.png" alt="!"/>
+		    	<img src="/img/invisible16.png" />
 			{% endif %}
 			
     		<div class="hiddenbox"><table>
