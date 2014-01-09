@@ -306,9 +306,46 @@ var ChoiceElement = FormElement.extend({
 	}
 });
 
-var TemplateChoiceElement = ChoiceElement.extend({
+var TemplateElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
+		this.options = options;
+		this.disabled = options.disabled;
+		this.call_element = options.call_element;
+		
+		this.element = $('<div style="margin:0px; padding:0px; border:0px;"></div>');
+		//this.element.before($('<div>'+this.template.label+'</div>'));
+		
+		template = editor.templates.get(options.type,options.value);
+		if (options.custom_template) {
+			this.change_value(new DummyForCustomTemplate(template));
+		} else {
+			this.change_value(template);
+		}
+		
+	},
+	getValue: function() {
+		return this.value;
+	},
+	
+	change_value: function(template) {
+		this.value = template.name;
+		this.template = template;
+		var t = this;
+		
+		var changebutton = $('<input type="button" value="change" />');
+		changebutton.click(function() {
+			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
+		})
+		
+		if (this.disabled) {
+			changebutton.prop("disabled",true);
+		}
+		
+		this.element.empty();
+		this.element.append(this.template.label + ' &nbsp; ');
+		this.element.append(changebutton)
+		this.element.append($(this.template.infobox()));
 	}
 });
 
@@ -622,6 +659,11 @@ var TemplateWindow = Window.extend({
 			this.disabled = options.disabled;
 		}
 		
+		this.callback = function(value) {};
+		if (options.callback != undefined && options.callback != null) {
+			this.callback = options.callback;
+		}
+		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
 		
 		var table = $('<table></table>');
@@ -637,6 +679,7 @@ var TemplateWindow = Window.extend({
 		var t = this;
 		cancelButton.click(function() {
 			t.hide();
+			t.callback(t.getValue());
 		});
 		buttons.append(cancelButton);
 		
@@ -647,6 +690,7 @@ var TemplateWindow = Window.extend({
 		saveButton.click(function() {
 			t.save();
 			t.hide();
+			t.callback(t.getValue());
 		});
 		buttons.append(saveButton);
 		
@@ -2921,55 +2965,17 @@ var VMElement = IconElement.extend({
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
 	},
-	showTemplateWindow: function() {
+	showTemplateWindow: function(callback) {
 		var window = new TemplateWindow({
 			element: this,
-			width: 300
+			width: 300,
+			callback: callback
 		});
 		window.show();
 	},
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
-		
-		
-		var templateInfo = {};
-		var templates = this.editor.templates.getAll(this.data.type);
-
-		for (var i=0; i<templates.length; i++) {
-			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
-			var d = $('<div class="hiddenbox"></div>');
-			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
-			var desc = $('<table></table>');
-			p.append(desc);
-			d.append(p);
-			
-			t=templates[i];
-			
-			if (t.description || t.creation_date) {
-
-				info.append(' &nbsp; <img src="/img/info.png" />');
-			
-				if (t.description) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
-				}
-				
-				if (t.creation_date) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
-				}
-				
-			}
-			
-			if (!t.nlXTP_installed) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-				info.append('&nbsp;<img src="/img/warning16.png" />');
-			}
-			
-			info.append(d);
-			
-			templateInfo[t.name] = info;
-		}
-		
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
@@ -3048,23 +3054,14 @@ var VMElement = IconElement.extend({
 			siteInfo[site.name] = info;
 		}
 		
-		
-		var templateChoices = {};
-		if (this.data.attrs.custom_template) {
-			templateChoices[this.data.attrs.template] = "Custom Image";
-			templateInfo = {}
-			templateInfo[this.data.attrs.template] = '<div class="hoverdescription" style="display:inline;"> &nbsp; <img src="/img/info.png" /><div class="hiddenbox"><p>You have uploaded a custom image.</p></div></div>';
-		} else {
-			templateChoices = createMap(this.editor.templates.getAll(this.data.type), "name", "label");
-		}
-		
-		config.special.template = new TemplateChoiceElement({
+		config.special.template = new TemplateElement({
 			label: "Template",
 			name: "template",
-			choices: templateChoices,
-			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
-			disabled: !(this.attrEnabled("template") && this.data.state == "created")
+			custom_template: this.data.attrs.custom_template,
+			disabled: (this.data.state == "started"),
+			type: this.data.type,
+			call_element: this
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
@@ -3167,6 +3164,7 @@ var HiddenChildElement = Element.extend({
 
 var Template = Class.extend({
 	init: function(options) {
+		this.classoptions = options;
 		this.type = options.tech;
 		this.subtype = options.subtype;
 		this.name = options.name;
@@ -3240,6 +3238,18 @@ var Template = Class.extend({
 		return info;
 	}
 });
+
+var DummyForCustomTemplate = Template.extend({
+	init:function(original) {
+		this._super(original.classoptions);
+		this.subtype = "customimage";
+		this.label = "Custom Image";
+		this.description = "You have uploaded an own image. We cannot know anything about this. NlXTP modules may be missing.";
+		this.nlXTP_installed = true;
+		this.creation_date = undefined;
+		this.restricted = false;
+	}
+})
 
 var TemplateStore = Class.extend({
 	init: function(data) {
