@@ -122,7 +122,9 @@ usage example:
 </div>
  */
 
-
+div.hoverdescription {
+	display:inline;
+}
 div.hoverdescription div.hiddenbox {
 	display:none;
 	font-size: 10pt;
