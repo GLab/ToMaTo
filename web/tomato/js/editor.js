@@ -2660,7 +2660,7 @@ var createElementMenu = function(obj) {
 						}
 					} : null,
 					"upload_image": obj.actionEnabled("upload_grant") ? {
-						name:"Upload own image",
+						name:"Upload custom image",
 						icon:"upload",
 						callback: function(){
 							obj.uploadImage();
