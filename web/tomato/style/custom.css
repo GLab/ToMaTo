@@ -141,3 +141,17 @@ div.hoverdescription:hover div.hiddenbox td p {
 .form-group > table > tbody > tr > td > ul > li > label {
 	font-weight: normal;
 }
+
+/* stddev color */
+table td.stddev_high.good_low, table td.stddev_low.good_high,
+table td.stddev_veryhigh.good_low, table td.stddev_verylow.good_high {
+  color: red !important;
+}
+table td.stddev_high.good_high, table td.stddev_low.good_low,
+table td.stddev_veryhigh.good_high, table td.stddev_verylow.good_low {
+  color: green !important;
+}
+table td.stddev_veryhigh.good_low, table td.stddev_verylow.good_high,
+table td.stddev_veryhigh.good_high, table td.stddev_verylow.good_low {
+  font-weight: bold;
+}
