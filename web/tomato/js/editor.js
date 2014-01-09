@@ -2653,7 +2653,7 @@ var createElementMenu = function(obj) {
 						}
 					} : null,
 					"download_image": obj.actionEnabled("download_grant") ? {
-						name:"Download own image",
+						name:"Download image",
 						icon:"download",
 						callback: function(){
 							obj.downloadImage();
