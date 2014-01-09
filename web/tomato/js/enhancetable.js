@@ -89,6 +89,7 @@ enhancetable = {
   
   stddevColor: function(table) {
 	var threshold = parseFloat(table.getAttribute("stddev_threshold")) || 1.0;
+    var threshold_high = parseFloat(table.getAttribute("stddev_threshold_high")) || 2.0;
     var rows = table.getElementsByTagName('tr');
     var headers = rows[0].getElementsByTagName("th");
 	var colCount = rows[rows.length-1].getElementsByTagName('td').length;
@@ -122,9 +123,11 @@ enhancetable = {
         var f = (val - avg)/stddev;
         var cls = headers.length > col ? headers[col].getAttribute("stddev_column_class") : null;
         if (cls) this.toggleClass(cols[col], cls, true);
-        this.toggleClass(cols[col], "stddev_high", f >= threshold); 
-        this.toggleClass(cols[col], "stddev_low", f <= -threshold); 
-        this.toggleClass(cols[col], "stddev_normal", -threshold <= f <= -threshold); 
+        this.toggleClass(cols[col], "stddev_veryhigh", f >= threshold_high); 
+        this.toggleClass(cols[col], "stddev_verylow", f <= -threshold_high); 
+        this.toggleClass(cols[col], "stddev_high", threshold_high > f && f >= threshold); 
+        this.toggleClass(cols[col], "stddev_low", -threshold_high < f && f <= -threshold); 
+        this.toggleClass(cols[col], "stddev_normal", -threshold <= f && f <= -threshold); 
       }      
 	}
   },
