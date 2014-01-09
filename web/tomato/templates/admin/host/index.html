@@ -131,11 +131,10 @@
 			</td>
 			    
 		    {% if request.session.user|args:host.organization|call:"isHostManager" %}
-		    	<td>
+		    	<td><nobr>
 		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
-		    		&nbsp;
 		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
-		    	</td>
+		    	</nobr></td>
 			{% endif %}
 	  </tr>
 	{% endfor %}
