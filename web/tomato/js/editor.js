@@ -306,9 +306,46 @@ var ChoiceElement = FormElement.extend({
 	}
 });
 
-var TemplateChoiceElement = ChoiceElement.extend({
+var TemplateElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
+		this.options = options;
+		this.disabled = options.disabled;
+		this.call_element = options.call_element;
+		
+		this.element = $('<div style="margin:0px; padding:0px; border:0px;"></div>');
+		//this.element.before($('<div>'+this.template.label+'</div>'));
+		
+		template = editor.templates.get(options.type,options.value);
+		if (options.custom_template) {
+			this.change_value(new DummyForCustomTemplate(template));
+		} else {
+			this.change_value(template);
+		}
+		
+	},
+	getValue: function() {
+		return this.value;
+	},
+	
+	change_value: function(template) {
+		this.value = template.name;
+		this.template = template;
+		var t = this;
+		
+		var changebutton = $('<input type="button" value="change" />');
+		changebutton.click(function() {
+			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
+		})
+		
+		if (this.disabled) {
+			changebutton.prop("disabled",true);
+		}
+		
+		this.element.empty();
+		this.element.append(this.template.label + ' &nbsp; ');
+		this.element.append(changebutton)
+		this.element.append($(this.template.infobox()));
 	}
 });
 
@@ -609,6 +646,109 @@ var AttributeWindow = Window.extend({
 		var values = {};
 		for (var i=0; i < this.elements.length; i++) values[this.elements[i].name] = this.elements[i].getValue();
 		return values;
+	}
+});
+
+var TemplateWindow = Window.extend({
+	init: function(options) {
+		this._super(options);
+		this.element = options.element;
+		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
+		if (options.disabled == undefined || options.disabled == null) {
+			this.disabled = false;
+		} else {
+			this.disabled = options.disabled;
+		}
+		
+		this.callback = function(value) {};
+		if (options.callback != undefined && options.callback != null) {
+			this.callback = options.callback;
+		}
+		
+		this.disable_restricted = !(editor.allowRestrictedTemplates);
+		
+		var table = $('<table></table>');
+		
+		this.value = this.element.data.attrs.template;
+		this.choices = editor.templates.getAll(this.element.data.type);
+		
+		table.append(this.getList());
+		
+		var buttons = $('<div colspan="2" style="text-align:right;"></div>');
+		
+		var cancelButton = $('<input type="button" value="Cancel" />');
+		var t = this;
+		cancelButton.click(function() {
+			t.hide();
+			t.callback(t.getValue());
+		});
+		buttons.append(cancelButton);
+		
+		var saveButton = $('<input type="button" value="Save" />');
+		if (this.disabled) {
+			saveButton.prop("disabled",true);
+		}
+		saveButton.click(function() {
+			t.save();
+			t.hide();
+			t.callback(t.getValue());
+		});
+		buttons.append(saveButton);
+		
+		this.div.append(table);
+		this.div.append(buttons);
+	},
+	getValue: function() {
+		return this.value;
+	},
+	save: function() {
+		this.element.changeTemplate(this.getValue());
+	},
+	getList: function() {
+		var form = $("<form></form>");
+		var ths = this;
+		
+		for(var i=0; i<this.choices.length; i++) {
+			var t = this.choices[i];
+			
+			
+			
+
+			//build template list entry
+			var tr = $("<tr></tr>");
+			
+			var td_option = $('<td />');
+			var radio = $('<input type="radio" name="template" value="'+t.name+'" />');
+			
+			if (this.disabled) {
+				radio.prop("disabled",true);
+			} else {
+				radio.change(function() {
+					ths.value = this.value;
+				});
+			}
+			
+			if (this.disable_restricted && t.restricted) {
+				radio.prop("disabled",true);
+			}
+			
+			if (t.name == this.element.data.attrs.template) {
+				radio.prop("checked","checked");
+			}name
+			
+			td_option.append(radio);
+			td_option.append($('<label for="'+t.name+'">'+t.label+'</label>'));
+			
+			var td_info = $('<td />');
+			td_info.append(t.infobox());
+			
+			tr.append(td_option);
+			tr.append(td_info);
+			
+			form.append(tr);
+		}
+		
+		return form;
 	}
 });
 
@@ -923,7 +1063,7 @@ var Workspace = Class.extend({
     		width: 500,
     		topology: this.editor.topology,
     		isGlobalOwner: this.editor.options.isGlobalOwner, //todo: set value depending on user permissions
-    		ownUserId: this.editor.options.userId,
+    		ownUserId: this.editor.options.user.id,
     		permissions: this.editor.options.permission_list
     	});
     	
@@ -2293,6 +2433,14 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
+	changeTemplate: function(tmplName) {
+		this.action("change_template", {
+			params:{
+				tmplName: tmplName
+				}
+			}
+		);
+	},
 	uploadImage: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
@@ -2493,10 +2641,17 @@ var createElementMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
-			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) ? {
+			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) || obj.actionEnabled("change_template") ? { 
 				name: "Disk image",
 				icon: "drive",
 				items: {
+					"change_template": obj.actionEnabled("change_template") ? {
+						name:"Change Template",
+						icon:"drive",
+						callback: function() {
+							obj.showTemplateWindow();
+						}
+					} : null,
 					"download_image": obj.actionEnabled("download_grant") ? {
 						name:"Download image",
 						icon:"download",
@@ -2505,7 +2660,7 @@ var createElementMenu = function(obj) {
 						}
 					} : null,
 					"upload_image": obj.actionEnabled("upload_grant") ? {
-						name:"Upload image",
+						name:"Upload custom image",
 						icon:"upload",
 						callback: function(){
 							obj.uploadImage();
@@ -2811,48 +2966,17 @@ var VMElement = IconElement.extend({
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
 	},
+	showTemplateWindow: function(callback) {
+		var window = new TemplateWindow({
+			element: this,
+			width: 300,
+			callback: callback
+		});
+		window.show();
+	},
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
-		
-		
-		var templateInfo = {};
-		var templates = this.editor.templates.getAll(this.data.type);
-
-		for (var i=0; i<templates.length; i++) {
-			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
-			var d = $('<div class="hiddenbox"></div>');
-			var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
-			var desc = $('<table></table>');
-			p.append(desc);
-			d.append(p);
-			
-			t=templates[i];
-			
-			if (t.description || t.creation_date) {
-
-				info.append(' &nbsp; <img src="/img/info.png" />');
-			
-				if (t.description) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+t.description+'</td></tr>'));
-				}
-				
-				if (t.creation_date) {
-					desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+t.creation_date+'</td></tr>'));
-				}
-				
-			}
-			
-			if (!t.nlXTP_installed) {
-				desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-				info.append('&nbsp;<img src="/img/warning16.png" />');
-			}
-			
-			info.append(d);
-			
-			templateInfo[t.name] = info;
-		}
-		
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
@@ -2931,23 +3055,14 @@ var VMElement = IconElement.extend({
 			siteInfo[site.name] = info;
 		}
 		
-		
-		var templateChoices = {};
-		if (this.data.attrs.custom_template) {
-			templateChoices[this.data.attrs.template] = "Custom Image";
-			templateInfo = {}
-			templateInfo[this.data.attrs.template] = '<div class="hoverdescription" style="display:inline;"> &nbsp; <img src="/img/info.png" /><div class="hiddenbox"><p>You have uploaded a custom image.</p></div></div>';
-		} else {
-			templateChoices = createMap(this.editor.templates.getAll(this.data.type), "name", "label");
-		}
-		
-		config.special.template = new TemplateChoiceElement({
+		config.special.template = new TemplateElement({
 			label: "Template",
 			name: "template",
-			choices: templateChoices,
-			info: templateInfo,
 			value: this.data.attrs.template || this.caps.attrs.template["default"],
-			disabled: !(this.attrEnabled("template") && this.data.state == "created")
+			custom_template: this.data.attrs.custom_template,
+			disabled: (this.data.state == "started"),
+			type: this.data.type,
+			call_element: this
 		});
 		config.special.site = new ChoiceElement({
 			label: "Site",
@@ -3050,6 +3165,7 @@ var HiddenChildElement = Element.extend({
 
 var Template = Class.extend({
 	init: function(options) {
+		this.classoptions = options;
 		this.type = options.tech;
 		this.subtype = options.subtype;
 		this.name = options.name;
@@ -3057,6 +3173,7 @@ var Template = Class.extend({
 		this.description = options.description || "no description available";
 		this.nlXTP_installed = options.nlXTP_installed || false;
 		this.creation_date = options.creation_date;
+		this.restricted = options.restricted;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3077,8 +3194,63 @@ var Template = Class.extend({
 			func: options.func,
 			hiddenboxHTML: hb
 		});
+	},
+	infobox: function() {
+		var restricted_icon = "/img/lock_open.png";
+		var restricted_text = "You have the permission to use this restricted template.";
+		if (!editor.allowRestrictedTemplates) {
+			restricted_icon = "/img/lock.png";
+			restricted_text = "This template is restricted. Contact an administrator if you want to get access to restricted templates.";
+		}
+		
+		var info = $('<div class="hoverdescription" style="display: inline;"></div>');
+		var d = $('<div class="hiddenbox"></div>');
+		var p = $('<p style="margin:4px; border:0px; padding:0px; color:black;"></p>');
+		var desc = $('<table></table>');
+		p.append(desc);
+		d.append(p);
+		
+		if (this.description || this.creation_date) {
+
+			info.append(' &nbsp; <img src="/img/info.png" />');
+		
+			if (this.description) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));
+			}
+			
+			if (this.creation_date) {
+				desc.append($('<tr><td style="background:white;"><img src="/img/calendar.png" /></td><td style="background:white;">'+this.creation_date+'</td></tr>'));
+			}
+			
+		}
+		
+		if (!this.nlXTP_installed) {
+			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			info.append('&nbsp;<img src="/img/warning16.png" />');
+		}
+		
+		if (this.restricted) {
+			desc.append($('<tr><td style="background:white;"><img src="'+restricted_icon+'" /></td><td style="background:white;">'+restricted_text+'</td></tr>'));
+			info.append('&nbsp;<img src="'+restricted_icon+'" />');
+		}
+		
+		info.append(d);
+		
+		return info;
 	}
 });
+
+var DummyForCustomTemplate = Template.extend({
+	init:function(original) {
+		this._super(original.classoptions);
+		this.subtype = "customimage";
+		this.label = "Custom Image";
+		this.description = "You have uploaded an own image. We cannot know anything about this. NlXTP modules may be missing.";
+		this.nlXTP_installed = true;
+		this.creation_date = undefined;
+		this.restricted = false;
+	}
+})
 
 var TemplateStore = Class.extend({
 	init: function(data) {
@@ -3196,6 +3368,14 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
+		
+		this.allowRestrictedTemplates= false;
+		this.allowRestrictedProfiles = false;
+		for (var i=0; i<this.options.user.flags.length; i++) {
+			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
+			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedTemplates= true;
+		}
+		
 		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
 		var t = this;
 		this.workspace.setBusy(true);

@@ -3,8 +3,16 @@ import datetime, time
 from django.template.defaultfilters import timesince
 from django import template
 from ..lib import getapi
+from django.utils.safestring import mark_safe
+from django.utils import simplejson
+
+
 
 register = template.Library()
+
+@register.filter
+def jsonify(o):
+	return mark_safe(simplejson.dumps(o))
 
 @register.simple_tag
 def aupurl():
