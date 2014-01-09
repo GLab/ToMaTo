@@ -25,9 +25,11 @@
   background: #E6E6E6/*{bgColorDefault}*/ url(images/ui-bg_glass_75_e6e6e6_1x400.png)/*{bgImgUrlDefault}*/ 0/*{bgDefaultXPos}*/ 50%/*{bgDefaultYPos}*/ repeat-x/*{bgDefaultRepeat}*/;
 }
 
-p.tutorialExplanation {
-	
+#menu label {
+  font-weight: normal;
+  margin-left: 5px;
 }
+
 p.tutorialCommand {
 	font-weight:bold;
 }
@@ -60,6 +62,10 @@ div.windowHelp {
 	width: 32px !important;
 	height: 32px !important;
 	background-position: middle top !important;
+}
+
+.context-menu-list {
+    overflow: visible !important;
 }
 
 .context-menu-list .context-menu-item.not-selectable:first-child {
@@ -98,12 +104,12 @@ div.windowHelp {
 }
 
 .ui-dialog table {
-	font-size: 11px;
+    border-collapse: separate;
+    border-spacing: 3px;
 }
 
 .ui-dialog .notes {
 	font-family: monospace;
-	font-size: 1.3em;
 }
 
 .context-menu-item.icon-start { background-image: url(../img/started.png); }
