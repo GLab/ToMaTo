@@ -653,6 +653,7 @@ var TemplateWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
 		this.element = options.element;
+		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
 		} else {
