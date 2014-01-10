@@ -20,11 +20,7 @@
 	    <th>Label</th>
 	    <th>Location</th>
 	    <th>Organization</th>
-	    <th>Description</th>
-	    
-	    {% if request.session.user.isAdmin or "orga_admin" in request.session.user.flags %}
-	    	<th />
-	    {% endif %}
+	    <th class="icononly" />
 	    
 	  </tr>
 	  
@@ -35,22 +31,25 @@
 	    <td>{{site.location}}</td>
 	    <td>{{site.organization}}</td>
 	    
-	    <td>{% if site.description_text %}
+	    <td class="icononly">
+	    {% if site.description_text %}
 		<div class="hoverdescription">
 			<img src="/img/info.png" alt="i" />
 			<div class="hiddenbox">
 				{{ site.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
 			</div>
 		</div>
-		{%endif%}</td>
+		{%endif%}
 	    
 	    {% if request.session.user and request.session.user|args:site.organization|call:"isAdmin" %}
-	    	<td>
+	    	<span width="16">&nbsp;</span>
 	    		<a href="{%url site.edit site.name%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
 	    		<a href="{%url site.remove site.name%}" ><img src="/img/cross.png" title="remove" /></a>
-			</td>
+			
 	    {% endif %}
+	    
+	    </td>
 	    
 	  </tr>
 	{% endfor %}

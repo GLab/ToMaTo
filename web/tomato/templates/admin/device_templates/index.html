@@ -15,12 +15,11 @@
 	
 	<table class="sortable,filterable table table-striped">
 	  <tr>
-	  	<th>Tech</th>
+	  	<th class="iconoly">Tech</th>
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
 	    <th>Creation Date</th>
-	    <th>Description</th>
 	    <th>Ready</th>
 	    
 	    {% if request.session.user.isHostManager %}
@@ -30,7 +29,7 @@
 	  </tr>
 	{% for templ in templ_list %}
 	  <tr>
-	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right">
+	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right" class="icononly">
 			{% if templ.attrs.tech == 'kvmqm' %}
 				<img src="/img/kvm16.png" title="KVM" />
 			{% else %}{% if templ.attrs.tech == 'openvz' %}
@@ -50,10 +49,27 @@
 	    
 	    <td>{{templ.attrs.creation_date}}</td>
 	    
+	  
+	    
 	    <td>
+		    {% if templ.attrs.ready.backend %}
+		    	<img src="/img/tick.png" title="on backend" />
+		    {% else %}
+		    	<img src="/img/error.png" title="not on backend" />
+		    {% endif %}
+		    /
+		    {% if templ.attrs.ready.hosts.ready == templ.attrs.ready.hosts.total %}
+		    	<img src="/img/tick.png" title="on all hosts" />
+		    {% else %}
+		    	<img src="/img/error.png" title="not on all hosts" />
+	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
+		    {% endif %}
+	    </td>
 	    
 	    
-	    <div class="hoverdescription" style="float:left;">
+	    
+	    <td class="icononly">
+	    <div class="hoverdescription">
 	    
 	    	{% if templ.attrs.description %}		    	
 		    	<img src="/img/info.png" alt="i" />
@@ -101,33 +117,19 @@
 		    
 		
 		 </div>
-		    
-		    
-	    </td>
-	    
-	    <td>
-		    {% if templ.attrs.ready.backend %}
-		    	<img src="/img/tick.png" title="on backend" />
-		    {% else %}
-		    	<img src="/img/error.png" title="not on backend" />
-		    {% endif %}
-		    /
-		    {% if templ.attrs.ready.hosts.ready == templ.attrs.ready.hosts.total %}
-		    	<img src="/img/tick.png" title="on all hosts" />
-		    {% else %}
-		    	<img src="/img/error.png" title="not on all hosts" />
-	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
-		    {% endif %}
-	    </td>
 	    
 	    {% if request.session.user.isHostManager %}
-	    	<td>
+	    
+	    <span width="16">&nbsp;</span>
+	    
 	    		<a href="{%url device_templates.edit_data templ.id%}"><img src="/img/page_edit.png" title="edit data" /></a>
 	    		<a href="{%url device_templates.edit_torrent templ.id%}"><img src="/img/cd_edit.png" title="change torrent" /></a>
 	    		&nbsp;
 	    		<a href="{%url device_templates.remove templ.id%}" ><img src="/img/cross.png" title="remove" /></a>
-			</td>
+			
 	    {% endif %}
+	    
+	    </td>
 	    
 	  </tr>
 	{% endfor %}

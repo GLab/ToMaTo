@@ -24,7 +24,7 @@
     
     
 	{% if "global_admin" in request.session.user.flags or "orga_admin" in request.session.user.flags %}
-	    <th></th>
+	    <th class="icononly"></th>
 	{% endif %}
   </tr>
 {% for account in accounts %}
@@ -51,7 +51,7 @@
 	{% endif %}
 	    
 	{% if show_reason %}
-	    <td>
+	    <td class="icononly">
 	    	{% if account.reason %}
 		    	<div class="hoverdescription">
 		    		<img src="/img/info.png" />
@@ -64,7 +64,7 @@
 	{% endif %}
 	    
 	{% if request.session.user|args:account.organization|call:"isAdmin" %}
-	    <td>
+	    <td class="icononly">
 	      <a href="{%url account.info account.id %}"><img src="/img/pencil.png" title="edit" /></a> <a href="{%url account.remove account.id %}"><img src="/img/cross.png" title="remove" /></a>
 	    </td>
 	{% endif %}

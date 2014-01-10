@@ -20,7 +20,7 @@
 	    <th>Network</th>
 	    
 	    {% if request.session.user.isHostManager %}
-	    	<th />
+	    	<th class="icononly" />
 	    {% endif %}
 	    
 	  </tr>
@@ -31,7 +31,7 @@
 	  	<td>{{netwI.attrs.network}}</td>
 	    
 	    {% if request.session.user.isHostManager %}
-	    	<td>
+	    	<td class="icononly">
 	    		<a href="{%url external_network_instances.edit netwI.id%}"><img src="/img/pencil.png" title="edit" /></a>
 	    		&nbsp;
 	    		<a href="{%url external_network_instances.remove netwI.id%}" ><img src="/img/cross.png" title="remove" /></a>

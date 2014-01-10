@@ -92,9 +92,18 @@ table th {
   font-size: 12px;
 }
 
+td,th {
+	white-space:nowrap;
+}
+
 .table th, .table td {
   padding-left: 4px !important;
   padding-right: 4px !important;
+}
+
+td.icononly, th.icononly {
+	width:1%;
+	text-align:right;
 }
 
 
@@ -113,10 +122,13 @@ usage example:
 </div>
  */
 
-
+div.hoverdescription {
+	display:inline;
+}
 div.hoverdescription div.hiddenbox {
 	display:none;
 	font-size: 10pt;
+	white-space:normal !important;
 }
 div.hoverdescription:hover div.hiddenbox {
 	display:inline;
@@ -130,6 +142,9 @@ div.hoverdescription:hover div.hiddenbox {
 div.hoverdescription:hover div.hiddenbox p {
 	padding-left:  15px;
 	padding-right: 15px;
+}
+div.hoverdescription:hover div.hiddenbox td {
+	white-space:normal !important;
 }
 div.hoverdescription:hover div.hiddenbox td p {
 	padding-left: 0px;
