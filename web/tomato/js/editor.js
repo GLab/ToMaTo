@@ -508,7 +508,7 @@ var TutorialWindow = Window.extend({
 	},
 	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 		//load tutorial
-		this.tutorialSteps = editor_tutorial
+		this.tutorialSteps = tutorial_steps
 		
 		//set visible buttons
 		if (this.tutorialStatus == 0) {

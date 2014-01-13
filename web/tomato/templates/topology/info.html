@@ -16,9 +16,8 @@
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
 
-{% if tutorial %}
+{% if tutorial_data %}
 	<script language="JavaScript" type="text/javascript" src="js/editor_tutorial_help.js"></script>
-	<script language="JavaScript" type="text/javascript" src="editor_tutorial/{{tutorial}}.js"></script>
 {% endif %}
 
 
@@ -45,15 +44,20 @@
 
 <script language="JavaScript" type="text/javascript">
   help_baseUrl = "{% aupurl %}";
+  {% if tutorial_data %}
+  var tutorial_base_path = "{{tutorial_data.base_url}}";
+  var tutorial_steps = {{tutorial_steps|safe}};
+  {% if tutorial_data.data %}
+  var tutorial_data = {{tutorial_data.data|jsonify}};
+  {% endif %}
+  {% endif %}
+  
   var editor = new Editor({
   	menu_container: $('#menu'),
   	workspace_container: $('#workspace'),
-  	
-  	{% if tutorial %}
-  		tutorial:true,
-  		{% if tutorial_status %}
-			tutorial_status: {{tutorial_status}},
-		{% endif %}
+  	{% if tutorial_data %}
+  		tutorial: true,
+		tutorial_status: {{tutorial_status}},
   	{% else %}
   		tutorial:false,
   	{% endif %}
@@ -71,53 +75,5 @@
   	
   });
 </script>
-
-{% if optimize_if_small_display %}
-
-<script language="JavaScript" type="text/javascript">
-
-function shrinkHeader() {
-	console.log("shrinking header");
-	
-	var header = document.getElementById("header");
-	header.style.height=35;
-	header.innerHTML = "";
-	header.style.textAlign = "center";
-	
-	var logo = document.createElement('div')
-	logo.innerHTML='<a href="//german-lab.de/" target="_blank"><img src="/style/glablogo.jpg" height="33" /></a>\
-					  <a href="{%url main.index%}"><img src="/style/tomato_logo.png" height="33" /></a>';
-	logo.style.float = 'left';
-	
-	var top_name_h = document.getElementById("topology_name");
-	top_name_h.style.margin = 0;
-	var top_name = document.createElement('div');
-	top_name.appendChild(top_name_h);
-	
-	var l = document.createElement('div');
-	l.innerHTML = "<a href=\"{%url topology.index%}\" >Back to topology list</a>";
-	l.style.float = "right";
-	l.style['margin-right'] = 20;
-	
-	header.appendChild(logo);
-	header.appendChild(l);
-	header.appendChild(top_name);
-	
-}
-
-function removeFooter() {
-	document.getElementsByTagName('footer')[0].remove();
-}
-
-$('body').ready(function(){
-	if (document.height > document.body.clientHeight){
-		removeFooter();
-		if (document.height > document.body.clientHeight)
-			shrinkHeader()
-	}
-});
-</script>
-
-{% endif %}
 
 {% endblock %}
