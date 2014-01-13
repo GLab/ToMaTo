@@ -68,7 +68,8 @@ def startClient(path, bwlimit=10000):
 	assert os.path.exists(path)
 	_clientConfig = {"path": path, "bwlimit": bwlimit} 
 	_clientPid = spawn(["btlaunchmany", ".", "--max_upload_rate", str(bwlimit)], cwd=path, daemon=False)
-	process.ionice(_clientPid, process.IoPolicy.Idle)
+	if os.geteuid() == 0:
+		process.ionice(_clientPid, process.IoPolicy.Idle)
 
 def restartClient():
 	global _clientPid, _clientConfig
