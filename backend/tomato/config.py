@@ -18,7 +18,10 @@
 import os
 
 CERTIFICATE = "/etc/tomato/backend.pem"
-AUP_URL = "http://tomato-lab.org/aup"
+EXTERNAL_URLS = {
+				'aup':  "http://tomato-lab.org/aup",
+				'help': "http://tomato-lab.org/help"
+				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"
 TRACKER_PORT = 8002

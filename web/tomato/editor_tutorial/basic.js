@@ -10,7 +10,7 @@ var editor_tutorial = [
 		 * 		decides if this trigger object matches current step (shall the tut continue now - next step?)
 		 * 		if not set, there will be no automatical way to continue.
 		 * 	text: the text shown on screen (HTML formatting possible; CSS: style/editor.css)
-		 *  help_page: if set, a ?-icon will appear in the tutorial window, directing to the url '/help/help_page'
+		 *  help_page: if set, a ?-icon will appear in the tutorial window, directing to the given url under the backend's help url
 		 *  skip_button: if set, the skip button will have this caption.
 		 *
 		 * be careful: tutorials with only 1 step might be buggy.

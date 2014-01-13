@@ -31,8 +31,8 @@ def host_public_key():
 	return misc.getPublicKey()
 
 @cached(300)
-def aup_url():
-	return misc.getAUPurl()
+def external_urls():
+	return misc.getExternalURLs()
 
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
 	return link.getStatistics(siteA, siteB, type, after, before)
