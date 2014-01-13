@@ -1,0 +1,26 @@
+[
+  {
+    "url":   "chat/tutorial.json",
+    "name": "Chat Tutorial",
+    "desc": "Get an overview over ToMaTo and its major features in a scenario using a text-based chat client.",
+    "icon": "chat/icon.png"
+  },
+  {
+    "url":   "basic/tutorial.json",
+    "name": "Beginner Tutorial",
+    "desc": "Teaches the basics about how to use ToMaTo's editor.",
+    "icon": "basic/icon.png"
+  },
+  {
+    "url":   "data_access/tutorial.json",
+    "name": "Data Access",
+    "desc": "Teaches various methods on how to upload and/or download data to/from the devices",
+    "icon": "data_access/icon.png"
+  },
+  {
+    "url":   "connections/tutorial.json",
+    "name": "Using Connections",
+    "desc": "Learn everything about connections. (currently under construction)",
+    "icon": "connections/icon.png"
+  } 
+]

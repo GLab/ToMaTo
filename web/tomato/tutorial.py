@@ -22,53 +22,24 @@ from django.shortcuts import render, redirect
 import json
 import urllib2
 from urlparse import urljoin
-from django.http import HttpResponse
+from settings import tutorial_list_url
 
 
 #This is a list of available tutorials (values should be self-explaining):
 #'id' references to
 # - a tut desc file in ./editor_tutorial/'id'.js
 # - a topology file in ./editor_tutorial/'id'.tomato3
-tutorials = [
-							{
-							 'id':   "chat",
-							 'name': "Chat Tutorial",
-							 'desc': "Get an overview over ToMaTo and its major features in a scenario using a text-based chat client.",
-							 'icon': "/img/user32.png"
-							},
-							{
-							 'id':   "basic",
-							 'name': "Beginner Tutorial",
-							 'desc': "Teaches the basics about how to use ToMaTo's editor.",
-							 'icon': "/img/user32.png"
-							},
-							{
-							 'id':   "data_access",
-							 'name': "Data Access",
-							 'desc': "Teaches various methods on how to upload and/or download data to/from the devices",
-							 'icon': "/img/download.png"
-							},
-							{
-							 'id':   "connections",
-							 'name': "Using Connections",
-							 'desc': "Learn everything about connections. (currently under construction)",
-							 'icon': "/img/connect32.png"
-							}
-							#===================================================
-							# {
-							# 'id':   "devices",
-							# 'name': "Using Devices",
-							# 'desc': "Learn everything about devices.",
-							# 'icon': "/img/openvz32.png"
-							# }
-							#===================================================
-			 
-			]
 
 
 @wrap_rpc
 def index(api, request):
-	return render(request, "topology/editor_tutorials_list.html",{'tutorials':tutorials})
+	tutorials = json.load(urllib2.urlopen(tutorial_list_url))
+	for tut in tutorials:
+		for attr in ["icon", "url"]:
+			if not attr in tut:
+				continue
+			tut[attr] = urljoin(tutorial_list_url, tut[attr])
+	return render(request, "topology/tutorials_list.html",{'tutorials':tutorials})
 
 
 @wrap_rpc

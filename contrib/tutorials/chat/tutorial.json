@@ -1,0 +1,14 @@
+{
+  "data": {
+    "templates": {
+      "node": "chat_node",
+      "monitor": "chat_monitor",
+      "sender": "chat_sender"
+    },
+    "delay": 2000
+  },
+  "steps_file": "steps.js",
+  "topology_file": "topology.json",
+  "base_url": "."
+}
+

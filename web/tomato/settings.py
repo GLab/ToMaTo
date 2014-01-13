@@ -102,6 +102,7 @@ server_httprealm="G-Lab ToMaTo"
 project_url="http://dswd.github.com/ToMaTo/%s"
 help_url="http://github.com/dswd/ToMaTo/wiki/%s"
 ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
+tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
 try:
     import sys
