@@ -321,21 +321,24 @@ def getUser(name):
 	except User.MultipleObjectsReturned:
 		fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
 
-def getFilteredUsers(filterfn):
-	return filter(filterfn, getAllUsers())
+def getFilteredUsers(filterfn, organization = None):
+	return filter(filterfn, getAllUsers(organization))
 
 def getFlaggedUsers(flag):
 	return getFilteredUsers(lambda user: user.hasFlag(flag))
 
-def mailFilteredUsers(filterfn, subject, message):
-	for user in getFilteredUsers(filterfn):
+def mailFilteredUsers(filterfn, subject, message, organization = None):
+	for user in getFilteredUsers(filterfn, organization):
 		user.sendMail(subject, message)
 
-def mailFlaggedUsers(flag, subject, message):
-	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message)
+def mailFlaggedUsers(flag, subject, message, organization=None):
+	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
 
-def getAllUsers():
-	return User.objects.all()
+def getAllUsers(organization = None):
+	if organization is None:
+		return User.objects.all()
+	else:
+		return User.objects.filter(organization=organization)
 
 def cleanup():
 	for provider in providers:
