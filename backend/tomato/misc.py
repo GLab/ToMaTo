@@ -29,8 +29,8 @@ def getPublicKey():
 				lines.append(line)
 	return "".join(lines)
 
-def getAUPurl():
-	return config.AUP_URL
+def getExternalURLs():
+	return config.EXTERNAL_URLS
 
 def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()
