@@ -1,0 +1,26 @@
+{% extends "help/base.html" %}
+
+{% block content %}
+<h1>Contact</h1>
+
+	<form>
+
+		<table class="whitebg">
+			{{form.as_table}}
+	
+			<tr>
+				<td />
+				<td align="right">
+	
+					
+					<input type="submit" value="Send Email" />
+					
+					<input type="button" onclick="history.back()" value="Cancel" />
+					
+				</td>
+			</tr>
+		</table>
+	
+	</form>
+	
+{% endblock %}

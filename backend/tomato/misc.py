@@ -32,9 +32,25 @@ def getPublicKey():
 def getAUPurl():
 	return config.AUP_URL
 
-def mailAdmins(subject, text):
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()
-	mailFlaggedUsers(Flags.GlobalAdminContact, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text))
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	
+	if flag is None:
+		fault.raise_("issue '%s' does not exist" % issue)
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
 	
 def mailUser(user, subject, text):
 	from_ = currentUser()

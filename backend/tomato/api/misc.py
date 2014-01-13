@@ -37,10 +37,10 @@ def aup_url():
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
 	return link.getStatistics(siteA, siteB, type, after, before)
 
-def mailAdmins(subject, text):
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	if not currentUser():
 		raise ErrorUnauthorized()
-	misc.mailAdmins(subject, text)
+	misc.mailAdmins(subject, text, global_contact, issue)
 	
 def mailUser(user, subject, text):
 	if not currentUser():
