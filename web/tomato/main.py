@@ -19,8 +19,6 @@
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
-from django.template import TemplateDoesNotExist
-from django.template.response import TemplateResponse
 from django import forms
 
 from lib import getapi
@@ -28,15 +26,6 @@ import settings
 
 def index(request):
 	return render(request, "main/start.html")
-
-def help(request, page=""):
-	try:
-		if page=="":
-			return render(request, "help/index.html")
-		else:
-			return render(request, "help/pages/"+page+".html")
-	except TemplateDoesNotExist:
-		return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)
