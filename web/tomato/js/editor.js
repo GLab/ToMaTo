@@ -1380,14 +1380,15 @@ var Topology = Class.extend({
 	},
 	action_destroy: function() {
 		var t = this;
+		if (this.editor.options.safe_mode && !confirm("Are you sure you want to completely destroy this topology?")) return;
 		this.action("stop", {
 			callback: function(){
-				t.action("destroy", {});
-			}
+				t.action("destroy", {noask: true});
+			}, noask: true
 		});
 	},
 	remove: function() {
-		if (! confirm("Are you sure you want to completely remove this topology?")) return;
+		if (this.editor.options.safe_mode && !confirm("Are you sure you want to completely remove this topology?")) return;
 		var t = this;
 		var removeTopology = function() {
 			t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "begin"});
@@ -1399,14 +1400,18 @@ var Topology = Class.extend({
 				}
 			});			
 		}
-		if (this.elementCount()) {
-			for (var elId in this.elements) {
-				if (this.elements[elId].parent) continue;
-				this.elements[elId].remove(function(){
-					if (! t.elementCount()) removeTopology();		
-				}, false);
-			}
-		} else removeTopology();
+		this.action("stop", {noask: true, callback: function() {
+			t.action("destroy", {noask: true, callback: function() {
+				if (t.elementCount()) {
+					for (var elId in t.elements) {
+						if (t.elements[elId].parent) continue;
+						t.elements[elId].remove(function(){
+							if (! t.elementCount()) removeTopology();		
+						}, false);
+					}
+				} else removeTopology();				
+			}});			
+		}});
 	},
 	showDebugInfo: function() {
 		var t = this;

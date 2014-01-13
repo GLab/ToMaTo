@@ -54,6 +54,14 @@ CategoryTranslationDict = {
            'user':'User',
            'other':'Other'
         }
+
+category_order = [
+        'manager_user_global',
+        'manager_user_orga',
+        'manager_host_global',
+        'manager_host_orga',
+        'user'
+    ]
             
 class AccountFlagFixedList(FixedList):
     api = None
@@ -63,10 +71,15 @@ class AccountFlagFixedList(FixedList):
         
         FlagTranslationDict = self.api.account_flags()
         categories = self.api.account_flag_categories()
+        catlist = category_order
         
         output = []
         isFirst = True
         for cat in categories.keys():
+            if not cat in catlist:
+                catlist.append(cat)
+        
+        for cat in catlist:
             foundOne = False
             for v in categories[cat]:
                 if v in value:
@@ -100,10 +113,15 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
     
         FlagTranslationDict = self.api.account_flags()
         categories = self.api.account_flag_categories()
+        catlist = category_order
         
         output = ['<ul>']
         isFirst = True
         for cat in categories.keys():
+            if not cat in catlist:
+                catlist.append(cat)
+        
+        for cat in catlist:
             foundOne = False
             for v in categories[cat]:
                 if not foundOne:
