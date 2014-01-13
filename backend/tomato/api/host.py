@@ -161,31 +161,5 @@ def host_remove(address):
 	h = _getHost(address)
 	h.remove()
 
-def host_element_owner(hostname, num):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	h = _getHost(hostname)
-	try:
-		hel = h.getElement(num)
-	except host.HostElement.DoesNotExist:
-		fault.raise_("Host element %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
-	return hel.getOwner()
-
-def host_connection_owner(hostname, num):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	h = _getHost(hostname)
-	try:
-		hcon = h.getConnection(num)
-	except host.HostConnection.DoesNotExist:
-		fault.raise_("Host connection %d on host %s is not used" % (num, hostname), fault.USER_ERROR)
-	return hcon.getOwner()
-
 from .. import host, fault, currentUser
 from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
