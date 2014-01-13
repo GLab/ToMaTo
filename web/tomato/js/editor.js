@@ -385,7 +385,7 @@ var Window = Class.extend({
 			window.open(t.helpLinkTarget,'_help');
 		});
 		this.helpButton.append(this.helpLink);
-		this.helpLinkTarget="/help";
+		this.helpLinkTarget=editor.help_baseUrl;
 
 		this.div.append(this.helpButton);
 		
@@ -542,7 +542,7 @@ var TutorialWindow = Window.extend({
 		
 		var helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
 		if (helpUrl) {
-			this.helpLinkTarget="/help/"+helpUrl;
+			this.helpLinkTarget=editor.help_baseUrl+"/"+helpUrl;
 			this.helpButton.show();
 		} else {
 			this.helpButton.hide();
@@ -1712,7 +1712,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
-			helpTarget = "/help/editor/configwindow_"+this.data.type;
+			helpTarget = editor.help_baseUrl+"/editor/configwindow_"+this.data.type;
 		}
 		
 		console.log('opening config window for type '+this.data.type);
@@ -1831,7 +1831,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
-		options.helpTarget = "/help/editor/configwindow_connection";
+		options.helpTarget = editor.help_baseUrl+"/editor/configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
@@ -3181,7 +3181,7 @@ var Template = Class.extend({
 		if (!this.nlXTP_installed) {
 			hb = hb + '<tr><td><img src="/img/error.png" /></td>'+
 				'<td>No nlXTP guest modules are installed. Executable archives will not auto-execute and status '+
-				'will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
+				'will be unavailable. <a href="'+editor.help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
 		}
 		hb = hb + "</tbody></table></p>";
 		return Menu.button({
@@ -3227,7 +3227,7 @@ var Template = Class.extend({
 		}
 		
 		if (!this.nlXTP_installed) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="'+editor.help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
 			info.append('&nbsp;<img src="/img/warning16.png" />');
 		} else {
 			info.append(' &nbsp; <img src="/img/invisible16.png" />');
@@ -3374,6 +3374,7 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
+		this.help_baseUrl = options.help_baseUrl;
 		
 		this.allowRestrictedTemplates= false;
 		this.allowRestrictedProfiles = false;
