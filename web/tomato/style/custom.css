@@ -176,3 +176,7 @@ table td.stddev_veryhigh.good_low, table td.stddev_verylow.good_high,
 table td.stddev_veryhigh.good_high, table td.stddev_verylow.good_low {
   font-weight: bold;
 }
+
+img.preload {
+  display: none;
+}
