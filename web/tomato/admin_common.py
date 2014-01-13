@@ -19,6 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from django import forms
+from lib import getapi
 
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -30,3 +31,6 @@ def organization_name_list(api):
         res.append((organization["name"],organization["description"] or organization["name"]))
     res.sort()
     return res
+
+def help_url():
+    return getapi().external_urls()['help']
