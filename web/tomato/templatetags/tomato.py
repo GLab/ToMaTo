@@ -16,8 +16,18 @@ def jsonify(o):
 
 @register.simple_tag
 def aupurl():
-	api = getapi()
-	return api.server_info()['external_urls']['aup']
+    api = getapi()
+    return api.server_info()['external_urls']['aup']
+    
+@register.simple_tag
+def impressumurl():
+    api = getapi()
+    return api.server_info()['external_urls']['impressum']
+    
+@register.simple_tag
+def projecturl():
+    api = getapi()
+    return api.server_info()['external_urls']['project']
 
 @register.simple_tag
 def backend_version():
