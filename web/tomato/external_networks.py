@@ -20,6 +20,7 @@ from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
 from admin_common import RemoveResourceForm, BootstrapForm
+from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
@@ -32,6 +33,7 @@ class NetworkForm(BootstrapForm):
     description = forms.CharField(widget = forms.Textarea, required=False)
     def __init__(self, *args, **kwargs):
         super(NetworkForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(add)
         self.helper.layout = Layout(
             'kind',
             'label',
@@ -50,6 +52,7 @@ class EditNetworkForm(NetworkForm):
         super(EditNetworkForm, self).__init__(*args, **kwargs)
         self.fields["kind"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["kind"].help_text=None
+        self.helper.form_action = reverse(edit)
         self.helper.layout = Layout(
             'res_id',
             'kind',
@@ -80,10 +83,10 @@ def add(api, request):
            
             return render(request, "admin/external_networks/add_success.html", {'label': formData["label"]})
         else:
-            return render(request, "admin/form.html", {'form': form, 'heading':"Add External Network"})
+            return render(request, "form.html", {'form': form, 'heading':"Add External Network"})
     else:
         form = NetworkForm
-        return render(request, "admin/form.html", {'form': form, 'heading':"Add External Network"})
+        return render(request, "form.html", {'form': form, 'heading':"Add External Network"})
 
 
 @wrap_rpc
@@ -133,7 +136,7 @@ def edit(api, request, res_id = None):
         else:
             kind = request.POST["kind"]
             if kind:
-                return render(request, "admin/form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
+                return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+kind+"'"})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -142,6 +145,6 @@ def edit(api, request, res_id = None):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditNetworkForm(origData)
-            return render(request, "admin/form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
+            return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

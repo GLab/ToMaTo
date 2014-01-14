@@ -163,10 +163,10 @@ def add(api, request):
            
             return render(request, "admin/device_profile/add_success.html", {'label': formData["label"],'tech':data['tech']})
         else:
-            return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
+            return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
     else:
         form = AddProfileForm
-        return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
+        return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 
     
 @wrap_rpc
@@ -234,7 +234,7 @@ def edit(api, request, res_id=None):
         else:
             label = request.POST["label"]
             if label:
-                return render(request, "admin/form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
+                return render(request, "form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -249,6 +249,6 @@ def edit(api, request, res_id=None):
                     form = EditOpenVZForm(origData)
                 else:
                     form = EditKVMqmForm(origData)
-            return render(request, "admin/form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
+            return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})

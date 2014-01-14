@@ -25,6 +25,11 @@ from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.response import TemplateResponse
 
+from admin_common import BootstrapForm
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
 available_issues = [
                     ('admin', "User Priviliges or General Assistance"),
                     ('host', "Testbed Misbehavior")
@@ -44,11 +49,24 @@ def help(request, page=""):
     except TemplateDoesNotExist:
         return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
-class HelpForm(forms.Form):
+class HelpForm(BootstrapForm):
     admin_class = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=available_admin_classes), initial="organization", label="Who to Contact")
     issue = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=available_issues), initial="admin")
     subject = forms.CharField(max_length=255, required=True)
     message = forms.CharField(widget = forms.Textarea, label="Description", required=True)
+    def __init__(self, *args, **kwargs):
+        super(HelpForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(contact_form)
+        self.helper.layout = Layout(
+            'admin_class',
+            'issue',
+            'subject',
+            'message',
+            FormActions(
+                StrictButton('Send e-mail', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
 
 @wrap_rpc
 def contact_form(api, request, subject=None, message=None, global_contact=False, issue=None):
@@ -66,7 +84,7 @@ def contact_form(api, request, subject=None, message=None, global_contact=False,
                            issue=formData['issue'])
             return render(request, "help/contact_form_success.html")
         else:
-            return render(request, "help/contact_form.html", {'form': form})
+            return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
     else:
         form = HelpForm()
         if subject:
@@ -77,4 +95,4 @@ def contact_form(api, request, subject=None, message=None, global_contact=False,
             form.fields['admin_class'].initial = "global"
         if issue:
             form.fields['issue'].initial = issue
-        return render(request, "help/contact_form.html", {'form': form})
+        return render(request, "form.html", {'form': form,"heading":"Contact Administrators"})
