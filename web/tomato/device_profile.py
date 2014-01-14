@@ -21,9 +21,14 @@
 
 from django import forms
 from django.shortcuts import render
+from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
 from admin_common import RemoveResourceForm
+
+from tomato.crispy_forms.helper import FormHelper
+from tomato.crispy_forms.layout import Layout, Fieldset
+from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
 class ProfileForm(forms.Form):
     label = forms.CharField(max_length=255, help_text="The displayed label for this template")
@@ -32,26 +37,79 @@ class ProfileForm(forms.Form):
     restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
-    cpus = forms.FloatField(label = "number of CPUs")
     description = forms.CharField(widget = forms.Textarea, required=False)
+    def __init__(self, *args, **kwargs):
+        super(ProfileForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_method = "post"
+        self.helper.label_class = 'col-lg-2'
+        self.helper.field_class = 'col-lg-4'
+        
+class EditProfileForm(ProfileForm):
+    def __init__(self, *args, **kwargs):
+        super(EditProfileForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(edit)
 
 
-class EditOpenVZForm(ProfileForm):
+class EditOpenVZForm(EditProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
     def __init__(self, *args, **kwargs):
         super(EditOpenVZForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'diskspace', 'ram', 'restricted', 'preference', 'description']
+        self.helper.layout = Layout(
+            'res_id',
+            'tech',
+            'label',
+            'diskspace',
+            'ram',
+            'restricted',
+            'preference',
+            'description',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default')
+            )
+        )
 
-class EditRePyForm(ProfileForm):
+class EditRePyForm(EditProfileForm):
+    cpus = forms.FloatField(label = "number of CPUs")
     def __init__(self, *args, **kwargs):
         super(EditRePyForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'cpus', 'ram', 'restricted', 'preference', 'description']
+        self.helper.layout = Layout(
+            'res_id',
+            'tech',
+            'label',
+            'cpus',
+            'ram',
+            'restricted',
+            'preference',
+            'description',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default')
+            )
+        )
 
-class EditKVMqmForm(ProfileForm):
+class EditKVMqmForm(EditProfileForm):
     diskspace = forms.IntegerField(label="Disk Space (MB)")
+    cpus = forms.FloatField(label = "number of CPUs")
     def __init__(self, *args, **kwargs):
         super(EditKVMqmForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['res_id', 'tech', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
+        self.helper.layout = Layout(
+            'res_id',
+            'tech',
+            'label',
+            'diskspace',
+            'cpus',
+            'ram',
+            'restricted',
+            'preference',
+            'description',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default')
+            )
+        )
     
     
 class AddProfileForm(ProfileForm):
@@ -61,7 +119,22 @@ class AddProfileForm(ProfileForm):
     cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy, OpenVZ: float number; KVMqm: integer number")
     def __init__(self, *args, **kwargs):
         super(AddProfileForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['tech', 'name', 'label', 'diskspace', 'cpus', 'ram', 'restricted', 'preference', 'description']
+        self.helper.form_action = reverse(add)
+        self.helper.layout = Layout(
+            'tech',
+            'name',
+            'label',
+            'diskspace',
+            'cpus',
+            'ram',
+            'restricted',
+            'preference',
+            'description',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default')
+            )
+        )
 
 @wrap_rpc
 def index(api, request):
