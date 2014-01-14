@@ -5,11 +5,8 @@
 
 {{message}}
 
-<form method="POST" class="form-group" action="{% url main.login %}">
-<table class="table">
-{{form.as_p}}
-</table>
-<input type="submit" value="Login" class="btn btn-default"/>
-</form>
+
+{% load crispy_forms_tags %}
+{% crispy form %}
 
 {% endblock %}

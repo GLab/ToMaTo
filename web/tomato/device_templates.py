@@ -22,10 +22,16 @@ from django.shortcuts import render
 from django import forms
 import base64
 from lib import wrap_rpc
-from admin_common import RemoveResourceForm, help_url
+from admin_common import RemoveResourceForm, help_url, BootstrapForm
 import datetime
 
-class TemplateForm(forms.Form):
+from tomato.crispy_forms.helper import FormHelper
+from tomato.crispy_forms.layout import Layout, Fieldset
+from tomato.crispy_forms.bootstrap import StrictButton, FormActions
+from django.core.urlresolvers import reverse
+
+
+class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
 	description = forms.CharField(widget = forms.Textarea, required=False)
@@ -33,6 +39,9 @@ class TemplateForm(forms.Form):
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
+	def __init__(self, *args, **kwargs):
+		super(TemplateForm, self).__init__(*args, **kwargs)
+		self.fields['creation_date'].initial=datetime.date.today()
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="'+help_url()+'/admin/torrents" target="_blank">Help</a>')
@@ -40,16 +49,61 @@ class AddTemplateForm(TemplateForm):
 	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
-		self.fields.keyOrder = ['name', 'label', 'subtype', 'description', 'tech', 'preference', 'restricted', 'nlXTP_installed', 'creation_date', 'torrentfile']
+		self.helper.form_action = reverse(add)
+		self.helper.layout = Layout(
+            'name',
+            'label',
+            'subtype',
+            'description',
+            'tech',
+            'preference',
+            'restricted',
+            'nlXTP_installed',
+            'creation_date',
+            'torrentfile',
+            FormActions(
+                StrictButton('Add', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+	def __init__(self, *args, **kwargs):
+		super(EditTemplateForm, self).__init__(*args, **kwargs)
+		self.helper.form_action = reverse(edit_data)
+		self.helper.layout = Layout(
+            'res_id',
+            'label',
+            'subtype',
+            'description',
+            'preference',
+            'restricted',
+            'nlXTP_installed',
+            'creation_date',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
 	
-class ChangeTemplateTorrentForm(forms.Form):
+class ChangeTemplateTorrentForm(BootstrapForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
-	
+	def __init__(self, *args, **kwargs):
+		super(EditTemplateForm, self).__init__(*args, **kwargs)
+		self.fields['creation_date'].initial=datetime.date.today()
+		self.helper.form_action = reverse(edit_torrent)
+		self.helper.layout = Layout(
+            'res_id',
+            'creation_date',
+            'torrentfile',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
 
 @wrap_rpc
 def index(api, request):
@@ -70,6 +124,7 @@ def index(api, request):
 
 @wrap_rpc
 def add(api, request):
+	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+api.server_info()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():
@@ -89,11 +144,11 @@ def add(api, request):
 											'creation_date':creation_date})
 			return render(request, "admin/device_templates/add_success.html", {'label': formData['label']})
 		else:
-			return render(request, "admin/device_templates/form.html", {'form': form, "edit":False})
+			return render(request, "admin/form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
-		form = AddTemplateForm({'creation_date':datetime.date.today()})
-		return render(request, "admin/device_templates/form.html", {'tracker_url': api.server_info()["TEMPLATE_TRACKER_URL"], 'form': form, "edit":False, 'hide_errors':True})
-   
+		form = AddTemplateForm()
+		return render(request, "admin/form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
+
 
 @wrap_rpc
 def remove(api, request, res_id=None):
@@ -151,14 +206,14 @@ def edit_torrent(api, request, res_id=None):
 		else:
 			label = request.POST["label"]
 			if label:
-				return render(request, "admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':False})
+				return render(request, "admin/form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm({'res_id': res_id, 'creation_date':datetime.date.today()})
-			return render(request, "admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':False, 'hide_errors':True})
+			form = ChangeTemplateTorrentForm({'res_id': res_id})
+			return render(request, "admin/form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
@@ -184,7 +239,7 @@ def edit_data(api, request, res_id=None):
 		else:
 			label = request.POST["label"]
 			if label:
-				return render(request, "admin/device_templates/form.html", {'label': label, 'form': form, "edit":True, 'edit_data':True})
+				return render(request, "admin/form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
@@ -193,7 +248,7 @@ def edit_data(api, request, res_id=None):
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
 			form = EditTemplateForm(origData)
-			return render(request, "admin/device_templates/form.html", {'label': res_info['attrs']['label'], 'form': form, "edit":True, 'edit_data':True})
+			return render(request, "admin/form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
