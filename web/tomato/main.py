@@ -22,7 +22,7 @@ from django.core.urlresolvers import reverse
 from django import forms
 from tomato.crispy_forms.helper import FormHelper
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import StrictButton
+from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
 from lib import getapi
 import settings
@@ -44,7 +44,7 @@ class LoginForm(forms.Form):
 		super(LoginForm, self).__init__(*args, **kwargs)
 		self.helper = FormHelper()
 		self.helper.form_class = 'form-horizontal'
-		self.helper.form_action = "/login"
+		self.helper.form_action = reverse(login)
 		self.helper.form_method = "post"
 		self.helper.label_class = 'col-lg-2'
 		self.helper.field_class = 'col-lg-4'
@@ -52,7 +52,9 @@ class LoginForm(forms.Form):
 		    'username',
 		    'password',
 		    'long_session',
-		    StrictButton('Log in', css_class='btn-default', type="submit")
+		    FormActions(
+		    	StrictButton('Log in', css_class='btn-primary', type="submit")
+		    	)
 		    )
 
 def login(request):
