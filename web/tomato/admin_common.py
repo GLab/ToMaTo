@@ -21,8 +21,19 @@
 from django import forms
 from lib import getapi
 
+from tomato.crispy_forms.helper import FormHelper
+
 class RemoveResourceForm(forms.Form):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    
+class BootstrapForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(BootstrapForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_method = "post"
+        self.helper.label_class = 'col-lg-2'
+        self.helper.field_class = 'col-lg-4'
     
 def organization_name_list(api):
     l = api.organization_list()

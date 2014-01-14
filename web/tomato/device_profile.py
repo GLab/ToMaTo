@@ -24,13 +24,13 @@ from django.shortcuts import render
 from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
-from admin_common import RemoveResourceForm
+from admin_common import RemoveResourceForm, BootstrapForm
 
 from tomato.crispy_forms.helper import FormHelper
 from tomato.crispy_forms.layout import Layout, Fieldset
 from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
-class ProfileForm(forms.Form):
+class ProfileForm(BootstrapForm):
     label = forms.CharField(max_length=255, help_text="The displayed label for this template")
     ram = forms.IntegerField(label="RAM (MB)")
     preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
@@ -40,11 +40,6 @@ class ProfileForm(forms.Form):
     description = forms.CharField(widget = forms.Textarea, required=False)
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_class = 'form-horizontal'
-        self.helper.form_method = "post"
-        self.helper.label_class = 'col-lg-2'
-        self.helper.field_class = 'col-lg-4'
         
 class EditProfileForm(ProfileForm):
     def __init__(self, *args, **kwargs):
@@ -67,7 +62,7 @@ class EditOpenVZForm(EditProfileForm):
             'description',
             FormActions(
                 StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default')
+                StrictButton('Cancel', css_class='btn-default backbutton')
             )
         )
 
@@ -86,7 +81,7 @@ class EditRePyForm(EditProfileForm):
             'description',
             FormActions(
                 StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default')
+                StrictButton('Cancel', css_class='btn-default backbutton')
             )
         )
 
@@ -107,7 +102,7 @@ class EditKVMqmForm(EditProfileForm):
             'description',
             FormActions(
                 StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default')
+                StrictButton('Cancel', css_class='btn-default backbutton')
             )
         )
     
@@ -132,7 +127,7 @@ class AddProfileForm(ProfileForm):
             'description',
             FormActions(
                 StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default')
+                StrictButton('Cancel', css_class='btn-default backbutton')
             )
         )
 
@@ -168,10 +163,10 @@ def add(api, request):
            
             return render(request, "admin/device_profile/add_success.html", {'label': formData["label"],'tech':data['tech']})
         else:
-            return render(request, "admin/device_profile/form.html", {'form': form, "edit":False})
+            return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
     else:
         form = AddProfileForm
-        return render(request, "admin/device_profile/form.html", {'form': form, "edit":False})
+        return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
 
     
 @wrap_rpc
@@ -239,7 +234,7 @@ def edit(api, request, res_id=None):
         else:
             label = request.POST["label"]
             if label:
-                return render(request, "admin/device_profile/form.html", {'label': label, 'tech':'repy', 'form': form, "edit":True})
+                return render(request, "admin/form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -254,6 +249,6 @@ def edit(api, request, res_id=None):
                     form = EditOpenVZForm(origData)
                 else:
                     form = EditKVMqmForm(origData)
-            return render(request, "admin/device_profile/form.html", {'label': res_info['attrs']['label'], 'tech':'repy', 'form': form, "edit":True})
+            return render(request, "admin/form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
