@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "The contents of the steps file are not valid JSON, so this file can not be used for evaluating the contents, it just describes them using JSON schema.",
+  "type": "array",
+  "items": {
+    "description": "Each array item is a tutorial step, the steps are enumarted starting from 0",
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string-expression",
+        "desciption": "A text that describes the current step and the tasks of it. This text can contain HTML tags. Also the string can be concatenated with the variable 'tutorial_base_url' to fetch resources (e.g. images) from a remote location."
+      },
+      "trigger": {
+        "type": "bool function(event)",
+        "description": "A function that is called with each editor event. If this function returns true, the tutorial will automatically advance one step."
+      },
+      "skip_button": {
+        "type": "string",
+        "desciption": "The label of the skip button"
+      }
+    }
+  }
+}
