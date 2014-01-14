@@ -89,7 +89,7 @@ class wrap_rpc:
 				etype = e.__class__.__name__
 				ecode = ""
 				etext = e.message
-			return render(request, "main/error.html", {'type': etype, 'code': ecode, 'text': etext})
+			return render(request, "main/error.html", {'type': etype, 'code': ecode, 'text': etext}, status=500)
 		
 class wrap_json:
 	def __init__(self, fun):
