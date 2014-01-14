@@ -124,7 +124,7 @@ def index(api, request):
 
 @wrap_rpc
 def add(api, request):
-	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>{{tracker_url}}</tt></pre>'
+	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+api.server_info()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():
