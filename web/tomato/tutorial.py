@@ -59,8 +59,8 @@ def loadTutorial(url):
 	if "steps_file" in data:
 		steps_url = urljoin(url, data["steps_file"])
 		steps_str = urllib2.urlopen(steps_url).read()
-	if "topology_str" in data:
-		top_dict = json.loads(data["topology_data"])
+	if "topology_data" in data:
+		top_dict = data["topology_data"]
 	if "topology_file" in data:
 		top_url = urljoin(url, data["topology_file"])
 		top_dict = json.load(urllib2.urlopen(top_url))

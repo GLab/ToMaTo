@@ -45,7 +45,7 @@
 <script language="JavaScript" type="text/javascript">
   help_baseUrl = "{% aupurl %}";
   {% if tutorial_data %}
-  var tutorial_base_path = "{{tutorial_data.base_url}}";
+  var tutorial_base_url = "{{tutorial_data.base_url}}";
   var tutorial_steps = {{tutorial_steps|safe}};
   {% if tutorial_data.data %}
   var tutorial_data = {{tutorial_data.data|jsonify}};
