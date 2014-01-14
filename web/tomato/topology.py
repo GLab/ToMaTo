@@ -37,7 +37,7 @@ def index(api, request, showall=False):
 	tut_in_top_list = False
 	for top in toplist:
 		tut_in_top_list_old = tut_in_top_list
-		if top['attrs'].has_key('_tutorial_id'):
+		if top['attrs'].has_key('_tutorial_url'):
 			top['attrs']['tutorial_url'] = top['attrs']['_tutorial_url']
 			tut_in_top_list = True
 		if top['attrs'].has_key('_tutorial_disabled'):
