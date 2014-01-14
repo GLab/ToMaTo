@@ -57,7 +57,7 @@ class EditOrganizationForm(OrganizationForm):
         self.helper.form_action = reverse(edit)
     okbutton_text = "Save"
     
-class RemoveOrganizationForm(forms.Form):
+class RemoveOrganizationForm(BootstrapForm):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
     def __init__(self, *args, **kwargs):
         super(RemoveOrganizationForm, self).__init__(*args, **kwargs)

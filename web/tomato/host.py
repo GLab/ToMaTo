@@ -54,7 +54,7 @@ class EditHostForm(HostForm):
         self.fields["address"].help_text=None
         self.helper.form_action = reverse(edit)
     
-class RemoveHostForm(forms.Form):
+class RemoveHostForm(BootstrapForm):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
     def __init__(self, *args, **kwargs):
         super(RemoveHostForm, self).__init__(*args, **kwargs)
