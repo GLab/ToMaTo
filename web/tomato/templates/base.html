@@ -72,6 +72,8 @@ head.appendChild(style);
         </td>
         </tr>
         </table>
+        <div style="position:absolute;top:3;right:3;font-size:8pt" title="Backend version: {% backend_version %}
+Frontend version: {% frontend_version %}">Version: {% backend_version %}/{% frontend_version %}</div>
         <ul class="nav nav-justified">
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>

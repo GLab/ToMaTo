@@ -25,7 +25,8 @@ def server_info():
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
 		'external_urls': misc.getExternalURLs(),
-		'public_key': misc.getPublicKey()
+		'public_key': misc.getPublicKey(),
+		'version': misc.getVersion()
 	}
 
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment

@@ -62,7 +62,7 @@ def uptime():
 
 @cached
 def hostmanagerVersion():
-	return getDpkgVersionStr("tomato-hostmanager")
+	return getDpkgVersionStr("tomato-hostmanager") or "devel"
 
 @cached
 def updaterVersion():
