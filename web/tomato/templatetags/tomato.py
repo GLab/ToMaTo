@@ -23,6 +23,11 @@ def aupurl():
 def impressumurl():
     api = getapi()
     return api.server_info()['external_urls']['impressum']
+    
+@register.simple_tag
+def projecturl():
+    api = getapi()
+    return api.server_info()['external_urls']['project']
 
 @register.simple_tag
 def backend_version():
