@@ -44,4 +44,4 @@ def organization_name_list(api):
     return res
 
 def help_url():
-    return getapi().external_urls()['help']
+    return getapi().server_info()["external_urls"]['help']

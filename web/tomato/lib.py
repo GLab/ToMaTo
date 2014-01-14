@@ -111,6 +111,50 @@ class wrap_json:
 		except xmlrpclib.Fault, f:
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))
 
+DEVNULL = open("/dev/null", "w")
+
+def runUnchecked(cmd, shell=False, ignoreErr=False, input=None, cwd=None): #@ReservedAssignment
+	import subprocess
+	stderr = DEVNULL if ignoreErr else subprocess.STDOUT
+	stdin = subprocess.PIPE if input else None
+	proc=subprocess.Popen(cmd, cwd=cwd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr, shell=shell, close_fds=True)
+	res=proc.communicate(input)
+	return (proc.returncode,res[0])
+
+def getDpkgVersionStr(package):
+	fields = {}
+	error, output = runUnchecked(["dpkg-query", "-s", package])
+	if error:
+		return None 
+	for line in output.splitlines():
+		if ": " in line:
+			name, value = line.split(": ")
+			fields[name.lower()] = value
+	if not "installed" in fields["status"]:
+		return None
+	return fields["version"]
+
+def splitVersion(verStr):
+	version = []
+	numStr = ""
+	if not verStr:
+		return verStr
+	for ch in verStr:
+		if ch in "0123456789":
+			numStr += ch
+		if ch in ".:-":
+			version.append(int(numStr))
+			numStr = ""
+	version.append(int(numStr))
+	return version
+	
+def getDpkgVersion(package, verStr=None):
+	verStr = getDpkgVersionStr(package)
+	return splitVersion(verStr)
+
+def getVersion():
+	return getDpkgVersion("tomato-web") or "devel"
+
 class UserObj:
 	def __init__(self, api):
 		self.data = api.account_info()
