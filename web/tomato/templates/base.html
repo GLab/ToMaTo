@@ -72,8 +72,6 @@ head.appendChild(style);
         </td>
         </tr>
         </table>
-        <div style="position:absolute;top:3;right:3;font-size:8pt" title="Backend version: {% backend_version %}
-Frontend version: {% frontend_version %}">Version: {% backend_version %}/{% frontend_version %}</div>
         <ul class="nav nav-justified">
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>
@@ -116,10 +114,15 @@ Frontend version: {% frontend_version %}">Version: {% backend_version %}/{% fron
 
       <!-- Site footer -->
       <div class="footer">		
-      	<a href="{%url main.project%}">Project</a>  
-   		<a href="{%url help.help "license/license"%}">License</a>
-   		<a href="{% aupurl %}">Terms and Conditions</a>
-        <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern, <a href="{{ site.baseurl }}/contact">Impressum</a></p>
+      	<ul>
+      		<li><a href="{%url main.project%}">Project</a></li>
+   			<li><a href="{%url help.help "license/license"%}">License</a></li>
+   			<li><a href="{% aupurl %}">Terms and Conditions</a></li>
+   			<li><a href="{%url help.contact_form%}">Contact</a></li>
+   			<li><a href="impressum">Impressum</a></li>
+   		</ul>
+        <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>
+        <p class="version">Backend version: {% backend_version %} / Frontend version: {% frontend_version %}</p>
       </div>
 
     </div> <!-- /container -->
