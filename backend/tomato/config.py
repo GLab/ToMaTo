@@ -20,7 +20,8 @@ import os
 CERTIFICATE = "/etc/tomato/backend.pem"
 EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
-				'help': "http://tomato-lab.org/help"
+				'help': "http://tomato-lab.org/help",
+				'impressum': "http://tomato-lab.org/contact/"
 				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"
