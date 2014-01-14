@@ -32,8 +32,8 @@ class BootstrapForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_class = 'form-horizontal'
         self.helper.form_method = "post"
-        self.helper.label_class = 'col-sm-4'
-        self.helper.field_class = 'col-sm-8'
+        self.helper.label_class = 'col-lg-4 col-sm-4'
+        self.helper.field_class = 'col-lg-6 col-sm-8'
     
 def organization_name_list(api):
     l = api.organization_list()
