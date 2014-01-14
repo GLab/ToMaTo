@@ -65,7 +65,7 @@ def add(api, request):
     else:
         form = HostForm(api)
         if api.site_list():
-            return render(request, "admin/host/form.html", {'public_key': api.host_public_key(), 'form': form, "edit":False})
+            return render(request, "admin/host/form.html", {'public_key': api.server_info()['public_key'], 'form': form, "edit":False})
         else:
             return render(request, "admin/host/error_no_site.html", {'user': api.user})
    
