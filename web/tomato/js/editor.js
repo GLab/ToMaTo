@@ -2,16 +2,16 @@
 
 var settings = {
 	childElementDistance: 25,
-	defaultTemplates: {
-		openvz: {
-			name: "debian-7.0_x86_64",
-			label: "Debian 7.0 (OpenVZ)"
-		},
-		kvmqm: {
-			name: "debian-7.0_x86_64",
-			label: "Debian 7.0 (KVM)"
-		}
-	}
+	commonPreferenceThreshold: 100,
+	otherCommonElements: [
+	                      {
+	                  		label: "Switch",
+	                		name: "vpn-switch",
+	                		icon: "img/switch32.png",
+	                		type: "tinc_vpn",
+	                		attrs: {mode: "switch"}  
+	                      }
+	],
 }
 
 var ajax = function(options) {
@@ -3179,6 +3179,7 @@ var Template = Class.extend({
 		this.nlXTP_installed = options.nlXTP_installed || false;
 		this.creation_date = options.creation_date;
 		this.restricted = options.restricted;
+		this.preference = options.preference;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3199,6 +3200,21 @@ var Template = Class.extend({
 			func: options.func,
 			hiddenboxHTML: hb
 		});
+	},
+	labelForCommon: function() {
+		var label = this.label.replace(/[ ]*\(.*\)/, "");
+		switch (this.type) {
+			case "kvmqm":
+				label += " (KVM)";
+				break;
+			case "openvz":
+				label += " (OpenVZ)";
+				break;
+			case "repy":
+				label += " (Repy)";
+				break;
+		}
+		return label;
 	},
 	infobox: function() {
 		var restricted_icon = "/img/lock_open.png";
@@ -3290,6 +3306,14 @@ var TemplateStore = Class.extend({
 	get: function(type, name) {
 		if (! this.types[type]) return null;
 		return this.types[type][name];
+	},
+	getCommon: function() {
+		var common = [];
+		for (var type in this.types)
+		 for (var name in this.types[type])
+		  if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
+		   common.push(this.types[type][name]);
+		return common;
 	}
 });
 
@@ -3352,6 +3376,13 @@ var NetworkStore = Class.extend({
 	},
 	all: function() {
 		return this.nets;
+	},
+	getCommon: function() {
+		var common = [];
+		for (var i = 0; i < this.nets.length; i++)
+		 if (this.nets[i].preference >= settings.commonPreferenceThreshold)
+		   common.push(this.nets[i]);
+		return common;
 	}
 });
 
@@ -3589,47 +3620,46 @@ var Editor = Class.extend({
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		var tmpl = t.templates.get("openvz", settings.defaultTemplates.openvz.name);
-		if (tmpl)
-		 group.addElement(tmpl.menuButton({
-			label: settings.defaultTemplates.openvz.label,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
-		}));
-		var tmpl = t.templates.get("kvmqm", settings.defaultTemplates.kvmqm.name);
-		if (tmpl)
-		 group.addElement(tmpl.menuButton({
-			label: settings.defaultTemplates.kvmqm.label,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
-		}));
-		group.addElement(Menu.button({
-			label: "Switch",
-			name: "vpn-switch",
-			icon: "img/switch32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "tinc_vpn",
-				attrs: {mode: "switch"}
-			}))
-		}));
-		group.addElement(Menu.button({
-			label: "Internet",
-			name: "net-internet",
-			icon: "img/internet32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "internet"}
-			}))
-		}));
-
+		var common = t.templates.getCommon();
+		for (var i=0; i < common.length; i++) {
+			var tmpl = common[i];
+			group.addElement(tmpl.menuButton({
+				label: tmpl.labelForCommon(),
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
+			}));
+		}
+		for (var i=0; i < settings.otherCommonElements.length; i++) {
+			var cel = settings.otherCommonElements[i];
+			group.addElement(Menu.button({
+				label: cel.label,
+				name: cel.name,
+				icon: cel.icon,
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: cel.type,
+					attrs: cel.attrs
+				}))
+			}));			
+		}
+		var common = t.networks.getCommon();
+		for (var i=0; i < common.length; i++) {
+			var net = common[i];
+			group.addElement(Menu.button({
+				label: net.label,
+				name: net.name,
+				icon: "img/internet32.png",
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: "external_network",
+					attrs: {kind: net.kind}					
+				}))
+			}));
+		}
 
 		var tab = this.menu.addTab("Devices");
 
@@ -3762,19 +3792,22 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Networks");
-		group.addElement(Menu.button({
-			label: "Internet",
-			name: "net-internet",
-			icon: "img/internet32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "internet"}
-			}))
-		}));
-
+		var common = t.networks.all();
+		for (var i=0; i < common.length; i++) {
+			var net = common[i];
+			group.addElement(Menu.button({
+				label: net.label,
+				name: net.name,
+				icon: "img/internet32.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: "external_network",
+					attrs: {kind: net.kind}					
+				}))
+			}));
+		}
 		var tab = this.menu.addTab("Topology");
 
 		var group = tab.addGroup("");
