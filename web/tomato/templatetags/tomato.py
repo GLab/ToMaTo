@@ -17,12 +17,12 @@ def jsonify(o):
 @register.simple_tag
 def aupurl():
 	api = getapi()
-	return api.external_urls()['aup']
+	return api.server_info()['external_urls']['aup']
 
 @register.simple_tag
 def helpurl():
 	api = getapi()
-	return api.external_urls()['help']
+	return api.server_info()['external_urls']['help']
 
 @register.filter
 def mult(value, arg):

@@ -24,15 +24,12 @@ def server_info():
 	"""
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
+		'external_urls': misc.getExternalURLs()
 	}
 
 @cached(300)
 def host_public_key():
 	return misc.getPublicKey()
-
-@cached(300)
-def external_urls():
-	return misc.getExternalURLs()
 
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
 	return link.getStatistics(siteA, siteB, type, after, before)
