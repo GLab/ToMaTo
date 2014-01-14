@@ -106,7 +106,7 @@ def add(api, request):
 @wrap_rpc
 def remove(api, request, res_id = None):
     if request.method == 'POST':
-        form = RemoveResourceForm(request.POST)
+        form = RemoveResourceForm(remove,request.POST)
         if form.is_valid():
             res_id = form.cleaned_data["res_id"]
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'network_instance':
@@ -119,17 +119,17 @@ def remove(api, request, res_id = None):
             if not res_id:
                 res_id = request.POST['res_id']
             if res_id:
-                form = RemoveResourceForm()
+                form = RemoveResourceForm(remove)
                 form.fields["res_id"].initial = res_id
-                return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+                return render(request, "form.html", {'heading':"Remove External Network Instance", "message_before":"Are you sure you want to remove the external network instance" +  api.resource_info(res_id)['attrs']['host'], 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if res_id:
-            form = RemoveResourceForm()
+            form = RemoveResourceForm(remove)
             form.fields["res_id"].initial = res_id
-            return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+            return render(request, "form.html", {'heading':"Remove External Network Instance", "message_before":"Are you sure you want to remove the external network instance" + api.resource_info(res_id)['attrs']['host'], 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
