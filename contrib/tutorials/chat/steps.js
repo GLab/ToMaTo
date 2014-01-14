@@ -1,13 +1,4 @@
-var tutorial_data = {
-  templates: {
-    node: "chat_node",
-    monitor: "chat_monitor",
-    sender: "chat_sender"
-  },
-  delay: 2000
-};
-
-var editor_tutorial = [
+[
 	{
 		text: '<h2>ToMaTo Chat Tutorial</h2>\
 <p class="tutorialExplanation">In this tutorial you will learn the basics of the Topology Management Tool in a simple scenario using a text-based chat client.</p>\
@@ -421,5 +412,4 @@ You can use this connection to exchange files with your nodes and to use externa
 	{
 		text: '<p class="tutorialExplanation">Now we are at the end of the tutorial, I hope you enjoyed it.</p>'
 	}
-];    
-
+]

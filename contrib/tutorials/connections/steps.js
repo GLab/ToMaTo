@@ -1,4 +1,4 @@
-var editor_tutorial = [
+[
 			{
 			text:	'<p class="tutorialExplanation">\
 						Welcome to the Connections tutorial!<br />\
@@ -227,4 +227,4 @@ var editor_tutorial = [
 			text:	'<p class="tutorialExplanation">\
 						That was it for this tutorial!</p>'
 			}
-];
+]

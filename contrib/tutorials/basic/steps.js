@@ -1,4 +1,4 @@
-var editor_tutorial = [
+[
 
 		/*
 		 * tutorial data
@@ -382,6 +382,4 @@ var editor_tutorial = [
 								<p class="tutorialExplanation">\
 									You can find a button to delete this topology in the "Topology" tab.'
 						}
-		];
-		
-
+		]
