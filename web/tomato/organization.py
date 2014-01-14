@@ -22,21 +22,53 @@ from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
 
-class OrganizationForm(forms.Form):
+from admin_common import BootstrapForm
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
+class OrganizationForm(BootstrapForm):
     name = forms.CharField(max_length=50, help_text="The name of the organization. Must be unique to all organizations. e.g.: ukl")
     description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
     image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
     description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+    okbutton_text = "Add"
+    def __init__(self, *args, **kwargs):
+        super(OrganizationForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(add)
+        self.helper.layout = Layout(
+            'name',
+            'description',
+            'homepage_url',
+            'image_url',
+            'description_text',
+            FormActions(
+                StrictButton(self.okbutton_text, css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 class EditOrganizationForm(OrganizationForm):
     def __init__(self, *args, **kwargs):
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["name"].help_text=None
+        self.helper.form_action = reverse(edit)
+    okbutton_text = "Save"
     
 class RemoveOrganizationForm(forms.Form):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    def __init__(self, *args, **kwargs):
+        super(RemoveOrganizationForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(remove)
+        self.helper.layout = Layout(
+            'name',
+            FormActions(
+                StrictButton('Confirm', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
 
 @wrap_rpc
 def index(api, request):
@@ -55,10 +87,10 @@ def add(api, request):
                                               })
             return render(request, "admin/organization/add_success.html", {'name': formData["name"]})
         else:
-            return render(request, "admin/organization/form.html", {'form': form, "edit":False})
+            return render(request, "form.html", {'form': form, "heading":"Add Organization"})
     else:
         form = OrganizationForm
-        return render(request, "admin/organization/form.html", {'form': form, "edit":False})
+        return render(request, "form.html", {'form': form, "heading":"Add Organization"})
     
 @wrap_rpc
 def remove(api, request, name=None):
@@ -74,7 +106,7 @@ def remove(api, request, name=None):
             if name:
                 form = RemoveOrganizationForm()
                 form.fields["name"].initial = name
-                return render(request, "admin/organization/remove_confirm.html", {'name': name, 'form': form})
+                return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -82,7 +114,7 @@ def remove(api, request, name=None):
         if name:
             form = RemoveOrganizationForm()
             form.fields["name"].initial = name
-            return render(request, "admin/organization/remove_confirm.html", {'name': name, 'form': form})
+            return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
     
@@ -104,7 +136,7 @@ def edit(api, request, name=None):
             if name:
                 form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
                 form.fields["name"].help_text=None
-                return render(request, "admin/organization/form.html", {'name': name, 'form': form, "edit":True})
+                return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
@@ -112,6 +144,6 @@ def edit(api, request, name=None):
         if name:
             orgaInfo = api.organization_info(name)
             form = EditOrganizationForm(orgaInfo)
-            return render(request, "admin/organization/form.html", {'name': name, 'form': form, "edit":True})
+            return render(request, "form.html", {"heading": "Editing Organization '"+name+"'", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
