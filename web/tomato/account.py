@@ -26,6 +26,7 @@ from admin_common import organization_name_list
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
+from admin_common import BootstrapForm, RemoveConfirmForm
 
 from lib import wrap_rpc, getapi, AuthError
 
@@ -296,26 +297,10 @@ def register(api, request):
 
 @wrap_rpc
 def remove(api, request, id=None):
-	if not api.user:
-		raise AuthError()
 	if request.method == 'POST':
-		form = AccountRemoveForm(request.POST)
+		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			id = form.cleaned_data["username"]
 			api.account_remove(id)
 			return HttpResponseRedirect(reverse("account_list"))
-		else:
-			if not id:
-				id=request.POST['username']
-			if id:
-				form.fields["username"].initial = id
-				return render(request, "account/remove_confirm.html", {'username': id, 'form': form})
-			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-	else:
-		if id:
-			form = AccountRemoveForm()
-			form.fields["username"].initial = id
-			return render(request, "account/remove_confirm.html", {'username': id, 'form': form})
-		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No username specified. Have you followed a valid link?'})
+	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
+	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})

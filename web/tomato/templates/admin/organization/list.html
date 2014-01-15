@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Organization list</h1>
+
+{% if organizations %}
+
+	{% if organizations|length > 10 and request.session.user and request.session.user.isAdmin %}
+      <form>
+    	<button type="submit" formaction="{%url organization.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+      </form>
+	{% endif %}
+
+	<script src="/js/enhancetable.js"></script>
+		
+	{% for orga in organizations %}
+		<h3>{{orga.description}} ({{orga.name}}) <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
+		{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
+		{% if orga.description_text %}
+			<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
+		{% endif %}
+	    <b>Sites:</b>
+	    <ul>
+	    	{% for site in sites %}{% ifequal site.organization orga.name %} 
+	    		<li>{{site.description}} ({{site.name}})</li>
+	    	{% endifequal %}{% endfor %} 
+	    </ul>
+	    <div class="skip-sm"></div>
+	{% endfor %}
+{% else %}
+	No organizations
+{% endif %}
+
+{% if request.session.user and request.session.user.isAdmin %}
+	<form>
+	<button type="submit" formaction="{%url organization.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+	</form>
+{% endif %}
+
+{% endblock %}

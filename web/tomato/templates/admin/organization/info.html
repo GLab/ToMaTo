@@ -1,0 +1,83 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Organization {{organization.name}}</h1>
+
+<form>
+  <button type="submit" formaction="{%url organization.list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Organization list</button>
+</form>
+
+<div class="skip-xs"></div>
+
+{% load tomato %}
+
+<table class="table">
+	<tr>
+		<th>Icon:</th>
+		<td>{% if organization.image_url %}<img class="site" src="{{organization.image_url}}"/>{% endif %}</td>
+	</tr>	    
+	<tr>
+		<th>Label:</th>
+	    <td>{{organization.description}}</td>
+	</tr>
+	<tr>
+		<th>Homepage:</th>
+		<td><a href="{{organization.homepage_url}}" target="_blank">{{organization.homepage_url}}</a>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{organization.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+	</tr>
+</table>
+
+<div class="skip-xs"></div>
+
+{% load tomato %}
+
+<form>
+  <button type="submit" formaction="{%url organization_accounts organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> accounts of {{organization.name}}</button>
+  <button type="submit" formaction="{%url organization_topologies organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> topologies of {{organization.name}}</button>
+  {% if request.session.user|args:organization.name|call:"isAdmin" %}
+  <div class="skip-xs"></div>
+  <button type="submit" formaction="{%url site.add organization.name%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> add site</button>
+  <button type="submit" formaction="{%url organization.edit organization.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit organization</button>
+  <button type="submit" formaction="{%url organization.remove organization.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove organization</button>
+  {% endif %}
+</form>
+
+{% for site in sites %}
+<div class="skip-sm"><hr/></div>
+
+<h2>Site {{site.name}}</h2>
+
+<table class="table">
+	<tr>
+		<th>Label:</th>
+	    <td>{{site.description}}</td>
+	</tr>
+	<tr>
+		<th>Location:</th>
+		<td>{{site.location}}</td>
+	</tr>
+	<tr>
+		<th>Geolocation:</th>
+		<td>Longitude: {{site.longitude}}, Latitude: {{site.latitude}}</td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+	    <td>{{site.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+	</tr>
+</table>
+
+<div class="skip-xs"></div>
+
+<form>
+  <button type="submit" formaction="" class="btn btn-default"><span class="glyphicon glyphicon-list"></span> hosts of {{site.name}}</button>
+  {% if request.session.user|args:organization.name|call:"isAdmin" %}
+  <button type="submit" formaction="{%url site.edit site.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit site</button>
+  <button type="submit" formaction="{%url site.remove site.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove site</button>
+  {% endif %}
+</form>
+{% endfor %}
+
+{% endblock %}

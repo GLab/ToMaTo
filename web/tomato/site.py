@@ -79,11 +79,7 @@ class RemoveSiteForm(BootstrapForm):
 		)
 	
 @wrap_rpc
-def list(api, request):
-	return render(request, "admin/site/index.html", {'site_list': api.site_list()})
-
-@wrap_rpc
-def add(api, request):
+def add(api, request, organization):
 	if request.method == 'POST':
 		form = SiteForm(api, request.POST)
 		if form.is_valid():

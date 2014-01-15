@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
 
-from admin_common import BootstrapForm
+from admin_common import BootstrapForm, RemoveConfirmForm
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
@@ -33,7 +34,7 @@ class OrganizationForm(BootstrapForm):
 	homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
 	image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-	okbutton_text = "Add"
+	okbutton_text = '<span class="glyphicon glyphicon-accept"></span> Add'
 	def __init__(self, *args, **kwargs):
 		super(OrganizationForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -44,8 +45,8 @@ class OrganizationForm(BootstrapForm):
 			'image_url',
 			'description_text',
 			FormActions(
-				StrictButton(self.okbutton_text, css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
 			)
 		)
 	
@@ -54,29 +55,20 @@ class EditOrganizationForm(OrganizationForm):
 		super(EditOrganizationForm, self).__init__(*args, **kwargs)
 		self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
 		self.fields["name"].help_text=None
-		self.helper.form_action = reverse(edit)
+		self.helper.form_action = reverse(edit, kwargs={"name": self.fields["name"].initial})
 	okbutton_text = "Save"
 	
-class RemoveOrganizationForm(BootstrapForm):
-	name = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, *args, **kwargs):
-		super(RemoveOrganizationForm, self).__init__(*args, **kwargs)
-		self.helper.form_action = reverse(remove)
-		self.helper.layout = Layout(
-			'name',
-			FormActions(
-				StrictButton('Confirm', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
-			)
-		)
-
 @wrap_rpc
 def list(api, request):
-	return render(request, "admin/organization/index.html", {'organization_list': api.organization_list()})
+	organizations = api.organization_list()
+	sites = api.site_list()
+	return render(request, "admin/organization/list.html", {'organizations': organizations, 'sites': sites})
 
 @wrap_rpc
 def info(api, request, name):
-	pass
+	orga = api.organization_info(name)
+	sites = api.site_list(organization=name)
+	return render(request, "admin/organization/info.html", {'organization': orga, 'sites': sites})
 
 @wrap_rpc
 def add(api, request):
@@ -89,7 +81,7 @@ def add(api, request):
 											  'image_url':formData['image_url'],
 											  'description_text':formData['description_text']
 											  })
-			return render(request, "admin/organization/add_success.html", {'name': formData["name"]})
+			return HttpResponseRedirect(reverse("tomato.organization.info", kwargs={"name": formData["name"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Organization"})
 	else:
@@ -99,28 +91,12 @@ def add(api, request):
 @wrap_rpc
 def remove(api, request, name=None):
 	if request.method == 'POST':
-		form = RemoveOrganizationForm(request.POST)
+		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			name = form.cleaned_data["name"]
 			api.organization_remove(name)
-			return render(request, "admin/organization/remove_success.html", {'name': name})
-		else:
-			if not name:
-				name = request.POST['name']
-			if name:
-				form = RemoveOrganizationForm()
-				form.fields["name"].initial = name
-				return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
-			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-	
-	else:
-		if name:
-			form = RemoveOrganizationForm()
-			form.fields["name"].initial = name
-			return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
-		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No organization specified. Have you followed a valid link?'})
+			return HttpResponseRedirect(reverse("tomato.organization.listinfo"))
+	form = RemoveConfirmForm.build(reverse("tomato.organization.remove", kwargs={"name": name}))
+	return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
 	
 @wrap_rpc
 def edit(api, request, name=None):
@@ -133,7 +109,7 @@ def edit(api, request, name=None):
 													  'image_url':formData['image_url'],
 													  'description_text':formData['description_text']
 													  })
-			return render(request, "admin/organization/edit_success.html", {'name': formData["name"]})
+			return HttpResponseRedirect(reverse("tomato.organization.info", kwargs={"name": formData["name"]}))
 		else:
 			if not name:
 				name=request.POST["name"]
