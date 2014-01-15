@@ -144,16 +144,16 @@ def add(api, request):
 											'creation_date':creation_date})
 			return render(request, "admin/device_templates/add_success.html", {'label': formData['label']})
 		else:
-			return render(request, "admin/form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
+			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
 		form = AddTemplateForm()
-		return render(request, "admin/form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
+		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
 
 
 @wrap_rpc
 def remove(api, request, res_id=None):
 	if request.method == 'POST':
-		form = RemoveResourceForm(request.POST)
+		form = RemoveResourceForm(remove,request.POST)
 		if form.is_valid():
 			res_id = form.cleaned_data["res_id"]
 			if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'template':
@@ -166,16 +166,16 @@ def remove(api, request, res_id=None):
 			if not res_id:
 				res_id = request.POST['res_id']
 			if res_id:
-				form = RemoveResourceForm()
+				form = RemoveResourceForm(remove)
 				form.fields["res_id"].initial = res_id
-				return render(request, "admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
+				return render(request, "form.html", {'heading':"Remove Template", "message_before":"Are you sure you want to remove the template" + api.resource_info(res_id)['attrs']['label'] + "?", 'form': form})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
-			form = RemoveResourceForm()
+			form = RemoveResourceForm(remove)
 			form.fields["res_id"].initial = res_id
-			return render(request, "admin/device_templates/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'form': form})
+			return render(request, "form.html", {'heading':"Remove Template", "message_before":"Are you sure you want to remove the template" + api.resource_info(res_id)['attrs']['label'] + "?", 'form': form})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 	
@@ -206,14 +206,14 @@ def edit_torrent(api, request, res_id=None):
 		else:
 			label = request.POST["label"]
 			if label:
-				return render(request, "admin/form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
+				return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+label+"' ("+request.POST["tech"]+")"})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
 			form = ChangeTemplateTorrentForm({'res_id': res_id})
-			return render(request, "admin/form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+			return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
@@ -239,7 +239,7 @@ def edit_data(api, request, res_id=None):
 		else:
 			label = request.POST["label"]
 			if label:
-				return render(request, "admin/form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
+				return render(request, "form.html", {'label': label, 'form': form, "heading":"Edit Template Data for '"+label+"' ("+request.POST['tech']+")"})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
@@ -248,7 +248,7 @@ def edit_data(api, request, res_id=None):
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
 			form = EditTemplateForm(origData)
-			return render(request, "admin/form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
+			return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 

@@ -24,7 +24,12 @@ from django import forms
 from lib import wrap_rpc
 from admin_common import organization_name_list
 
-class SiteForm(forms.Form):
+from admin_common import BootstrapForm
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
+class SiteForm(BootstrapForm):
     name = forms.CharField(max_length=50, help_text="The name of the site. Must be unique to all sites. e.g.: ukl")
     description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
     description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
@@ -32,18 +37,45 @@ class SiteForm(forms.Form):
     location = forms.CharField(max_length=255, help_text="e.g.: Germany")
     geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
     geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",label="Geolocation: Latitude")
+    okbutton_text = "Add"
     def __init__(self, api, *args, **kwargs):
         super(SiteForm, self).__init__(*args, **kwargs)
         self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
+        self.helper.form_action = reverse(add)
+        self.helper.layout = Layout(
+            'name',
+            'description',
+            'description_text',
+            'organization',
+            'location',
+            'geolocation_longitude',
+            'geolocation_latitude',
+            FormActions(
+                StrictButton(self.okbutton_text, css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 class EditSiteForm(SiteForm):
+    okbutton_text = "Save"
     def __init__(self, api, *args, **kwargs):
         super(EditSiteForm, self).__init__(api, *args, **kwargs)
         self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["name"].help_text=None
+        self.helper.form_action = reverse(edit)
     
-class RemoveSiteForm(forms.Form):
+class RemoveSiteForm(BootstrapForm):
     name = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    def __init__(self, *args, **kwargs):
+        super(RemoveSiteForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(remove)
+        self.helper.layout = Layout(
+            'name',
+            FormActions(
+                StrictButton('Confirm', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 
 
@@ -65,10 +97,10 @@ def add(api, request):
                                               'description_text':formData['description_text']})
             return render(request, "admin/site/add_success.html", {'name': formData["name"]})
         else:
-            return render(request, "admin/site/form.html", {'form': form, "edit":False})
+            return render(request, "form.html", {'form': form, "heading":"Add Site"})
     else:
         form = SiteForm(api)
-        return render(request, "admin/site/form.html", {'form': form, "edit":False})
+        return render(request, "form.html", {'form': form, "heading":"Add Site"})
     
 @wrap_rpc
 def remove(api, request, name=None):
@@ -84,7 +116,7 @@ def remove(api, request, name=None):
             if name:
                 form = RemoveSiteForm()
                 form.fields["name"].initial = name
-                return render(request, "admin/site/remove_confirm.html", {'name': name, 'form': form})
+                return render(request, "form.html", {"heading": "Remove Site", "message_before": "Are you sure you want to remove the site '"+name+"'?", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
@@ -92,7 +124,7 @@ def remove(api, request, name=None):
         if name:
             form = RemoveSiteForm()
             form.fields["name"].initial = name
-            return render(request, "admin/site/remove_confirm.html", {'name': name, 'form': form})
+            return render(request, "form.html", {"heading": "Remove Site", "message_before": "Are you sure you want to remove the site '"+name+"'?", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
     
@@ -115,7 +147,7 @@ def edit(api, request, name=None):
             if name:
                 form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
                 form.fields["name"].help_text=None
-                return render(request, "admin/site/form.html", {'name': name, 'form': form, "edit":True})
+                return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
             
@@ -126,6 +158,6 @@ def edit(api, request, name=None):
             siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
             del siteInfo['geolocation']
             form = EditSiteForm(api, siteInfo)
-            return render(request, "admin/site/form.html", {'name': name, 'form': form, "edit":True})
+            return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})

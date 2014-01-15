@@ -163,38 +163,38 @@ def add(api, request):
            
             return render(request, "admin/device_profile/add_success.html", {'label': formData["label"],'tech':data['tech']})
         else:
-            return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
+            return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
     else:
         form = AddProfileForm
-        return render(request, "admin/form.html", {'form': form, "heading":"Add Device Profile"})
+        return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 
     
 @wrap_rpc
 def remove(api, request, res_id=None):
     if request.method == 'POST':
-        form = RemoveResourceForm(request.POST)
+        form = RemoveResourceForm(remove,request.POST)
         if form.is_valid():
             res_id = form.cleaned_data["res_id"]
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'profile':
                 label = api.resource_info(res_id)['attrs']['label']
                 tech = api.resource_info(res_id)['attrs']['tech']
                 api.resource_remove(res_id)
-                return render(request, "admin/device_profile/remove_success.html", {'label':label, 'tech':tech})
+                return render(request, "form.html", {'heading':"Remove Profile", "message_before":"Are you sure you want to remove the profile" + label, 'tech':tech})
             else:
                 return render(request, "main/error.html",{'type':'invalid id','text':'There is no device profile with id '+res_id})
         else:
             if not res_id:
                 res_id = request.POST['res_id']
             if res_id:
-                form = RemoveResourceForm()
+                form = RemoveResourceForm(remove)
                 form.fields["res_id"].initial = res_id
-                return render(request, "admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
+                return render(request, "form.html", {'heading':"Remove Profile", "message_before":"Are you sure you want to remove the profile" +  api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if res_id:
-            form = RemoveResourceForm()
+            form = RemoveResourceForm(remove)
             form.fields["res_id"].initial = res_id
             return render(request, "admin/device_profile/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['label'], 'tech': api.resource_info(res_id)['attrs']['tech'], 'form': form})
         else:
@@ -234,7 +234,7 @@ def edit(api, request, res_id=None):
         else:
             label = request.POST["label"]
             if label:
-                return render(request, "admin/form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
+                return render(request, "form.html", {'form': form, "heading":"Edit Device Profile '"+label+"'"})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -249,6 +249,6 @@ def edit(api, request, res_id=None):
                     form = EditOpenVZForm(origData)
                 else:
                     form = EditKVMqmForm(origData)
-            return render(request, "admin/form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
+            return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
