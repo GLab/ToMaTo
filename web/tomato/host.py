@@ -77,7 +77,7 @@ def site_name_list(api):
     return res
 
 @wrap_rpc
-def index(api, request):
+def list(api, request):
         sites = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
         return render(request, "admin/host/index.html", {'host_list': api.host_list(), 'sites': sites})
 

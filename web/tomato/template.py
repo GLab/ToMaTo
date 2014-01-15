@@ -106,7 +106,7 @@ class ChangeTemplateTorrentForm(BootstrapForm):
         )
 
 @wrap_rpc
-def index(api, request):
+def list(api, request):
 	templ_list = api.resource_list('template')
 	def _cmp(ta, tb):
 		a = ta["attrs"]

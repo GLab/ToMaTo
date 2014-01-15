@@ -32,7 +32,7 @@ from settings import tutorial_list_url
 
 
 @wrap_rpc
-def index(api, request):
+def list(api, request):
 	tutorials = json.load(urllib2.urlopen(tutorial_list_url))
 	for tut in tutorials:
 		for attr in ["icon", "url"]:

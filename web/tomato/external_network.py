@@ -66,7 +66,7 @@ class EditNetworkForm(NetworkForm):
         )
     
 @wrap_rpc
-def index(api, request):
+def list(api, request):
     netw_list = api.resource_list('network')
     return render(request, "admin/external_networks/index.html", {'netw_list': netw_list})
 

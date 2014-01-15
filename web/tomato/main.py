@@ -58,8 +58,6 @@ class LoginForm(forms.Form):
 		    )
 
 def login(request):
-	
-	
 	if request.method == 'POST':
 		form = LoginForm(request.POST)
 		if not form.is_valid():

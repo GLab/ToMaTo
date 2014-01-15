@@ -3,7 +3,6 @@
 {% load tomato %}
 
 {% block header %}
-
 <script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>
 <link type="text/css" href="/style/jquery-ui.css" rel="stylesheet" />
@@ -12,26 +11,14 @@
     $( ".datepicker" ).datepicker();
   });
 </script>
-
-
 {% endblock %}
 
 {% block content %}
-
-
-
-
-
 	<h1>{{heading}}</h1>
-	
-		{{message_before|safe}}
-
-		{% load crispy_forms_tags %}
-		{% crispy form %}
-		
-		{{message_after|safe}}
-	
-	
+	{{message_before|safe}}
+	{% load crispy_forms_tags %}
+	{% crispy form %}
+	{{message_after|safe}}
 <script>
 $('form .backbutton').live('click', function(e) {
 	history.back();

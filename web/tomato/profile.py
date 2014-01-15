@@ -132,7 +132,7 @@ class AddProfileForm(ProfileForm):
         )
 
 @wrap_rpc
-def index(api, request):
+def list(api, request):
     profile_list = api.resource_list('profile')
     return render(request, "admin/device_profile/index.html", {'profile_list': profile_list})
 

@@ -184,7 +184,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	top = _getTopology(id)
 	return top.info(full)
 
-def topology_list(full=False, showAll=False): #@ReservedAssignment
+def topology_list(full=False, showAll=False, organization=None): #@ReservedAssignment
 	"""
 	Retrieves information about all topologies the user can access.
 
@@ -198,7 +198,10 @@ def topology_list(full=False, showAll=False): #@ReservedAssignment
 	"""
 	if not currentUser():
 		raise ErrorUnauthorized()
-	if showAll:
+	if organization:
+		organization = _getOrganization(organization)
+		tops = topology.getAll(permissions__entries__user__organization=organization, permissions__entries__role="owner")		
+	elif showAll:
 		tops = topology.getAll()
 	else:
 		tops = topology.getAll(permissions__entries__user=currentUser())
@@ -336,6 +339,7 @@ def topology_export(id): #@ReservedAssignment
 	top = reduceData(top_full)
 	return {'file_information': {'version': 3}, 'topology': top}
 		
+from host import _getOrganization
 from account import _getAccount
 from .. import fault, topology, currentUser
 from elements import element_create, element_modify 

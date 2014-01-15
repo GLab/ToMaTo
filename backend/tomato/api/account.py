@@ -66,7 +66,7 @@ def account_info(name=None):
 	acc = _getAccount(name)
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
-def account_list():
+def account_list(organization=None):
 	"""
 	Retrieves information about all accounts. 
 	 
@@ -76,9 +76,14 @@ def account_list():
 	"""
 	if not currentUser():
 		raise ErrorUnauthorized()
+	if organization:
+		organization = _getOrganization(organization)
 	if currentUser().hasFlag(Flags.GlobalAdmin):
-		return [acc.info(True) for acc in getAllUsers()]
+		accounts = getAllUsers(organization=organization) if organization else getAllUsers()
+		return [acc.info(True) for acc in accounts]
 	elif currentUser().hasFlag(Flags.OrgaAdmin):
+		if organization != currentUser().organization:
+			fault.raise_("Not enough permissions")
 		return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization)]
 	else:
 		fault.raise_("Not enough permissions")
@@ -175,6 +180,7 @@ def account_flag_categories():
 	"""
 	return categories
 		
+from host import _getOrganization
 from .. import fault, currentUser
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
 from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport

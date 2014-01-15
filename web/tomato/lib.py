@@ -28,6 +28,9 @@ def getauth(request):
 	username, password = auth.split(':',1)
 	return (username, password)
 
+class AuthError(Exception):
+	pass
+
 class ServerProxy(object):
 	def __init__(self, url, **kwargs):
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
@@ -62,6 +65,8 @@ def getapi(request=None):
 class wrap_rpc:
 	def __init__(self, fun):
 		self.fun = fun
+		self.__name__ = fun.__name__
+		self.__module__ = fun.__module__
 	def __call__(self, request, *args, **kwargs):
 		try:
 			api = getapi(request)
@@ -74,6 +79,9 @@ class wrap_rpc:
 				etype = "Socket error"
 				ecode = e.errno
 				etext = os.strerror(e.errno)
+			elif isinstance(e, AuthError):
+				request.session['forward_url'] = request.build_absolute_uri()
+				return redirect("tomato.main.login")
 			elif isinstance(e, xmlrpclib.ProtocolError):
 				etype = "RPC protocol error"
 				ecode = e.errcode
@@ -163,6 +171,16 @@ class UserObj:
 		self.origin = self.data["origin"]
 		self.organization = self.data["organization"]
 		self.realname = self.data["realname"]
+	def hasGlobalToplFlags(self):
+		for flag in ["global_topl_admin", "global_topl_manager", "global_topl_user"]:
+			if flag in self.flags:
+				return True
+		return False
+	def hasOrgaToplFlags(self):
+		for flag in ["orga_topl_admin", "orga_topl_manager", "orga_topl_user"]:
+			if flag in self.flags:
+				return True
+		return False
 	def isAdmin(self, orgaName=None):
 		if "global_admin" in self.flags:
 			return True

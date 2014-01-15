@@ -5,21 +5,16 @@
 {% block content %}
 <h1>Import Topology</h1>
 
-
-	<form action="{%url topology.import_form%}" method="post" enctype="multipart/form-data">
-	
+	<form action="{%url topology.import_%}" method="post" enctype="multipart/form-data">
 		<table class="whitebg">
 			{{form.as_table}}
-	
 			<tr>
 				<td />
 				<td align="right">
 					<input type="submit" value="Import" />
 				</td>
 			</tr>
-			
 		</table>
-
 	</form>
 	
 {% endblock %}

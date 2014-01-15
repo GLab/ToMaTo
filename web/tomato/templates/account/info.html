@@ -3,10 +3,57 @@
 {% block content %}
 <h1>Account {{account.name}}</h1>
 
-<form action="{%url account.info account.id%}" class="form-group" method="POST">
-<table class="table table-striped">
-{{form.as_table}}
-</table>
-<input type="submit" value="Save" class="btn btn-default"/>
+<form>
+  <button type="submit" formaction="{%url account_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Account list</button>
 </form>
+
+<div class="skip-sm"></div>
+
+<table class="table">
+	<tr>
+		<th>Full name:</th>
+		<td>{{account.realname}}</td>
+	</tr>
+	<tr>
+		<th>Origin:</th>
+		<td>{{account.origin}}</td>
+	</tr>
+	<tr>
+		<th>Organization:</th>
+		<td><a href="{%url organization.info account.organization%}">{{organization.description}}</a></td>
+	</tr>
+	<tr>
+		<th>Email:</th>
+		<td><a href="mailto:{{account.email}}">{{account.email}}</a></td>
+	</tr>
+	<tr>
+		<th>Flags:</th>
+		<td>
+			<ul>
+				{% for flag in flags %}
+				  <li>{{flag}}</li>
+				{% endfor %}
+			</ul>
+		</td>
+	</tr>
+{% if "new_account" in account.flags %}
+	<tr>
+		<th>Reason for registering:</th>
+		<td>{{account.reason}}</td>
+	</tr>
+{% endif %}
+</table>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<form>
+{% if "new_account" in account.flags and request.session.user|args:account.organization|call:"isAdmin" %}
+  <button type="submit" formaction="{%url account.accept id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> accept account</button>
+{% endif %}  
+  <button type="submit" formaction="{%url account.edit id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit account</button>
+  <button type="submit" formaction="{%url account.remove id=account.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove account</button>
+</form>
+
 {% endblock %}
