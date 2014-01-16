@@ -176,3 +176,9 @@ table td.stddev_veryhigh.good_low, table td.stddev_verylow.good_high,
 table td.stddev_veryhigh.good_high, table td.stddev_verylow.good_low {
   font-weight: bold;
 }
+
+
+
+div.ui-dialog-content.ui-widget-content.form-horizontal {
+	font-size:10pt;
+}

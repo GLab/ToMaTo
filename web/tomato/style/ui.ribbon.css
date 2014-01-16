@@ -240,7 +240,7 @@
 /* SIMPLE button */
 .ui-ribbon .ui-ribbon-group .ui-button { 
 	padding: 0 0.1em 0 0.1em;
-	font-size: 1em; 
+	font-size: 10pt; 
 	height: 1.5em;
 	line-height: 1.5em;
 	overflow: hidden;
@@ -271,6 +271,7 @@
 	padding: 0.1em auto 0.1em auto;
 }
 .ui-ribbon .ui-ribbon-group .ui-button.ui-ribbon-large-button .ui-button-label {
+	font-size: 10pt;
 	display: block;
 	top: 0px;
 	float: none;
