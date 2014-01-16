@@ -1,0 +1,157 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Host {{host.address}}</h1>
+
+<form>
+  <button type="submit" formaction="{%url host_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Host list</button>
+</form>
+
+<div class="skip-sm"></div>
+
+{% if host.problems %}
+	<div class="alert alert-danger">
+	  <b>Host has problems:</b> This host is currently not working properly and is disabled. The details of the problems follow:
+	  <ul>
+	  	{% for p in host.problems %}
+	  		<li><b>{{p}}</b></li>
+	  	{% endfor %}
+	  </ul>
+	</div>
+{% else %}
+	<div class="alert alert-success"><b>No problems:</b> This host is currently working without problems.</div>
+{% endif %}
+
+{% load tomato %}
+
+<table class="table">
+	<tr>
+		<th>Address:</th>
+		<td>{{host.address}}</td>
+	</tr>
+	<tr>
+		<th>Site:</th>
+		<td><a href="{%url organization.info organization.name%}">{{site.description}} ({{site.name}})</a></td>
+	</tr>
+	<tr>
+		<th>Organization:</th>
+		<td><a href="{%url organization.info organization.name%}">{{organization.description}} ({{organization.name}})</a></td>
+	</tr>
+	<tr>
+		<th>Availability:</th>
+		<td>{{host.availability|percentage}}</td>
+	</tr>
+	<tr>
+		<th>Average load:</th>
+		<td>{{host.load|percentage}}</td>
+	</tr>
+	{% if host.host_info %}
+	<tr>
+		<th>Uptime:</th>
+		<td>{{host.host_info.uptime|toduration}}</td>
+	</tr>
+	<tr>
+		<th>Information age:</th>
+		<td>{{host.host_info_timestamp|age|toduration}}</td>
+	</tr>
+	<tr>
+		<th>Time difference:</th>
+		<td>{{host.host_info.time_diff|floatformat:2}} s</td>
+	</tr>
+	<tr>
+		<th>Last query duration:</th>
+		<td>{{host.host_info.query_time|mult:1000|floatformat:0}} ms</td>
+	</tr>
+	<tr>
+		<th>Versions:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Hostmanager</dt><dd>{{host.host_info.hostmanager.version}}</dd>
+  				<dt>Updater</dt><dt><dd>
+  					{% if host.host_info.hostmanager.updater %}
+						{{host.host_info.hostmanager.updater}}
+					{% else %}
+						not installed
+					{% endif %}
+				</dd>
+			    <dt>Distribution</dt><dd>{{host.host_info.system.distribution|join:" "}}</dd>
+			    <dt>Python</dt><dd>{{host.host_info.system.python}}</dd>
+			    <dt>Kernel</dt><dd>{{host.host_info.system.kernel}}</dd>
+			</dl>
+		</td>
+	</tr>
+	<tr>
+		<th>Processor:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Count</dt><dd>{{host.host_info.resources.cpus_present.count}}</dd>
+  				<dt>Model</dt><dd>{{host.host_info.resources.cpus_present.model}}</dd>
+  				<dt>Architecture</dt><dd>{{host.host_info.system.processor}}</dd>
+  				<dt>Bogomips</dt><dd>{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</dd>
+  				<dt>Average load</dt><dd>{{host.host_info.resources.loadavg|slice:"1:2"|first|percentage:host.host_info.resources.cpus_present.count}} {{host.host_info.resources.loadavg}}</dd>
+			</dl>			
+		</td>
+	</tr>
+	<tr>
+		<th>Memory:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Total</dt><dd>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</dd>
+  				<dt>Free</dt><dd>{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}} ({{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|mult:1024|filesizeformat}})</dd>
+			</dl>			
+		</td>
+	</tr>
+	<tr>
+		<th>Disk space (root):</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Total</dt><dd>{{host.host_info.resources.diskspace.root.total|mult:1024|filesizeformat}}</dd>
+  				<dt>Free</dt><dd>{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}} ({{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|mult:1024|filesizeformat}})</dd>
+			</dl>			
+		</td>
+	</tr>
+	<tr>
+		<th>Disk space (data):</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Total</dt><dd>{{host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</dd>
+  				<dt>Free</dt><dd>{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}} ({{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|mult:1024|filesizeformat}})</dd>
+			</dl>			
+		</td>
+	</tr>
+	{% endif %}
+	<tr>
+		<th>Supported types:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Element types</dt><dd>{{host.element_types|join:", "}}</dd>
+  				<dt>Connection types</dt><dd>{{host.connection_types|join:", "}}</dd>
+			</dl>			
+		</td>
+	</tr>
+	<tr>
+		<th>Debug information:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Component errors</dt><dd>{{host.component_errors}}</dd>
+  				<dt>Error dumps</dt><dd>{{host.host_info.dumps}}</dd>
+			</dl>			
+		</td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{ host.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	</tr>
+</table>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<form>
+  <button type="submit" formaction="" class="btn btn-default"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
+  <button type="submit" formaction="{%url host.edit host.address%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
+  <button type="submit" formaction="{%url host.remove host.address%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
+</form>
+
+{% endblock %}

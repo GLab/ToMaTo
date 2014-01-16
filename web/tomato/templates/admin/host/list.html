@@ -3,30 +3,64 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of Hosts</h1>
+<h1>Host list</h1>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if organization %}
+      Showing all hosts of organization '{{organization}}'
+    {% else %}{% if site %}
+      Showing all hosts of site '{{site}}'
+    {% else %}
+      Showing all hosts
+    {% endif %}{% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url host_list %}">Show all hosts</a></li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Organizations</li>
+    {% for orga in organizations %}
+      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of organization '{{orga.name}}'</a></li>    
+    {% endfor %}
+    <li class="divider"></li>
+    <li class="dropdown-header">Sites</li>
+    {% for s in sites %}
+      <li><a href="{% url site_hosts site=s.name %}">Show all hosts of site '{{s.name}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  		Select fields <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+  		<li><a><input type="checkbox" id="important" onChange="reShow()" checked/><label for="important">Most important</label></a></li>
+		<li><a><input type="checkbox" id="versions" onChange="reShow()"/><label for="versions">Versions</label></a></li>
+		<li><a><input type="checkbox" id="timing" onChange="reShow()"/><label for="timing">Timing</label></a></li>
+		<li><a><input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label></a></li>
+		<li><a><input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label></a></li>
+		<li><a><input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label></a></li>
+		<li><a><input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label></a></li>
+		<li><a><input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label></a></li>
+  </ul>
+</div>
+
+<div class="skip-sm"></div>
 
 {# only show 'add' button when user is authorized #}
 	{% if host_list|length > 10 %}
 	{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
-		<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" class="btn btn-default" /></p>
+<form>
+  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+</form>
 	{% endif %}
 	{% endif %}
 
 
 {% if host_list %}
-	<script src="/js/enhancetable.js"></script>
-	
-	{# filter table columns #}
-	<b>Show details:</b>
-	<input type="checkbox" id="important" onChange="reShow()" checked/><label for="important">Most important</label>
-	<input type="checkbox" id="versions" onChange="reShow()"/><label for="versions">Versions</label>
-	<input type="checkbox" id="timing" onChange="reShow()"/><label for="timing">Timing</label>
-	<input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label>
-	<input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label>
-	<input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label>
-	<input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label>
-	<input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label>
-
+	<script src="/js/enhancetable.js"></script>	
 	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5" stddev_threshold_high="2.5">
 	  <tr>
 	    <th>&nbsp;</th>
@@ -56,7 +90,6 @@
 	    <th stddev_column_class="good_low">Errors</th>
 	    <th stddev_column_class="good_low">Dumps</th>
 	    <th stddev_column_class="good_high">Availability</th>
-	    <th class="icononly" />
 	  </tr>
 	  
 		{% for host in host_list %}
@@ -67,9 +100,9 @@
 	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
 			{% endif %}
 			
-	    	<td>{{host.address}}</td>
+	    	<td><a href="{%url host.info host.address %}">{{host.address}}</a></td>
 	    	
-	    	<td title="{{sites|get:host.site}}">{{host.site}}</td>
+	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}">{{host.site}}</a></td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
 			{% if host.host_info %}
@@ -113,24 +146,7 @@
 			    <td>???</td>
 			{% endif %}
 		    
-		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>
-		    
-		    <td class="icononly">
-			    {% if host.description_text %}
-					<div class="hoverdescription"" style="display:inline;">
-						<img src="/img/info.png" alt="i" /> &nbsp;
-						<div class="hiddenbox" style="float:left;">
-							{{ host.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}
-						</div>
-					</div>
-				{%endif%}
-		    {% if request.session.user|args:host.organization|call:"isHostManager" %}
-		    <span width=16;></span>
-		    		<a href="{%url host.edit host.address%}"><img src="/img/pencil.png" title="edit" /></a>
-		    		<a href="{%url host.remove host.address%}" ><img src="/img/cross.png" title="remove" /></a>
-		    	
-			{% endif %}
-			</td>
+		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>		    
 	  </tr>
 	{% endfor %}
 	</table>
@@ -183,11 +199,13 @@
 	</script>
 
 {% else %}
-	No hosts
+	<p>No hosts</p>
 {% endif %}
 
 {% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
-	<p><input type="button" onClick="window.location='{%url host.add%}'" value="Add host" class="btn btn-default" /></p>
+<form>
+  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+</form>
 {% endif %}
 
 {% endblock %}

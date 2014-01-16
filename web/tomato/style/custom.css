@@ -97,6 +97,9 @@ table th {
 td,th {
 	white-space:nowrap;
 }
+td dd {
+	white-space:normal;
+}
 
 .table th, .table td {
   padding-left: 4px !important;

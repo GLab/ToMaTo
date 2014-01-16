@@ -138,13 +138,18 @@ def host_info(address):
 	h = _getHost(address)
 	return h.info()
 
-def host_list(site_filter=None):
+def host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
 	if not currentUser():
 		raise ErrorUnauthorized()
-	hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
+	if site:
+		hosts = host.getAll(site__name=site)
+	elif organization:
+		hosts = host.getAll(site__organization__name=organization)
+	else:
+		hosts = host.getAll()
 	return [h.info() for h in hosts]
 
 def host_modify(address, attrs):
