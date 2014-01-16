@@ -18,9 +18,15 @@
     "icon": "data_access/icon.png"
   },
   {
+    "url":   "link_emulation/tutorial.json",
+    "name": "Link Emulation",
+    "desc": "Learn how to use link emulation.",
+    "icon": "link_emulation/icon.png"
+  } 
+  {
     "url":   "connections/tutorial.json",
-    "name": "Using Connections",
-    "desc": "Learn everything about connections. (currently under construction)",
+    "name": "Using Connections (deprecated)",
+    "desc": "Learn about connections.",
     "icon": "connections/icon.png"
   } 
 ]
