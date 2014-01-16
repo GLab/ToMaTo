@@ -204,19 +204,25 @@ var TextElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.pattern = options.pattern || /^.*$/;
-		this.element = $('<input class="form-element" size=10 type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
-		if (options.disabled) this.element.attr({disabled: true});
+		this.element = $('<div class="row" />');
+		this.textfieldbox = $('<div class="col-md-9">');
+		this.textfield = $('<input class="form-control" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
+		
+		this.element.append(this.textfieldbox);
+		this.textfieldbox.append(this.textfield);
+		
+		if (options.disabled) this.textfield.attr({disabled: true});
 		var t = this;
-		this.element.change(function() {
+		this.textfield.change(function() {
 			t.onChanged(this.value);
 		});
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.convertInput(this.element[0].value);
+		return this.convertInput(this.textfield[0].value);
 	},
 	setValue: function(value) {
-		this.element[0].value = value;
+		this.textfield[0].value = value;
 	},
 	isValid: function(value) {
 		var val = value || this.getValue();
@@ -247,13 +253,18 @@ var ChoiceElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		
+		console.log(options);
 		this.infoboxes = options.info;
 		this.showInfo = (this.infoboxes != undefined);
-		
-		this.element = $('<select class="form-element" name="'+this.name+'"/>');
-		if (options.disabled) this.element.attr({disabled: true});
+ 
+		this.element = $('<div class="row" />');
+		this.selectdiv = $('<div class="col-md-9" />');
+		this.select = $('<select class="form-control input-sm" name="'+this.name+'"/>');
+		this.element.append(this.selectdiv);
+		this.selectdiv.append(this.select);
+		if (options.disabled) this.select.attr({disabled: true});
 		var t = this;
-		this.element.change(function() {
+		this.select.change(function() {
 			t.onChanged(this.value);
 		});
 		this.choices = options.choices || {};
@@ -261,11 +272,11 @@ var ChoiceElement = FormElement.extend({
 		if (options.value != null) this.setValue(options.value);
 		
 		if (this.showInfo) {
-			this.info = $('<div style="display: inline;"></div>');
-			this.element.after(this.info);
+			this.info = $('<div class="col-md-3"></div>');
+			this.selectdiv.after(this.info);
 			
 			var t = this;
-			this.element.change(function(){
+			this.select.change(function(){
 				t.updateInfoBox();
 			});
 			
@@ -274,15 +285,15 @@ var ChoiceElement = FormElement.extend({
 		
 	},
 	setChoices: function(choices) {
-		this.element.find("option").remove();
-		for (var name in choices) this.element.append($('<option value="'+name+'">'+choices[name]+'</option>'));
+		this.select.find("option").remove();
+		for (var name in choices) this.select.append($('<option value="'+name+'">'+choices[name]+'</option>'));
 		this.setValue(this.getValue());
 	},
 	getValue: function() {
-		return this.convertInput(this.element[0].value);
+		return this.convertInput(this.select[0].value);
 	},
 	setValue: function(value) {
-		var options = this.element.find("option");
+		var options = this.select.find("option");
 		for (var i=0; i < options.length; i++) {
 			$(options[i]).attr({selected: options[i].value == value + ""});
 		}
@@ -313,7 +324,7 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		this.element = $('<div style="margin:0px; padding:0px; border:0px;"></div>');
+		this.element = $('<div class="row" />');
 		//this.element.before($('<div>'+this.template.label+'</div>'));
 		
 		template = editor.templates.get(options.type,options.value);
@@ -333,7 +344,7 @@ var TemplateElement = FormElement.extend({
 		this.template = template;
 		var t = this;
 		
-		var changebutton = $('<input type="button" value="change" />');
+		var changebutton = $('&nbsp;<button class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
 			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
 		})
@@ -343,9 +354,10 @@ var TemplateElement = FormElement.extend({
 		}
 		
 		this.element.empty();
-		this.element.append(this.template.label + ' &nbsp; ');
-		this.element.append(changebutton)
-		this.element.append($(this.template.infobox()));
+		var temp = $('<div class="col-md-6"/>').append(this.template.label);
+		temp.after($('<div class="col-md-3"/>').append(changebutton));
+		temp.after($('<div class="col-md-3"/>').append($(this.template.infobox())));
+		this.element.append(temp);
 	}
 });
 
@@ -354,7 +366,7 @@ var Window = Class.extend({
 		log(options);
 		this.options = options;
 		this.options.position = options.position || ['center',200];
-		this.div = $('<div/>').dialog({
+		this.div = $('<div style="overflow:visible;"/>').dialog({
 			autoOpen: false,
 			draggable: options.draggable != null ? options.draggable : true,
 			resizable: options.resizable != null ? options.resizable : true,
@@ -378,13 +390,17 @@ var Window = Class.extend({
 		
 
 		
-		this.helpButton = $("<div class=\"windowHelp\"></div>");
-		this.helpLink = $("<a><img src=\"/img/help.png\"></a>");
+		this.helpButton = $('<div class="row" />');
+		this.helpLinkPosition = $('<div class="col-md-1 col-md-offset-11" />');
+		this.helpLink = $('<a><img src="/img/help.png"></a></div>');
+		
+		this.helpLinkPosition.append(this.helpLink);
+		
 		var t = this;
 		this.helpLink.click(function(){
 			window.open(t.helpLinkTarget,'_help');
 		});
-		this.helpButton.append(this.helpLink);
+		this.helpButton.append(this.helpLinkPosition);
 		this.helpLinkTarget=help_baseUrl;
 
 		this.div.append(this.helpButton);
@@ -591,15 +607,15 @@ var TutorialWindow = Window.extend({
 var AttributeWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
-		this.table = $('<table/>');
+		this.table = $('<form class="form-horizontal" role="form"></form>');
 		this.div.append(this.table);
 		this.elements = [];
 	},
 	add: function(element) {
 		this.elements.push(element);
-		var tr = $("<tr/>");
-		tr.append($("<td/>").append(element.getLabel()));
-		tr.append($("<td/>").append(element.getElement()));
+		var tr = $('<div class="form-group"/>');
+		tr.append($('<label for="'+element.getElement().name+'" class="col-sm-4 control-label" />').append(element.getLabel()));
+		tr.append($('<div class="col-sm-8" />').append(element.getElement()));
 		this.table.append(tr);
 	},
 	autoElement: function(info, value, enabled) {
@@ -648,7 +664,6 @@ var AttributeWindow = Window.extend({
 		return values;
 	}
 });
-
 var TemplateWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
@@ -667,16 +682,16 @@ var TemplateWindow = Window.extend({
 		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
 		
-		var table = $('<table></table>');
+		
 		
 		this.value = this.element.data.attrs.template;
 		this.choices = editor.templates.getAll(this.element.data.type);
 		
-		table.append(this.getList());
+		var table = this.getList();
 		
 		var buttons = $('<div colspan="2" style="text-align:right;"></div>');
 		
-		var cancelButton = $('<input type="button" value="Cancel" />');
+		var cancelButton = $('<button class="btn btn-primary"><span class="ui-button-text">Cancel</span></button>');
 		var t = this;
 		cancelButton.click(function() {
 			t.hide();
@@ -684,7 +699,7 @@ var TemplateWindow = Window.extend({
 		});
 		buttons.append(cancelButton);
 		
-		var saveButton = $('<input type="button" value="Save" />');
+		var saveButton = $('<button class="btn btn-primary"><span class="ui-button-text">Save</span></button>');
 		if (this.disabled) {
 			saveButton.prop("disabled",true);
 		}
@@ -705,7 +720,7 @@ var TemplateWindow = Window.extend({
 		this.element.changeTemplate(this.getValue());
 	},
 	getList: function() {
-		var form = $("<form></form>");
+		var form = $('<form class="form-horizontal"></form>');
 		var ths = this;
 		
 		for(var i=0; i<this.choices.length; i++) {
@@ -715,9 +730,11 @@ var TemplateWindow = Window.extend({
 			
 
 			//build template list entry
-			var tr = $("<tr></tr>");
+			var div_formgroup = $('<div class="form-group"></div>');
 			
-			var td_option = $('<td />');
+			var div_option = $('<div class="col-md-10" />');
+			var div_radio = $('<div class="radio"></div>');
+			div_option.append(div_radio);
 			var radio = $('<input type="radio" name="template" value="'+t.name+'" />');
 			
 			if (this.disabled) {
@@ -734,18 +751,18 @@ var TemplateWindow = Window.extend({
 			
 			if (t.name == this.element.data.attrs.template) {
 				radio.prop("checked","checked");
-			}name
+			}
 			
-			td_option.append(radio);
-			td_option.append($('<label for="'+t.name+'">'+t.label+'</label>'));
+			var radiolabel = $('<label for="'+t.name+'">'+t.label+'</label>')
+			div_radio.append(radiolabel);
+			radiolabel.prepend(radio);
+			var div_info = $('<div class="col-md-2" />');
+			div_info.append(t.infobox());
 			
-			var td_info = $('<td />');
-			td_info.append(t.infobox());
+			div_formgroup.append(div_option);
+			div_formgroup.append(div_info);
 			
-			tr.append(td_option);
-			tr.append(td_info);
-			
-			form.append(tr);
+			form.append(div_formgroup);
 		}
 		
 		return form;
@@ -773,7 +790,7 @@ var PermissionsWindow = Window.extend({
 		
 		this.buttons = $('<div />');
 		
-		this.closeButton = $('<input type="button" value="Close" style="float:right;" />');
+		this.closeButton = $('<button class="btn btn-primary" style="float:right;"><span class="ui-button-text">Close</span></button>');
 		this.closeButton.click(function(){
 			/* if (t.div.getElementsByTagName("select").length > 0) {
 				if (!window.confirm("Are you sure you want to discard all changes?"))
@@ -823,15 +840,15 @@ var PermissionsWindow = Window.extend({
 		}
 		
 		if (this.options.allowChange) {
-			var addbutton = $('<input type="button" value="Add User" />');
+			var addbutton = $('<div class="ui-dialog-buttonset"><button class="btn btn-primary"><span class="ui-button-text">Add User</span></button>');
 			addbutton.click(function(){
 				t.addNewUser();
 			});
 			this.buttons.append(addbutton);
 		}
 		
-		this.userTable = $('<table><tr><th/><th>User</th><th>Permission</th></tr></table>');
-		if (this.options.allowChange) this.userTable.append($('<th />'));
+		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
+		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
 		this.userList.append(this.userTable);
 		var perm = this.topology.data.permissions;
 		for (u in perm) {
@@ -842,16 +859,17 @@ var PermissionsWindow = Window.extend({
 	
 	addUserToList: function(username) {
 		var t = this;
-		var tr = $('<tr />');
-		var td_name = $('<td/>');
-		var td_perm = $('<td/>');
-		var td_buttons = $('<td/>');
-		var td_icon = $('<td/>')
+		var tr = $('<div class="row" />');
+		var td_name = $('<div class="col-sm-4" />');
+		var td_perm = $('<div class="col-sm-4" />');
+		var td_buttons = $('<div class="col-sm-3" />');
+		var td_icon = $('<div class="col-sm-1" />');
+	
 		
 		ajax({
 			url:	'account/'+username+'/info',
 			successFn: function(data) {
-				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank">'+data.id+'</a>)'
+				var s = data.realname+' (<a href="/account/info/'+data.id+'" target="_blank" style="font-size:10pt;">'+data.id+'</a>)'
 				td_name.append($(s));
 				if (data.id == t.options.ownUserId) td_icon.append($('<img src="/img/user.png" title="This is you!" />'));
 			}
@@ -868,7 +886,7 @@ var PermissionsWindow = Window.extend({
 				td_buttons: td_buttons,
 				tr: tr
 		};
-		this.userTable.append(tr);
+		this.userTable.after(tr);
 		
 		this.drawView(username);
 	},
@@ -912,7 +930,9 @@ var PermissionsWindow = Window.extend({
 		td_buttons.empty();
 		var sel_id='permissions_'+username;
 		
+		var div = $('<div class="col-sm-10"/>');
 		var sel=$('<select name="sel" id="'+sel_id+'"></select>');
+		div.append(sel);
 		for (perm in this.permissions) {
 			if (perm != "null")
 				sel.append($('<option value="'+perm+'" title="'+this.permissions[perm].description+'">'+this.permissions[perm].title+'</option>'));
@@ -1839,7 +1859,7 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 		options.helpTarget = help_baseUrl+"/editor/configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
-			this.table.append($("<tr/>").append($("<th colspan=4><big>Link emulation</big></th>")));
+			this.table.append($('<div class="form-group" />').append($("<h4>Link emulation</h4>")));
 			this.emulation_elements = [];
 			var t = this;
 			var el = new CheckboxElement({
@@ -1850,7 +1870,8 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				}
 			});
 			this.elements.push(el);
-			this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+			
+			this.table.append($('<div class="form-group" />').append($('<label class="col-sm-4 control-label">Enabled</label>')).append($('<div class="col-sm-8">').append(el.getElement())));
 			//direction arrows
 			var size = 30;
 			var _div = '<div style="width: '+size+'px; height: '+size+'px;"/>';
@@ -1875,11 +1896,10 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			}
 			var fromDir = $("<div>From " + name1 + "<br/>to " + name2 + "</div>");
 			var toDir = $("<div>From " + name2 + " <br/>to " + name1 + "</div>");
-			this.table.append($('<tr/>')
-				.append($("<td>Direction</td>"))
-				.append($('<td align="middle"/>').append(fromDir).append(dir1))
-				.append($('<td align="middle"/>').append(toDir).append(dir2))
-				.append($('<td>&nbsp;</td>'))
+			this.table.append($('<div class="form-group" />')
+				.append($('<label class="col-sm-4 control-label">Direction</label>'))
+				.append($('<div class="col-sm-4" />').append(fromDir).append(dir1))
+				.append($('<div class="col-sm-4" />').append(toDir).append(dir2))
 			);
 			//simple fields
 			var order = ["bandwidth", "delay", "jitter", "distribution", "lossratio", "duplicate", "corrupt"];
@@ -1891,19 +1911,18 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				var el_to = this.autoElement(con.caps.attrs[name+"_to"], con.data.attrs[name+"_to"], true)
 				this.elements.push(el_to);
 				this.emulation_elements.push(el_to);
-				this.table.append($("<tr/>")
-					.append($("<td/>").append(con.caps.attrs[name+"_to"].desc))
-					.append($("<td/>").append(el_from.getElement()))
-					.append($("<td/>").append(el_to.getElement()))
-					.append($("<td/>").append(con.caps.attrs[name+"_to"].unit))
+				this.table.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-4 control-label" />').append(con.caps.attrs[name+"_to"].desc))
+					.append($('<div class="col-sm-3" />').append(el_from.getElement()))
+					.append($('<div class="col-sm-3" />').append(el_to.getElement()))
+					.append($('<div class="col-sm-2" />').append(con.caps.attrs[name+"_to"].unit))
 				);
 			}
 			this.updateEmulationStatus(con.data.attrs.emulation);
-			this.table.append($("<tr/>").append($("<td colspan=4>&nbsp;</td>")));
 		}
 		if (con.attrEnabled("capturing")) {
 			var t = this;
-			this.table.append($("<tr/>").append($("<th colspan=4><big>Packet capturing</big></th>")));
+			this.table.append($('<div class="form-group" />').append($("<h4>Packet capturing</h4>")));
 			this.capturing_elements = [];
 			var el = new CheckboxElement({
 				name: "capturing",
@@ -1913,16 +1932,16 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 				}
 			});
 			this.elements.push(el);
-			this.table.append($("<tr/>").append($("<td>Enabled</td>")).append($("<td colspan=3/>").append(el.getElement())));
+			this.table.append($('<div class="form-group" />').append($('<label class="col-sm-6 control-label">Enabled</div>')).append($('<div class="col-sm-6" />').append(el.getElement())));
 			var order = ["capture_mode", "capture_filter"];
 			for (var i = 0; i < order.length; i++) {
 				var name = order[i];
 				var el = this.autoElement(con.caps.attrs[name], con.data.attrs[name], con.attrEnabled(name));
 				this.capturing_elements.push(el);
 				this.elements.push(el);
-				this.table.append($("<tr/>")
-					.append($("<td/>").append(con.caps.attrs[name].desc))
-					.append($("<td colspan=3/>").append(el.getElement()))
+				this.table.append($('<div class="form-group" />')
+					.append($('<label class="col-sm-6 control-label">Enabled</div>').append(con.caps.attrs[name].desc))
+					.append($('<div class="col-sm-6" />').append(el.getElement()))
 				);
 			}
 			this.updateCapturingStatus(con.data.attrs.capturing);
@@ -2910,7 +2929,7 @@ var ExternalNetworkElement = IconElement.extend({
 			
 			net = networks[i];
 			
-			info.append(' &nbsp; <img src="/img/info.png" />');
+			info.append('<img src="/img/info.png" />');
 
 			if (net.description) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+net.description+'</td></tr>'));
@@ -2974,7 +2993,7 @@ var VMElement = IconElement.extend({
 	showTemplateWindow: function(callback) {
 		var window = new TemplateWindow({
 			element: this,
-			width: 300,
+			width: 400,
 			callback: callback
 		});
 		window.show();
@@ -2996,7 +3015,7 @@ var VMElement = IconElement.extend({
 			
 			prof = profiles[i];
 			
-			info.append(' &nbsp; <img src="/img/info.png" />');
+			info.append('<img src="/img/info.png" />');
 
 			if (prof.description) {
 				desc.append($('<tr><td style="background:white;"></td><td style="background:white;">'+prof.description+'</td></tr>'));
@@ -3032,10 +3051,10 @@ var VMElement = IconElement.extend({
 			
 			site = sites[i];
 			
-			info.append(' &nbsp; <img src="/img/info.png" />');
+			info.append('<img src="/img/info.png" />');
 			
 			if (this.data.attrs.host_site && (this.data.attrs.site == null)) {
-				info.append(' &nbsp; <img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
+				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
 
@@ -3233,7 +3252,7 @@ var Template = Class.extend({
 		
 		if (this.description || this.creation_date) {
 
-			info.append(' &nbsp; <img src="/img/info.png" />');
+			info.append('<img src="/img/info.png" />');
 		
 			if (this.description) {
 				desc.append($('<tr><td style="background:white;"><img src="/img/info.png" /></td><td style="background:white;">'+this.description+'</td></tr>'));	
@@ -3244,21 +3263,21 @@ var Template = Class.extend({
 			}
 			
 		} else {
-			info.append(' &nbsp; <img src="/img/invisible16.png" />');
+			info.append('<img src="/img/invisible16.png" />');
 		}
 		
 		if (!this.nlXTP_installed) {
 			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="'+help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
-			info.append('&nbsp;<img src="/img/warning16.png" />');
+			info.append('<img src="/img/warning16.png" />');
 		} else {
-			info.append(' &nbsp; <img src="/img/invisible16.png" />');
+			info.append('<img src="/img/invisible16.png" />');
 		}
 		
 		if (this.restricted) {
 			desc.append($('<tr><td style="background:white;"><img src="'+restricted_icon+'" /></td><td style="background:white;">'+restricted_text+'</td></tr>'));
-			info.append('&nbsp;<img src="'+restricted_icon+'" />');
+			info.append('<img src="'+restricted_icon+'" />');
 		} else {
-			info.append(' &nbsp; <img src="/img/invisible16.png" />');
+			info.append('<img src="/img/invisible16.png" />');
 		}
 		
 		info.append(d);
