@@ -24,6 +24,12 @@
     "icon": "link_emulation/icon.png"
   } 
   {
+    "url":   "packet_capturing/tutorial.json",
+    "name": "Packet Capturing",
+    "desc": "Learn how to capture traffic in your topologies.",
+    "icon": "packet_capturing/icon.png"
+  } 
+  {
     "url":   "connections/tutorial.json",
     "name": "Using Connections (deprecated)",
     "desc": "Learn about connections.",
