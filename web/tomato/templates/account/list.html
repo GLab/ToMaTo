@@ -20,10 +20,11 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url account_list_all %}">Show all accounts</a></li>
+    <li class="divider"></li>
     {% for orga in orgas %}
-      <li><a href="{% url organization_accounts organization=orga.name %}">Showing all accounts of '{{orga.name}}'</a></li>    
+      <li><a href="{% url organization_accounts organization=orga.name %}">Show all accounts of '{{orga.name}}'</a></li>    
     {% endfor %}
-    <li><a href="{% url account_list_all %}">Showing all accounts</a></li>
   </ul>
 </div>
 {% endif %}
@@ -40,18 +41,18 @@
   </button>
   <ul class="dropdown-menu" role="menu">
     {% if organization %}
-      <li><a href="{% url account_list %}">Showing regular accounts</a></li>
+      <li><a href="{% url account_list %}">Show regular accounts</a></li>
     {% else %}
-      <li><a href="{% url account_list_all %}">Showing regular accounts</a></li>
+      <li><a href="{% url account_list_all %}">Show regular accounts</a></li>
     {% endif %}
     {% if 'global_admin' in request.session.user.flags %}
       {% ifequal organization request.session.user.organization %}
-        <li><a href="{% url account_list_registrations %}">Showing pending registrations</a></li>
+        <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
       {% else %}    
-        <li><a href="{% url account_list_registrations_all %}">Showing pending registrations</a></li>
+        <li><a href="{% url account_list_registrations_all %}">Show pending registrations</a></li>
       {% endifequal %}
     {% else %}
-      <li><a href="{% url account_list_registrations %}">Showing pending registrations</a></li>
+      <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
     {% endif %}
   </ul>
 </div>

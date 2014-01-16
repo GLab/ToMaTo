@@ -149,7 +149,7 @@
 {% load tomato %}
 
 <form>
-  <button type="submit" formaction="" class="btn btn-default"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
+  <button type="submit" formaction="{%url host_external_networks host.address%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
   <button type="submit" formaction="{%url host.edit host.address%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
   <button type="submit" formaction="{%url host.remove host.address%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
 </form>

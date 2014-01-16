@@ -1,0 +1,94 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>External Network Instance list</h1>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if network %}
+      Showing instances of network '{{network_kind}}'
+    {% else %}
+      Showing instances of all networks
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{%url external_network_instances_all %}">Show all external network instances</a></li>
+    <li class="divider"></li>
+    {% for net in networks %}
+      <li><a href="{%url external_network_instances net.id %}">Show instances of network '{{net.attrs.kind}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if host %}
+      Showing instances on host '{{host}}'
+    {% else %}
+      Showing instances on all hosts
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{%url external_network_instances_all %}">Show all external network instances</a></li>
+    <li class="divider"></li>
+    {% for h in hosts %}
+      <li><a href="{%url host_external_networks h.address %}">Show instances on host '{{h.address}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="skip-sm"></div>
+
+{% if nis|length > 10 and request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+</form>
+{% endif %}
+
+{% if nis %}
+	<script src="/js/enhancetable.js"></script>
+
+	<table class="sortable,filterable table table-striped">
+	  <tr>
+	    <th>Host</th>
+	  	<th>Bridge</th>
+	    <th>Network</th>
+	    
+	    {% if request.session.user.isHostManager %}
+	    	<th/>
+	    {% endif %}
+	    
+	  </tr>
+	{% for ni in nis %}
+	  <tr>
+	  	<td><a href="{%url host.info ni.attrs.host%}">{{ni.attrs.host}}</a></td>
+	  	<td>{{ni.attrs.bridge}}</td>
+	  	<td>{{ni.attrs.network}}</td>
+	    
+	    {% if request.session.user.isHostManager %}
+	    <td>
+	    	<form>
+	    		<button type="submit" formaction="{%url external_network_instance.edit ni.id%}" class="btn btn-xs btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
+  				<button type="submit" formaction="{%url external_network_instance.remove ni.id%}" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
+  			</from>
+		</td>
+	    {% endif %}
+	    
+	  </tr>
+	{% endfor %}
+	</table>
+{% else %}
+	<p>No external network instances</p>
+{% endif %}
+
+{% if request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+</form>
+{% endif %}
+
+{% endblock %}

@@ -41,18 +41,18 @@ class NetworkForm(BootstrapForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 	
 class EditNetworkForm(NetworkForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, *args, **kwargs):
+	def __init__(self, res_id, *args, **kwargs):
 		super(EditNetworkForm, self).__init__(*args, **kwargs)
 		self.fields["kind"].widget=forms.TextInput(attrs={'readonly':'readonly'})
 		self.fields["kind"].help_text=None
-		self.helper.form_action = reverse(edit)
+		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
 		self.helper.layout = Layout(
 			'res_id',
 			'kind',
@@ -60,15 +60,15 @@ class EditNetworkForm(NetworkForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 	
 @wrap_rpc
 def list(api, request):
 	netw_list = api.resource_list('network')
-	return render(request, "admin/external_networks/index.html", {'netw_list': netw_list})
+	return render(request, "admin/external_networks/list.html", {'netw_list': netw_list})
 
 @wrap_rpc
 def add(api, request):
@@ -76,12 +76,11 @@ def add(api, request):
 		form = NetworkForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.resource_create('network',{'kind':formData['kind'],
+			res = api.resource_create('network',{'kind':formData['kind'],
 										   'label':formData['label'],
 										   'preference':formData['preference'],
 										   'description':formData['description']})
-		   
-			return render(request, "admin/external_networks/add_success.html", {'label': formData["label"]})
+			return HttpResponseRedirect(reverse("tomato.external_network.list"))
 		else:
 			return render(request, "form.html", {'form': form, 'heading':"Add External Network"})
 	else:
@@ -94,23 +93,23 @@ def remove(api, request, res_id=None):
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
 			api.resource_remove(res_id)
-			return HttpResponseRedirect(reverse("host_list"))
+			return HttpResponseRedirect(reverse("tomato.external_network.list"))
 	form = RemoveConfirmForm.build(reverse("tomato.external_network.remove", kwargs={"res_id": res_id}))
 	res = api.resource_info(res_id)
-	return render(request, "form.html", {"heading": "Remove External Network", "message_before": "Are you sure you want to remove the external network '"+res["attrs"]["name"]+"'?", 'form': form})	
+	return render(request, "form.html", {"heading": "Remove External Network", "message_before": "Are you sure you want to remove the external network '"+res["attrs"]["kind"]+"'?", 'form': form})	
 	
 
 @wrap_rpc
 def edit(api, request, res_id = None):
 	if request.method=='POST':
-		form = EditNetworkForm(request.POST)
+		form = EditNetworkForm(res_id, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			if api.resource_info(formData['res_id'])['type'] == 'network':
 				api.resource_modify(formData["res_id"],{'label':formData['label'],
 														'preference':formData['preference'],
 														'description':formData['description']})
-				return render(request, "admin/external_networks/edit_success.html", {'label': formData["label"], 'res_id': formData['res_id']})
+				return HttpResponseRedirect(reverse("tomato.external_network.list"))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})
 		else:
@@ -124,7 +123,7 @@ def edit(api, request, res_id = None):
 			res_info = api.resource_info(res_id)
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
-			form = EditNetworkForm(origData)
+			form = EditNetworkForm(res_id, origData)
 			return render(request, "form.html", {'form': form, 'heading':"Edit External Network '"+res_info['attrs']['label']+"'"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
