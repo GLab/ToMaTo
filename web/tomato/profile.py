@@ -25,6 +25,7 @@ from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
 from admin_common import RemoveConfirmForm, BootstrapForm
+from template import techs_dict
 
 from tomato.crispy_forms.helper import FormHelper
 from tomato.crispy_forms.layout import Layout, Fieldset
@@ -42,15 +43,15 @@ class ProfileForm(BootstrapForm):
 		super(ProfileForm, self).__init__(*args, **kwargs)
 		
 class EditProfileForm(ProfileForm):
-	def __init__(self, *args, **kwargs):
+	def __init__(self, res_id, *args, **kwargs):
 		super(EditProfileForm, self).__init__(*args, **kwargs)
-		self.helper.form_action = reverse(edit)
+		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
 
 
 class EditOpenVZForm(EditProfileForm):
 	diskspace = forms.IntegerField(label="Disk Space (MB)")
-	def __init__(self, *args, **kwargs):
-		super(EditOpenVZForm, self).__init__(*args, **kwargs)
+	def __init__(self, res_id, *args, **kwargs):
+		super(EditOpenVZForm, self).__init__(res_id, *args, **kwargs)
 		self.helper.layout = Layout(
 			'res_id',
 			'tech',
@@ -61,15 +62,15 @@ class EditOpenVZForm(EditProfileForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 
 class EditRePyForm(EditProfileForm):
 	cpus = forms.FloatField(label = "number of CPUs")
-	def __init__(self, *args, **kwargs):
-		super(EditRePyForm, self).__init__(*args, **kwargs)
+	def __init__(self, res_id, *args, **kwargs):
+		super(EditRePyForm, self).__init__(res_id, *args, **kwargs)
 		self.helper.layout = Layout(
 			'res_id',
 			'tech',
@@ -80,16 +81,16 @@ class EditRePyForm(EditProfileForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 
 class EditKVMqmForm(EditProfileForm):
 	diskspace = forms.IntegerField(label="Disk Space (MB)")
 	cpus = forms.FloatField(label = "number of CPUs")
-	def __init__(self, *args, **kwargs):
-		super(EditKVMqmForm, self).__init__(*args, **kwargs)
+	def __init__(self, res_id, *args, **kwargs):
+		super(EditKVMqmForm, self).__init__(res_id, *args, **kwargs)
 		self.helper.layout = Layout(
 			'res_id',
 			'tech',
@@ -101,8 +102,8 @@ class EditKVMqmForm(EditProfileForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 	
@@ -126,16 +127,33 @@ class AddProfileForm(ProfileForm):
 			'preference',
 			'description',
 			FormActions(
-				StrictButton('Save', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 
 @wrap_rpc
-def list(api, request):
+def list(api, request, tech):
 	profile_list = api.resource_list('profile')
-	return render(request, "admin/device_profile/index.html", {'profile_list': profile_list})
+	def _cmp(ta, tb):
+		a = ta["attrs"]
+		b = tb["attrs"]
+		c = cmp(a["tech"], b["tech"])
+		if c:
+			return c
+		c = -cmp(a["preference"], b["preference"])
+		if c:
+			return c
+		return cmp(a["name"], b["name"])
+	profile_list.sort(_cmp)
+	if tech:
+		profile_list = filter(lambda t: t["attrs"]["tech"] == tech, profile_list)
+	return render(request, "admin/profile/list.html", {'profile_list': profile_list, 'tech': tech, 'techs_dict': techs_dict})
 
+@wrap_rpc
+def info(api, request, res_id):
+	profile = api.resource_info(res_id)
+	return render(request, "admin/profile/info.html", {"profile": profile, "techs_dict": techs_dict})
 
 @wrap_rpc
 def add(api, request):
@@ -143,7 +161,6 @@ def add(api, request):
 		form = AddProfileForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			
 			data={'tech': formData['tech'],
 				 'name': formData['name'],
 				 'ram':formData['ram'],
@@ -158,10 +175,8 @@ def add(api, request):
 				data['restricted'] = formData['restricted']
 			else:
 				data['restricted'] = False
-			
-			api.resource_create('profile',data)
-		   
-			return render(request, "admin/device_profile/add_success.html", {'label': formData["label"],'tech':data['tech']})
+			res = api.resource_create('profile',data)
+			return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 	else:
@@ -184,13 +199,11 @@ def edit(api, request, res_id=None):
 	if request.method=='POST':
 		tech = request.POST['tech']
 		if tech == 'repy':
-			form = EditRePyForm(request.POST)
+			form = EditRePyForm(res_id, request.POST)
+		elif tech == 'openvz':
+			form = EditOpenVZForm(res_id, request.POST)
 		else:
-			if tech == 'openvz':
-				form = EditOpenVZForm(request.POST)
-			else:
-				form = EditKVMqmForm(request.POST)
-		
+			form = EditKVMqmForm(res_id, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			data={'cpus':formData['cpus'],
@@ -207,7 +220,7 @@ def edit(api, request, res_id=None):
 			
 			if api.resource_info(formData['res_id'])['type'] == 'profile':
 				api.resource_modify(formData["res_id"],data)
-				return render(request, "admin/device_profile/edit_success.html", {'label': formData["label"],'tech':'repy'})
+				return HttpResponseRedirect(reverse("tomato.profile.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no repy device profile.'})
 		else:
@@ -222,12 +235,11 @@ def edit(api, request, res_id=None):
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
 			if origData['tech'] == 'repy':
-				form = EditRePyForm(origData)
+				form = EditRePyForm(res_id, origData)
+			elif origData['tech'] == 'openvz':
+				form = EditOpenVZForm(res_id, origData)
 			else:
-				if origData['tech'] == 'openvz':
-					form = EditOpenVZForm(origData)
-				else:
-					form = EditKVMqmForm(origData)
+				form = EditKVMqmForm(res_id, origData)
 			return render(request, "form.html", {'form': form, "heading":"Edit "+res_info['attrs']['tech']+" Device Profile '"+res_info['attrs']['label']+"'"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})

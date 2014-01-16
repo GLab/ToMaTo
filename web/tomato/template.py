@@ -155,7 +155,7 @@ def add(api, request):
 											'description':formData['description'],
 											'nlXTP_installed':formData['nlXTP_installed'],
 											'creation_date':creation_date})
-			return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res["id"]}))
+			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
@@ -186,7 +186,7 @@ def edit_torrent(api, request, res_id=None):
 			if res_info['type'] == 'template':
 				api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
 														'creation_date':creation_date})
-				return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res_id}))
+				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
@@ -219,7 +219,7 @@ def edit(api, request, res_id=None):
 														'description':formData['description'],
 														'creation_date':creation_date,
 														'nlXTP_installed':formData['nlXTP_installed']})
-				return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res_id}))
+				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
