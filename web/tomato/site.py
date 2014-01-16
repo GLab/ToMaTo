@@ -55,14 +55,14 @@ class SiteForm(BootstrapForm):
 		)
 	
 class AddSiteForm(SiteForm):
-	okbutton_text = "Add"
+	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Add'
 	def __init__(self, api, organization, *args, **kwargs):
 		super(AddSiteForm, self).__init__(api, *args, **kwargs)
 		self.fields["organization"].initial = organization
 		self.helper.form_action = reverse(add, kwargs={"organization": organization})	
 	
 class EditSiteForm(SiteForm):
-	okbutton_text = "Save"
+	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Save'
 	def __init__(self, api, name, *args, **kwargs):
 		super(EditSiteForm, self).__init__(api, *args, **kwargs)
 		self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})

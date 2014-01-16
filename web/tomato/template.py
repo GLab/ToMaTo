@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 import base64
 from lib import wrap_rpc
-from admin_common import RemoveResourceForm, help_url, BootstrapForm
+from admin_common import RemoveConfirmForm, help_url, BootstrapForm
 import datetime
 
 from tomato.crispy_forms.helper import FormHelper
@@ -30,6 +31,12 @@ from tomato.crispy_forms.layout import Layout, Fieldset
 from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 from django.core.urlresolvers import reverse
 
+techs=[
+		{"name": "kvmqm", "label": "KVM"},
+		{"name": "openvz", "label": "OpenVZ"},
+		{"name": "repy", "label": "Repy"}
+	  ]
+techs_dict=dict([(t["name"], t["label"]) for t in techs])
 
 class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -46,7 +53,7 @@ class TemplateForm(BootstrapForm):
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="'+help_url()+'/admin/torrents" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
-	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[('kvmqm','kvmqm'),('openvz','openvz'),('repy','repy')]))
+	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[(t["name"], t["label"]) for t in techs]))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -62,16 +69,16 @@ class AddTemplateForm(TemplateForm):
             'creation_date',
             'torrentfile',
             FormActions(
-                StrictButton('Add', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Add', css_class='btn-success', type="submit")
             )
         )
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, *args, **kwargs):
+	def __init__(self, res_id, *args, **kwargs):
 		super(EditTemplateForm, self).__init__(*args, **kwargs)
-		self.helper.form_action = reverse(edit_data)
+		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
 		self.helper.layout = Layout(
             'res_id',
             'label',
@@ -82,8 +89,8 @@ class EditTemplateForm(TemplateForm):
             'nlXTP_installed',
             'creation_date',
             FormActions(
-                StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
             )
         )
 	
@@ -91,22 +98,22 @@ class ChangeTemplateTorrentForm(BootstrapForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}))
 	torrentfile  = forms.FileField(label="Torrent containing image:", help_text='See the <a href="https://tomato.readthedocs.org/en/latest/docs/templates/" target="_blank">template documentation about the torrent file.</a> for more information')	
-	def __init__(self, *args, **kwargs):
-		super(EditTemplateForm, self).__init__(*args, **kwargs)
+	def __init__(self, res_id, *args, **kwargs):
+		super(ChangeTemplateTorrentForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
-		self.helper.form_action = reverse(edit_torrent)
+		self.helper.form_action = reverse(edit_torrent, kwargs={"res_id": res_id})
 		self.helper.layout = Layout(
             'res_id',
             'creation_date',
             'torrentfile',
             FormActions(
-                StrictButton('Save', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default backbutton')
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
             )
         )
 
 @wrap_rpc
-def list(api, request):
+def list(api, request, tech):
 	templ_list = api.resource_list('template')
 	def _cmp(ta, tb):
 		a = ta["attrs"]
@@ -119,8 +126,14 @@ def list(api, request):
 			return c
 		return cmp(a["name"], b["name"])
 	templ_list.sort(_cmp)
-	return render(request, "admin/device_templates/index.html", {'templ_list': templ_list})
+	if tech:
+		templ_list = filter(lambda t: t["attrs"]["tech"] == tech, templ_list)
+	return render(request, "admin/templates/list.html", {'templ_list': templ_list, "tech": tech, "techs_dict": techs_dict})
 
+@wrap_rpc
+def info(api, request, res_id):
+	template = api.resource_info(res_id)
+	return render(request, "admin/templates/info.html", {"template": template, "techs_dict": techs_dict})
 
 @wrap_rpc
 def add(api, request):
@@ -132,7 +145,7 @@ def add(api, request):
 			creation_date = str(formData['creation_date'])
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
-			api.resource_create('template',{'name':formData['name'],
+			res = api.resource_create('template',{'name':formData['name'],
 											'label':formData['label'],
 											'subtype':formData['subtype'],
 											'preference':formData['preference'],
@@ -142,55 +155,28 @@ def add(api, request):
 											'description':formData['description'],
 											'nlXTP_installed':formData['nlXTP_installed'],
 											'creation_date':creation_date})
-			return render(request, "admin/device_templates/add_success.html", {'label': formData['label']})
+			return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
 		form = AddTemplateForm()
 		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
 
-
 @wrap_rpc
 def remove(api, request, res_id=None):
 	if request.method == 'POST':
-		form = RemoveResourceForm(remove,request.POST)
+		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			res_id = form.cleaned_data["res_id"]
-			if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'template':
-				label = api.resource_info(res_id)['attrs']['label']
-				api.resource_remove(res_id)
-				return render(request, "admin/device_templates/remove_success.html", {'label':label})
-			else:
-				return render(request, "main/error.html",{'type':'invalid id','text':'There is no template with id '+res_id})
-		else:
-			if not res_id:
-				res_id = request.POST['res_id']
-			if res_id:
-				form = RemoveResourceForm(remove)
-				form.fields["res_id"].initial = res_id
-				return render(request, "form.html", {'heading':"Remove Template", "message_before":"Are you sure you want to remove the template" + api.resource_info(res_id)['attrs']['label'] + "?", 'form': form})
-			else:
-				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
-	else:
-		if res_id:
-			form = RemoveResourceForm(remove)
-			form.fields["res_id"].initial = res_id
-			return render(request, "form.html", {'heading':"Remove Template", "message_before":"Are you sure you want to remove the template" + api.resource_info(res_id)['attrs']['label'] + "?", 'form': form})
-		else:
-			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
-	
-
-@wrap_rpc
-def edit(api, request, res_id=None):
-	if res_id:
-		return render(request, "admin/device_templates/edit_unspecified.html",{'res_id':res_id,'label':api.resource_info(request.GET['id'])['attrs']['label']})
-	else:
-		return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
+			api.resource_remove(res_id)
+			return HttpResponseRedirect(reverse("template_list"))
+	form = RemoveConfirmForm.build(reverse("tomato.template.remove", kwargs={"res_id": res_id}))
+	res = api.resource_info(res_id)
+	return render(request, "form.html", {"heading": "Remove Template", "message_before": "Are you sure you want to remove the template '"+res["attrs"]["name"]+"'?", 'form': form})	
 
 @wrap_rpc
 def edit_torrent(api, request, res_id=None):
 	if request.method=='POST':
-		form = ChangeTemplateTorrentForm(request.POST,request.FILES)
+		form = ChangeTemplateTorrentForm(res_id, request.POST,request.FILES)
 		if form.is_valid():
 			formData = form.cleaned_data
 			f = request.FILES['torrentfile']
@@ -200,7 +186,7 @@ def edit_torrent(api, request, res_id=None):
 			if res_info['type'] == 'template':
 				api.resource_modify(formData["res_id"],{'torrent_data':torrent_data,
 														'creation_date':creation_date})
-				return render(request, "admin/device_templates/edit_success.html", {'label': res_info['attrs']['label'], 'res_id': formData['res_id'], 'edited_data': True})
+				return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
@@ -212,28 +198,28 @@ def edit_torrent(api, request, res_id=None):
 	else:
 		if res_id:
 			res_info = api.resource_info(res_id)
-			form = ChangeTemplateTorrentForm({'res_id': res_id})
+			form = ChangeTemplateTorrentForm(res_id, {'res_id': res_id})
 			return render(request, "form.html", {'form': form, "heading":"Edit Template Torrent for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
 
 
 @wrap_rpc
-def edit_data(api, request, res_id=None):
+def edit(api, request, res_id=None):
 	if request.method=='POST':
-		form = EditTemplateForm(request.POST)
+		form = EditTemplateForm(res_id, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			creation_date = str(formData['creation_date'])
-			if api.resource_info(formData['res_id'])['type'] == 'template':
-				api.resource_modify(formData["res_id"],{'label':formData['label'],
+			if api.resource_info(res_id)['type'] == 'template':
+				api.resource_modify(res_id,{'label':formData['label'],
 														'restricted': formData['restricted'],
 														'subtype':formData['subtype'],
 														'preference':formData['preference'],
 														'description':formData['description'],
 														'creation_date':creation_date,
 														'nlXTP_installed':formData['nlXTP_installed']})
-				return render(request, "admin/device_templates/edit_success.html", {'label': formData["label"], 'res_id': formData['res_id'], 'edited_data': True})
+				return HttpResponseRedirect(reverse("template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
@@ -247,7 +233,7 @@ def edit_data(api, request, res_id=None):
 			res_info = api.resource_info(res_id)
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
-			form = EditTemplateForm(origData)
+			form = EditTemplateForm(res_id, origData)
 			return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

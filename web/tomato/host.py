@@ -31,7 +31,7 @@ class HostForm(BootstrapForm):
 	site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
 	enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-	okbutton_text = "Add"
+	okbutton_text = '<span class="glyphicon glyphicon-accept"></span> Add'
 	def __init__(self, api, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
 		self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
@@ -48,7 +48,7 @@ class HostForm(BootstrapForm):
 		)
 	
 class EditHostForm(HostForm):
-	okbutton_text = "Save"
+	okbutton_text = '<span class="glyphicon glyphicon-accept"></span> Save'
 	def __init__(self, api, address, *args, **kwargs):
 		super(EditHostForm, self).__init__(api, *args, **kwargs)
 		self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})

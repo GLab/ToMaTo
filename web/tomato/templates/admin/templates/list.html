@@ -3,54 +3,57 @@
 {% load tomato %}
 
 {% block content %}
-<h1>List of Templates</h1>
+<h1>Template list</h1>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if tech %}
+      Showing all hosts of organization '{{organization}}'
+    {% else %}
+      Showing all templates
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url template_list %}">Show all templates</a></li>
+    <li class="divider"></li>
+    {% for name, label in techs_dict.iteritems %}
+      <li><a href="{% url template_list_bytech tech=name %}">Show all template of tech '{{label}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="skip-sm"></div>
 
 {% if templ_list|length > 10 and request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" class="btn btn-default" /></p>
+<form>
+  <button type="submit" formaction="{%url template.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
+</form>
 {% endif %}
 
 {% if templ_list %}
 	<script src="/js/enhancetable.js"></script>
-	
-	
 	<table class="sortable,filterable table table-striped">
 	  <tr>
-	  	<th class="iconoly">Tech</th>
+	  	<th class="icononly">Tech</th>
+	  	<th>Name</th>
 	    <th>Label</th>
 	    <th>Subtype</th>
 	    <th>Preference</th>
 	    <th>Creation Date</th>
 	    <th>Ready</th>
-	    
-	    {% if request.session.user.isHostManager %}
-	    	<th />
-	    {% endif %}
-	    
+	    <th class="icononly"></th>
 	  </tr>
 	{% for templ in templ_list %}
 	  <tr>
 	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right" class="icononly">
-			{% if templ.attrs.tech == 'kvmqm' %}
-				<img src="/img/kvm16.png" title="KVM" />
-			{% else %}{% if templ.attrs.tech == 'openvz' %}
-				<img src="/img/openvz16.png" title="OpenVZ" />
-			{% else %}
-				<img src="/img/repy16.png" title="Repy" />
-			{% endif %}{% endif %}
+	  		<img src="/img/{{templ.attrs.tech}}16.png" title="{{techs_dict|get:templ.attrs.tech}}" />
 		</td>
-	  
-	    <td title="{{templ.attrs.name}}">{{templ.attrs.label}}</td>
+	    <td><a href="{%url template.info templ.id%}">{{templ.attrs.name}}</a></td>
+	    <td>{{templ.attrs.label}}</td>
 	    <td>{{templ.attrs.subtype}}</td>
-	    <td>
-	    	{{templ.attrs.preference}}
-	    </td>
-	    
-	    
-	    
+	    <td>{{templ.attrs.preference}}</td>
 	    <td>{{templ.attrs.creation_date}}</td>
-	    
-	  
-	    
 	    <td>
 		    {% if templ.attrs.ready.backend %}
 		    	<img src="/img/tick.png" title="on backend" />
@@ -65,18 +68,14 @@
 	    		{{templ.attrs.ready.hosts.ready}}/{{templ.attrs.ready.hosts.total}}
 		    {% endif %}
 	    </td>
-	    
-	    
-	    
 	    <td class="icononly">
 	    <div class="hoverdescription">
-	    
 	    	{% if templ.attrs.description %}		    	
 		    	<img src="/img/info.png" alt="i" />
 		    {% else %}
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
-	 
+		    
 	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {% else %}
@@ -90,7 +89,6 @@
 			{% endif %}
 			
     		<div class="hiddenbox"><table>
-    		
     		{% if templ.attrs.description %}
     			<tr>
     				<td><img src="/img/info.png" /></td>
@@ -113,33 +111,19 @@
 			{% endif %}
 			
     		</table></div>
-		    		
-		    
-		
-		 </div>
-	    
-	    {% if request.session.user.isHostManager %}
-	    
-	    <span width="16">&nbsp;</span>
-	    
-	    		<a href="{%url device_templates.edit_data templ.id%}"><img src="/img/page_edit.png" title="edit data" /></a>
-	    		<a href="{%url device_templates.edit_torrent templ.id%}"><img src="/img/cd_edit.png" title="change torrent" /></a>
-	    		&nbsp;
-	    		<a href="{%url device_templates.remove templ.id%}" ><img src="/img/cross.png" title="remove" /></a>
-			
-	    {% endif %}
-	    
+		 </div>	    
 	    </td>
-	    
 	  </tr>
 	{% endfor %}
 	</table>
 {% else %}
-	No templates
+	<p>No templates</p>
 {% endif %}
 
 {% if request.session.user.isHostManager %}
-	<p><input type="button" onClick="window.location='{%url device_templates.add%}'" value="Add template" class="btn btn-default" /></p>
+<form>
+  <button type="submit" formaction="{%url template.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
+</form>
 {% endif %}
 
 {% endblock %}

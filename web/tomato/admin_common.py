@@ -36,19 +36,6 @@ class BootstrapForm(forms.Form):
 		self.helper.label_class = 'col-lg-4 col-sm-4'
 		self.helper.field_class = 'col-lg-6 col-sm-8'
 
-class RemoveResourceForm(BootstrapForm):
-	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, remove_fn, *args, **kwargs):
-		super(RemoveResourceForm, self).__init__(*args, **kwargs)
-		self.helper.form_action = reverse(remove_fn)
-		self.helper.layout = Layout(
-			'res_id',
-			FormActions(
-				StrictButton('Confirm', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
-			)
-		)
-
 class RemoveConfirmForm(BootstrapForm):
 	def __init__(self, *args, **kwargs):
 		super(RemoveConfirmForm, self).__init__(*args, **kwargs)

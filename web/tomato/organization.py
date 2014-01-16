@@ -34,7 +34,7 @@ class OrganizationForm(BootstrapForm):
 	homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
 	image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-	okbutton_text = '<span class="glyphicon glyphicon-accept"></span> Add'
+	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Add'
 	def __init__(self, *args, **kwargs):
 		super(OrganizationForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
