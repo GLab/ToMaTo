@@ -219,7 +219,7 @@ var TextElement = FormElement.extend({
 		if (options.value != null) this.setValue(options.value);
 	},
 	getValue: function() {
-		return this.convertInput(this.textele[0].value);
+		return this.convertInput(this.textfield[0].value);
 	},
 	setValue: function(value) {
 		this.textfield[0].value = value;
