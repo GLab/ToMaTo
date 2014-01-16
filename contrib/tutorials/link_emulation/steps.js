@@ -31,6 +31,9 @@
 			text:	'<p class="tutorialExplanation">\
 						You see a topology where an OpenVZ device is connected to a switch, and the switch is connected to the internet.<br />\
 						Link emulation does not work when the connection is directly at an external network. Therefore, we need a switch in order to use link emulation.\
+					<p class="tutorialExplanation">\
+						All devices connected to a switch which is connected to to the internet will have a direct connection to the internet (no NAT router or similar).<br />\
+						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
 					<p class="tutorialCommand">\
 						Please start your topology. Changes to link emulation settings can be done while the topology is running.'
 			},
@@ -74,12 +77,8 @@
 				return compareToMask(obj,mask);
 				
 			  },
-			text:	'<p class="tutorialExplanation">\
-						While your topology is being started, let me explain what happens:<br />\
-						All devices connected to a switch connected to to the internet will have a direct connection to the internet (no NAT router or similar).<br />\
-						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
-					<p class="tutorialCommand>\
-						When the topology is running, open a console connection to the device.</p>'
+			text:	'<p class="tutorialCommand>\
+						When the topology is running, open a VNC connection to the device.</p>'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
