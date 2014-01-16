@@ -19,9 +19,14 @@
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
-from admin_common import RemoveResourceForm
+from admin_common import RemoveResourceForm, BootstrapForm
 
-class NetworkInstanceForm(forms.Form):
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+
+from django.core.urlresolvers import reverse
+
+class NetworkInstanceForm(BootstrapForm):
     host = forms.CharField(label="Host")
     bridge = forms.CharField(max_length=255,label="Bridge",help_text="TODO: write a useful help text here...")
     network = forms.CharField(label="Network")
@@ -29,11 +34,32 @@ class NetworkInstanceForm(forms.Form):
         super(NetworkInstanceForm, self).__init__(*args, **kwargs)
         self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
         self.fields["host"].widget = forms.widgets.Select(choices=host_list(api))
+        self.helper.form_action = reverse(add)
+        self.helper.layout = Layout(
+            'host',
+            'bridge',
+            'network',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 class EditNetworkInstanceForm(NetworkInstanceForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
     def __init__(self, api, *args, **kwargs):
         super(EditNetworkInstanceForm, self).__init__(api, *args, **kwargs)
+        self.helper.form_action = reverse(edit)
+        self.helper.layout = Layout(
+            'res_id',
+            'host',
+            'bridge',
+            'network',
+            FormActions(
+                StrictButton('Save', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
     
 def external_network_list(api):
@@ -71,16 +97,16 @@ def add(api, request):
            
             return render(request, "admin/external_network_instances/add_success.html", {'label': formData["host"]})
         else:
-            return render(request, "admin/external_network_instances/form.html", {'form': form, "edit":False})
+            return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
     else:
         form = NetworkInstanceForm(api)
-        return render(request, "admin/external_network_instances/form.html", {'form': form, "edit":False,})
+        return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
     
    
 @wrap_rpc
 def remove(api, request, res_id = None):
     if request.method == 'POST':
-        form = RemoveResourceForm(request.POST)
+        form = RemoveResourceForm(remove,request.POST)
         if form.is_valid():
             res_id = form.cleaned_data["res_id"]
             if api.resource_info(res_id) and api.resource_info(res_id)['type'] == 'network_instance':
@@ -93,17 +119,17 @@ def remove(api, request, res_id = None):
             if not res_id:
                 res_id = request.POST['res_id']
             if res_id:
-                form = RemoveResourceForm()
+                form = RemoveResourceForm(remove)
                 form.fields["res_id"].initial = res_id
-                return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+                return render(request, "form.html", {'heading':"Remove External Network Instance", "message_before":"Are you sure you want to remove the external network instance" +  api.resource_info(res_id)['attrs']['host'], 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     
     else:
         if res_id:
-            form = RemoveResourceForm()
+            form = RemoveResourceForm(remove)
             form.fields["res_id"].initial = res_id
-            return render(request, "admin/external_network_instances/remove_confirm.html", {'label': api.resource_info(res_id)['attrs']['host'], 'form': form})
+            return render(request, "form.html", {'heading':"Remove External Network Instance", "message_before":"Are you sure you want to remove the external network instance" + api.resource_info(res_id)['attrs']['host'], 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No resource specified. Have you followed a valid link?'})
     
@@ -125,7 +151,7 @@ def edit(api, request, res_id = None):
         else:
             host = request.POST["host"]
             if host:
-                return render(request, "admin/external_network_instances/form.html", {'label': host, 'form': form, "edit":True})
+                return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+host})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -134,6 +160,6 @@ def edit(api, request, res_id = None):
             origData = res_info['attrs']
             origData['res_id'] = res_id
             form = EditNetworkInstanceForm(api, origData)
-            return render(request, "admin/external_network_instances/form.html", {'label': res_info['attrs']['host'], 'form': form, "edit":True})
+            return render(request, "form.html", {'form': form, "heading":"Edit External Network Instance on "+res_info['attrs']['host']})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

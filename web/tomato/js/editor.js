@@ -2,16 +2,16 @@
 
 var settings = {
 	childElementDistance: 25,
-	defaultTemplates: {
-		openvz: {
-			name: "debian-7.0_x86_64",
-			label: "Debian 7.0 (OpenVZ)"
-		},
-		kvmqm: {
-			name: "debian-7.0_x86_64",
-			label: "Debian 7.0 (KVM)"
-		}
-	}
+	commonPreferenceThreshold: 100,
+	otherCommonElements: [
+	                      {
+	                  		label: "Switch",
+	                		name: "vpn-switch",
+	                		icon: "img/switch32.png",
+	                		type: "tinc_vpn",
+	                		attrs: {mode: "switch"}  
+	                      }
+	],
 }
 
 var ajax = function(options) {
@@ -401,7 +401,7 @@ var Window = Class.extend({
 			window.open(t.helpLinkTarget,'_help');
 		});
 		this.helpButton.append(this.helpLinkPosition);
-		this.helpLinkTarget="/help";
+		this.helpLinkTarget=help_baseUrl;
 
 		this.div.append(this.helpButton);
 		
@@ -524,7 +524,7 @@ var TutorialWindow = Window.extend({
 	},
 	loadTutorial: function() {//loads editor_tutorial.tutName; tutID: position in "tutorials" array
 		//load tutorial
-		this.tutorialSteps = editor_tutorial
+		this.tutorialSteps = tutorial_steps
 		
 		//set visible buttons
 		if (this.tutorialStatus == 0) {
@@ -558,7 +558,7 @@ var TutorialWindow = Window.extend({
 		
 		var helpUrl=this.tutorialSteps[this.tutorialStatus].help_page;
 		if (helpUrl) {
-			this.helpLinkTarget="/help/"+helpUrl;
+			this.helpLinkTarget=help_baseUrl+"/"+helpUrl;
 			this.helpButton.show();
 		} else {
 			this.helpButton.hide();
@@ -1400,14 +1400,15 @@ var Topology = Class.extend({
 	},
 	action_destroy: function() {
 		var t = this;
+		if (this.editor.options.safe_mode && !confirm("Are you sure you want to completely destroy this topology?")) return;
 		this.action("stop", {
 			callback: function(){
-				t.action("destroy", {});
-			}
+				t.action("destroy", {noask: true});
+			}, noask: true
 		});
 	},
 	remove: function() {
-		if (! confirm("Are you sure you want to completely remove this topology?")) return;
+		if (this.editor.options.safe_mode && !confirm("Are you sure you want to completely remove this topology?")) return;
 		var t = this;
 		var removeTopology = function() {
 			t.editor.triggerEvent({component: "topology", object: t, operation: "remove", phase: "begin"});
@@ -1419,14 +1420,18 @@ var Topology = Class.extend({
 				}
 			});			
 		}
-		if (this.elementCount()) {
-			for (var elId in this.elements) {
-				if (this.elements[elId].parent) continue;
-				this.elements[elId].remove(function(){
-					if (! t.elementCount()) removeTopology();		
-				}, false);
-			}
-		} else removeTopology();
+		this.action("stop", {noask: true, callback: function() {
+			t.action("destroy", {noask: true, callback: function() {
+				if (t.elementCount()) {
+					for (var elId in t.elements) {
+						if (t.elements[elId].parent) continue;
+						t.elements[elId].remove(function(){
+							if (! t.elementCount()) removeTopology();		
+						}, false);
+					}
+				} else removeTopology();				
+			}});			
+		}});
 	},
 	showDebugInfo: function() {
 		var t = this;
@@ -1732,7 +1737,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
-			helpTarget = "/help/editor/configwindow_"+this.data.type;
+			helpTarget = help_baseUrl+"/editor/configwindow_"+this.data.type;
 		}
 		
 		console.log('opening config window for type '+this.data.type);
@@ -1851,7 +1856,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
-		options.helpTarget = "/help/editor/configwindow_connection";
+		options.helpTarget = help_baseUrl+"/editor/configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($('<div class="form-group" />').append($("<h4>Link emulation</h4>")));
@@ -3193,6 +3198,7 @@ var Template = Class.extend({
 		this.nlXTP_installed = options.nlXTP_installed || false;
 		this.creation_date = options.creation_date;
 		this.restricted = options.restricted;
+		this.preference = options.preference;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3200,7 +3206,7 @@ var Template = Class.extend({
 		if (!this.nlXTP_installed) {
 			hb = hb + '<tr><td><img src="/img/error.png" /></td>'+
 				'<td>No nlXTP guest modules are installed. Executable archives will not auto-execute and status '+
-				'will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
+				'will be unavailable. <a href="'+help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>';
 		}
 		hb = hb + "</tbody></table></p>";
 		return Menu.button({
@@ -3213,6 +3219,21 @@ var Template = Class.extend({
 			func: options.func,
 			hiddenboxHTML: hb
 		});
+	},
+	labelForCommon: function() {
+		var label = this.label.replace(/[ ]*\(.*\)/, "");
+		switch (this.type) {
+			case "kvmqm":
+				label += " (KVM)";
+				break;
+			case "openvz":
+				label += " (OpenVZ)";
+				break;
+			case "repy":
+				label += " (Repy)";
+				break;
+		}
+		return label;
 	},
 	infobox: function() {
 		var restricted_icon = "/img/lock_open.png";
@@ -3246,7 +3267,7 @@ var Template = Class.extend({
 		}
 		
 		if (!this.nlXTP_installed) {
-			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="/help/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
+			desc.append($('<tr><td style="background:white;"><img src="/img/warning16.png" /></td><td style="background:white;">No nlXTP guest modules are installed. Executable archives will not auto-execute and status will be unavailable. <a href="'+help_baseUrl+'/rextfv/guestmodules" target="_help">More Info</a></td></tr>'));
 			info.append('<img src="/img/warning16.png" />');
 		} else {
 			info.append('<img src="/img/invisible16.png" />');
@@ -3304,6 +3325,14 @@ var TemplateStore = Class.extend({
 	get: function(type, name) {
 		if (! this.types[type]) return null;
 		return this.types[type][name];
+	},
+	getCommon: function() {
+		var common = [];
+		for (var type in this.types)
+		 for (var name in this.types[type])
+		  if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
+		   common.push(this.types[type][name]);
+		return common;
 	}
 });
 
@@ -3366,6 +3395,13 @@ var NetworkStore = Class.extend({
 	},
 	all: function() {
 		return this.nets;
+	},
+	getCommon: function() {
+		var common = [];
+		for (var i = 0; i < this.nets.length; i++)
+		 if (this.nets[i].preference >= settings.commonPreferenceThreshold)
+		   common.push(this.nets[i]);
+		return common;
 	}
 });
 
@@ -3603,47 +3639,46 @@ var Editor = Class.extend({
 		]);
 		
 		var group = tab.addGroup("Common elements");
-		var tmpl = t.templates.get("openvz", settings.defaultTemplates.openvz.name);
-		if (tmpl)
-		 group.addElement(tmpl.menuButton({
-			label: settings.defaultTemplates.openvz.label,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
-		}));
-		var tmpl = t.templates.get("kvmqm", settings.defaultTemplates.kvmqm.name);
-		if (tmpl)
-		 group.addElement(tmpl.menuButton({
-			label: settings.defaultTemplates.kvmqm.label,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
-		}));
-		group.addElement(Menu.button({
-			label: "Switch",
-			name: "vpn-switch",
-			icon: "img/switch32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "tinc_vpn",
-				attrs: {mode: "switch"}
-			}))
-		}));
-		group.addElement(Menu.button({
-			label: "Internet",
-			name: "net-internet",
-			icon: "img/internet32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "internet"}
-			}))
-		}));
-
+		var common = t.templates.getCommon();
+		for (var i=0; i < common.length; i++) {
+			var tmpl = common[i];
+			group.addElement(tmpl.menuButton({
+				label: tmpl.labelForCommon(),
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createTemplateFunc(tmpl))
+			}));
+		}
+		for (var i=0; i < settings.otherCommonElements.length; i++) {
+			var cel = settings.otherCommonElements[i];
+			group.addElement(Menu.button({
+				label: cel.label,
+				name: cel.name,
+				icon: cel.icon,
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: cel.type,
+					attrs: cel.attrs
+				}))
+			}));			
+		}
+		var common = t.networks.getCommon();
+		for (var i=0; i < common.length; i++) {
+			var net = common[i];
+			group.addElement(Menu.button({
+				label: net.label,
+				name: net.name,
+				icon: "img/internet32.png",
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: "external_network",
+					attrs: {kind: net.kind}					
+				}))
+			}));
+		}
 
 		var tab = this.menu.addTab("Devices");
 
@@ -3776,19 +3811,22 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Networks");
-		group.addElement(Menu.button({
-			label: "Internet",
-			name: "net-internet",
-			icon: "img/internet32.png",
-			toggle: true,
-			toggleGroup: toggleGroup,
-			small: false,
-			func: this.createPositionElementFunc(this.createElementFunc({
-				type: "external_network",
-				attrs: {kind: "internet"}
-			}))
-		}));
-
+		var common = t.networks.all();
+		for (var i=0; i < common.length; i++) {
+			var net = common[i];
+			group.addElement(Menu.button({
+				label: net.label,
+				name: net.name,
+				icon: "img/internet32.png",
+				toggle: true,
+				toggleGroup: toggleGroup,
+				small: false,
+				func: this.createPositionElementFunc(this.createElementFunc({
+					type: "external_network",
+					attrs: {kind: net.kind}					
+				}))
+			}));
+		}
 		var tab = this.menu.addTab("Topology");
 
 		var group = tab.addGroup("");

@@ -19,9 +19,35 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from django import forms
+from lib import getapi
 
-class RemoveResourceForm(forms.Form):
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
+from tomato.crispy_forms.helper import FormHelper
+    
+class BootstrapForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(BootstrapForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_method = "post"
+        self.helper.label_class = 'col-lg-4 col-sm-4'
+        self.helper.field_class = 'col-lg-6 col-sm-8'
+
+class RemoveResourceForm(BootstrapForm):
     res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    def __init__(self, remove_fn, *args, **kwargs):
+        super(RemoveResourceForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(remove_fn)
+        self.helper.layout = Layout(
+            'res_id',
+            FormActions(
+                StrictButton('Confirm', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 def organization_name_list(api):
     l = api.organization_list()
@@ -30,3 +56,6 @@ def organization_name_list(api):
         res.append((organization["name"],organization["description"] or organization["name"]))
     res.sort()
     return res
+
+def help_url():
+    return getapi().server_info()["external_urls"]['help']

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL of the tutorial description file, relative to this file"
+      },
+      "name": {
+        "type": "string",
+        "description": "A short name for the tutorial"
+      },
+      "desc": {
+        "type": "string",
+        "description": "A small text describing the contents of the tutorial and the target audience"
+      },
+      "icon": {
+        "type": "string",
+        "format": "uri",
+        "description": "A 32x32 icon for this tutorial, url is relative to this file"
+      }
+    },
+    "required": ["url", "name"]
+  }
+}

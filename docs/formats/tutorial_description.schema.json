@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "description": "An object containing some tutorial data that will be available to the tutorial steps via the variable 'tutorial_data'."
+    },
+    "steps_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the javascript file defining the tutorial steps. The URL is relative to this file."
+    },
+    "steps_str": {
+      "type": "string",
+      "description": "A string containing all the steps of the tutorial. This must be a string and not an array because the contents will not be valid JSON."
+    },
+    "topology_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the file defining the tutorial topology. The URL is relative to this file."
+    },
+    "topology_data": {
+      "type": "object",
+      "description": "An object containing the topolgy definition."
+    },
+    "base_url": {
+      "type": "string",
+      "format": "url",
+      "default": ".",
+      "description": "A base url that the steps file can use to load additional files from the tutorial source location. This url is relative to the current file. The absolute path of the URL will be available to the tutorial steps file via the variable 'tutorial_base_url'."
+    }
+  },
+  "required": []
+}

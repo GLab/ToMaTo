@@ -104,7 +104,7 @@ head.appendChild(style);
 					<li><a href="{%url account.register%}">Register</a></li>
 					<li><a href="{%url main.login%}">Login</a></li>
 				{% endif %}
-				<li id="menu_item_help"><a href="{%url main.help%}" target="_help">Help</a></li>
+				<li id="menu_item_help"><a href="{%url help.help%}" target="_help">Help</a></li>
         </ul>
       </div>
 
@@ -114,10 +114,15 @@ head.appendChild(style);
 
       <!-- Site footer -->
       <div class="footer">		
-      	<a href="{%url main.project%}">Project</a>  
-   		<a href="{%url main.help "license/license"%}">License</a>
-   		<a href="{% aupurl %}">Terms and Conditions</a>
-        <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern, <a href="{{ site.baseurl }}/contact">Impressum</a></p>
+      	<ul>
+      		<li><a href="{% projecturl %}">Project</a></li>
+   			<li><a href="{%url help.help "license/license"%}">License</a></li>
+   			<li><a href="{% aupurl %}">Terms and Conditions</a></li>
+   			<li><a href="{%url help.contact_form%}">Contact</a></li>
+   			<li><a href="{% impressumurl %}">Impressum</a></li>
+   		</ul>
+        <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>
+        <p class="version">Backend version: {% backend_version %} / Frontend version: {% frontend_version %}</p>
       </div>
 
     </div> <!-- /container -->

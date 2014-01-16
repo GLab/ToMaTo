@@ -26,7 +26,7 @@ class Flags:
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
-	Mails = "mails"
+	NoMails = "nomails"
 	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
 	GlobalHostManager = "global_host_manager"
 	GlobalToplOwner = "global_topl_owner"
@@ -48,7 +48,7 @@ flags = {
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
-	Flags.Mails: "Mails: Can receive mails at all",
+	Flags.NoMails: "NoMails: Can not receive mails at all",
 	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
 	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
 	Flags.GlobalToplOwner: "GlobalToplOwner: Owner for every topology",
@@ -96,12 +96,12 @@ categories = {
 						],
 	'other': [
 						Flags.Debug,
-						Flags.Mails
+						Flags.NoMails
 						]
 	}
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
-						Flags.RestrictedProfiles, Flags.Mails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.RestrictedProfiles, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
@@ -258,7 +258,7 @@ class User(attributes.Mixin, models.Model):
 		return info
 		
 	def sendMail(self, subject, message):
-		if not self.email or not self.hasFlag(Flags.Mails):
+		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
 		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
@@ -321,21 +321,24 @@ def getUser(name):
 	except User.MultipleObjectsReturned:
 		fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
 
-def getFilteredUsers(filterfn):
-	return filter(filterfn, getAllUsers())
+def getFilteredUsers(filterfn, organization = None):
+	return filter(filterfn, getAllUsers(organization))
 
 def getFlaggedUsers(flag):
 	return getFilteredUsers(lambda user: user.hasFlag(flag))
 
-def mailFilteredUsers(filterfn, subject, message):
-	for user in getFilteredUsers(filterfn):
+def mailFilteredUsers(filterfn, subject, message, organization = None):
+	for user in getFilteredUsers(filterfn, organization):
 		user.sendMail(subject, message)
 
-def mailFlaggedUsers(flag, subject, message):
-	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message)
+def mailFlaggedUsers(flag, subject, message, organization=None):
+	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
 
-def getAllUsers():
-	return User.objects.all()
+def getAllUsers(organization = None):
+	if organization is None:
+		return User.objects.all()
+	else:
+		return User.objects.filter(organization=organization)
 
 def cleanup():
 	for provider in providers:

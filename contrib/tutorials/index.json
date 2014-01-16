@@ -1,0 +1,44 @@
+[
+  {
+    "url":   "chat/tutorial.json",
+    "name": "Chat Tutorial",
+    "desc": "Get an overview over ToMaTo and its major features in a scenario using a text-based chat client.",
+    "icon": "chat/icon.png"
+  },
+  {
+    "url":   "basic/tutorial.json",
+    "name": "Beginner Tutorial",
+    "desc": "Teaches the basics about how to use ToMaTo's editor.",
+    "icon": "basic/icon.png"
+  },
+  {
+    "url":   "device_access/tutorial.json",
+    "name": "Device Access (not implemented yet)",
+    "desc": "Access your devices using standard protocols like VNC or SSH",
+    "icon": "device_access/icon.png"
+  },
+  {
+    "url":   "link_emulation/tutorial.json",
+    "name": "Link Emulation",
+    "desc": "Learn how to use link emulation.",
+    "icon": "link_emulation/icon.png"
+  },
+  {
+    "url":   "packet_capturing/tutorial.json",
+    "name": "Packet Capturing (unfinished)",
+    "desc": "Learn how to capture traffic in your topologies.",
+    "icon": "packet_capturing/icon.png"
+  },
+  {
+    "url":   "templates_images/tutorial.json",
+    "name": "Templates and Images (not implemented yet)",
+    "desc": "Learn how to use templates and custom images.",
+    "icon": "templates_images/icon.png"
+  },
+  {
+    "url":   "executable_archives/tutorial.json",
+    "name": "Templates and Images (not implemented yet)",
+    "desc": "Use executable archives to control your devices and access data.",
+    "icon": "executable_archives/icon.png"
+  }
+]

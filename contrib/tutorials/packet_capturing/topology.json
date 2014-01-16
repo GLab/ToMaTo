@@ -1,0 +1,122 @@
+{
+  "file_information": {
+    "version": 3
+  }, 
+  "topology": {
+    "connections": [
+      {
+        "elements": [
+          3628, 
+          3629
+        ], 
+        "type": "bridge", 
+        "attrs": {
+          "bandwidth_to": 10000, 
+          "bandwidth_from": 10000, 
+          "emulation": true
+        }, 
+        "id": 982
+      }, 
+      {
+        "elements": [
+          3630, 
+          3631
+        ], 
+        "type": "fixed_bridge", 
+        "attrs": {
+          "bandwidth_to": 10000, 
+          "bandwidth_from": 10000, 
+          "emulation": true
+        }, 
+        "id": 983
+      }
+    ], 
+    "elements": [
+      {
+        "type": "tinc_endpoint", 
+        "attrs": {
+          "name": "tinc_endpoint3631", 
+          "mode": "switch"
+        }, 
+        "parent": 3627, 
+        "id": 3631
+      }, 
+      {
+        "type": "external_network_endpoint", 
+        "attrs": {
+          "name": "external_network_endpoint3630"
+        }, 
+        "parent": 3624, 
+        "id": 3630
+      }, 
+      {
+        "type": "openvz_interface", 
+        "attrs": {
+          "use_dhcp": true, 
+          "name": "eth0"
+        }, 
+        "parent": 3494, 
+        "id": 3629
+      }, 
+      {
+        "type": "tinc_endpoint", 
+        "attrs": {
+          "name": "tinc_endpoint3628", 
+          "mode": "switch"
+        }, 
+        "parent": 3627, 
+        "id": 3628
+      }, 
+      {
+        "type": "tinc_vpn", 
+        "attrs": {
+          "_pos": {
+            "y": 0.36363636363636365, 
+            "x": 0.033333333333333333
+          }, 
+          "mode": "switch", 
+          "name": "switch1"
+        }, 
+        "parent": null, 
+        "id": 3627
+      }, 
+      {
+        "type": "external_network", 
+        "attrs": {
+          "kind": "internet", 
+          "samenet": false, 
+          "name": "internet1", 
+          "_pos": {
+            "y": 0.59090909090909094, 
+            "x": 0.033333333333333333
+          }
+        }, 
+        "parent": null, 
+        "id": 3624
+      }, 
+      {
+        "type": "openvz", 
+        "attrs": {
+          "profile": "normal", 
+          "name": "openvz1", 
+          "site": null, 
+          "_pos": {
+            "y": 0.090909090909090912, 
+            "x": 0.033333333333333333
+          }, 
+          "host_problems": null, 
+          "template": "debian-7.0_x86_64", 
+          "custom_template": false, 
+          "host_site": null
+        }, 
+        "parent": null, 
+        "id": 3494
+      }
+    ], 
+    "attrs": {
+      "_snap_to_grid": false, 
+      "name": "Tutorial: Packet Capturing", 
+      "_debug_mode": true
+    }
+  }
+}

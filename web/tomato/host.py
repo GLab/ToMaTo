@@ -20,23 +20,52 @@ from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
 
-class HostForm(forms.Form):
+from admin_common import BootstrapForm
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
+class HostForm(BootstrapForm):
     address = forms.CharField(max_length=255,help_text="The host's IP address. This is also its unique id.")
     site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
     enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
     description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+    okbutton_text = "Add"
     def __init__(self, api, *args, **kwargs):
         super(HostForm, self).__init__(*args, **kwargs)
         self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+        self.helper.form_action = reverse(add)
+        self.helper.layout = Layout(
+            'address',
+            'site',
+            'enabled',
+            'description_text',
+            FormActions(
+                StrictButton(self.okbutton_text, css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
 class EditHostForm(HostForm):
+    okbutton_text = "Save"
     def __init__(self, api, *args, **kwargs):
         super(EditHostForm, self).__init__(api, *args, **kwargs)
         self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})
         self.fields["address"].help_text=None
+        self.helper.form_action = reverse(edit)
     
-class RemoveHostForm(forms.Form):
+class RemoveHostForm(BootstrapForm):
     address = forms.CharField(max_length=50, widget=forms.HiddenInput)
+    def __init__(self, *args, **kwargs):
+        super(RemoveHostForm, self).__init__(*args, **kwargs)
+        self.helper.form_action = reverse(remove)
+        self.helper.layout = Layout(
+            'address',
+            FormActions(
+                StrictButton('Confirm', css_class='btn-primary', type="submit"),
+                StrictButton('Cancel', css_class='btn-default backbutton')
+            )
+        )
     
     
 def site_name_list(api):
@@ -54,6 +83,7 @@ def index(api, request):
 
 @wrap_rpc
 def add(api, request):
+    message_after = '<h2>Public key</h2>    The public key of this backend is:    <pre><tt>'+api.server_info()['public_key']+'</tt></pre>'
     if request.method == 'POST':
         form = HostForm(api, request.POST)
         if form.is_valid():
@@ -61,11 +91,11 @@ def add(api, request):
             api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"],'description_text':formData['description_text']})
             return render(request, "admin/host/add_success.html", {'address': formData["address"]})
         else:
-            return render(request, "admin/host/form.html", {'form': form, "edit":False})
+            return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
     else:
         form = HostForm(api)
         if api.site_list():
-            return render(request, "admin/host/form.html", {'public_key': api.host_public_key(), 'form': form, "edit":False})
+            return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
         else:
             return render(request, "admin/host/error_no_site.html", {'user': api.user})
    
@@ -82,14 +112,14 @@ def remove(api, request, address=None):
                 address=request.POST['address']
             if address:
                 form.fields["address"].initial = address
-                return render(request, "admin/host/remove_confirm.html", {'address': address, 'form': form})
+                return render(request, "form.html", {"heading": "Remove Host", "message_before": "Are you sure you want to remove the host '"+address+"'?", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
         if address:
             form = RemoveHostForm()
             form.fields["address"].initial = address
-            return render(request, "admin/host/remove_confirm.html", {'address': address, 'form': form})
+            return render(request, "form.html", {"heading": "Remove Host", "message_before": "Are you sure you want to remove the host '"+address+"'?", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
 
@@ -105,7 +135,7 @@ def edit(api, request, address=None):
             if not address:
                 address=request.POST["address"]
             if address:
-                return render(request, "admin/host/form.html", {'address': address, 'form': form, "edit":True})
+                return render(request, "form.html", {"heading": "Editing Host '"+address+"'", 'form': form})
             else:
                 return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
     else:
@@ -114,6 +144,6 @@ def edit(api, request, address=None):
             form = EditHostForm(api, hostinfo)
             form.fields["site"].initial = hostinfo["site"]
             form.fields["enabled"].initial = hostinfo["enabled"]
-            return render(request, "admin/host/form.html", {'address': address, 'form': form, "edit":True})
+            return render(request, "form.html", {"heading": "Editing Host '"+address+"'", 'form': form})
         else:
             return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})

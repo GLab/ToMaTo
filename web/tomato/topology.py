@@ -22,6 +22,7 @@ from django.http import HttpResponse
 
 import json, re
 
+from tutorial import loadTutorial
 from lib import wrap_rpc
 
 class ImportTopologyForm(forms.Form):
@@ -36,8 +37,8 @@ def index(api, request, showall=False):
 	tut_in_top_list = False
 	for top in toplist:
 		tut_in_top_list_old = tut_in_top_list
-		if top['attrs'].has_key('_tutorial_id'):
-			top['attrs']['tutorial_id'] = top['attrs']['_tutorial_id']
+		if top['attrs'].has_key('_tutorial_url'):
+			top['attrs']['tutorial_url'] = top['attrs']['_tutorial_url']
 			tut_in_top_list = True
 		if top['attrs'].has_key('_tutorial_disabled'):
 			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
@@ -45,34 +46,46 @@ def index(api, request, showall=False):
 				tut_in_top_list = tut_in_top_list_old
 	return render(request, "topology/index.html", {'top_list': toplist, 'showall': showall, 'tut_in_top_list':tut_in_top_list})
 
-def _display(api, request, info, tut_id, tut_stat):
+def _display(api, request, info, tut_url, tut_stat):
 	caps = api.capabilities()
 	res = api.resource_list()
 	sites = api.site_list()
-	optimize_if_small_display = True; #Todo: allow the user to change this
 	permission_list = api.topology_permissions()
 	
 	for s in sites:
 		orga = api.organization_info(s['organization'])
 		del s['organization']
 		s['organization'] = orga
-	
-	return render(request, "topology/info.html", {'top': info, 'res_json': json.dumps(res), 'sites_json': json.dumps(sites), 'caps_json': json.dumps(caps), 'tutorial':tut_id, 'tutorial_status':tut_stat, 'permission_list':permission_list, 'optimize_if_small_display': optimize_if_small_display})	
+
+	tut_data, tut_steps = None, None
+	if tut_url:
+		tut_data, tut_steps, _ = loadTutorial(tut_url)
+
+	return render(request, "topology/info.html", {
+		'top': info,
+		'res_json': json.dumps(res),
+		'sites_json': json.dumps(sites),
+		'caps_json': json.dumps(caps),
+		'tutorial_steps':tut_steps,
+		'tutorial_status':tut_stat,
+		'tutorial_data': tut_data,
+		'permission_list':permission_list,
+	})	
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
 	info=api.topology_info(id)
 	tut_stat = None
-	tut_id = None
+	tut_url = None
 	allow_tutorial = True
 	if info['attrs'].has_key('_tutorial_disabled'):
 		allow_tutorial = not info['attrs']['_tutorial_disabled']
 	if allow_tutorial:
-		if info['attrs'].has_key('_tutorial_id'):
-			tut_id = info['attrs']['_tutorial_id']
+		if info['attrs'].has_key('_tutorial_url'):
+			tut_url = info['attrs']['_tutorial_url']
 			if info['attrs'].has_key('_tutorial_status'):
 				tut_stat = info['attrs']['_tutorial_status']
-	return _display(api, request, info, tut_id, tut_stat);
+	return _display(api, request, info, tut_url, tut_stat);
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment

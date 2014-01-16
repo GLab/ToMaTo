@@ -177,8 +177,33 @@ table td.stddev_veryhigh.good_high, table td.stddev_verylow.good_low {
   font-weight: bold;
 }
 
+img.preload {
+  display: none;
+}
 
-
-div.ui-dialog-content.ui-widget-content.form-horizontal {
-	font-size:10pt;
+div.footer {
+	text-align:center;
+}
+div.footer ul {
+	margin:0px;
+	padding:0px;
+}
+div.footer li {
+	display:inline;
+	border-left: 1px solid black;
+	margin:0px;
+	padding-left: 10px;
+	padding-right:7px;
+}
+div.footer li:first-child {
+	border-left: 0px;
+	margin-left:0px;
+	padding-left:0px;
+}
+div.footer li:last-child {
+	margin-right:0px;
+	padding-right:0px;
+}
+div.footer p.version {
+	font-size:8pt;
 }

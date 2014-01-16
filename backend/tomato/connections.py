@@ -51,11 +51,13 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
-	#elements: set of elements.Element
+	#elements: [elements.Element]
 	connection1 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
 	connection2 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
 	connectionElement1 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
 	connectionElement2 = models.ForeignKey(HostElement, null=True, on_delete=models.SET_NULL, related_name="+")
+	#host_elements: [host.HostElement]
+	#host_connections: [host.HostConnections]
 	
 	DIRECT_ACTIONS = True
 	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy"]

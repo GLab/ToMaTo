@@ -24,23 +24,18 @@ def server_info():
 	"""
 	return {
 		"TEMPLATE_TRACKER_URL": "http://%s:%d/announce" % (config.PUBLIC_ADDRESS, config.TRACKER_PORT),
+		'external_urls': misc.getExternalURLs(),
+		'public_key': misc.getPublicKey(),
+		'version': misc.getVersion()
 	}
-
-@cached(300)
-def host_public_key():
-	return misc.getPublicKey()
-
-@cached(300)
-def aup_url():
-	return misc.getAUPurl()
 
 def link_statistics(siteA, siteB, type=None, after=None, before=None): #@ReservedAssignment
 	return link.getStatistics(siteA, siteB, type, after, before)
 
-def mailAdmins(subject, text):
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	if not currentUser():
 		raise ErrorUnauthorized()
-	misc.mailAdmins(subject, text)
+	misc.mailAdmins(subject, text, global_contact, issue)
 	
 def mailUser(user, subject, text):
 	if not currentUser():

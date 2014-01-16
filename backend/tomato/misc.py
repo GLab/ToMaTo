@@ -17,6 +17,10 @@
 
 from . import config, currentUser
 from auth import Flags, mailFlaggedUsers, getUser
+from lib.cmd import getDpkgVersion #@UnresolvedImport
+
+def getVersion():
+	return getDpkgVersion("tomato-backend") or "devel"
 
 def getPublicKey():
 	lines = []
@@ -29,12 +33,28 @@ def getPublicKey():
 				lines.append(line)
 	return "".join(lines)
 
-def getAUPurl():
-	return config.AUP_URL
+def getExternalURLs():
+	return config.EXTERNAL_URLS
 
-def mailAdmins(subject, text):
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	user = currentUser()
-	mailFlaggedUsers(Flags.GlobalAdminContact, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text))
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	
+	if flag is None:
+		fault.raise_("issue '%s' does not exist" % issue)
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
 	
 def mailUser(user, subject, text):
 	from_ = currentUser()
