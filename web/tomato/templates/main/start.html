@@ -1,10 +1,32 @@
 {% extends "main/base.html" %}
 
 {% block content %}
+<div class="row"><div class="col-md-8 col-md-offset-2">
+
 <h1>Welcome to G-Lab ToMaTo</h1>
 <p>G-Lab ToMaTo (<b>To</b>pology <b>Ma</b>nagement <b>To</b>ol) gives researchers the possibility to design and use virtual networking topologies consisting of devices and connectors.</p>
 <img src="/img/example1.png"/>
 
 <p>To start, <a href="{%url topology.list%}">Login</a> or <a href="{%url account.register%}">Register</a>.</p>
 
+<div class="skip-md"></div>
+
+{% if news %}
+<h2>Latest news <a href="{{news.link}}" class="btn btn-primary btn-sm pull-right"><span class="glyphicon glyphicon-globe"></span> Homepage</a></h2>
+{% for item in news.items %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{item.title|safe}}</h3>
+  </div>
+  <div class="panel-body">
+  	{{item.description|safe}}
+  </div>
+  <div class="panel-footer">{{item.pubDate}}</div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-danger"><b>Failed to load news feed!</b></div>
+{% endif %}
+
+</div></div>
 {% endblock %}
