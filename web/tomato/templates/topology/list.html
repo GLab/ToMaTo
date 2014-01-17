@@ -20,14 +20,14 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url topology_list %}">Showing user topologies</a></li>
+    <li><a href="{% url topology_list %}">Show user topologies</a></li>
     {% if request.session.user.hasGlobalToplFlags %}
       {% for orga in orgas %}
-        <li><a href="{% url organization_topologies organization=orga.name %}">Showing all topologies of '{{orga.name}}'</a></li>    
+        <li><a href="{% url organization_topologies organization=orga.name %}">Show all topologies of '{{orga.name}}'</a></li>    
       {% endfor %}
-      <li><a href="{% url topology_list_all %}">Showing all topologies</a></li>
+      <li><a href="{% url topology_list_all %}">Show all topologies</a></li>
     {% else %}
-      <li><a href="{% url organization_topologies organization=request.session.user.organization %}">Showing all topologies of '{{request.session.user.organization}}'</a></li>        
+      <li><a href="{% url organization_topologies organization=request.session.user.organization %}">Show all topologies of '{{request.session.user.organization}}'</a></li>        
     {% endif %}
   </ul>
 </div>
