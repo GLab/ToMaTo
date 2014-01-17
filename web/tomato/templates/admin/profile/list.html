@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Device Profile list</h1>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if tech %}
+      Showing all device profiles of tech '{{tech}}'
+    {% else %}
+      Showing all device profiles
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url profile_list %}">Show all device profiles</a></li>
+    <li class="divider"></li>
+    {% for name, label in techs_dict.iteritems %}
+      <li><a href="{% url profile_list_bytech tech=name %}">Show all device profiles of tech '{{label}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="skip-sm"></div>
+
+{% if profile_list|length > 10 and request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url profile.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
+</form>
+{% endif %}
+
+{% if profile_list %}
+	<script src="/js/enhancetable.js"></script>
+	
+	<table class="sortable,filterable table table-striped">
+	  <tr>
+		<th class="icononly">Tech</th>
+		<th>Name</th>
+		<th>Label</th>
+		<th>Disk Space</th>
+		<th>RAM</th>
+		<th>CPUs</th>
+		<th>Preference</th>
+		<th class="icononly" />
+	  </tr>
+	{% for profile in profile_list %}
+	  <tr>
+	  	<td enhancetable_customkey="{{profile.attrs.tech}}" align="right" class="icononly">
+	  		<img src="/img/{{profile.attrs.tech}}16.png" title="{{techs_dict|get:profile.attrs.tech}}" />
+		</td>
+	    <td><a href="{%url profile.info profile.id%}">{{profile.attrs.name}}</a></td>
+	    <td>{{profile.attrs.label}}</td>
+		<td>
+			{% if profile.attrs.tech != 'repy' %}
+				{{profile.attrs.diskspace}} MB
+			{% endif %}
+		</td>
+		
+		<td>{{profile.attrs.ram}} MB</td>
+		<td>{{profile.attrs.cpus}}</td>
+		<td>{{profile.attrs.preference}}</td>
+		<td class="icononly">
+		<div class="hoverdescription">
+			{% if profile.attrs.description %}
+				<img src="/img/info.png" alt="i" />
+		    {% else %}
+		    	<img src="/img/invisible16.png" />
+			{% endif %}
+			
+			{% if profile.attrs.restricted %}
+		    	<img src="/img/lock.png" />
+		    {% else %}
+		    	<img src="/img/invisible16.png" />
+		    {% endif %}
+			
+			<div class="hiddenbox"><table>
+				{% if profile.attrs.description %}
+					<tr><td><img src="/img/info.png" /></td><td>{{ profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td></tr>
+				{% endif %}
+				
+				{% if profile.attrs.restricted %}
+					<tr><td><img src="/img/lock.png" /></td><td>This profile is restricted. It can only be used by users with the "Restricted Profiles" flag.</td></tr>
+				{% endif %}
+			</table></div>
+		</div>		    
+	  </tr>
+	{% endfor %}
+	
+	</table>
+{% else %}
+	<p>No profiles</p>
+{% endif %}
+
+{% if request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url profile.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
+</form>
+{% endif %}
+
+
+{% endblock %}

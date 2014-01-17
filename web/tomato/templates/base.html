@@ -63,48 +63,64 @@ head.appendChild(style);
         </td>
         <td style="text-align: right;vertical-align:bottom;">
         <small>
-                        {% if request.session.user %}
-                        Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
-                        {% else %}
-                        &nbsp;
-                        {% endif %}
+        {% if request.session.user %}
+        Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
+        {% else %}
+        &nbsp;
+        {% endif %}
         </small>
         </td>
         </tr>
         </table>
         <ul class="nav nav-justified">
+            {% if not request.session.user %}
+				<li><a href="{%url account.register%}">Register</a></li>
+				<li><a href="{%url main.login%}">Login</a></li>
+            {% endif %}
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>
-				<li><a href="{%url topology.index%}">Topologies</a></li>
 				<li class="dropdown">
-			        <a href="{%url host.index%}" class="dropdown-toggle" data-toggle="dropdown">Admin <b class="caret"></b></a>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies</a>
 			        <ul class="dropdown-menu">
-						<li><a href="{%url host.index%}">Hosts</a></li>
-						<li><a href="{%url site.index%}">Sites</a></li>
-						<li><a href="{%url organization.index%}">Organizations</a></li>
-
-						<li role="presentation" class="divider"></li>
-						<li><a href="{%url device_templates.index%}">Templates</a></li>
-						<li><a href="{%url device_profile.index%}">Device profiles</a></li>
-
-						<li role="presentation" class="divider"></li>
-						<li><a href="{%url external_networks.index%}">External networks</a></li>
-						<li><a href="{%url external_network_instances.index%}">External network instances</a></li>
-			
-						<li role="presentation" class="divider"></li>
-						<li><a href="{%url account.index%}">Account list</a></li>
-						<li><a href="{%url account.index_newaccounts%}">Open User Registrations</a></li>
-						<li><a href="{%url topology.index_all%}">All Topologies</a></li>
-
-						<li role="presentation" class="divider"></li>
-						<li><a href="{%url physical_link_stats.index%}">Physical links</a></li>
-						<li><a href="{.%url main.resource_usage_by_user%}">Resource usage</a></li>
-				    </ul>
-				{% else %}
-					<li><a href="{%url account.register%}">Register</a></li>
-					<li><a href="{%url main.login%}">Login</a></li>
+			        	<li><a href="{%url topology_list%}">My Topologies</a></li>
+						<li><a href="{%url topology_list_all%}">All Topologies</a></li>
+						<li class="divider"></li>
+						<li><a href="{%url topology.import_%}">Import Topology</a></li>
+						<li class="divider"></li>
+						<li><a href="{%url tutorial.list%}">Tutorials</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
+					<ul class="dropdown-menu">
+						<li><a href="{%url account_list%}">Account list</a></li>
+						<li><a href="{%url account_list_all%}">All accounts</a></li>
+						<li><a href="{%url account_list_registrations%}">Pending account registrations</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info</a>
+					<ul class="dropdown-menu">
+						<li><a href="{%url organization.list%}">Organizations</a></li>
+						<li><a href="{%url site.map%}">Sites map</a></li>
+						<li class="divider"></li>
+						<li><a href="{%url host.list%}">Hosts</a></li>
+						<li class="divider"></li>
+						<li><a href="{%url template.list%}">Templates</a></li>
+						<li><a href="{%url profile.list%}">Device profiles</a></li>
+						<li><a href="{%url external_network.list%}">External networks</a></li>
+					</ul>
+				</li>
 				{% endif %}
-				<li id="menu_item_help"><a href="{%url help.help%}" target="_help">Help</a></li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links</a>
+					<ul class="dropdown-menu">
+						<li><a href="{%url help.help%}" target="_help">Help</a></li>
+			      		<li><a href="{% projecturl %}">Project</a></li>
+			   			<li><a href="{% aupurl %}">Terms and Conditions</a></li>
+   						<li><a href="{%url help.contact_form%}">Contact</a></li>
+					</ul>
+				</li>
         </ul>
       </div>
 
@@ -115,10 +131,7 @@ head.appendChild(style);
       <!-- Site footer -->
       <div class="footer">		
       	<ul>
-      		<li><a href="{% projecturl %}">Project</a></li>
    			<li><a href="{%url help.help "license/license"%}">License</a></li>
-   			<li><a href="{% aupurl %}">Terms and Conditions</a></li>
-   			<li><a href="{%url help.contact_form%}">Contact</a></li>
    			<li><a href="{% impressumurl %}">Impressum</a></li>
    		</ul>
         <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>

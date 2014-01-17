@@ -1,0 +1,97 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Template {{template.attrs.name}}</h1>
+
+<form>
+  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Template list</button>
+</form>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<table class="table">
+	<tr>
+		<th>Name:</th>
+		<td>{{template.attrs.name}}</td>
+	</tr>
+	<tr>
+		<th>Label:</th>
+		<td>{{template.attrs.label}}</td>
+	</tr>
+	<tr>
+		<th>Tech:</th>
+		<td><img src="/img/{{template.attrs.tech}}16.png" /> {{template.attrs.tech}}</td>
+	</tr>
+	<tr>
+		<th>Subtype:</th>
+		<td>{{template.attrs.subtype}}</td>
+	</tr>
+	<tr>
+		<th>Preference:</th>
+		<td>{{template.attrs.preference}}</td>
+	</tr>	
+	<tr>
+		<th>Creation date:</th>
+		<td>{{template.attrs.creation_date}}</td>
+	</tr>	
+	<tr>
+		<th>Executable archive support:</th>
+		<td>
+		{% if template.attrs.nlXTP_installed %}
+			<img src="/img/tick.png"/> yes
+		{% else %}
+			{% if template.attrs.tech != 'repy' %}<img src="/img/warning16.png"/>{% endif %} no
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
+		<th>Restricted:</th>
+		<td>
+		{% if template.attrs.restricted %}
+			<img src="/img/lock.png" /> yes
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
+		<th>Availability:</th>
+		<td>
+			<dl class="dl-horizontal">
+  				<dt>Backend</dt><dd>
+				    {% if template.attrs.ready.backend %}
+				    	<img src="/img/tick.png"/> yes
+		    		{% else %}
+		    			<img src="/img/error.png"/> no
+		    		{% endif %}
+  				</dd>
+  				<dt>Hosts</dt><dd>
+				    {% if template.attrs.ready.hosts.ready == template.attrs.ready.hosts.total %}
+				    	<img src="/img/tick.png"/>
+		    		{% else %}
+				    	<img src="/img/error.png"/>
+		    		{% endif %}
+		    		{{template.attrs.ready.hosts.ready}}/{{template.attrs.ready.hosts.total}}
+  				</dd>
+			</dl>		
+	    </td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{template.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	</tr>
+</table>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<form>
+  <button type="submit" formaction="{%url template.edit_torrent template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
+  <button type="submit" formaction="{%url template.edit template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
+  <button type="submit" formaction="{%url template.remove template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
+</form>
+
+{% endblock %}

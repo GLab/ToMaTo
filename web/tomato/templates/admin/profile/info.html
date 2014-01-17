@@ -1,0 +1,68 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Device profile {{profile.attrs.name}}</h1>
+
+<form>
+  <button type="submit" formaction="{%url profile_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Device profile list</button>
+</form>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<table class="table">
+	<tr>
+		<th>Name:</th>
+		<td>{{profile.attrs.name}}</td>
+	</tr>
+	<tr>
+		<th>Label:</th>
+		<td>{{profile.attrs.label}}</td>
+	</tr>
+	<tr>
+		<th>Tech:</th>
+		<td><img src="/img/{{profile.attrs.tech}}16.png" /> {{profile.attrs.tech}}</td>
+	</tr>
+	<tr>
+		<th>Preference:</th>
+		<td>{{profile.attrs.preference}}</td>
+	</tr>	
+	<tr>
+		<th>Restricted:</th>
+		<td>
+		{% if profile.attrs.restricted %}
+			<img src="/img/lock.png" /> yes
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
+		<th>Resources:</th>
+		<td>
+			<dl class="dl-horizontal">
+				{% if profile.attrs.tech != 'repy' %}
+  					<dt>Disk space</dt><dd>{{profile.attrs.diskspace}} MB</dd>
+				{% endif %}
+				<dt>Memory</dt><dd>{{profile.attrs.ram}} MB</dd>
+				<dt>CPUs</dt><dd>{{profile.attrs.cpus}}</dd>
+			</dl>		
+	    </td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+		<td>{{profile.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
+	</tr>
+</table>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<form>
+  <button type="submit" formaction="{%url profile.edit profile.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit device profile</button>
+  <button type="submit" formaction="{%url profile.remove profile.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove device profile</button>
+</form>
+
+{% endblock %}

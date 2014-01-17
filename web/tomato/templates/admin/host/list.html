@@ -1,0 +1,211 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>Host list</h1>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if organization %}
+      Showing all hosts of organization '{{organization}}'
+    {% else %}{% if site %}
+      Showing all hosts of site '{{site}}'
+    {% else %}
+      Showing all hosts
+    {% endif %}{% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url host_list %}">Show all hosts</a></li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Organizations</li>
+    {% for orga in organizations %}
+      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of organization '{{orga.name}}'</a></li>    
+    {% endfor %}
+    <li class="divider"></li>
+    <li class="dropdown-header">Sites</li>
+    {% for s in sites %}
+      <li><a href="{% url site_hosts site=s.name %}">Show all hosts of site '{{s.name}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  		Select fields <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+  		<li><a><input type="checkbox" id="important" onChange="reShow()" checked/><label for="important">Most important</label></a></li>
+		<li><a><input type="checkbox" id="versions" onChange="reShow()"/><label for="versions">Versions</label></a></li>
+		<li><a><input type="checkbox" id="timing" onChange="reShow()"/><label for="timing">Timing</label></a></li>
+		<li><a><input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label></a></li>
+		<li><a><input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label></a></li>
+		<li><a><input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label></a></li>
+		<li><a><input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label></a></li>
+		<li><a><input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label></a></li>
+  </ul>
+</div>
+
+<div class="skip-sm"></div>
+
+{# only show 'add' button when user is authorized #}
+	{% if host_list|length > 10 %}
+	{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
+<form>
+  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+</form>
+	{% endif %}
+	{% endif %}
+
+
+{% if host_list %}
+	<script src="/js/enhancetable.js"></script>	
+	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5" stddev_threshold_high="2.5">
+	  <tr>
+	    <th>&nbsp;</th>
+	    <th>Address</th>
+	    <th>Site</th>
+	    <th stddev_column_class="good_low" title="Combination of CPU, memory and disk">Load</th>
+	    <th>Hostmanager</th>
+	    <th>Distribution</th>
+	    <th>Python</th>
+	    <th>Kernel</th>
+    	<th stddev_column_class="good_high">Info age</th>
+	    <th stddev_column_class="good_high">Uptime</th>
+	    <th stddev_column_class="good_low good_high">Time diff</th>
+	    <th stddev_column_class="good_low">Query time</th>
+	    <th stddev_column_class="good_high">CPUs</th>
+	    <th>Arch</th>
+	    <th stddev_column_class="good_high">Bogomips</th>
+	    <th stddev_column_class="good_low">CPU Load</th>
+	    <th stddev_column_class="good_high">Total RAM</th>
+	    <th stddev_column_class="good_high">Free RAM</th>
+	    <th stddev_column_class="good_high">Total [root]</th>
+	    <th stddev_column_class="good_high">Free [root]</th>
+	    <th stddev_column_class="good_high">Total [data]</th>
+	    <th stddev_column_class="good_high">Free [data]</th>
+	    <th stddev_column_class="good_high">Element types</th>
+	    <th stddev_column_class="good_high">Connection types</th>
+	    <th stddev_column_class="good_low">Errors</th>
+	    <th stddev_column_class="good_low">Dumps</th>
+	    <th stddev_column_class="good_high">Availability</th>
+	  </tr>
+	  
+		{% for host in host_list %}
+	  	<tr>
+			{% if host.problems %}
+	    		<td title="{{host.problems|join:', '}}" enhancetable_customkey="1"><img src="/img/error.png"></td>
+			{% else %}
+	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
+			{% endif %}
+			
+	    	<td><a href="{%url host.info host.address %}">{{host.address}}</a></td>
+	    	
+	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}">{{host.site}}</a></td>
+	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
+	
+			{% if host.host_info %}
+			    <td>{{host.host_info.hostmanager.version}}{% if host.host_info.hostmanager.updater %} <img src="/img/refresh.png" title="Updater installed: {{host.host_info.hostmanager.updater}}"/>{% endif %}</td>
+			    <td>{{host.host_info.system.distribution|join:" "}}</td>
+			    <td>{{host.host_info.system.python}}</td>
+			    <td>{{host.host_info.system.kernel}}</td>
+			    
+			    <td enhancetable_customkey="{{host.host_info_timestamp}}"><nobr>{{host.host_info_timestamp|age|toduration}}</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>
+			    <td enhancetable_customkey="{{host.host_info.time_diff}}"><nobr>{{host.host_info.time_diff|floatformat:2}} s</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.query_time}}"><nobr>{{host.host_info.query_time|mult:1000|floatformat:0}} ms</nobr></td>
+	
+			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.count}}</td>
+			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.system.processor}}</td>
+			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.bogomips_avg|floatformat}}</td>
+			    <td title="{{host.host_info.resources.loadavg}}" enhancetable_customkey="{{host.host_info.resources.loadavg|slice:"1:2"|first|div:host.host_info.resources.cpus_present.count}}">{{host.host_info.resources.loadavg|slice:"1:2"|first|percentage:host.host_info.resources.cpus_present.count}}</td>
+			
+			    <td enhancetable_customkey="{{host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|mult:1024|filesizeformat}}</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used}}" title="{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|percentage:host.host_info.resources.memory.total}}"><nobr>{{host.host_info.resources.memory.total|minus:host.host_info.resources.memory.used|mult:1024|filesizeformat}}</nobr></td>
+	    
+			    <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total}}"><nobr>{{host.host_info.resources.diskspace.root.total|mult:1024|filesizeformat}}</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used}}" title="{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|percentage:host.host_info.resources.diskspace.root.total}}"><nobr>{{host.host_info.resources.diskspace.root.total|minus:host.host_info.resources.diskspace.root.used|mult:1024|filesizeformat}}</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|mult:1024|filesizeformat}}</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used}}" title="{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|percentage:host.host_info.resources.diskspace.data.total}}"><nobr>{{host.host_info.resources.diskspace.data.total|minus:host.host_info.resources.diskspace.data.used|mult:1024|filesizeformat}}</nobr></td>
+			{% else %}
+			    <td>???</td><td>???</td><td>???</td><td>???</td>
+			    <td>???</td><td>???</td><td>???</td><td>???</td>
+			    <td>???</td><td>???</td><td>???</td><td>???</td>
+			    <td>???</td><td>???</td>
+			    <td>???</td><td>???</td><td>???</td><td>???</td>
+			{% endif %}
+			
+			<td title="{{host.element_types|join:", "}}">{{host.element_types|length}}</td>
+			<td title="{{host.connection_types|join:", "}}">{{host.connection_types|length}}</td>
+			
+	    	<td>{{host.component_errors}}</td>
+			{% if host.host_info %}
+		    	<td>{{host.host_info.dumps}}</td>
+			{% else %}		    	
+			    <td>???</td>
+			{% endif %}
+		    
+		    <td enhancetable_customkey="{{host.availability}}"><nobr>{{host.availability|percentage}}</nobr></td>		    
+	  </tr>
+	{% endfor %}
+	</table>
+
+	<script>
+	  function reShow() {
+	  	var table = document.getElementById('table');
+	  	var important = document.getElementById('important').checked;
+	  	var col = 4;
+	  	columnShow(table, col+0, document.getElementById('versions').checked || important);
+	  	columnShow(table, col+1, document.getElementById('versions').checked);
+	  	columnShow(table, col+2, document.getElementById('versions').checked);
+	  	columnShow(table, col+3, document.getElementById('versions').checked);
+	  	col += 4;
+	  	columnShow(table, col+0, document.getElementById('timing').checked);
+	  	columnShow(table, col+1, document.getElementById('timing').checked);
+	  	columnShow(table, col+2, document.getElementById('timing').checked);
+	  	columnShow(table, col+3, document.getElementById('timing').checked);
+	  	col += 4;
+	  	columnShow(table, col+0, document.getElementById('cpu').checked || important);
+	  	columnShow(table, col+1, document.getElementById('cpu').checked);
+	  	columnShow(table, col+2, document.getElementById('cpu').checked);
+	  	columnShow(table, col+3, document.getElementById('cpu').checked || important);
+	  	col += 4;
+	  	columnShow(table, col+0, document.getElementById('ram').checked);
+	  	columnShow(table, col+1, document.getElementById('ram').checked || important);
+	  	col += 2;
+	  	columnShow(table, col+0, document.getElementById('disk').checked);
+	  	columnShow(table, col+1, document.getElementById('disk').checked);
+	  	columnShow(table, col+2, document.getElementById('disk').checked);
+	  	columnShow(table, col+3, document.getElementById('disk').checked || important);
+	  	col += 4;
+	  	columnShow(table, col+0, document.getElementById('features').checked);
+	  	columnShow(table, col+1, document.getElementById('features').checked);
+	  	col += 2;
+	  	columnShow(table, col+0, document.getElementById('debug').checked);
+	  	columnShow(table, col+1, document.getElementById('debug').checked);
+	  	columnShow(table, col+2, document.getElementById('debug').checked || important);
+	  }
+	  function columnShow(table, col, show) {
+	    var rows = table.getElementsByTagName('tr');
+	    for (var row=0; row<rows.length;row++) {
+	      var cells = rows[row].getElementsByTagName('td');
+	      if (cells.length) cells[col].style.display = show ? 'table-cell' : 'none';
+	      cells = rows[row].getElementsByTagName('th');
+	      if (cells.length) cells[col].style.display = show ? 'table-cell' : 'none';
+	    }
+	  }
+	  reShow();
+	</script>
+
+{% else %}
+	<p>No hosts</p>
+{% endif %}
+
+{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
+<form>
+  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+</form>
+{% endif %}
+
+{% endblock %}

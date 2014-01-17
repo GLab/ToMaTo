@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+<h1>External Network list</h1>
+
+{% if netw_list|length > 10 and request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url external_network.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
+</form>
+{% endif %}
+
+{% if netw_list %}
+{% for netw in netw_list %}
+<div class="skip-sm"><hr/></div>
+
+<h2>External network {{netw.attrs.kind}}</h2>
+
+<table class="table">
+	<tr>
+		<th>Label:</th>
+	    <td>{{netw.attrs.label}}</td>
+	</tr>
+	<tr>
+		<th>Preference:</th>
+		<td>{{netw.attrs.preference}}</td>
+	</tr>
+	<tr>
+		<th>Description:</th>
+	    <td>{{netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
+	</tr>
+</table>
+
+<div class="skip-xs"></div>
+
+<form>
+	<button type="submit" formaction="{%url external_network_instances netw.id%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> instances of {{netw.attrs.kind}}</button>
+	{% if request.session.user.isHostManager %}
+  	<button type="submit" formaction="{%url external_network.edit netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit external network</button>
+  	<button type="submit" formaction="{%url external_network.remove netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove external network</button>
+  {% endif %}
+</form>
+{% endfor %}
+{% else %}
+	<p>No external networks</p>
+{% endif %}
+	    
+{% if request.session.user.isHostManager %}
+<form>
+  <button type="submit" formaction="{%url external_network.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
+</form>
+{% endif %}
+
+{% endblock %}

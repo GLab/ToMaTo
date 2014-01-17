@@ -1,0 +1,115 @@
+{% extends "admin/base.html" %}
+
+{% load tomato %}
+
+{% block content %}
+{% ifequal with_flag 'new_account' %}
+<h1>Pending Account Registrations</h1>
+{% else %}
+<h1>Account List</h1>
+{% endifequal %}
+
+{% if 'global_admin' in request.session.user.flags %}
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if organization %}
+      Showing all accounts of '{{organization}}'
+    {% else %}
+      Showing all accounts
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="{% url account_list_all %}">Show all accounts</a></li>
+    <li class="divider"></li>
+    {% for orga in orgas %}
+      <li><a href="{% url organization_accounts organization=orga.name %}">Show all accounts of '{{orga.name}}'</a></li>    
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if 'global_admin' in request.session.user.flags or 'orga_admin' in request.session.user.flags %}
+<div class="btn-group">
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    {% if with_flag %}
+      Showing pending registrations
+    {% else %}
+      Showing regular accounts
+    {% endif %}
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    {% if organization %}
+      <li><a href="{% url account_list %}">Show regular accounts</a></li>
+    {% else %}
+      <li><a href="{% url account_list_all %}">Show regular accounts</a></li>
+    {% endif %}
+    {% if 'global_admin' in request.session.user.flags %}
+      {% ifequal organization request.session.user.organization %}
+        <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
+      {% else %}    
+        <li><a href="{% url account_list_registrations_all %}">Show pending registrations</a></li>
+      {% endifequal %}
+    {% else %}
+      <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="skip-sm"></div>
+
+<script src="/js/enhancetable.js"></script>
+{% if accounts %}
+<table class="sortable,filterable table table-striped">
+  <tr>
+    <th>Name</th>
+    <th>Origin</th>
+    <th>Full name</th>
+    <th>Organization</th>
+   	<th>Flags</th>
+  </tr>
+{% for account in accounts %}
+  <tr>
+    <td>
+      {% if "new_account" in account.flags %}
+      <span class="glyphicon glyphicon-question-sign"></span>
+      {% else %}{% if "global_admin" in account.flags or "global_topl_admin" in account.flags or "global_host_manager" in account.flags %}
+      <span class="glyphicon glyphicon-star"></span>
+      {% else %}{% if "orga_admin" in account.flags or "orga_topl_admin" in account.flags or "orga_host_manager" in account.flags %}
+      <span class="glyphicon glyphicon-star-empty"></span>
+      {% else %}
+      <span class="glyphicon glyphicon-user"></span>
+      {% endif %}{% endif %}{% endif %}
+      <a href="{%url account.info account.name%}">{{account.name}}</a>
+    </td>
+    <td>{{account.origin}}</td>
+    <td>{{account.realname}}</td>
+    <td>{{account.organization}}</td>    
+    <td>
+    	<div class="hoverdescription" style="white-space:normal">
+    		{{account.flags|join:", "}}
+    		<div class="hiddenbox">
+    			{% for f in account.flags_name %}
+    				<p>{{f}}</p>
+    			{% endfor %}
+    		</div>
+    	</div>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+{% else %}
+{% ifequal with_flag 'new_account' %}
+<p>There are no pending registrations.</p>
+{% else %}
+<p>There are no accounts yet.</p>
+{% endifequal %}
+{% endif %}
+
+<form>
+  <button type="submit" formaction="{%url account.register%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Account</button>
+</form>
+
+{% endblock %}

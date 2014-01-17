@@ -23,17 +23,30 @@ from django.http import HttpResponse
 import json, re
 
 from tutorial import loadTutorial
-from lib import wrap_rpc
+from lib import wrap_rpc, AuthError
 
-class ImportTopologyForm(forms.Form):
-	topologyfile  = forms.FileField(label="Topology File")	
-	
-def index_all(request):
-	return index(request, showall=True)
-	
+from admin_common import BootstrapForm
+from tomato.crispy_forms.helper import FormHelper
+from tomato.crispy_forms.layout import Layout, Fieldset
+from tomato.crispy_forms.bootstrap import StrictButton, FormActions
+
+class ImportTopologyForm(BootstrapForm):
+	topologyfile = forms.FileField(label="Topology File")	
+	def __init__(self, *args, **kwargs):
+		super(ImportTopologyForm, self).__init__(*args, **kwargs)
+		self.helper.layout = Layout(
+			'topologyfile',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Import', css_class='btn-success', type="submit")
+			)
+		)
 @wrap_rpc
-def index(api, request, showall=False):
-	toplist=api.topology_list(showAll=showall)
+def list(api, request, show_all=False, organization=None):
+	if not api.user:
+		raise AuthError()
+	toplist=api.topology_list(showAll=show_all, organization=organization)
+	orgas=api.organization_list()
 	tut_in_top_list = False
 	for top in toplist:
 		tut_in_top_list_old = tut_in_top_list
@@ -44,7 +57,7 @@ def index(api, request, showall=False):
 			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
 			if top['attrs']['tutorial_disabled']:
 				tut_in_top_list = tut_in_top_list_old
-	return render(request, "topology/index.html", {'top_list': toplist, 'showall': showall, 'tut_in_top_list':tut_in_top_list})
+	return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all, 'tut_in_top_list':tut_in_top_list})
 
 def _display(api, request, info, tut_url, tut_stat):
 	caps = api.capabilities()
@@ -74,6 +87,8 @@ def _display(api, request, info, tut_url, tut_stat):
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
 	info=api.topology_info(id)
 	tut_stat = None
 	tut_url = None
@@ -89,16 +104,22 @@ def info(api, request, id): #@ReservedAssignment
 
 @wrap_rpc
 def usage(api, request, id): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
 	usage=api.topology_usage(id)
 	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Topology #%d' % int(id)})
 
 @wrap_rpc
 def create(api, request):
+	if not api.user:
+		raise AuthError()
 	info=api.topology_create()
 	return redirect("tomato.topology.info", id=info["id"])
 
 @wrap_rpc
-def import_form(api, request):
+def import_(api, request):
+	if not api.user:
+		raise AuthError()
 	if request.method=='POST':
 		form = ImportTopologyForm(request.POST,request.FILES)
 		if form.is_valid():
@@ -119,13 +140,15 @@ def import_form(api, request):
 				
 			return redirect("tomato.topology.info", id=id_)
 		else:
-			return render(request, "topology/import_form.html", {'form': form})
+			return render(request, "form.html", {'form': form, "heading":"Import Topology"})
 	else:
 		form = ImportTopologyForm()
-		return render(request, "topology/import_form.html", {'form': form})
+		return render(request, "form.html", {'form': form, "heading":"Import Topology"})
 		
 @wrap_rpc
 def export(api, request, id):
+	if not api.user:
+		raise AuthError()
 	top = api.topology_export(id)
 	filename = re.sub('[^\w\-_\. ]', '_', id + "__" + top['topology']['attrs']['name'].lower().replace(" ","_") ) + ".tomato3.json"
 	response = HttpResponse(json.dumps(top, indent = 2), content_type="application/json")

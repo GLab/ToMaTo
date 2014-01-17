@@ -89,11 +89,16 @@ def site_info(name):
 	site = _getSite(name)
 	return site.info()
 
-def site_list():
+def site_list(organization=None):
 	"""
 	undocumented
 	"""
-	return [s.info() for s in host.getAllSites()]
+	if organization:
+		organization = _getOrganization(organization)
+		sites = host.getAllSites(organization=organization)
+	else:
+		sites = host.getAllSites()
+	return [s.info() for s in sites]
 
 def site_modify(name, attrs):
 	"""
@@ -133,13 +138,18 @@ def host_info(address):
 	h = _getHost(address)
 	return h.info()
 
-def host_list(site_filter=None):
+def host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
 	if not currentUser():
 		raise ErrorUnauthorized()
-	hosts = host.getAll(site__name=site_filter) if site_filter else host.getAll()
+	if site:
+		hosts = host.getAll(site__name=site)
+	elif organization:
+		hosts = host.getAll(site__organization__name=organization)
+	else:
+		hosts = host.getAll()
 	return [h.info() for h in hosts]
 
 def host_modify(address, attrs):

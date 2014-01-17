@@ -1,0 +1,12 @@
+{% extends "account/base.html" %}
+
+{% block content %}
+<h1>Account {{account.name}}</h1>
+
+<form action="{%url account.edit account.id%}" class="form-group" method="POST">
+<table class="table table-striped">
+{{form.as_table}}
+</table>
+<input type="submit" value="Save" class="btn btn-default"/>
+</form>
+{% endblock %}

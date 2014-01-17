@@ -43,6 +43,11 @@ def helpurl():
 	api = getapi()
 	return api.server_info()['external_urls']['help']
 
+@register.simple_tag
+def button(style='default', icon=None, title=""):
+	glyphicon = '<span class="glyphicon glyphicon-%s"></span> ' % icon if icon else ""
+	return '<a href="#" class="btn btn-%(style)s">%(glyphicon)s%(title)s</a>' % {'style': style, 'title': title, 'glyphicon': glyphicon}
+	
 @register.filter
 def mult(value, arg):
 	return float(value or "0.0") * arg
