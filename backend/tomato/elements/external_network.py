@@ -28,7 +28,6 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	samenet = samenet_attr.attribute()
 	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
 	kind = kind_attr.attribute()
-	network_attr = Attr("network", type="str")
 	network = models.ForeignKey(network.Network, null=True)
 	
 	CUSTOM_ACTIONS = {
@@ -147,7 +146,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		self.name = val
 
 	def modify_kind(self, val):
-		self.kind = self.getParent().kind if self.parent else val
+		self.kind = val
 
 	def onError(self, exc):
 		if self.element:
