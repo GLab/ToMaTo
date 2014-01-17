@@ -69,14 +69,14 @@ def list(api, request, site=None, organization=None):
 	sites = api.site_list()
 	hosts = api.host_list(site=site, organization=organization)
 	site_map = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-	return render(request, "admin/host/list.html", {'host_list': hosts, 'organizations': organizations, 'site_map': site_map, 'sites': sites, 'site': site, 'organization': organization})
+	return render(request, "host/list.html", {'host_list': hosts, 'organizations': organizations, 'site_map': site_map, 'sites': sites, 'site': site, 'organization': organization})
 
 @wrap_rpc
 def info(api, request, address):
 	host = api.host_info(address)
 	site = api.site_info(host["site"])
 	organization = api.organization_info(host["organization"])
-	return render(request, "admin/host/info.html", {'host': host, 'organization': organization, 'site': site})
+	return render(request, "host/info.html", {'host': host, 'organization': organization, 'site': site})
 
 @wrap_rpc
 def add(api, request):

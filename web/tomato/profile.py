@@ -148,12 +148,12 @@ def list(api, request, tech):
 	profile_list.sort(_cmp)
 	if tech:
 		profile_list = filter(lambda t: t["attrs"]["tech"] == tech, profile_list)
-	return render(request, "admin/profile/list.html", {'profile_list': profile_list, 'tech': tech, 'techs_dict': techs_dict})
+	return render(request, "profile/list.html", {'profile_list': profile_list, 'tech': tech, 'techs_dict': techs_dict})
 
 @wrap_rpc
 def info(api, request, res_id):
 	profile = api.resource_info(res_id)
-	return render(request, "admin/profile/info.html", {"profile": profile, "techs_dict": techs_dict})
+	return render(request, "profile/info.html", {"profile": profile, "techs_dict": techs_dict})
 
 @wrap_rpc
 def add(api, request):

@@ -128,12 +128,12 @@ def list(api, request, tech):
 	templ_list.sort(_cmp)
 	if tech:
 		templ_list = filter(lambda t: t["attrs"]["tech"] == tech, templ_list)
-	return render(request, "admin/templates/list.html", {'templ_list': templ_list, "tech": tech, "techs_dict": techs_dict})
+	return render(request, "templates/list.html", {'templ_list': templ_list, "tech": tech, "techs_dict": techs_dict})
 
 @wrap_rpc
 def info(api, request, res_id):
 	template = api.resource_info(res_id)
-	return render(request, "admin/templates/info.html", {"template": template, "techs_dict": techs_dict})
+	return render(request, "templates/info.html", {"template": template, "techs_dict": techs_dict})
 
 @wrap_rpc
 def add(api, request):

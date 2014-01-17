@@ -100,7 +100,7 @@ def list(api, request, network=None, host=None):
 	print networks
 	print network_kind
 	nis = filter(lambda ni: (not network or ni["attrs"]["network"] == network_kind) and (not host or ni["attrs"]["host"] == host), nis)
-	return render(request, "admin/external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, "network": network, "network_kind": network_kind})
+	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, "network": network, "network_kind": network_kind})
 
 @wrap_rpc
 def add(api, request):

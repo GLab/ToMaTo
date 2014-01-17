@@ -298,7 +298,7 @@ def map(api, request):
 	_socket.connect(("8.8.8.8",80))
 	PUBLIC_ADDRESS = _socket.getsockname()[0]
 	_socket.close()
-	return render(request, "admin/physical_link_stats/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
+	return render(request, "map/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
 
 @wrap_rpc
 def map_kml(api, request):
@@ -311,12 +311,12 @@ def map_kml(api, request):
 		link["src_data"] = sitemap[link["src"]]
 		link["dst_data"] = sitemap[link["dst"]]
 		link["color"] = "ff%02x%02x%02x" % tuple(reversed([r * 256 for r in link["color"]]))
-	return render(request, "admin/physical_link_stats/kml.html",{'sites': sites,'links': links,'user':api.user})
+	return render(request, "map/kml.html",{'sites': sites,'links': links,'user':api.user})
 
 @wrap_rpc
 def details_link(api, request, src, dst):
-	return render(request, "admin/physical_link_stats/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
+	return render(request, "map/usage.html",{'usage':api.link_statistics(src,dst),'name': api.site_info(src)['description'] + " <-> " + api.site_info(dst)['description'],'user':api.user});
 
 @wrap_rpc
 def details_site(api, request, site):
-	return render(request, "admin/physical_link_stats/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});
+	return render(request, "map/usage.html",{'usage':api.link_statistics(site,site),'name':"inside "+api.site_info(site)['description'],'user':api.user});
