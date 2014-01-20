@@ -69,6 +69,42 @@ class EditSiteForm(SiteForm):
 		self.fields["name"].help_text=None
 		self.helper.form_action = reverse(edit, kwargs={"name": name})
 	
+	
+		
+		
+geolocation_script = '<script>\n\
+		function fillCoordinates() {\n\
+			var address = document.getElementById("id_description").value;\n\
+            queryAndFillCoordinates(address);\n\
+        }\n\
+		function queryAndFillCoordinates(address) {\n\
+            var addr=encodeURIComponent(address);\n\
+            $.ajax({\n\
+                type: "GET",\n\
+                async: true,\n\
+                url: "//maps.googleapis.com/maps/api/geocode/json?sensor=false&address="+addr,\n\
+                success: function(res) {\n\
+                    var ret = res.results[0];\n\
+                    if(ret) {\n\
+                        loc = ret.geometry.location;\n\
+                        document.getElementById("id_geolocation_latitude").value = loc.lat;\n\
+                        document.getElementById("id_geolocation_longitude").value = loc.lng;\n\
+                    } else {\n\
+                        var address_new = prompt("Could not get the location for address. Enter a location to get the geolocation coordinates for");\n\
+                    	if (address_new != null) {\n\
+                    		queryAndFillCoordinates(address_new);\n\
+                    	}\n\
+                    }\n\
+                }\n\
+              });\n\
+            }\n\
+        \n\
+        var button = $("<button role=\\\"button\\\" onClick=\\\"fillCoordinates(); return false;\\\" class=\\\"btn btn-primary\\\"><span class=\\\"glyphicon glyphicon-globe\\\"> Fetch Geolocation</span></button>");\n\
+        loc_field = $("#id_location")\n\
+        loc_field.parent().append(button);\n\
+    </script>'
+		
+	
 @wrap_rpc
 def add(api, request, organization):
 	if request.method == 'POST':
@@ -83,10 +119,10 @@ def add(api, request, organization):
 											  'description_text':formData['description_text']})
 			return HttpResponseRedirect(reverse("tomato.organization.info", kwargs={"name": formData["organization"]}))
 		else:
-			return render(request, "form.html", {'form': form, "heading":"Add Site"})
+			return render(request, "form.html", {'form': form, "heading":"Add Site", 'message_after':geolocation_script})
 	else:
 		form = AddSiteForm(api, organization)
-		return render(request, "form.html", {'form': form, "heading":"Add Site"})
+		return render(request, "form.html", {'form': form, "heading":"Add Site", 'message_after':geolocation_script})
 	
 @wrap_rpc
 def remove(api, request, name=None):
@@ -118,7 +154,7 @@ def edit(api, request, name):
 			if name:
 				form.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
 				form.fields["name"].help_text=None
-				return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form})
+				return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 			
@@ -129,7 +165,7 @@ def edit(api, request, name):
 			siteInfo['geolocation_latitude'] = siteInfo['geolocation'].get('latitude',0)
 			del siteInfo['geolocation']
 			form = EditSiteForm(api, name, siteInfo)
-			return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form})
+			return render(request, "form.html", {"heading": "Editing Site '"+name+"'", 'form': form, 'message_after':geolocation_script})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No site specified. Have you followed a valid link?'})
 
