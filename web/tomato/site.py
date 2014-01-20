@@ -86,7 +86,10 @@ class RemoveSiteForm(BootstrapForm):
 		
 geolocation_script = '<script>\n\
 		function fillCoordinates() {\n\
-            var address = prompt("Enter a location to get geolocation coordinates for");\n\
+			var address = document.getElementById("id_description").value;\n\
+            queryAndFillCoordinates(address);\n\
+        }\n\
+		function queryAndFillCoordinates(address) {\n\
             var addr=encodeURIComponent(address);\n\
             $.ajax({\n\
                 type: "GET",\n\
@@ -98,9 +101,11 @@ geolocation_script = '<script>\n\
                         loc = ret.geometry.location;\n\
                         document.getElementById("id_geolocation_latitude").value = loc.lat;\n\
                         document.getElementById("id_geolocation_longitude").value = loc.lng;\n\
-                        console.log(loc);\n\
                     } else {\n\
-                        alert("Could not find a location for "+address);\n\
+                        var address_new = prompt("Could not get the location for address. Enter a location to get the geolocation coordinates for");\n\
+                    	if (address_new != null) {\n\
+                    		queryAndFillCoordinates(address_new);\n\
+                    	}\n\
                     }\n\
                 }\n\
               });\n\
