@@ -11,6 +11,7 @@ encoding//tomato/crispy_forms/templatetags/crispy_forms_tags.py=utf-8
 encoding//tomato/crispy_forms/templatetags/crispy_forms_utils.py=utf-8
 encoding//tomato/element.py=utf-8
 encoding//tomato/external_network.py=utf-8
+encoding//tomato/external_network_instance.py=utf-8
 encoding//tomato/external_network_instances.py=utf-8
 encoding//tomato/help.py=utf-8
 encoding//tomato/host.py=utf-8
