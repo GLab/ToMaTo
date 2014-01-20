@@ -34,7 +34,7 @@ class SiteForm(BootstrapForm):
 	description = forms.CharField(max_length=255, label="Label", help_text="e.g.: Technische Universit&auml;t Kaiserslautern")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
 	organization = forms.CharField(max_length=50)
-	location = forms.CharField(max_length=255, help_text="e.g.: Kaiserslautern")
+	location = forms.CharField(max_length=255, help_text="e.g.: Germany")
 	geolocation_longitude = forms.FloatField(help_text="Float Number. >0 if East, <0 if West",label="Geolocation: Longitude")
 	geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",label="Geolocation: Latitude")
 	def __init__(self, api, *args, **kwargs):
@@ -86,8 +86,8 @@ class RemoveSiteForm(BootstrapForm):
 		
 geolocation_script = '<script>\n\
 		function fillCoordinates() {\n\
-            var address = document.getElementById("id_description").value;\n\
-            var addr=address.replace(" ","+");\n\
+            var address = prompt("Enter a location to get geolocation coordinates for");\n\
+            var addr=encodeURIComponent(address);\n\
             $.ajax({\n\
                 type: "GET",\n\
                 async: true,\n\
