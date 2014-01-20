@@ -30,6 +30,11 @@ from admin_common import BootstrapForm, RemoveConfirmForm
 
 from lib import wrap_rpc, getapi, AuthError
 
+from admin_common import BootstrapForm, RemoveConfirmForm
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+
 class FixedText(forms.HiddenInput):
 	is_hidden = False
 	def render(self, name, value, attrs=None):
@@ -152,7 +157,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		self.api = api
 		self.choices = api.account_flags().items()
 	
-class AccountForm(forms.Form):
+class AccountForm(BootstrapForm):
 	name = forms.CharField(label="Account name", max_length=50)
 	password = forms.CharField(label="Password", widget=forms.PasswordInput, required=False)
 	password2 = forms.CharField(label="Password (repeated)", widget=forms.PasswordInput, required=False)
@@ -176,7 +181,7 @@ class AccountForm(forms.Form):
 		return forms.Form.clean(self, *args, **kwargs)
 
 class AccountChangeForm(AccountForm):
-	def __init__(self, api, data=None):
+	def __init__(self, api, data):
 		AccountForm.__init__(self, api, data)
 		flags = api.account_flags().items()
 		self.fields["name"].widget = FixedText()
@@ -188,6 +193,21 @@ class AccountChangeForm(AccountForm):
 		else:
 			self.fields["flags"].widget = AccountFlagFixedList(api)
 			
+		self.helper.form_action = reverse(edit, kwargs={'id':data['name']})
+		self.helper.layout = Layout(
+			'name',
+			'password',
+			'password2',
+			'organization',
+			'realname',
+			'email',
+			'flags',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton("Save", css_class='btn-success', type="submit")
+			)
+		)
+			
 
 class AccountRegisterForm(AccountForm):
 	aup = forms.BooleanField(label="", required=True)
@@ -198,11 +218,21 @@ class AccountRegisterForm(AccountForm):
 		del self.fields["flags"]
 		del self.fields["origin"]
 		self.fields['aup'].help_text = 'I accept the <a href="'+ api.server_info()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
-		
+		self.helper.form_action = reverse(register)
+		self.helper.layout = Layout(
+			'name',
+			'password',
+			'password2',
+			'organization',
+			'realname',
+			'email',
+			'aup',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
+			)
+		)
 
-class AccountRemoveForm(forms.Form):
-	username = forms.CharField(max_length=250, widget=forms.HiddenInput)
-	
 @wrap_rpc
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
@@ -273,7 +303,7 @@ def edit(api, request, id):
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		form = AccountChangeForm(api, user)
-	return render(request, "account/edit.html", {"account": user, "form": form})
+	return render(request, "form.html", {"account": user, "form": form})
 	
 @wrap_rpc
 def register(api, request):
@@ -302,7 +332,7 @@ def register(api, request):
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
 		form = AccountRegisterForm(api) 
-	return render(request, "account/register.html", {"form": form})
+	return render(request, "from.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, id=None):
