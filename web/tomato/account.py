@@ -30,22 +30,13 @@ from admin_common import BootstrapForm, RemoveConfirmForm
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
-class FixedText(forms.HiddenInput):
-	is_hidden = False
-	def render(self, name, value, attrs=None):
-		return forms.HiddenInput.render(self, name, value) + value
+from admin_common import BootstrapForm, RemoveConfirmForm, FixedList, FixedText
+from tomato.crispy_forms.layout import Layout
+from tomato.crispy_forms.bootstrap import FormActions, StrictButton
+from django.core.urlresolvers import reverse
+from tomato.crispy_forms.utils import render_field
 
-class FixedList(forms.MultipleHiddenInput):
-	is_hidden = False
-	def render(self, name, value, attrs=None):
-		return forms.MultipleHiddenInput.render(self, name, value) + ", ".join(value)
-	def value_from_datadict(self, data, files, name):
-		value = forms.MultipleHiddenInput.value_from_datadict(self, data, files, name)
-		# fix django bug
-		if isinstance(value, list):
-			return value
-		else:
-			return [value]
+
 
 CategoryTranslationDict = {
 		   'manager_user_global':'Global User Management',
@@ -63,40 +54,41 @@ category_order = [
 		'manager_host_orga',
 		'user'
 	]
+
+def render_account_flag_fixedlist(api, value):
+	FlagTranslationDict = api.account_flags()
+	categories = api.account_flag_categories()
+	
+	catlist = category_order
+	for cat in categories.keys():
+		if not cat in catlist:
+			catlist.append(cat)
+	
+	output = []
+	isFirst = True
+	
+	for cat in catlist:
+		foundOne = False
+		for v in categories[cat]:
+			if v in value:
+				if not foundOne:
+					if not isFirst:
+						output.append('</ul>')
+					else:
+						isFirst = False
+					output.append('<ul>')
+					output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
+					foundOne = True
+				output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+		
+	return output
+			
+			
 			
 class AccountFlagFixedList(FixedList):
 	api = None
 	def render(self, name, value, attrs=None):
-		
-		print value
-		
-		FlagTranslationDict = self.api.account_flags()
-		categories = self.api.account_flag_categories()
-		catlist = category_order
-		
-		output = []
-		isFirst = True
-		for cat in categories.keys():
-			if not cat in catlist:
-				catlist.append(cat)
-		
-		for cat in catlist:
-			foundOne = False
-			for v in categories[cat]:
-				if v in value:
-					if not foundOne:
-						if not isFirst:
-							output.append('</ul>')
-						else:
-							isFirst = False
-						output.append('<ul>')
-						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-						foundOne = True
-					output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
-		if output == []:
-			output = ['None']
-			
-			
+		output = render_account_flag_fixedlist(self.api, value)
 		return forms.MultipleHiddenInput.render(self, name, value) + mark_safe(u'\n'.join(output))
 	
 	def __init__(self, api, *args, **kwargs):
@@ -105,6 +97,7 @@ class AccountFlagFixedList(FixedList):
 		
 
 class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
+	inline_class=""
 	api = None
 	def render(self, name, value, attrs=None):
 		if value is None: value = []
@@ -116,7 +109,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		categories = self.api.account_flag_categories()
 		catlist = category_order
 		
-		output = ['<ul>']
+		output = []
 		isFirst = True
 		for cat in categories.keys():
 			if not cat in catlist:
@@ -143,7 +136,9 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 				option_value = force_unicode(v)
 				rendered_cb = cb.render(name, option_value)
 				option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
-				output.append(u'<li><label%s>%s %s</label></li>' % (label_for, rendered_cb, option_label))
+				output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
+				output.append(rendered_cb.replace("form-control", "") + option_label)
+				output.append('</label>')
 		output.append('</ul>')
 		return mark_safe(u'\n'.join(output))
 	
@@ -152,7 +147,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		self.api = api
 		self.choices = api.account_flags().items()
 	
-class AccountForm(forms.Form):
+class AccountForm(BootstrapForm):
 	name = forms.CharField(label="Account name", max_length=50)
 	password = forms.CharField(label="Password", widget=forms.PasswordInput, required=False)
 	password2 = forms.CharField(label="Password (repeated)", widget=forms.PasswordInput, required=False)
@@ -176,7 +171,7 @@ class AccountForm(forms.Form):
 		return forms.Form.clean(self, *args, **kwargs)
 
 class AccountChangeForm(AccountForm):
-	def __init__(self, api, data=None):
+	def __init__(self, api, data):
 		AccountForm.__init__(self, api, data)
 		flags = api.account_flags().items()
 		self.fields["name"].widget = FixedText()
@@ -188,6 +183,21 @@ class AccountChangeForm(AccountForm):
 		else:
 			self.fields["flags"].widget = AccountFlagFixedList(api)
 			
+		self.helper.form_action = reverse(edit, kwargs={'id':data['name']})
+		self.helper.layout = Layout(
+			'name',
+			'password',
+			'password2',
+			'organization',
+			'realname',
+			'email',
+			'flags',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton("Save", css_class='btn-success', type="submit")
+			)
+		)
+			
 
 class AccountRegisterForm(AccountForm):
 	aup = forms.BooleanField(label="", required=True)
@@ -197,12 +207,22 @@ class AccountRegisterForm(AccountForm):
 		self.fields["password"].required = True
 		del self.fields["flags"]
 		del self.fields["origin"]
-		self.fields['aup'].help_text = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
-		
+		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
+		self.helper.form_action = reverse(register)
+		self.helper.layout = Layout(
+			'name',
+			'password',
+			'password2',
+			'organization',
+			'realname',
+			'email',
+			'aup',
+			FormActions(
+				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
+				StrictButton("Register", css_class='btn-success', type="submit")
+			)
+		)
 
-class AccountRemoveForm(forms.Form):
-	username = forms.CharField(max_length=250, widget=forms.HiddenInput)
-	
 @wrap_rpc
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
@@ -241,7 +261,7 @@ def info(api, request, id=None):
 			flags.append(account_flags[flag])
 		else:
 			flags.append(flag+" (unknown flag)")
-	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags})
+	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags, 'flaglist':mark_safe(u'\n'.join(render_account_flag_fixedlist(api,user['flags'])))})                   
 
 @wrap_rpc
 def accept(api, request, id):
@@ -273,7 +293,7 @@ def edit(api, request, id):
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		form = AccountChangeForm(api, user)
-	return render(request, "account/edit.html", {"account": user, "form": form})
+	return render(request, "form.html", {"account": user, "form": form})
 	
 @wrap_rpc
 def register(api, request):
@@ -302,7 +322,7 @@ def register(api, request):
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
 		form = AccountRegisterForm(api) 
-	return render(request, "account/register.html", {"form": form})
+	return render(request, "form.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, id=None):

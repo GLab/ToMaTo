@@ -9,6 +9,7 @@ from django.template import loader, Context
 from django.conf import settings
 
 from tomato.crispy_forms.utils import TEMPLATE_PACK
+from tomato.account import AccountFlagCheckboxList
 
 register = template.Library()
 
@@ -37,7 +38,7 @@ def is_radioselect(field):
 
 @register.filter
 def is_checkboxselectmultiple(field):
-    return isinstance(field.field.widget, forms.CheckboxSelectMultiple)
+    return isinstance(field.field.widget, forms.CheckboxSelectMultiple) and not isinstance(field.field.widget, AccountFlagCheckboxList)
 
 
 @register.filter
