@@ -76,13 +76,13 @@
   <tr>
     <td>
       {% if "new_account" in account.flags %}
-      <span class="glyphicon glyphicon-question-sign"></span>
+      <span class="glyphicon glyphicon-question-sign" title="New account"></span>
       {% else %}{% if "global_admin" in account.flags or "global_topl_admin" in account.flags or "global_host_manager" in account.flags %}
-      <span class="glyphicon glyphicon-star"></span>
+      <span class="glyphicon glyphicon-star" title="Account with global permissions"></span>
       {% else %}{% if "orga_admin" in account.flags or "orga_topl_admin" in account.flags or "orga_host_manager" in account.flags %}
-      <span class="glyphicon glyphicon-star-empty"></span>
+      <span class="glyphicon glyphicon-star-empty" title="Account with organization-wide permissions"></span>
       {% else %}
-      <span class="glyphicon glyphicon-user"></span>
+      <span class="glyphicon glyphicon-user" title="Regular user"></span>
       {% endif %}{% endif %}{% endif %}
       <a href="{%url account.info account.name%}">{{account.name}}</a>
     </td>
