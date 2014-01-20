@@ -97,6 +97,7 @@ class AccountFlagFixedList(FixedList):
 		
 
 class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
+	inline_class=""
 	api = None
 	def render(self, name, value, attrs=None):
 		if value is None: value = []
@@ -108,7 +109,7 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 		categories = self.api.account_flag_categories()
 		catlist = category_order
 		
-		output = ['<ul>']
+		output = []
 		isFirst = True
 		for cat in categories.keys():
 			if not cat in catlist:
@@ -135,7 +136,9 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 				option_value = force_unicode(v)
 				rendered_cb = cb.render(name, option_value)
 				option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
-				output.append(u'<li><label%s>%s %s</label></li>' % (label_for, rendered_cb, option_label))
+				output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
+				output.append(rendered_cb.replace("form-control", "") + option_label)
+				output.append('</label>')
 		output.append('</ul>')
 		return mark_safe(u'\n'.join(output))
 	
