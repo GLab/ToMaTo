@@ -28,6 +28,29 @@ def getauth(request):
 	username, password = auth.split(':',1)
 	return (username, password)
 
+class CachedMethod:
+	def __init__(self, timeout, fn):
+		self.timeout = timeout
+		self.fn = fn
+		self.time = None
+		self.cache = None
+		self.__name__ = fn.__name__
+		self.__doc__ = fn.__doc__
+	def __call__(self, *args, **kwargs):
+		import time
+		if self.time and self.time + self.timeout > time.time():
+			return self.cache
+		self.cache = self.fn(*args, **kwargs)
+		self.time = time.time()
+		return self.cache
+		
+def cached(timeout):
+	def wrap(fn):
+		_cache = None
+		_time = None
+		return CachedMethod(timeout, fn)
+	return wrap
+
 class AuthError(Exception):
 	pass
 
@@ -162,6 +185,31 @@ def getDpkgVersion(package, verStr=None):
 	verStr = getDpkgVersionStr(package)
 	return splitVersion(verStr)
 
+@cached(600)
+def serverInfo():
+	return getapi().server_info()
+	
+import urllib2, re
+from urlparse import urljoin
+
+@cached(3600)
+def getNews():
+	url = serverInfo()["external_urls"]["news_feed"]
+	news = json.load(urllib2.urlopen(url))
+	pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
+	for item in news["items"]:
+		desc = item["description"]
+		for term, url in pattern.findall(desc):
+			if url.startswith("mailto:") or url.startswith("&#109;&#097;&#105;&#108;&#116;&#111;:"):
+				continue
+			nurl = urljoin(item["link"], url)
+			nterm = term.replace(url, nurl)
+			desc = desc.replace(term, nterm)
+		item["description"] = desc
+	news["items"] = news["items"][:3]
+	return news
+
+@cached(3600)
 def getVersion():
 	return getDpkgVersion("tomato-web") or "devel"
 

@@ -18,7 +18,7 @@
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc
+from lib import wrap_rpc, serverInfo
 from django.http import HttpResponseRedirect
 
 from admin_common import BootstrapForm, RemoveConfirmForm
@@ -80,7 +80,7 @@ def info(api, request, address):
 
 @wrap_rpc
 def add(api, request):
-	message_after = '<h2>Public key</h2>	The public key of this backend is:	<pre><tt>'+api.server_info()['public_key']+'</tt></pre>'
+	message_after = '<h2>Public key</h2>	The public key of this backend is:	<pre><tt>'+serverInfo()['public_key']+'</tt></pre>'
 	if request.method == 'POST':
 		form = HostForm(api, request.POST)
 		if form.is_valid():

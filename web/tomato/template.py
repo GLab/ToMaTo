@@ -22,7 +22,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 import base64
-from lib import wrap_rpc
+from lib import wrap_rpc, serverInfo
 from admin_common import RemoveConfirmForm, help_url, BootstrapForm
 import datetime
 
@@ -137,7 +137,7 @@ def info(api, request, res_id):
 
 @wrap_rpc
 def add(api, request):
-	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+api.server_info()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
+	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+serverInfo()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
 		if form.is_valid():

@@ -28,7 +28,7 @@ from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 from admin_common import BootstrapForm, RemoveConfirmForm
 
-from lib import wrap_rpc, getapi, AuthError
+from lib import wrap_rpc, getapi, AuthError, serverInfo
 
 class FixedText(forms.HiddenInput):
 	is_hidden = False
@@ -197,7 +197,7 @@ class AccountRegisterForm(AccountForm):
 		self.fields["password"].required = True
 		del self.fields["flags"]
 		del self.fields["origin"]
-		self.fields['aup'].help_text = 'I accept the <a href="'+ api.server_info()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
+		self.fields['aup'].help_text = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
 		
 
 class AccountRemoveForm(forms.Form):

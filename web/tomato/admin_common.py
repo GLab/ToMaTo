@@ -19,7 +19,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from django import forms
-from lib import getapi
+from lib import serverInfo
 
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
@@ -61,4 +61,4 @@ def organization_name_list(api):
 	return res
 
 def help_url():
-	return getapi().server_info()["external_urls"]['help']
+	return serverInfo()["external_urls"]['help']
