@@ -47,13 +47,17 @@ enhancetable = {
   
   makeFilterable: function(table) {
     var form = document.createElement("form");
-    var label = document.createElement("label");
-    label.appendChild(document.createTextNode("Filter:"));
+    form.className="left-inner-addon";
+    var label = document.createElement("i");
+    label.className="glyphicon glyphicon-search";
     form.appendChild(label);
     var input = document.createElement("input");
+    input.className="textinput form-control";
+    input.style.maxWidth="6cm";
     input.table = table
     input.setAttribute("onkeyup", "enhancetable.filter(this)");
     input.setAttribute("type","text");
+    input.placeholder="Filter Table";
     form.appendChild(input);
     table.parentNode.insertBefore(form, table);
   },
