@@ -22,6 +22,11 @@ var ajax = function(options) {
 	 	url: "../ajax/" + options.url,
 	 	data: {data: $.toJSON(options.data || {})},
 	 	complete: function(res) {
+	 		if (res.status == 401 || res.status == 403) {
+	 			alert("Your session has ended, please log in again");
+	 			window.location.reload();
+	 			return;
+	 		}
 	 		if (res.status != 200) return options.errorFn ? options.errorFn(res.statusText) : null;
 	 		var msg = $.parseJSON(res.responseText);
 	 		if (! msg.success) return options.errorFn ? options.errorFn(msg.error) : null;
