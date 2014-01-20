@@ -212,3 +212,7 @@ div.footer li:last-child {
 div.footer p.version {
 	font-size:8pt;
 }
+
+a.logobacklink:hover {
+	text-decoration:none;
+}
