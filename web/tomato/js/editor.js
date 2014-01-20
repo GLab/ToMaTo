@@ -673,7 +673,7 @@ var AttributeWindow = Window.extend({
 var InputWindow = Window.extend({
 	init: function(options) {
 		this.element = new TextElement({name: options.inputname});
-		this.element.setValue(options.topologyname);
+		this.element.setValue(options.inputvalue);
 		options.buttons = 
 		this._super(options);
 		var form = $('<form class="form-horizontal" role="form" />');
@@ -924,24 +924,58 @@ var PermissionsWindow = Window.extend({
 	},
 	
 	addNewUser: function() {
-		var username = window.prompt("Please enter the user's username")
 		var t = this;
-		if (username) ajax({
-			url:	'account/'+username+'/info',
-			successFn: function(data) {
-				if (!(data.id in t.userListFinder)) {
-					if (window.confirm("Found the user "+ data.realname + ' (' + data.id +")\nIs this correct?")) {
-						t.addUserToList(data.id);
-						t.makePermissionEditable(data.id);
-					}
-				} else
-					window.alert("This user is a		lready in the list.");
-			},
-			errorFn: function(msg) {
-				window.alert("Error: "+msg);
-			}
+		this.username = new InputWindow({
+			title: "New User",
+			width: 550,
+			height: 175,
+			zIndex: 1000,
+			inputname: "newuser",
+			inputlabel: "Username:",
+			infotext: "Please enter the user's username:",
+			inputvalue: "",
+			buttons: [
+						{ 
+							text: "Add User",
+							beforeShow: function() {
+								$(t).removeClass();
+								$(t).addClass('btn btn-primary');
+							},
+							click: function() {
+								t.username.hide();
+								if (t.username.element.getValue() != '') ajax({
+									url:	'account/'+t.username.element.getValue()+'/info',
+									successFn: function(data) {
+										if (!(data.id in t.userListFinder)) {
+											if (window.confirm("Found the user "+ data.realname + ' (' + data.id +")\nIs this correct?")) {
+												t.addUserToList(data.id);
+												t.makePermissionEditable(data.id);
+											}
+										} else
+											window.alert("This user is a		lready in the list.");
+									},
+									errorFn: function(msg) {
+										window.alert("Error: "+msg);
+									}
+								});
+								t.username = null;
+							}
+						},
+						{
+							text: "Cancel",
+							beforeShow: function() {
+								console.log("Ich werde zumindest aufgerufen!");
+								$(t).removeClass();
+								$(t).addClass('btn btn-primary');
+							},
+							click: function() {
+								t.username.hide();
+								t.username = null;
+							}
+						}
+			],
 		});
-		
+		this.username.show();
 	},
 	
 	removeUserFromList: function(username) {
@@ -1537,21 +1571,37 @@ var Topology = Class.extend({
 			height: 150,
 			inputname: "newname",
 			inputlabel: "New Name:",
-			topologyname: t.data.attrs.name,
-			buttons: { 
-				Save: function() {
-					t.rename.hide();
-					if(t.rename.element.getValue() != '') {
-						t.modify_value("name", t.rename.element.getValue());
-						$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+			inputvalue: t.data.attrs.name,
+			buttons: [
+				{ 
+					text: "Save",
+					beforeShow: function() {
+						console.log("Ich werde zumindest aufgerufen!");
+						$(t).removeClass();
+						$(t).addClass('btn btn-primary');
+					},
+					click: function() {
+						console.log("Ich werde auch zumindest aufgerufen!");
+						t.rename.hide();
+						if(t.rename.element.getValue() != '') {
+							t.modify_value("name", t.rename.element.getValue());
+							$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+						}
+						t.rename = null;
 					}
-					t.rename = null;
 				},
-				Cancel: function() {
-					t.rename.hide();
-					t.rename = null;
+				{
+					text: "Cancel",
+					beforeShow: function() {
+						$(t).removeClass();
+						$(t).addClass('btn btn-primary');
+					},
+					click: function() {
+						t.rename.hide();
+						t.rename = null;
+					}
 				}
-			}
+			],
 		});
 		this.rename.show();
 	},
@@ -1564,21 +1614,36 @@ var Topology = Class.extend({
 			inputname: "newname",
 			inputlabel: "New Name:",
 			infotext: "You have created a new Topology. Please enter a name for it:",
-			topologyname: t.data.attrs.name,
-			buttons: { 
-				Save: function() {
-					t.firstname.hide();
-					if(t.firstname.element.getValue() != '') {
-						t.modify_value("name", t.firstname.element.getValue());
-						$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
-					}
-					t.firstname = null;
-				},
-				Cancel: function() {
-					t.firstname.hide();
-					t.firstname = null;
-				}
-			}
+			inputvalue: t.data.attrs.name,
+			buttons: [
+						{ 
+							text: "Save",
+							beforeShow: function() {
+								$(t).removeClass();
+								$(t).addClass('btn btn-primary');
+							},
+							click: function() {
+								t.firstname.hide();
+								if(t.firstname.element.getValue() != '') {
+									t.modify_value("name", t.firstname.element.getValue());
+									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+								}
+								t.firstname = null;
+							}
+						},
+						{
+							text: "Cancel",
+							beforeShow: function() {
+								console.log("Ich werde zumindest aufgerufen!");
+								$(t).removeClass();
+								$(t).addClass('btn btn-primary');
+							},
+							click: function() {
+								t.firstname.hide();
+								t.firstname = null;
+							}
+						}
+			],
 		});
 		this.firstname.show();
 	},
