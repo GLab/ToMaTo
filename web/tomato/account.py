@@ -251,12 +251,13 @@ def info(api, request, id=None):
 	organization = api.organization_info(user["organization"])
 	user["reason"] = user.get("_reason")
 	flags = []
-	for flag in user["flags"]:
+	for flag in user["flags"] or []:
 		if flag in account_flags:
 			flags.append(account_flags[flag])
 		else:
 			flags.append(flag+" (unknown flag)")
-	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags, 'flaglist':mark_safe(u'\n'.join(render_account_flag_fixedlist(api,user['flags'])))})                   
+	flaglist = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,user['flags'] or [])))
+	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags, 'flaglist': flaglist})                   
 
 @wrap_rpc
 def accept(api, request, id):
@@ -280,6 +281,7 @@ def edit(api, request, id):
 			data = form.cleaned_data
 			if not api.user.isAdmin(data["organization"]):
 				del data["flags"]
+				del data["organization"]
 			del data["name"]
 			del data["password2"]
 			if not data["password"]:
