@@ -93,9 +93,7 @@
     	<div class="hoverdescription" style="white-space:normal">
     		{{account.flags|join:", "}}
     		<div class="hiddenbox">
-    			{% for f in account.flags_name %}
-    				<p>{{f}}</p>
-    			{% endfor %}
+    			{{account.flags_name }}
     		</div>
     	</div>
     </td>
