@@ -219,7 +219,7 @@ class AccountRegisterForm(AccountForm):
 			'aup',
 			FormActions(
 				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
+				StrictButton("Register", css_class='btn-success', type="submit")
 			)
 		)
 
