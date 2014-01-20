@@ -2,7 +2,7 @@ import datetime, time
 
 from django.template.defaultfilters import timesince
 from django import template
-from ..lib import getapi, getVersion
+from ..lib import getVersion, serverInfo
 from django.utils.safestring import mark_safe
 from django.utils import simplejson
 
@@ -16,23 +16,19 @@ def jsonify(o):
 
 @register.simple_tag
 def aupurl():
-    api = getapi()
-    return api.server_info()['external_urls']['aup']
-    
+	return serverInfo()['external_urls']['aup']
+	
 @register.simple_tag
 def impressumurl():
-    api = getapi()
-    return api.server_info()['external_urls']['impressum']
-    
+	return serverInfo()['external_urls']['impressum']
+	
 @register.simple_tag
 def projecturl():
-    api = getapi()
-    return api.server_info()['external_urls']['project']
+	return serverInfo()['external_urls']['project']
 
 @register.simple_tag
 def backend_version():
-	api = getapi()
-	return api.server_info()['version']
+	return serverInfo()['version']
 
 @register.simple_tag
 def frontend_version():
@@ -40,8 +36,7 @@ def frontend_version():
 
 @register.simple_tag
 def helpurl():
-	api = getapi()
-	return api.server_info()['external_urls']['help']
+	return serverInfo()['external_urls']['help']
 
 @register.simple_tag
 def button(style='default', icon=None, title=""):

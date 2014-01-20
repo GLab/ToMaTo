@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+{% extends "base.html" %}
 
 {% load tomato %}
 
@@ -7,6 +7,7 @@
 
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  	<span class="glyphicon glyphicon-filter"></span>
     {% if network %}
       Showing instances of network '{{network_kind}}'
     {% else %}
@@ -25,6 +26,7 @@
 
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  	<span class="glyphicon glyphicon-filter"></span>
     {% if host %}
       Showing instances on host '{{host}}'
     {% else %}

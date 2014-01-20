@@ -24,31 +24,13 @@ from tomato.crispy_forms.helper import FormHelper
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
-from lib import getapi
+from lib import getapi, getNews
 import settings
-
-import json, urllib2, re
-from urlparse import urljoin
 
 def index(request):
 	try:
-		api = getapi()
-		url = api.server_info()["external_urls"]["news_feed"]
-		news = json.load(urllib2.urlopen(url))
-		pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
-		for item in news["items"]:
-			desc = item["description"]
-			for term, url in pattern.findall(desc):
-				if url.startswith("mailto:") or url.startswith("&#109;&#097;&#105;&#108;&#116;&#111;:"):
-					continue
-				nurl = urljoin(item["link"], url)
-				nterm = term.replace(url, nurl)
-				desc = desc.replace(term, nterm)
-			item["description"] = desc
-		news["items"] = news["items"][:3]
+		news = getNews()
 	except:
-		import traceback
-		traceback.print_exc()
 		news = {}
 	return render(request, "main/start.html", {"news": news})
 

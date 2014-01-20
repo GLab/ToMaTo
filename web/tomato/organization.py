@@ -62,13 +62,13 @@ class EditOrganizationForm(OrganizationForm):
 def list(api, request):
 	organizations = api.organization_list()
 	sites = api.site_list()
-	return render(request, "admin/organization/list.html", {'organizations': organizations, 'sites': sites})
+	return render(request, "organization/list.html", {'organizations': organizations, 'sites': sites})
 
 @wrap_rpc
 def info(api, request, name):
 	orga = api.organization_info(name)
 	sites = api.site_list(organization=name)
-	return render(request, "admin/organization/info.html", {'organization': orga, 'sites': sites})
+	return render(request, "organization/info.html", {'organization': orga, 'sites': sites})
 
 @wrap_rpc
 def add(api, request):

@@ -71,8 +71,11 @@ def _display(api, request, info, tut_url, tut_stat):
 		s['organization'] = orga
 
 	tut_data, tut_steps = None, None
-	if tut_url:
-		tut_data, tut_steps, _ = loadTutorial(tut_url)
+	try:
+		if tut_url:
+			tut_data, tut_steps, _ = loadTutorial(tut_url)
+	except:
+		pass
 
 	return render(request, "topology/info.html", {
 		'top': info,
