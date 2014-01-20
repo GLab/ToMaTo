@@ -8,6 +8,7 @@
 {% if request.session.user.hasOrgaToplFlags or request.session.user.hasGlobalToplFlags %}
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    <span class="glyphicon glyphicon-filter"></span>
     {% if not show_all %}
       Showing user topologies
     {% else %}
