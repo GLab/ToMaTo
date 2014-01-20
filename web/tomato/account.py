@@ -239,12 +239,7 @@ def list(api, request, with_flag=None, organization=True):
 				acclist_new.append(acc)
 		accs = acclist_new
 	for acc in accs:
-		acc['flags_name'] = []
-		for flag in acc['flags']:
-			if flag in account_flags:
-				acc['flags_name'].append(account_flags[flag])
-			else:
-				acc['flags_name'].append(flag+" (unknown flag)")
+		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'])))
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization})
 
 @wrap_rpc
