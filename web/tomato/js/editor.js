@@ -952,7 +952,7 @@ var PermissionsWindow = Window.extend({
 												t.makePermissionEditable(data.id);
 											}
 										} else
-											window.alert("This user is a		lready in the list.");
+											window.alert("This user is already in the list.");
 									},
 									errorFn: function(msg) {
 										window.alert("Error: "+msg);
@@ -964,7 +964,6 @@ var PermissionsWindow = Window.extend({
 						{
 							text: "Cancel",
 							beforeShow: function() {
-								console.log("Ich werde zumindest aufgerufen!");
 								$(t).removeClass();
 								$(t).addClass('btn btn-primary');
 							},
@@ -1536,7 +1535,7 @@ var Topology = Class.extend({
 		var openWithEditor = openWithEditor_html[0];
 		if (this.data.attrs._notes_autodisplay) {
 			openWithEditor.checked = true;
-			console.log("chconfigeck");
+			console.log("check");
 		}
 		dialog.append($('<br/>'))
 		dialog.append(openWithEditor_html);
@@ -1576,12 +1575,10 @@ var Topology = Class.extend({
 				{ 
 					text: "Save",
 					beforeShow: function() {
-						console.log("Ich werde zumindest aufgerufen!");
 						$(t).removeClass();
 						$(t).addClass('btn btn-primary');
 					},
 					click: function() {
-						console.log("Ich werde auch zumindest aufgerufen!");
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
 							t.modify_value("name", t.rename.element.getValue());
@@ -1634,7 +1631,6 @@ var Topology = Class.extend({
 						{
 							text: "Cancel",
 							beforeShow: function() {
-								console.log("Ich werde zumindest aufgerufen!");
 								$(t).removeClass();
 								$(t).addClass('btn btn-primary');
 							},
