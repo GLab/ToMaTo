@@ -222,12 +222,12 @@ class UserObj:
 		self.organization = self.data["organization"]
 		self.realname = self.data["realname"]
 	def hasGlobalToplFlags(self):
-		for flag in ["global_topl_admin", "global_topl_manager", "global_topl_user"]:
+		for flag in ["global_topl_owner", "global_topl_manager", "global_topl_user"]:
 			if flag in self.flags:
 				return True
 		return False
 	def hasOrgaToplFlags(self):
-		for flag in ["orga_topl_admin", "orga_topl_manager", "orga_topl_user"]:
+		for flag in ["orga_topl_owner", "orga_topl_manager", "orga_topl_user"]:
 			if flag in self.flags:
 				return True
 		return False

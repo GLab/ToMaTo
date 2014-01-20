@@ -293,7 +293,7 @@ def edit(api, request, id):
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		form = AccountChangeForm(api, user)
-	return render(request, "form.html", {"account": user, "form": form})
+	return render(request, "form.html", {"account": user, "form": form, "heading":"Edit Account "+user["id"]})
 	
 @wrap_rpc
 def register(api, request):
@@ -322,7 +322,7 @@ def register(api, request):
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
 		form = AccountRegisterForm(api) 
-	return render(request, "form.html", {"form": form})
+	return render(request, "form.html", {"form": form, "heading":"Register New Account"})
 
 @wrap_rpc
 def remove(api, request, id=None):
