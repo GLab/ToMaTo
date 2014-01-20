@@ -63,8 +63,8 @@ class HelpForm(BootstrapForm):
             'subject',
             'message',
             FormActions(
-                StrictButton('Send e-mail', css_class='btn-primary', type="submit"),
-                StrictButton('Cancel', css_class='btn-default backbutton')
+                StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-default backbutton'),
+                StrictButton('<span class="glyphicon glyphicon-send"></span> Send e-mail', css_class='btn-primary', type="submit")
             )
         )
 

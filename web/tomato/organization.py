@@ -51,12 +51,12 @@ class OrganizationForm(BootstrapForm):
 		)
 	
 class EditOrganizationForm(OrganizationForm):
+	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Save'
 	def __init__(self, *args, **kwargs):
 		super(EditOrganizationForm, self).__init__(*args, **kwargs)
 		self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})
 		self.fields["name"].help_text=None
 		self.helper.form_action = reverse(edit, kwargs={"name": self.fields["name"].initial})
-	okbutton_text = "Save"
 	
 @wrap_rpc
 def list(api, request):
