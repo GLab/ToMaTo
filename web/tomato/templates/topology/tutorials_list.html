@@ -15,8 +15,8 @@
 
 {% for tut in tutorials %}
   <tr>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}" onclick="loadbusy()"><img src="{{tut.icon}}" /></a></td>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}" onclick="loadbusy()">{{tut.name}}</a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}" onclick="loadbusy(event)"><img src="{{tut.icon}}" /></a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}" onclick="loadbusy(event)">{{tut.name}}</a></td>
     <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm;">{{tut.desc}}</td>
 {% endfor %}
 </table>

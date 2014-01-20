@@ -18,7 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-function loadbusy() {
+function loadbusy(evt) {
+	if (evt && evt.button == 1) return;
 	var busyloader = $('\
 			<div style="background:#c0c0c0;\
 						filter:alpha(opacity=75); /* IE */ \

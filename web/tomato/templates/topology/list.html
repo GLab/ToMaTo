@@ -39,7 +39,7 @@
 
 {% if top_list|length > 10 and not 'no_topology_create' in user.flags %}
     <form>
-    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy()" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
+    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
 	<button type="submit" formaction="{%url tutorial.list%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
 	<button type="submit" formaction="{%url topology.import_%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
@@ -71,7 +71,7 @@
   <tr>
     <td>{{top.id}}</td>
     <td>{% if top.attrs.tutorial_url and not top.attrs.tutorial_disabled %}<img src="/img/tutorial.png"/>{% endif %}</td>
-    <td><a href="{% url topology.info top.id %}" onclick="loadbusy();">{{top.attrs.name}}</a></td>
+    <td><a href="{% url topology.info top.id %}" onclick="loadbusy(event);">{{top.attrs.name}}</a></td>
     <td>
     	{% for user, role in top.permissions.items %}
     		{% if role == "owner" %}
@@ -106,7 +106,7 @@
 	<p>You may not create any topologies. Contact the administrator for more information.</p>
 {% else %}
     <form>
-    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy()" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
+    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
 	<button type="submit" formaction="{%url tutorial.list%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
 	<button type="submit" formaction="{%url topology.import_%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
