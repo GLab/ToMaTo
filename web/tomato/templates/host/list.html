@@ -32,22 +32,21 @@
   </ul>
 </div>
 
-<div class="btn-group">
-  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-  	<span class="glyphicon glyphicon-eye-open"></span>
-  		Select fields <span class="caret"></span>
-  </button>
-  <ul class="dropdown-menu" role="menu">
-  		<li><a><input type="checkbox" id="important" onChange="reShow()" checked/><label for="important">Most important</label></a></li>
-		<li><a><input type="checkbox" id="versions" onChange="reShow()"/><label for="versions">Versions</label></a></li>
-		<li><a><input type="checkbox" id="timing" onChange="reShow()"/><label for="timing">Timing</label></a></li>
-		<li><a><input type="checkbox" id="cpu" onChange="reShow()"/><label for="cpu">CPU info</label></a></li>
-		<li><a><input type="checkbox" id="ram" onChange="reShow()"/><label for="ram">Memory info</label></a></li>
-		<li><a><input type="checkbox" id="disk" onChange="reShow()"/><label for="disk">Disk info</label></a></li>
-		<li><a><input type="checkbox" id="features" onChange="reShow()"/><label for="features">Features</label></a></li>
-		<li><a><input type="checkbox" id="debug" onChange="reShow()"/><label for="debug">Debug</label></a></li>
-  </ul>
-</div>
+
+	<div class="btn-group">		
+        <div class="col-md-12">
+            <select type="text" class="form-control multiselect multiselect-icon" multiple="multiple" role="multiselect" onChange="reShow()">          
+              <option id="important" value="important" data-icon="glyphicon-star" selected="selected">Most Important</option>          
+              <option id="versions" value="versions" data-icon="glyphicon-refresh">Versions</option>
+              <option id="timing" value="timing" data-icon="glyphicon-time">Timing</option>
+              <option id="cpu" value="cpu" data-icon="glyphicon-qrcode">CPU</option>
+              <option id="ram" value="ram" data-icon="glyphicon-barcode">RAM</option>
+              <option id="disk" value="disk" data-icon="glyphicon-hdd">Disk</option>
+              <option id="features" value="features" data-icon="glyphicon-certificate">Features</option>
+              <option id="debug" value="debug" data-icon="glyphicon-wrench">Debug</option>
+            </select> 
+        </div>        
+	</div>
 
 <div class="skip-sm"></div>
 
@@ -155,39 +154,42 @@
 	</table>
 
 	<script>
+	
+	multiselect_bootstrap_maxcount = 100;
+	
 	  function reShow() {
 	  	var table = document.getElementById('table');
-	  	var important = document.getElementById('important').checked;
+	  	var important = document.getElementById('important').selected;
 	  	var col = 4;
-	  	columnShow(table, col+0, document.getElementById('versions').checked || important);
-	  	columnShow(table, col+1, document.getElementById('versions').checked);
-	  	columnShow(table, col+2, document.getElementById('versions').checked);
-	  	columnShow(table, col+3, document.getElementById('versions').checked);
+	  	columnShow(table, col+0, document.getElementById('versions').selected || important);
+	  	columnShow(table, col+1, document.getElementById('versions').selected);
+	  	columnShow(table, col+2, document.getElementById('versions').selected);
+	  	columnShow(table, col+3, document.getElementById('versions').selected);
 	  	col += 4;
-	  	columnShow(table, col+0, document.getElementById('timing').checked);
-	  	columnShow(table, col+1, document.getElementById('timing').checked);
-	  	columnShow(table, col+2, document.getElementById('timing').checked);
-	  	columnShow(table, col+3, document.getElementById('timing').checked);
+	  	columnShow(table, col+0, document.getElementById('timing').selected);
+	  	columnShow(table, col+1, document.getElementById('timing').selected);
+	  	columnShow(table, col+2, document.getElementById('timing').selected);
+	  	columnShow(table, col+3, document.getElementById('timing').selected);
 	  	col += 4;
-	  	columnShow(table, col+0, document.getElementById('cpu').checked || important);
-	  	columnShow(table, col+1, document.getElementById('cpu').checked);
-	  	columnShow(table, col+2, document.getElementById('cpu').checked);
-	  	columnShow(table, col+3, document.getElementById('cpu').checked || important);
+	  	columnShow(table, col+0, document.getElementById('cpu').selected || important);
+	  	columnShow(table, col+1, document.getElementById('cpu').selected);
+	  	columnShow(table, col+2, document.getElementById('cpu').selected);
+	  	columnShow(table, col+3, document.getElementById('cpu').selected || important);
 	  	col += 4;
-	  	columnShow(table, col+0, document.getElementById('ram').checked);
-	  	columnShow(table, col+1, document.getElementById('ram').checked || important);
+	  	columnShow(table, col+0, document.getElementById('ram').selected);
+	  	columnShow(table, col+1, document.getElementById('ram').selected || important);
 	  	col += 2;
-	  	columnShow(table, col+0, document.getElementById('disk').checked);
-	  	columnShow(table, col+1, document.getElementById('disk').checked);
-	  	columnShow(table, col+2, document.getElementById('disk').checked);
-	  	columnShow(table, col+3, document.getElementById('disk').checked || important);
+	  	columnShow(table, col+0, document.getElementById('disk').selected);
+	  	columnShow(table, col+1, document.getElementById('disk').selected);
+	  	columnShow(table, col+2, document.getElementById('disk').selected);
+	  	columnShow(table, col+3, document.getElementById('disk').selected || important);
 	  	col += 4;
-	  	columnShow(table, col+0, document.getElementById('features').checked);
-	  	columnShow(table, col+1, document.getElementById('features').checked);
+	  	columnShow(table, col+0, document.getElementById('features').selected);
+	  	columnShow(table, col+1, document.getElementById('features').selected);
 	  	col += 2;
-	  	columnShow(table, col+0, document.getElementById('debug').checked);
-	  	columnShow(table, col+1, document.getElementById('debug').checked);
-	  	columnShow(table, col+2, document.getElementById('debug').checked || important);
+	  	columnShow(table, col+0, document.getElementById('debug').selected);
+	  	columnShow(table, col+1, document.getElementById('debug').selected);
+	  	columnShow(table, col+2, document.getElementById('debug').selected || important);
 	  }
 	  function columnShow(table, col, show) {
 	    var rows = table.getElementsByTagName('tr');
