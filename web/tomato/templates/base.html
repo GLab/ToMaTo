@@ -83,21 +83,27 @@ head.appendChild(style);
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies</a>
 			        <ul class="dropdown-menu">
 			        	<li><a href="{%url topology_list%}">My Topologies</a></li>
-						<li><a href="{%url topology_list_all%}">All Topologies</a></li>
-						<li class="divider"></li>
-						<li><a href="{%url topology.import_%}">Import Topology</a></li>
-						<li class="divider"></li>
-						<li><a href="{%url tutorial.list%}">Tutorials</a></li>
+			        	{% if request.session.user.hasGlobalToplFlags or request.session.user.hasOrgaToplFlags %} 
+						  	<li><a href="{%url topology_list_all%}">All Topologies</a></li>
+						{% endif %}
+						{% if not "no_topology_create" in request.session.user.flags %}
+							<li class="divider"></li>
+							<li><a href="{%url topology.import_%}">Import Topology</a></li>
+							<li class="divider"></li>
+							<li><a href="{%url tutorial.list%}">Tutorials</a></li>
+						{% endif %}
 					</ul>
 				</li>
-				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
-					<ul class="dropdown-menu">
-						<li><a href="{%url account_list%}">Account list</a></li>
-						<li><a href="{%url account_list_all%}">All accounts</a></li>
-						<li><a href="{%url account_list_registrations%}">Pending account registrations</a></li>
-					</ul>
-				</li>
+	        	{% if request.session.user.isAdmin %} 
+					<li class="dropdown">
+						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
+						<ul class="dropdown-menu">
+							<li><a href="{%url account_list%}">Account list</a></li>
+							<li><a href="{%url account_list_all%}">All accounts</a></li>
+							<li><a href="{%url account_list_registrations%}">Pending account registrations</a></li>
+						</ul>
+					</li>
+				{% endif %}
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info</a>
 					<ul class="dropdown-menu">
