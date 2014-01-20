@@ -12,6 +12,7 @@
 {% if 'global_admin' in request.session.user.flags %}
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    <span class="glyphicon glyphicon-filter"></span>
     {% if organization %}
       Showing all accounts of '{{organization}}'
     {% else %}
@@ -32,6 +33,7 @@
 {% if 'global_admin' in request.session.user.flags or 'orga_admin' in request.session.user.flags %}
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    <span class="glyphicon glyphicon-filter"></span>
     {% if with_flag %}
       Showing pending registrations
     {% else %}

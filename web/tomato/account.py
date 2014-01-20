@@ -221,7 +221,10 @@ def list(api, request, with_flag=None, organization=True):
 	for acc in accs:
 		acc['flags_name'] = []
 		for flag in acc['flags']:
-			acc['flags_name'].append(account_flags[flag])
+			if flag in account_flags:
+				acc['flags_name'].append(account_flags[flag])
+			else:
+				acc['flags_name'].append(flag+" (unknown flag)")
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization})
 
 @wrap_rpc
@@ -232,7 +235,13 @@ def info(api, request, id=None):
 	account_flags = api.account_flags()
 	organization = api.organization_info(user["organization"])
 	user["reason"] = user.get("_reason")
-	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": (account_flags[flag] for flag in user["flags"])})
+	flags = []
+	for flag in user["flags"]:
+		if flag in account_flags:
+			flags.append(account_flags[flag])
+		else:
+			flags.append(flag+" (unknown flag)")
+	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags})
 
 @wrap_rpc
 def accept(api, request, id):
