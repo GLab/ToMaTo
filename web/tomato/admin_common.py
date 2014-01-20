@@ -26,6 +26,23 @@ from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.helper import FormHelper
+
+class FixedText(forms.HiddenInput):
+	is_hidden = False
+	def render(self, name, value, attrs=None):
+		return forms.HiddenInput.render(self, name, value) + value
+
+class FixedList(forms.MultipleHiddenInput):
+	is_hidden = False
+	def render(self, name, value, attrs=None):
+		return forms.MultipleHiddenInput.render(self, name, value) + ", ".join(value)
+	def value_from_datadict(self, data, files, name):
+		value = forms.MultipleHiddenInput.value_from_datadict(self, data, files, name)
+		# fix django bug
+		if isinstance(value, list):
+			return value
+		else:
+			return [value]
 	
 class BootstrapForm(forms.Form):
 	def __init__(self, *args, **kwargs):

@@ -30,27 +30,12 @@ from admin_common import BootstrapForm, RemoveConfirmForm
 
 from lib import wrap_rpc, getapi, AuthError
 
-from admin_common import BootstrapForm, RemoveConfirmForm
+from admin_common import BootstrapForm, RemoveConfirmForm, FixedList, FixedText
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
-class FixedText(forms.HiddenInput):
-	is_hidden = False
-	def render(self, name, value, attrs=None):
-		return forms.HiddenInput.render(self, name, value) + value
 
-class FixedList(forms.MultipleHiddenInput):
-	is_hidden = False
-	def render(self, name, value, attrs=None):
-		return forms.MultipleHiddenInput.render(self, name, value) + ", ".join(value)
-	def value_from_datadict(self, data, files, name):
-		value = forms.MultipleHiddenInput.value_from_datadict(self, data, files, name)
-		# fix django bug
-		if isinstance(value, list):
-			return value
-		else:
-			return [value]
 
 CategoryTranslationDict = {
 		   'manager_user_global':'Global User Management',
