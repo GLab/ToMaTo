@@ -22,7 +22,8 @@ EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
 				'help': "http://tomato-lab.org/help",
 				'impressum': "http://tomato-lab.org/contact/",
-				'project': "http://tomato-lab.org"
+				'project': "http://tomato-lab.org",
+				'news_feed': "http://www.tomato-lab.org/feed.json"
 				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"

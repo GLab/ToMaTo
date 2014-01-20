@@ -7,6 +7,7 @@
 
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  	<span class="glyphicon glyphicon-filter"></span>
     {% if organization %}
       Showing all hosts of organization '{{organization}}'
     {% else %}{% if site %}
@@ -33,6 +34,7 @@
 
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+  	<span class="glyphicon glyphicon-eye-open"></span>
   		Select fields <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
@@ -102,11 +104,12 @@
 			
 	    	<td><a href="{%url host.info host.address %}">{{host.address}}</a></td>
 	    	
-	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}">{{host.site}}</a></td>
+	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}#{{host.site}}">{{host.site}}</a></td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
 			{% if host.host_info %}
-			    <td>{{host.host_info.hostmanager.version}}{% if host.host_info.hostmanager.updater %} <img src="/img/refresh.png" title="Updater installed: {{host.host_info.hostmanager.updater}}"/>{% endif %}</td>
+			    <td>{% if host.host_info.hostmanager.version %}{{host.host_info.hostmanager.version}}{% else %}devel{% endif %}
+			    	{% if host.host_info.hostmanager.updater %} <img src="/img/refresh.png" title="Updater installed: {{host.host_info.hostmanager.updater}}"/>{% endif %}</td>
 			    <td>{{host.host_info.system.distribution|join:" "}}</td>
 			    <td>{{host.host_info.system.python}}</td>
 			    <td>{{host.host_info.system.kernel}}</td>
