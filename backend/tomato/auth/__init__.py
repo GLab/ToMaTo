@@ -253,8 +253,8 @@ class User(attributes.Mixin, models.Model):
 		}
 		info.update(self.attrs)
 		if not includeInfos:
-			info["email"] = "*** hidden ***"
-			info["flags"] = "*** hidden ***"
+			info["email"] = None
+			info["flags"] = None
 		return info
 		
 	def sendMail(self, subject, message):
