@@ -27,8 +27,30 @@ from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 from lib import getapi
 import settings
 
+import json, urllib2, re
+from urlparse import urljoin
+
 def index(request):
-	return render(request, "main/start.html")
+	try:
+		api = getapi()
+		url = api.server_info()["external_urls"]["news_feed"]
+		news = json.load(urllib2.urlopen(url))
+		pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
+		for item in news["items"]:
+			desc = item["description"]
+			for term, url in pattern.findall(desc):
+				if url.startswith("mailto:") or url.startswith("&#109;&#097;&#105;&#108;&#116;&#111;:"):
+					continue
+				nurl = urljoin(item["link"], url)
+				nterm = term.replace(url, nurl)
+				desc = desc.replace(term, nterm)
+			item["description"] = desc
+		news["items"] = news["items"][:3]
+	except:
+		import traceback
+		traceback.print_exc()
+		news = {}
+	return render(request, "main/start.html", {"news": news})
 
 def ticket(request, page=""):
 	return HttpResponseRedirect(settings.ticket_url % page)
