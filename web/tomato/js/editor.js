@@ -1557,7 +1557,7 @@ var Topology = Class.extend({
 	},
 	initialRenameDialog: function() {
 		var t = this;
-		this.rename = new InputWindow({
+		this.firstname = new InputWindow({
 			title: "Rename Topology",
 			width: 550,
 			height: 175,
@@ -1567,20 +1567,20 @@ var Topology = Class.extend({
 			topologyname: t.data.attrs.name,
 			buttons: { 
 				Save: function() {
-					t.rename.hide();
-					if(t.rename.element.getValue() != '') {
-						t.modify_value("name", t.rename.element.getValue());
+					t.firstname.hide();
+					if(t.firstname.element.getValue() != '') {
+						t.modify_value("name", t.firstname.element.getValue());
 						$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
 					}
-					t.rename = null;
+					t.firstname = null;
 				},
 				Cancel: function() {
-					t.rename.hide();
-					t.rename = null;
+					t.firstname.hide();
+					t.firstname = null;
 				}
 			}
 		});
-		this.rename.show();
+		this.firstname.show();
 	},
 	name: function() {
 		return this.data.attrs.name;
@@ -3669,7 +3669,7 @@ var Editor = Class.extend({
 			})
 		]);
 
-		var group = tab.addGroup("Topology control");
+		var group = tab.addGroup("Topology Topology #59control");
 		group.addElement(Menu.button({
 			label: "Start",
 			icon: "img/start32.png",
