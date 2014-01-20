@@ -669,6 +669,33 @@ var AttributeWindow = Window.extend({
 		return values;
 	}
 });
+
+var InputWindow = Window.extend({
+	init: function(options) {
+		this.element = new TextElement({name: options.inputname});
+		this.element.setValue(options.topologyname);
+		options.buttons = 
+		this._super(options);
+		var form = $('<form class="form-horizontal" role="form" />');
+		var div = $('<div class="form-group"></div>');
+		if(options.infotext) {
+			var infotext = $('<div class="row"><div class="col-sm-12" style="margin-bottom:3pt;">'+options.infotext+'</div></div>');
+			form.append(div.before(infotext));
+		} else {
+			form.append(div.before(infotext));
+		}
+
+		var label = $('<label for="newname" class="col-sm-4 control-label" />');
+
+		label.append(options.inputlabel);
+		label.after($('<div class="col-sm-8"/>').append(this.element.getElement()));
+		
+		div.append(label);
+		this.add(form);
+		this.setTitle(options.title);
+	}
+});
+
 var TemplateWindow = Window.extend({
 	init: function(options) {
 		this._super(options);
@@ -908,7 +935,7 @@ var PermissionsWindow = Window.extend({
 						t.makePermissionEditable(data.id);
 					}
 				} else
-					window.alert("This user is already in the list.");
+					window.alert("This user is a		lready in the list.");
 			},
 			errorFn: function(msg) {
 				window.alert("Error: "+msg);
@@ -985,7 +1012,7 @@ var PermissionsWindow = Window.extend({
 					t.topology.data.permissions[username]=permission;
 				} else {
 					delete t.topology.data.permissions[username];
-				}
+				}		
 				if (perm_send == null) {
 					t.removeUserFromList(username)
 				} else {
@@ -1475,7 +1502,7 @@ var Topology = Class.extend({
 		var openWithEditor = openWithEditor_html[0];
 		if (this.data.attrs._notes_autodisplay) {
 			openWithEditor.checked = true;
-			console.log("check");
+			console.log("chconfigeck");
 		}
 		dialog.append($('<br/>'))
 		dialog.append(openWithEditor_html);
@@ -1503,18 +1530,57 @@ var Topology = Class.extend({
 		});
 	},
 	renameDialog: function() {
-		var name = prompt("Topology name:", this.data.attrs.name);
-		if (name) {
-			this.modify_value("name", name);
-			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
-		}
+		var t = this;
+		this.rename = new InputWindow({
+			title: "Rename Topology",
+			width: 550,
+			height: 150,
+			inputname: "newname",
+			inputlabel: "New Name:",
+			topologyname: t.data.attrs.name,
+			buttons: { 
+				Save: function() {
+					t.rename.hide();
+					if(t.rename.element.getValue() != '') {
+						t.modify_value("name", t.rename.element.getValue());
+						$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+					}
+					t.rename = null;
+				},
+				Cancel: function() {
+					t.rename.hide();
+					t.rename = null;
+				}
+			}
+		});
+		this.rename.show();
 	},
 	initialRenameDialog: function() {
-		var name = prompt("You have created a new Topology. Please enter a name for it:", this.data.attrs.name);
-		if (name) {
-			this.modify_value("name", name);
-			$('#topology_name').text("Topology '"+this.data.attrs.name+"' [#"+this.id+"]");
-		}
+		var t = this;
+		this.rename = new InputWindow({
+			title: "Rename Topology",
+			width: 550,
+			height: 175,
+			inputname: "newname",
+			inputlabel: "New Name:",
+			infotext: "You have created a new Topology. Please enter a name for it:",
+			topologyname: t.data.attrs.name,
+			buttons: { 
+				Save: function() {
+					t.rename.hide();
+					if(t.rename.element.getValue() != '') {
+						t.modify_value("name", t.rename.element.getValue());
+						$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+					}
+					t.rename = null;
+				},
+				Cancel: function() {
+					t.rename.hide();
+					t.rename = null;
+				}
+			}
+		});
+		this.rename.show();
 	},
 	name: function() {
 		return this.data.attrs.name;
