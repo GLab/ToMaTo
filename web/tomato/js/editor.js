@@ -3730,7 +3730,7 @@ var Editor = Class.extend({
 			})
 		]);
 
-		var group = tab.addGroup("Topology Topology #59control");
+		var group = tab.addGroup("Topology control");
 		group.addElement(Menu.button({
 			label: "Start",
 			icon: "img/start32.png",
