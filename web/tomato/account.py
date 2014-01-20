@@ -34,6 +34,7 @@ from admin_common import BootstrapForm, RemoveConfirmForm, FixedList, FixedText
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
+from tomato.crispy_forms.utils import render_field
 
 
 
@@ -53,40 +54,41 @@ category_order = [
 		'manager_host_orga',
 		'user'
 	]
+
+def render_account_flag_fixedlist(api, value):
+	FlagTranslationDict = api.account_flags()
+	categories = api.account_flag_categories()
+	
+	catlist = category_order
+	for cat in categories.keys():
+		if not cat in catlist:
+			catlist.append(cat)
+	
+	output = []
+	isFirst = True
+	
+	for cat in catlist:
+		foundOne = False
+		for v in categories[cat]:
+			if v in value:
+				if not foundOne:
+					if not isFirst:
+						output.append('</ul>')
+					else:
+						isFirst = False
+					output.append('<ul>')
+					output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
+					foundOne = True
+				output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+		
+	return output
+			
+			
 			
 class AccountFlagFixedList(FixedList):
 	api = None
 	def render(self, name, value, attrs=None):
-		
-		print value
-		
-		FlagTranslationDict = self.api.account_flags()
-		categories = self.api.account_flag_categories()
-		catlist = category_order
-		
-		output = []
-		isFirst = True
-		for cat in categories.keys():
-			if not cat in catlist:
-				catlist.append(cat)
-		
-		for cat in catlist:
-			foundOne = False
-			for v in categories[cat]:
-				if v in value:
-					if not foundOne:
-						if not isFirst:
-							output.append('</ul>')
-						else:
-							isFirst = False
-						output.append('<ul>')
-						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-						foundOne = True
-					output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
-		if output == []:
-			output = ['None']
-			
-			
+		output = render_account_flag_fixedlist(self.api, value)
 		return forms.MultipleHiddenInput.render(self, name, value) + mark_safe(u'\n'.join(output))
 	
 	def __init__(self, api, *args, **kwargs):
@@ -256,7 +258,7 @@ def info(api, request, id=None):
 			flags.append(account_flags[flag])
 		else:
 			flags.append(flag+" (unknown flag)")
-	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags})
+	return render(request, "account/info.html", {"account": user, "organization": organization, "flags": flags, 'flaglist':mark_safe(u'\n'.join(render_account_flag_fixedlist(api,user['flags'])))})                   
 
 @wrap_rpc
 def accept(api, request, id):
