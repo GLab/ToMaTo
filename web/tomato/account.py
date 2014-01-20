@@ -322,7 +322,7 @@ def register(api, request):
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
 		form = AccountRegisterForm(api) 
-	return render(request, "from.html", {"form": form})
+	return render(request, "form.html", {"form": form})
 
 @wrap_rpc
 def remove(api, request, id=None):
