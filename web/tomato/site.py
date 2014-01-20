@@ -69,19 +69,6 @@ class EditSiteForm(SiteForm):
 		self.fields["name"].help_text=None
 		self.helper.form_action = reverse(edit, kwargs={"name": name})
 	
-class RemoveSiteForm(BootstrapForm):
-	name = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, *args, **kwargs):
-		super(RemoveSiteForm, self).__init__(*args, **kwargs)
-		self.helper.form_action = reverse(remove)
-		self.helper.layout = Layout(
-			'name',
-			FormActions(
-				StrictButton('Confirm', css_class='btn-primary', type="submit"),
-				StrictButton('Cancel', css_class='btn-default backbutton')
-			)
-		)
-	
 @wrap_rpc
 def add(api, request, organization):
 	if request.method == 'POST':
