@@ -194,7 +194,7 @@ class AccountChangeForm(AccountForm):
 			'flags',
 			FormActions(
 				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton("Save", css_class='btn-success', type="submit")
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 			
@@ -219,7 +219,7 @@ class AccountRegisterForm(AccountForm):
 			'aup',
 			FormActions(
 				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton("Register", css_class='btn-success', type="submit")
+				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
 			)
 		)
 
