@@ -16,10 +16,42 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{%url external_network_instances_all %}">Show all external network instances</a></li>
+  
+    <li>
+    {% if organization %}
+      		<a href="{%url organization_external_networks organization %}">
+      	{% else %}
+      		{% if site %}
+      			<a href="{%url site_external_networks site %}">
+      		{% else %}
+      			{% if host %}
+      				<a href="{%url host_external_networks host  %}">
+      			{% else %}
+	      			<a href="{%url external_network_instances_all %}">
+	      		{% endif %}
+	      	{% endif %}
+	      {% endif %}
+	      
+    Show all external network instances</a></li>
+    
     <li class="divider"></li>
     {% for net in networks %}
-      <li><a href="{%url external_network_instances net.id %}">Show instances of network '{{net.attrs.kind}}'</a></li>    
+    	<li>
+    	{% if organization %}
+      		<a href="{%url organization_external_network organization net.id %}">
+      	{% else %}
+      		{% if site %}
+      			<a href="{%url site_external_network site net.id %}">
+      		{% else %}
+      			{% if host %}
+      				<a href="{%url host_external_network host net.id %}">
+      			{% else %}
+	      			<a href="{%url external_network_instances net.id %}">
+	      		{% endif %}
+	      	{% endif %}
+	      {% endif %}
+	      
+	      Show instances of network '{{net.attrs.kind}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -30,15 +62,49 @@
     {% if host %}
       Showing instances on host '{{host}}'
     {% else %}
-      Showing instances on all hosts
+    	{% if site %}
+    		Showing instances on site '{{site}}'
+    	{% else %}
+    		{% if organization %}
+    			Showing instances on organization '{{organization}}'
+    		{% else %}
+      			Showing instances on all hosts
+      		{% endif %}
+   		{% endif %}
     {% endif %}
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{%url external_network_instances_all %}">Show all external network instances</a></li>
+    <li><a href="{%url external_network_instances_all %}">Show instances on all host</a></li>
+    
     <li class="divider"></li>
+    <li class="dropdown-header">Organizations</li>
+    {% for o in organizations %}
+    	{% if network %}
+      		<li><a href="{%url organization_external_network o.name network %}">Show instances on '{{o.name}}'</a></li>    
+    	{% else %}
+    		<li><a href="{%url organization_external_networks o.name %}">Show instances on '{{o.name}}'</a></li>    
+    	{% endif %}
+    {% endfor %}
+    
+    <li class="divider"></li>
+    <li class="dropdown-header">Sites</li>
+    {% for s in sites %}
+    	{% if network %}
+     		<li><a href="{%url site_external_network s.name network %}">Show instances on '{{s.name}}'</a></li>
+     	{% else %}
+     		<li><a href="{%url site_external_networks s.name %}">Show instances on '{{s.name}}'</a></li>
+     	{% endif %}   
+    {% endfor %}
+    
+    <li class="divider"></li>
+    <li class="dropdown-header">Hosts</li>
     {% for h in hosts %}
-      <li><a href="{%url host_external_networks h.address %}">Show instances on host '{{h.address}}'</a></li>    
+    	{% if network %}
+      		<li><a href="{%url host_external_network h.address network %}">Show instances on '{{h.address}}'</a></li> 
+    	{% else %}
+      		<li><a href="{%url host_external_networks h.address %}">Show instances on '{{h.address}}'</a></li> 
+      	{% endif %}   
     {% endfor %}
   </ul>
 </div>
