@@ -78,29 +78,32 @@
     <li><a href="{%url external_network_instances_all %}">Show instances on all host</a></li>
     
     <li class="divider"></li>
+    <li class="dropdown-header">Organizations</li>
     {% for o in organizations %}
     	{% if network %}
-      		<li><a href="{%url organization_external_network o.name network %}">Show instances on organization '{{o.name}}'</a></li>    
+      		<li><a href="{%url organization_external_network o.name network %}">Show instances on '{{o.name}}'</a></li>    
     	{% else %}
-    		<li><a href="{%url organization_external_networks o.name %}">Show instances on organization '{{o.name}}'</a></li>    
+    		<li><a href="{%url organization_external_networks o.name %}">Show instances on '{{o.name}}'</a></li>    
     	{% endif %}
     {% endfor %}
     
     <li class="divider"></li>
+    <li class="dropdown-header">Sites</li>
     {% for s in sites %}
     	{% if network %}
-     		<li><a href="{%url site_external_network s.name network %}">Show instances on site '{{s.name}}'</a></li>
+     		<li><a href="{%url site_external_network s.name network %}">Show instances on '{{s.name}}'</a></li>
      	{% else %}
-     		<li><a href="{%url site_external_networks s.name %}">Show instances on site '{{s.name}}'</a></li>
+     		<li><a href="{%url site_external_networks s.name %}">Show instances on '{{s.name}}'</a></li>
      	{% endif %}   
     {% endfor %}
     
     <li class="divider"></li>
+    <li class="dropdown-header">Hosts</li>
     {% for h in hosts %}
     	{% if network %}
-      		<li><a href="{%url host_external_network h.address network %}">Show instances on host '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_network h.address network %}">Show instances on '{{h.address}}'</a></li> 
     	{% else %}
-      		<li><a href="{%url host_external_networks h.address %}">Show instances on host '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_networks h.address %}">Show instances on '{{h.address}}'</a></li> 
       	{% endif %}   
     {% endfor %}
   </ul>
