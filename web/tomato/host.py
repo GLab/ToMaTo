@@ -21,9 +21,8 @@ from django import forms
 from lib import wrap_rpc, serverInfo
 from django.http import HttpResponseRedirect
 
-from admin_common import BootstrapForm, RemoveConfirmForm
+from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
 class HostForm(BootstrapForm):
@@ -31,7 +30,7 @@ class HostForm(BootstrapForm):
 	site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
 	enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Add'
+	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
 		self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
@@ -41,14 +40,11 @@ class HostForm(BootstrapForm):
 			'site',
 			'enabled',
 			'description_text',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
-			)
+			self.buttons
 		)
 	
 class EditHostForm(HostForm):
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Save'
+	buttons = Buttons.cancel_save
 	def __init__(self, api, address, *args, **kwargs):
 		super(EditHostForm, self).__init__(api, *args, **kwargs)
 		self.fields["address"].widget=forms.TextInput(attrs={'readonly':'readonly'})

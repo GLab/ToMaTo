@@ -35,7 +35,7 @@
 
 	<div class="btn-group">		
         <div class="col-md-12">
-            <select type="text" class="form-control multiselect multiselect-icon" multiple="multiple" role="multiselect" onChange="reShow()">          
+            <select type="text" class="form-control multiselect multiselect-icon btn-default" multiple="multiple" role="multiselect" onChange="reShow()">          
               <option id="important" value="important" data-icon="glyphicon-star" selected="selected">Most Important</option>          
               <option id="versions" value="versions" data-icon="glyphicon-refresh">Versions</option>
               <option id="timing" value="timing" data-icon="glyphicon-time">Timing</option>
@@ -156,6 +156,7 @@
 	<script>
 	
 	multiselect_bootstrap_maxcount = 100;
+	window.jQuery.fn.multiselect.Constructor.prototype.defaults.buttonClass = "btn btn-default";
 	
 	  function reShow() {
 	  	var table = document.getElementById('table');

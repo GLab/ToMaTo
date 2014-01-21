@@ -24,12 +24,10 @@ from django.shortcuts import render
 from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
-from admin_common import RemoveConfirmForm, BootstrapForm
+from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
 from template import techs_dict
 
-from tomato.crispy_forms.helper import FormHelper
-from tomato.crispy_forms.layout import Layout, Fieldset
-from tomato.crispy_forms.bootstrap import StrictButton, FormActions
+from tomato.crispy_forms.layout import Layout
 
 class ProfileForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this template")
@@ -61,10 +59,7 @@ class EditOpenVZForm(EditProfileForm):
 			'restricted',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_save
 		)
 
 class EditRePyForm(EditProfileForm):
@@ -80,10 +75,7 @@ class EditRePyForm(EditProfileForm):
 			'restricted',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_save
 		)
 
 class EditKVMqmForm(EditProfileForm):
@@ -101,10 +93,7 @@ class EditKVMqmForm(EditProfileForm):
 			'restricted',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_save
 		)
 	
 	
@@ -126,10 +115,7 @@ class AddProfileForm(ProfileForm):
 			'restricted',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_add
 		)
 
 @wrap_rpc
