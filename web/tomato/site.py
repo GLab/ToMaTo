@@ -24,9 +24,8 @@ from django import forms
 import math, socket
 
 from lib import wrap_rpc
-from admin_common import organization_name_list, BootstrapForm, RemoveConfirmForm
+from admin_common import organization_name_list, BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
 class SiteForm(BootstrapForm):
@@ -48,21 +47,18 @@ class SiteForm(BootstrapForm):
 			'location',
 			'geolocation_longitude',
 			'geolocation_latitude',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
-			)
+			self.buttons
 		)
 	
 class AddSiteForm(SiteForm):
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Add'
+	buttons = Buttons.cancel_add
 	def __init__(self, api, organization, *args, **kwargs):
 		super(AddSiteForm, self).__init__(api, *args, **kwargs)
 		self.fields["organization"].initial = organization
 		self.helper.form_action = reverse(add, kwargs={"organization": organization})	
 	
 class EditSiteForm(SiteForm):
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Save'
+	buttons = Buttons.cancel_save
 	def __init__(self, api, name, *args, **kwargs):
 		super(EditSiteForm, self).__init__(api, *args, **kwargs)
 		self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})

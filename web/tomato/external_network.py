@@ -20,11 +20,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
-from admin_common import RemoveConfirmForm, BootstrapForm
+from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
 from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 
 
 class NetworkForm(BootstrapForm):
@@ -40,10 +39,7 @@ class NetworkForm(BootstrapForm):
 			'label',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_add
 		)
 	
 class EditNetworkForm(NetworkForm):
@@ -59,10 +55,7 @@ class EditNetworkForm(NetworkForm):
 			'label',
 			'preference',
 			'description',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_save
 		)
 	
 @wrap_rpc
@@ -76,7 +69,7 @@ def add(api, request):
 		form = NetworkForm(request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			res = api.resource_create('network',{'kind':formData['kind'],
+			api.resource_create('network',{'kind':formData['kind'],
 										   'label':formData['label'],
 										   'preference':formData['preference'],
 										   'description':formData['description']})

@@ -23,9 +23,8 @@ from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
 
-from admin_common import BootstrapForm, RemoveConfirmForm
+from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
 
 class OrganizationForm(BootstrapForm):
@@ -34,7 +33,7 @@ class OrganizationForm(BootstrapForm):
 	homepage_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org")
 	image_url = forms.CharField(max_length=255, required=False, help_text="must start with protocol, i.e. http://www.tomato-testbed.org/logo.png")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Add'
+	buttons = Buttons.cancel_add
 	def __init__(self, *args, **kwargs):
 		super(OrganizationForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -44,14 +43,11 @@ class OrganizationForm(BootstrapForm):
 			'homepage_url',
 			'image_url',
 			'description_text',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton(self.okbutton_text, css_class='btn-success', type="submit")
-			)
+			self.buttons
 		)
 	
 class EditOrganizationForm(OrganizationForm):
-	okbutton_text = '<span class="glyphicon glyphicon-ok"></span> Save'
+	buttons = Buttons.cancel_save
 	def __init__(self, *args, **kwargs):
 		super(EditOrganizationForm, self).__init__(*args, **kwargs)
 		self.fields["name"].widget=forms.TextInput(attrs={'readonly':'readonly'})

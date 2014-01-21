@@ -23,12 +23,10 @@ from django.shortcuts import render
 from django import forms
 import base64
 from lib import wrap_rpc, serverInfo
-from admin_common import RemoveConfirmForm, help_url, BootstrapForm
+from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons
 import datetime
 
-from tomato.crispy_forms.helper import FormHelper
-from tomato.crispy_forms.layout import Layout, Fieldset
-from tomato.crispy_forms.bootstrap import StrictButton, FormActions
+from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 techs=[
@@ -68,10 +66,7 @@ class AddTemplateForm(TemplateForm):
             'nlXTP_installed',
             'creation_date',
             'torrentfile',
-            FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Add', css_class='btn-success', type="submit")
-            )
+            Buttons.cancel_add
         )
 	
 class EditTemplateForm(TemplateForm):
@@ -88,10 +83,7 @@ class EditTemplateForm(TemplateForm):
             'restricted',
             'nlXTP_installed',
             'creation_date',
-            FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-            )
+            Buttons.cancel_save
         )
 	
 class ChangeTemplateTorrentForm(BootstrapForm):
@@ -106,10 +98,7 @@ class ChangeTemplateTorrentForm(BootstrapForm):
             'res_id',
             'creation_date',
             'torrentfile',
-            FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-            )
+            Buttons.cancel_save
         )
 
 @wrap_rpc
