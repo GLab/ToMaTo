@@ -23,7 +23,6 @@ from lib import serverInfo
 
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
-from django.core.urlresolvers import reverse
 
 from tomato.crispy_forms.helper import FormHelper
 
@@ -53,15 +52,25 @@ class BootstrapForm(forms.Form):
 		self.helper.label_class = 'col-lg-4 col-sm-4'
 		self.helper.field_class = 'col-lg-6 col-sm-8'
 
+def createButtons(back_icon="remove", back_label="Cancel", back_class="btn-danger backbutton", icon="ok", label="Save", class_="btn-success"):
+	return FormActions(
+		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (back_icon, back_label), css_class=back_class),
+		StrictButton('<span class="glyphicon glyphicon-%s"></span> %s' % (icon, label), css_class=class_, type="submit"),
+		css_class="col-sm-offset-4"
+	)
+	
+class Buttons:
+	@staticmethod
+	def default(**kwargs):
+		return createButtons(**kwargs)
+	cancel_save = createButtons()
+	cancel_add = createButtons(label="Add")
+	cancel_remove =	createButtons(icon="trash", label="Remove", class_="btn-warning")
+
 class RemoveConfirmForm(BootstrapForm):
 	def __init__(self, *args, **kwargs):
 		super(RemoveConfirmForm, self).__init__(*args, **kwargs)
-		self.helper.layout = Layout(
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-trash"></span> Remove', css_class='btn-warning', type="submit")
-			)
-		)
+		self.helper.layout = Layout(Buttons.cancel_remove)
 	@classmethod
 	def build(cls, action):
 		obj = cls()

@@ -25,10 +25,8 @@ import json, re
 from tutorial import loadTutorial
 from lib import wrap_rpc, AuthError
 
-from admin_common import BootstrapForm
-from tomato.crispy_forms.helper import FormHelper
-from tomato.crispy_forms.layout import Layout, Fieldset
-from tomato.crispy_forms.bootstrap import StrictButton, FormActions
+from admin_common import BootstrapForm, Buttons
+from tomato.crispy_forms.layout import Layout
 
 class ImportTopologyForm(BootstrapForm):
 	topologyfile = forms.FileField(label="Topology File")	
@@ -36,10 +34,7 @@ class ImportTopologyForm(BootstrapForm):
 		super(ImportTopologyForm, self).__init__(*args, **kwargs)
 		self.helper.layout = Layout(
 			'topologyfile',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Import', css_class='btn-success', type="submit")
-			)
+			Buttons.default(label="Import")
 		)
 @wrap_rpc
 def list(api, request, show_all=False, organization=None):
@@ -128,7 +123,7 @@ def import_(api, request):
 		if form.is_valid():
 			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
-			id_, elementIds, connectionIds, errors = api.topology_import(topology_structure)
+			id_, _, _, errors = api.topology_import(topology_structure)
 
 			if errors != []:
 				str = "Errors occured during import";

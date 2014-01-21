@@ -20,10 +20,9 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
-from admin_common import RemoveConfirmForm, BootstrapForm
+from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
 
 from tomato.crispy_forms.layout import Layout
-from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 
 from django.core.urlresolvers import reverse
 
@@ -40,10 +39,7 @@ class NetworkInstanceForm(BootstrapForm):
 			'host',
 			'bridge',
 			'network',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_add
 		)
 	
 class EditNetworkInstanceForm(NetworkInstanceForm):
@@ -56,10 +52,7 @@ class EditNetworkInstanceForm(NetworkInstanceForm):
 			'host',
 			'bridge',
 			'network',
-			FormActions(
-				StrictButton('<span class="glyphicon glyphicon-remove"></span> Cancel', css_class='btn-danger backbutton'),
-				StrictButton('<span class="glyphicon glyphicon-ok"></span> Save', css_class='btn-success', type="submit")
-			)
+			Buttons.cancel_save
 		)
 	
 	
