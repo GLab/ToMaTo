@@ -84,7 +84,7 @@ head.appendChild(style);
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies</a>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies <span class="caret"></span></a>
 			        <ul class="dropdown-menu">
 			        	<li><a href="{%url topology_list%}">My Topologies</a></li>
 			        	{% if request.session.user.hasGlobalToplFlags or request.session.user.hasOrgaToplFlags %} 
@@ -100,7 +100,7 @@ head.appendChild(style);
 				</li>
 	        	{% if request.session.user.isAdmin %} 
 					<li class="dropdown">
-						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin</a>
+						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin <span class="caret"></span></a>
 						<ul class="dropdown-menu">
 							<li><a href="{%url account_list%}">Account list</a></li>
 							<li><a href="{%url account_list_all%}">All accounts</a></li>
@@ -109,7 +109,7 @@ head.appendChild(style);
 					</li>
 				{% endif %}
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info</a>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="{%url organization.list%}">Organizations</a></li>
 						<li><a href="{%url site.map%}">Sites map</a></li>
@@ -123,11 +123,11 @@ head.appendChild(style);
 				</li>
 				{% endif %}
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links</a>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="{%url help.help%}" target="_help">Help</a></li>
-			      		<li><a href="{% projecturl %}">Project</a></li>
-			   			<li><a href="{% aupurl %}">Terms and Conditions</a></li>
+						<li><a href="{% helpurl %}" target="_help">Help</a></li>
+			      		<li><a href="{% projecturl %}" target="_blank">Project</a></li>
+			   			<li><a href="{% aupurl %} target="_blank"">Terms and Conditions</a></li>
    						<li><a href="{%url help.contact_form%}">Contact</a></li>
 					</ul>
 				</li>
