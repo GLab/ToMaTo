@@ -29,7 +29,7 @@ from tomato.crispy_forms.layout import Layout
 class NetworkForm(BootstrapForm):
 	kind = forms.CharField(label="Kind",max_length=255)
 	label = forms.CharField(max_length=255,label="Label",help_text="Visible Name")
-	preference = forms.IntegerField(label="Preference", help_text="The item with the highest preference will be the default one. An integer number.")
+	preference = forms.IntegerField(label="Preference", help_text="Sort networks in the editor (higher preference first). The item with the highest preference will be the default one. An integer number.")
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	def __init__(self, *args, **kwargs):
 		super(NetworkForm, self).__init__(*args, **kwargs)
