@@ -8,7 +8,18 @@
 			<styleUrl>#site</styleUrl>
 			<name>{{site.displayName}}, {{site.location}} ({{site.name}})</name>
 			<description><![CDATA[
-<a href="/link_stats/{{site.name}}">Statistics for intra-site traffic</a>
+			{% if site.description %}
+				<p>{{site.description}}</p>
+			{% endif %}
+			<p>Hosted by:<br />
+				{% if site.organization.image_url %}
+					<img style="max-width:8cm; max-height:6cm;" src="{{site.organization.image_url}}" title="{{site.organization.description}}" />
+				{% else %}
+					{{site.organization.description}}
+				{% endif %}
+				<br />
+				<a href="{{site.organization.homepage_url}}">{{site.organization.homepage_url}}</a></p>
+			<p><a href="{% url tomato.site.details_site site.name %}">Statistics for intra-site traffic</a></p>
 ]]></description>
 			<Point><coordinates>{{site.geolocation.longitude}},{{site.geolocation.latitude}}</coordinates></Point>
 		</Placemark>
@@ -35,7 +46,7 @@
 {{link.src_data.name}}: {{link.src_data.displayName}}, {{link.src_data.location}}<br/>
 {{link.dst_data.name}}: {{link.dst_data.displayName}}, {{link.dst_data.location}}<br/>
 <br/>
-<a href="/link_stats/{{link.src_data.name}}/{{link.dst_data.name}}">Link statistics</a>
+<a href="{% url tomato.site.details_link link.src_data.name link.dst_data.name %}">Link statistics</a>
 ]]></description>
 			<LineString>
 				<tessellate>0</tessellate>

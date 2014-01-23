@@ -179,12 +179,19 @@ def site_list(api):
 def site_location_list(api):
 	r = []
 	l = api.site_list()
+	organizations = api.organization_list()
+	orgas = {}
+	for o in organizations:
+		orgas[o['name']] = o
 	for i in l:
 		r.append({'name':i['name'],
 				  'geolocation':get_site_location(i['name'],api),
 				  'displayName':i['description'],
-				  'location':i['location']
+				  'location':i['location'],
+				  'organization':orgas[i['organization']],
+				  'description':i['description_text']
 				  })
+	print r
 	return r
 
 def site_site_pairs(api,allow_self=True): # allow_self: allow self-referencing pairs like ('ukl','ukl')
