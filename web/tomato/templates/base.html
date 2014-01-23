@@ -108,20 +108,22 @@ head.appendChild(style);
 						</ul>
 					</li>
 				{% endif %}
+				{% endif %}
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info</a>
 					<ul class="dropdown-menu">
 						<li><a href="{%url organization.list%}">Organizations</a></li>
 						<li><a href="{%url site.map%}">Sites map</a></li>
-						<li class="divider"></li>
-						<li><a href="{%url host.list%}">Hosts</a></li>
-						<li class="divider"></li>
-						<li><a href="{%url template.list%}">Templates</a></li>
-						<li><a href="{%url profile.list%}">Device profiles</a></li>
-						<li><a href="{%url external_network.list%}">External networks</a></li>
+						{% if request.session.user %}
+							<li class="divider"></li>
+							<li><a href="{%url host.list%}">Hosts</a></li>
+							<li class="divider"></li>
+							<li><a href="{%url template.list%}">Templates</a></li>
+							<li><a href="{%url profile.list%}">Device profiles</a></li>
+							<li><a href="{%url external_network.list%}">External networks</a></li>
+						{% endif %}
 					</ul>
 				</li>
-				{% endif %}
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links</a>
 					<ul class="dropdown-menu">
