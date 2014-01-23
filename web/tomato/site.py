@@ -191,7 +191,6 @@ def site_location_list(api):
 				  'organization':orgas[i['organization']],
 				  'description':i['description_text']
 				  })
-	print r
 	return r
 
 def site_site_pairs(api,allow_self=True): # allow_self: allow self-referencing pairs like ('ukl','ukl')
