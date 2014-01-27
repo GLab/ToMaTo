@@ -32,7 +32,7 @@ from tomato.crispy_forms.layout import Layout
 class ProfileForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this template")
 	ram = forms.IntegerField(label="RAM (MB)")
-	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
+	preference = forms.IntegerField(label="Preference", help_text="Sort profiles in the editor (higher preference first). The profile with highest preference will be the default. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
 	tech = forms.CharField(max_length=50, widget=forms.HiddenInput)

@@ -40,7 +40,7 @@ class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
 	description = forms.CharField(widget = forms.Textarea, required=False)
-	preference = forms.IntegerField(label="Preference", help_text="The profile with the highest preference will be the default profile. An integer number.")
+	preference = forms.IntegerField(label="Preference", help_text="Sort templates in the editor (higher preference first). The template with highest preference will be the default. When preference &ge; 100, the template will be featured as 'Common Element' in the editor's home tab. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
