@@ -937,10 +937,6 @@ var PermissionsWindow = Window.extend({
 			buttons: [
 						{ 
 							text: "Add User",
-							beforeShow: function() {
-								$(t).removeClass();
-								$(t).addClass('btn btn-primary');
-							},
 							click: function() {
 								t.username.hide();
 								if (t.username.element.getValue() != '') ajax({
@@ -963,10 +959,6 @@ var PermissionsWindow = Window.extend({
 						},
 						{
 							text: "Cancel",
-							beforeShow: function() {
-								$(t).removeClass();
-								$(t).addClass('btn btn-primary');
-							},
 							click: function() {
 								t.username.hide();
 								t.username = null;
@@ -1574,10 +1566,6 @@ var Topology = Class.extend({
 			buttons: [
 				{ 
 					text: "Save",
-					beforeShow: function() {
-						$(t).removeClass();
-						$(t).addClass('btn btn-primary');
-					},
 					click: function() {
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
@@ -1589,10 +1577,6 @@ var Topology = Class.extend({
 				},
 				{
 					text: "Cancel",
-					beforeShow: function() {
-						$(t).removeClass();
-						$(t).addClass('btn btn-primary');
-					},
 					click: function() {
 						t.rename.hide();
 						t.rename = null;
@@ -1615,10 +1599,6 @@ var Topology = Class.extend({
 			buttons: [
 						{ 
 							text: "Save",
-							beforeShow: function() {
-								$(t).removeClass();
-								$(t).addClass('btn btn-primary');
-							},
 							click: function() {
 								t.firstname.hide();
 								if(t.firstname.element.getValue() != '') {
@@ -1630,10 +1610,6 @@ var Topology = Class.extend({
 						},
 						{
 							text: "Cancel",
-							beforeShow: function() {
-								$(t).removeClass();
-								$(t).addClass('btn btn-primary');
-							},
 							click: function() {
 								t.firstname.hide();
 								t.firstname = null;
