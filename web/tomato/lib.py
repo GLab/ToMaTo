@@ -167,24 +167,6 @@ def getDpkgVersionStr(package):
 		return None
 	return fields["version"]
 
-def splitVersion(verStr):
-	version = []
-	numStr = ""
-	if not verStr:
-		return verStr
-	for ch in verStr:
-		if ch in "0123456789":
-			numStr += ch
-		if ch in ".:-":
-			version.append(int(numStr))
-			numStr = ""
-	version.append(int(numStr))
-	return version
-	
-def getDpkgVersion(package, verStr=None):
-	verStr = getDpkgVersionStr(package)
-	return splitVersion(verStr)
-
 @cached(600)
 def serverInfo():
 	return getapi().server_info()
@@ -211,7 +193,7 @@ def getNews():
 
 @cached(3600)
 def getVersion():
-	return getDpkgVersion("tomato-web") or "devel"
+	return getDpkgVersionStr("tomato-web") or "devel"
 
 class UserObj:
 	def __init__(self, api):

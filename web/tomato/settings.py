@@ -79,7 +79,7 @@ CACHES = {
     }
 }
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 TEMPLATE_CONTEXT_PROCESSORS = ('django.core.context_processors.request',)
 
@@ -90,9 +90,8 @@ TEMPLATE_DIRS = os.path.join(CURRENT_DIR, 'templates')
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
     'django.contrib.sites',
-    'crispy_forms',
+    'tomato.crispy_forms',
     'tomato'
 )
 
