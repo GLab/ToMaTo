@@ -674,7 +674,6 @@ var InputWindow = Window.extend({
 	init: function(options) {
 		this.element = new TextElement({name: options.inputname});
 		this.element.setValue(options.inputvalue);
-		options.buttons = 
 		this._super(options);
 		var form = $('<form class="form-horizontal" role="form" />');
 		var div = $('<div class="form-group"></div>');
@@ -1554,12 +1553,12 @@ var Topology = Class.extend({
 			}
 		});
 	},
-	renameDialog: function() {
+	_showRenameDialog: function(text) {
 		var t = this;
-		this.rename = new InputWindow({
+		windowOptions = {
 			title: "Rename Topology",
 			width: 550,
-			height: 150,
+
 			inputname: "newname",
 			inputlabel: "New Name:",
 			inputvalue: t.data.attrs.name,
@@ -1583,41 +1582,21 @@ var Topology = Class.extend({
 					}
 				}
 			],
-		});
+			};
+		if (text) {
+			windowOptions.height = 200;
+			windowOptions.infotext = text;
+		} else {
+			windowOptions.height = 150;
+		}
+		this.rename = new InputWindow(windowOptions);
 		this.rename.show();
 	},
+	renameDialog: function() {
+		this._showRenameDialog(null);
+	},
 	initialRenameDialog: function() {
-		var t = this;
-		this.firstname = new InputWindow({
-			title: "Rename Topology",
-			width: 550,
-			height: 175,
-			inputname: "newname",
-			inputlabel: "New Name:",
-			infotext: "You have created a new Topology. Please enter a name for it:",
-			inputvalue: t.data.attrs.name,
-			buttons: [
-						{ 
-							text: "Save",
-							click: function() {
-								t.firstname.hide();
-								if(t.firstname.element.getValue() != '') {
-									t.modify_value("name", t.firstname.element.getValue());
-									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
-								}
-								t.firstname = null;
-							}
-						},
-						{
-							text: "Cancel",
-							click: function() {
-								t.firstname.hide();
-								t.firstname = null;
-							}
-						}
-			],
-		});
-		this.firstname.show();
+		this._showRenameDialog("You have created a new topology. Please enter a name for it.");
 	},
 	name: function() {
 		return this.data.attrs.name;
