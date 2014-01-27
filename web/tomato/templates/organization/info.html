@@ -66,7 +66,13 @@
 	</tr>
 	<tr>
 		<th>Geolocation:</th>
-		<td>Longitude: {{site.geolocation.longitude}}, Latitude: {{site.geolocation.latitude}}</td>
+		<td>{% if site.geolocation %}
+				Longitude: {{site.geolocation.longitude}}, Latitude: {{site.geolocation.latitude}}
+				<a class="btn btn-default btn-xs" target="_blank" href="http://maps.google.com/?ie=UTF8&hq=&ll={{site.geolocation.latitude}},{{site.geolocation.longitude}}&z=13"><span class="glyphicon glyphicon-share-alt"></span> Google Maps</a>
+			{% else %}
+				unknown
+			{% endif %}
+		</td>
 	</tr>
 	<tr>
 		<th>Description:</th>
