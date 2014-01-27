@@ -22,12 +22,12 @@
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in organizations %}
-      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of organization '{{orga.name}}'</a></li>    
+      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of '{{orga.name}}'</a></li>    
     {% endfor %}
     <li class="divider"></li>
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
-      <li><a href="{% url site_hosts site=s.name %}">Show all hosts of site '{{s.name}}'</a></li>    
+      <li><a href="{% url site_hosts site=s.name %}">Show all hosts of '{{s.name}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
