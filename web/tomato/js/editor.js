@@ -697,6 +697,27 @@ var InputWindow = Window.extend({
 
 var TemplateWindow = Window.extend({
 	init: function(options) {
+		
+		var t = this;
+		options.buttons = [ 
+
+		                    {
+		                    	text: "Save",
+		                    	click: function() {
+		                			t.save();
+		                			t.hide();
+		                			t.callback(t.getValue());
+		                		}
+		         
+		                    },
+		                    {
+		                    	text: "Cancel",
+		                    	click: function() {
+		                			t.hide();
+		                			t.callback(t.getValue());
+		                		}
+		                    }];
+		
 		this._super(options);
 		this.element = options.element;
 		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
@@ -720,29 +741,9 @@ var TemplateWindow = Window.extend({
 		
 		var table = this.getList();
 		
-		var buttons = $('<div colspan="2" style="text-align:right;"></div>');
 		
-		var cancelButton = $('<button class="btn btn-primary"><span class="ui-button-text">Cancel</span></button>');
-		var t = this;
-		cancelButton.click(function() {
-			t.hide();
-			t.callback(t.getValue());
-		});
-		buttons.append(cancelButton);
-		
-		var saveButton = $('<button class="btn btn-primary"><span class="ui-button-text">Save</span></button>');
-		if (this.disabled) {
-			saveButton.prop("disabled",true);
-		}
-		saveButton.click(function() {
-			t.save();
-			t.hide();
-			t.callback(t.getValue());
-		});
-		buttons.append(saveButton);
 		
 		this.div.append(table);
-		this.div.append(buttons);
 	},
 	getValue: function() {
 		return this.value;
