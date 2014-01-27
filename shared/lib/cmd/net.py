@@ -92,6 +92,9 @@ def freeTcpPort(port):
 def _brifPath(brname):
 	return os.path.join(_ifacePath(brname), "brif")
 
+def bridgeList():
+	return map(lambda d: os.path.exists(os.path.join(_ifacePath(d), "brif")), os.listdir(_ifacePath("")))
+
 def bridgeExists(brname):
 	return path.exists(_brifPath(brname))
 
@@ -107,7 +110,6 @@ def bridgeRemove(brname):
 	assert bridgeExists(brname)
 	ifDown(brname)
 	run(["brctl", "delbr", brname])
-	
 	
 def bridgeAddInterface(brname, ifname):
 	assert bridgeExists(brname)

@@ -20,13 +20,13 @@ import os, struct, socket, random, time
 
 def ip_checksum(data):
   if len(data) & 1:
-    data = data + "\x00"
+	data = data + "\x00"
   words = struct.unpack("!%dH" % (len(data)/2), data)
   sum = 0
   for w in words:
-    sum += w^0xffff
+	sum += w^0xffff
   while sum >> 16:
-    sum = (sum>>16) + (sum&0xffff)
+	sum = (sum>>16) + (sum&0xffff)
   sum ^= 0xffff
   return sum
 
@@ -50,7 +50,6 @@ def searchServer(ifname, maxWait=2.0):
 	pkg = "\xff"*6 + mac + "\x08\x00" + pkg
 	sock.send(pkg)
 	start = time.time()
-	replies = []
 	while time.time() - start < maxWait:
 		pkg = sock.recv(1518)
 		if not pkg[:6] == mac or not pkg[12:14] == "\x08\x00":
@@ -115,8 +114,10 @@ def searchServer(ifname, maxWait=2.0):
 				pass
 			else:
 				reply["unknown_option_%d" % t] = v
-		replies.append(reply)
-	return replies
+		sock.close()
+		return reply
+	sock.close()
+	return None
 
 if __name__ == "__main__":
 	import sys
