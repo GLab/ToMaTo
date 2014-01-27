@@ -135,3 +135,51 @@ div.windowHelp {
 .context-menu-item.icon-live-capture { background-image: url(../img/page_gear.png); }
 .context-menu-item.icon-no-capture { background-image: url(../img/page_error.png); }
 .context-menu-item.icon-cloudshark { background-image: url(../img/cloudshark16.png); }
+
+.ui-dialog-buttons .ui-button-text-only {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.428571429;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+       -o-user-select: none;
+          user-select: none;
+  color: #ffffff;
+  background-color: #428bca;
+  border-color: #357ebd;
+}
+
+
+.ui-dialog-buttons .ui-button-text-only:focus {
+  outline: thin dotted #333;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+
+.ui-dialog-buttons .ui-button-text-only:hover {
+  color: #ffffff;
+  background-color: #3276b1;
+  border-color: #285e8e;
+  text-decoration: none;
+}
+
+.ui-dialog-buttons .ui-button-text-only:active {
+  background-image: none;
+  outline: 0;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+          box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  color: #ffffff;
+  background-color: #3276b1;
+  border-color: #285e8e;
+}
