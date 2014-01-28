@@ -48,16 +48,10 @@ import random
 SECRET_KEY = str(random.random())
 
 # List of callables that know how to import templates from various sources.
-if DJANGO_VERSION < (1,4):
-    TEMPLATE_LOADERS = (
-        'django.template.loaders.filesystem.load_template_source',
-        'django.template.loaders.app_directories.load_template_source',
-    )
-else:
-    TEMPLATE_LOADERS = (
-        'django.template.loaders.filesystem.Loader',
-        'django.template.loaders.app_directories.Loader',
-    )
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+)
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
@@ -99,12 +93,16 @@ server_protocol = "http"
 server_host = "localhost"
 server_port = "8000"
 server_httprealm="G-Lab ToMaTo"
-project_url="http://dswd.github.com/ToMaTo/%s"
-help_url="http://github.com/dswd/ToMaTo/wiki/%s"
-ticket_url="http://github.com/dswd/ToMaTo/issues/%s"
 tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
+
+if DJANGO_VERSION < (1,4):
+    TEMPLATE_LOADERS = (
+        'django.template.loaders.filesystem.load_template_source',
+        'django.template.loaders.app_directories.load_template_source',
+    )
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 try:
     import sys
