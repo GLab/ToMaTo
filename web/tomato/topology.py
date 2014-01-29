@@ -72,7 +72,7 @@ def _display(api, request, info, tut_url, tut_stat):
 	except:
 		pass
 
-	return render(request, "topology/info.html", {
+	res = render(request, "topology/info.html", {
 		'top': info,
 		'res_json': json.dumps(res),
 		'sites_json': json.dumps(sites),
@@ -82,6 +82,8 @@ def _display(api, request, info, tut_url, tut_stat):
 		'tutorial_data': tut_data,
 		'permission_list':permission_list,
 	})	
+	return res
+
 
 @wrap_rpc
 def info(api, request, id): #@ReservedAssignment

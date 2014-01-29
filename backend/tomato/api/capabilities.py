@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.decorators import cached #@UnresolvedImport
+from ..lib.cache import cached #@UnresolvedImport
 
 def capabilities_element(type, host=None): #@ReservedAssignment
 	typeClass = elements.TYPES.get(type)
@@ -31,7 +31,7 @@ def capabilities_connection(type, host=None): #@ReservedAssignment
 		fault.check(host, "No such host: %s", host)
 	return connections.Connection.getCapabilities(type, host)
 
-@cached(300)
+@cached(timeout=24*3600)
 def capabilities():
 	return {
 		"element": dict((t, capabilities_element(t)) for t in elements.TYPES),

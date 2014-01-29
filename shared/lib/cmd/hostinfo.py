@@ -18,21 +18,9 @@
 from . import run, CommandError, getDpkgVersionStr 
 import platform, os, time
 from ... import config
+from ..cache import cached
 
-_cache = {}
-def cached(fn):
-	def call(*args, **kwargs):
-		if fn.__name__ in _cache:
-			return _cache[fn.__name__]
-		res = fn(*args, **kwargs)
-		_cache[fn.__name__] = res
-		return res
-	call.__name__ = fn.__name__
-	call.__doc__ = fn.__doc__
-	call.__dict__.update(fn.__dict__)
-	return call
-
-@cached
+@cached(timeout=None)
 def cpuinfo():
 	with open("/proc/cpuinfo", "r") as fp:
 		bogomips = []
@@ -60,15 +48,15 @@ def uptime():
 	with open("/proc/uptime", "r") as fp:
 		return float(fp.readline().split()[0])
 
-@cached
+@cached(timeout=24*3600)
 def hostmanagerVersion():
 	return getDpkgVersionStr("tomato-hostmanager") or "devel"
 
-@cached
+@cached(timeout=24*3600)
 def updaterVersion():
 	return getDpkgVersionStr("tomato-updater")
 
-@cached
+@cached(timeout=24*3600)
 def system():
 	pve_ver = getDpkgVersionStr("pve-manager")
 	return {

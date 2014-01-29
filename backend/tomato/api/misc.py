@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from ..lib.decorators import cached #@UnresolvedImport
+from ..lib.cache import cached #@UnresolvedImport
 
-@cached(300)
+@cached(timeout=300)
 def server_info():
 	"""
 	undocumented
