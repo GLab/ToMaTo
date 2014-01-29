@@ -60,7 +60,12 @@ class ServerProxy(object):
 	def __getattr__(self, name):
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
 		def _call(*args, **kwargs):
-			return call_proxy(args, kwargs)
+			#import time
+			#before = time.time()
+			res = call_proxy(args, kwargs)
+			#after = time.time()
+			#print "%f, %f, %s(%s, %s)" % (after, after-before, name, args, kwargs)
+			return res
 		return _call
 
 def getapi(request=None):

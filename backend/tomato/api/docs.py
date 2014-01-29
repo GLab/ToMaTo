@@ -16,9 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import elements, connections
-from ..lib.decorators import cached #@UnresolvedImport
+from ..lib.cache import cached #@UnresolvedImport
 
-@cached(3600)
+@cached(timeout=3600)
 def docs():
     """
     undocumented
@@ -28,7 +28,7 @@ def docs():
         "connections": {"default": connections.Connection.DOC},
     }
 
-@cached(3600)
+@cached(timeout=3600)
 def role_list():
     return {
 		"owner": {"title": "Owner", "description": "full topology control, permission changes, topology removal"},
