@@ -59,9 +59,9 @@ def _display(api, request, info, tut_url, tut_stat):
 	res = api.resource_list()
 	sites = api.site_list()
 	permission_list = api.topology_permissions()
-	
+	orgas = dict([(o["name"], o) for o in api.organization_list()])
 	for s in sites:
-		orga = api.organization_info(s['organization'])
+		orga = orgas[s['organization']]
 		del s['organization']
 		s['organization'] = orga
 
