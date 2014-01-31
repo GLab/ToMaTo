@@ -257,9 +257,11 @@ def accept(api, request, id):
 		raise AuthError()
 	user = api.account_info(id)
 	flags = user["flags"]
-	flags.remove("new_account")
-	flags.remove("over_quota")
+	for flag in ["new_account", "over_quota"]:
+		if flag in flags:
+			flags.remove(flag)
 	api.account_modify(id, attrs={"flags": flags})
+	api.account_mail(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
 	return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 
 @wrap_rpc
