@@ -200,7 +200,7 @@ class AccountRegisterForm(AccountForm):
 		self.fields["password"].required = True
 		del self.fields["flags"]
 		del self.fields["origin"]
-		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">terms and conditions</a>'
+		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">acceptable use policy</a>'
 		self.helper.form_action = reverse(register)
 		self.helper.layout = Layout(
 			'name',
