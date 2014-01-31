@@ -11,6 +11,16 @@
 
 <div class="skip-sm"></div>
 
+{% if 'new_account' in request.session.user.flags and request.session.user.id == account.id %}
+<div class="alert alert-warning">
+<strong>Note:</strong> Your account is new and needs to be activated first.
+Administrators have been informed about your pending registration and will handle it soon. You will be informed when your registration has been processed.
+<br/>
+While waiting for the account activation you can create and design topologies but not prepare or start them. (Most tutorials will not work.) 
+</div>
+<div class="skip-sm"></div>
+{% endif %}
+
 <table class="table">
 	<tr>
 		<th>Full name:</th>
