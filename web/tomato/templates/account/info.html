@@ -11,6 +11,16 @@
 
 <div class="skip-sm"></div>
 
+{% if 'new_account' in request.session.user.flags and request.session.user.id == account.id %}
+<div class="alert alert-warning">
+<strong>Note:</strong> Your account is new and needs to be activated first.
+Administrators have been informed about your pending registration and will handle it soon. You will be informed when your registration has been processed.
+<br/>
+While waiting for the account activation you can create and design topologies but not prepare or start them. (Most tutorials will not work.) 
+</div>
+<div class="skip-sm"></div>
+{% endif %}
+
 <table class="table">
 	<tr>
 		<th>Full name:</th>
@@ -58,12 +68,13 @@
 
 <form>
 {% if "new_account" in account.flags and request.session.user|args:account.organization|call:"isAdmin" %}
-  <button type="submit" formaction="{%url account.accept id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> accept account</button>
+  <button type="submit" formaction="{%url account.accept id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-check"></span> accept account</button>
 {% endif %}  
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags or account.id == request.session.user.id %}
   <button type="submit" formaction="{%url account.edit id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit account</button>
 {% endif %}
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
+  <button type="submit" formaction="{%url account.reset_password id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-wrench"></span> reset password</button>
   <button type="submit" formaction="{%url account.remove id=account.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove account</button>
 {% endif %}
 </form>

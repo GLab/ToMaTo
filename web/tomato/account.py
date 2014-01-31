@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import random, string
+
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
@@ -28,7 +30,7 @@ from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
-from admin_common import BootstrapForm, RemoveConfirmForm, FixedList, FixedText, Buttons
+from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -153,6 +155,7 @@ class AccountForm(BootstrapForm):
 	email = forms.EmailField()
 	flags = forms.MultipleChoiceField(required=False)
 	_reason = forms.CharField(widget = forms.Textarea, required=False, label="Reason for Registering")
+	send_mail = forms.BooleanField(label="Inform user", required=False, initial=True)
 	def __init__(self, api, *args, **kwargs):
 		super(AccountForm, self).__init__(*args, **kwargs)
 		self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
@@ -188,6 +191,7 @@ class AccountChangeForm(AccountForm):
 			'realname',
 			'email',
 			'flags',
+			'send_mail',
 			Buttons.cancel_save
 		)
 			
@@ -200,6 +204,7 @@ class AccountRegisterForm(AccountForm):
 		self.fields["password"].required = True
 		del self.fields["flags"]
 		del self.fields["origin"]
+		del self.fields["send_mail"]
 		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">acceptable use policy</a>'
 		self.helper.form_action = reverse(register)
 		self.helper.layout = Layout(
@@ -209,7 +214,29 @@ class AccountRegisterForm(AccountForm):
 			'organization',
 			'realname',
 			'email',
+			'_reason',
 			'aup',
+			Buttons.cancel_save
+		)
+
+class AdminAccountRegisterForm(AccountForm):
+	aup = forms.BooleanField(label="", required=True)
+	
+	def __init__(self, api, data=None):
+		AccountForm.__init__(self, api, data)
+		self.fields["password"].required = True
+		del self.fields["flags"]
+		del self.fields["origin"]
+		del self.fields["aup"]
+		del self.fields["password"]
+		del self.fields["password2"]
+		del self.fields["send_mail"]
+		self.helper.form_action = reverse(register)
+		self.helper.layout = Layout(
+			'name',
+			'organization',
+			'realname',
+			'email',
 			Buttons.cancel_save
 		)
 
@@ -254,9 +281,11 @@ def accept(api, request, id):
 		raise AuthError()
 	user = api.account_info(id)
 	flags = user["flags"]
-	flags.remove("new_account")
-	flags.remove("over_quota")
+	for flag in ["new_account", "over_quota"]:
+		if flag in flags:
+			flags.remove(flag)
 	api.account_modify(id, attrs={"flags": flags})
+	api.account_mail(id, subject="Account activated", message="Your account has been activated by an administrator. Now you are ready to start your first topology. Please see the tutorials to learn how to use ToMaTo.", from_support=True)
 	return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 
 @wrap_rpc
@@ -275,29 +304,44 @@ def edit(api, request, id):
 			del data["password2"]
 			if not data["password"]:
 				del data["password"]
+			send_mail = data.get("send_mail", False)
+			if send_mail:
+				del data["send_mail"]
 			api.account_modify(id, attrs=data)
+			if send_mail:
+				api.account_mail(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
-		form = AccountChangeForm(api, user)
+		data = user.copy()
+		data["send_mail"] = True
+		form = AccountChangeForm(api, data)
 	return render(request, "form.html", {"account": user, "form": form, "heading":"Edit Account "+user["id"]})
 	
 @wrap_rpc
 def register(api, request):
 	if request.method=='POST':
-		form = AccountRegisterForm(api, request.REQUEST)
+		form = AdminAccountRegisterForm(api, request.REQUEST) if api.user else AccountRegisterForm(api, request.REQUEST)
 		if form.is_valid():
 			data = form.cleaned_data
 			username = data["name"]
-			password = data["password"]
 			organization=data["organization"]
-			del data["password"]
-			del data["password2"]
 			del data["name"]
-			del data["aup"]
 			del data["organization"]
+			if api.user:
+				password = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
+			else:
+				password = data["password"]
+				del data["password"]
+				del data["password2"]
+				del data["aup"]
 			try:
 				account = api.account_create(username, password=password, organization=organization, attrs=data)
-				if not api.user:
+				if api.user:
+					api.account_mail(username, 
+						subject="Account creation", 
+						message="A new ToMaTo account has been created for you by an administrator with the username\n\n\t%s\n\n and the password\n\n\t%s\n\nPlease login using that username and password and change it to something you can remember." % (username, password),
+						from_support=True)
+				else:
 					request.session["auth"] = "%s:%s" % (username, password)
 					api = getapi(request)
 					request.session["user"] = api.user  
@@ -307,8 +351,20 @@ def register(api, request):
 				print traceback.print_exc()
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
-		form = AccountRegisterForm(api) 
+		form = AdminAccountRegisterForm(api) if api.user else AccountRegisterForm(api) 
 	return render(request, "form.html", {"form": form, "heading":"Register New Account"})
+
+@wrap_rpc
+def reset_password(api, request, id):
+	if request.method == 'POST':
+		form = ConfirmForm(request.POST)
+		if form.is_valid():
+			passwd = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
+			api.account_modify(id, {"password": passwd})
+			api.account_mail(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
+			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
+	form = ConfirmForm.build(reverse("tomato.account.reset_password", kwargs={"id": id}))
+	return render(request, "form.html", {"heading": "Reset Password", "message_before": "Are you sure you want to reset the password of the account '"+id+"'?", 'form': form})	
 
 @wrap_rpc
 def remove(api, request, id=None):

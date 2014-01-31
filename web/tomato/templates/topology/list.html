@@ -36,9 +36,19 @@
 
 <div class="skip-sm"></div>
 
+{% if 'new_account' in request.session.user.flags %}
+<div class="alert alert-warning">
+<strong>Note:</strong> Your account is new and needs to be activated first.
+Administrators have been informed about your pending registration and will handle it soon. You will be informed when your registration has been processed.
+<br/>
+While waiting for the account activation you can create and design topologies but not prepare or start them. (Most tutorials will not work.) 
+</div>
+<div class="skip-sm"></div>
+{% endif %}
+
 {% if top_list %}
 
-{% if top_list|length > 10 and not 'no_topology_create' in user.flags %}
+{% if top_list|length > 10 and not 'no_topology_create' in request.session.user.flags %}
     <form>
     <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
 	<button type="submit" formaction="{%url tutorial.list%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
