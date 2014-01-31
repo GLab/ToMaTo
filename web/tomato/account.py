@@ -204,6 +204,7 @@ class AccountRegisterForm(AccountForm):
 		self.fields["password"].required = True
 		del self.fields["flags"]
 		del self.fields["origin"]
+		del self.fields["send_mail"]
 		self.fields['aup'].label = 'I accept the <a href="'+ serverInfo()['external_urls']['aup'] +'" target="_blank">acceptable use policy</a>'
 		self.helper.form_action = reverse(register)
 		self.helper.layout = Layout(
@@ -215,6 +216,27 @@ class AccountRegisterForm(AccountForm):
 			'email',
 			'_reason',
 			'aup',
+			Buttons.cancel_save
+		)
+
+class AdminAccountRegisterForm(AccountForm):
+	aup = forms.BooleanField(label="", required=True)
+	
+	def __init__(self, api, data=None):
+		AccountForm.__init__(self, api, data)
+		self.fields["password"].required = True
+		del self.fields["flags"]
+		del self.fields["origin"]
+		del self.fields["aup"]
+		del self.fields["password"]
+		del self.fields["password2"]
+		del self.fields["send_mail"]
+		self.helper.form_action = reverse(register)
+		self.helper.layout = Layout(
+			'name',
+			'organization',
+			'realname',
+			'email',
 			Buttons.cancel_save
 		)
 
@@ -298,20 +320,28 @@ def edit(api, request, id):
 @wrap_rpc
 def register(api, request):
 	if request.method=='POST':
-		form = AccountRegisterForm(api, request.REQUEST)
+		form = AdminAccountRegisterForm(api, request.REQUEST) if api.user else AccountRegisterForm(api, request.REQUEST)
 		if form.is_valid():
 			data = form.cleaned_data
 			username = data["name"]
-			password = data["password"]
 			organization=data["organization"]
-			del data["password"]
-			del data["password2"]
 			del data["name"]
-			del data["aup"]
 			del data["organization"]
+			if api.user:
+				password = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
+			else:
+				password = data["password"]
+				del data["password"]
+				del data["password2"]
+				del data["aup"]
 			try:
 				account = api.account_create(username, password=password, organization=organization, attrs=data)
-				if not api.user:
+				if api.user:
+					api.account_mail(username, 
+						subject="Account creation", 
+						message="A new ToMaTo account has been created for you by an administrator with the username\n\n\t%s\n\n and the password\n\n\t%s\n\nPlease login using that username and password and change it to something you can remember." % (username, password),
+						from_support=True)
+				else:
 					request.session["auth"] = "%s:%s" % (username, password)
 					api = getapi(request)
 					request.session["user"] = api.user  
@@ -321,7 +351,7 @@ def register(api, request):
 				print traceback.print_exc()
 				form._errors["name"] = form.error_class(["This name is already taken"])
 	else:
-		form = AccountRegisterForm(api) 
+		form = AdminAccountRegisterForm(api) if api.user else AccountRegisterForm(api) 
 	return render(request, "form.html", {"form": form, "heading":"Register New Account"})
 
 @wrap_rpc
