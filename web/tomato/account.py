@@ -153,6 +153,7 @@ class AccountForm(BootstrapForm):
 	email = forms.EmailField()
 	flags = forms.MultipleChoiceField(required=False)
 	_reason = forms.CharField(widget = forms.Textarea, required=False, label="Reason for Registering")
+	send_mail = forms.BooleanField(label="Inform user", required=False, initial=True)
 	def __init__(self, api, *args, **kwargs):
 		super(AccountForm, self).__init__(*args, **kwargs)
 		self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
@@ -188,6 +189,7 @@ class AccountChangeForm(AccountForm):
 			'realname',
 			'email',
 			'flags',
+			'send_mail',
 			Buttons.cancel_save
 		)
 			
@@ -275,10 +277,17 @@ def edit(api, request, id):
 			del data["password2"]
 			if not data["password"]:
 				del data["password"]
+			send_mail = data.get("send_mail", False)
+			if send_mail:
+				del data["send_mail"]
 			api.account_modify(id, attrs=data)
+			if send_mail:
+				api.account_mail(id, subject="Account modified", message="Your account has been modified by an administrator. Please check your account details for the changes.", from_support=True)
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
-		form = AccountChangeForm(api, user)
+		data = user.copy()
+		data["send_mail"] = True
+		form = AccountChangeForm(api, data)
 	return render(request, "form.html", {"account": user, "form": form, "heading":"Edit Account "+user["id"]})
 	
 @wrap_rpc
