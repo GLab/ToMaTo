@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Account {{account.name}}</h1>
 
-{% if "orga_admin" in request.session.user.flags or "gloabl_admin" in request.session.user.flags %}
+{% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
 <form>
   <button type="submit" formaction="{%url account_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Account list</button>
 </form>
@@ -70,10 +70,10 @@ While waiting for the account activation you can create and design topologies bu
 {% if "new_account" in account.flags and request.session.user|args:account.organization|call:"isAdmin" %}
   <button type="submit" formaction="{%url account.accept id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> accept account</button>
 {% endif %}  
-{% if "orga_admin" in request.session.user.flags or "gloabl_admin" in request.session.user.flags or account.id == request.session.user.id %}
+{% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags or account.id == request.session.user.id %}
   <button type="submit" formaction="{%url account.edit id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit account</button>
 {% endif %}
-{% if "orga_admin" in request.session.user.flags or "gloabl_admin" in request.session.user.flags %}
+{% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
   <button type="submit" formaction="{%url account.remove id=account.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove account</button>
 {% endif %}
 </form>

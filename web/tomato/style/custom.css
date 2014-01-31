@@ -244,3 +244,19 @@ a.logobacklink:hover {
     padding: 10px 12px;
     pointer-events: none;
 }
+
+
+
+
+
+#javascriptwarning {
+	background-color:#ffffaa;
+	border-bottom:1px solid black;
+	width:100%;
+	padding:10px;
+	padding-left:30px;
+	font-size:13pt;
+	margin:0px;
+	margin-top:-20px;
+	margin-bottom:15px;
+}
