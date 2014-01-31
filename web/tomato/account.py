@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import random, string
+
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
@@ -28,7 +30,7 @@ from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
-from admin_common import BootstrapForm, RemoveConfirmForm, FixedList, FixedText, Buttons
+from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -321,6 +323,18 @@ def register(api, request):
 	else:
 		form = AccountRegisterForm(api) 
 	return render(request, "form.html", {"form": form, "heading":"Register New Account"})
+
+@wrap_rpc
+def reset_password(api, request, id):
+	if request.method == 'POST':
+		form = ConfirmForm(request.POST)
+		if form.is_valid():
+			passwd = ''.join(random.choice(2 * string.ascii_lowercase + string.ascii_uppercase + 2 * string.digits) for x in range(12))
+			api.account_modify(id, {"password": passwd})
+			api.account_mail(id, subject="Password reset", message="Your password has been reset by an administrator to\n\n\t%s\n\nPlease login using that password and change it to something you can remember." % passwd, from_support=True)
+			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
+	form = ConfirmForm.build(reverse("tomato.account.reset_password", kwargs={"id": id}))
+	return render(request, "form.html", {"heading": "Reset Password", "message_before": "Are you sure you want to reset the password of the account '"+id+"'?", 'form': form})	
 
 @wrap_rpc
 def remove(api, request, id=None):
