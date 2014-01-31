@@ -211,6 +211,7 @@ class AccountRegisterForm(AccountForm):
 			'organization',
 			'realname',
 			'email',
+			'_reason',
 			'aup',
 			Buttons.cancel_save
 		)
