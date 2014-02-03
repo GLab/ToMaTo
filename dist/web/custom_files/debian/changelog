@@ -1,4 +1,4 @@
-tomato-web (3.2-1) stable; urgency=low
+tomato-web (3.2.1) stable; urgency=low
 
   * Bugfix release
   * Fixed aup link
