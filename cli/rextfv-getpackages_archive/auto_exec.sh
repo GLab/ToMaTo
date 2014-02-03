@@ -70,6 +70,7 @@ need_apt_get () {
 }
 
 update_apt_get () {
+	dhclient eth0
 	apt-get update
 }
 setstatus_prepare_upgrade_apt_get () {
