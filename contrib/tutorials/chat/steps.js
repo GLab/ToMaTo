@@ -8,10 +8,20 @@
 		skip_button: 'Start tutorial'
 	},
 	{
+		text: '<p class="tutorialExplanation">For this tutorial you need 4 files. We will use them later to create our chat servers and show some aspects of the editor.<br />\
+			<ul>\
+			<li><a href="'+tutorial_base_url+'install_python.tar.gz" style="color: blue;" download="install_python.tar.gz">Python install package</li>\
+			<li><a href="'+tutorial_base_url+'chat_client.tar.gz" style="color: blue;"  download="chat_client.tar.gz">Chat client</li>\
+			<li><a href="'+tutorial_base_url+'chat_monitor.repy" style="color: blue;"  download="chat_monitor.repy">Chat monitor (Repository)</li>\
+			<li><a href="'+tutorial_base_url+'chat_sender.repy" style="color: blue;"  download="chat_sender.repy">Chat sender (Repository)</li>\
+			</ul></p>',
+		skip_button: 'Continue'
+	},
+	{
 		text: '<p class="tutorialExplanation">As first step we add a virtual machine to the topology. This virtual machine will use OpenVZ technology since we only want to run a simple program on it.<br/>\
-Click on the blue computer icon on the right of the menu and then click into the work space to position that element. You can later move it by dragging the icon in the work space.<br/>\
-You can move this tutorial window if it covers your work space.</p>\
-<br/><b>Task: Add an OpenVZ virtual machine to your topology</b>',
+			Click on the blue computer icon on the right of the menu and then click into the work space to position that element. You can laterIch glaube man muss vor Spamern langsam Angst bekommen:  move it by dragging the icon in the work space.<br/>\
+			You can move this tutorial window if it covers your work space.</p>\
+			<p class="tutorialCommand">Add an OpenVZ virtual machine to your topology</p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
@@ -24,39 +34,59 @@ You can move this tutorial window if it covers your work space.</p>\
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">For this chat tutorial we have a special template that contains the chat client. Currently your virtual machine has the default template, which is a plain debian installation. As your virtual machine is not yet started, we can still change its template.<br/>\
-Right-click on the virtual machine icon in your work space and select <i>configure</i> to open the attribute window of this element.<br/>\
-Change the template to <i>Chat Tutorial Node</i> and click on <i>Save</i> to apply the change.<br/>\
-You can also change the name your virtual machine and its hostname if you want to.</p>\
-<br/><b>Task: Change the template of the virtual machine to <i>Chat Tutorial Node</i></b>',
+		text: '<p class="tutorialExplanation">Currently your virtual machine has the default template, which is a plain debian installation. <br />\
+			With a right-click on your virtual machine icon in your work space you can select <i>configure</i> to open the attribute window of this element.<br/>\
+			As your virtual machine is not started yet you can change nearly every attribute of it, even the template.<br/>\
+			You can also change theIch glaube man muss vor Spamern langsam Angst bekommen:  name your virtual machine and its hostname if you want to.</p>',
+		skip_button: 'Continue'
+	},
+	{
+		text: '<p class="tutorialExplanation">Before we can install the chat client we have to prepare our virtual machine. <br /> We have two options to do this. The first option is to right-click our virtual machine and select </i>Prepare</i><br />The other way to do this is to use the <i>Prepare</i>-Button in the menu</p>\
+<p class="tutorialCommand">Prepare your virtual device</p>',
 		trigger: function(event) {
 			return compareToMask(event, {
-				operation: "modify",
+				operation: "action",
+				action: "prepare",
 				component: "element",
 				phase: "end",
-				attrs: {
-					template: tutorial_data.templates.node
-				}
 			});
 		}
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we need a chat partner, so we add another node to the topology. This time we give it the right template right from the start. To do this, open the <i>Devices</i> tab in the menu and select the <i>Chat Tutorial Node</i> from the menu.</p>\
-<br/><b>Task: Add another virtual machine using the <i>Chat Tutorial Node</i> template</b>',
+		text: '<p class="tutorialExplanation">Now we will install python through executable archives. We will need it for the chat client. <br /> \
+			This archive has a <i>auto_exec.sh</i> file in it.  <br /> \
+			It will automaticly executed after it is uploaded.<br /> \
+			Right-click on the virtual machine and select <i>Executable archive &gt; Upload Archive</i>;</p><p class="tutorialCommand">Upload the <i>install_python.tar.gz</li> archive from the beginning of the tutorial</p>',
 		trigger: function(event) {
-			return compareToMask(event, {
-				operation: "create",
-				component: "element",
-				phase: "end",
-				attrs: {
-					type: "openvz",
-					attrs: {
-						template: tutorial_data.templates.node
-					}
-				}
-			});
+				return compareToMask(event, {
+					operation: "action",
+					phase: "end", 
+					action: "rextfv_upload_use",
+					component: "element"
+				});
+			},
+	}, 
+	{
+		text: '<p class="tutorialExplanation">If you want to get information about the execution of your archive, just go to executable archive status window</p>\
+<p class="tutorialCommand">Open the executable archive status page by right-clicking the virtual machine &gt; Executable archive &gt; Status</p>',
+		trigger: function(event) {
+				return compareToMask(event, {
+					operation: "rextfv-status",
+					component: "element"
+				});
 		}
 	},
+	{
+		text: '<p class="tutorialExplanation">Now we will install the chat client through executable archives. <br /></p><p class="tutorialCommand">Upload the <i>install_python.tar.gz</li> archive from the beginning of the tutorial.</p>',
+		trigger: function(event) {
+				return compareToMask(event, {
+					operation: "action",
+					phase: "end", 
+					action: "rextfv_upload_use",
+					component: "element"
+				});
+			},
+	}, 
 	{
 		text: '<p class="tutorialExplanation">To be able to exchange messages between these VMs, we need to connect them. Right-click on one of the machines, select <i>Connect</i> and then click on the other node to establish a connection between the two topology elements.</p>\
 <br/><b>Task: Create a connection between the two VMs</b>',
