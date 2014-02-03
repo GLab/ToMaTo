@@ -104,21 +104,75 @@
 				return false;
 			  },
 			text:	'<p class="tutorialCommand">\
-						Also, open the Configure Dialog of the Device-Switch connection.</p>\
+						Now open the Configure Dialog of the Device-Switch connection.</p>\
 					<p class="tutorialExplanation">\
 						To open the Configure Dialog, Right-click on the connection (i.e., the blue square), and select "Configure".</p>'
 			},
 			{
+			trigger: function(obj) {
+				mask = { 	operation: "modify",
+						phase: "end",
+						component: "connection",
+						attrs: {
+							capturing: true,
+							capture_mode: "file",
+						}
+					};
+				return compareToMask(obj,mask);
+			},
 			text:	'<p class="tutorialExplanation">\
-						In this tutorial, we will only use the packet capturing part of the configuration window.<br />\
-						First, enable packet capturing (mode: "for download", filter expression "") in the connection\'s settings, and then let the device load a webpage.</p>\
-					<p class="tutorialExplanation">\
+						In this tutorial, we will only use the packet capturing part of the configuration window.</p>\
+						<p class="tutorialCommand">Enable packet capturing (mode: "for download", filter expression "") in the connection\'s settings.</p>\
+			',
+			skip_button:	"Continue"
+			},
+			{
+			text: '<p class="tutorialCommand">Now let the device load a webpage. You can do this by typing <pre>wget http://tomato-lab.org/</pre></p>',
+			skip_button:	"Continue"
+			},
+			{
+			trigger: function(obj) {
+				mask = {	operation: "action",
+						phase: "end",
+						action: "download_grant"
+				};
+				return compareToMask(obj,mask);
+			},
+			text:	'<p class="tutorialExplanation">\
 						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
-						The downloaded file can be viewed by any application which supports pcap viewing.</p>\
-					<p class="tutorialExplanation">\
+						The downloaded file can be viewed by any application which supports pcap viewing, like Wireshark.</p>\
+<p class="tutorialCommand">Please download the captur using the connection\'s right-click menu.</p>',
+			skip_button:	"Continue"
+			},
+			{
+			trigger: function(obj) {
+				mask = { 	operation: "action",
+						phase: "end",
+						component: "connection",
+						action: "download_grant"
+					};
+				return compareToMask(obj,mask);
+			},
+			text:	'<p class="tutorialCommand">\
+					Now use the right-click menu to View the Capture in CloudShark.\
+					</p>',
+			skip_button:	"Continue"
+			},
+			{
+			trigger: function(obj) {
+				mask = { 	operation: "modify",
+						phase: "end",
+						component: "connection",
+						attrs: {
+							capture_mode: "net",
+						}
+					};
+				return compareToMask(obj,mask);
+			},
+			text:	'<p class="tutorialExplanation">\
 						If you instead prefer life-viewing using wireshark, set the capture mode to "via network". Then, a different item will appear in the right-click menu ("live capture info"), providing all info you need.</p>\
-					<p class="tutorialExplanation">\
-						The filter expression is the same you would use with tcpdump. (See the tcpdump manpage for more information)</p>',
+				<p class="tutorialExplanation">\
+						The filter expression is the same you would use with tcpdump. (See <a href="http://www.tcpdump.org/manpages/pcap-filter.7.html" target="_blank" style="color: blue;">the tcpdump manpage</a> for more information)</p>',
 			skip_button:	"Continue"
 			},
 			{
