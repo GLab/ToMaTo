@@ -1825,7 +1825,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
-			helpTarget = help_baseUrl+"/editor/configwindow_"+this.data.type;
+			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
 		}
 		
 		console.log('opening config window for type '+this.data.type);
@@ -1944,7 +1944,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
-		options.helpTarget = help_baseUrl+"/editor/configwindow_connection";
+		options.helpTarget = help_baseUrl+"/editor:configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($('<div class="form-group" />').append($("<h4>Link emulation</h4>")));
