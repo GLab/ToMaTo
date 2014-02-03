@@ -7,15 +7,21 @@
 			},
 			{
 			trigger:function(obj) {
-				
-				mask = {
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var match = compareToMask(obj, {
 					action: "start",
 					component: "element",
 					operation: "action",
-					phase: "begin"
-				};
-				return compareToMask(obj,mask);
-				
+					phase: "end"
+				});
+				if (match) tutorial_data.tmp++;
+				console.log("tutorial_data.tmp: "+tutorial_data.tmp);				
+				if (tutorial_data.tmp >= 3) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+
 			  },
 			text:	'<p class="tutorialExplanation">\
 						All devices connected to a switch which is connected to to the internet will have a direct connection to the internet (no NAT router or similar).<br />\
@@ -44,18 +50,58 @@
 				return compareToMask(obj,mask);
 				
 			  },
-			text:	'<p class="tutorialCommand>\
+			text:	'<p class="tutorialCommand">\
 						When the topology is running, open a VNC connection to the device.</p>'
 			},
 			{
 			trigger:function(obj) { 
-				console.log("TODO: check if this is a connection between the switch and a device or the internet");
-				mask = {
+
+
+				mask = { 
 					component: "connection",
-					operation: "attribute-dialog"
+					operation: "attribute-dialog",
+					object: {
+						elements: {
+							0: {
+								data: {
+									type: "tinc_endpoint"
+								}
+							},					
+							1: {
+								data: {
+									type: "openvz_interface"
+								}
+							}
+						}	
+					}				
 				};
-				return compareToMask(obj,mask);
-				
+				console.log(mask);
+				if(compareToMask(obj,mask)) {
+					return true;
+				}
+				mask = { 
+					component: "connection",
+					operation: "attribute-dialog",
+					object: {
+						elements: {
+							1: {
+								data: {
+									type: "tinc_endpoint"
+								}
+							},					
+							0: {
+								data: {
+									type: "openvz_interface"
+								}
+							}
+						}	
+					}			
+				};
+				if(compareToMask(obj,mask)) {
+					return true;
+				}
+
+				return false;
 			  },
 			text:	'<p class="tutorialCommand">\
 						Also, open the Configure Dialog of the Device-Switch connection.</p>\
