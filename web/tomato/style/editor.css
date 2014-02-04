@@ -183,3 +183,15 @@ div.windowHelp {
   background-color: #3276b1;
   border-color: #285e8e;
 }
+
+
+
+#permwindow-close-button:disabled, #permwindow-add-button:disabled {
+	background-color:grey;
+}
+#permwindow-add-button:disabled {
+	display:none;
+}
+#permwindow-add-button {
+	float:left;
+}
