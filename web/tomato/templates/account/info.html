@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Account {{account.name}}</h1>
 
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
 <form>
-  <button type="submit" formaction="{%url account_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Account list</button>
+  <button type="submit" formaction="{%url account_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Accounts</button>
 </form>
 {% endif %}
+
+<h1>Account {{account.name}}</h1>
 
 <div class="skip-sm"></div>
 
