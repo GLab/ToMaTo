@@ -24,7 +24,7 @@
 	    <b>Sites:</b>
 	    <ul>
 	    	{% for site in sites %}{% ifequal site.organization orga.name %} 
-	    		<li>{{site.description}} ({{site.name}})</li>
+	    		<li>{{site.description}} {% if request.session.user and request.session.user.isAdmin %} ({{site.name}}) {%endif%}</li>
 	    	{% endifequal %}{% endfor %} 
 	    </ul>
 	    <div class="skip-sm"></div>
