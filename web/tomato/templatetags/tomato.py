@@ -104,3 +104,8 @@ def args(obj, arg):
 		obj.__callArg = []
 	obj.__callArg += [arg]
 	return obj
+
+@register.filter
+def newsitem_bettertime(value):
+	v = value.split(" ")
+	return v[0]+" "+v[1]+" "+v[2]+" "+v[3]
