@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Organization "{{organization.description}}"</h1>
 
 <form>
-  <button type="submit" formaction="{%url organization.list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Organization list</button>
+  <button type="submit" formaction="{%url organization.list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-globe"></span> All Organizations</button>
 </form>
+
+<h1>Organization "{{organization.description}}"</h1>
 
 <div class="skip-xs"></div>
 
@@ -39,10 +40,10 @@
 {% load tomato %}
 
 <form>
-  <button type="submit" formaction="{%url organization_accounts organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Accounts</button>
-  <button type="submit" formaction="{%url organization_topologies organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Topologies</button>
-  <button type="submit" formaction="{%url organization_hosts organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Hosts</button>
-  <button type="submit" formaction="{%url organization_external_networks organization.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
+  <button type="submit" formaction="{%url organization_accounts organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Accounts</button>
+  <button type="submit" formaction="{%url organization_topologies organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Topologies</button>
+  <button type="submit" formaction="{%url organization_hosts organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
+  <button type="submit" formaction="{%url organization_external_networks organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
   {% if request.session.user|args:organization.name|call:"isAdmin" %}
   <div class="skip-xs"></div>
   <button type="submit" formaction="{%url site.add organization.name%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> add site</button>
@@ -91,8 +92,8 @@
 <div class="skip-xs"></div>
 
 <form>
-  <button type="submit" formaction="{%url site_hosts site.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Hosts</button>
-  <button type="submit" formaction="{%url site_external_networks site.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
+  <button type="submit" formaction="{%url site_hosts site.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
+  <button type="submit" formaction="{%url site_external_networks site.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
   {% if request.session.user|args:organization.name|call:"isAdmin" %}
   <button type="submit" formaction="{%url site.edit site.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit site</button>
   <button type="submit" formaction="{%url site.remove site.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove site</button>
