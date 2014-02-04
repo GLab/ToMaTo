@@ -3419,7 +3419,6 @@ var TemplateStore = Class.extend({
 		var common = [];
 		for (var type in this.types)
 		 for (var name in this.types[type])
-		  //if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
 		  if (this.types[type][name].showAsCommon)
 		   common.push(this.types[type][name]);
 		return common;
