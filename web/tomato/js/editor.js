@@ -14,6 +14,16 @@ var settings = {
 	],
 }
 
+var showError = function(msg) {
+	switch(msg.toLowerCase()) {
+	case "over quota":
+		showError("You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.");
+		break;
+	default:
+		alert("Error: "+msg);
+	}
+}
+
 var ajax = function(options) {
 	var t = this;
 	$.ajax({
@@ -23,7 +33,7 @@ var ajax = function(options) {
 	 	data: {data: $.toJSON(options.data || {})},
 	 	complete: function(res) {
 	 		if (res.status == 401 || res.status == 403) {
-	 			alert("Your session has ended, please log in again");
+	 			showError("Your session has ended, please log in again");
 	 			window.location.reload();
 	 			return;
 	 		}
@@ -948,11 +958,9 @@ var PermissionsWindow = Window.extend({
 												t.makePermissionEditable(data.id);
 											}
 										} else
-											window.alert("This user is already in the list.");
+											showError("This user is already in the list.");
 									},
-									errorFn: function(msg) {
-										window.alert("Error: "+msg);
-									}
+									errorFn: showError
 								});
 								t.username = null;
 							}
@@ -1045,7 +1053,7 @@ var PermissionsWindow = Window.extend({
 				}
 			},
 			errorFn: function(msg){
-				window.alert("Error while setting permission: "+msg);
+				showError("Error while setting user permission: "+msg);
 				t.backToView(username);
 			}
 		})
@@ -1366,7 +1374,7 @@ var Topology = Class.extend({
 				t.onUpdate();
 			},
 			errorFn: function(error) {
-				alert(error);
+				showError(error);
 				obj.paintRemove();
 				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "error", attrs: data});
 			}
@@ -1397,7 +1405,7 @@ var Topology = Class.extend({
 					el2.onConnected();
 				},
 				errorFn: function(error) {
-					alert(error);
+					showError(error);
 					obj.paintRemove();
 					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "error", attrs: data});
 				}
@@ -1510,7 +1518,7 @@ var Topology = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 	}
 		});
 	},
@@ -1636,7 +1644,7 @@ var Topology = Class.extend({
 			}
 			maxCount = Math.max(maxCount, count);
 		}
-		if (maxCount > this.loop_last_warn) alert("Network segments must not contain multiple external network exits! This could lead to loops in the network and result in a total network crash.");
+		if (maxCount > this.loop_last_warn) showError("Network segments must not contain multiple external network exits! This could lead to loops in the network and result in a total network crash.");
 		this.loop_last_warn = maxCount;
 	},
 	colorNetworkSegments: function(segments) {
@@ -1801,7 +1809,7 @@ var Component = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 	}
 		});
 	},
@@ -1903,7 +1911,7 @@ var Component = Class.extend({
 				t.triggerEvent({operation: "modify", phase: "end", attrs: attrs});
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.update();
 				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
@@ -1932,7 +1940,7 @@ var Component = Class.extend({
 				t.updateDependent();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.update();
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 		 	}
@@ -2233,7 +2241,7 @@ var Connection = Component.extend({
 						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
@@ -2555,7 +2563,7 @@ var Element = Component.extend({
 	},
 	uploadImage: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
-			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action("upload_grant", {callback: function(el, res) {
@@ -2580,7 +2588,7 @@ var Element = Component.extend({
 	},
 	uploadRexTFV: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
-			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
@@ -2654,7 +2662,7 @@ var Element = Component.extend({
 					t.triggerEvent({operation: "remove", phase: "end"});
 			 	},
 			 	errorFn: function(error) {
-			 		alert(error);
+			 		showError(error);
 			 		t.setBusy(false);
 					t.triggerEvent({operation: "remove", phase: "error"});
 			 	}
