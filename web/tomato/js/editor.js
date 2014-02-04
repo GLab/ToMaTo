@@ -397,7 +397,7 @@ var Window = Class.extend({
 		
 		this.helpButton = $('<div class="row" />');
 		this.helpLinkPosition = $('<div class="col-md-1 col-md-offset-11" />');
-		this.helpLink = $('<a><img src="/img/help.png"></a></div>');
+		this.helpLink = $('<a><img style="cursor:pointer;" src="/img/help.png"></a></div>');
 		
 		this.helpLinkPosition.append(this.helpLink);
 		
