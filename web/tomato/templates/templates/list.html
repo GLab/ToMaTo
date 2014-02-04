@@ -77,6 +77,12 @@
 		    	<img src="/img/invisible16.png" />
 		    {%endif%}
 		    
+		    {% if templ.attrs.show_as_common %}
+		    	<img src="/img/tick.png"/>
+		    {% else %}
+		    	<img src="/img/invisible16.png" />
+		    {%endif%}
+		    
 	    	{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 		    	<img src="/img/warning16.png" alt="!"/>
 		    {% else %}
@@ -96,6 +102,13 @@
 	    			<td>{{ templ.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	    		</tr>
 	    	{%endif%}
+	    	
+	    	{% if templ.attrs.show_as_common %}
+	    		<tr>
+	    			<td><img src="/img/tick.png"/></td>
+	    			<td>This template appears as a common element in the editor.</td>
+	    		</tr>
+	    	{% endif %}
 	    	
     		{% if not templ.attrs.nlXTP_installed and not templ.attrs.tech == 'repy' %}
 	    		<tr>

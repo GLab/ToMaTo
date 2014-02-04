@@ -3287,6 +3287,7 @@ var Template = Class.extend({
 		this.creation_date = options.creation_date;
 		this.restricted = options.restricted;
 		this.preference = options.preference;
+		this.showAsCommon = options.show_as_common;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3418,7 +3419,8 @@ var TemplateStore = Class.extend({
 		var common = [];
 		for (var type in this.types)
 		 for (var name in this.types[type])
-		  if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
+		  //if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
+		  if (this.types[type][name].showAsCommon)
 		   common.push(this.types[type][name]);
 		return common;
 	}

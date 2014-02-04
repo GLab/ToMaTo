@@ -40,10 +40,11 @@ class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
 	description = forms.CharField(widget = forms.Textarea, required=False)
-	preference = forms.IntegerField(label="Preference", help_text="Sort templates in the editor (higher preference first). The template with highest preference will be the default. When preference &ge; 100, the template will be featured as 'Common Element' in the editor's home tab. Must be an integer number.")
+	preference = forms.IntegerField(label="Preference", help_text="Sort templates in the editor (higher preference first). The template with highest preference will be the default. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
+	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
@@ -62,6 +63,7 @@ class AddTemplateForm(TemplateForm):
             'description',
             'tech',
             'preference',
+            'show_as_common',
             'restricted',
             'nlXTP_installed',
             'creation_date',
@@ -80,6 +82,7 @@ class EditTemplateForm(TemplateForm):
             'subtype',
             'description',
             'preference',
+            'show_as_common',
             'restricted',
             'nlXTP_installed',
             'creation_date',
@@ -143,7 +146,8 @@ def add(api, request):
 											'torrent_data':torrent_data,
 											'description':formData['description'],
 											'nlXTP_installed':formData['nlXTP_installed'],
-											'creation_date':creation_date})
+											'creation_date':creation_date,
+											'show_as_common':formData['show_as_common']})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
@@ -207,7 +211,8 @@ def edit(api, request, res_id=None):
 														'preference':formData['preference'],
 														'description':formData['description'],
 														'creation_date':creation_date,
-														'nlXTP_installed':formData['nlXTP_installed']})
+														'nlXTP_installed':formData['nlXTP_installed'],
+														'show_as_common':formData['show_as_common']})
 				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})

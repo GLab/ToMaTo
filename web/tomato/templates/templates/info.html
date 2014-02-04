@@ -31,7 +31,16 @@
 	<tr>
 		<th>Preference:</th>
 		<td>{{template.attrs.preference}}</td>
-	</tr>	
+	</tr>
+	<tr>
+		<th>Common Element:</th>
+		<td>{% if template.attrs.show_as_common %}
+			<img src="/img/tick.png"> yes
+		{% else %}
+			<img src="/img/error.png"> no
+		{% endif %}
+		</td>
+	</tr>
 	<tr>
 		<th>Creation date:</th>
 		<td>{{template.attrs.creation_date}}</td>
