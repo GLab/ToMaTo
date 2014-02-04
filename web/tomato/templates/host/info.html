@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Host {{host.address}}</h1>
 
 <form>
-  <button type="submit" formaction="{%url host_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Host list</button>
+  <button type="submit" formaction="{%url host_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Hosts</button>
 </form>
+
+<h1>Host {{host.address}}</h1>
 
 <div class="skip-sm"></div>
 

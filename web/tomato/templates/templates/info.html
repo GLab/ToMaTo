@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Template {{template.attrs.name}}</h1>
 
 <form>
-  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Template list</button>
+  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
 </form>
+
+<h1>Template {{template.attrs.name}}</h1>
 
 <div class="skip-sm"></div>
 
