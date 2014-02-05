@@ -814,14 +814,37 @@ var TemplateWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		options.modal = true;
-		this._super(options);
 		
 		var t = this;
-
 		this.options = options;
-		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
-		this.permissions = this.options.permissions;
+		this.permissions = options.permissions;
+		console.log(this.topology);
+		
+		this.options.allowChange = this.options.isGlobalOwner;
+		
+		
+		var closebutton = {
+		                    	text: "Close",
+		                    	id: "permwindow-close-button",
+		                    	click: function() {
+		                			t.hide();
+		                		}
+		         
+		                    };
+		var addbutton = {
+		                    	text: "Add User",
+		                    	id: "permwindow-add-button",
+		                    	click: function() {
+		                    		t.addNewUser();
+		                    	}
+		                    };
+
+		this.options.buttons=[closebutton,addbutton];
+		
+		
+		this._super(this.options);
+
 		
 		this.editingList = {};
 		
@@ -831,23 +854,10 @@ var PermissionsWindow = Window.extend({
 		this.listCreated = false;
 		
 		this.buttons = $('<div />');
-		
-		this.closeButton = $('<button class="btn btn-primary" style="float:right;"><span class="ui-button-text">Close</span></button>');
-		this.closeButton.click(function(){
-			/* if (t.div.getElementsByTagName("select").length > 0) {
-				if (!window.confirm("Are you sure you want to discard all changes?"))
-					return
-				else
-					this.div.empty();
-					this.listCreated = false;
-			} */
-			t.hide();
-		});
-		this.buttons.append(this.closeButton);
-		
 		this.div.append(this.buttons);
 		
-		
+		this.closeButton = $("#permwindow-close-button");
+		this.addButton = $("#permwindow-add-button");
 		
 	},
 	
@@ -880,14 +890,10 @@ var PermissionsWindow = Window.extend({
 		if (!this.options.allowChange) {
 			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
 		}
-		
-		if (this.options.allowChange) {
-			var addbutton = $('<div class="ui-dialog-buttonset"><button class="btn btn-primary"><span class="ui-button-text">Add User</span></button>');
-			addbutton.click(function(){
-				t.addNewUser();
-			});
-			this.buttons.append(addbutton);
+		if (!this.options.allowChange) {
+			this.addButton.attr("disabled",true);
 		}
+		
 		
 		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
 		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
