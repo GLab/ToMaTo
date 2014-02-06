@@ -6,7 +6,7 @@ topologies consisting of devices and connectors. ToMaTo utilizes Proxmox
 virtualization technology (OpenVZ and KVM), Tinc VPN and Dummynet link 
 emulation to organize virtual machines in virtual topologies.
 
-Homepage: http://dswd.github.com/ToMaTo
+Homepage: http://www.tomato-lab.org
 
 Copyright (c) 2010-2011 by the Integrated Communication Systems Lab of the University of Kaiserslautern (http://www.icsy.de)
 License: GNU Affero GPL 3 (see agpl-3.0.txt)

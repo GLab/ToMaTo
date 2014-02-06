@@ -65,17 +65,21 @@ class Buttons:
 		return createButtons(**kwargs)
 	cancel_save = createButtons()
 	cancel_add = createButtons(label="Add")
+	cancel_continue = createButtons(label="Continue")
 	cancel_remove =	createButtons(icon="trash", label="Remove", class_="btn-warning")
 
-class RemoveConfirmForm(BootstrapForm):
-	def __init__(self, *args, **kwargs):
-		super(RemoveConfirmForm, self).__init__(*args, **kwargs)
-		self.helper.layout = Layout(Buttons.cancel_remove)
+class ConfirmForm(BootstrapForm):
 	@classmethod
-	def build(cls, action):
+	def build(cls, action, buttons=Buttons.cancel_continue):
 		obj = cls()
 		obj.helper.form_action = action
+		obj.helper.layout = Layout(buttons)
 		return obj
+
+class RemoveConfirmForm(ConfirmForm):
+	@classmethod
+	def build(cls, action):
+		return ConfirmForm.build(action, Buttons.cancel_remove)
 		
 
 def organization_name_list(api):

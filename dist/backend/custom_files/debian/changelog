@@ -1,3 +1,16 @@
+tomato-backend (3.2.1) stable; urgency=low
+
+  * Minor bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 03 Feb 2014 15:35:27 +0100
+
+tomato-backend (3.2) stable; urgency=low
+
+  * Restructed and redesigned web-interface
+  * Various bugfixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 27 Jan 2014 15:20:47 +0100
+
 tomato-backend (3.1) stable; urgency=low
 
   * Organizations         

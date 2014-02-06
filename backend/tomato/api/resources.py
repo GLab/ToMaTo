@@ -15,11 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from api_helpers import checkauth
+from ..lib.cache import cached #@UnresolvedImport
+
 def _getResource(id_):
 	res = resources.get(id_)
 	fault.check(res, "No such resource: id=%d", id_, code=fault.UNKNOWN_OBJECT)
 	return res
 
+@cached(timeout=6*3600)
+def resource_list(type_filter=None):
+	"""
+	Retrieves information about all resources. 
+	 
+	Parameter *type_filter*:
+	  If *type_filter* is set, only resources with a matching type will be 
+	  returned.
+	 
+	Return value:
+	  A list with information entries of all matching resources. Each list 
+	  entry contains exactly the same information as returned by 
+	  :py:func:`resource_info`. If no resource matches, the list is empty. 
+	"""
+	res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
+	return [r.info() for r in res]
+
+@checkauth
 def resource_create(type, attrs={}): #@ReservedAssignment
 	"""
 	Creates a resource of given type, configuring it with the given attributes
@@ -46,12 +67,12 @@ def resource_create(type, attrs={}): #@ReservedAssignment
 	Exceptions:
 	  Various other exceptions can be raised, depending on the given type.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	attrs = dict(attrs)
 	res = resources.create(type, attrs)
+	resource_list.invalidate()
 	return res.info()
 
+@checkauth
 def resource_modify(id, attrs): #@ReservedAssignment
 	"""
 	Modifies a resource, configuring it with the given attributes.
@@ -76,12 +97,12 @@ def resource_modify(id, attrs): #@ReservedAssignment
 	  exist* is raised.
 	  Various other exceptions can be raised, depending on the resource type. 
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	res = _getResource(int(id))
 	res.modify(attrs)
+	resource_list.invalidate()
 	return res.info()
 
+@checkauth
 def resource_remove(id): #@ReservedAssignment
 	"""
 	Removes a resource.
@@ -97,12 +118,12 @@ def resource_remove(id): #@ReservedAssignment
 	  exist* is raised.
 	  Various other exceptions can be raised, depending on the resource type. 
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	res = _getResource(int(id))
 	res.remove()
+	resource_list.invalidate()
 	return {}
 
+@checkauth
 def resource_info(id): #@ReservedAssignment
 	"""
 	Retrieves information about a resource.
@@ -130,28 +151,7 @@ def resource_info(id): #@ReservedAssignment
 	  If the given resource does not exist an exception *resource does not
 	  exist* is raised.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	res = _getResource(int(id))
 	return res.info()
 	
-def resource_list(type_filter=None):
-	"""
-	Retrieves information about all resources. 
-	 
-	Parameter *type_filter*:
-	  If *type_filter* is set, only resources with a matching type will be 
-	  returned.
-	 
-	Return value:
-	  A list with information entries of all matching resources. Each list 
-	  entry contains exactly the same information as returned by 
-	  :py:func:`resource_info`. If no resource matches, the list is empty. 
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	res = resources.getAll(type=type_filter) if type_filter else resources.getAll()
-	return [r.info() for r in res]
-
-from .. import fault, resources, currentUser
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from .. import fault, resources

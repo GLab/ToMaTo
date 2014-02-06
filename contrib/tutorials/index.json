@@ -25,7 +25,7 @@
   },
   {
     "url":   "packet_capturing/tutorial.json",
-    "name": "Packet Capturing (unfinished)",
+    "name": "Packet Capturing",
     "desc": "Learn how to capture traffic in your topologies.",
     "icon": "packet_capturing/icon.png"
   },

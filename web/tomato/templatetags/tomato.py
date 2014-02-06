@@ -42,6 +42,12 @@ def helpurl():
 def button(style='default', icon=None, title=""):
 	glyphicon = '<span class="glyphicon glyphicon-%s"></span> ' % icon if icon else ""
 	return '<a href="#" class="btn btn-%(style)s">%(glyphicon)s%(title)s</a>' % {'style': style, 'title': title, 'glyphicon': glyphicon}
+
+@register.filter
+def absolute(value):
+	if value<0:
+		return -value
+	return value
 	
 @register.filter
 def mult(value, arg):
@@ -98,3 +104,8 @@ def args(obj, arg):
 		obj.__callArg = []
 	obj.__callArg += [arg]
 	return obj
+
+@register.filter
+def newsitem_bettertime(value):
+	v = value.split(" ")
+	return v[0]+" "+v[1]+" "+v[2]+" "+v[3]

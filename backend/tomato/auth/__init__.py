@@ -257,14 +257,17 @@ class User(attributes.Mixin, models.Model):
 			info["flags"] = None
 		return info
 		
-	def sendMail(self, subject, message):
+	def sendMail(self, subject, message, fromUser=None):
 		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
 		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
 		subject = config.EMAIL_SUBJECT_TEMPLATE % data
 		message = config.EMAIL_MESSAGE_TEMPLATE % data
-		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message)
+		from_ = None
+		if fromUser:
+			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email) 
+		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
 		
 	def __str__(self):
 		return self.__unicode__()

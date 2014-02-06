@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Template {{template.attrs.name}}</h1>
 
 <form>
-  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> Template list</button>
+  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
 </form>
+
+<h1>Template {{template.attrs.name}}</h1>
 
 <div class="skip-sm"></div>
 
@@ -31,7 +32,16 @@
 	<tr>
 		<th>Preference:</th>
 		<td>{{template.attrs.preference}}</td>
-	</tr>	
+	</tr>
+	<tr>
+		<th>Common Element:</th>
+		<td>{% if template.attrs.show_as_common %}
+			<img src="/img/tick.png"> yes
+		{% else %}
+			<img src="/img/error.png"> no
+		{% endif %}
+		</td>
+	</tr>
 	<tr>
 		<th>Creation date:</th>
 		<td>{{template.attrs.creation_date}}</td>

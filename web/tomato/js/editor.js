@@ -14,6 +14,16 @@ var settings = {
 	],
 }
 
+var showError = function(msg) {
+	switch(msg.toLowerCase()) {
+	case "over quota":
+		showError("You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.");
+		break;
+	default:
+		alert("Error: "+msg);
+	}
+}
+
 var ajax = function(options) {
 	var t = this;
 	$.ajax({
@@ -23,7 +33,7 @@ var ajax = function(options) {
 	 	data: {data: $.toJSON(options.data || {})},
 	 	complete: function(res) {
 	 		if (res.status == 401 || res.status == 403) {
-	 			alert("Your session has ended, please log in again");
+	 			showError("Your session has ended, please log in again");
 	 			window.location.reload();
 	 			return;
 	 		}
@@ -397,7 +407,7 @@ var Window = Class.extend({
 		
 		this.helpButton = $('<div class="row" />');
 		this.helpLinkPosition = $('<div class="col-md-1 col-md-offset-11" />');
-		this.helpLink = $('<a><img src="/img/help.png"></a></div>');
+		this.helpLink = $('<a><img style="cursor:pointer;" src="/img/help.png"></a></div>');
 		
 		this.helpLinkPosition.append(this.helpLink);
 		
@@ -804,14 +814,37 @@ var TemplateWindow = Window.extend({
 var PermissionsWindow = Window.extend({
 	init: function(options) {
 		options.modal = true;
-		this._super(options);
 		
 		var t = this;
-
 		this.options = options;
-		this.options.allowChange = this.options.isGlobalOwner
 		this.topology = options.topology;
-		this.permissions = this.options.permissions;
+		this.permissions = options.permissions;
+		console.log(this.topology);
+		
+		this.options.allowChange = this.options.isGlobalOwner;
+		
+		
+		var closebutton = {
+		                    	text: "Close",
+		                    	id: "permwindow-close-button",
+		                    	click: function() {
+		                			t.hide();
+		                		}
+		         
+		                    };
+		var addbutton = {
+		                    	text: "Add User",
+		                    	id: "permwindow-add-button",
+		                    	click: function() {
+		                    		t.addNewUser();
+		                    	}
+		                    };
+
+		this.options.buttons=[closebutton,addbutton];
+		
+		
+		this._super(this.options);
+
 		
 		this.editingList = {};
 		
@@ -821,23 +854,10 @@ var PermissionsWindow = Window.extend({
 		this.listCreated = false;
 		
 		this.buttons = $('<div />');
-		
-		this.closeButton = $('<button class="btn btn-primary" style="float:right;"><span class="ui-button-text">Close</span></button>');
-		this.closeButton.click(function(){
-			/* if (t.div.getElementsByTagName("select").length > 0) {
-				if (!window.confirm("Are you sure you want to discard all changes?"))
-					return
-				else
-					this.div.empty();
-					this.listCreated = false;
-			} */
-			t.hide();
-		});
-		this.buttons.append(this.closeButton);
-		
 		this.div.append(this.buttons);
 		
-		
+		this.closeButton = $("#permwindow-close-button");
+		this.addButton = $("#permwindow-add-button");
 		
 	},
 	
@@ -870,14 +890,10 @@ var PermissionsWindow = Window.extend({
 		if (!this.options.allowChange) {
 			this.options.allowChange = (this.topology.data.permissions[this.options.ownUserId] == "owner");
 		}
-		
-		if (this.options.allowChange) {
-			var addbutton = $('<div class="ui-dialog-buttonset"><button class="btn btn-primary"><span class="ui-button-text">Add User</span></button>');
-			addbutton.click(function(){
-				t.addNewUser();
-			});
-			this.buttons.append(addbutton);
+		if (!this.options.allowChange) {
+			this.addButton.attr("disabled",true);
 		}
+		
 		
 		this.userTable = $('<div class="row"><div class="col-sm-4 col-sm-offset-1"><h4>User</h4></div><div class="col-sm-4"><h4>Permission</h4></div></div>');
 		if (this.options.allowChange) this.userTable.append($('<div class="col-sm-3" />'));
@@ -948,11 +964,9 @@ var PermissionsWindow = Window.extend({
 												t.makePermissionEditable(data.id);
 											}
 										} else
-											window.alert("This user is already in the list.");
+											showError("This user is already in the list.");
 									},
-									errorFn: function(msg) {
-										window.alert("Error: "+msg);
-									}
+									errorFn: showError
 								});
 								t.username = null;
 							}
@@ -1045,7 +1059,7 @@ var PermissionsWindow = Window.extend({
 				}
 			},
 			errorFn: function(msg){
-				window.alert("Error while setting permission: "+msg);
+				showError("Error while setting user permission: "+msg);
 				t.backToView(username);
 			}
 		})
@@ -1366,7 +1380,7 @@ var Topology = Class.extend({
 				t.onUpdate();
 			},
 			errorFn: function(error) {
-				alert(error);
+				showError(error);
 				obj.paintRemove();
 				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "error", attrs: data});
 			}
@@ -1397,7 +1411,7 @@ var Topology = Class.extend({
 					el2.onConnected();
 				},
 				errorFn: function(error) {
-					alert(error);
+					showError(error);
 					obj.paintRemove();
 					t.editor.triggerEvent({component: "connection", object: obj, operation: "create", phase: "error", attrs: data});
 				}
@@ -1510,7 +1524,7 @@ var Topology = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 	}
 		});
 	},
@@ -1636,7 +1650,7 @@ var Topology = Class.extend({
 			}
 			maxCount = Math.max(maxCount, count);
 		}
-		if (maxCount > this.loop_last_warn) alert("Network segments must not contain multiple external network exits! This could lead to loops in the network and result in a total network crash.");
+		if (maxCount > this.loop_last_warn) showError("Network segments must not contain multiple external network exits! This could lead to loops in the network and result in a total network crash.");
 		this.loop_last_warn = maxCount;
 	},
 	colorNetworkSegments: function(segments) {
@@ -1801,7 +1815,7 @@ var Component = Class.extend({
 		 		win.show();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 	}
 		});
 	},
@@ -1825,7 +1839,7 @@ var Component = Class.extend({
 		
 		var helpTarget = undefined;
 		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
-			helpTarget = help_baseUrl+"/editor/configwindow_"+this.data.type;
+			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
 		}
 		
 		console.log('opening config window for type '+this.data.type);
@@ -1903,7 +1917,7 @@ var Component = Class.extend({
 				t.triggerEvent({operation: "modify", phase: "end", attrs: attrs});
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.update();
 				t.triggerEvent({operation: "modify", phase: "error", attrs: attrs});
 		 	}
@@ -1932,7 +1946,7 @@ var Component = Class.extend({
 				t.updateDependent();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.update();
 				t.triggerEvent({operation: "action", phase: "error", action: action, params: params});
 		 	}
@@ -1944,7 +1958,7 @@ var Component = Class.extend({
 
 var ConnectionAttributeWindow = AttributeWindow.extend({
 	init: function(options, con) {
-		options.helpTarget = help_baseUrl+"/editor/configwindow_connection";
+		options.helpTarget = help_baseUrl+"/editor:configwindow_connection";
 		this._super(options);
 		if (con.attrEnabled("emulation")) {
 			this.table.append($('<div class="form-group" />').append($("<h4>Link emulation</h4>")));
@@ -2233,7 +2247,7 @@ var Connection = Component.extend({
 						t.elements[i].remove();
 		 	},
 		 	errorFn: function(error) {
-		 		alert(error);
+		 		showError(error);
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "remove", phase: "error"});
 		 	}
@@ -2555,7 +2569,7 @@ var Element = Component.extend({
 	},
 	uploadImage: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
-			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action("upload_grant", {callback: function(el, res) {
@@ -2580,7 +2594,7 @@ var Element = Component.extend({
 	},
 	uploadRexTFV: function() {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
-			alert("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
+			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
@@ -2654,7 +2668,7 @@ var Element = Component.extend({
 					t.triggerEvent({operation: "remove", phase: "end"});
 			 	},
 			 	errorFn: function(error) {
-			 		alert(error);
+			 		showError(error);
 			 		t.setBusy(false);
 					t.triggerEvent({operation: "remove", phase: "error"});
 			 	}
@@ -3287,6 +3301,7 @@ var Template = Class.extend({
 		this.creation_date = options.creation_date;
 		this.restricted = options.restricted;
 		this.preference = options.preference;
+		this.showAsCommon = options.show_as_common;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3418,7 +3433,7 @@ var TemplateStore = Class.extend({
 		var common = [];
 		for (var type in this.types)
 		 for (var name in this.types[type])
-		  if (this.types[type][name].preference >= settings.commonPreferenceThreshold)
+		  if (this.types[type][name].showAsCommon)
 		   common.push(this.types[type][name]);
 		return common;
 	}
