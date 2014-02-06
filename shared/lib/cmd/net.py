@@ -19,7 +19,8 @@ from .. import util
 from . import run, CommandError
 from process import killTree
 import path
-import os, re, random
+import os, re, random, struct
+from fcntl import ioctl
 
 def getIfbCount():
 	def _ifbExists(n):
@@ -158,3 +159,29 @@ def randomMac():
 	bytes = [random.randint(0x00, 0xff) for _ in xrange(6)]
 	bytes[0] = bytes[0] & 0xfc | 0x02 # local and individual
 	return ':'.join(map(lambda x: "%02x" % x, bytes))
+
+class IfaceAccess:
+	def __init__(self, ifname):
+		self.sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+		self.sock.bind((ifname, 0x0003))
+		self.sock.setblocking(1)
+	def receive(self, mtu=1516):
+		return self.sock.recv(mtu)
+	def send(self, pkg):
+		self.sock.send(pkg)
+	def close(self):
+		self.sock.close()		
+
+class BridgeAccess:
+	def __init__(self, brname, ifname):
+		self.fd = os.open('/dev/net/tun', os.O_RDWR)
+		ifs = ioctl(self.fd, 0x400454ca, struct.pack("16sH", ifname, 0x1002))
+		ifname = ifs[:16].strip("\x00")
+		ifUp(ifname)
+		bridgeAddInterface(brname, ifname)
+	def receive(self, mtu=1516):
+		return os.read(self.fd, mtu)
+	def send(self, pkg):
+		os.write(self.fd, pkg)
+	def close(self):
+		os.close(self.fd)

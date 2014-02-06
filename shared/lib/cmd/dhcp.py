@@ -17,6 +17,7 @@
 
 from fcntl import ioctl
 import os, struct, socket, random, time
+from . import net
 
 def ip_checksum(data):
   if len(data) & 1:
@@ -34,9 +35,10 @@ def ip_to_str(ip):
 	return ".".join([str(ord(b)) for b in ip])
 
 def searchServer(ifname, maxWait=2.0):
-	sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
-	sock.bind((ifname, 0x0003))
-	sock.setblocking(1)
+	if net.bridgeExists(ifname):
+		sock = net.BridgeAccess(ifname, "dhcp_probe")
+	else:
+		sock = net.IfaceAccess(ifname)
 	mac = "\x02" + os.urandom(5)
 	xid = os.urandom(4)
 	# dhcp payload
@@ -51,7 +53,7 @@ def searchServer(ifname, maxWait=2.0):
 	sock.send(pkg)
 	start = time.time()
 	while time.time() - start < maxWait:
-		pkg = sock.recv(1518)
+		pkg = sock.receive(1518)
 		if not pkg[:6] == mac or not pkg[12:14] == "\x08\x00":
 			continue #not for me or not an ip packet
 		pkg = pkg[14:] #ip packet

@@ -151,9 +151,8 @@
 			{% for net in host.networks %}
 				<dt>{{ net.bridge }}</dt>
 				<dd>
-				  	{{net}}
-				 	DHCP: {% if net.dhcp_server %}yes{% else %}no{% endif %},
-				 	active: {% if net.bytes_received > 1000000 %}yes{% else %}no{% endif %}
+				 	DHCP: {% if net.dhcp_server %}yes ({{net.dhcp_server.ip}}){% else %}no{% endif %}<br/>
+				 	Traffic: {{net.bytes_received|filesizeformat}} since boot
 				</dd>
 			{% empty %}<dt>Unknown</dt><dd></dd>{% endfor %}
 			</dl>			
