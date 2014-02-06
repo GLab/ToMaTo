@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
-from ..lib.decorators import cached #@UnresolvedImport
+from ..lib.cache import cached #@UnresolvedImport
 
 def host_info():
 	"""
@@ -266,8 +266,10 @@ def host_ping(dst):
 def host_networks():
 	res = []
 	for br in net.bridgeList():
+		if br == "dummy":
+			continue
 		data = {"bridge": br}
-		data["bytes_received"], data["bytes_sent"] = net.trafficInfo(br)
+		data["bytes_received"], data["bytes_sent"] = map(str, net.trafficInfo(br))
 		data["dhcp_server"] = dhcp.searchServer(br)
 		res.append(data)
 	return res

@@ -93,7 +93,7 @@ def _brifPath(brname):
 	return os.path.join(_ifacePath(brname), "brif")
 
 def bridgeList():
-	return map(lambda d: os.path.exists(os.path.join(_ifacePath(d), "brif")), os.listdir(_ifacePath("")))
+	return filter(lambda d: os.path.exists(os.path.join(_ifacePath(d), "brif")), os.listdir(_ifacePath("")))
 
 def bridgeExists(brname):
 	return path.exists(_brifPath(brname))
