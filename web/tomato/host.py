@@ -82,7 +82,7 @@ def add(api, request):
 		if form.is_valid():
 			formData = form.cleaned_data
 			api.host_create(formData["address"],formData["site"], {"enabled": formData["enabled"],'description_text':formData['description_text']})
-			return HttpResponseRedirect(reverse("host.info", kwargs={"address": formData["address"]}))
+			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"address": formData["address"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
 	else:
@@ -109,7 +109,7 @@ def edit(api, request, address=None):
 		if form.is_valid():
 			formData = form.cleaned_data
 			api.host_modify(formData["address"],{'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
-			return HttpResponseRedirect(reverse("host.info", kwargs={"address": address}))
+			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"address": address}))
 		else:
 			if not address:
 				address=request.POST["address"]
