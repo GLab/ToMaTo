@@ -17,7 +17,7 @@
 		<th>Icon:</th>
 		<td>{% if organization.image_url %}<img class="site" src="{{organization.image_url}}"/>{% endif %}</td>
 	</tr>
-	{% if request.session.user|args:organization.name|call:"isAdmin" %}
+	{% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
 	<tr>
 		<th>Internal name:</th>
 	    <td>{{organization.name}}</td>
@@ -44,7 +44,7 @@
   <button type="submit" formaction="{%url organization_topologies organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Topologies</button>
   <button type="submit" formaction="{%url organization_hosts organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
   <button type="submit" formaction="{%url organization_external_networks organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
-  {% if request.session.user|args:organization.name|call:"isAdmin" %}
+  {% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
   <div class="skip-xs"></div>
   <button type="submit" formaction="{%url site.add organization.name%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> add site</button>
   <button type="submit" formaction="{%url organization.edit organization.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit organization</button>
@@ -61,7 +61,7 @@
 <h2>Site "{{site.description}}"</h2>
 
 <table class="table">
-	{% if request.session.user|args:organization.name|call:"isAdmin" %}
+	{% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
 	<tr>
 		<th>Internal name:</th>
 	    <td>{{site.name}}</td>
@@ -94,7 +94,7 @@
 <form>
   <button type="submit" formaction="{%url site_hosts site.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
   <button type="submit" formaction="{%url site_external_networks site.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
-  {% if request.session.user|args:organization.name|call:"isAdmin" %}
+  {% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
   <button type="submit" formaction="{%url site.edit site.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit site</button>
   <button type="submit" formaction="{%url site.remove site.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove site</button>
   {% endif %}
