@@ -313,7 +313,7 @@ def edit(api, request, id):
 			return HttpResponseRedirect(reverse("tomato.account.info", kwargs={"id": id}))
 	else:
 		data = user.copy()
-		data["send_mail"] = True
+		data["send_mail"] = user["id"] != api.user.id
 		form = AccountChangeForm(api, data)
 	return render(request, "form.html", {"account": user, "form": form, "heading":"Edit Account "+user["id"]})
 	
