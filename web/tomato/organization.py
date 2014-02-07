@@ -90,7 +90,7 @@ def remove(api, request, name=None):
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
 			api.organization_remove(name)
-			return HttpResponseRedirect(reverse("tomato.organization.listinfo"))
+			return HttpResponseRedirect(reverse("tomato.organization.list"))
 	form = RemoveConfirmForm.build(reverse("tomato.organization.remove", kwargs={"name": name}))
 	return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
 	
