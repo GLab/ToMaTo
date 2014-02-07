@@ -1,3 +1,9 @@
+tomato-backend (3.2.2) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 07 Feb 2014 13:59:31 +0100
+
 tomato-backend (3.2.1) stable; urgency=low
 
   * Minor bugfix release
