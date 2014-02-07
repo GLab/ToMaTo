@@ -69,7 +69,7 @@ def maskPasswords(data):
             value = maskPasswords(value)
         else:
             for pattern in ["password", "passwd", "pwd"]:
-                if pattern in key or pattern in str(value):
+                if pattern in key or pattern in repr(value):
                     value = "(contains passwords)MD5=%s" % hashlib.md5(value).hexdigest()
                     break
         tmp[key] = value
