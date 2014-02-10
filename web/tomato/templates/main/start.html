@@ -7,7 +7,7 @@
 	height:250px;
 }
 </style>
-    <link rel="alternate" type="application/rss+xml" title="RSS" href="{% rssurl %}">
+    {% if rssurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{% rssurl %}">{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -229,7 +229,7 @@
 <div class="skip-md"></div> 
 
 {% if news %}
-<h2>Latest news <a href="{{ rssurl }}" class="btn btn-warning btn-sm pull-right"><span class="glyphicon glyphicon-signal"></span> RSS Feed</a></h2>
+<h2>Latest news{% if rssurl %} <a href="{{ rssurl }}" class="btn btn-warning btn-sm pull-right"><span class="icomoon-rss"></span> RSS Feed</a>{% endif %}</h2>
 {% for item in news.items %}
 <div class="panel panel-default">
   <div class="panel-heading">

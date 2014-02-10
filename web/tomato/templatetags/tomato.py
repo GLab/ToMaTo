@@ -31,7 +31,7 @@ def rssurl():
 	if 'rss_feed' in serverInfo()['external_urls']:
 		return serverInfo()['external_urls']['rss_feed']
 	else:
-		return ""
+		return None
 
 @register.simple_tag
 def backend_version():
