@@ -636,14 +636,6 @@ var AttributeWindow = Window.extend({
 			elem.append($('<p style="padding:0px; margin:0px; color:#888888;"></p>').append(element.options.help_text));
 		tr.append(elem);
 		this.table.append(tr);
-		/*
-		if (element.options.help_text) {
-			var helptr = $('<div class="form-group" style="color:margin-top:-0.7cm;"></div>');
-			var helptd = $('<div class="col-sm-8 col-sm-offset-4"></div>');
-			helptd.append($(element.options.help_text));
-			helptr.append(helptd);
-			this.table.append(helptr);
-		}*/
 	},
 	autoElement: function(info, value, enabled) {
 		var el;
