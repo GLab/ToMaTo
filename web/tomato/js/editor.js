@@ -3424,8 +3424,7 @@ var TemplateStore = Class.extend({
 		if (! this.types[type]) return [];
 		var tmpls = [];
 		for (var name in this.types[type])
-			if (!this.types[type][name].restricted || this.editor.allowRestrictedTemplates)
-				tmpls.push(this.types[type][name]);
+			tmpls.push(this.types[type][name]);
 		return tmpls;
 	},
 	get: function(type, name) {
@@ -3541,7 +3540,7 @@ var Editor = Class.extend({
 		this.profiles = new ProfileStore(this.options.resources);
 		this.templates = new TemplateStore(this.options.resources,this);
 		this.networks = new NetworkStore(this.options.resources);
-		this.buildMenu();
+		this.buildMenu(this);
 		this.setMode(Mode.select);
 		
 		
@@ -3669,7 +3668,7 @@ var Editor = Class.extend({
 	createTemplateFunc: function(tmpl) {
 		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
 	},
-	buildMenu: function() {
+	buildMenu: function(editor) {
 		var t = this;
 
 		var toggleGroup = new ToggleGroup();
@@ -3795,10 +3794,11 @@ var Editor = Class.extend({
 		var tmpls = t.templates.getAll("openvz");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
-		 btns.push(tmpls[i].menuButton({
-			toggleGroup: toggleGroup,
-			small: true,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
+			 btns.push(tmpls[i].menuButton({
+				toggleGroup: toggleGroup,
+				small: true,
+				func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
 		group.addStackedElements(btns);
 
@@ -3807,10 +3807,11 @@ var Editor = Class.extend({
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "linux")
-		  btns.push(tmpls[i].menuButton({
-			toggleGroup: toggleGroup,
-			small: true,
-			func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
+			  btns.push(tmpls[i].menuButton({
+				toggleGroup: toggleGroup,
+				small: true,
+				func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
 		group.addStackedElements(btns);
 
@@ -3819,10 +3820,11 @@ var Editor = Class.extend({
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "linux")
-		  btns.push(tmpls[i].menuButton({
-		  	toggleGroup: toggleGroup,
-			small: true,
-		  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
+			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
+			  btns.push(tmpls[i].menuButton({
+			  	toggleGroup: toggleGroup,
+				small: true,
+			  	func: this.createPositionElementFunc(this.createTemplateFunc(tmpls[i]))
 		})); 
 		group.addStackedElements(btns);
 
