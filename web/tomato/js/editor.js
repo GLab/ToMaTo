@@ -3150,6 +3150,11 @@ var VMElement = IconElement.extend({
 				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
 			}
 			
+			if (prof.restricted) {
+				info.append('<img src="/img/lock_open.png" />');
+				desc.append($('<tr><td style="background:white;"><img src="/img/lock_open.png" /></td><td>This profile is restricted; you have access to restricted profiles.</td></tr>'));
+			}
+			
 			info.append(d);
 			profileInfo[prof.name] = info;
 		}
