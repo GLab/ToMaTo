@@ -2178,13 +2178,13 @@ var Connection = Component.extend({
 	downloadCapture: function() {
 		this.action("download_grant", {callback: function(con, res) {
 			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
-			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
 	viewCapture: function() {
 		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
-			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_fileserver_port + "/" + res + "/download"; 
+			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download"; 
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})
 	},
@@ -2548,14 +2548,14 @@ var Element = Component.extend({
 					name += ".repy";
 					break;
 			}
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
 	downloadRexTFV: function() {
 		this.action("rextfv_download_grant", {callback: function(el, res) {
 			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '_rextfv.tar.gz';
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
@@ -2573,7 +2573,7 @@ var Element = Component.extend({
 			return;
 		}
 		this.action("upload_grant", {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body
@@ -2598,7 +2598,7 @@ var Element = Component.extend({
 			return;
 		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_fileserver_port + "/" + res + "/upload";
+			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body
@@ -2920,7 +2920,7 @@ var IconElement = Element.extend({
 	updateStateIcon: function() {
 		
 		//set 'host has problems' icon if host has problems
-		if (this.data.attrs.host_problems && this.data.attrs.host_problems.length != 0) {
+		if (this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
 			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
 			this.errIcon.attr({'src':'/img/error.png'});
 		} else {
@@ -3155,7 +3155,7 @@ var VMElement = IconElement.extend({
 			
 			info.append('<img src="/img/info.png" />');
 			
-			if (this.data.attrs.host_site && (this.data.attrs.site == null)) {
+			if (this.data.attrs.host_info.site && (this.data.attrs.site == null)) {
 				info.append('<img src="/img/automatic.png" />'); //TODO: insert a useful symbol for "automatic" here and on the left column one line below
 				desc.append($('<tr><td><img src="/img/automatic.png" /></td><td>This site has been automatically selected by the backend.</td></tr>'))
 			}
@@ -3197,7 +3197,7 @@ var VMElement = IconElement.extend({
 			choices: createMap(this.editor.sites, "name", function(site) {
 				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
 			}, {"": "Any site"}),
-			value: this.data.attrs.host_site || this.data.attrs.site || this.caps.attrs.site["default"],
+			value: this.data.attrs.host_info.site || this.data.attrs.site || this.caps.attrs.site["default"],
 			disabled: !this.attrEnabled("site")
 		});
 		config.special.profile = new ChoiceElement({
