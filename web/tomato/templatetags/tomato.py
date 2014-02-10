@@ -28,7 +28,10 @@ def projecturl():
 	
 @register.simple_tag
 def rssurl():
-	return serverInfo()['external_urls']['rss_feed']
+	if 'rss_feed' in serverInfo()['external_urls']:
+		return serverInfo()['external_urls']['rss_feed']
+	else:
+		return ""
 
 @register.simple_tag
 def backend_version():

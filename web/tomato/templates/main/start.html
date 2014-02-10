@@ -2,12 +2,12 @@
 {% load tomato %}
 
 {% block header %}
-<script src="/js/bootstrap.min.js"></script>
 <style>
 .img-responsive {
 	height:250px;
 }
 </style>
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="{% rssurl %}">
 {% endblock %}
 
 {% block content %}
