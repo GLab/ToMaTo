@@ -3402,7 +3402,8 @@ var DummyForCustomTemplate = Template.extend({
 })
 
 var TemplateStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+		this.editor = editor
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3422,7 +3423,9 @@ var TemplateStore = Class.extend({
 	getAll: function(type) {
 		if (! this.types[type]) return [];
 		var tmpls = [];
-		for (var name in this.types[type]) tmpls.push(this.types[type][name]);
+		for (var name in this.types[type])
+			if (!this.types[type][name].restricted || this.editor.allowRestrictedTemplates)
+				tmpls.push(this.types[type][name]);
 		return tmpls;
 	},
 	get: function(type, name) {
@@ -3433,7 +3436,7 @@ var TemplateStore = Class.extend({
 		var common = [];
 		for (var type in this.types)
 		 for (var name in this.types[type])
-		  if (this.types[type][name].showAsCommon)
+		  if (this.types[type][name].showAsCommon && (!this.types[type][name].restricted || this.editor.allowRestrictedTemplates))
 		   common.push(this.types[type][name]);
 		return common;
 	}
@@ -3519,6 +3522,14 @@ var Mode = {
 var Editor = Class.extend({
 	init: function(options) {
 		this.options = options;
+		
+		this.allowRestrictedTemplates= false;
+		this.allowRestrictedProfiles = false;
+		for (var i=0; i<this.options.user.flags.length; i++) {
+			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
+			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;
+		}
+		
 		this.options.grid_size = this.options.grid_size || 25;
 		this.options.frame_size = this.options.frame_size || this.options.grid_size;
 		this.listeners = [];
@@ -3528,17 +3539,12 @@ var Editor = Class.extend({
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
 		this.profiles = new ProfileStore(this.options.resources);
-		this.templates = new TemplateStore(this.options.resources);
+		this.templates = new TemplateStore(this.options.resources,this);
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu();
 		this.setMode(Mode.select);
 		
-		this.allowRestrictedTemplates= false;
-		this.allowRestrictedProfiles = false;
-		for (var i=0; i<this.options.user.flags.length; i++) {
-			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
-			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;
-		}
+		
 		
 		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
 		var t = this;
