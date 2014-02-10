@@ -3537,7 +3537,7 @@ var Editor = Class.extend({
 		this.allowRestrictedProfiles = false;
 		for (var i=0; i<this.options.user.flags.length; i++) {
 			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
-			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedTemplates= true;
+			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;
 		}
 		
 		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
