@@ -229,7 +229,7 @@
 <div class="skip-md"></div> 
 
 {% if news %}
-<h2>Latest news <a href="{{news.link}}" class="btn btn-primary btn-sm pull-right"><span class="glyphicon glyphicon-globe"></span> Homepage</a></h2>
+<h2>Latest news <a href="{{ rssurl }}" class="btn btn-warning btn-sm pull-right"><span class="glyphicon glyphicon-signal"></span> RSS Feed</a></h2>
 {% for item in news.items %}
 <div class="panel panel-default">
   <div class="panel-heading">
