@@ -1,20 +1,232 @@
 {% extends "main/base.html" %}
 {% load tomato %}
 
+{% block header %}
+<script src="/js/bootstrap.min.js"></script>
+<style>
+.img-responsive {
+	height:250px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row"><div class="col-md-8 col-md-offset-2">
 
 <h1>Welcome to G-Lab ToMaTo</h1>
 <p>G-Lab ToMaTo (<b>To</b>pology <b>Ma</b>nagement <b>To</b>ol) gives researchers the possibility to design and use virtual networking topologies consisting of devices and connectors.</p>
-<img src="/img/example1.png"/>
 
 
-<div class="skip-xs" style="height:2cm;"></div>
-<p><a href="{%url topology_list%}" class="btn btn-primary btn-lg">Login</a>
-<span style="margin-left:0.4cm; margin-right:0.2cm;">or</span>
-<a href="{%url account.register%}" class="btn btn-default">Register</a></p>
 
-<div class="skip-md"></div>
+<div class="skip-xs" style="height:1cm;"></div>
+
+<div class="row">
+<div class="alert alert-info col-xs-8 col-xs-offset-2 text-center" style="background-color:#eeeeee !important; color:black !important; border-color:grey !important;">
+	<p>
+	{% if request.session.user %}
+		<a href="{%url topology_list%}" class="btn btn-primary btn-lg">My Topologies</a>
+	{% else %}
+		<a href="{%url topology_list%}" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-user"></span> Login</a>
+		<span style="margin-left:0.3cm; margin-right:0.3cm;">or</span>
+		<a href="{%url account.register%}" class="btn btn-default btn-lg">Register</a>
+	{% endif %}
+	</p>
+	<div class="skip-xs""></div>
+	<p>
+		<a href="{% projecturl %}" class="btn btn-primary"><span class="glyphicon glyphicon-globe"></span> Visit our Homepage</a>
+	</p>
+</div>
+</div>
+
+
+<div class="skip-xs" style="height:0.7cm;"></div>
+
+<div class="panel-group">
+  <div class="panel panel-default">
+  
+  	<div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+          <span class="glyphicon glyphicon-info-sign"></span> Features <small>(click to expand)</small>
+        </a>
+      </h4>
+    </div>
+    <div id="collapseOne" class="panel-collapse collapse" style="padding:0.2cm;">
+  
+		<div class="features">
+		    <div id="carousel-features-captions" class="carousel slide" data-ride="carousel">
+		      <ol class="carousel-indicators">
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="0"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="1"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="2"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="3"></li>
+		
+		        <li class="active" data-target="#carousel-features-captions" data-slide-to="4"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="5"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="6"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="7"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="8"></li>
+		
+		        <li class="" data-target="#carousel-features-captions" data-slide-to="9"></li>
+		
+		      </ol>
+		      <div class="carousel-inner">
+		
+		        <div class="item">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/editor1.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/editor1.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Intuitive editor</h3>
+		            <p>Create your virtual network topology in an intuitive web-based editor. No need to write config files or code.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/fast.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/fast.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Up and running in seconds</h3>
+		            <p>Even very complex topologies can be configured and started in a few seconds.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/worldwide.jpeg" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:20https://master.tomato-lab.org/0px">
+		            <img src="/img/carousel/worldwide.jpeg" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Sites worldwide</h3>
+		            <p>Create topologies that go around the globe, select freely from our various sites.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/packet_capturing.jpeg" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/packet_capturing.jpeg" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Packet capturing</h3>
+		            <p>Have a look at what goes over the wire. Just activate packet capturing on a link and analyze the traffic in Wireshark.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item active">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/link_emulation.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/link_emulation.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Link emulation</h3>
+		            <p>Configure different properties like latency, packet loss or bandwidth on each link.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item ">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/graphical_console.jpeg" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/graphical_console.jpeg" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Graphical console</h3>
+		            <p>Control your virtual machines directly from a web-based console viewer. Watch your VM boot or control graphical user interfaces.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item ">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/virtual_networks.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/virtual_networks.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Virtual networks</h3>
+		            <p>Use virtual switches or external networks to connect your topology.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item ">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/virtualization_techs.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/virtualization_techs.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Different virtualization technologies</h3>
+		            <p>Select from full virtualization (KVM) and container virtualization (OpenVZ) for each topology component to save resources.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item ">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/templates.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/templates.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Pre-configured templates</h3>
+		            <p>Select from a wide range of pre-configures VM images spanning from Debian, Ubuntu and other Linux systems to Windows XP.</p>
+		          </div>
+		        </div>
+		
+		        <div class="item ">
+		          <div class="visible-lg visible-md visible-sm" >
+		            <img src="/img/carousel/monitoring.png" class="img-responsive">
+		          </div>
+		          <div class="visible-xs" style="height:200px">
+		            <img src="/img/carousel/monitoring.png" class="img-responsive">
+		          </div>
+		          <div class="carousel-caption">
+		            <h3>Integrated monitoring</h3>
+		            <p>Observe the resource usage of a whole topology or individual components.</p>
+		          </div>
+		        </div>
+		
+		      </div>
+		      <a class="left carousel-control" href="#carousel-features-captions" data-slide="prev">
+		        <span class="glyphicon glyphicon-chevron-left"></span>
+		      </a>
+		      <a class="right carousel-control" href="#carousel-features-captions" data-slide="next">
+		        <span class="glyphicon glyphicon-chevron-right"></span>
+		      </a>
+		    </div>
+		  </div>
+</div></div></div>
+
+
+
+
+
+
+<div class="skip-md"></div> 
 
 {% if news %}
 <h2>Latest news <a href="{{news.link}}" class="btn btn-primary btn-sm pull-right"><span class="glyphicon glyphicon-globe"></span> Homepage</a></h2>
