@@ -208,6 +208,7 @@ class Host(attributes.Mixin, models.Model):
 	connectionTypes = attributes.attribute("connection_types", dict, {})
 	hostInfo = attributes.attribute("info", dict, {})
 	hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
+	hostNetworks = attributes.attribute("networks", list, {})
 	accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
 	lastResourcesSync = attributes.attribute("last_resources_sync", float, 0.0)
 	enabled = attributes.attribute("enabled", bool, True)
@@ -252,6 +253,10 @@ class Host(attributes.Mixin, models.Model):
 		self.hostInfoTimestamp = (before+after)/2.0
 		self.hostInfo["query_time"] = after - before
 		self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
+		try:
+			self.hostNetworks = self.getProxy().host_networks()
+		except:
+			self.hostNetworks = None
 		caps = self._capabilities()
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
@@ -559,7 +564,8 @@ class Host(attributes.Mixin, models.Model):
 			"host_info": self.hostInfo.copy() if self.hostInfo else None,
 			"host_info_timestamp": self.hostInfoTimestamp,
 			"availability": self.availability,
-			"description_text": self.description_text
+			"description_text": self.description_text,
+			"networks": [n for n in self.hostNetworks] if self.hostNetworks else None
 		}
 		
 	def __str__(self):

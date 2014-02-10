@@ -145,6 +145,20 @@
 		</td>
 	</tr>
 	<tr>
+		<th>External networks:</th>
+		<td>
+			<dl class="dl-horizontal">
+			{% for net in host.networks %}
+				<dt>{{ net.bridge }}</dt>
+				<dd>
+				 	DHCP: {% if net.dhcp_server %}yes ({{net.dhcp_server.ip}}){% else %}no{% endif %}<br/>
+				 	Traffic: {{net.bytes_received|filesizeformat}} since boot
+				</dd>
+			{% empty %}<dt>Unknown</dt><dd></dd>{% endfor %}
+			</dl>			
+		</td>
+	</tr>
+	<tr>
 		<th>Description:</th>
 		<td>{{ host.description_text|linebreaks|escape|simpletags:"b i em strong"|safe }}</td>
 	</tr>
