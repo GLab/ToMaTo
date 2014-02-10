@@ -1,0 +1,1022 @@
+
+def send(dev, p, exclude=None):
+  if dev:
+    if dev != exclude:
+      tuntap_send(dev, str(p))
+  else:
+    for dev in tuntap_list():
+      send(dev, p, exclude)
+      
+def run_forever(handle_fn):
+  while True:
+    try:
+      (dev, packet) = tuntap_read_any(None)
+      if packet:
+        handle_fn(dev, packet)
+    except Exception, e:
+      print_exc(e)
+
+
+
+
+class Header:
+  def __init__(self, *args, **kwargs):
+    if args and len(args) == 1:
+      self.decode(args[0])
+    else:
+      self.create(*args, **kwargs)
+  def create(self):
+    pass
+  def decode(self, bytes):
+    pass
+  def encode(self):
+    pass
+  def __str__(self):
+    return "unknown header"
+
+EVENT_PACKET_ANY = 1
+EVENT_PACKET_MATCH = 2
+EVENT_PACKET_BROADCAST = 3
+EVENT_PACKET_NO_MATCH = 4
+EVENT_PACKET_NO_REGISTRATION = 5
+
+class Node:
+  def __init__(self):
+    self.eventHandlers = {}
+  def register(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      self.eventHandlers[event] = {}
+    if not key in self.eventHandlers[event]:
+      self.eventHandlers[event][key] = []
+    self.eventHandlers[event][key].append(handlerFn)
+  def unregister(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      return
+    if not key in self.eventHandlers[event]:
+      return
+    self.eventHandlers[event][key].remove(handlerFn)
+  def _getRegistrations(self, event, key):
+    if event in self.eventHandlers and key in self.eventHandlers[event]:
+      return self.eventHandlers[event][key]
+    else:
+      return []
+  def _fireEvent(self, event, key, *args, **kwargs):
+    for eh in self._getRegistrations(event, key):
+      eh(*args, **kwargs)
+  def handle(self, dev, packet):
+    pass
+    
+
+def macToStr(s):
+    return ":".join(["%02x" % ord(b) for b in s])
+
+def strToMac(s):
+    return "".join([chr(int(c, 16)) for c in s.split(":")])
+
+mycontext["macs"] = []
+
+def assignMac(deviceId, macNum):
+    return struct_pack("!BIB", [2, deviceId, macNum])
+
+ETHERNET_GLOBAL_BROADCAST = "\xff\xff\xff\xff\xff\xff"
+
+class EthernetHeader(Header):
+  def create(self, dst, src, type, payload):
+    self.dst = dst
+    self.src = src
+    self.type = type
+    self.payload = payload
+  def decode(self, p):
+    self.dst = p[0:6]
+    self.src = p[6:12]
+    self.type = struct_unpack("!H", p[12:14])[0]
+    self.payload = p[14:]
+    return self
+  def encode(self):
+    return self.dst + self.src + struct_pack("!H", [self.type]) + self.payload
+  def __str__(self):
+    return "Ethernet(dst=%s, src=%s, type=%d)" % (macToStr(self.dst), macToStr(self.src), self.type)
+  
+class EthernetNode(Node):
+  def __init__(self, devs=tuntap_list(), mac=None, id=-1, **kwargs):
+    Node.__init__(self)
+    if not mac:
+      mac = assignMac(int(id), len(mycontext["macs"]))
+      mycontext["macs"].append(mac)
+      echo("Assigned MAC address %s" % macToStr(mac))
+    self.mac = mac
+    self.devs = devs
+    self.mac_table = {}
+  def handle(self, dev, p):
+    ether = EthernetHeader(p)
+    self.mac_table[ether.src] = dev
+    self._fireEvent(EVENT_PACKET_ANY, ether.type, ether, dev)
+    if ether.dst == self.mac:
+      self._fireEvent(EVENT_PACKET_MATCH, ether.type, ether, dev)
+    elif ether.dst == ETHERNET_GLOBAL_BROADCAST:
+      self._fireEvent(EVENT_PACKET_BROADCAST, ether.type, ether, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_MATCH, ether.type, ether, dev)
+  def send(self, dst, type, payload, dev=None):
+    if not dev:
+      dev = self.mac_table.get(dst)
+    p = EthernetHeader(dst=dst, src=self.mac, type=type, payload=payload)
+    if dev:
+      tuntap_send(dev, str(p.encode()))
+    else:
+      for dev in self.devs:
+        tuntap_send(dev, str(p.encode()))
+
+  
+
+
+
+
+ #FIXME: gateways, netmasks, etc.
+
+ETHERNET_TYPE_IP = 0x0800
+
+
+
+
+
+ETHERNET_TYPE_ARP = 0x0806
+
+ARP_HTYPE_ETHERNET = 1
+ARP_PTYPE_IP = ETHERNET_TYPE_IP
+ARP_OPER_REQUEST = 1
+ARP_OPER_REPLY = 2
+
+class ArpHeader(Header):
+  def create(self, htype, ptype, hlen, plen, oper, sha, spa, tha, tpa):
+    self.htype = htype
+    self.ptype = ptype
+    self.hlen = hlen
+    self.plen = plen
+    self.oper = oper
+    self.sha = sha
+    self.spa = spa
+    self.tha = tha
+    self.tpa = tpa
+  def decode(self, p):
+    (self.htype, self.ptype, self.hlen, self.plen, self.oper) = struct_unpack("!2H2BH", p[0:8])
+    pos = 8
+    self.sha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.spa = p[pos:pos+self.plen]
+    pos += self.plen
+    self.tha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.tpa = p[pos:pos+self.plen]
+    return self
+  def encode(self):
+    return struct_pack("!2H2BH", [self.htype, self.ptype, self.hlen, self.plen, self.oper]) + self.sha + self.spa + self.tha + self.tpa
+  def __str__(self):
+    sha = macToStr(self.sha)
+    tha = macToStr(self.tha)
+    spa = ipToStr(self.spa)
+    tpa = ipToStr(self.tpa)
+    if self.oper == ARP_OPER_REQUEST:
+      return "ARP(%s, %s who has %s)" % (sha, spa, tpa)
+    if self.oper == ARP_OPER_REPLY:
+      return "ARP(%s has %s)" % (sha, spa)
+    return "ARP"
+
+
+IP_GLOBAL_BROADCAST = "\xff\xff\xff\xff"
+IP_ZERO_ADDRESS = "\x00\x00\x00\x00"
+
+def ipToStr(s):
+  return ".".join([str(ord(b)) for b in s])
+
+def ipToNum(s):
+  return struct_unpack("!I", s)[0]
+
+def strToIp(s):
+  return "".join([chr(int(i)) for i in s.split(".")])
+    
+def netmaskToNetworkSize(s):
+  num = ipToNum(s)
+  for i in xrange(0, 33):
+    if ((num>>i)<<i) != num:
+      return 33-i
+
+def toIp(s):
+  if len(s) > 4:
+    return strToIp(s)
+  else:
+    return s
+
+def ip_checksum(data):
+  if len(data) & 1:
+    data = data + "\x00"
+  words = struct_unpack("!%dH" % (len(data)/2), data)
+  sum = 0
+  for w in words:
+    sum += w^0xffff
+  while sum >> 16:
+    sum = (sum>>16) + (sum&0xffff)
+  sum ^= 0xffff
+  return sum
+
+class IPv4Header(Header):
+  def create(self, src, dst, protocol, payload, options=[], version=4, dscp=0, ecn=0, id=0, dont_fragment=0, more_fragments=0, fragment_offset=0, ttl=64):
+    self.src = src
+    self.dst = dst
+    self.protocol = protocol
+    self.payload = payload
+    self.options = options
+    self.version = version
+    self.dscp = dscp
+    self.ecn = ecn
+    self.id = id
+    self.dont_fragment = dont_fragment
+    self.more_fragments = more_fragments
+    self.fragment_offset = fragment_offset
+    self.ttl = ttl
+  def decode(self, p):
+    (version_ihl, tos, self.length, self.id, flags_frag_off, self.ttl, self.protocol, self.checksum) = struct_unpack("!BBHHHBBH", p[0:12])
+    self.version = version_ihl >> 4
+    ihl = version_ihl & 0x0f
+    self.dscp = tos >> 2
+    self.ecn = tos & 0x03
+    flags = flags_frag_off >> 13
+    self.dont_fragment = flags & 0x02
+    self.more_fragments = flags & 0x01
+    self.fragment_offset = flags_frag_off & 0x1fff
+    self.src = p[12:16]
+    self.dst = p[16:20]
+    self.options = []
+    for i in range(5, ihl):
+        self.options.append(p[4*i:4*i+4])
+    hlen = 4 * ihl
+    self.payload = p[hlen:]
+    self.checksum_correct = ip_checksum(p[0:hlen]) == 0
+    return self
+  def encode(self):
+    ihl = 5 + len(self.options)
+    version_ihl = ((self.version & 0x0f) << 4) | (ihl & 0x0f)
+    tos = ((self.dscp & 0x1f) << 2) | (self.ecn & 0x03)
+    self.length = 4 * ihl + len(self.payload)
+    flags = ((self.dont_fragment & 0x01) << 1) | (self.more_fragments & 0x01)
+    flags_frag_off = ((flags & 0x07) << 13) | (self.fragment_offset & 0x1fff)
+    p = struct_pack("!BBHHHBBH", [version_ihl, tos, self.length, self.id, flags_frag_off, self.ttl, self.protocol, 0]) + self.src + self.dst + "".join(self.options)
+    p = p[0:10] + struct_pack("!H", [ip_checksum(p)^0xffff]) + p[12:] + self.payload
+    return p
+  def __str__(self):
+    return "IP(version=%d, src=%s, dst=%s, ttl=%d, protocol=%d)" % (self.version, ipToStr(self.src), ipToStr(self.dst), self.ttl, self.protocol)
+
+class IPv4Node(Node):
+  def __init__(self, parent, ip="0.0.0.0", gateway="0.0.0.0", networkSize=0, answer_arp=True, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.ip = toIp(ip)
+    self.gateway = toIp(gateway)
+    self.networkSize = networkSize
+    self.answer_arp = answer_arp
+    self.arp_table = {}
+    self.arp_cache = {}
+    self.fragments = {}
+    parent.register(EVENT_PACKET_MATCH, ETHERNET_TYPE_ARP, self._arp)
+    parent.register(EVENT_PACKET_BROADCAST, ETHERNET_TYPE_ARP, self._arp)
+    parent.register(EVENT_PACKET_MATCH, ETHERNET_TYPE_IP, self._ip)
+    parent.register(EVENT_PACKET_BROADCAST, ETHERNET_TYPE_IP, self._ip)
+  def _isInNetwork(self, ip):
+    return (ipToNum(ip)>>(32-self.networkSize)) == (ipToNum(self.gateway)>>(32-self.networkSize))
+  def _arp(self, ethernet, dev):
+    arp = ArpHeader(ethernet.payload)
+    if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
+      return
+    if self.answer_arp and arp.oper == ARP_OPER_REQUEST and arp.tpa == self.ip:
+      arp_reply = ArpHeader(arp.htype, arp.ptype, arp.hlen, arp.plen, ARP_OPER_REPLY, self.parent.mac, self.ip, arp.sha, arp.spa)
+      self.parent.send(dst=ethernet.src, type=ETHERNET_TYPE_ARP, payload=arp_reply.encode())
+    if arp.oper == ARP_OPER_REPLY:
+      self.arp_table[arp.spa]=arp.sha
+      if arp.spa in self.arp_cache:
+        for p in self.arp_cache[arp.spa]:
+          self.send(src=p.src, dst=p.dst, payload=p.payload, protocol=p.protocol)
+  def _handle_fragment(self, ip, ethernet, dev):
+    if not ip.id in self.fragments:
+      self.fragments[ip.id] = {}
+    frags = self.fragments[ip.id]
+    frags[ip.fragment_offset] = ip.payload
+    if not ip.more_fragments:
+      frags[ip.fragment_offset+len(ip.payload)/8] = True
+    pos = 0
+    data = ""
+    while pos in frags:
+      if frags[pos] is True:
+        del self.fragments[ip.id]
+        ip.payload = data
+        ip.fragment_offset = 0
+        ip.more_fragments = 0
+        self.handle_ip(ip, ethernet, dev)
+        return
+      else:
+        data += frags[pos]
+        pos += len(frags[pos])/8
+  def _ip(self, ethernet, dev):
+    ip = IPv4Header(ethernet.payload)
+    if not ip.checksum_correct:
+      echo("Invalid IP chechsum")
+      return
+    self.arp_table[ip.src] = ethernet.src
+    if ip.more_fragments or ip.fragment_offset > 0:
+      self._handle_fragment(ip, ethernet, dev)
+      return
+    self._fireEvent(EVENT_PACKET_ANY, ip.protocol, ip, ethernet, dev)
+    if ip.dst == self.ip or self.ip == IP_ZERO_ADDRESS:
+      self._fireEvent(EVENT_PACKET_MATCH, ip.protocol, ip, ethernet, dev)
+    elif ip.dst == IP_GLOBAL_BROADCAST:
+      self._fireEvent(EVENT_PACKET_BROADCAST, ip.protocol, ip, ethernet, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_MATCH, ip.protocol, ip, ethernet, dev)
+  def send(self, dst, protocol, payload, ether_dst=None, dev=None, src=None, **kwargs):
+    #FIXME: fragment
+    if not src:
+      src = self.ip
+    packet = IPv4Header(src, dst, protocol, payload, **kwargs)
+    if dst == IP_GLOBAL_BROADCAST:
+      ether_dst = ETHERNET_GLOBAL_BROADCAST
+    if not ether_dst:
+      if self._isInNetwork(dst):
+        next_hop = dst
+      else:
+        next_hop = self.gateway
+      ether_dst = self.arp_table.get(next_hop)
+    if not ether_dst:
+      if next_hop in self.arp_cache:
+        self.arp_cache[next_hop].append(packet)
+      else:
+        self.arp_cache[next_hop] = [packet]
+      arp_request = ArpHeader(ARP_HTYPE_ETHERNET, ARP_PTYPE_IP, 6, 4, ARP_OPER_REQUEST, self.parent.mac, self.ip, ETHERNET_GLOBAL_BROADCAST, next_hop)
+      self.parent.send(dst=ETHERNET_GLOBAL_BROADCAST, type=ETHERNET_TYPE_ARP, payload=arp_request.encode())
+    else:
+      self.parent.send(ether_dst, ETHERNET_TYPE_IP, packet.encode(), dev=dev)
+
+
+
+
+IP_PROTOCOL_UDP = 17
+
+class UdpHeader(Header):
+  def create(self, src, dst, payload):
+    self.src = src
+    self.dst = dst
+    self.payload = payload
+  def decode(self, p):
+    (self.src, self.dst, length, checksum) = struct_unpack("!HHHH", p[0:8])
+    self.payload = p[8:]
+    #FIXME: check checksum
+    return self
+  def encode(self):
+    return struct_pack("!HHHH", [self.src, self.dst, 8+len(self.payload), 0]) + self.payload
+  def __str__(self):
+    return "UDP(src=%d, dst=%d)" % (self.src, self.dst)
+
+class UdpNode(Node):
+  def __init__(self, parent, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.parent.register(EVENT_PACKET_MATCH, IP_PROTOCOL_UDP, self._udp)
+    self.parent.register(EVENT_PACKET_BROADCAST, IP_PROTOCOL_UDP, self._udp)
+  def _udp(self, ip, ethernet, dev):
+    udp = UdpHeader(ip.payload)
+    self.handle_udp(udp, ip, ethernet, dev)
+  def handle_udp(self, udp, ip, ethernet, dev):
+    if self._getRegistrations(EVENT_PACKET_MATCH, udp.dst):
+      self._fireEvent(EVENT_PACKET_MATCH, udp.dst, udp, ip, ethernet, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_REGISTRATION, 0, udp, ip, ethernet, dev)
+  def send(self, srcport, dstip, dstport, payload, **kwargs):
+    udp_msg = UdpHeader(srcport, dstport, payload)
+    self.parent.send(dstip, IP_PROTOCOL_UDP, udp_msg.encode(), **kwargs)
+
+
+
+def parse_args(defaults):
+    options = {}
+    if defaults:
+        options = defaults
+    for arg in callargs:
+        for a in arg.split(","):
+            (key, value) = a.split("=")
+            options[key]=value
+    return options
+
+
+
+""" 
+<Program Name>
+  random.repy
+
+<Author>
+  Justin Cappos: random_sample
+
+  Modified by Anthony Honstain
+    random_nbit_int and random_long_to_bytes is modified from 
+    Python Cryptography Toolkit and was part of pycrypto which 
+    is maintained by Dwayne C. Litzenberger
+    
+    random_range, random_randint, and random_int_below are modified 
+    from the Python 2.6.1 random.py module. Which was:
+    Translated by Guido van Rossum from C source provided by
+    Adrian Baddeley.  Adapted by Raymond Hettinger for use with
+    the Mersenne Twister  and os.urandom() core generators.  
+
+<Purpose>
+  Random routines (similar to random module in Python)
+  
+  
+<Updates needed when emulmisc.py adds randombytes function>
+  TODO-
+    random_nbit_int currently uses random_randombytes as a source 
+    of random bytes, this is not a permanent fix (the extraction 
+    of random bytes from the float is not portable). The change will
+    likely be made to random_randombytes (since calls os.urandom will
+    likely be restricted to a limited number of bytes).  
+  TODO - 
+    random_randombytes will remained but serve as a helper function
+    to collect the required number of bytes. Calls to randombytes
+    will be restricted to a set number of bytes at a time, since
+    allowing an arbitrary request to os.urandom would circumvent 
+    performance restrictions. 
+  TODO - 
+    _random_long_to_bytes will no longer be needed.  
+      
+"""
+
+""" Justin Cappos -- substitute for a few python math routines"""
+
+def math_ceil(x):
+  xint = int(x)
+  
+   # if x is positive and not equal to itself truncated then we should add 1
+  if x > 0 and x != xint:
+    xint = xint + 1
+
+   # I return a float because math.ceil does
+  return float(xint)
+
+
+
+def math_floor(x):
+  xint = int(x)
+  
+   # if x is negative and not equal to itself truncated then we should subtract 1
+  if x < 0 and x != xint:
+    xint = xint - 1
+
+   # I return a float because math.ceil does
+  return float(xint)
+
+
+
+math_e = 2.7182818284590451
+math_pi = 3.1415926535897931
+
+ # Algorithm from logN.py on
+ # http://en.literateprograms.org/Logarithm_Function_(Python) #chunk
+ # MIT license
+ #
+ # hmm, math_log(4.5,4)      == 1.0849625007211561
+ # Python's math.log(4.5,4)  == 1.0849625007211563
+ # I'll assume this is okay.
+def math_log(X, base=math_e, epsilon=1e-16):
+   # JMC: The domain of the log function is {n | n > 0)
+  if X <= 0:
+    raise ValueError, "log function domain error"
+
+   # log is logarithm function with the default base of e
+  integer = 0
+  if X < 1 and base < 1:
+     # BUG: the cmath implementation can handle smaller numbers...
+    raise ValueError, "math domain error"
+  while X < 1:
+    integer -= 1
+    X *= base
+  while X >= base:
+    integer += 1
+    X /= base
+  partial = 0.5                # partial = 1/2 
+  X *= X                       # We perform a squaring
+  decimal = 0.0
+  while partial > epsilon:
+    if X >= base:              # If X >= base then a_k is 1 
+      decimal += partial       # Insert partial to the front of the list
+      X = X / base             # Since a_k is 1, we divide the number by the base
+    partial *= 0.5             # partial = partial / 2
+    X *= X                     # We perform the squaring again
+  return (integer + decimal)
+
+
+CACHE = {'bytes': ''}
+
+def randomfloat():
+  """
+   <Purpose>
+     Return a random number in the range [0.0, 1.0) using the
+     randombytes() function.
+     
+   <Arguments>
+     None
+    
+   <Exceptions>
+     None
+
+   <Side Effects>
+     This function generally results in one or more calls to
+     randombytes which uses a OS source of random data which is
+     metered.
+
+   <Returns>
+     A string of num_bytes random bytes suitable for cryptographic use.
+  """
+  
+  cache = CACHE['bytes']
+  num_bytes = 7
+  
+   # Make sure the cache has enough bytes to give...
+  while len(cache) < num_bytes:
+    cache += randombytes()
+    
+   # ...then take what we want.
+  randombytes_result = cache[:num_bytes]
+  CACHE['bytes'] = cache[num_bytes:]
+  
+   # Create a random integer.
+  randomint = 0L
+  for i in range(0, 7):
+    randomint = (randomint << 8) 
+    randomint = randomint + ord(randombytes_result[i]) 
+
+   # Trim off the excess bits to get 53bits.
+  randomint = randomint >> 3
+  
+   # randomint is a number between 0 and 2**(53) - 1
+  return randomint * (2**(-53))
+
+
+
+def random_randombytes(num_bytes, random_float=None):
+  """
+   <Purpose>
+     Return a string of length num_bytes, made of random bytes 
+     suitable for cryptographic use (because randomfloat draws
+     from a os provided random source).
+      
+     *WARNING* If python implements float as a C single precision
+     floating point number instead of a double precision then
+     there will not be 53 bits of data in the coefficient.
+
+   <Arguments>
+     num_bytes:
+               The number of bytes to request from os.urandom. 
+               Must be a positive integer value.
+     random_float:
+                  Should not be used, available only for testing
+                  so that predetermined floats can be provided.
+    
+   <Exceptions>
+     None
+
+   <Side Effects>
+     This function results in one or more calls to randomfloat 
+     which uses a OS source of random data which is metered.
+
+   <Returns>
+     A string of num_bytes random bytes suitable for cryptographic use.
+  """
+   # To ensure accurate testing, this allows the source
+   # of random floats to be supplied.
+  if random_float is None: 
+    random_float = randomfloat()
+  
+  randombytes = ''
+  
+   # num_bytes/6 + 1 is used because at most a single float
+   # can only result in 6 bytes of random data. So an additional
+   # 6 bytes is added and them trimmed to the desired size.
+  for byte in range(num_bytes/6 + 1):
+    
+     # Convert the float back to a integer by multiplying
+     # it by 2**53, 53 is used because the expected precision
+     # of a python float will be a C type double with a 53 bit 
+     # coefficient, this will still depend on the implementation
+     # but the standard is to expect 53 bits.
+    randomint = int(random_float * (2**53)) 
+     # 53 bits trimmed down to 48bits
+     # and 48bits is equal to 6 bytes
+    randomint = randomint >> 5  
+    
+     # Transform the randomint into a byte string, 6 bytes were
+     # used to create this integer, but several of the leading 
+     # bytes could have been trimmed off in the process.
+    sixbytes = _random_long_to_bytes(randomint)
+    
+     # Add on the zeroes that should be there.
+    if len(sixbytes) < 6: 
+       # pad additions binary zeroes that were lost during 
+       # the floats creation.
+      sixbytes = '\x00'*(6-len(sixbytes)) + sixbytes 
+    randombytes += sixbytes
+  
+  return randombytes[6 - num_bytes % 6:]
+
+
+  
+def _random_long_to_bytes(long_int):
+  """
+  <Purpose>
+    Convert a long integer to a byte string.   
+    Used by random_randombytes to convert integers recovered
+    from random floats into its byte representation.
+    Used by random_randombytes, random_randombytes is responsible
+    for padding any required binary zeroes that are lost in the
+    conversion process.     
+  """
+
+  long_int = long(long_int)
+  byte_string = ''
+  temp_int = 0
+  
+   # Special case to ensure that a non-empty string
+   # is always returned.
+  if long_int == 0:
+    return '\000'
+  
+  while long_int > 0:
+     # Use a bitwise AND to get the last 8 bits from the long.
+     #    long_int  -->   1010... 010000001 (base 2)
+     #    0xFF      -->            11111111
+     #              _______________________
+     #  Bitwise AND result -->     10000001
+    tmp_int = long_int & 0xFF
+     # Place the new character at the front of the string.
+    byte_string = "%s%s" % (chr(tmp_int), byte_string)
+     # Bitshift the long because the trailing 8 bits have just been read.
+    long_int = long_int >> 8
+      
+  return byte_string
+
+
+
+def random_nbit_int(num_bits):  
+  """
+  <Purpose>
+    Returns an random integer that was constructed with
+    num_bits many random bits. The result will be an
+    integer [0, 2**(num_bits) - 1] inclusive.
+     
+    For Example:
+     If a 10bit number is needed, random_nbit_int(10).
+     Min should be greater or equal to 0
+     Max should be less than or equal to 1023
+
+    TODO-
+      This function currently uses random_randombytes as a source 
+      of random bytes, this is not a permanent fix (the extraction 
+      of random bytes from the float is not portable). The change will
+      likely be made to random_randombytes (since calls os.urandom will
+      likely be restricted to a limited number of bytes).
+
+  <Arguments>
+    num_bits:
+             The number of random bits to be used for construction
+             of the random integer to be returned.
+
+  <Exceptions>
+    TypeError if non-integer values for num_bits.
+      Will accept floats of the type 1.0, 2.0, ...
+    
+    ValueError if the num_bits is negative or 0.
+
+  <Side Effects>
+    This function results in one or more calls to randomfloat 
+    which uses a OS source of random data which is metered.
+
+  <Returns>
+    Returns a random integer between [0, 2**(num_bits) - 1] inclusive.
+  
+  <Walkthrough of functions operation>
+    This will be a step by step walk through of the key operations
+    defined in this function, with the largest possible
+    10 bit integer returned.
+    
+    num_bits = 10
+    
+    randstring = random_randombytes(10/8)  for our example we
+    will suppose that the byte returned was '\xff' (which is the
+    same as chr(255)).
+    
+    odd_bits = 10 % 8 = 2
+    Once again we assume that random_randombytes(1) returns the
+    maximum possible, which is '\xff'  
+    chr = ord('\xff') >> (8 - odd_bits)
+    -> chr = 255 >> (8 - 2)
+    -> chr = 255 >> 6 = 3   Note 3 is the largest 2 bit number
+    chr(3) is appended to randstring resulting in
+    randstring = '\x03\xff' 
+    
+    value = 0
+    length = 2
+    
+    STEP 1 (i = 0):
+      value = value << 8 
+      -> value = 0
+      value = value + ord(randstring[0])
+      -> value = 3
+    
+    STEP 2 (i = 1):
+      value = value << 8
+      -> value = 768
+      value = value + ord(randstring[1])
+      -> value = 1023
+    
+    return 1023
+    This is the maximum possible 10 bit integer.
+  """
+  if num_bits <= 0:
+    raise ValueError('number of bits must be greater than zero')
+  if num_bits != int(num_bits):
+    raise TypeError('number of bits should be an integer')
+  
+   # The number of bits requested may not be a multiple of
+   # 8, then an additional byte will trimmed down.
+  randstring = random_randombytes(num_bits/8)
+
+  odd_bits = num_bits % 8
+   # A single random byte be converted to an integer (which will
+   # be an element of [0,255]) it will then be shifted to the required
+   # number of bits.
+   # Example: if odd_bits = 3, then the 8 bit retrieved from the 
+   # single byte will be shifted right by 5.
+  if odd_bits != 0:
+    char = ord(random_randombytes(1)) >> (8 - odd_bits)
+    randstring = chr(char) + randstring
+  
+   # the random bytes in randstring will be read from left to right
+  result = 0L
+  length = len(randstring)
+  for i in range(0, length):
+     # While result = 0, the bitshift left will still result in 0
+     # Since we are dealing with integers, this does not result
+     # in the loss of any information.
+    result = (result << 8) 
+    result = result + ord(randstring[i]) 
+  
+  assert(result < (2 ** num_bits))
+  assert(result >= 0)
+
+  return result
+
+
+
+def random_int_below(upper_bound):
+  """
+  <Purpose>
+    Returns an random integer in the range [0,upper_bound)
+    
+    Handles the case where upper_bound has more bits than returned
+    by a single call to the underlying generator.
+     
+    For Example:
+     For a 10bit number, random_int_below(10).
+     results would be an element in of the set 0,1,2,..,9.
+     
+    NOTE: This function is a port from the random.py file in 
+    python 2.6.2. For large numbers I have experienced inconsistencies
+    when using a naive logarithm function to determine the
+    size of a number in bits.  
+
+  <Arguments>
+    upper_bound:
+           The random integer returned will be in [0, upper_bound).
+           Results will be integers less than this argument.
+
+  <Exceptions>
+    TypeError if non-integer values for upper_bound.
+    ValueError if the upper_bound is negative or 0.
+
+  <Side Effects>
+    This function results in one or more calls to randomfloat 
+    which uses a OS source of random data which is metered.
+
+  <Returns>
+    Returns a random integer between [0, upper_bound).
+  
+  """
+  
+  try:
+    upper_bound = int(upper_bound)
+  except ValueError:
+    raise TypeError('number should be an integer')
+  
+  if upper_bound <= 0:
+    raise ValueError('number must be greater than zero')
+  
+    
+   # If upper_bound == 1, the math_log call will loop infinitely.
+   # The only int in [0, 1) is 0 anyway, so return 0 here.
+   # Resolves bug  #927
+  if upper_bound == 1:
+    return 0
+  
+  k = int(1.00001 + math_log(upper_bound - 1, 2.0))    # 2**k > n-1 > 2**(k-2)
+  r = random_nbit_int(k)
+  while r >= upper_bound:
+    r = random_nbit_int(k)
+  return r
+
+ 
+
+def random_randrange(start, stop=None, step=1):
+  """
+  <Purpose>
+    Choose a random item from range(start, stop[, step]).
+    
+  <Arguments>
+    start:
+      The random integer returned will be greater than
+      or equal to start. 
+  
+    stop:
+      The random integer returned will be less than stop.
+      Results will be integers less than this argument.
+
+    step:
+      Determines which elements from the range will be considered.
+     
+  <Exceptions>
+    ValueError:
+      Non-integer for start or stop argument
+      Empty range, if start < 0 and stop is None
+      Empty range
+      Zero or non-integer step for range
+
+  <Side Effects>
+    This function results in one or more calls to randomfloat 
+    which uses a OS source of randomdata which is metered.
+  
+  <Returns>
+    Random item from (start, stop[, step]) 'exclusive'
+    
+  <Notes on port>
+    This fixes the problem with randint() which includes the
+    endpoint; in Python this is usually not what you want.
+    
+    Anthony -I removed these since they do not apply
+      int=int, default=None, maxwidth=1L<<BPF
+      Do not supply the 'int', 'default', and 'maxwidth' arguments.
+  """
+  maxwidth = 1L<<53
+
+   # This code is a bit messy to make it fast for the
+   # common case while still doing adequate error checking.
+  istart = int(start)
+  if istart != start:
+    raise ValueError, "non-integer arg 1 for randrange()"
+  if stop is None:
+    if istart > 0:
+      if istart >= maxwidth:
+        return random_int_below(istart)
+      return int(randomfloat() * istart)
+    raise ValueError, "empty range for randrange()"
+
+   # stop argument supplied.
+  istop = int(stop)
+  if istop != stop:
+    raise ValueError, "non-integer stop for randrange()"
+  width = istop - istart
+  if step == 1 and width > 0:
+     # Note that
+     #     int(istart + self.random()*width)
+     # instead would be incorrect.  For example, consider istart
+     # = -2 and istop = 0.  Then the guts would be in
+     # -2.0 to 0.0 exclusive on both ends (ignoring that random()
+     # might return 0.0), and because int() truncates toward 0, the
+     # final result would be -1 or 0 (instead of -2 or -1).
+     #     istart + int(self.random()*width)
+     # would also be incorrect, for a subtler reason:  the RHS
+     # can return a long, and then randrange() would also return
+     # a long, but we're supposed to return an int (for backward
+     # compatibility).
+
+    if width >= maxwidth:
+      return int(istart + random_int_below(width))
+    return int(istart + int(randomfloat()*width))
+  if step == 1:
+    raise ValueError, "empty range for randrange() (%d,%d, %d)" % (istart, istop, width)
+
+   # Non-unit step argument supplied.
+  istep = int(step)
+  if istep != step:
+    raise ValueError, "non-integer step for randrange()"
+  if istep > 0:
+    n = (width + istep - 1) // istep
+  elif istep < 0:
+    n = (width + istep + 1) // istep
+  else:
+    raise ValueError, "zero step for randrange()"
+
+  if n <= 0:
+    raise ValueError, "empty range for randrange()"
+
+  if n >= maxwidth:
+    return istart + istep*random_int_below(n)
+  return istart + istep*int(randomfloat() * n)
+
+
+
+def random_randint(lower_bound, upper_bound):
+  """
+  <Purpose>
+    Return random integer in range [lower_bound, upper_bound], 
+    including both end points.
+    
+  <Arguments>
+    upper_bound:
+      The random integer returned will be less than upper_bound.
+    lower_bound:
+      The random integer returned will be greater than
+      or equal to the lower_bound.
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    This function results in one or more calls to randomfloat 
+    which uses a OS source of randomdata which is metered.
+  
+  <Returns>
+    Random integer from [lower_bound, upper_bound] 'inclusive'  
+  """
+  return random_randrange(lower_bound, upper_bound+1)
+
+
+
+def random_sample(population, k):
+  """
+  <Purpose>
+    To return a list containing a random sample from the population.
+    
+  <Arguments>
+    population:
+               The elements to be sampled from.
+    k: 
+      The number of elements to sample
+      
+  <Exceptions>
+    ValueError is sampler larger than population.
+    
+  <Side Effects>
+    This function results in one or more calls to randomfloat 
+    which uses a OS source of randomdata which is metered.
+    
+  <Returns>
+    A list of len(k) with random elements from the population.
+    
+  """
+  
+  newpopulation = population[:]
+  if len(population) < k:
+    raise ValueError, "sample larger than population"
+
+  retlist = []
+  populationsize = len(population)-1
+
+  for num in range(k):
+    pos = random_randint(0,populationsize-num)
+    retlist.append(newpopulation[pos])
+    del newpopulation[pos]
+
+  return retlist
+
+def mac_to_str(s):
+    return ":".join(["%02x" % ord(b) for b in s])
+
+def str_to_mac(s):
+    return "".join([chr(int(c, 16)) for c in s.split(":")])
+
+def random_mac():
+    return "\x02" + random_randombytes(5)
+
+
+seqNum = 1
+
+defaults = {"ip":"10.0.0.100", "mac": mac_to_str(random_mac())}
+options = parse_args(defaults)
+
+echo("")
+echo("Chat Tutorial Sender - sending messages every 3 seconds")
+
+while True:
+  msg = "%s|%d|%d|Message %d" % (options["mac"], seqNum, int(time()), seqNum)
+  udp = UdpHeader(src=5000, dst=5000, payload=msg)
+  ip = IPv4Header(src=strToIp(options["ip"]), dst=IP_GLOBAL_BROADCAST, protocol=IP_PROTOCOL_UDP, payload=udp.encode())
+  eth = EthernetHeader(src=str_to_mac(options["mac"]), dst=ETHERNET_GLOBAL_BROADCAST, type=ETHERNET_TYPE_IP, payload=ip.encode())
+  echo("Sending message #%d" % seqNum)
+  for dev in tuntap_list():
+    tuntap_send(dev, eth.encode())
+  seqNum += 1
+  sleep(3)

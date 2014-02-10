@@ -1,0 +1,447 @@
+
+def send(dev, p, exclude=None):
+  if dev:
+    if dev != exclude:
+      tuntap_send(dev, str(p))
+  else:
+    for dev in tuntap_list():
+      send(dev, p, exclude)
+      
+def run_forever(handle_fn):
+  while True:
+    try:
+      (dev, packet) = tuntap_read_any(None)
+      if packet:
+        handle_fn(dev, packet)
+    except Exception, e:
+      print_exc(e)
+
+
+
+
+class Header:
+  def __init__(self, *args, **kwargs):
+    if args and len(args) == 1:
+      self.decode(args[0])
+    else:
+      self.create(*args, **kwargs)
+  def create(self):
+    pass
+  def decode(self, bytes):
+    pass
+  def encode(self):
+    pass
+  def __str__(self):
+    return "unknown header"
+
+EVENT_PACKET_ANY = 1
+EVENT_PACKET_MATCH = 2
+EVENT_PACKET_BROADCAST = 3
+EVENT_PACKET_NO_MATCH = 4
+EVENT_PACKET_NO_REGISTRATION = 5
+
+class Node:
+  def __init__(self):
+    self.eventHandlers = {}
+  def register(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      self.eventHandlers[event] = {}
+    if not key in self.eventHandlers[event]:
+      self.eventHandlers[event][key] = []
+    self.eventHandlers[event][key].append(handlerFn)
+  def unregister(self, event, key, handlerFn):
+    if not event in self.eventHandlers:
+      return
+    if not key in self.eventHandlers[event]:
+      return
+    self.eventHandlers[event][key].remove(handlerFn)
+  def _getRegistrations(self, event, key):
+    if event in self.eventHandlers and key in self.eventHandlers[event]:
+      return self.eventHandlers[event][key]
+    else:
+      return []
+  def _fireEvent(self, event, key, *args, **kwargs):
+    for eh in self._getRegistrations(event, key):
+      eh(*args, **kwargs)
+  def handle(self, dev, packet):
+    pass
+    
+
+def macToStr(s):
+    return ":".join(["%02x" % ord(b) for b in s])
+
+def strToMac(s):
+    return "".join([chr(int(c, 16)) for c in s.split(":")])
+
+mycontext["macs"] = []
+
+def assignMac(deviceId, macNum):
+    return struct_pack("!BIB", [2, deviceId, macNum])
+
+ETHERNET_GLOBAL_BROADCAST = "\xff\xff\xff\xff\xff\xff"
+
+class EthernetHeader(Header):
+  def create(self, dst, src, type, payload):
+    self.dst = dst
+    self.src = src
+    self.type = type
+    self.payload = payload
+  def decode(self, p):
+    self.dst = p[0:6]
+    self.src = p[6:12]
+    self.type = struct_unpack("!H", p[12:14])[0]
+    self.payload = p[14:]
+    return self
+  def encode(self):
+    return self.dst + self.src + struct_pack("!H", [self.type]) + self.payload
+  def __str__(self):
+    return "Ethernet(dst=%s, src=%s, type=%d)" % (macToStr(self.dst), macToStr(self.src), self.type)
+  
+class EthernetNode(Node):
+  def __init__(self, devs=tuntap_list(), mac=None, id=-1, **kwargs):
+    Node.__init__(self)
+    if not mac:
+      mac = assignMac(int(id), len(mycontext["macs"]))
+      mycontext["macs"].append(mac)
+      echo("Assigned MAC address %s" % macToStr(mac))
+    self.mac = mac
+    self.devs = devs
+    self.mac_table = {}
+  def handle(self, dev, p):
+    ether = EthernetHeader(p)
+    self.mac_table[ether.src] = dev
+    self._fireEvent(EVENT_PACKET_ANY, ether.type, ether, dev)
+    if ether.dst == self.mac:
+      self._fireEvent(EVENT_PACKET_MATCH, ether.type, ether, dev)
+    elif ether.dst == ETHERNET_GLOBAL_BROADCAST:
+      self._fireEvent(EVENT_PACKET_BROADCAST, ether.type, ether, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_MATCH, ether.type, ether, dev)
+  def send(self, dst, type, payload, dev=None):
+    if not dev:
+      dev = self.mac_table.get(dst)
+    p = EthernetHeader(dst=dst, src=self.mac, type=type, payload=payload)
+    if dev:
+      tuntap_send(dev, str(p.encode()))
+    else:
+      for dev in self.devs:
+        tuntap_send(dev, str(p.encode()))
+
+  
+
+
+
+
+ #FIXME: gateways, netmasks, etc.
+
+ETHERNET_TYPE_IP = 0x0800
+
+
+
+
+
+ETHERNET_TYPE_ARP = 0x0806
+
+ARP_HTYPE_ETHERNET = 1
+ARP_PTYPE_IP = ETHERNET_TYPE_IP
+ARP_OPER_REQUEST = 1
+ARP_OPER_REPLY = 2
+
+class ArpHeader(Header):
+  def create(self, htype, ptype, hlen, plen, oper, sha, spa, tha, tpa):
+    self.htype = htype
+    self.ptype = ptype
+    self.hlen = hlen
+    self.plen = plen
+    self.oper = oper
+    self.sha = sha
+    self.spa = spa
+    self.tha = tha
+    self.tpa = tpa
+  def decode(self, p):
+    (self.htype, self.ptype, self.hlen, self.plen, self.oper) = struct_unpack("!2H2BH", p[0:8])
+    pos = 8
+    self.sha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.spa = p[pos:pos+self.plen]
+    pos += self.plen
+    self.tha = p[pos:pos+self.hlen]
+    pos += self.hlen
+    self.tpa = p[pos:pos+self.plen]
+    return self
+  def encode(self):
+    return struct_pack("!2H2BH", [self.htype, self.ptype, self.hlen, self.plen, self.oper]) + self.sha + self.spa + self.tha + self.tpa
+  def __str__(self):
+    sha = macToStr(self.sha)
+    tha = macToStr(self.tha)
+    spa = ipToStr(self.spa)
+    tpa = ipToStr(self.tpa)
+    if self.oper == ARP_OPER_REQUEST:
+      return "ARP(%s, %s who has %s)" % (sha, spa, tpa)
+    if self.oper == ARP_OPER_REPLY:
+      return "ARP(%s has %s)" % (sha, spa)
+    return "ARP"
+
+
+IP_GLOBAL_BROADCAST = "\xff\xff\xff\xff"
+IP_ZERO_ADDRESS = "\x00\x00\x00\x00"
+
+def ipToStr(s):
+  return ".".join([str(ord(b)) for b in s])
+
+def ipToNum(s):
+  return struct_unpack("!I", s)[0]
+
+def strToIp(s):
+  return "".join([chr(int(i)) for i in s.split(".")])
+    
+def netmaskToNetworkSize(s):
+  num = ipToNum(s)
+  for i in xrange(0, 33):
+    if ((num>>i)<<i) != num:
+      return 33-i
+
+def toIp(s):
+  if len(s) > 4:
+    return strToIp(s)
+  else:
+    return s
+
+def ip_checksum(data):
+  if len(data) & 1:
+    data = data + "\x00"
+  words = struct_unpack("!%dH" % (len(data)/2), data)
+  sum = 0
+  for w in words:
+    sum += w^0xffff
+  while sum >> 16:
+    sum = (sum>>16) + (sum&0xffff)
+  sum ^= 0xffff
+  return sum
+
+class IPv4Header(Header):
+  def create(self, src, dst, protocol, payload, options=[], version=4, dscp=0, ecn=0, id=0, dont_fragment=0, more_fragments=0, fragment_offset=0, ttl=64):
+    self.src = src
+    self.dst = dst
+    self.protocol = protocol
+    self.payload = payload
+    self.options = options
+    self.version = version
+    self.dscp = dscp
+    self.ecn = ecn
+    self.id = id
+    self.dont_fragment = dont_fragment
+    self.more_fragments = more_fragments
+    self.fragment_offset = fragment_offset
+    self.ttl = ttl
+  def decode(self, p):
+    (version_ihl, tos, self.length, self.id, flags_frag_off, self.ttl, self.protocol, self.checksum) = struct_unpack("!BBHHHBBH", p[0:12])
+    self.version = version_ihl >> 4
+    ihl = version_ihl & 0x0f
+    self.dscp = tos >> 2
+    self.ecn = tos & 0x03
+    flags = flags_frag_off >> 13
+    self.dont_fragment = flags & 0x02
+    self.more_fragments = flags & 0x01
+    self.fragment_offset = flags_frag_off & 0x1fff
+    self.src = p[12:16]
+    self.dst = p[16:20]
+    self.options = []
+    for i in range(5, ihl):
+        self.options.append(p[4*i:4*i+4])
+    hlen = 4 * ihl
+    self.payload = p[hlen:]
+    self.checksum_correct = ip_checksum(p[0:hlen]) == 0
+    return self
+  def encode(self):
+    ihl = 5 + len(self.options)
+    version_ihl = ((self.version & 0x0f) << 4) | (ihl & 0x0f)
+    tos = ((self.dscp & 0x1f) << 2) | (self.ecn & 0x03)
+    self.length = 4 * ihl + len(self.payload)
+    flags = ((self.dont_fragment & 0x01) << 1) | (self.more_fragments & 0x01)
+    flags_frag_off = ((flags & 0x07) << 13) | (self.fragment_offset & 0x1fff)
+    p = struct_pack("!BBHHHBBH", [version_ihl, tos, self.length, self.id, flags_frag_off, self.ttl, self.protocol, 0]) + self.src + self.dst + "".join(self.options)
+    p = p[0:10] + struct_pack("!H", [ip_checksum(p)^0xffff]) + p[12:] + self.payload
+    return p
+  def __str__(self):
+    return "IP(version=%d, src=%s, dst=%s, ttl=%d, protocol=%d)" % (self.version, ipToStr(self.src), ipToStr(self.dst), self.ttl, self.protocol)
+
+class IPv4Node(Node):
+  def __init__(self, parent, ip="0.0.0.0", gateway="0.0.0.0", networkSize=0, answer_arp=True, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.ip = toIp(ip)
+    self.gateway = toIp(gateway)
+    self.networkSize = networkSize
+    self.answer_arp = answer_arp
+    self.arp_table = {}
+    self.arp_cache = {}
+    self.fragments = {}
+    parent.register(EVENT_PACKET_MATCH, ETHERNET_TYPE_ARP, self._arp)
+    parent.register(EVENT_PACKET_BROADCAST, ETHERNET_TYPE_ARP, self._arp)
+    parent.register(EVENT_PACKET_MATCH, ETHERNET_TYPE_IP, self._ip)
+    parent.register(EVENT_PACKET_BROADCAST, ETHERNET_TYPE_IP, self._ip)
+  def _isInNetwork(self, ip):
+    return (ipToNum(ip)>>(32-self.networkSize)) == (ipToNum(self.gateway)>>(32-self.networkSize))
+  def _arp(self, ethernet, dev):
+    arp = ArpHeader(ethernet.payload)
+    if arp.htype != ARP_HTYPE_ETHERNET or arp.ptype != ARP_PTYPE_IP:
+      return
+    if self.answer_arp and arp.oper == ARP_OPER_REQUEST and arp.tpa == self.ip:
+      arp_reply = ArpHeader(arp.htype, arp.ptype, arp.hlen, arp.plen, ARP_OPER_REPLY, self.parent.mac, self.ip, arp.sha, arp.spa)
+      self.parent.send(dst=ethernet.src, type=ETHERNET_TYPE_ARP, payload=arp_reply.encode())
+    if arp.oper == ARP_OPER_REPLY:
+      self.arp_table[arp.spa]=arp.sha
+      if arp.spa in self.arp_cache:
+        for p in self.arp_cache[arp.spa]:
+          self.send(src=p.src, dst=p.dst, payload=p.payload, protocol=p.protocol)
+  def _handle_fragment(self, ip, ethernet, dev):
+    if not ip.id in self.fragments:
+      self.fragments[ip.id] = {}
+    frags = self.fragments[ip.id]
+    frags[ip.fragment_offset] = ip.payload
+    if not ip.more_fragments:
+      frags[ip.fragment_offset+len(ip.payload)/8] = True
+    pos = 0
+    data = ""
+    while pos in frags:
+      if frags[pos] is True:
+        del self.fragments[ip.id]
+        ip.payload = data
+        ip.fragment_offset = 0
+        ip.more_fragments = 0
+        self.handle_ip(ip, ethernet, dev)
+        return
+      else:
+        data += frags[pos]
+        pos += len(frags[pos])/8
+  def _ip(self, ethernet, dev):
+    ip = IPv4Header(ethernet.payload)
+    if not ip.checksum_correct:
+      echo("Invalid IP chechsum")
+      return
+    self.arp_table[ip.src] = ethernet.src
+    if ip.more_fragments or ip.fragment_offset > 0:
+      self._handle_fragment(ip, ethernet, dev)
+      return
+    self._fireEvent(EVENT_PACKET_ANY, ip.protocol, ip, ethernet, dev)
+    if ip.dst == self.ip or self.ip == IP_ZERO_ADDRESS:
+      self._fireEvent(EVENT_PACKET_MATCH, ip.protocol, ip, ethernet, dev)
+    elif ip.dst == IP_GLOBAL_BROADCAST:
+      self._fireEvent(EVENT_PACKET_BROADCAST, ip.protocol, ip, ethernet, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_MATCH, ip.protocol, ip, ethernet, dev)
+  def send(self, dst, protocol, payload, ether_dst=None, dev=None, src=None, **kwargs):
+    #FIXME: fragment
+    if not src:
+      src = self.ip
+    packet = IPv4Header(src, dst, protocol, payload, **kwargs)
+    if dst == IP_GLOBAL_BROADCAST:
+      ether_dst = ETHERNET_GLOBAL_BROADCAST
+    if not ether_dst:
+      if self._isInNetwork(dst):
+        next_hop = dst
+      else:
+        next_hop = self.gateway
+      ether_dst = self.arp_table.get(next_hop)
+    if not ether_dst:
+      if next_hop in self.arp_cache:
+        self.arp_cache[next_hop].append(packet)
+      else:
+        self.arp_cache[next_hop] = [packet]
+      arp_request = ArpHeader(ARP_HTYPE_ETHERNET, ARP_PTYPE_IP, 6, 4, ARP_OPER_REQUEST, self.parent.mac, self.ip, ETHERNET_GLOBAL_BROADCAST, next_hop)
+      self.parent.send(dst=ETHERNET_GLOBAL_BROADCAST, type=ETHERNET_TYPE_ARP, payload=arp_request.encode())
+    else:
+      self.parent.send(ether_dst, ETHERNET_TYPE_IP, packet.encode(), dev=dev)
+
+
+
+
+IP_PROTOCOL_UDP = 17
+
+class UdpHeader(Header):
+  def create(self, src, dst, payload):
+    self.src = src
+    self.dst = dst
+    self.payload = payload
+  def decode(self, p):
+    (self.src, self.dst, length, checksum) = struct_unpack("!HHHH", p[0:8])
+    self.payload = p[8:]
+    #FIXME: check checksum
+    return self
+  def encode(self):
+    return struct_pack("!HHHH", [self.src, self.dst, 8+len(self.payload), 0]) + self.payload
+  def __str__(self):
+    return "UDP(src=%d, dst=%d)" % (self.src, self.dst)
+
+class UdpNode(Node):
+  def __init__(self, parent, **kwargs):
+    Node.__init__(self)
+    self.parent = parent
+    self.parent.register(EVENT_PACKET_MATCH, IP_PROTOCOL_UDP, self._udp)
+    self.parent.register(EVENT_PACKET_BROADCAST, IP_PROTOCOL_UDP, self._udp)
+  def _udp(self, ip, ethernet, dev):
+    udp = UdpHeader(ip.payload)
+    self.handle_udp(udp, ip, ethernet, dev)
+  def handle_udp(self, udp, ip, ethernet, dev):
+    if self._getRegistrations(EVENT_PACKET_MATCH, udp.dst):
+      self._fireEvent(EVENT_PACKET_MATCH, udp.dst, udp, ip, ethernet, dev)
+    else:
+      self._fireEvent(EVENT_PACKET_NO_REGISTRATION, 0, udp, ip, ethernet, dev)
+  def send(self, srcport, dstip, dstport, payload, **kwargs):
+    udp_msg = UdpHeader(srcport, dstport, payload)
+    self.parent.send(dstip, IP_PROTOCOL_UDP, udp_msg.encode(), **kwargs)
+
+
+def isLeapYear(year):
+  return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+def datetime(time):
+  time = int(time)
+  monthLengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  time, seconds = divmod(time, 60)
+  time, minutes = divmod(time, 60)
+  time, hours = divmod(time, 24)
+  years, days = divmod(time, 365)
+  years += 1970
+  days += 1
+  for y in xrange(1970, years):
+    if isLeapYear(y):
+      days -= 1
+  if days < 1:
+    days += 365
+    if isLeapYear(years):
+      days += 1
+    years -= 1
+  months = 1
+  for m in monthLengths:
+    if days <= m:
+      break
+    months += 1
+    days -= m
+  if isLeapYear(years) and months > 2:
+    days -= 1
+    if days < 1:
+      days += 29
+      months -= 1
+  return years, months, days, hours, minutes, seconds
+  
+
+def chatmonitor(src, pkt):
+  eth = EthernetHeader(pkt)
+  if eth.type != ETHERNET_TYPE_IP:
+    return
+  ip = IPv4Header(eth.payload)
+  if ip.protocol != IP_PROTOCOL_UDP:
+    return
+  udp = UdpHeader(ip.payload)
+  if udp.src != 5000 or udp.dst != 5000:
+    return
+  uniqueid, seqnum, timestamp, msg = udp.payload.split("|")
+  ip = ipToStr(ip.src)
+  date = "%04d-%02d-%02d %02d:%02d:%02d" % datetime(float(timestamp))
+  echo("%s %s[%s]: %s" % (date, ip, seqnum, msg))
+
+echo("")
+echo("Chat Tutorial Monitor - waiting for messages...")
+run_forever(chatmonitor)
