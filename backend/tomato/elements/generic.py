@@ -229,10 +229,10 @@ class VMElement(elements.Element):
 		info["attrs"]["site"] = self.site.name if self.site else None
 		info["attrs"]["host"] = self.element.host.address if self.element else None
 		info["attrs"]["host_info"] = {
-									'problems': 		self.element.host.problems(),
-									'site':				self.element.host.site.name,
-									'fileserver_port': 	self.element.host.hostInfo.get('fileserver_port', None)
-									} if self.element else {}
+									'problems': 		self.element.host.problems() if self.element else None,
+									'site':				self.element.host.site.name if self.element else None,
+									'fileserver_port': 	self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
+									}
 		info["attrs"]["custom_template"] = self.element.custom_template if self.element else False
 		return info
 
