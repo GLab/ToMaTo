@@ -3502,7 +3502,7 @@ var NetworkStore = Class.extend({
 	getCommon: function() {
 		var common = [];
 		for (var i = 0; i < this.nets.length; i++)
-		 if (this.nets[i].preference >= settings.commonPreferenceThreshold)
+		 if (this.nets[i].show_as_common)
 		   common.push(this.nets[i]);
 		return common;
 	}

@@ -32,6 +32,7 @@ class NetworkForm(BootstrapForm):
 	preference = forms.IntegerField(label="Preference", help_text="Sort networks in the editor (higher preference first). The item with the highest preference will be the default one. An integer number.")
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	big_icon = forms.BooleanField(label="Show as a big icon in the editor", required=False)
+	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this network in the common elements section in the editor", required=False)
 	def __init__(self, *args, **kwargs):
 		super(NetworkForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -39,6 +40,7 @@ class NetworkForm(BootstrapForm):
 			'kind',
 			'label',
 			'preference',
+            'show_as_common',
 			'big_icon',
 			'description',
 			Buttons.cancel_add
@@ -56,6 +58,7 @@ class EditNetworkForm(NetworkForm):
 			'kind',
 			'label',
 			'preference',
+            'show_as_common',
 			'big_icon',
 			'description',
 			Buttons.cancel_save
@@ -76,7 +79,8 @@ def add(api, request):
 										   'label':formData['label'],
 										   'preference':formData['preference'],
 										   'description':formData['description'],
-										   'big_icon':formData['big_icon']})
+										   'big_icon':formData['big_icon'],
+										   'show_as_common': formData['show_as_common']})
 			return HttpResponseRedirect(reverse("tomato.external_network.list"))
 		else:
 			return render(request, "form.html", {'form': form, 'heading':"Add External Network"})
@@ -106,7 +110,8 @@ def edit(api, request, res_id = None):
 				api.resource_modify(formData["res_id"],{'label':formData['label'],
 														'preference':formData['preference'],
 														'description':formData['description'],
-										   				'big_icon':formData['big_icon']})
+										   				'big_icon':formData['big_icon'],
+										   				'show_as_common': formData['show_as_common']})
 				return HttpResponseRedirect(reverse("tomato.external_network.list"))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no external network.'})

@@ -24,13 +24,23 @@
 	</tr>
 	<tr>
 		<th>Preference:</th>
-		<td>
-			{{netw.attrs.preference}}
-			{% if netw.attrs.big_icon %}
-				<img src="/img/tick.png" title="Big icon in the Editor" />
-			{% endif %}
-		</td>
+		<td>{{netw.attrs.preference}}</td>
 	</tr>
+	
+	{% if netw.attrs.show_as_common %}
+	<tr>
+		<th>Common Element:</th>
+		<td><img src="/img/tick.png" /></td>
+	</tr>
+	{% endif %}
+	
+	{% if netw.attrs.big_icon %}
+	<tr>
+		<th>Big icon:</th>
+		<td><img src="/img/tick.png" /></td>
+	</tr>
+	{% endif %}
+	
 	{% if netw.attrs.description %}
 	<tr>
 		<th>Description:</th>
@@ -39,13 +49,14 @@
 	{% endif %}
 </table>
 
-<div class="skip-xs"></div>
 
 <form>
 	<button type="submit" formaction="{%url external_network_instances netw.id%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> instances of {{netw.attrs.kind}}</button>
 	{% if request.session.user.isHostManager %}
-  	<button type="submit" formaction="{%url external_network.edit netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit external network</button>
-  	<button type="submit" formaction="{%url external_network.remove netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove external network</button>
+  	<button type="submit" formaction="{%url external_network.edit netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
+  	<button type="submit" formaction="{%url external_network.remove netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
+  	
+<div class="skip-xs"></div>
   {% endif %}
 </form>
 {% endfor %}
