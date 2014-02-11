@@ -24,7 +24,12 @@
 	</tr>
 	<tr>
 		<th>Preference:</th>
-		<td>{{netw.attrs.preference}}</td>
+		<td>
+			{{netw.attrs.preference}}
+			{% if netw.attrs.big_icon %}
+				<img src="/img/tick.png" title="Big icon in the Editor" />
+			{% endif %}
+		</td>
 	</tr>
 	{% if netw.attrs.description %}
 	<tr>
