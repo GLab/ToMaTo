@@ -3529,7 +3529,7 @@ var NetworkStore = Class.extend({
 	getCommon: function() {
 		var common = [];
 		for (var i = 0; i < this.nets.length; i++)
-		 if (this.nets[i].preference >= settings.commonPreferenceThreshold)
+		 if (this.nets[i].show_as_common)
 		   common.push(this.nets[i]);
 		return common;
 	}
@@ -3942,21 +3942,42 @@ var Editor = Class.extend({
 
 		var group = tab.addGroup("Networks");
 		var common = t.networks.all();
+		var buttonstack = [];
 		for (var i=0; i < common.length; i++) {
 			var net = common[i];
-			group.addElement(Menu.button({
+			var inet_icon = 'img/internet16.png';
+			var is_big_button = (net.big_icon);
+			if (is_big_button) {
+				inet_icon = 'img/internet32.png';
+			}
+				
+			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: "img/internet32.png",
+				icon: inet_icon,
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: false,
+				small: !is_big_button,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
 					attrs: {kind: net.kind}					
 				}))
-			}));
+			});
+			if (is_big_button) {
+				if(buttonstack.length>0) {
+					group.addStackedElements(buttonstack);
+					buttonstack=[];
+				}
+				group.addElement(inet_button);
+			} else {
+				buttonstack.push(inet_button);
+			}
 		}
+		group.addStackedElements(buttonstack);
+		
+		
+		
+		
 		var tab = this.menu.addTab("Topology");
 
 		var group = tab.addGroup("");
