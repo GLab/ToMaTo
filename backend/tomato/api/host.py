@@ -122,7 +122,7 @@ def site_remove(name):
 	site.remove()
 	site_list.invalidate()
 
-@cached(timeout=6*3600)
+@cached(timeout=300)
 def host_list(site=None, organization=None):
 	"""
 	undocumented
