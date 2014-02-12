@@ -25,6 +25,13 @@ def impressumurl():
 @register.simple_tag
 def projecturl():
 	return serverInfo()['external_urls']['project']
+	
+@register.simple_tag
+def rssurl():
+	if 'rss_feed' in serverInfo()['external_urls']:
+		return serverInfo()['external_urls']['rss_feed']
+	else:
+		return None
 
 @register.simple_tag
 def backend_version():

@@ -9,9 +9,9 @@
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
   	<span class="glyphicon glyphicon-filter"></span>
     {% if organization %}
-      Showing all hosts of organization '{{organization}}'
+      Showing all hosts of organization '{{organization_description}}'
     {% else %}{% if site %}
-      Showing all hosts of site '{{site}}'
+      Showing all hosts on site '{{site_description}}'
     {% else %}
       Showing all hosts
     {% endif %}{% endif %}
@@ -22,12 +22,12 @@
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in organizations %}
-      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of '{{orga.name}}'</a></li>    
+      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of '{{orga.description}}'</a></li>    
     {% endfor %}
     <li class="divider"></li>
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
-      <li><a href="{% url site_hosts site=s.name %}">Show all hosts of '{{s.name}}'</a></li>    
+      <li><a href="{% url site_hosts site=s.name %}">Show all hosts on '{{s.description}}'</a></li>    
     {% endfor %}
   </ul>
 </div>

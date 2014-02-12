@@ -251,17 +251,17 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		self.checkAction(action)
 		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
 		try:
+			if hasattr(self, "before_%s" % action):
+				getattr(self, "before_%s" % action)(**params)
 			if action in self.CUSTOM_ACTIONS:
 				res = getattr(self, "action_%s" % action)(**params)
 			else:
 				mel = self.mainElement()
 				assert mel
-				if hasattr(self, "before_%s" % action):
-					getattr(self, "before_%s" % action)(**params)
 				res = mel.action(action, params)
 				self.setState(mel.state, True)
-				if hasattr(self, "after_%s" % action):
-					getattr(self, "after_%s" % action)(**params)
+			if hasattr(self, "after_%s" % action):
+				getattr(self, "after_%s" % action)(**params)
 		except Exception, exc:
 			self.onError(exc)
 			raise

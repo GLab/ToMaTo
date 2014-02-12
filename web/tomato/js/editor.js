@@ -630,7 +630,11 @@ var AttributeWindow = Window.extend({
 		this.elements.push(element);
 		var tr = $('<div class="form-group"/>');
 		tr.append($('<label for="'+element.getElement().name+'" class="col-sm-4 control-label" />').append(element.getLabel()));
-		tr.append($('<div class="col-sm-8" />').append(element.getElement()));
+		elem = $('<div class="col-sm-8" />')
+		elem.append($('<p style="padding:0px; margin:0px;"></p>').append($(element.getElement())));
+		if (element.options.help_text)
+			elem.append($('<p style="padding:0px; margin:0px; color:#888888;"></p>').append(element.options.help_text));
+		tr.append(elem);
 		this.table.append(tr);
 	},
 	autoElement: function(info, value, enabled) {
@@ -2730,13 +2734,13 @@ var createElementMenu = function(obj) {
 				name:"Console",
 				icon:"console",
 				items: {
-					"console_novnc": {
+					"console_novnc": obj.data.attrs.websocket_pid ? {
 						name:"NoVNC (HTML5+JS)",
 						icon:"novnc",
 						callback: function(){
 							obj.openConsoleNoVNC();
 						}
-					},
+					} : null,
 					"console_java": {
 						name: "Java applet",
 						icon: "java-applet",
@@ -2920,7 +2924,7 @@ var IconElement = Element.extend({
 	updateStateIcon: function() {
 		
 		//set 'host has problems' icon if host has problems
-		if (this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
+		if (this.data.attrs.host_info && this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
 			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
 			this.errIcon.attr({'src':'/img/error.png'});
 		} else {
@@ -3106,6 +3110,9 @@ var VMElement = IconElement.extend({
 		
 		var profileInfo = {};
 		var profiles = this.editor.profiles.getAll(this.data.type);
+		var profile_helptext = null;
+		if (!editor.allowRestrictedProfiles)
+			profile_helptext = 'If you need more performance, contact your administrator.';
 		
 		for (var i=0; i<profiles.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
@@ -3133,6 +3140,11 @@ var VMElement = IconElement.extend({
 			
 			if (prof.diskspace) {
 				desc.append($('<tr><td style="background:white;">Disk</td><td style="background:white;">'+prof.diskspace+' MB</td></tr>'));
+			}
+			
+			if (prof.restricted) {
+				info.append('<img src="/img/lock_open.png" />');
+				desc.append($('<tr><td style="background:white;"><img src="/img/lock_open.png" /></td><td>This profile is restricted; you have access to restricted profiles.</td></tr>'));
 			}
 			
 			info.append(d);
@@ -3204,9 +3216,10 @@ var VMElement = IconElement.extend({
 			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
-			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
+			choices: createMap(this.editor.profiles.getAllowed(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
-			disabled: !this.attrEnabled("profile")
+			disabled: !this.attrEnabled("profile"),
+			help_text: profile_helptext
 		});
 		config.special._endpoint = new ChoiceElement({
 			label: "Segment seperation",
@@ -3478,6 +3491,20 @@ var ProfileStore = Class.extend({
 		for (var name in this.types[type]) tmpls.push(this.types[type][name]);
 		return tmpls;
 	},
+	getAllowed: function(type) {
+		var profs = this.getAll(type)
+		console.log(profs);
+		if (!editor.allowRestrictedProfiles) {
+			var profs_filtered = [];
+			for (var i = 0; i<profs.length;i++) {
+				if (!(profs[i].restricted))
+					profs_filtered.push(profs[i]);
+			profs = profs_filtered;
+			}
+		}
+		console.log(profs);
+		return profs;
+	},
 	get: function(type, name) {
 		if (! this.types[type]) return null;
 		return this.types[type][name];
@@ -3504,7 +3531,7 @@ var NetworkStore = Class.extend({
 	getCommon: function() {
 		var common = [];
 		for (var i = 0; i < this.nets.length; i++)
-		 if (this.nets[i].preference >= settings.commonPreferenceThreshold)
+		 if (this.nets[i].show_as_common)
 		   common.push(this.nets[i]);
 		return common;
 	}
@@ -3923,21 +3950,42 @@ var Editor = Class.extend({
 
 		var group = tab.addGroup("Networks");
 		var common = t.networks.all();
+		var buttonstack = [];
 		for (var i=0; i < common.length; i++) {
 			var net = common[i];
-			group.addElement(Menu.button({
+			var inet_icon = 'img/internet16.png';
+			var is_big_button = (net.big_icon);
+			if (is_big_button) {
+				inet_icon = 'img/internet32.png';
+			}
+				
+			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: "img/internet32.png",
+				icon: inet_icon,
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: false,
+				small: !is_big_button,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
 					attrs: {kind: net.kind}					
 				}))
-			}));
+			});
+			if (is_big_button) {
+				if(buttonstack.length>0) {
+					group.addStackedElements(buttonstack);
+					buttonstack=[];
+				}
+				group.addElement(inet_button);
+			} else {
+				buttonstack.push(inet_button);
+			}
 		}
+		group.addStackedElements(buttonstack);
+		
+		
+		
+		
 		var tab = this.menu.addTab("Topology");
 
 		var group = tab.addGroup("");
