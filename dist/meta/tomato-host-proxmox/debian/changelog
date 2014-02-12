@@ -1,3 +1,9 @@
+tomato-host-proxmox (3.2.1) stable; urgency=low
+
+  * Moved websockify dependency to hostmanager
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Feb 2014 11:31:41 +0100
+
 tomato-host-proxmox (3.0.1) stable; urgency=low
 
   * Added dosfstools dependency

@@ -2734,13 +2734,13 @@ var createElementMenu = function(obj) {
 				name:"Console",
 				icon:"console",
 				items: {
-					"console_novnc": {
+					"console_novnc": obj.data.attrs.websocket_pid ? {
 						name:"NoVNC (HTML5+JS)",
 						icon:"novnc",
 						callback: function(){
 							obj.openConsoleNoVNC();
 						}
-					},
+					} : null,
 					"console_java": {
 						name: "Java applet",
 						icon: "java-applet",
