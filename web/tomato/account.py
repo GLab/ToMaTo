@@ -244,7 +244,7 @@ class AdminAccountRegisterForm(AccountForm):
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
 		raise AuthError()
-	current_organization = None
+	organization_description = None
 	if organization is True:
 		organization = api.user.organization
 		organization_description = api.organization_info(organization)['description']
