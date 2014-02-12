@@ -2924,7 +2924,7 @@ var IconElement = Element.extend({
 	updateStateIcon: function() {
 		
 		//set 'host has problems' icon if host has problems
-		if (this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
+		if (this.data.attrs.host_info && this.data.attrs.host_info.problems && this.data.attrs.host_info.problems.length != 0) {
 			this.errIcon.attr({'title':'The Host for this device has problems. Contact an Administrator.'});
 			this.errIcon.attr({'src':'/img/error.png'});
 		} else {
