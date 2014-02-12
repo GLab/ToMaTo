@@ -60,7 +60,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	#host_connections: [host.HostConnections]
 	
 	DIRECT_ACTIONS = True
-	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy"]
+	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy", REMOVE_ACTION]
 	CUSTOM_ACTIONS = {REMOVE_ACTION: [ST_CREATED]}
 	
 	DIRECT_ATTRS = True
