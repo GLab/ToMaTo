@@ -62,7 +62,6 @@ class LoginForm(forms.Form):
 		)
 
 def login(request):
-	print request
 	if request.method == 'POST' and "username" in request.POST:
 		form = LoginForm(request.POST)
 		if not form.is_valid():
