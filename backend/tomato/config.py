@@ -23,7 +23,8 @@ EXTERNAL_URLS = {
 				'help': "https://github.com/GLab/ToMaTo/wiki",
 				'impressum': "http://tomato-lab.org/contact/",
 				'project': "http://tomato-lab.org",
-				'news_feed': "http://www.tomato-lab.org/feed.json"
+				'json_feed': "http://www.tomato-lab.org/feed.json",
+				'rss_feed': "http://tomato-lab.org/feed.xml"
 				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"
