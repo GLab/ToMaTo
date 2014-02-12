@@ -62,7 +62,7 @@ class LoginForm(forms.Form):
 		)
 
 def login(request):
-	if request.method == 'POST':
+	if request.method == 'POST' and "username" in request.POST:
 		form = LoginForm(request.POST)
 		if not form.is_valid():
 			return render(request, "main/login.html", {'form': form})
@@ -81,6 +81,8 @@ def login(request):
 		return HttpResponseRedirect(forward)
 	else:
 		form = LoginForm()
+		if "forward_url" in request.POST:
+			request.session["forward_url"] = request.POST['forward_url']
 		return render(request, "main/login.html", {'form': form})
 
 def logout(request):
