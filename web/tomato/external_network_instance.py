@@ -87,11 +87,19 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 	sites = api.site_list()
 	organizations = api.organization_list()
 	network_kind = None
+	network_label = None
+	organization_description=None
+	site_description=None
+	if site:
+		site_description=api.site_info(site)['description']
+	if organization:
+		organization_description = api.organization_info(organization)['description']
 	if network:
 		network = int(network)
 		for net in networks:
 			if net["id"] == network:
 				network_kind = net["attrs"]["kind"]
+				network_label = net["attrs"]["label"]
 	print networks
 	print network_kind
 	nis = filter(lambda ni: (not network or ni["attrs"]["network"] == network_kind) and (not host or ni["attrs"]["host"] == host), nis)
@@ -106,7 +114,7 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 				nis_new.append(ni)
 		nis = nis_new
 	
-	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind})
+	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_description':site_description, 'organization_description': organization_description, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
 
 @wrap_rpc
 def add(api, request):

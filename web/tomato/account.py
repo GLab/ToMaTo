@@ -244,8 +244,10 @@ class AdminAccountRegisterForm(AccountForm):
 def list(api, request, with_flag=None, organization=True):
 	if not api.user:
 		raise AuthError()
+	organization_description = None
 	if organization is True:
 		organization = api.user.organization
+		organization_description = api.organization_info(organization)['description']
 	accs = api.account_list(organization=organization)
 	orgas = api.organization_list()
 	if with_flag:
@@ -256,7 +258,7 @@ def list(api, request, with_flag=None, organization=True):
 		accs = acclist_new
 	for acc in accs:
 		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'])))
-	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization})
+	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization, 'organization_description':organization_description})
 
 @wrap_rpc
 def info(api, request, id=None):

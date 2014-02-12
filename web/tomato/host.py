@@ -64,8 +64,14 @@ def list(api, request, site=None, organization=None):
 	organizations = api.organization_list()
 	sites = api.site_list()
 	hosts = api.host_list(site=site, organization=organization)
+	site_description=None
+	organization_description=None
+	if site:
+		site_description=api.site_info(site)['description']
+	if organization:
+		organization_description = api.organization_info(organization)['description']
 	site_map = dict([(s["name"], "%s, %s" % (s["description"] if s["description"] else s["name"], s["location"])) for s in api.site_list()])
-	return render(request, "host/list.html", {'host_list': hosts, 'organizations': organizations, 'site_map': site_map, 'sites': sites, 'site': site, 'organization': organization})
+	return render(request, "host/list.html", {'host_list': hosts, 'organizations': organizations, 'site_map': site_map, 'sites': sites, 'site': site, 'site_description':site_description, 'organization': organization, 'organization_description': organization_description})
 
 @wrap_rpc
 def info(api, request, address):
