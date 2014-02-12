@@ -92,7 +92,7 @@ def problems():
 		if not os.access("/etc/vz/conf", os.R_OK):
 			problems.append("Config: /etc/vz/conf is not readable")
 			
-	#hostname resolves to local ip?
+	#hostname resolvable?
 	try:
 		with open("/etc/hostname", 'r') as file:
 			etchostname = file.readline()
