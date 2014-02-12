@@ -94,14 +94,13 @@ def problems():
 			
 	#hostname resolvable?
 	try:
-		with open("/etc/hostname", 'r') as file:
-			etchostname = file.readline()
-			try:
-				hostnameip = socket.gethostbyname(etchostname)
-			except:
-				problems.append("Config: cannot resolve hostname from /etc/hostname")
+		etchostname = socket.gethostname()
+		try:
+			hostnameip = socket.gethostbyname(etchostname)
+		except:
+			problems.append("Config: cannot resolve hostname from /etc/hostname")
 	except:
-		problems.append("Config: /etc/hostname is not readable")
+		problems.append("Config: Cannot read own hostname")
 		
 	#try to resolve external_hostname
 	try:
