@@ -98,8 +98,6 @@ def problems():
 			etchostname = file.readline()
 			try:
 				hostnameip = socket.gethostbyname(etchostname)
-				if not hostnameip in own_ips():
-					problems.append("Config: IP from /etc/hostname does not resolve to own IP address")
 			except:
 				problems.append("Config: cannot resolve hostname from /etc/hostname")
 	except:
@@ -119,9 +117,6 @@ def problems():
 
 def ping_test(ip_address): #return a boolean whether the test was successful
 	return os.system("ping -c 1 %s > /dev/null 2>&1") == 0
-	
-def own_ips():
-	return []
 
 def diskproblems(path):
 	testFile = os.path.join(path, ".test")
