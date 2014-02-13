@@ -26,6 +26,7 @@ class Flags:
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
+	RestrictedTemplates ="restricted_templates"
 	NoMails = "nomails"
 	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
 	GlobalHostManager = "global_host_manager"
@@ -48,6 +49,7 @@ flags = {
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
+	Flags.RestrictedTemplates:"RestrictedTemplates: Can use restricted templates",
 	Flags.NoMails: "NoMails: Can not receive mails at all",
 	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
 	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
@@ -92,6 +94,7 @@ categories = {
 						Flags.NoTopologyCreate,
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
+						Flags.RestrictedTemplates,
 						Flags.NewAccount
 						],
 	'other': [
@@ -101,7 +104,7 @@ categories = {
 	}
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
-						Flags.RestrictedProfiles, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]

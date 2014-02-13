@@ -132,6 +132,9 @@ class VMElement(elements.Element):
 			self.element.modify(self._profileAttrs())
 
 	def modify_template(self, tmplName):
+		template = resources.template.get(self.TYPE, tmplName)
+		if template.restricted and not self.template == template:
+			fault.check(currentUser().hasFlag(Flags.RestrictedTemplates), "Template is restricted")
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.element:
 			self.element.modify({"template": self._template().name})
