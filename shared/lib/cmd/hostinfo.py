@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from . import run, CommandError, getDpkgVersionStr 
-import platform, os, time, socket
+import platform, os, time, socket, net
 from ... import config
 from ..cache import cached
 
@@ -115,7 +115,7 @@ def problems():
 	return problems
 
 def ping_test(ip_address): #return a boolean whether the test was successful
-	return os.system("ping -c 1 %s > /dev/null 2>&1") == 0
+	net.ping(ip_address, count=1)["received"] == 1
 
 def diskproblems(path):
 	testFile = os.path.join(path, ".test")
