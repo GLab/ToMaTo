@@ -20,11 +20,12 @@ import os
 CERTIFICATE = "/etc/tomato/backend.pem"
 EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
-				'help': "https://github.com/GLab/ToMaTo/wiki",
+				'help': "http://github.com/GLab/ToMaTo/wiki",
 				'impressum': "http://tomato-lab.org/contact/",
 				'project': "http://tomato-lab.org",
 				'json_feed': "http://www.tomato-lab.org/feed.json",
-				'rss_feed': "http://tomato-lab.org/feed.xml"
+				'rss_feed': "http://tomato-lab.org/feed.xml",
+				'bugtracker': 'http://github.com/GLab/ToMaTo/issues'
 				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"

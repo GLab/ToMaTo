@@ -34,6 +34,10 @@ def rssurl():
 		return None
 
 @register.simple_tag
+def externalurl(name):
+	return serverInfo()['external_urls'].get(name, "")
+	
+@register.simple_tag
 def backend_version():
 	return serverInfo()['version']
 
