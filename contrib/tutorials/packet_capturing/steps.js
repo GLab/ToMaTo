@@ -124,7 +124,8 @@
 						In this tutorial, we will only use the packet capturing part of the configuration window.</p>\
 						<p class="tutorialCommand">Enable packet capturing (mode: "for download", filter expression "") in the connection\'s settings.</p>\
 			',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'packetcapturing'
 			},
 			{
 			text: '<p class="tutorialCommand">Now let the device load a webpage. You can do this by typing <pre>wget http://tomato-lab.org/</pre></p>',
@@ -142,7 +143,8 @@
 						Using the connection\'s right-click menu, you can now download the capture, or directly view it in cloudshark.<br />\
 						The downloaded file can be viewed by any application which supports pcap viewing, like Wireshark.</p>\
 <p class="tutorialCommand">Please download the captur using the connection\'s right-click menu.</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'packetcapturing'
 			},
 			{
 			trigger: function(obj) {
@@ -156,7 +158,8 @@
 			text:	'<p class="tutorialCommand">\
 					Now use the right-click menu to View the Capture in CloudShark.\
 					</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'packetcapturing'
 			},
 			{
 			trigger: function(obj) {
@@ -173,7 +176,8 @@
 						If you instead prefer life-viewing using wireshark, set the capture mode to "via network". Then, a different item will appear in the right-click menu ("live capture info"), providing all info you need.</p>\
 				<p class="tutorialExplanation">\
 						The filter expression is the same you would use with tcpdump. (See <a href="http://www.tcpdump.org/manpages/pcap-filter.7.html" target="_blank" style="color: blue;">the tcpdump manpage</a> for more information)</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'packetcapturing'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\

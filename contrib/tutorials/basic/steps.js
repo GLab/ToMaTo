@@ -38,7 +38,8 @@
 								In the menu, you will find all the tools you need to model and control your topologies.</p>\
 							<p class="tutorialExplanation">\
 								In the workspace, you will model the topology.</p>',
-					skip_button: 'Continue'
+					skip_button: 'Continue',
+					help_page: "GraphicalEditor"
 					},
 					{
 					text: '<p class="tutorialExplanation">\
@@ -90,7 +91,7 @@
 								which also means you can only run Linux systems in OpenVZ devices.</p>\
 							<p class="tutorialExplanation">Did you notice the ? button, which just appeared in the top-right corner of this window?\
 								This leads you to a help page which tells you more about what you just did (Don\'t worry, it opens in a new browser tab).</p>',
-					help_page:'system/openvz',
+					help_page:'OpenVZDevice',
 					skip_button: 'Continue'
 					},
 					{
@@ -146,7 +147,7 @@
 								KVM devices can be identified by a green screen.\
 								Contrary to OpenVZ, KVM devices run completely separated from their host systems.\
 								This means that you can modify the kernel and/or use any operating system.</p>',
-					help_page:'system/kvm',
+					help_page:'KVMDevice',
 					skip_button:'continue'
 					},
 					{
@@ -202,7 +203,7 @@
 							<p class="tutorialExplanation">\
 								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device. Please wait for this, and click "Continue" when it\'s finished.</p>',
 					skip_button: 'Continue',
-					help_page: 'prepare'
+					help_page: 'Devices'
 					},
 					{
 					trigger:function(obj) {
@@ -229,7 +230,7 @@
 							<p class="tutorialExplanation">\
 								Note also that you did not connect the devices to the internet yet (We\'ll do that in the \'connections\' tutorial).</p>',
 					skip_button: 'Continue',
-					help_page: 'run'
+					help_page: 'Devices'
 					},
 					{
 					trigger:function(obj) {
@@ -247,6 +248,7 @@
 							<p class="tutorialCommand">\
 								Please open a console for one of your two devices.',
 					},
+					help_page: 'Consoleaccess'
 					{
 						text:	'<p class="tutorialExplanation">\
 									You can now play around with these two devices.</p>\
@@ -275,7 +277,7 @@
 								<p class="tutorialExplanation">\
 									Devices will not be stopped by closing the window etc, but only when you stop them (although there might be other cases where a stop may be forced by the system or administrators).</p>',
 						skip_button: 'Continue',
-						help_page: 'prepare'
+						help_page: 'devices'
 						},
 						{
 						trigger:function(obj) {
@@ -298,7 +300,7 @@
 								<p class="tutorialExplanation">\
 									You can also start, stop, prepare and destroy individual devices in their right-click menu.</p>',
 						skip_button: 'Continue',
-						help_page: 'prepare'
+						help_page: 'devices'
 						},
 						{
 						trigger:function(obj) {
