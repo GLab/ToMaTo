@@ -33,7 +33,7 @@
 	</p>
 	<div class="skip-xs""></div>
 	<p>
-		<a href="{% projecturl %}" class="btn btn-primary"><span class="glyphicon glyphicon-globe"></span> Visit our Homepage</a>
+		<a href="{%externalurl 'project' %}" class="btn btn-primary"><span class="glyphicon glyphicon-globe"></span> Visit our Homepage</a>
 	</p>
 </div>
 </div>
@@ -229,7 +229,7 @@
 <div class="skip-sm"></div> 
 
 {% if news %}
-<h2>Latest news{% if rssurl %} <a href="{{ rssurl }}" class="btn btn-warning btn-sm pull-right"><span class="icomoon-rss"></span> RSS Feed</a>{% endif %}</h2>
+<h2>Latest news <a href="{%externalurl 'rss_feed'%}" class="btn btn-warning btn-sm pull-right"><span class="icomoon-rss"></span> RSS Feed</a></h2>
 {% for item in news.items %}
 <div class="panel panel-default">
   <div class="panel-heading">
