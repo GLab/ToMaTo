@@ -13,22 +13,21 @@
       </form>
 	{% endif %}
 
-	<script src="/js/enhancetable.js"></script>
-		
+
+	<div class="row">		
 	{% for orga in organizations %}
-		<h3>{{orga.description}} <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
-		{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
-		{% if orga.description_text %}
-			<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
-		{% endif %}
-	    <b>Sites:</b>
-	    <ul>
-	    	{% for site in sites %}{% ifequal site.organization orga.name %} 
-	    		<li>{{site.description}} {% if request.session.user and request.session.user.isAdmin %} ({{site.name}}) {%endif%}</li>
-	    	{% endifequal %}{% endfor %} 
-	    </ul>
-	    <div class="skip-sm"></div>
+		<div class="col-md-4 col-sm-6 col-xs-12">
+			<h3>{{orga.description}} <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
+			{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
+			{% if orga.description_text %}
+				<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
+			{% endif %}
+		</div>
+		<div class="visible-xs skip-sm"></div>
+		{% cycle "" '<div class="clearfix visible-sm skip-sm"></div>' %}
+		{% cycle "" "" '<div class="clearfix visible-lg visible-md skip-sm"></div>' %}
 	{% endfor %}
+	</div>
 {% else %}
 	No organizations
 {% endif %}
