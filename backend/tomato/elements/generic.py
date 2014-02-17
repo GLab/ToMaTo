@@ -185,7 +185,7 @@ class VMElement(elements.Element):
 			"template": self._template().name,
 		})
 		attrs.update(self._profileAttrs())
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		for iface in self.getChildren():
 			iface._create()
@@ -271,7 +271,7 @@ class VMInterface(elements.Element):
 		parEl = self.getParent().element
 		assert parEl
 		attrs = self._remoteAttrs()
-		self.element = parEl.createChild(self.TYPE, attrs=attrs, owner=self)
+		self.element = parEl.createChild(self.TYPE, attrs=attrs, ownerElement=self)
 		self.save()
 		
 	def _remove(self):

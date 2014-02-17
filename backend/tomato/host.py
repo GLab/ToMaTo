@@ -279,24 +279,26 @@ class Host(attributes.Mixin, models.Model):
 	def getConnectionCapabilities(self, type_):
 		return self.connectionTypes.get(type_)
 
-	def createElement(self, type_, parent=None, attrs={}, owner=None):
+	def createElement(self, type_, parent=None, attrs={}, ownerElement=None, ownerConnection=None):
 		assert not parent or parent.host == self
 		try:
 			el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
 		except:
 			self.incrementErrors()
 			raise
-		hel = HostElement(host=self, num=el["id"])
+		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hel.usageStatistics = UsageStatistics.objects.create()
 		hel.attrs = el
 		hel.save()
-		logging.logMessage("element_create", category="host", host=self.address, element=el, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)		
+		logging.logMessage("element_create", category="host", host=self.address, element=el, 
+			ownerElement=(ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+			ownerConnection=(ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)		
 		return hel
 
 	def getElement(self, num):
 		return self.elements.get(num=num)
 
-	def createConnection(self, hel1, hel2, type_=None, attrs={}, owner=None):
+	def createConnection(self, hel1, hel2, type_=None, attrs={}, ownerElement=None, ownerConnection=None):
 		assert hel1.host == self
 		assert hel2.host == self
 		try:
@@ -304,11 +306,13 @@ class Host(attributes.Mixin, models.Model):
 		except:
 			self.incrementErrors()
 			raise
-		hcon = HostConnection(host=self, num=con["id"])
+		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.attrs = con
 		hcon.save()
-		logging.logMessage("connection_create", category="host", host=self.address, element=con, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)		
+		logging.logMessage("connection_create", category="host", host=self.address, element=con,		
+			ownerElement=(ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+			ownerConnection=(ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)		
 		return hcon
 
 	def getConnection(self, num):
@@ -589,11 +593,11 @@ class HostElement(attributes.Mixin, models.Model):
 	class Meta:
 		unique_together = (("host", "num"),)
 
-	def createChild(self, type_, attrs={}, owner=None):
-		return self.host.createElement(type_, self, attrs, owner=owner)
+	def createChild(self, type_, attrs={}, ownerConnection=None, ownerElement=None):
+		return self.host.createElement(type_, self, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
 
-	def connectWith(self, hel, type_=None, attrs={}, owner=None):
-		return self.host.createConnection(self, hel, type_, attrs, owner=owner)
+	def connectWith(self, hel, type_=None, attrs={}, ownerConnection=None, ownerElement=None):
+		return self.host.createConnection(self, hel, type_, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
 
 	def modify(self, attrs):
 		logging.logMessage("element_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)
