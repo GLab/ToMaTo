@@ -87,7 +87,8 @@
 }
 
 img.site {
-  height: 5em;
+  max-height: 5em;
+  max-width: 100%;
 }
 
 table th {
