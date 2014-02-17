@@ -311,17 +311,17 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		# First create connection, then set attributes
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
-			self.connection1 = el1.connectWith(el2, attrs={}, owner=self)
+			self.connection1 = el1.connectWith(el2, attrs={}, ownerConnection=self)
 			if self.connection1.state == ST_CREATED:
 				self.connection1.action("start")
 		else:
 			# complex case: helper elements needed to connect elements on different hosts
-			self.connectionElement1 = el1.host.createElement("udp_tunnel", owner=self)
+			self.connectionElement1 = el1.host.createElement("udp_tunnel", ownerConnection=self)
 			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
 				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
-			}, owner=self)
-			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, owner=self)
-			self.connection2 = el2.connectWith(self.connectionElement2, owner=self)
+			}, ownerConnection=self)
+			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
+			self.connection2 = el2.connectWith(self.connectionElement2, ownerConnection=self)
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")

@@ -215,7 +215,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 			"mode": self.mode,
 			"peers": self.peers,
 		})
-		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		self.setState(ST_PREPARED, True)
 		
