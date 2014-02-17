@@ -307,7 +307,7 @@ def edit(api, request, id):
 			if not data["password"]:
 				del data["password"]
 			send_mail = data.get("send_mail", False)
-			if send_mail:
+			if "send_mail" in data:
 				del data["send_mail"]
 			api.account_modify(id, attrs=data)
 			if send_mail:
