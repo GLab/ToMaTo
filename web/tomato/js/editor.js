@@ -2342,7 +2342,7 @@ var Element = Component.extend({
 		this.connection = null;
 	},
 	rextfvStatusSupport: function() {
-		return 'rextfv_supported';
+		return this.data.attrs.rextfv_supported;
 	},
 	openRexTFVStatusWindow: function() {
 		window.open('../element/'+this.id+'/rextfv_status', '_blank', "innerWidth=350,innerheight=420,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no");
