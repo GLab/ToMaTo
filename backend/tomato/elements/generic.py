@@ -19,7 +19,7 @@ from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr #@UnresolvedImport
-from ..lib import util #@UnresolvedImport
+from ..lib import util, attributes #@UnresolvedImport
 import time
 
 ST_CREATED = "created"
@@ -38,6 +38,7 @@ class VMElement(elements.Element):
 	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
+	last_sync = attributes.attribute("description", unicode, "")
 	
 	CUSTOM_ACTIONS = {
 		"stop": [ST_STARTED],
@@ -69,6 +70,9 @@ class VMElement(elements.Element):
 			self.element.updateInfo()
 		except:
 			pass
+		
+		self.last_sync = time.ctime()
+		
 		#calculate next update time:
 		time_passed = int(time.time()) - self.rextfv_last_started
 		if time_passed < 60*60*24: #less than one day
@@ -227,6 +231,7 @@ class VMElement(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
+		info["info_age"] = self.last_sync
 		info["attrs"]["template"] = self._template().name
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
