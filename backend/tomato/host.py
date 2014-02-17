@@ -919,8 +919,8 @@ def synchronizeHost(host):
 	
 def synchronize():
 	for host in getAll():
-		util.start_thread(synchronizeHost, host)
-	util.start_thread(synchronizeComponents)
+		synchronizeHost(host)
+	synchronizeComponents()
 
 _lastComponentSync = time.time()
 
