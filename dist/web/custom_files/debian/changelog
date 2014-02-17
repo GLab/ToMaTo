@@ -1,3 +1,9 @@
+tomato-web (3.2.3) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 17 Feb 2014 12:11:44 +0100
+
 tomato-web (3.2.2) stable; urgency=low
 
   * Bugfix release
