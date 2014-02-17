@@ -24,8 +24,8 @@
 			{% endif %}
 		</div>
 		<div class="visible-xs skip-sm"></div>
-		{% cycle "" '<div class="clearfix visible-sm skip-sm"></div>' %}
-		{% cycle "" "" '<div class="clearfix visible-lg visible-md skip-sm"></div>' %}
+		{% cycle "" '<div class="clearfix visible-sm"></div><div class="visible-sm skip-sm"></div>' %}
+		{% cycle "" "" '<div class="clearfix visible-lg visible-md"></div><div class="visible-md visible-lg skip-sm"></div>' %}
 	{% endfor %}
 	</div>
 {% else %}
