@@ -135,9 +135,10 @@ head.appendChild(style);
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="{% helpurl %}" target="_help">Help</a></li>
-			      		<li><a href="{% projecturl %}" target="_blank">Project</a></li>
-			   			<li><a href="{% aupurl %}" target="_blank">Acceptable Use Policy</a></li>
+			      		<li><a href="{%externalurl 'project' %}" target="_blank">Project</a></li>
+						<li><a href="{%externalurl 'help' %}" target="_help">Help</a></li>
+						<li><a href="{%externalurl 'bugtracker' %}" target="_help">Bugtracker</a></li>
+			   			<li><a href="{%externalurl 'aup' %}" target="_blank">Acceptable Use Policy</a></li>
    						<li><a href="{%url help.contact_form%}">Contact</a></li>
 					</ul>
 				</li>
@@ -152,7 +153,7 @@ head.appendChild(style);
       <div class="footer">		
       	<ul>
    			<li><a href="{%url help.help "license/license"%}">License</a></li>
-   			<li><a href="{% impressumurl %}">Impressum</a></li>
+   			<li><a href="{%externalurl 'impressum' %}">Impressum</a></li>
    		</ul>
         <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>
         <p class="version">Backend version: {% backend_version %} / Frontend version: {% frontend_version %}</p>

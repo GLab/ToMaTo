@@ -15,24 +15,9 @@ def jsonify(o):
 	return mark_safe(simplejson.dumps(o))
 
 @register.simple_tag
-def aupurl():
-	return serverInfo()['external_urls']['aup']
+def externalurl(name):
+	return serverInfo()['external_urls'].get(name, "")
 	
-@register.simple_tag
-def impressumurl():
-	return serverInfo()['external_urls']['impressum']
-	
-@register.simple_tag
-def projecturl():
-	return serverInfo()['external_urls']['project']
-	
-@register.simple_tag
-def rssurl():
-	if 'rss_feed' in serverInfo()['external_urls']:
-		return serverInfo()['external_urls']['rss_feed']
-	else:
-		return None
-
 @register.simple_tag
 def backend_version():
 	return serverInfo()['version']
@@ -40,10 +25,6 @@ def backend_version():
 @register.simple_tag
 def frontend_version():
 	return getVersion()
-
-@register.simple_tag
-def helpurl():
-	return serverInfo()['external_urls']['help']
 
 @register.simple_tag
 def button(style='default', icon=None, title=""):
