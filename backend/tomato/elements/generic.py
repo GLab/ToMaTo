@@ -126,6 +126,7 @@ class VMElement(elements.Element):
 
 	def modify_profile(self, val):
 		profile = resources.profile.get(self.TYPE, val)
+		fault.check(profile, "No such profile: %s", val)
 		if profile.restricted and not self.profile == profile:
 			fault.check(currentUser().hasFlag(Flags.RestrictedProfiles), "Profile is restricted")
 		self.profile = profile
@@ -134,9 +135,10 @@ class VMElement(elements.Element):
 
 	def modify_template(self, tmplName):
 		template = resources.template.get(self.TYPE, tmplName)
+		fault.check(template, "No such template: %s", tmplName)
 		if template.restricted and not self.template == template:
 			fault.check(currentUser().hasFlag(Flags.RestrictedTemplates), "Template is restricted")
-		self.template = resources.template.get(self.TYPE, tmplName)
+		self.template = template
 		if self.element:
 			self.element.modify({"template": self._template().name})
 
