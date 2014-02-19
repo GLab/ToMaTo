@@ -15,6 +15,9 @@ repy/tomato-repy-*
 repy/tomato-repy/debian/tomato-repy
 repy/repy_orig
 repy/tomato-repy/repy
+ipspy/ipspy-*
+ipspy/ipspy/debian/ipspy
+ipspy/ipspy/debian/files
 hostserver/tomato-hostserver/debian/files
 hostserver/tomato-hostserver/debian/tomato-hostserver
 kernel/pve-kernel-*
