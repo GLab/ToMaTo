@@ -1,13 +1,9 @@
 Format: http://dep.debian.net/deps/dep5
-Upstream-Name: tomato-repy
-Source: <http://dswd.github.com/ToMaTo>
+Upstream-Name: ipspy
+Source: <http://www.tomato-lab.org>
 
-Files: tomato_repy.py, debian/*
-Copyright: 2011 Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
-License: GPL-3.0+
-
-Files: *.py (Rest)
-Copyright: 2008-2011 Justin Cappos, et.al.
+Files: ipspy.py
+Copyright: 2014 Dennis Schwerdel
 License: GPL-3.0+
 
 License: GPL-3.0+
