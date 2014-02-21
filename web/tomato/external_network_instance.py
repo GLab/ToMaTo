@@ -68,7 +68,7 @@ def host_list(api):
 	l = api.host_list()
 	res = []
 	for host in l:
-		res.append((host['address'],host['address']))
+		res.append((host['name'],host['name']))
 	res.sort()
 	return res
 
@@ -108,7 +108,7 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 		nis_new=[]
 		host_dict ={}
 		for h in hosts:
-			host_dict[h['address']] = h
+			host_dict[h['name']] = h
 		for ni in nis:
 			if (not organization or host_dict[ni['attrs']['host']]['organization'] == organization) and (not site or host_dict[ni['attrs']['host']]['site'] == site):
 				nis_new.append(ni)

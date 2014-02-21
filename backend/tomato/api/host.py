@@ -28,9 +28,9 @@ def _getSite(name):
 	fault.check(s, "Site with name %s does not exist", name)
 	return s
 
-def _getHost(address):
-	h = host.get(address=address)
-	fault.check(h, "Host with address %s does not exist", address)
+def _getHost(name):
+	h = host.get(name=name)
+	fault.check(h, "Host with name %s does not exist", name)
 	return h
 
 @cached(timeout=6*3600)
@@ -136,39 +136,39 @@ def host_list(site=None, organization=None):
 	return [h.info() for h in hosts]
 
 @checkauth
-def host_create(address, site, attrs={}):
+def host_create(name, site, attrs={}):
 	"""
 	undocumented
 	"""
 	site = _getSite(site)
-	h = host.create(address, site, attrs)
+	h = host.create(name, site, attrs)
 	host_list.invalidate()
 	return h.info()
 
 @checkauth
-def host_info(address):
+def host_info(name):
 	"""
 	undocumented
 	"""
-	h = _getHost(address)
+	h = _getHost(name)
 	return h.info()
 
 @checkauth
-def host_modify(address, attrs):
+def host_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	h = _getHost(address)
+	h = _getHost(name)
 	h.modify(attrs)
 	host_list.invalidate()
 	return h.info()
 
 @checkauth
-def host_remove(address):
+def host_remove(name):
 	"""
 	undocumented
 	"""
-	h = _getHost(address)
+	h = _getHost(name)
 	h.remove()
 	host_list.invalidate()
 

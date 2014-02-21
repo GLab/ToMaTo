@@ -100,7 +100,7 @@
                            'view_only':    WebUtil.getQueryVar('view_only', false),
                            'updateState':  updateState,
                            'onPasswordRequired':  passwordRequired});
-            rfb.connect('{{info.attrs.host}}', {{info.attrs.websocket_port}}, '{{info.attrs.vncpassword}}', 'websockify');
+            rfb.connect('{{info.attrs.host_info.address}}', {{info.attrs.websocket_port}}, '{{info.attrs.vncpassword}}', 'websockify');
         };
         </script>
     </body>
