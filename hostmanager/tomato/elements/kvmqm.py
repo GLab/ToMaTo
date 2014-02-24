@@ -585,7 +585,7 @@ class KVMQM_Interface(elements.Element):
 		self.num = int(re.match("^eth([0-9]+)$", val).groups()[0])
 			
 	def interfaceName(self):
-		if self.state == ST_STARTED:
+		if self.state != ST_CREATED:
 			return self.getParent()._interfaceName(self.num)
 		else:
 			return None

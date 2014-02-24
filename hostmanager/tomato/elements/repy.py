@@ -384,10 +384,7 @@ class Repy_Interface(elements.Element):
 		self.name = self.getParent()._nextIfaceName()
 		
 	def interfaceName(self):
-		if self.state == ST_STARTED:
-			return self.getParent()._interfaceName(self.name)
-		else:
-			return None
+		return self.getParent()._interfaceName(self.name)
 		
 	def upcast(self):
 		return self
