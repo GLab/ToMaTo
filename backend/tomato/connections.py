@@ -421,6 +421,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				return "fixed_bridge"
 		return "bridge"
 			
+	def fetchInfo(self):
+		mcon = self.mainConnection()
+		if mcon:
+			mcon.updateInfo()
+			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
