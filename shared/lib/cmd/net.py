@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import util
-from . import run, CommandError
+from . import run, CommandError, spawn
 from process import killTree
 import path
-import os, re, random, struct
+import os, re, random, struct, json
 from fcntl import ioctl
 
 def getIfbCount():
@@ -159,6 +159,19 @@ def randomMac():
 	bytes = [random.randint(0x00, 0xff) for _ in xrange(6)]
 	bytes[0] = bytes[0] & 0xfc | 0x02 # local and individual
 	return ':'.join(map(lambda x: "%02x" % x, bytes))
+
+def ipspy_start(iface, output):
+	return spawn(["ipspy", "-i", iface, "-o", output, "--dhcp"])
+
+def ipspy_read(filename):
+	try:
+		with open(filename, "r") as fn:
+			data = json.load(fn)
+			ips = data.keys()
+			ips.sort(key=lambda ip: data[ip]["last_seen"] + data[ip]["pkg_count"] * 1000, reverse=True)
+			return ips 
+	except:
+		return []
 
 class IfaceAccess:
 	def __init__(self, ifname):
