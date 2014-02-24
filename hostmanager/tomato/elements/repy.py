@@ -264,6 +264,7 @@ class Repy(elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
+			interface._start()
 		net.freeTcpPort(self.vncport)				
 		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; sleep 1; done'" % (self.vncport, self.vncpassword, self.dataPath("program.log")))				
 		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
@@ -279,6 +280,7 @@ class Repy(elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
+			interface._stop()
 		if self.vncpid:
 			process.killTree(self.vncpid)
 			del self.vncpid
@@ -352,6 +354,10 @@ Actions: None
 class Repy_Interface(elements.Element):
 	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
 	name = name_attr.attribute()
+	ipspy_pid_attr = Attr("ipspy_pid", type="int")
+	ipspy_pid = ipspy_pid_attr.attribute()
+	used_addresses_attr = Attr("used_addresses", type=list, default=[])
+	used_addresses = used_addresses_attr.attribute()
 
 	TYPE = "repy_interface"
 	CAP_ACTIONS = {
@@ -386,7 +392,21 @@ class Repy_Interface(elements.Element):
 	def upcast(self):
 		return self
 
+	def _start(self):
+		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
+		self.save()
+	
+	def _stop(self):
+		if self.ipspy_pid:
+			process.kill(self.ipspy_pid)
+			del self.ipspy_pid
+		self.save()
+
 	def info(self):
+		if self.state == ST_STARTED:
+			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
+		else:
+			self.used_addresses = []
 		info = elements.Element.info(self)
 		return info
 
@@ -409,6 +429,8 @@ def register(): #pragma: no cover
 	if not vnctermVersion:
 		print >>sys.stderr, "Warning: Repy needs vncterm, disabled"
 		return
+	if not ipspyVersion:
+		print >>sys.stderr, "Warning: ipspy not available"
 	elements.TYPES[Repy.TYPE] = Repy
 	elements.TYPES[Repy_Interface.TYPE] = Repy_Interface
 
@@ -416,4 +438,5 @@ if not config.MAINTENANCE:
 	repyVersion = cmd.getDpkgVersion("tomato-repy")
 	vnctermVersion = cmd.getDpkgVersion("vncterm")
 	websockifyVersion = cmd.getDpkgVersion("websockify")
+	ipspyVersion = cmd.getDpkgVersion("ipspy")
 	register()
