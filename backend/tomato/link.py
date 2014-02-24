@@ -129,7 +129,7 @@ def _measure():
 			begin = time.time()
 			res = hostA.getProxy().host_ping(hostB.address)
 			end = time.time()
-			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.address, hostB=hostB.address, result=res)
+			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.name, hostB=hostB.name, result=res)
 			LinkMeasurement.objects.create(siteA=siteA, siteB=siteB, begin=begin, end=end, type=TYPES[0], loss=res["loss"], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"])
 	
 def _removeOld():

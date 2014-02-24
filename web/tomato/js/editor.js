@@ -2186,13 +2186,13 @@ var Connection = Component.extend({
 	downloadCapture: function() {
 		this.action("download_grant", {callback: function(con, res) {
 			var name = con.topology.data.attrs.name + "_capture_" + con.id + ".pcap";
-			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + con.data.attrs.host_info.address + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
 	viewCapture: function() {
 		this.action("download_grant", {params: {limitSize: 1024*1024}, callback: function(con, res) {
-			var url = "http://" + con.data.attrs.host + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download"; 
+			var url = "http://" + con.data.attrs.host_info.address + ":" + con.data.attrs.host_info.fileserver_port + "/" + res + "/download"; 
 			window.open("http://www.cloudshark.org/view?url="+url, "_newtab");
 		}})
 	},
@@ -2200,7 +2200,7 @@ var Connection = Component.extend({
 		return this.actionEnabled("download_grant") && this.data.attrs.capturing && this.data.attrs.capture_mode == "net";
 	},
 	liveCaptureInfo: function() {
-		var host = this.data.attrs.host;
+		var host = this.data.attrs.host_info.address;
 		var port = this.data.attrs.capture_port;
 		var cmd = "wireshark -k -i <( nc "+host+" "+port+" )";
 		new Window({
@@ -2518,7 +2518,7 @@ var Element = Component.extend({
 		this.triggerEvent({operation: "console-dialog"});
 	},
 	openVNCurl: function() {
-		var host = this.data.attrs.host;
+		var host = this.data.attrs.host_info.address;
 		var port = this.data.attrs.vncport;
 		var passwd = this.data.attrs.vncpassword;
 		var link = "vnc://:" + passwd + "@" + host + ":" + port;
@@ -2526,7 +2526,7 @@ var Element = Component.extend({
 		this.triggerEvent({operation: "console-dialog"});
 	},
 	showVNCinfo: function() {
-		var host = this.data.attrs.host;
+		var host = this.data.attrs.host_info.address;
 		var port = this.data.attrs.vncport;
 		var wport = this.data.attrs.websocket_port;
 		var passwd = this.data.attrs.vncpassword;
@@ -2556,14 +2556,14 @@ var Element = Component.extend({
 					name += ".repy";
 					break;
 			}
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
 	downloadRexTFV: function() {
 		this.action("rextfv_download_grant", {callback: function(el, res) {
 			var name = el.topology.data.attrs.name + "_" + el.data.attrs.name + '_rextfv.tar.gz';
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
+			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/download?name=" + encodeURIComponent(name); 
 			window.location.href = url;
 		}})
 	},
@@ -2581,7 +2581,7 @@ var Element = Component.extend({
 			return;
 		}
 		this.action("upload_grant", {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
+			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body
@@ -2606,7 +2606,7 @@ var Element = Component.extend({
 			return;
 		}
 		this.action("rextfv_upload_grant", {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
+			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
 			var div = $('<div/>');
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
 			// iframe.load will be triggered a moment after iframe is added to body

@@ -65,6 +65,7 @@
 	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5" stddev_threshold_high="2.5">
 	  <tr>
 	    <th>&nbsp;</th>
+	    <th>Name</th>
 	    <th>Address</th>
 	    <th>Site</th>
 	    <th stddev_column_class="good_low" title="Combination of CPU, memory and disk">Load</th>
@@ -101,7 +102,9 @@
 	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
 			{% endif %}
 			
-	    	<td><a href="{%url host.info host.address %}">{{host.address}}</a></td>
+	    	<td><a href="{%url host.info host.name %}">{{host.name}}</a></td>
+
+	    	<td>{{host.address}}</td>
 	    	
 	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}#{{host.site}}">{{host.site}}</a></td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
@@ -161,7 +164,7 @@
 	  function reShow() {
 	  	var table = document.getElementById('table');
 	  	var important = document.getElementById('important').selected;
-	  	var col = 4;
+	  	var col = 5;
 	  	columnShow(table, col+0, document.getElementById('versions').selected || important);
 	  	columnShow(table, col+1, document.getElementById('versions').selected);
 	  	columnShow(table, col+2, document.getElementById('versions').selected);

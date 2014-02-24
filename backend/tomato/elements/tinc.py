@@ -86,7 +86,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 			assert ch.element
 			info = ch.info()
 			peers.append({
-				"host": ch.element.host.address,
+				"host": ch.element.host.name,
 				"port": info["attrs"]["port"],
 				"pubkey": info["attrs"]["pubkey"],
 			})

@@ -205,7 +205,7 @@ def synchronize():
         try:
             h.updateAccountingData(now)
         except:
-            logging.logException(host=h.address)
+            logging.logException(host=h.name)
             print "Error fetching accounting data from %s" % h
     for el in elements.getAll():
         el.updateUsage(now-900)

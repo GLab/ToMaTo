@@ -21,13 +21,13 @@ def capabilities_element(type, host=None): #@ReservedAssignment
 	typeClass = elements.TYPES.get(type)
 	fault.check(typeClass, "No such element type: %s", type)
 	if host:
-		host = modhost.get(address=host)
+		host = modhost.get(name=host)
 		fault.check(host, "No such host: %s", host)
 	return typeClass.getCapabilities(host)
 	
 def capabilities_connection(type, host=None): #@ReservedAssignment
 	if host:
-		host = modhost.get(address=host)
+		host = modhost.get(name=host)
 		fault.check(host, "No such host: %s", host)
 	return connections.Connection.getCapabilities(type, host)
 

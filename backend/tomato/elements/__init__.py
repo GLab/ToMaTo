@@ -436,8 +436,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 			"debug": {
-					"host_elements": [(o.host.address, o.num) for o in self.getHostElements()],
-					"host_connections": [(o.host.address, o.num) for o in self.getHostConnections()],
+					"host_elements": [(o.host.name, o.num) for o in self.getHostElements()],
+					"host_connections": [(o.host.name, o.num) for o in self.getHostConnections()],
 			}
 		}
 		mel = self.mainElement()
