@@ -70,7 +70,8 @@ def list(api, request):
 		o["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
 	for o in organizations:
 		o["hosts"]["avg_load"] = (o["hosts"]["avg_load"] / o["hosts"]["count"]) if o["hosts"]["count"] else None  
-		o["hosts"]["avg_availability"] = (o["hosts"]["avg_availability"] / o["hosts"]["count"]) if o["hosts"]["count"] else None  
+		o["hosts"]["avg_availability"] = (o["hosts"]["avg_availability"] / o["hosts"]["count"]) if o["hosts"]["count"] else None
+	organizations.sort(key=lambda o: o["hosts"]["count"], reverse=True)  
 	return render(request, "organization/list.html", {'organizations': organizations, 'sites': sites})
 
 @wrap_rpc
