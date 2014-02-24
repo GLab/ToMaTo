@@ -1891,15 +1891,17 @@ var Component = Class.extend({
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
-	update: function() {
+	update: function(fetch, callback) {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
 			url: this.component_type+'/'+this.id+'/info',
+			data: {fetch: fetch},
 		 	successFn: function(result) {
 		 		t.updateData(result);
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "end"});
+				if (callback) callback();
 		 	},
 		 	errorFn: function() {
 		 		t.setBusy(false);
@@ -3288,11 +3290,14 @@ var ChildElement = Element.extend({
 
 var VMInterfaceElement = ChildElement.extend({
 	showUsedAddresses: function() {
- 		var win = new Window({
- 			title: "Used addresses on " + this.name(),
- 			content: '<p>'+this.data.attrs.used_addresses.join('<br/>')+'</p>',
- 			autoShow: true
- 		});
+		var t = this;
+		this.update(true, function() {
+	 		var win = new Window({
+	 			title: "Used addresses on " + t.name(),
+	 			content: '<p>'+t.data.attrs.used_addresses.join('<br/>')+'</p>',
+	 			autoShow: true
+	 		});			
+		});
 	}
 });
 
