@@ -397,6 +397,7 @@ var Window = Class.extend({
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
+			minWidth:250,
 			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {},
 			closeOnEscape: false
@@ -2768,6 +2769,13 @@ var createElementMenu = function(obj) {
 					},
 				}
 			} : null,
+			"used_addresses": obj.data.attrs.used_addresses ? {
+				name:"Used addresses",
+				icon:"info",
+				callback: function(){
+					obj.showUsedAddresses();
+				}
+			} : null,
 			"usage": {
 				name:"Resource usage",
 				icon:"usage",
@@ -3279,6 +3287,13 @@ var ChildElement = Element.extend({
 });
 
 var VMInterfaceElement = ChildElement.extend({
+	showUsedAddresses: function() {
+ 		var win = new Window({
+ 			title: "Used addresses on " + this.name(),
+ 			content: '<p>'+this.data.attrs.used_addresses.join('<br/>')+'</p>',
+ 			autoShow: true
+ 		});
+	}
 });
 
 var VMConfigurableInterfaceElement = VMInterfaceElement.extend({
