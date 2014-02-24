@@ -3,66 +3,8 @@
     "version": 3
   }, 
   "topology": {
-    "connections": [
-      {
-        "elements": [
-          1662, 
-          1663
-        ], 
-        "type": "bridge", 
-        "attrs": {
-          "bandwidth_from": 10000, 
-          "lossratio_to": 0, 
-          "delay_to": 0, 
-          "duplicate_from": 0, 
-          "distribution_to": "uniform", 
-          "delay_from": 100, 
-          "capture_mode": "file", 
-          "lossratio_from": 0, 
-          "corrupt_to": 0, 
-          "emulation": true, 
-          "jitter_from": 0, 
-          "duplicate_to": 0, 
-          "distribution_from": "uniform", 
-          "bandwidth_to": 10000, 
-          "jitter_to": 0, 
-          "corrupt_from": 0, 
-          "capturing": false, 
-          "capture_filter": ""
-        }, 
-        "id": 442
-      }
-    ], 
+    "connections": [],
     "elements": [
-      {
-        "type": "openvz_interface", 
-        "id": 1663, 
-        "parent": 1658, 
-        "attrs": {
-          "ip4address": "10.0.0.1/24"
-        }
-      }, 
-      {
-        "type": "kvmqm_interface", 
-        "id": 1662, 
-        "parent": 1660, 
-        "attrs": {}
-      }, 
-      {
-        "type": "kvmqm", 
-        "id": 1660, 
-        "parent": null, 
-        "attrs": {
-          "profile": "normal", 
-          "site": null, 
-          "name": "kvmqm1", 
-          "template": "debian-6.0_x86", 
-          "_pos": {
-            "y": 0.3181818181818182, 
-            "x": 0.5666666666666667
-          }
-        }
-      }, 
       {
         "type": "openvz", 
         "id": 1658, 
@@ -81,7 +23,7 @@
     ], 
     "attrs": {
       "_snap_to_grid": true, 
-      "name": "Tutorial: Data Access"
+      "name": "Tutorial: Executable Archives"
     }
   }
 }
