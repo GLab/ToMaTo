@@ -18,6 +18,7 @@
 from .. import elements
 import generic, time
 from ..lib import util #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"

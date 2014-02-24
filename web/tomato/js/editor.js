@@ -14,13 +14,16 @@ var settings = {
 	],
 }
 
+var ignoreErrors = false;
+
 var showError = function(msg) {
+	if (ignoreErrors) return;
 	switch(msg.toLowerCase()) {
-	case "over quota":
-		showError("You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.");
-		break;
-	default:
-		alert("Error: "+msg);
+		case "over quota":
+			showError("You are over quota. If you are a newly registered user, please wait until your account has been approved. Otherwise, contact an administrator.");
+			break;
+		default:
+			alert("Error: "+msg);
 	}
 }
 
@@ -34,6 +37,7 @@ var ajax = function(options) {
 	 	complete: function(res) {
 	 		if (res.status == 401 || res.status == 403) {
 	 			showError("Your session has ended, please log in again");
+	 			ignoreErrors=true;
 	 			window.location.reload();
 	 			return;
 	 		}
