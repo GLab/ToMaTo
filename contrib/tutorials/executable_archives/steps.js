@@ -50,7 +50,7 @@
 					Executable archives contain a bash script with the name <i>auto_exec.sh</i>. <br />\
 					After the archive got uploaded our device will search for this script and execute it. <br />\
 					We will look closesly to such a script later in the tutorial</p>\
-				<p class="tutorialCommand"><a href="'+tutorial_base_url+'expirement.tar.gz" style="color: blue;"  download="expirement.tar.gz">experiment.tar.gz</a> </p>',
+				<p class="tutorialCommand"><a href="'+tutorial_base_url+'experiment.tar.gz" style="color: blue;"  download="expirement.tar.gz">experiment.tar.gz</a> </p>',
 			},
 			{
 
