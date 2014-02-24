@@ -601,7 +601,9 @@ var TutorialWindow = Window.extend({
 	},
 	closeTutorial: function() {
 		var t = this
-		if (confirm("You have completed the tutorial. Do you wish to keep this topology? (\"Cancel\" will delete it)")) {
+		if (confirm("You have completed the tutorial. This topology will now be removed. (Press \"Cancel\" to keep the topology)")) {
+			this.editor.topology.remove();	
+		} else {
 			ajax({
 				url: 'topology/'+this.editor.topology.id+'/modify',
 			 	data: {attrs: {
@@ -609,14 +611,6 @@ var TutorialWindow = Window.extend({
 			 					},
 			 			}
 			});
-		} else {
-			ajax({
-				url: "topology/"+this.editor.topology.id+"/remove",
-				successFn: function() {
-					t.editor.triggerEvent({component: "topology", object: t.editor.topology, operation: "remove", phase: "end"});
-					window.location = "/topology";
-				}
-			});	
 		}
 	}
 	
