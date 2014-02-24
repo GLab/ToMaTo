@@ -37,7 +37,7 @@
   },
   {
     "url":   "executable_archives/tutorial.json",
-    "name": "Templates and Images (not implemented yet)",
+    "name": "Executable Archives",
     "desc": "Use executable archives to control your devices and access data.",
     "icon": "executable_archives/icon.png"
   }
