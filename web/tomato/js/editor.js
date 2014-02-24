@@ -209,8 +209,8 @@ var TextElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.pattern = options.pattern || /^.*$/;
-		this.element = $('<div class="row" />');
-		this.textfieldbox = $('<div class="col-md-9">');
+		this.element = $('<div />');
+		this.textfieldbox = $('<div class="col-sm-9" />');
 		this.textfield = $('<input class="form-control" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
 		
 		this.element.append(this.textfieldbox);
@@ -262,11 +262,9 @@ var ChoiceElement = FormElement.extend({
 		this.infoboxes = options.info;
 		this.showInfo = (this.infoboxes != undefined);
  
-		this.element = $('<div class="row" />');
-		this.selectdiv = $('<div class="col-md-9" />');
+		this.element = $('<div class="col-sm-9" />');
 		this.select = $('<select class="form-control input-sm" name="'+this.name+'"/>');
-		this.element.append(this.selectdiv);
-		this.selectdiv.append(this.select);
+		this.element.append(this.select);
 		if (options.disabled) this.select.attr({disabled: true});
 		var t = this;
 		this.select.change(function() {
@@ -277,8 +275,8 @@ var ChoiceElement = FormElement.extend({
 		if (options.value != null) this.setValue(options.value);
 		
 		if (this.showInfo) {
-			this.info = $('<div class="col-md-3"></div>');
-			this.selectdiv.after(this.info);
+			this.info = $('<div class="col-sm-3"></div>');
+			this.element.after(this.info);
 			
 			var t = this;
 			this.select.change(function(){
@@ -329,7 +327,6 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		this.element = $('<div class="row" />');
 		//this.element.before($('<div>'+this.template.label+'</div>'));
 		
 		template = editor.templates.get(options.type,options.value);
@@ -349,7 +346,7 @@ var TemplateElement = FormElement.extend({
 		this.template = template;
 		var t = this;
 		
-		var changebutton = $('&nbsp;<button class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
+		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
 			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
 		})
@@ -358,11 +355,9 @@ var TemplateElement = FormElement.extend({
 			changebutton.prop("disabled",true);
 		}
 		
-		this.element.empty();
-		var temp = $('<div class="col-md-6"/>').append(this.template.label);
-		temp.after($('<div class="col-md-3"/>').append(changebutton));
-		temp.after($('<div class="col-md-3"/>').append($(this.template.infobox())));
-		this.element.append(temp);
+		this.element = $('<div class="col-sm-6"/>').append(this.template.label);
+		this.element.after($('<div class="col-sm-3"/>').append(changebutton));
+		this.element.after($('<div class="col-sm-3"/>').append($(this.template.infobox())));
 	}
 });
 
@@ -754,15 +749,15 @@ var TemplateWindow = Window.extend({
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
 		var ths = this;
-		
+
+		//build template list entry
+		var div_formgroup = $('<div class="form-group"></div>');
 		for(var i=0; i<this.choices.length; i++) {
 			var t = this.choices[i];
 			
 			
 			
 
-			//build template list entry
-			var div_formgroup = $('<div class="form-group"></div>');
 			
 			var div_option = $('<div class="col-md-10" />');
 			var div_radio = $('<div class="radio"></div>');
@@ -822,7 +817,7 @@ var PermissionsWindow = Window.extend({
 		
 		this.buttons = $('<div />');
 		
-		this.closeButton = $('<button class="btn btn-primary" style="float:right;"><span class="ui-button-text">Close</span></button>');
+		this.closeButton = $('<button class="btn btn-primary" type="button" style="float:right;"><span class="ui-button-text">Close</span></button>');
 		this.closeButton.click(function(){
 			/* if (t.div.getElementsByTagName("select").length > 0) {
 				if (!window.confirm("Are you sure you want to discard all changes?"))
@@ -872,7 +867,7 @@ var PermissionsWindow = Window.extend({
 		}
 		
 		if (this.options.allowChange) {
-			var addbutton = $('<div class="ui-dialog-buttonset"><button class="btn btn-primary"><span class="ui-button-text">Add User</span></button>');
+			var addbutton = $('<div class="ui-dialog-buttonset"><button type="button" class="btn btn-primary"><span class="ui-button-text">Add User</span></button>');
 			addbutton.click(function(){
 				t.addNewUser();
 			});
@@ -928,7 +923,7 @@ var PermissionsWindow = Window.extend({
 		this.username = new InputWindow({
 			title: "New User",
 			width: 550,
-			height: 175,
+			height: 200,
 			zIndex: 1000,
 			inputname: "newuser",
 			inputlabel: "Username:",
