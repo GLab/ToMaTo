@@ -195,7 +195,7 @@ def createSite(name, organization, description=""):
 	return site
 
 def _connect(address, port):
-	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
+	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
 	return rpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
 
 
