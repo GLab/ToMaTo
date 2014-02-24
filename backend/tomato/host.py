@@ -195,7 +195,7 @@ def createSite(name, organization, description=""):
 	return site
 
 def _connect(address, port):
-	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
+	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
 	return rpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
 
 
@@ -594,7 +594,6 @@ class HostElement(attributes.Mixin, models.Model):
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
 	type = attributes.attribute("type", str) #@ReservedAssignment
-	custom_template = attributes.attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 		
 	class Meta:
 		unique_together = (("host", "num"),)
@@ -705,12 +704,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode != fault.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:
-			logging.logException(host=self.host.name)
-			
-	def after_upload_use(self):
-		self.custom_template = True
-		self.save()
-		
+			logging.logException(host=self.host.address)
+
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
 	num = models.IntegerField(null=False) #not id, since this is reserved

@@ -1,0 +1,13 @@
+Source: ipspy
+Priority: extra
+Maintainer: Dennis Schwerdel <schwerdel@informatik.uni-kl.de>
+Build-Depends: debhelper (>= 7.0.50~)
+Standards-Version: 3.9.1
+Section: network
+Homepage: http://dswd.github.com/ToMaTo
+
+Package: ipspy
+Section: network
+Architecture: all
+Depends: ${misc:Depends}, python, python-pypcap
+Description: A small tool to spy on used IP adresses behind an interface

@@ -273,8 +273,8 @@ def topology_import_v3(top):
 			for key, value in top['attrs'].iteritems():
 				try:
 					topology_modify(top_id, {key: value})
-				except:
-					errors.append(("topology", None, key, value))
+				except Exception, ex:
+					errors.append(("topology", None, key, value, str(ex)))
 		elements = top["elements"]
 		elements.sort(key=lambda el: el['id'])
 		for el in elements:
@@ -287,8 +287,8 @@ def topology_import_v3(top):
 				for key, value in el['attrs'].iteritems():
 					try:
 						element_modify(elId, {key: value})
-					except:
-						errors.append(("element", el['id'], key, value))
+					except Exception, ex:
+						errors.append(("element", el['id'], key, value, str(ex)))
 		for con in top["connections"]:
 			el1 = elementIds.get(con["elements"][0])
 			el2 = elementIds.get(con["elements"][1])
@@ -300,8 +300,8 @@ def topology_import_v3(top):
 				for key, value in con['attrs'].iteritems():
 					try:
 						connection_modify(conId, {key: value})
-					except:
-						errors.append(("connection", con['id'], key, value))
+					except Exception, ex:
+						errors.append(("connection", con['id'], key, value, str(ex)))
 	except:
 		topology_remove(top_id)
 		raise
@@ -322,7 +322,8 @@ def topology_export(id): #@ReservedAssignment
 		
 		blacklist = ['usage', 'debug', 'bridge', 'capture_port', 'websocket_pid', 'vmid', 'vncpid',
 					 'host', 'websocket_port', 'vncport', 'peers', 'pubkey', 'path', 'port', 
-					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword']
+					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword', 
+					 'host_info', 'custom_template']
 		blacklist_elements = ['children',
 							  'connection']
 		blacklist_connections = []

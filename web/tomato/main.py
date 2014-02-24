@@ -25,7 +25,6 @@ from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
 from lib import getapi, getNews
-import settings
 
 def index(request):
 	try:
@@ -33,12 +32,6 @@ def index(request):
 	except:
 		news = {}
 	return render(request, "main/start.html", {"news": news})
-
-def ticket(request, page=""):
-	return HttpResponseRedirect(settings.ticket_url % page)
-
-def project(request, page=""):
-	return HttpResponseRedirect(settings.project_url % page)
 
 class LoginForm(forms.Form):
 	username = forms.CharField(max_length=255)

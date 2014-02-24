@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, json, shutil
+import os, sys, json, shutil, re
 from django.db import models
 from .. import connections, elements, resources, fault, config
 from ..resources import template
@@ -544,6 +544,7 @@ Actions: None
 class KVMQM_Interface(elements.Element):
 	num_attr = Attr("num", type="int")
 	num = num_attr.attribute()
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
 	mac_attr = Attr("mac", desc="MAC Address", type="str")
 	mac = mac_attr.attribute()
 	
@@ -553,6 +554,7 @@ class KVMQM_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
+		"name": name_attr,				
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
@@ -572,7 +574,10 @@ class KVMQM_Interface(elements.Element):
 		assert isinstance(self.getParent(), KVMQM)
 		self.num = self.getParent()._nextIfaceNum()
 		self.mac = net.randomMac()
-		
+
+	def modify_name(self, val):
+		self.num = int(re.match("^eth([0-9]+)$", val).groups()[0])
+			
 	def interfaceName(self):
 		if self.state == ST_STARTED:
 			return self.getParent()._interfaceName(self.num)
@@ -584,6 +589,7 @@ class KVMQM_Interface(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
+		info["attrs"]["name"] = "eth%d" % self.num
 		return info
 
 	def updateUsage(self, usage, data):

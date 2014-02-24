@@ -284,11 +284,21 @@ class ServerProxy(object):
 			return call_proxy(args, kwargs)
 		return _call
 	
-class SafeTransportWithCerts(xmlrpclib.SafeTransport):
-	def __init__(self, keyFile, certFile, *args, **kwargs):
+class TimeoutTransport(xmlrpclib.SafeTransport):
+	def __init__(self, timeout=None, *args, **kwargs):
+		self.timeout = timeout
 		xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
+	def make_connection(self, *args, **kwargs):
+		con = xmlrpclib.SafeTransport.make_connection(self, *args, **kwargs)
+		if self.timeout:
+			con.timeout = self.timeout
+		return con
+	
+class SafeTransportWithCerts(TimeoutTransport):
+	def __init__(self, keyFile, certFile, *args, **kwargs):
+		TimeoutTransport.__init__(self, *args, **kwargs)
 		self.certFile = certFile
 		self.keyFile = keyFile
 	def make_connection(self,host):
 		host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
-		return xmlrpclib.SafeTransport.make_connection(self,host_with_cert)
+		return TimeoutTransport.make_connection(self,host_with_cert)

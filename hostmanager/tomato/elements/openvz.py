@@ -645,7 +645,7 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
 	name = name_attr.attribute()
 	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
 	ip4address = ip4address_attr.attribute()	
@@ -662,6 +662,7 @@ class OpenVZ_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
+		"name": name_attr,
 		"ip4address": ip4address_attr,
 		"ip6address": ip6address_attr,
 		"use_dhcp": use_dhcp_attr,
@@ -723,6 +724,9 @@ class OpenVZ_Interface(elements.Element):
 		self.use_dhcp = val
 		if self.state == ST_STARTED:
 			self._setUseDhcp()
+	
+	def modify_name(self, val):
+		self.name = val
 	
 	def _configure(self):
 		self._setAddresses()
