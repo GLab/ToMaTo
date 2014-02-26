@@ -18,36 +18,17 @@
 import threading, thread, traceback, time, xmlrpclib, datetime
 from decorators import xmlRpcSafe
 
-class RepeatedTimer(threading.Thread):
-	def __init__(self, timeout, func, *args, **kwargs):
-		self.timeout = timeout
-		self.func = func
-		self.args = args
-		self.kwargs = kwargs
-		threading.Thread.__init__(self)
-		self.stopped = threading.Event()
-		self.stopped_confirm = threading.Event()
-		self.daemon = True
-	def run(self):
-		while not self.stopped.isSet():
-			try:
-				self.stopped.wait(self.timeout)
-			except: #pylint: disable-msg=W0702
-				self.stopped_confirm.set()
-				return
-			if not self.stopped.isSet():
-				try:
-					self.func(*self.args, **self.kwargs)
-				except Exception, exc: #pylint: disable-msg=W0703
-					from .. import fault
-					fault.errors_add(exc, traceback.format_exc())
-		self.stopped_confirm.set()
-	def stop(self):
-		self.stopped.set()
+def wrap_task(fn):
+	def call(*args, **kwargs):
 		try:
-			self.stopped_confirm.wait()
-		except:
-			pass
+			return fn(*args, **kwargs)
+		except Exception, exc:
+			from .. import fault
+			fault.errors_add(exc, traceback.format_exc())
+	call.__name__ = fn.__name__
+	call.__doc__ = fn.__doc__
+	call.__dict__.update(fn.__dict__)
+	return call
 
 def print_except_helper(func, args, kwargs):
 	try:

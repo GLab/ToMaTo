@@ -57,6 +57,9 @@ def login(credentials, sslCert):
 	setCurrentUser(user)
 	return user or not credentials
 
+from lib import tasks #@UnresolvedImport
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
+
 starttime = None
 
 from models import *
@@ -65,7 +68,9 @@ import api
 
 from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
-from lib import logging #@UnresolvedImport
+from lib import logging, util #@UnresolvedImport
+
+scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
 stopped = threading.Event()
 
@@ -74,18 +79,12 @@ def start():
 	db_migrate()
 	auth.init()
 	resources.init()
-	host.task.start() #@UndefinedVariable
-	elements.kvmqm.rextfv_syncer.start() #@UndefinedVariable
-	elements.openvz.rextfv_syncer.start() #@UndefinedVariable
-	accounting.task.start() #@UndefinedVariable
-	auth.task.start() #@UndefinedVariable
-	link.task.start() #@UndefinedVariable
 	global starttime
 	bittorrent.startTracker(config.TRACKER_PORT, config.TEMPLATE_PATH)
 	bittorrent.startClient(config.TEMPLATE_PATH)
-	bittorrent.task.start() #@UndefinedVariable
 	rpcserver.start()
 	starttime = time.time()
+	scheduler.start()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
@@ -114,13 +113,7 @@ def stop(*args):
 	print >>sys.stderr, "Shutting down..."
 	thread.start_new_thread(_stopHelper, ())
 	rpcserver.stop()
-	auth.task.stop() #@UndefinedVariable
-	host.task.stop() #@UndefinedVariable
-	elements.kvmqm.rextfv_syncer.stop() #@UndefinedVariable
-	elements.openvz.rextfv_syncer.stop() #@UndefinedVariable
-	link.task.stop() #@UndefinedVariable
-	accounting.task.stop() #@UndefinedVariable
-	bittorrent.task.stop() #@UndefinedVariable
+	scheduler.stop()
 	bittorrent.stopTracker()
 	bittorrent.stopClient()
 	logging.closeDefault()
