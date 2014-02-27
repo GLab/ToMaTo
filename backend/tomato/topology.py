@@ -30,7 +30,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	name = attributes.attribute("name", unicode)
 	send_timeout_mail = attributes.attribute("send_timeout_mail", bool)	
 	DOC = ""
-	CAP_ACTIONS = ["prepare", "destroy", "start", "stop"]
+	CAP_ACTIONS = ["prepare", "destroy", "start", "stop", "renew"]
 	CAP_ATTRS = ["name"]
 	
 	class Meta:
@@ -169,9 +169,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
 
 	def action_renew(self, timeout):
+		timeout = float(timeout)
 		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX, "Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
-		self.send_timeout_mail = self.timeout >= config.TOPOLOGY_TIMEOUT_WARNING
+		self.send_timeout_mail = self.timeout > config.TOPOLOGY_TIMEOUT_WARNING
 		
 	def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
 		# execute action in order
