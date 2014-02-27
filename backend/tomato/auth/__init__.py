@@ -18,7 +18,7 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser
+from .. import config, fault, currentUser, setCurrentUser, scheduler
 
 class Flags:
 	Debug = "debug"
@@ -346,6 +346,7 @@ def getAllUsers(organization = None):
 	else:
 		return User.objects.filter(organization=organization)
 
+@util.wrap_task
 def cleanup():
 	for provider in providers:
 		provider.cleanup()
@@ -391,7 +392,7 @@ def register(username, password, organization, attrs={}, provider=""):
 
 providers = []
 
-task = util.RepeatedTimer(300, cleanup) #every 5 minutes
+scheduler.scheduleRepeated(300, cleanup) #every 5 minutes @UndefinedVariable
 
 def init():
 	print >>sys.stderr, "Loading auth modules..."

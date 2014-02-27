@@ -87,5 +87,3 @@ def stopClient():
 def createTorrent(tracker, dataPath, torrentPath=""):
 	assert os.path.exists(dataPath)
 	return run(["btmakemetafile", tracker, dataPath, "--target", torrentPath])
-	
-task = util.RepeatedTimer(config.BITTORRENT_RESTART, restartClient)

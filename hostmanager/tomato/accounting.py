@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 
 from lib import db, attributes, util, logging #@UnresolvedImport
 from lib.decorators import *
+from . import scheduler
 
 # storage needs:
 # <100 bytes per record
@@ -221,6 +222,7 @@ class UsageRecord(models.Model):
             "usage": {"cputime": self.cputime, "diskspace": self.diskspace, "memory": self.memory, "traffic": self.traffic},
         }
         
+@util.wrap_task
 def update():
     for us in UsageStatistics.objects.all():
         try:
@@ -228,4 +230,4 @@ def update():
         except:
             traceback.print_exc()
         
-task = util.RepeatedTimer(60, update)
+scheduler.scheduleRepeated(60, update) #@UndefinedVariable
