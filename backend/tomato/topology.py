@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+import time
 from lib import attributes, db, logging #@UnresolvedImport
 from accounting import UsageStatistics
 from auth import Flags
@@ -24,9 +25,10 @@ from auth.permissions import Permissions, PermissionMixin, Role
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	timeout = models.FloatField()
 	attrs = db.JSONField()
 	name = attributes.attribute("name", unicode)
-	
+	send_timeout_mail = attributes.attribute("send_timeout_mail", bool)	
 	DOC = ""
 	CAP_ACTIONS = ["prepare", "destroy", "start", "stop"]
 	CAP_ATTRS = ["name"]
@@ -39,6 +41,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		self.permissions = Permissions.objects.create()
 		self.permissions.set(owner, "owner")
 		self.totalUsage = UsageStatistics.objects.create()
+		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
+		self.send_timeout_mail = False
 		self.save()
 		self.name = "Topology #%d" % self.id
 		self.modify(attrs)
@@ -164,6 +168,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 							 typeOrder=["kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
 							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
 
+	def action_renew(self, timeout):
+		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX, "Timeout is greater than the maximum")
+		self.timeout = time.time() + timeout
+		self.send_timeout_mail = self.timeout >= config.TOPOLOGY_TIMEOUT_WARNING
+		
 	def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
 		# execute action in order
 		for type_ in typeOrder:
@@ -227,7 +236,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			"permissions": dict([(str(p.user), p.role) for p in self.permissions.entries.all()]),
 			"elements": elements,
 			"connections": connections,
-			"usage": usage[0].info() if usage else None
+			"usage": usage[0].info() if usage else None,
+			"timeout": self.timeout
 		}
 		
 	def updateUsage(self, now):
@@ -252,4 +262,4 @@ def create(attrs={}):
 	logging.logMessage("info", category="topology", id=top.id, info=top.info())	
 	return top
 	
-from . import fault, currentUser
+from . import fault, currentUser, config

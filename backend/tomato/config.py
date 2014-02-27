@@ -79,6 +79,12 @@ EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
 
+TOPOLOGY_TIMEOUT_INITIAL = 3600.0
+TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 6 # 6 hours
+TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 14 # 14 days
+TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
+TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 6, 3600.0 * 24 * 5, 3600.0 * 24 * 14]
+
 # Django mail config
 #EMAIL_HOST = ""
 #EMAIL_PORT =
