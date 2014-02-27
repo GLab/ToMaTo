@@ -1,5 +1,5 @@
 # encoding: utf-8
-import datetime
+import datetime, time
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
@@ -9,13 +9,19 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Adding field 'Topology.timeout'
-        db.add_column('tomato_topology', 'timeout', self.gf('django.db.models.fields.FloatField')(default=1396002680.0), keep_default=False)
+        db.add_column('tomato_topology', 'timeout', self.gf('django.db.models.fields.FloatField')(default=time.time()+3600.0*24*30), keep_default=False)
+
+        # Adding field 'Topology.timeout_step'
+        db.add_column('tomato_topology', 'timeout_step', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
 
 
     def backwards(self, orm):
         
         # Deleting field 'Topology.timeout'
         db.delete_column('tomato_topology', 'timeout')
+
+        # Deleting field 'Topology.timeout_step'
+        db.delete_column('tomato_topology', 'timeout_step')
 
 
     models = {
@@ -230,6 +236,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'permissions': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['tomato.Permissions']"}),
             'timeout': ('django.db.models.fields.FloatField', [], {}),
+            'timeout_step': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'totalUsage': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'+'", 'unique': 'True', 'null': 'True', 'to': "orm['tomato.UsageStatistics']"})
         },
         'tomato.udp_endpoint': {
@@ -259,7 +266,7 @@ class Migration(SchemaMigration):
             'Meta': {'ordering': "['name', 'origin']", 'unique_together': "(('name', 'origin'),)", 'object_name': 'User'},
             'attrs': ('tomato.lib.db.JSONField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_login': ('django.db.models.fields.FloatField', [], {'default': '1393410358.441226'}),
+            'last_login': ('django.db.models.fields.FloatField', [], {'default': '1393506525.882925'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'organization': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'users'", 'to': "orm['tomato.Organization']"}),
             'origin': ('django.db.models.fields.CharField', [], {'max_length': '50'}),

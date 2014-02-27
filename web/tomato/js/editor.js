@@ -1687,7 +1687,7 @@ var Topology = Class.extend({
 		var timeout_settings = t.editor.options.timeout_settings;
 		for (var i = 0; i < timeout_settings.options.length; i++) choices[timeout_settings.options[i]] = formatDuration(timeout_settings.options[i]);
 		var timeout_val = t.data.timeout - new Date().getTime()/1000.0;
-		var text = "Your topology will time out in " + formatDuration(timeout_val);
+		var text = timeout_val > 0 ? ("Your topology will time out in " + formatDuration(timeout_val)) : "Your topology has timed out. You must renew it to use it.";
 		if (timeout_val < timeout_settings.warning) text = '<b style="color:red">' + text + '</b>';
 		dialog.addText("<center>"  + text + "</center>");
 		timeout = dialog.add(new ChoiceElement({
