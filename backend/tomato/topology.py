@@ -179,7 +179,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
 	def action_renew(self, timeout):
 		timeout = float(timeout)
-		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX, "Timeout is greater than the maximum")
+		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin), "Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
 		self.timeout_step = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
 		
@@ -284,22 +284,21 @@ def timeout_task():
 	now = time.time()
 	setCurrentUser(True) #we are a global admin
 	for top in Topology.objects.filter(timeout_step=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
-		print "Timeout warning: %s" % top
+		logging.logMessage("timeout warning", category="topology", id=top.id)
 		top.sendMail(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
 		top.timeout_step = TimeoutStep.WARNED
 		top.save()
 	for top in Topology.objects.filter(timeout_step=TimeoutStep.WARNED, timeout__lte=now):
-		print "Timeout stop: %s" % top
+		logging.logMessage("timeout stop", category="topology", id=top.id)
 		top.action_stop()
 		top.timeout_step = TimeoutStep.STOPPED
 		top.save()
 	for top in Topology.objects.filter(timeout_step=TimeoutStep.STOPPED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_WARNING):
-		print "Timeout destroy: %s" % top
-		top.action_stop()
+		logging.logMessage("timeout destroy", category="topology", id=top.id)
+		top.action_destroy()
 		top.timeout_step = TimeoutStep.DESTROYED
 		top.save()
-	
 
-scheduler.scheduleRepeated(10, timeout_task)
+scheduler.scheduleRepeated(600, timeout_task)
 
 from . import fault, currentUser, config, setCurrentUser
