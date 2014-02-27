@@ -54,9 +54,9 @@ def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignmen
 	return info
 
 @wrap_json
-def element_info(api, id): #@ReservedAssignment
+def element_info(api, id, fetch=False): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.element_info(id)
+	info = api.element_info(id, fetch)
 	return info
 
 @wrap_json
@@ -84,9 +84,9 @@ def connection_create(api, elements, attrs={}):
 	return info
 
 @wrap_json
-def connection_info(api, id): #@ReservedAssignment
+def connection_info(api, id, fetch=False): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.connection_info(id)
+	info = api.connection_info(id, fetch)
 	return info
 
 @wrap_json

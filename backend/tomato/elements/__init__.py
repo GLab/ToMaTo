@@ -445,6 +445,11 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 			info["attrs"].update(mel.attrs["attrs"])
 		return info
 
+	def fetchInfo(self):
+		mel = self.mainElement()
+		if mel:
+			mel.updateInfo()
+
 	def updateUsage(self, now):
 		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])

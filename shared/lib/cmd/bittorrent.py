@@ -30,7 +30,7 @@ def startTracker(port, path):
 		return
 	assert os.path.exists(path)
 	usage = run(["bttrack"])
-	args = ["bttrack", "--port", str(port), "--dfile", os.path.join(path, "tracker.cache"), "--allowed_dir", path, "--logfile", os.path.join(path, "tracker.log")]
+	args = ["bttrack", "--port", str(port), "--dfile", os.path.join(path, "tracker.cache"), "--allowed_dir", path]
 	if "--parse_allowed_interval" in usage: #bittorrent
 		args += ["--parse_allowed_interval", "1"] #minutes
 	elif "--parse_dir_interval" in usage: #bittornado
@@ -87,5 +87,3 @@ def stopClient():
 def createTorrent(tracker, dataPath, torrentPath=""):
 	assert os.path.exists(dataPath)
 	return run(["btmakemetafile", tracker, dataPath, "--target", torrentPath])
-	
-task = util.RepeatedTimer(config.BITTORRENT_RESTART, restartClient)

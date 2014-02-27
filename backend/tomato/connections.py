@@ -321,7 +321,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
 			}, ownerConnection=self)
 			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
-			self.connection2 = el2.connectWith(self.connectionElement2, ownerConnection=self)
+			self.connection2 = el2.connectWith(self.connectionElement2, attrs={"emulation": False}, ownerConnection=self)
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
@@ -420,6 +420,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			if el.type == "external_network_endpoint":
 				return "fixed_bridge"
 		return "bridge"
+			
+	def fetchInfo(self):
+		mcon = self.mainConnection()
+		if mcon:
+			mcon.updateInfo()
 			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):

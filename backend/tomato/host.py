@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser, starttime
+from . import config, currentUser, starttime, scheduler
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags
@@ -922,24 +922,20 @@ def synchronizeHost(host):
 	host.checkProblems()
 
 	
+@util.wrap_task
 def synchronize():
 	for host in getAll():
 		synchronizeHost(host)
 	synchronizeComponents()
 
-_lastComponentSync = time.time()
-
+@util.wrap_task
 def synchronizeComponents():
-	# only run every hour
-	global _lastComponentSync
-	if time.time() - _lastComponentSync < 3600:
-		return
-	_lastComponentSync = time.time()
 	for hel in HostElement.objects.all():
 		hel.synchronize()
 	for hcon in HostConnection.objects.all():
 		hcon.synchronize()
 	
-task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize)
+scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize) #@UndefinedVariable
+scheduler.scheduleRepeated(3600, synchronizeComponents) #@UndefinedVariable
 
 from . import fault

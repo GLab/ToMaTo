@@ -397,6 +397,7 @@ var Window = Class.extend({
 			show: "slide",
 			hide: "slide",
 			minHeight:50,
+			minWidth:250,
 			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {},
 			closeOnEscape: false
@@ -1884,15 +1885,17 @@ var Component = Class.extend({
 		this.configWindow.show();
 		this.triggerEvent({operation: "attribute-dialog"});
 	},
-	update: function() {
+	update: function(fetch, callback) {
 		var t = this;
 		this.triggerEvent({operation: "update", phase: "begin"});
 		ajax({
 			url: this.component_type+'/'+this.id+'/info',
+			data: {fetch: fetch},
 		 	successFn: function(result) {
 		 		t.updateData(result);
 		 		t.setBusy(false);
 				t.triggerEvent({operation: "update", phase: "end"});
+				if (callback) callback();
 		 	},
 		 	errorFn: function() {
 		 		t.setBusy(false);
@@ -2762,6 +2765,13 @@ var createElementMenu = function(obj) {
 					},
 				}
 			} : null,
+			"used_addresses": obj.data.attrs.used_addresses ? {
+				name:"Used addresses",
+				icon:"info",
+				callback: function(){
+					obj.showUsedAddresses();
+				}
+			} : null,
 			"usage": {
 				name:"Resource usage",
 				icon:"usage",
@@ -3273,6 +3283,16 @@ var ChildElement = Element.extend({
 });
 
 var VMInterfaceElement = ChildElement.extend({
+	showUsedAddresses: function() {
+		var t = this;
+		this.update(true, function() {
+	 		var win = new Window({
+	 			title: "Used addresses on " + t.name(),
+	 			content: '<p>'+t.data.attrs.used_addresses.join('<br/>')+'</p>',
+	 			autoShow: true
+	 		});			
+		});
+	}
 });
 
 var VMConfigurableInterfaceElement = VMInterfaceElement.extend({

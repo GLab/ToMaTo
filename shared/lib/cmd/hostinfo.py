@@ -115,7 +115,7 @@ def problems():
 	return problems
 
 def ping_test(ip_address): #return a boolean whether the test was successful
-	net.ping(ip_address, count=1)["received"] == 1
+	return net.ping(ip_address, count=1)["received"] == 1
 
 def diskproblems(path):
 	testFile = os.path.join(path, ".test")

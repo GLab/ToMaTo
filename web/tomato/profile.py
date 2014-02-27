@@ -34,19 +34,20 @@ class ProfileForm(BootstrapForm):
 	ram = forms.IntegerField(label="RAM (MB)")
 	preference = forms.IntegerField(label="Preference", help_text="Sort profiles in the editor (higher preference first). The profile with highest preference will be the default. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
-	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	tech = forms.CharField(max_length=50, widget=forms.HiddenInput)
+	tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	def __init__(self, *args, **kwargs):
 		super(ProfileForm, self).__init__(*args, **kwargs)
 		
 class EditProfileForm(ProfileForm):
+	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
 	def __init__(self, res_id, *args, **kwargs):
 		super(EditProfileForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
 
 
 class EditOpenVZForm(EditProfileForm):
+	cpus = forms.FloatField(label = "number of CPUs")
 	diskspace = forms.IntegerField(label="Disk Space (MB)")
 	def __init__(self, res_id, *args, **kwargs):
 		super(EditOpenVZForm, self).__init__(res_id, *args, **kwargs)
@@ -54,6 +55,7 @@ class EditOpenVZForm(EditProfileForm):
 			'res_id',
 			'tech',
 			'label',
+			'cpus',
 			'diskspace',
 			'ram',
 			'restricted',
@@ -98,10 +100,9 @@ class EditKVMqmForm(EditProfileForm):
 	
 	
 class AddProfileForm(ProfileForm):
-	tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all templates of the same tech. Cannot be changed. Not displayed.")
 	diskspace = forms.IntegerField(label="Disk Space (MB)", required = False, help_text="only OpenVZ and KVMqm")
-	cpus = forms.IntegerField(label="number of CPUs", required = False, help_text="Repy, OpenVZ: float number; KVMqm: integer number")
+	cpus = forms.FloatField(label="number of CPUs", help_text="Repy, OpenVZ: float number; KVMqm: integer number")
 	def __init__(self, *args, **kwargs):
 		super(AddProfileForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -153,9 +154,9 @@ def add(api, request):
 				 'label':formData['label'],
 				 'preference':formData['preference'],
 				 'description':formData['description']}
-			if formData['diskspace'] and (formData['tech'] != 'repy'):
+			if formData.get('diskspace') and (formData['tech'] != 'repy'):
 				data['diskspace'] = formData['diskspace']
-			if formData['cpus']:
+			if formData.get('cpus'):
 				data['cpus'] = formData['cpus'] 
 			if formData['restricted']:
 				data['restricted'] = formData['restricted']

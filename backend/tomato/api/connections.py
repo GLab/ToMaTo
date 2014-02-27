@@ -162,7 +162,7 @@ def connection_remove(id): #@ReservedAssignment
 	con = _getConnection(id)
 	con.remove()
 
-def connection_info(id): #@ReservedAssignment
+def connection_info(id, fetch=False): #@ReservedAssignment
 	"""
 	Retrieves information about a connection.
 	
@@ -205,6 +205,8 @@ def connection_info(id): #@ReservedAssignment
 	if not currentUser():
 		raise ErrorUnauthorized()
 	con = _getConnection(id)
+	if fetch:
+		con.fetchInfo()
 	return con.info()
 	
 def connection_usage(id): #@ReservedAssignment
