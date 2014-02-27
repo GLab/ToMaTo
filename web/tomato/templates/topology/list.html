@@ -70,8 +70,8 @@ While waiting for the account activation you can create and design topologies bu
     <th></th>
     <th>Name</th>
     <th>Owner</th>
+    <th>Timeout</th>
     <th>Elements</th>
-    <th>Connections</th>
     <th stddev_column_class="good_low">CPUs</th>
     <th stddev_column_class="good_low">Traffic</th>
     <th stddev_column_class="good_low">Memory</th>
@@ -90,8 +90,8 @@ While waiting for the account activation you can create and design topologies bu
     		{% endif %}
     	{% endfor %}
     </td>
+    <td>{{top.timeout|todate|timeuntil}}</td>
     <td>{{top.elements|length}}</td>
-    <td>{{top.connections|length}}</td>
     <td enhancetable_customkey="{{top.usage.usage.cputime}}">{{top.usage.usage.cputime|div:300|floatformat}} CPUs</td>
     <td enhancetable_customkey="{{top.usage.usage.traffic}}">{{top.usage.usage.traffic|div:300|filesizeformat}}/s</td>
     <td enhancetable_customkey="{{top.usage.usage.memory}}">{{top.usage.usage.memory|filesizeformat}}</td>
