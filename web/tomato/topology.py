@@ -23,7 +23,7 @@ from django.http import HttpResponse
 import json, re
 
 from tutorial import loadTutorial
-from lib import wrap_rpc, AuthError
+from lib import wrap_rpc, AuthError, serverInfo
 
 from admin_common import BootstrapForm, Buttons
 from tomato.crispy_forms.layout import Layout
@@ -74,6 +74,7 @@ def _display(api, request, info, tut_url, tut_stat):
 
 	res = render(request, "topology/info.html", {
 		'top': info,
+		'timeout_settings': serverInfo()["topology_timeout"],
 		'res_json': json.dumps(res),
 		'sites_json': json.dumps(sites),
 		'caps_json': json.dumps(caps),
