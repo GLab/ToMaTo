@@ -248,6 +248,8 @@ class Host(attributes.Mixin, models.Model):
 	def update(self):
 		self.availability *= config.HOST_AVAILABILITY_FACTOR
 		self.save()
+		if not self.enabled:
+			return
 		before = time.time()
 		self.hostInfo = self._info()
 		after = time.time()
@@ -324,6 +326,8 @@ class Host(attributes.Mixin, models.Model):
 	
 	def synchronizeResources(self):
 		if time.time() - self.lastResourcesSync < config.RESOURCES_SYNC_INTERVAL:
+			return
+		if not self.enabled:
 			return
 		from models import TemplateOnHost
 		logging.logMessage("resource_sync begin", category="host", name=self.name)		
