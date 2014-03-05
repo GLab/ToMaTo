@@ -17,12 +17,15 @@
 
 import threading, thread, traceback, time, xmlrpclib, datetime
 from decorators import xmlRpcSafe
+from django.db import transaction, IntegrityError
 
 def wrap_task(fn):
 	def call(*args, **kwargs):
 		try:
 			return fn(*args, **kwargs)
 		except Exception, exc:
+			if isinstance(exc, DatabaseError):
+				transaction.rollback()
 			from .. import fault
 			fault.errors_add(exc, traceback.format_exc())
 	call.__name__ = fn.__name__
