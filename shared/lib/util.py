@@ -210,3 +210,13 @@ def joinDicts(dictA,dictB):
 			else:
 				A[i] = dictB[i]
 	return A
+
+def filterStr(s, allowedChars=string.ascii_letters+string.digits+"_", substitute="_"):
+	res = ""
+	for ch in s:
+		if ch in allowedChars:
+			res += ch
+		else:
+			if substitute:
+				res += substitute
+	return res
