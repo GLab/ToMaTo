@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import threading, thread, traceback, time, xmlrpclib, datetime
+import threading, thread, traceback, time, xmlrpclib, datetime, string
 from decorators import xmlRpcSafe
-from django.db import transaction, IntegrityError
+from django.db import transaction, DatabaseError
 
 def wrap_task(fn):
 	def call(*args, **kwargs):
