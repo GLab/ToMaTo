@@ -249,6 +249,31 @@ var TextElement = FormElement.extend({
 	}
 });
 
+var TextAreaElement = FormElement.extend({
+	init: function(options) {
+		this._super(options);
+		this.element = $('<div class="row" />');
+		this.textfieldbox = $('<div class="col-md-9">');
+		this.textfield = $('<textarea class="form-control" name="'+this.name+'"></textarea>');
+		
+		this.element.append(this.textfieldbox);
+		this.textfieldbox.append(this.textfield);
+		
+		if (options.disabled) this.textfield.attr({disabled: true});
+		var t = this;
+		this.textfield.change(function() {
+			t.onChanged(this.value);
+		});
+		if (options.value != null) this.setValue(options.value);
+	},
+	getValue: function() {
+		return this.convertInput(this.textfield[0].value);
+	},
+	setValue: function(value) {
+		this.textfield[0].value = value;
+	}
+});
+
 var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
@@ -271,8 +296,6 @@ var CheckboxElement = FormElement.extend({
 var ChoiceElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		
-		console.log(options);
 		this.infoboxes = options.info;
 		this.showInfo = (this.infoboxes != undefined);
  
@@ -400,7 +423,10 @@ var Window = Class.extend({
 			minWidth:250,
 			modal: options.modal != null ? options.modal : true,
 			buttons: options.buttons || {},
-			closeOnEscape: false
+			closeOnEscape: false,
+			open: function(event, ui) { 
+				if (options.closable === false) $(".ui-dialog-titlebar-close").hide(); 
+			}
 		});
 		if (options.closeOnEscape != undefined)
 			this.div.closeOnEscape = options.closeOnEscape;
@@ -625,6 +651,9 @@ var AttributeWindow = Window.extend({
 		this.div.append(this.table);
 		this.elements = [];
 	},
+	addText: function(text) {
+		this.table.append("<p>"+text+"</p>");		
+	},
 	add: function(element) {
 		this.elements.push(element);
 		var tr = $('<div class="form-group"/>');
@@ -635,6 +664,7 @@ var AttributeWindow = Window.extend({
 			elem.append($('<p style="padding:0px; margin:0px; color:#888888;"></p>').append(element.options.help_text));
 		tr.append(elem);
 		this.table.append(tr);
+		return element;
 	},
 	autoElement: function(info, value, enabled) {
 		var el;
@@ -1313,10 +1343,36 @@ var Topology = Class.extend({
 		this.setBusy(true);
 		this.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "begin", attrs: attrs});
 		var t = this;
-		//TODO: success and error callbacks
 		ajax({
 			url: 'topology/'+this.id+'/modify',
 		 	data: {attrs: attrs},
+		 	successFn: function(result) {
+				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "end", attrs: attrs});
+		 	},
+		 	errorFn: function(error) {
+		 		showError(error);
+				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "error", attrs: attrs});
+		 	}
+		});
+	},
+	action: function(action, options) {
+		var options = options || {};
+		var params = options.params || {};
+		this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "begin", action: action, params: params});
+		var t = this;
+		ajax({
+			url: 'topology/'+this.id+'/action',
+		 	data: {action: action, params: params},
+		 	successFn: function(result) {
+		 		var data = result[1];
+		 		t.data.timeout = data.timeout;
+		 		t.data.attrs = data.attrs;
+				t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action, params: params});
+		 	},
+		 	errorFn: function(error) {
+		 		showError(error);
+				t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "error", action: action, params: params});
+		 	}
 		});
 	},
 	modify_value: function(name, value) {
@@ -1432,7 +1488,7 @@ var Topology = Class.extend({
 		this.modify_value("_" + name, this.editor.options[name]);
 		this.onUpdate();
 	},
-	action: function(action, options) {
+	action_delegate: function(action, options) {
 		var options = options || {};
 		if ((action=="destroy"||action=="stop") && !options.noask && this.editor.options.safe_mode && ! confirm("Do you want to " + action + " this topology?")) return;
 		this.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "begin", action: action});
@@ -1460,24 +1516,24 @@ var Topology = Class.extend({
 	},
 	action_start: function() {
 		var t = this;
-		this.action("prepare", {
+		this.action_delegate("prepare", {
 			callback: function(){
-				t.action("start", {});
+				t.action_delegate("start", {});
 			}
 		});
 	},
 	action_stop: function() {
-		this.action("stop");
+		this.action_delegate("stop");
 	},
 	action_prepare: function() {
-		this.action("prepare");
+		this.action_delegate("prepare");
 	},
 	action_destroy: function() {
 		var t = this;
 		if (this.editor.options.safe_mode && !confirm("Are you sure you want to completely destroy this topology?")) return;
-		this.action("stop", {
+		this.action_delegate("stop", {
 			callback: function(){
-				t.action("destroy", {noask: true});
+				t.action_delegate("destroy", {noask: true});
 			}, noask: true
 		});
 	},
@@ -1494,8 +1550,8 @@ var Topology = Class.extend({
 				}
 			});			
 		}
-		this.action("stop", {noask: true, callback: function() {
-			t.action("destroy", {noask: true, callback: function() {
+		this.action_delegate("stop", {noask: true, callback: function() {
+			t.action_delegate("destroy", {noask: true, callback: function() {
 				if (t.elementCount()) {
 					for (var elId in t.elements) {
 						if (t.elements[elId].parent) continue;
@@ -1571,12 +1627,11 @@ var Topology = Class.extend({
 			}
 		});
 	},
-	_showRenameDialog: function(text) {
+	renameDialog: function() {
 		var t = this;
 		windowOptions = {
 			title: "Rename Topology",
 			width: 550,
-
 			inputname: "newname",
 			inputlabel: "New Name:",
 			inputvalue: t.data.attrs.name,
@@ -1600,21 +1655,100 @@ var Topology = Class.extend({
 					}
 				}
 			],
-			};
-		if (text) {
-			windowOptions.height = 200;
-			windowOptions.infotext = text;
-		} else {
-			windowOptions.height = 150;
-		}
+		};
 		this.rename = new InputWindow(windowOptions);
 		this.rename.show();
 	},
-	renameDialog: function() {
-		this._showRenameDialog(null);
+	renewDialog: function() {
+		var t = this;
+		var dialog, timeout;
+		dialog = new AttributeWindow({
+			title: "Topology Timeout",
+			width: 500,
+			buttons: [
+						{ 
+							text: "Save",
+							click: function() {
+								t.action("renew", {params:{
+									"timeout": timeout.getValue()
+								}});
+								dialog.hide();
+							}
+						},
+						{
+							text: "Close",
+							click: function() {
+								dialog.hide();
+							}
+						}
+					],
+		});
+		var choices = {};
+		var timeout_settings = t.editor.options.timeout_settings;
+		for (var i = 0; i < timeout_settings.options.length; i++) choices[timeout_settings.options[i]] = formatDuration(timeout_settings.options[i]);
+		var timeout_val = t.data.timeout - new Date().getTime()/1000.0;
+		var text = timeout_val > 0 ? ("Your topology will time out in " + formatDuration(timeout_val)) : "Your topology has timed out. You must renew it to use it.";
+		if (timeout_val < timeout_settings.warning) text = '<b style="color:red">' + text + '</b>';
+		dialog.addText("<center>"  + text + "</center>");
+		timeout = dialog.add(new ChoiceElement({
+			name: "timeout",
+			label: "New timeout",
+			choices: choices,
+			value: timeout_settings["default"],
+			help_text: "After this time, your topology will automatically be stopped. Timeouts can be extended arbitrarily."
+		}));
+		dialog.show();		
 	},
-	initialRenameDialog: function() {
-		this._showRenameDialog("You have created a new topology. Please enter a name for it.");
+	initialDialog: function() {
+		var t = this;
+		var dialog, name, description, timeout;
+		dialog = new AttributeWindow({
+			title: "New Topology",
+			width: 500,
+			closable: false,
+			buttons: [
+						{ 
+							text: "Save",
+							click: function() {
+								if (name.getValue() && timeout.getValue()) {
+									t.modify({
+										"name": name.getValue(),
+										"_notes": description.getValue(),
+										"_initialized": true
+									});
+									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+									t.action("renew", {params:{
+										"timeout": timeout.getValue()
+									}});
+									dialog.hide();
+									dialog = null;
+								}
+							}
+						}
+					],
+		});
+		name = dialog.add(new TextElement({
+			name: "name",
+			label: "Name",
+			help_text: "The name for your topology"
+		}));
+		var choices = {};
+		var timeout_settings = t.editor.options.timeout_settings;
+		for (var i = 0; i < timeout_settings.options.length; i++) choices[timeout_settings.options[i]] = formatDuration(timeout_settings.options[i]); 
+		timeout = dialog.add(new ChoiceElement({
+			name: "timeout",
+			label: "Timeout",
+			choices: choices,
+			value: timeout_settings["default"],
+			help_text: "After this time, your topology will automatically be stopped. Timeouts can be extended arbitrarily."
+		}));
+		description = dialog.add(new TextAreaElement({
+			name: "description",
+			label: "Description",
+			help_text: "Description of the experiment. (Optional)",
+			value: t.data.attrs._notes
+		}));
+		dialog.show();
 	},
 	name: function() {
 		return this.data.attrs.name;
@@ -3598,11 +3732,10 @@ var Editor = Class.extend({
 			successFn: function(data){
 				t.topology.load(data);
 				t.workspace.setBusy(false);
-				if ((data.elements.length == 0) && (t.topology.name() == "Topology #"+t.topology.id)) {
-					t.topology.initialRenameDialog();
-				} else
-					if (t.topology.data.attrs._notes_autodisplay)
-						t.topology.notesDialog();
+				if (t.topology.data.attrs._initialized) {
+					if (t.topology.data.timeout - new Date().getTime()/1000.0 < t.topology.editor.options.timeout_settings.warning) t.topology.renewDialog();
+					if (t.topology.data.attrs._notes_autodisplay) t.topology.notesDialog();
+				} else t.topology.initialDialog();
 			}
 		});
 	},
@@ -4008,6 +4141,15 @@ var Editor = Class.extend({
 
 		var group = tab.addGroup("");
 		group.addElement(Menu.button({
+			label: "Renew",
+			icon: "img/renew.png",
+			toggle: false,
+			small: false,
+			func: function(){
+				t.topology.renewDialog();
+			}
+		}));
+		group.addElement(Menu.button({
 			label: "Notes",
 			icon: "img/notes32.png",
 			toggle: false,
@@ -4016,7 +4158,6 @@ var Editor = Class.extend({
 				t.topology.notesDialog();
 			}
 		}));
-		
 		group.addElement(Menu.button({
 			label: "Resource usage",
 			icon: "img/office-chart-bar.png",

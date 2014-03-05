@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, threading
+import os, shutil, threading, time
 from django.db import models
 
 from ..connections import Connection
@@ -217,6 +217,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		self.checkRole(Role.manager)
 		if action in ["prepare", "start", "upload_grant"]:
 			fault.check(not currentUser().hasFlag(Flags.OverQuota), "Over quota")
+			fault.check(self.topology.timeout > time.time(), "Topology has timed out")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
@@ -424,7 +425,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		}
 			
 	def info(self):
-		if not currentUser().hasFlag(Flags.Debug):
+		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		info = {
 			"id": self.id,

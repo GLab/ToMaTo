@@ -16,19 +16,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
+import time
 from lib import attributes, db, logging #@UnresolvedImport
 from accounting import UsageStatistics
 from auth import Flags
 from auth.permissions import Permissions, PermissionMixin, Role
+from . import scheduler
+
+class TimeoutStep:
+	INITIAL = 0
+	WARNED = 9
+	STOPPED = 10
+	DESTROYED = 20
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	permissions = models.ForeignKey(Permissions, null=False)
 	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	timeout = models.FloatField()
+	timeout_step = models.IntegerField(default=TimeoutStep.INITIAL)
 	attrs = db.JSONField()
 	name = attributes.attribute("name", unicode)
-	
 	DOC = ""
-	CAP_ACTIONS = ["prepare", "destroy", "start", "stop"]
+	CAP_ACTIONS = ["prepare", "destroy", "start", "stop", "renew"]
 	CAP_ATTRS = ["name"]
 	
 	class Meta:
@@ -39,6 +48,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		self.permissions = Permissions.objects.create()
 		self.permissions.set(owner, "owner")
 		self.totalUsage = UsageStatistics.objects.create()
+		self.timeout = time.time() + config.TOPOLOGY_TIMEOUT_INITIAL
+		self.timeout_step = TimeoutStep.WARNED #not sending a warning for initial timeout
 		self.save()
 		self.name = "Topology #%d" % self.id
 		self.modify(attrs)
@@ -111,6 +122,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		@type action: str
 		"""
 		self.checkRole(Role.manager)
+		if action in ["start", "prepare"]:
+			fault.check(self.timeout > time.time(), "Topology has timed out")
 		fault.check(not self.isBusy(), "Object is busy")
 		fault.check(action in self.CAP_ACTIONS, "Unsupported action for topology: %s", action)
 	
@@ -164,6 +177,12 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 							 typeOrder=["kvmqm", "openvz", "repy", "tinc_vpn", "udp_endpoint", "external_network"],
 							 typesExclude=["kvmqm_interface", "openvz_interface", "repy_interface"])
 
+	def action_renew(self, timeout):
+		timeout = float(timeout)
+		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin), "Timeout is greater than the maximum")
+		self.timeout = time.time() + timeout
+		self.timeout_step = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
+		
 	def _compoundAction(self, action, stateFilter, typeOrder, typesExclude):
 		# execute action in order
 		for type_ in typeOrder:
@@ -211,6 +230,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		logging.logMessage("permission", category="topology", id=self.id, user=user.name, role=role)
 		self.permissions.set(user, role)
 			
+	def sendMail(self, role=Role.manager, **kwargs):
+		for permission in self.permissions.entries.all():
+			if Role.RANKING.index(permission.role) >= Role.RANKING.index(role):
+				permission.user.sendMail(**kwargs)
+			
 	def info(self, full=False):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
@@ -227,13 +251,16 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			"permissions": dict([(str(p.user), p.role) for p in self.permissions.entries.all()]),
 			"elements": elements,
 			"connections": connections,
-			"usage": usage[0].info() if usage else None
+			"usage": usage[0].info() if usage else None,
+			"timeout": self.timeout
 		}
 		
 	def updateUsage(self, now):
 		self.totalUsage.updateFrom(now, [el.totalUsage for el in self.getElements()]
 								 + [con.totalUsage for con in self.getConnections()])
 
+	def __str__(self):
+		return "%s [#%d]" % (self.name, self.id)
 
 def get(id_, **kwargs):
 	try:
@@ -252,4 +279,26 @@ def create(attrs={}):
 	logging.logMessage("info", category="topology", id=top.id, info=top.info())	
 	return top
 	
-from . import fault, currentUser
+	
+def timeout_task():
+	now = time.time()
+	setCurrentUser(True) #we are a global admin
+	for top in Topology.objects.filter(timeout_step=TimeoutStep.INITIAL, timeout__lte=now+config.TOPOLOGY_TIMEOUT_WARNING):
+		logging.logMessage("timeout warning", category="topology", id=top.id)
+		top.sendMail(subject="Topology timeout warning: %s" % top, message="The topology %s will time out soon. This means that the topology will be first stopped and afterwards destroyed which will result in data loss. If you still want to use this topology, please log in and renew the topology." % top)
+		top.timeout_step = TimeoutStep.WARNED
+		top.save()
+	for top in Topology.objects.filter(timeout_step=TimeoutStep.WARNED, timeout__lte=now):
+		logging.logMessage("timeout stop", category="topology", id=top.id)
+		top.action_stop()
+		top.timeout_step = TimeoutStep.STOPPED
+		top.save()
+	for top in Topology.objects.filter(timeout_step=TimeoutStep.STOPPED, timeout__lte=now-config.TOPOLOGY_TIMEOUT_WARNING):
+		logging.logMessage("timeout destroy", category="topology", id=top.id)
+		top.action_destroy()
+		top.timeout_step = TimeoutStep.DESTROYED
+		top.save()
+
+scheduler.scheduleRepeated(600, timeout_task)
+
+from . import fault, currentUser, config, setCurrentUser

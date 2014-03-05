@@ -162,6 +162,20 @@ formatSize = function(value) {
 	return Math.round(value*100)/100 + " " + ["Bytes", "KB", "MB", "GB", "TB"][suffix];
 };
 
+formatDuration = function(value, recursed) {
+	var units = [[1, "seconds"], [60, "minutes"], [3600, "hours"], [3600*24, "days"]];
+	for (var i = units.length-1; i >= 0; i--) {
+		var val = units[i][0];
+		var unit = units[i][1];
+		if (value >= val) {
+			var str = Math.floor(value/val) + " " + unit;
+			var rest = value - Math.floor(value/val)*val;
+			if (rest && !recursed) str += ", " + formatDuration(rest, true);
+			return str;
+		}
+	}
+};
+
 if (!Array.prototype.indexOf) {
   Array.prototype.indexOf = function(elt /*, from*/) {
     var len = this.length;
