@@ -319,11 +319,9 @@ def site_site_connections(api):
 
 @wrap_rpc
 def map(api, request):
-	_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	_socket.connect(("8.8.8.8",80))
-	PUBLIC_ADDRESS = _socket.getsockname()[0]
-	_socket.close()
-	return render(request, "map/index.html",{'site_location_list':site_location_list(api),'connections': site_site_connections(api),'user':api.user,'public_address':PUBLIC_ADDRESS})
+	sites = site_location_list(api)
+	links = site_site_connections(api)
+	return render(request, "map/index.html",{'sites': sites,'links': links})
 
 @wrap_rpc
 def map_kml(api, request):

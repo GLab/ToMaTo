@@ -11,19 +11,14 @@
       }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script src="/js/util.js"></script>
+    <script src="/js/map.js"></script>
     <script>
       function initialize() {
-        var map_canvas = document.getElementById('map_canvas');
-        var map_options = {
-          mapTypeId: google.maps.MapTypeId.ROADMAP
-        }
-        var map = new google.maps.Map(map_canvas, map_options);
-        var src = document.location.protocol + '//' + document.location.host + '/map.kml';
-        src = src + '?' + (new Date().getTime()); // No google, you may not cache this file
-        var kmlLayer = new google.maps.KmlLayer(src, {
-          suppressInfoWindows: false,
-          preserveViewport: false,
-          map: map
+        var map = new Map({
+        	sites: {{sites|jsonify}},
+        	links: {{links|jsonify}},
+        	canvas: document.getElementById('map_canvas')
         });
       }
       google.maps.event.addDomListener(window, 'load', initialize);
