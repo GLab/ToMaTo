@@ -1354,6 +1354,7 @@ var Topology = Class.extend({
 				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
+		for (var name in attrs) this.data.attrs[name] = attrs[name];
 	},
 	action: function(action, options) {
 		var options = options || {};
@@ -1379,7 +1380,6 @@ var Topology = Class.extend({
 		var attrs = {};
 		attrs[name] = value;
 		this.modify(attrs);
-		this.data.attrs[name] = value;
 	},
 	isEmpty: function() {
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;

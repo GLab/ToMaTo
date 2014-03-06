@@ -27,6 +27,14 @@ class OpenVZ(generic.VMElement):
 	}
 	PROFILE_ATTRS = ["ram", "diskspace", "cpus"]
 	
+	def init(self, *args, **kwargs):
+		generic.VMElement.init(self, *args, **kwargs)
+		self.modify_name(self.name)
+	
+	def modify_name(self, value):
+		generic.VMElement.modify_name(self, value)
+		self._modify({"hostname": util.filterStr(value, substitute="x")})
+	
 	class Meta:
 		db_table = "tomato_openvz"
 		app_label = 'tomato'

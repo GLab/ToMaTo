@@ -15,14 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import threading, thread, traceback, time, xmlrpclib, datetime
+import threading, thread, traceback, time, xmlrpclib, datetime, string
 from decorators import xmlRpcSafe
+from django.db import transaction, DatabaseError
 
 def wrap_task(fn):
 	def call(*args, **kwargs):
 		try:
 			return fn(*args, **kwargs)
 		except Exception, exc:
+			if isinstance(exc, DatabaseError):
+				transaction.rollback()
 			from .. import fault
 			fault.errors_add(exc, traceback.format_exc())
 	call.__name__ = fn.__name__
@@ -207,3 +210,13 @@ def joinDicts(dictA,dictB):
 			else:
 				A[i] = dictB[i]
 	return A
+
+def filterStr(s, allowedChars=string.ascii_letters+string.digits+"_", substitute="_"):
+	res = ""
+	for ch in s:
+		if ch in allowedChars:
+			res += ch
+		else:
+			if substitute:
+				res += substitute
+	return res

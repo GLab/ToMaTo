@@ -56,6 +56,6 @@ def wrap(exc):
 
 def check(condition, errorStr, formatOpt = None, code=USER_ERROR):
 	if not condition:
-		if formatOpt:
+		if not formatOpt is None:
 			errorStr = errorStr % formatOpt
 		raise_(errorStr, code)
