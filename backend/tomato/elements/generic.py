@@ -38,7 +38,7 @@ class VMElement(elements.Element):
 	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
-	last_sync = attributes.attribute("last_sync", unicode, "")
+	last_sync = attributes.attribute("last_sync", float, 0)
 	
 	CUSTOM_ACTIONS = {
 		"stop": [ST_STARTED],
@@ -71,7 +71,7 @@ class VMElement(elements.Element):
 		except:
 			pass
 		
-		self.last_sync = time.ctime()
+		self.last_sync = time.time()
 		
 		#calculate next update time:
 		time_passed = int(time.time()) - self.rextfv_last_started
@@ -231,7 +231,7 @@ class VMElement(elements.Element):
 
 	def info(self):
 		info = elements.Element.info(self)
-		info["info_age"] = self.last_sync
+		info["info_sync_date"] = self.last_sync
 		info["attrs"]["template"] = self._template().name
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
