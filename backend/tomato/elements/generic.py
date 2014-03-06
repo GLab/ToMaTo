@@ -38,7 +38,7 @@ class VMElement(elements.Element):
 	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
-	last_sync = attributes.attribute("description", unicode, "")
+	last_sync = attributes.attribute("last_sync", unicode, "")
 	
 	CUSTOM_ACTIONS = {
 		"stop": [ST_STARTED],
