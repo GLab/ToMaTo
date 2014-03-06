@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from .. import util
-from . import run, CommandError
+from . import run, CommandError, spawn
 from process import killTree
 import path
-import os, re, random
+import os, re, random, struct, json
+from fcntl import ioctl
 
 def getIfbCount():
 	def _ifbExists(n):
@@ -92,6 +93,9 @@ def freeTcpPort(port):
 def _brifPath(brname):
 	return os.path.join(_ifacePath(brname), "brif")
 
+def bridgeList():
+	return filter(lambda d: os.path.exists(os.path.join(_ifacePath(d), "brif")), os.listdir(_ifacePath("")))
+
 def bridgeExists(brname):
 	return path.exists(_brifPath(brname))
 
@@ -107,7 +111,6 @@ def bridgeRemove(brname):
 	assert bridgeExists(brname)
 	ifDown(brname)
 	run(["brctl", "delbr", brname])
-	
 	
 def bridgeAddInterface(brname, ifname):
 	assert bridgeExists(brname)
@@ -156,3 +159,42 @@ def randomMac():
 	bytes = [random.randint(0x00, 0xff) for _ in xrange(6)]
 	bytes[0] = bytes[0] & 0xfc | 0x02 # local and individual
 	return ':'.join(map(lambda x: "%02x" % x, bytes))
+
+def ipspy_start(iface, output):
+	return spawn(["ipspy", "-i", iface, "-o", output, "--dhcp"])
+
+def ipspy_read(filename):
+	try:
+		with open(filename, "r") as fn:
+			data = json.load(fn)
+			ips = data.keys()
+			ips.sort(key=lambda ip: data[ip]["last_seen"] + data[ip]["pkg_count"] * 1000, reverse=True)
+			return ips 
+	except:
+		return []
+
+class IfaceAccess:
+	def __init__(self, ifname):
+		self.sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+		self.sock.bind((ifname, 0x0003))
+		self.sock.setblocking(1)
+	def receive(self, mtu=1516):
+		return self.sock.recv(mtu)
+	def send(self, pkg):
+		self.sock.send(pkg)
+	def close(self):
+		self.sock.close()		
+
+class BridgeAccess:
+	def __init__(self, brname, ifname):
+		self.fd = os.open('/dev/net/tun', os.O_RDWR)
+		ifs = ioctl(self.fd, 0x400454ca, struct.pack("16sH", ifname, 0x1002))
+		ifname = ifs[:16].strip("\x00")
+		ifUp(ifname)
+		bridgeAddInterface(brname, ifname)
+	def receive(self, mtu=1516):
+		return os.read(self.fd, mtu)
+	def send(self, pkg):
+		os.write(self.fd, pkg)
+	def close(self):
+		os.close(self.fd)

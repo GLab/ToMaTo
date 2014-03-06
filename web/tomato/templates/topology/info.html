@@ -43,7 +43,7 @@
 </div>
 
 <script language="JavaScript" type="text/javascript">
-  help_baseUrl = "{% aupurl %}";
+  help_baseUrl = "{%externalurl 'help' %}";
   {% if tutorial_data %}
   var tutorial_base_url = "{{tutorial_data.base_url}}";
   var tutorial_steps = {{tutorial_steps|safe}};
@@ -65,6 +65,7 @@
   	supported_configwindow_help_pages: ['kvmqm','openvz','connection'],
   	
   	safe_mode: true,
+  	timeout_settings: {{timeout_settings|jsonify}},
   	sites: {{sites_json|safe}},
   	resources: {{res_json|safe}},
   	capabilities: {{caps_json|safe}}, 

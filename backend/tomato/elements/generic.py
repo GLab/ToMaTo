@@ -18,8 +18,8 @@
 from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
-from ..lib.attributes import Attr #@UnresolvedImport
-from ..lib import util #@UnresolvedImport
+from ..lib.attributes import Attr, attribute #@UnresolvedImport
+from ..lib import util, attributes #@UnresolvedImport
 import time
 
 ST_CREATED = "created"
@@ -38,6 +38,8 @@ class VMElement(elements.Element):
 	template = models.ForeignKey(r_template.Template, null=True, on_delete=models.SET_NULL)
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
+	last_sync = attributes.attribute("last_sync", float, 0)
+	custom_template = attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 	
 	CUSTOM_ACTIONS = {
 		"stop": [ST_STARTED],
@@ -69,6 +71,9 @@ class VMElement(elements.Element):
 			self.element.updateInfo()
 		except:
 			pass
+		
+		self.last_sync = time.time()
+		
 		#calculate next update time:
 		time_passed = int(time.time()) - self.rextfv_last_started
 		if time_passed < 60*60*24: #less than one day
@@ -125,6 +130,7 @@ class VMElement(elements.Element):
 
 	def modify_profile(self, val):
 		profile = resources.profile.get(self.TYPE, val)
+		fault.check(profile, "No such profile: %s", val)
 		if profile.restricted and not self.profile == profile:
 			fault.check(currentUser().hasFlag(Flags.RestrictedProfiles), "Profile is restricted")
 		self.profile = profile
@@ -132,7 +138,11 @@ class VMElement(elements.Element):
 			self.element.modify(self._profileAttrs())
 
 	def modify_template(self, tmplName):
-		self.template = resources.template.get(self.TYPE, tmplName)
+		template = resources.template.get(self.TYPE, tmplName)
+		fault.check(template, "No such template: %s", tmplName)
+		if template.restricted and not self.template == template:
+			fault.check(currentUser().hasFlag(Flags.RestrictedTemplates), "Template is restricted")
+		self.template = template
 		if self.element:
 			self.element.modify({"template": self._template().name})
 
@@ -182,7 +192,7 @@ class VMElement(elements.Element):
 			"template": self._template().name,
 		})
 		attrs.update(self._profileAttrs())
-		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement(self.TYPE, parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		for iface in self.getChildren():
 			iface._create()
@@ -196,6 +206,7 @@ class VMElement(elements.Element):
 				iface._remove()
 			self.element.remove()
 			self.element = None
+			self.custom_template = False
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -216,22 +227,25 @@ class VMElement(elements.Element):
 			ch.triggerConnectionStart()
 
 	def after_upload_use(self):
-		if self.element:
-			self.element.after_upload_use()
+		self.custom_template = True
+		self.save()
 
 	def upcast(self):
 		return self
 
 	def info(self):
 		info = elements.Element.info(self)
+		info["info_sync_date"] = self.last_sync
 		info["attrs"]["template"] = self._template().name
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
-		info["attrs"]["host"] = self.element.host.address if self.element else None
-		info["attrs"]["host_problems"] = self.element.host.problems() if self.element else None
-		info["attrs"]["custom_template"] = self.element.custom_template if self.element else False
-		info["attrs"]["host_site"] = self.element.host.site.name if self.element else None
-		info["attrs"]["host_fileserver_port"] = self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
+		info["attrs"]["host"] = self.element.host.name if self.element else None
+		info["attrs"]["host_info"] = {
+									'address':			self.element.host.address if self.element else None,
+									'problems': 		self.element.host.problems() if self.element else None,
+									'site':				self.element.host.site.name if self.element else None,
+									'fileserver_port': 	self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
+									}
 		return info
 
 
@@ -266,7 +280,7 @@ class VMInterface(elements.Element):
 		parEl = self.getParent().element
 		assert parEl
 		attrs = self._remoteAttrs()
-		self.element = parEl.createChild(self.TYPE, attrs=attrs, owner=self)
+		self.element = parEl.createChild(self.TYPE, attrs=attrs, ownerElement=self)
 		self.save()
 		
 	def _remove(self):

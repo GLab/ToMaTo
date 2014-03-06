@@ -1,3 +1,21 @@
+tomato-hostmanager (3.2.2) unstable; urgency=low
+
+  * Added websockify dependency
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Feb 2014 11:33:52 +0100
+
+tomato-hostmanager (3.2.1) unstable; urgency=low
+
+  * Added information about host networks
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 06 Feb 2014 14:56:21 +0100
+
+tomato-hostmanager (3.2) unstable; urgency=low
+
+  * Major release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 27 Jan 2014 16:28:33 +0100
+
 tomato-hostmanager (3.1.2) unstable; urgency=low
 
   * Include version of updater (if installed) in host info

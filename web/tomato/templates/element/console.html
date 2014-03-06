@@ -25,7 +25,7 @@ setTimeout ("wresize()", 1000);
   </head>
   <body style="margin:0px;overflow='hidden'">
     <applet name="vncapp" code="VncViewer.class" archive="/static/VncViewer.jar" width="745" height="400">
-	  <param name="HOST" value="{{info.attrs.host}}">
+	  <param name="HOST" value="{{info.attrs.host_info.address}}">
 	  <param name="PORT" value="{{info.attrs.vncport}}">
 	  <param name="PASSWORD" value="{{info.attrs.vncpassword}}">
 	  <param name="Show Controls" value="Yes">

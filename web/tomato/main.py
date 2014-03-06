@@ -24,8 +24,7 @@ from tomato.crispy_forms.helper import FormHelper
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import StrictButton, FormActions
 
-from lib import getapi, getNews
-import settings
+from lib import getapi, getNews, wrap_rpc
 
 def index(request):
 	try:
@@ -34,11 +33,9 @@ def index(request):
 		news = {}
 	return render(request, "main/start.html", {"news": news})
 
-def ticket(request, page=""):
-	return HttpResponseRedirect(settings.ticket_url % page)
-
-def project(request, page=""):
-	return HttpResponseRedirect(settings.project_url % page)
+@wrap_rpc
+def statistics(api, request):
+	return render(request, "main/statistics.html", {"stats": api.statistics()})
 
 class LoginForm(forms.Form):
 	username = forms.CharField(max_length=255)
@@ -62,7 +59,7 @@ class LoginForm(forms.Form):
 		)
 
 def login(request):
-	if request.method == 'POST':
+	if request.method == 'POST' and "username" in request.POST:
 		form = LoginForm(request.POST)
 		if not form.is_valid():
 			return render(request, "main/login.html", {'form': form})
@@ -81,6 +78,8 @@ def login(request):
 		return HttpResponseRedirect(forward)
 	else:
 		form = LoginForm()
+		if "forward_url" in request.POST:
+			request.session["forward_url"] = request.POST['forward_url']
 		return render(request, "main/login.html", {'form': form})
 
 def logout(request):

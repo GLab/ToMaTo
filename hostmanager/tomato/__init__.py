@@ -53,6 +53,8 @@ def login(credentials, sslCert):
 	setCurrentUser(user)
 	return bool(sslCert)
 
+from lib import tasks #@UnresolvedImport
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
 
 from models import *
 	
@@ -60,7 +62,9 @@ import api
 
 from . import dump, lib, resources, accounting, rpcserver, elements #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
-from lib import logging #@UnresolvedImport
+from lib import logging, util #@UnresolvedImport
+
+scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
 stopped = threading.Event()
 
@@ -68,12 +72,10 @@ def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
-	accounting.task.start() #@UndefinedVariable
 	bittorrent.startClient(config.TEMPLATE_DIR)
-	bittorrent.task.start() #@UndefinedVariable
 	fileserver.start()
 	rpcserver.start()
-	elements.timeoutTask.start() #@UndefinedVariable
+	scheduler.start()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
@@ -85,10 +87,8 @@ def stop(*args):
 	try:
 		print >>sys.stderr, "Shutting down..."
 		rpcserver.stop()
+		scheduler.stop()
 		fileserver.stop()
-		elements.timeoutTask.stop() #@UndefinedVariable
-		accounting.task.stop() #@UndefinedVariable
-		bittorrent.task.stop() #@UndefinedVariable
 		bittorrent.stopClient()
 		logging.closeDefault()
 		stopped.set()

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, threading
+import os, shutil, threading, time
 from django.db import models
 
 from ..connections import Connection
@@ -217,6 +217,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		self.checkRole(Role.manager)
 		if action in ["prepare", "start", "upload_grant"]:
 			fault.check(not currentUser().hasFlag(Flags.OverQuota), "Over quota")
+			fault.check(self.topology.timeout > time.time(), "Topology has timed out")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
@@ -251,17 +252,17 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		self.checkAction(action)
 		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)
 		try:
+			if hasattr(self, "before_%s" % action):
+				getattr(self, "before_%s" % action)(**params)
 			if action in self.CUSTOM_ACTIONS:
 				res = getattr(self, "action_%s" % action)(**params)
 			else:
 				mel = self.mainElement()
 				assert mel
-				if hasattr(self, "before_%s" % action):
-					getattr(self, "before_%s" % action)(**params)
 				res = mel.action(action, params)
 				self.setState(mel.state, True)
-				if hasattr(self, "after_%s" % action):
-					getattr(self, "after_%s" % action)(**params)
+			if hasattr(self, "after_%s" % action):
+				getattr(self, "after_%s" % action)(**params)
 		except Exception, exc:
 			self.onError(exc)
 			raise
@@ -424,7 +425,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		}
 			
 	def info(self):
-		if not currentUser().hasFlag(Flags.Debug):
+		if not (currentUser() is True or currentUser().hasFlag(Flags.Debug)):
 			self.checkRole(Role.user)
 		info = {
 			"id": self.id,
@@ -436,14 +437,19 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 			"children": [ch.id for ch in self.getChildren()],
 			"connection": self.connection.id if self.connection else None,
 			"debug": {
-					"host_elements": [(o.host.address, o.num) for o in self.getHostElements()],
-					"host_connections": [(o.host.address, o.num) for o in self.getHostConnections()],
+					"host_elements": [(o.host.name, o.num) for o in self.getHostElements()],
+					"host_connections": [(o.host.name, o.num) for o in self.getHostConnections()],
 			}
 		}
 		mel = self.mainElement()
 		if mel:
 			info["attrs"].update(mel.attrs["attrs"])
 		return info
+
+	def fetchInfo(self):
+		mel = self.mainElement()
+		if mel:
+			mel.updateInfo()
 
 	def updateUsage(self, now):
 		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]

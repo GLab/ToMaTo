@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import elements
+from .. import elements, scheduler
 import generic, time
 from ..lib import util #@UnresolvedImport
+from ..lib.attributes import Attr #@UnresolvedImport
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"
@@ -39,11 +40,12 @@ class KVMQM_Interface(generic.VMInterface):
 		db_table = "tomato_kvmqm_interface"
 		app_label = 'tomato'
 
+@util.wrap_task
 def syncRexTFV():
 	for e in KVMQM.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
 		e.updateInfo()
-rextfv_syncer = util.RepeatedTimer(1, syncRexTFV)
-#don't forget to start/stop this in tomato/__init__.py
+		
+scheduler.scheduleRepeated(1, syncRexTFV)
 	
 elements.TYPES[KVMQM.TYPE] = KVMQM
 elements.TYPES[KVMQM_Interface.TYPE] = KVMQM_Interface

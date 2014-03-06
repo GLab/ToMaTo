@@ -95,7 +95,7 @@ class UDP_Endpoint(elements.Element):
 		attrs.update({
 			"connect": self.connect,
 		})
-		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		self.setState(ST_PREPARED, True)
 		

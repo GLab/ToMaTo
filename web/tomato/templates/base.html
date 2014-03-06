@@ -16,6 +16,8 @@
 <!-- Custom styles for this template -->
 <link href="/style/justified-nav.css" rel="stylesheet">
 
+<link href="/style/icomoon-rss.css" rel="stylesheet">
+
 <link href="/style/custom.css" rel="stylesheet">
 
 
@@ -30,7 +32,7 @@
 {% load tomato %}
 
 <script src="/js/jquery.js"></script>
-<script src="/js/dropdown.js"></script>
+<script src="/js/bootstrap.min.js"></script>
 <script src="/js/bootstrap-multiselect.js"></script>
 <script src="/js/tab.js"></script>
 {% block header %}
@@ -57,6 +59,12 @@ head.appendChild(style);
 
 {% block page %}
 
+{% if not request.session.user %}
+<form id="loginnavbarform" method="post" action="{%url main.login%}" style="display:none;">
+  <input type="hidden" name="forward_url" value="{{request.path}}" />
+</form>
+{% endif %}
+
 <div class="container">
 	<div class="masthead">
 		<table style="width:100%">
@@ -81,7 +89,7 @@ head.appendChild(style);
         <ul class="nav nav-justified">
             {% if not request.session.user %}
 				<li><a href="{%url account.register%}">Register</a></li>
-				<li><a href="{%url main.login%}">Login</a></li>
+				<li><a onclick="document.getElementById('loginnavbarform').submit();" href="#">Login</a></li>
             {% endif %}
 			{% if request.session.user %}
 				<li><a href="{%url account.info%}">My Account</a></li>
@@ -124,14 +132,17 @@ head.appendChild(style);
 							<li><a href="{%url profile.list%}">Device profiles</a></li>
 							<li><a href="{%url external_network.list%}">External networks</a></li>
 						{% endif %}
+						<li class="divider"></li>
+						<li><a href="{%url main.statistics%}">Statistics</a></li>
 					</ul>
 				</li>
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Links <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="{% helpurl %}" target="_help">Help</a></li>
-			      		<li><a href="{% projecturl %}" target="_blank">Project</a></li>
-			   			<li><a href="{% aupurl %} target="_blank"">Terms and Conditions</a></li>
+			      		<li><a href="{%externalurl 'project' %}" target="_blank">Project</a></li>
+						<li><a href="{%externalurl 'help' %}" target="_help">Help</a></li>
+						<li><a href="{%externalurl 'bugtracker' %}" target="_help">Bugtracker</a></li>
+			   			<li><a href="{%externalurl 'aup' %}" target="_blank">Acceptable Use Policy</a></li>
    						<li><a href="{%url help.contact_form%}">Contact</a></li>
 					</ul>
 				</li>
@@ -146,7 +157,7 @@ head.appendChild(style);
       <div class="footer">		
       	<ul>
    			<li><a href="{%url help.help "license/license"%}">License</a></li>
-   			<li><a href="{% impressumurl %}">Impressum</a></li>
+   			<li><a href="{%externalurl 'impressum' %}">Impressum</a></li>
    		</ul>
         <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>
         <p class="version">Backend version: {% backend_version %} / Frontend version: {% frontend_version %}</p>

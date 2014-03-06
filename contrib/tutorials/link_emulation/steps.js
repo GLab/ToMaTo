@@ -93,7 +93,8 @@
 						You will also notice a change in the connection\'s appearance: A dashed line means that link emulation (except for bandwidth) is taking place.</p>\
 					<p class="tutorialExplanation">\
 						Now, set a jitter of 50ms on the same direction. You will notice a jitter in the delay.</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'linkemulation'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
@@ -102,7 +103,8 @@
 						When playing around with loss ratio, corruption ratio, and/or duplication ratio, you will notice lost, corrupted and duplicated packets in your ping history, where the ratio is the probability of corruption for each packet when travelling in the respective direction.<br />\
 					<p class="tutorialExplanation">\
 						Please reset delay and ratios to 0, and stop the pinging.</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+			help_page: 'linkemulation'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
@@ -112,7 +114,8 @@
 					<p class="tutorialExplanation">\
 						You can now change the bandwidth (from switch to device) to be bigger or smaller, and see that these changes affect the download (even while it is running).<br />\
 						You will also notice a change in the connection\'s thickness. This represents the bandwidth.</p>',
-			skip_button:	"Continue"
+			skip_button:	"Continue",
+		help_page: 'linkemulation'
 			},
 			{
 			text:	'<p class="tutorialExplanation">\

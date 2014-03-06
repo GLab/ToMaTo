@@ -1,0 +1,13 @@
+ipspy (0.2) unstable; urgency=low
+
+  * Writing out after first received packet
+  * Also detecting addresses assigned via DHCP (IPv4 only)
+  * Using exact timestamps
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 19 Feb 2014 16:01:33 +0100
+
+ipspy (0.1) unstable; urgency=low
+
+  * Initial package
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 19 Feb 2014 13:49:04 +0100

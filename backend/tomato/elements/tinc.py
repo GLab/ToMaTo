@@ -86,7 +86,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 			assert ch.element
 			info = ch.info()
 			peers.append({
-				"host": ch.element.host.address,
+				"host": ch.element.host.name,
 				"port": info["attrs"]["port"],
 				"pubkey": info["attrs"]["pubkey"],
 			})
@@ -215,7 +215,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 			"mode": self.mode,
 			"peers": self.peers,
 		})
-		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement(self.remoteType(), parent=None, attrs=attrs, ownerElement=self)
 		self.save()
 		self.setState(ST_PREPARED, True)
 		

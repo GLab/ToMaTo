@@ -54,9 +54,9 @@ def element_create(api, topid, type, parent=None, attrs={}): #@ReservedAssignmen
 	return info
 
 @wrap_json
-def element_info(api, id): #@ReservedAssignment
+def element_info(api, id, fetch=False): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.element_info(id)
+	info = api.element_info(id, fetch)
 	return info
 
 @wrap_json
@@ -84,9 +84,9 @@ def connection_create(api, elements, attrs={}):
 	return info
 
 @wrap_json
-def connection_info(api, id): #@ReservedAssignment
+def connection_info(api, id, fetch=False): #@ReservedAssignment
 	id = int(id) #@ReservedAssignment
-	info = api.connection_info(id)
+	info = api.connection_info(id, fetch)
 	return info
 
 @wrap_json
@@ -111,15 +111,4 @@ def connection_remove(api, id): #@ReservedAssignment
 @wrap_json
 def account_info(api, name):
 	res = api.account_info(name)
-	return res
-
-@wrap_json
-def element_rextfv_status(api, id): #@ReservedAssignment
-	d = api.element_info(id)
-	info=d['attrs']
-	res = {'state': d['state']}
-	if 'rextfv_max_size' in info:
-		res['rextfv_max_size'] = info['rextfv_max_size']
-	if 'rextfv_run_status' in info:
-		res['rextfv_run_status'] = info['rextfv_run_status']
 	return res

@@ -87,7 +87,9 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 		except:
 			import traceback
 			traceback.print_exc()
-		fault.raise_("Failed to cast resource #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+		id, type = self.id, self.type
+		self.remove()
+		fault.raise_("Failed to cast resource #%d to type %s" % (id, type), code=fault.INTERNAL_ERROR)
 	
 	def modify(self, attrs):
 		if not _initPhase:

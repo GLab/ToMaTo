@@ -28,6 +28,10 @@
         SetHandler none
     </Location>
 
+    <Location "/fonts">
+        SetHandler none
+    </Location>
+
     <Location "/editor_tutorial">
         SetHandler none
     </Location>

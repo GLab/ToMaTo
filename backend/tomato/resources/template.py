@@ -34,6 +34,7 @@ class Template(resources.Resource):
 	label = attributes.attribute("label", str)
 	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
+	restricted = attributes.attribute("restricted", bool)
 	# hosts: [TemplateOnHost]
 	
 	TYPE = "template"

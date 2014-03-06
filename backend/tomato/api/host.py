@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from api_helpers import checkauth
+from ..lib.cache import cached #@UnresolvedImport
+
 def _getOrganization(name):
 	o = host.getOrganization(name)
 	fault.check(o, "Organization with name %s does not exist", name)
@@ -25,70 +28,54 @@ def _getSite(name):
 	fault.check(s, "Site with name %s does not exist", name)
 	return s
 
-def _getHost(address):
-	h = host.get(address=address)
-	fault.check(h, "Host with address %s does not exist", address)
+def _getHost(name):
+	h = host.get(name=name)
+	fault.check(h, "Host with name %s does not exist", name)
 	return h
 
-def organization_create(name, description=""):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	o = host.createOrganization(name, description)
-	return o.info()
-
-def organization_info(name):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	orga = _getOrganization(name)
-	return orga.info()
-
+@cached(timeout=6*3600)
 def organization_list():
 	"""
 	undocumented
 	"""
 	return [o.info() for o in host.getAllOrganizations()]
 
+@checkauth
+def organization_create(name, description=""):
+	"""
+	undocumented
+	"""
+	o = host.createOrganization(name, description)
+	organization_list.invalidate()
+	return o.info()
+
+def organization_info(name):
+	"""
+	undocumented
+	"""
+	orga = _getOrganization(name)
+	return orga.info()
+
+@checkauth
 def organization_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	orga = _getOrganization(name)
 	orga.modify(attrs)
+	organization_list.invalidate()
 	return orga.info()
 
+@checkauth
 def organization_remove(name):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	orga = _getOrganization(name)
 	orga.remove()
+	organization_list.invalidate()
 
-def site_create(name, organization, description=""):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	s = host.createSite(name, organization, description)
-	return s.info()
-
-def site_info(name):
-	"""
-	undocumented
-	"""
-	site = _getSite(name)
-	return site.info()
-
+@cached(timeout=6*3600)
 def site_list(organization=None):
 	"""
 	undocumented
@@ -100,50 +87,46 @@ def site_list(organization=None):
 		sites = host.getAllSites()
 	return [s.info() for s in sites]
 
+@checkauth
+def site_create(name, organization, description=""):
+	"""
+	undocumented
+	"""
+	s = host.createSite(name, organization, description)
+	site_list.invalidate()
+	return s.info()
+
+def site_info(name):
+	"""
+	undocumented
+	"""
+	site = _getSite(name)
+	return site.info()
+
+@checkauth
 def site_modify(name, attrs):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	site = _getSite(name)
 	site.modify(attrs)
+	site_list.invalidate()
 	return site.info()
 
+@checkauth
 def site_remove(name):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	site = _getSite(name)
 	site.remove()
+	site_list.invalidate()
 
-def host_create(address, site, attrs={}):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	site = _getSite(site)
-	h = host.create(address, site, attrs)
-	return h.info()
-
-def host_info(address):
-	"""
-	undocumented
-	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	h = _getHost(address)
-	return h.info()
-
+@cached(timeout=300)
 def host_list(site=None, organization=None):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
 	if site:
 		hosts = host.getAll(site__name=site)
 	elif organization:
@@ -152,24 +135,41 @@ def host_list(site=None, organization=None):
 		hosts = host.getAll()
 	return [h.info() for h in hosts]
 
-def host_modify(address, attrs):
+@checkauth
+def host_create(name, site, attrs={}):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	h = _getHost(address)
-	h.modify(attrs)
+	site = _getSite(site)
+	h = host.create(name, site, attrs)
+	host_list.invalidate()
 	return h.info()
 
-def host_remove(address):
+@checkauth
+def host_info(name):
 	"""
 	undocumented
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
-	h = _getHost(address)
-	h.remove()
+	h = _getHost(name)
+	return h.info()
 
-from .. import host, fault, currentUser
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+@checkauth
+def host_modify(name, attrs):
+	"""
+	undocumented
+	"""
+	h = _getHost(name)
+	h.modify(attrs)
+	host_list.invalidate()
+	return h.info()
+
+@checkauth
+def host_remove(name):
+	"""
+	undocumented
+	"""
+	h = _getHost(name)
+	h.remove()
+	host_list.invalidate()
+
+from .. import host, fault

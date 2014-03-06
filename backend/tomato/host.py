@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser, starttime
+from . import config, currentUser, starttime, scheduler
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags
@@ -195,11 +195,12 @@ def createSite(name, organization, description=""):
 	return site
 
 def _connect(address, port):
-	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE)
+	transport = rpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
 	return rpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
 
 
 class Host(attributes.Mixin, models.Model):
+	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
 	attrs = db.JSONField()
@@ -208,6 +209,7 @@ class Host(attributes.Mixin, models.Model):
 	connectionTypes = attributes.attribute("connection_types", dict, {})
 	hostInfo = attributes.attribute("info", dict, {})
 	hostInfoTimestamp = attributes.attribute("info_timestamp", float, 0.0)
+	hostNetworks = attributes.attribute("networks", list, {})
 	accountingTimestamp = attributes.attribute("accounting_timestamp", float, 0.0)
 	lastResourcesSync = attributes.attribute("last_resources_sync", float, 0.0)
 	enabled = attributes.attribute("enabled", bool, True)
@@ -221,7 +223,7 @@ class Host(attributes.Mixin, models.Model):
 	# templates: [TemplateOnHost]
 	
 	class Meta:
-		ordering = ['site', 'address']
+		ordering = ['site', 'name']
 
 	def init(self, attrs={}):
 		self.attrs = {}
@@ -239,7 +241,7 @@ class Host(attributes.Mixin, models.Model):
 	def incrementErrors(self):
 		# count all component errors {element|connection}_{create|action|modify}
 		# this value is reset on every sync
-		logging.logMessage("component error", category="host", host=self.address)
+		logging.logMessage("component error", category="host", host=self.name)
 		self.componentErrors +=1
 		self.save()
 		
@@ -252,6 +254,10 @@ class Host(attributes.Mixin, models.Model):
 		self.hostInfoTimestamp = (before+after)/2.0
 		self.hostInfo["query_time"] = after - before
 		self.hostInfo["time_diff"] = self.hostInfo["time"] - self.hostInfoTimestamp
+		try:
+			self.hostNetworks = self.getProxy().host_networks()
+		except:
+			self.hostNetworks = None
 		caps = self._capabilities()
 		self.elementTypes = caps["elements"]
 		self.connectionTypes = caps["connections"]
@@ -259,8 +265,8 @@ class Host(attributes.Mixin, models.Model):
 		if not self.problems():
 			self.availability += 1.0 - config.HOST_AVAILABILITY_FACTOR
 		self.save()
-		logging.logMessage("info", category="host", address=self.address, info=self.hostInfo)		
-		logging.logMessage("capabilities", category="host", address=self.address, capabilities=caps)		
+		logging.logMessage("info", category="host", name=self.name, info=self.hostInfo)		
+		logging.logMessage("capabilities", category="host", name=self.name, capabilities=caps)		
 		
 	def _capabilities(self):
 		return self.getProxy().host_capabilities()
@@ -274,24 +280,26 @@ class Host(attributes.Mixin, models.Model):
 	def getConnectionCapabilities(self, type_):
 		return self.connectionTypes.get(type_)
 
-	def createElement(self, type_, parent=None, attrs={}, owner=None):
+	def createElement(self, type_, parent=None, attrs={}, ownerElement=None, ownerConnection=None):
 		assert not parent or parent.host == self
 		try:
 			el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
 		except:
 			self.incrementErrors()
 			raise
-		hel = HostElement(host=self, num=el["id"])
+		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hel.usageStatistics = UsageStatistics.objects.create()
 		hel.attrs = el
 		hel.save()
-		logging.logMessage("element_create", category="host", host=self.address, element=el, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)		
+		logging.logMessage("element_create", category="host", host=self.name, element=el, 
+			ownerElement=(ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+			ownerConnection=(ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)		
 		return hel
 
 	def getElement(self, num):
 		return self.elements.get(num=num)
 
-	def createConnection(self, hel1, hel2, type_=None, attrs={}, owner=None):
+	def createConnection(self, hel1, hel2, type_=None, attrs={}, ownerElement=None, ownerConnection=None):
 		assert hel1.host == self
 		assert hel2.host == self
 		try:
@@ -299,11 +307,13 @@ class Host(attributes.Mixin, models.Model):
 		except:
 			self.incrementErrors()
 			raise
-		hcon = HostConnection(host=self, num=con["id"])
+		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.attrs = con
 		hcon.save()
-		logging.logMessage("connection_create", category="host", host=self.address, element=con, owner=(owner.__class__.__name__.lower(), owner.id) if owner else None)		
+		logging.logMessage("connection_create", category="host", host=self.name, element=con,		
+			ownerElement=(ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
+			ownerConnection=(ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)		
 		return hcon
 
 	def getConnection(self, num):
@@ -316,7 +326,7 @@ class Host(attributes.Mixin, models.Model):
 		if time.time() - self.lastResourcesSync < config.RESOURCES_SYNC_INTERVAL:
 			return
 		from models import TemplateOnHost
-		logging.logMessage("resource_sync begin", category="host", address=self.address)		
+		logging.logMessage("resource_sync begin", category="host", name=self.name)		
 		#TODO: implement for other resources
 		from . import resources
 		hostNets = {}
@@ -331,13 +341,13 @@ class Host(attributes.Mixin, models.Model):
 			if not key in hostNets:
 				#create resource
 				self.getProxy().resource_create("network", attrs)
-				logging.logMessage("network create", category="host", address=self.address, network=attrs)		
+				logging.logMessage("network create", category="host", name=self.name, network=attrs)		
 			else:
 				hNet = hostNets[key]
 				if hNet["attrs"] != attrs:
 					#update resource
 					self.getProxy().resource_modify(hNet["id"], attrs)
-					logging.logMessage("network update", category="host", address=self.address, network=attrs)				
+					logging.logMessage("network update", category="host", name=self.name, network=attrs)				
 		tpls = {}
 		for tpl in self.getProxy().resource_list("template"):
 			tpls[tpl["attrs"]["tech"]] = tpls.get(tpl["attrs"]["tech"], {})
@@ -353,7 +363,7 @@ class Host(attributes.Mixin, models.Model):
 			if not attrs["tech"] in tpls or not attrs["name"] in tpls[attrs["tech"]]:
 				#create resource
 				self.getProxy().resource_create("template", attrs)
-				logging.logMessage("template create", category="host", address=self.address, template=attrs)		
+				logging.logMessage("template create", category="host", name=self.name, template=attrs)		
 				toh.ready = False
 				toh.date = time.time()
 				toh.save()  
@@ -379,8 +389,8 @@ class Host(attributes.Mixin, models.Model):
 						toh.date = time.time()
 						toh.save()  						
 					self.getProxy().resource_modify(hTpl["id"], attrs)
-					logging.logMessage("template update", category="host", address=self.address, template=attrs)		
-		logging.logMessage("resource_sync end", category="host", address=self.address)		
+					logging.logMessage("template update", category="host", name=self.name, template=attrs)		
+		logging.logMessage("resource_sync end", category="host", name=self.name)		
 		self.lastResourcesSync = time.time()
 		self.save()
 
@@ -388,29 +398,29 @@ class Host(attributes.Mixin, models.Model):
 		return len(self.templates.filter(template=tpl, ready=True))
 
 	def updateAccountingData(self, now):
-		logging.logMessage("accounting_sync begin", category="host", address=self.address)		
+		logging.logMessage("accounting_sync begin", category="host", name=self.name)		
 		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp-900)
 		for el in self.elements.all():
 			if not el.usageStatistics:
 				el.usageStatistics = UsageStatistics.objects.create()
 				el.save()
 			if not str(el.num) in data["elements"]:
-				print "Missing accounting data for element #%d on host %s" % (el.num, self.address)
+				print "Missing accounting data for element #%d on host %s" % (el.num, self.name)
 				continue
-			logging.logMessage("host_records", category="accounting", host=self.address, records=data["elements"][str(el.num)], object=("element", el.id))		
+			logging.logMessage("host_records", category="accounting", host=self.name, records=data["elements"][str(el.num)], object=("element", el.id))		
 			el.updateAccountingData(data["elements"][str(el.num)])
 		for con in self.connections.all():
 			if not con.usageStatistics:
 				con.usageStatistics = UsageStatistics.objects.create()
 				con.save()
 			if not str(con.num) in data["connections"]:
-				print "Missing accounting data for connection #%d on host %s" % (con.num, self.address)
+				print "Missing accounting data for connection #%d on host %s" % (con.num, self.name)
 				continue
-			logging.logMessage("host_records", category="accounting", host=self.address, records=data["connections"][str(con.num)], object=("connection", con.id))		
+			logging.logMessage("host_records", category="accounting", host=self.name, records=data["connections"][str(con.num)], object=("connection", con.id))		
 			con.updateAccountingData(data["connections"][str(con.num)])
 		self.accountingTimestamp=now
 		self.save()
-		logging.logMessage("accounting_sync end", category="host", address=self.address)		
+		logging.logMessage("accounting_sync end", category="host", name=self.name)		
 	
 	def getNetworkKinds(self):
 		nets = [net.getKind() for net in self.networks.all()]
@@ -433,7 +443,7 @@ class Host(attributes.Mixin, models.Model):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		fault.check(not self.elements.all(), "Host still has active elements")
 		fault.check(not self.connections.all(), "Host still has active connections")
-		logging.logMessage("remove", category="host", name=self.address)
+		logging.logMessage("remove", category="host", name=self.name)
 		try:
 			for res in self.getProxy().resource_list():
 				self.getProxy().resource_remove(res["id"])
@@ -443,10 +453,14 @@ class Host(attributes.Mixin, models.Model):
 
 	def modify(self, attrs):
 		fault.check(self.checkPermissions(), "Not enough permissions")
-		logging.logMessage("modify", category="host", name=self.address, attrs=attrs)
+		logging.logMessage("modify", category="host", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "site":
 				self.site = getSite(value)
+			elif key == "address":
+				self.address = value
+			elif key == "name":
+				self.name = value
 			elif key == "enabled":
 				self.enabled = value
 			elif key == "description_text":
@@ -547,6 +561,7 @@ class Host(attributes.Mixin, models.Model):
 		
 	def info(self):
 		return {
+			"name": self.name,
 			"address": self.address,
 			"site": self.site.name,
 			"organization": self.site.organization.name,
@@ -559,14 +574,15 @@ class Host(attributes.Mixin, models.Model):
 			"host_info": self.hostInfo.copy() if self.hostInfo else None,
 			"host_info_timestamp": self.hostInfoTimestamp,
 			"availability": self.availability,
-			"description_text": self.description_text
+			"description_text": self.description_text,
+			"networks": [n for n in self.hostNetworks] if self.hostNetworks else None
 		}
 		
 	def __str__(self):
-		return self.address
+		return self.name
 
 	def __repr__(self):
-		return "Host(%s)" % self.address
+		return "Host(%s)" % self.name
 
 class HostElement(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="elements")
@@ -578,53 +594,52 @@ class HostElement(attributes.Mixin, models.Model):
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
 	type = attributes.attribute("type", str) #@ReservedAssignment
-	custom_template = attributes.attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 		
 	class Meta:
 		unique_together = (("host", "num"),)
 
-	def createChild(self, type_, attrs={}, owner=None):
-		return self.host.createElement(type_, self, attrs, owner=owner)
+	def createChild(self, type_, attrs={}, ownerConnection=None, ownerElement=None):
+		return self.host.createElement(type_, self, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
 
-	def connectWith(self, hel, type_=None, attrs={}, owner=None):
-		return self.host.createConnection(self, hel, type_, attrs, owner=owner)
+	def connectWith(self, hel, type_=None, attrs={}, ownerConnection=None, ownerElement=None):
+		return self.host.createConnection(self, hel, type_, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
 
 	def modify(self, attrs):
-		logging.logMessage("element_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)
+		logging.logMessage("element_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:		
 			self.attrs = self.host.getProxy().element_modify(self.num, attrs)
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing element", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)		
+		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.attrs)		
 		self.save()
 			
 	def action(self, action, params={}):
-		logging.logMessage("element_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)		
+		logging.logMessage("element_action begin", category="host", host=self.host.name, id=self.num, action=action, params=params)		
 		try:
 			res = self.host.getProxy().element_action(self.num, action, params)
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing element", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_action end", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)		
+		logging.logMessage("element_action end", category="host", host=self.host.name, id=self.num, action=action, params=params, result=res)		
 		self.updateInfo()
 		return res
 			
 	def remove(self):
 		try:
-			logging.logMessage("element_remove", category="host", host=self.host.address, id=self.num)		
+			logging.logMessage("element_remove", category="host", host=self.host.name, id=self.num)		
 			self.host.getProxy().element_remove(self.num)
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNKNOWN_OBJECT:
@@ -642,13 +657,13 @@ class HostElement(attributes.Mixin, models.Model):
 			self.attrs = self.host.getProxy().element_info(self.num)
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing element", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_info", category="host", host=self.host.address, id=self.num, info=self.attrs)		
+		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.attrs)		
 		self.save()
 		
 	def info(self):
@@ -667,7 +682,7 @@ class HostElement(attributes.Mixin, models.Model):
 			return res
 		except:
 			self.host.incrementErrors()
-			logging.logException(host=self.host.address)
+			logging.logException(host=self.host.name)
 			return []
 
 	def getAllowedAttributes(self):
@@ -690,11 +705,7 @@ class HostElement(attributes.Mixin, models.Model):
 				raise
 		except:
 			logging.logException(host=self.host.address)
-			
-	def after_upload_use(self):
-		self.custom_template = True
-		self.save()
-		
+
 class HostConnection(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="connections")
 	num = models.IntegerField(null=False) #not id, since this is reserved
@@ -710,39 +721,39 @@ class HostConnection(attributes.Mixin, models.Model):
 		unique_together = (("host", "num"),)
 
 	def modify(self, attrs):
-		logging.logMessage("connection_modify", category="host", host=self.host.address, id=self.num, attrs=attrs)
+		logging.logMessage("connection_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:		
 			self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing connection", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)		
+		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.attrs)		
 		self.save()
 			
 	def action(self, action, params={}):
-		logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params)
+		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action, params=params)
 		try:		
 			res = self.host.getProxy().connection_action(self.num, action, params)
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing connection", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("connection_action begin", category="host", host=self.host.address, id=self.num, action=action, params=params, result=res)		
+		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action, params=params, result=res)		
 		self.updateInfo()
 		return res
 			
 	def remove(self):
 		try:
-			logging.logMessage("connection_remove", category="host", host=self.host.address, id=self.num)		
+			logging.logMessage("connection_remove", category="host", host=self.host.name, id=self.num)		
 			self.host.getProxy().connection_remove(self.num)
 		except xmlrpclib.Fault, f:
 			if f.faultCode != fault.UNKNOWN_OBJECT:
@@ -761,13 +772,13 @@ class HostConnection(attributes.Mixin, models.Model):
 			self.state = self.attrs["state"]
 		except xmlrpclib.Fault, f:
 			if f.faultCode == fault.UNKNOWN_OBJECT:
-				logging.logMessage("missing connection", category="host", host=self.host.address, id=self.num)
+				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("connection_info", category="host", host=self.host.address, id=self.num, info=self.attrs)		
+		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.attrs)		
 		self.save()
 		
 	def info(self):
@@ -799,7 +810,7 @@ class HostConnection(attributes.Mixin, models.Model):
 				return
 			self.updateInfo()
 		except:
-			logging.logException(host=self.host.address)
+			logging.logException(host=self.host.name)
 
 def get(**kwargs):
 	try:
@@ -810,12 +821,12 @@ def get(**kwargs):
 def getAll(**kwargs):
 	return list(Host.objects.filter(**kwargs))
 	
-def create(address, site, attrs={}):
+def create(name, site, attrs={}):
 	user = currentUser()
 	fault.check(user.hasFlag(Flags.GlobalHostManager) 
 		or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
 		"Not enough permissions")
-	host = Host(address=address, site=site)
+	host = Host(name=name, site=site)
 	host.init(attrs)
 	host.save()
 	logging.logMessage("create", category="host", info=host.info())		
@@ -862,10 +873,10 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 			prefs[h] += sitePrefs[h.site]
 	#STEP 4: select the best host
 	hosts.sort(key=lambda h: prefs[h], reverse=True)
-	logging.logMessage("select", category="host", result=hosts[0].address, 
-			prefs=dict([(k.address, v) for k, v in prefs.iteritems()]), 
+	logging.logMessage("select", category="host", result=hosts[0].name, 
+			prefs=dict([(k.name, v) for k, v in prefs.iteritems()]), 
 			site=site.name if site else None, element_types=elementTypes, connection_types=connectionTypes, network_types=networkKinds,
-			host_prefs=dict([(k.address, v) for k, v in hostPrefs.iteritems()]),
+			host_prefs=dict([(k.name, v) for k, v in hostPrefs.iteritems()]),
 			site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
 	return hosts[0]
 
@@ -906,29 +917,25 @@ def synchronizeHost(host):
 		host.update()
 		host.synchronizeResources()
 	except:
-		logging.logException(host=host.address)
+		logging.logException(host=host.name)
 		print "Error updating information from %s" % host
 	host.checkProblems()
 
 	
+@util.wrap_task
 def synchronize():
 	for host in getAll():
-		util.start_thread(synchronizeHost, host)
-	util.start_thread(synchronizeComponents)
+		synchronizeHost(host)
+	synchronizeComponents()
 
-_lastComponentSync = time.time()
-
+@util.wrap_task
 def synchronizeComponents():
-	# only run every hour
-	global _lastComponentSync
-	if time.time() - _lastComponentSync < 3600:
-		return
-	_lastComponentSync = time.time()
 	for hel in HostElement.objects.all():
 		hel.synchronize()
 	for hcon in HostConnection.objects.all():
 		hcon.synchronize()
 	
-task = util.RepeatedTimer(config.HOST_UPDATE_INTERVAL, synchronize)
+scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize) #@UndefinedVariable
+scheduler.scheduleRepeated(3600, synchronizeComponents) #@UndefinedVariable
 
 from . import fault

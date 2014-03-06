@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import host
+from . import host, scheduler
 from lib import util, logging #@UnresolvedImport
 
 from datetime import datetime, timedelta
@@ -129,7 +129,7 @@ def _measure():
 			begin = time.time()
 			res = hostA.getProxy().host_ping(hostB.address)
 			end = time.time()
-			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.address, hostB=hostB.address, result=res)
+			logging.logMessage("link measurement", category="link", siteA=siteA.name, siteB=siteB.name, hostA=hostA.name, hostB=hostB.name, result=res)
 			LinkMeasurement.objects.create(siteA=siteA, siteB=siteB, begin=begin, end=end, type=TYPES[0], loss=res["loss"], delayAvg=res.get("rtt_avg", 0.0)/2.0, delayStddev=res.get("rtt_mdev", 0.0)/2.0, measurements=res["transmitted"])
 	
 def _removeOld():
@@ -142,6 +142,7 @@ def _removeOld():
 				for r in link.filter(type=type_).order_by("-begin")[KEEP_RECORDS[type_]:]:
 					r.delete()
 		
+@util.wrap_task
 def taskRun():
 	_combine()
 	_measure()
@@ -163,4 +164,4 @@ def getStatistics(siteA, siteB, type=None, after=None, before=None): #@ReservedA
 	else:
 		return dict([(t, [m.info() for m in all_.filter(type=t)]) for t in TYPES])
 	
-task = util.RepeatedTimer(60, taskRun) #every minute
+scheduler.scheduleRepeated(60, taskRun) #every minute

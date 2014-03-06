@@ -18,7 +18,7 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser
+from .. import config, fault, currentUser, setCurrentUser, scheduler
 
 class Flags:
 	Debug = "debug"
@@ -26,6 +26,7 @@ class Flags:
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
+	RestrictedTemplates ="restricted_templates"
 	NoMails = "nomails"
 	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
 	GlobalHostManager = "global_host_manager"
@@ -48,6 +49,7 @@ flags = {
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
+	Flags.RestrictedTemplates:"RestrictedTemplates: Can use restricted templates",
 	Flags.NoMails: "NoMails: Can not receive mails at all",
 	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
 	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
@@ -92,6 +94,7 @@ categories = {
 						Flags.NoTopologyCreate,
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
+						Flags.RestrictedTemplates,
 						Flags.NewAccount
 						],
 	'other': [
@@ -101,7 +104,7 @@ categories = {
 	}
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
-						Flags.RestrictedProfiles, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
@@ -257,14 +260,17 @@ class User(attributes.Mixin, models.Model):
 			info["flags"] = None
 		return info
 		
-	def sendMail(self, subject, message):
+	def sendMail(self, subject, message, fromUser=None):
 		if not self.email or self.hasFlag(Flags.NoMails):
 			logging.logMessage("failed to send mail", category="user", subject=subject)
 			return
 		data = {"subject": subject, "message": message, "realname": self.realname or self.name}
 		subject = config.EMAIL_SUBJECT_TEMPLATE % data
 		message = config.EMAIL_MESSAGE_TEMPLATE % data
-		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message)
+		from_ = None
+		if fromUser:
+			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email) 
+		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
 		
 	def __str__(self):
 		return self.__unicode__()
@@ -340,6 +346,7 @@ def getAllUsers(organization = None):
 	else:
 		return User.objects.filter(organization=organization)
 
+@util.wrap_task
 def cleanup():
 	for provider in providers:
 		provider.cleanup()
@@ -385,7 +392,7 @@ def register(username, password, organization, attrs={}, provider=""):
 
 providers = []
 
-task = util.RepeatedTimer(300, cleanup) #every 5 minutes
+scheduler.scheduleRepeated(300, cleanup) #every 5 minutes @UndefinedVariable
 
 def init():
 	print >>sys.stderr, "Loading auth modules..."

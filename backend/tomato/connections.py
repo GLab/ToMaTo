@@ -60,7 +60,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	#host_connections: [host.HostConnections]
 	
 	DIRECT_ACTIONS = True
-	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy"]
+	DIRECT_ACTIONS_EXCLUDE = ["start", "stop", "prepare", "destroy", REMOVE_ACTION]
 	CUSTOM_ACTIONS = {REMOVE_ACTION: [ST_CREATED]}
 	
 	DIRECT_ATTRS = True
@@ -311,17 +311,17 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		# First create connection, then set attributes
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
-			self.connection1 = el1.connectWith(el2, attrs={}, owner=self)
+			self.connection1 = el1.connectWith(el2, attrs={}, ownerConnection=self)
 			if self.connection1.state == ST_CREATED:
 				self.connection1.action("start")
 		else:
 			# complex case: helper elements needed to connect elements on different hosts
-			self.connectionElement1 = el1.host.createElement("udp_tunnel", owner=self)
+			self.connectionElement1 = el1.host.createElement("udp_tunnel", ownerConnection=self)
 			self.connectionElement2 = el2.host.createElement("udp_tunnel", attrs={
 				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
-			}, owner=self)
-			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, owner=self)
-			self.connection2 = el2.connectWith(self.connectionElement2, owner=self)
+			}, ownerConnection=self)
+			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
+			self.connection2 = el2.connectWith(self.connectionElement2, attrs={"emulation": False}, ownerConnection=self)
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
@@ -421,6 +421,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				return "fixed_bridge"
 		return "bridge"
 			
+	def fetchInfo(self):
+		mcon = self.mainConnection()
+		if mcon:
+			mcon.updateInfo()
+			
 	def info(self):
 		if not currentUser().hasFlag(Flags.Debug):
 			self.checkRole(Role.user)
@@ -431,11 +436,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			"attrs": self.attrs.copy(),
 			"elements": sorted([el.id for el in self.elements.all()]), #sort elements so that first is from and second is to
 			"debug": {
-					"host_elements": [(o.host.address, o.num) for o in self.getHostElements()],
-					"host_connections": [(o.host.address, o.num) for o in self.getHostConnections()],
+					"host_elements": [(o.host.name, o.num) for o in self.getHostElements()],
+					"host_connections": [(o.host.name, o.num) for o in self.getHostConnections()],
 			}
 		}
-		info["attrs"]["host"] = self.connection1.host.address if self.connection1 else None
+		info["attrs"]["host"] = self.connection1.host.name if self.connection1 else None
 		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
 		mcon = self.mainConnection()
 		if mcon:

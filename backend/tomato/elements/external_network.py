@@ -173,7 +173,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		else:
 			self.network = network.getInstance(_host, self.kind)			
 		attrs = {"network": self.network.network.kind}
-		self.element = _host.createElement("external_network", parent=None, attrs=attrs, owner=self)
+		self.element = _host.createElement("external_network", parent=None, attrs=attrs, ownerElement=self)
 		self.setState(ST_STARTED)
 		self.triggerConnectionStart()
 		

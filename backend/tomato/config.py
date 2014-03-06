@@ -20,10 +20,12 @@ import os
 CERTIFICATE = "/etc/tomato/backend.pem"
 EXTERNAL_URLS = {
 				'aup':  "http://tomato-lab.org/aup",
-				'help': "http://tomato-lab.org/help",
+				'help': "http://github.com/GLab/ToMaTo/wiki",
 				'impressum': "http://tomato-lab.org/contact/",
 				'project': "http://tomato-lab.org",
-				'news_feed': "http://www.tomato-lab.org/feed.json"
+				'json_feed': "http://www.tomato-lab.org/feed.json",
+				'rss_feed': "http://tomato-lab.org/feed.xml",
+				'bugtracker': 'http://github.com/GLab/ToMaTo/issues'
 				}
 
 TEMPLATE_PATH = "/var/lib/tomato/templates"
@@ -68,6 +70,7 @@ DATABASES['default'] = {
 	'NAME': 'tomato'
 }
 
+RPC_TIMEOUT = 60
 HOST_UPDATE_INTERVAL = 60
 HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
 RESOURCES_SYNC_INTERVAL = 600
@@ -75,6 +78,12 @@ RESOURCES_SYNC_INTERVAL = 600
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
+
+TOPOLOGY_TIMEOUT_INITIAL = 3600.0
+TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 6 # 6 hours
+TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 14 # 14 days
+TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
+TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 6, 3600.0 * 24 * 5, 3600.0 * 24 * 14]
 
 # Django mail config
 #EMAIL_HOST = ""

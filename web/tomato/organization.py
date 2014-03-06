@@ -58,6 +58,20 @@ class EditOrganizationForm(OrganizationForm):
 def list(api, request):
 	organizations = api.organization_list()
 	sites = api.site_list()
+	hosts = api.host_list()
+	omap = {}
+	for o in organizations:
+		o["hosts"] = {"count": 0, "avg_load": 0.0, "avg_availability": 0.0}
+		omap[o["name"]] = o
+	for h in hosts:
+		o = omap[h["organization"]]
+		o["hosts"]["count"] += 1
+		o["hosts"]["avg_load"] += h["load"] if "host_info" in h else 0.0
+		o["hosts"]["avg_availability"] += h["availability"] if "host_info" in h else 0.0
+	for o in organizations:
+		o["hosts"]["avg_load"] = (o["hosts"]["avg_load"] / o["hosts"]["count"]) if o["hosts"]["count"] else None  
+		o["hosts"]["avg_availability"] = (o["hosts"]["avg_availability"] / o["hosts"]["count"]) if o["hosts"]["count"] else None
+	organizations.sort(key=lambda o: o["hosts"]["count"], reverse=True)  
 	return render(request, "organization/list.html", {'organizations': organizations, 'sites': sites})
 
 @wrap_rpc
@@ -90,7 +104,7 @@ def remove(api, request, name=None):
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
 			api.organization_remove(name)
-			return HttpResponseRedirect(reverse("tomato.organization.listinfo"))
+			return HttpResponseRedirect(reverse("tomato.organization.list"))
 	form = RemoveConfirmForm.build(reverse("tomato.organization.remove", kwargs={"name": name}))
 	return render(request, "form.html", {"heading": "Remove Organization", "message_before": "Are you sure you want to remove the organization '"+name+"'?", 'form': form})
 	

@@ -38,6 +38,7 @@
 	<table>
 		<tr><td>Element Name:</td><td id="element_name" /></tr>
 		<tr><td>Topology:</td><td id="topology_name"></td></tr>
+		<tr><td>Last Update:</td><td id="info_age"></td></tr>
 		<tr><td>RexTFV status available:</td><td id="rextfv_readable" /></tr>
 	</table>
 </div>
@@ -66,12 +67,16 @@ function doAjaxCall(url,successfn) {
 
 //urls for ajax calls
 function ElementInfoURL(){return "/ajax/element/"+ElementID+"/info"}
-function RexTFVStatusURL(){return "/ajax/element/"+ElementID+"/rextfv_status"}
 function TopologyInfoURL(top_id){return "/ajax/topology/"+top_id+"/info"}
 
 //auto-refresh process. timer initited by initWindow().
 function updateRexTFVStatus() {
-	doAjaxCall(RexTFVStatusURL(),function(rextfv_status){
+	doAjaxCall(ElementInfoURL(),function(element_info){
+		
+		var info_date = new Date(element_info['info_sync_date'] * 1000);
+		document.getElementById("info_age").innerHTML = info_date.toLocaleTimeString() + " &nbsp; " + /\((.*)\)/.exec(info_date.toString())[1];
+		
+		rextfv_status = element_info['attrs']['rextfv_run_status'];
 		if (rextfv_status['state'] == 'started') {
 			s = rextfv_status['rextfv_run_status'];
 			if (s['readable']) {
@@ -97,7 +102,7 @@ function updateRexTFVStatus() {
 			document.getElementById('rextfv_readable').innerHTML = "No (element stopped)";
 			document.getElementById('overall_status_p').innerHTML = "";
 		}
-	})
+	});
 }
 
 //called once. fetches permanent info and starts the auto refresh process.

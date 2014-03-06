@@ -60,7 +60,12 @@ class ServerProxy(object):
 	def __getattr__(self, name):
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
 		def _call(*args, **kwargs):
-			return call_proxy(args, kwargs)
+			#import time
+			#before = time.time()
+			res = call_proxy(args, kwargs)
+			#after = time.time()
+			#print "%f, %f, %s(%s, %s)" % (after, after-before, name, args, kwargs)
+			return res
 		return _call
 
 def getapi(request=None):
@@ -167,24 +172,6 @@ def getDpkgVersionStr(package):
 		return None
 	return fields["version"]
 
-def splitVersion(verStr):
-	version = []
-	numStr = ""
-	if not verStr:
-		return verStr
-	for ch in verStr:
-		if ch in "0123456789":
-			numStr += ch
-		if ch in ".:-":
-			version.append(int(numStr))
-			numStr = ""
-	version.append(int(numStr))
-	return version
-	
-def getDpkgVersion(package, verStr=None):
-	verStr = getDpkgVersionStr(package)
-	return splitVersion(verStr)
-
 @cached(600)
 def serverInfo():
 	return getapi().server_info()
@@ -194,7 +181,12 @@ from urlparse import urljoin
 
 @cached(3600)
 def getNews():
-	url = serverInfo()["external_urls"]["news_feed"]
+	infs = serverInfo()["external_urls"]
+	if "json_feed" in infs:
+		url = serverInfo()["external_urls"]["json_feed"]
+	else:
+		url = serverInfo()["external_urls"]["news_feed"]
+	
 	news = json.load(urllib2.urlopen(url))
 	pattern = re.compile("<[^>]+((?:src|href)=(?:[\"']([^\"']+)[\"']))[^>]*>")
 	for item in news["items"]:
@@ -211,7 +203,7 @@ def getNews():
 
 @cached(3600)
 def getVersion():
-	return getDpkgVersion("tomato-web") or "devel"
+	return getDpkgVersionStr("tomato-web") or "devel"
 
 class UserObj:
 	def __init__(self, api):

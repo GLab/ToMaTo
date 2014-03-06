@@ -21,6 +21,7 @@ from lib import db, attributes, util, logging #@UnresolvedImport
 from lib.decorators import *
 from datetime import datetime, timedelta
 import time
+from . import scheduler
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
@@ -196,7 +197,8 @@ class UsageRecord(models.Model):
             "measurements": self.measurements,
             "usage": {"cputime": self.cputime, "diskspace": self.diskspace, "memory": self.memory, "traffic": self.traffic},
         }
-        
+
+@util.wrap_task        
 def synchronize():
     logging.logMessage("sync begin", category="accounting")        
     from . import host, elements, connections, topology
@@ -205,7 +207,7 @@ def synchronize():
         try:
             h.updateAccountingData(now)
         except:
-            logging.logException(host=h.address)
+            logging.logException(host=h.name)
             print "Error fetching accounting data from %s" % h
     for el in elements.getAll():
         el.updateUsage(now-900)
@@ -215,4 +217,4 @@ def synchronize():
         top.updateUsage(now-900)
     logging.logMessage("sync end", category="accounting")        
 
-task = util.RepeatedTimer(300, synchronize) #every 5 minutes
+scheduler.scheduleRepeated(300, synchronize) #every 5 minutes @UndefinedVariable

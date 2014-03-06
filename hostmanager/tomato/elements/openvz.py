@@ -457,7 +457,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
-			interface._configure() #configure after connecting to allow dhcp, etc.
+			interface._start() #configure after connecting to allow dhcp, etc.
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawnShell("vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'" % (self.vncport, self.vncpassword, self.vmid))
@@ -475,6 +475,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.name))
+			interface._stop()
 		if self.vncpid:
 			process.killTree(self.vncpid)
 			del self.vncpid
@@ -645,7 +646,7 @@ Actions: None
 """
 
 class OpenVZ_Interface(elements.Element):
-	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$")
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
 	name = name_attr.attribute()
 	ip4address_attr = Attr("ip4address", desc="IPv4 address", type="str")
 	ip4address = ip4address_attr.attribute()	
@@ -655,6 +656,10 @@ class OpenVZ_Interface(elements.Element):
 	use_dhcp = use_dhcp_attr.attribute()		
 	mac_attr = Attr("mac", desc="MAC Address", type="str")
 	mac = mac_attr.attribute()
+	ipspy_pid_attr = Attr("ipspy_pid", type="int")
+	ipspy_pid = ipspy_pid_attr.attribute()
+	used_addresses_attr = Attr("used_addresses", type=list, default=[])
+	used_addresses = used_addresses_attr.attribute()
 
 	TYPE = "openvz_interface"
 	CAP_ACTIONS = {
@@ -662,6 +667,7 @@ class OpenVZ_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}	
 	CAP_ATTRS = {
+		"name": name_attr,
 		"ip4address": ip4address_attr,
 		"ip6address": ip6address_attr,
 		"use_dhcp": use_dhcp_attr,
@@ -724,13 +730,24 @@ class OpenVZ_Interface(elements.Element):
 		if self.state == ST_STARTED:
 			self._setUseDhcp()
 	
-	def _configure(self):
+	def modify_name(self, val):
+		self.name = val
+	
+	def _start(self):
+		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
+		self.save()
 		self._setAddresses()
 		self._setUseDhcp()
 		self._execute("ip link set up %s" % self.name)			
 	
+	def _stop(self):
+		if self.ipspy_pid:
+			process.kill(self.ipspy_pid)
+			del self.ipspy_pid
+		self.save()
+	
 	def interfaceName(self):
-		if self.state == ST_STARTED:
+		if self.state != ST_CREATED:
 			return self.getParent()._interfaceName(self.name)
 		else:
 			return None		
@@ -739,6 +756,10 @@ class OpenVZ_Interface(elements.Element):
 		return self
 
 	def info(self):
+		if self.state == ST_STARTED:
+			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
+		else:
+			self.used_addresses = []
 		info = elements.Element.info(self)
 		return info
 
@@ -747,7 +768,6 @@ class OpenVZ_Interface(elements.Element):
 		if net.ifaceExists(ifname):
 			traffic = sum(net.trafficInfo(ifname))
 			usage.updateContinuous("traffic", traffic, data)
-			
 			
 OpenVZ_Interface.__doc__ = DOC_IFACE
 
@@ -767,6 +787,8 @@ def register(): #pragma: no cover
 	if not perlVersion:
 		print >>sys.stderr, "Warning: OpenVZ needs perl, disabled"
 		return
+	if not ipspyVersion:
+		print >>sys.stderr, "Warning: ipspy not available"
 	elements.TYPES[OpenVZ.TYPE] = OpenVZ
 	elements.TYPES[OpenVZ_Interface.TYPE] = OpenVZ_Interface
 
@@ -776,4 +798,5 @@ if not config.MAINTENANCE:
 	vzctlVersion = cmd.getDpkgVersion("vzctl")
 	vnctermVersion = cmd.getDpkgVersion("vncterm")
 	websockifyVersion = cmd.getDpkgVersion("websockify")
+	ipspyVersion = cmd.getDpkgVersion("ipspy")
 	register()

@@ -12,12 +12,6 @@
     "icon": "basic/icon.png"
   },
   {
-    "url":   "device_access/tutorial.json",
-    "name": "Device Access (not implemented yet)",
-    "desc": "Access your devices using standard protocols like VNC or SSH",
-    "icon": "device_access/icon.png"
-  },
-  {
     "url":   "link_emulation/tutorial.json",
     "name": "Link Emulation",
     "desc": "Learn how to use link emulation.",
@@ -25,15 +19,9 @@
   },
   {
     "url":   "packet_capturing/tutorial.json",
-    "name": "Packet Capturing (unfinished)",
+    "name": "Packet Capturing",
     "desc": "Learn how to capture traffic in your topologies.",
     "icon": "packet_capturing/icon.png"
-  },
-  {
-    "url":   "templates_images/tutorial.json",
-    "name": "Templates and Images (not implemented yet)",
-    "desc": "Learn how to use templates and custom images.",
-    "icon": "templates_images/icon.png"
   },
   {
     "url":   "executable_archives/tutorial.json",

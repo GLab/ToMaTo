@@ -16,23 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from . import run, CommandError, getDpkgVersionStr 
-import platform, os, time
+import platform, os, time, socket, net
 from ... import config
+from ..cache import cached
 
-_cache = {}
-def cached(fn):
-	def call(*args, **kwargs):
-		if fn.__name__ in _cache:
-			return _cache[fn.__name__]
-		res = fn(*args, **kwargs)
-		_cache[fn.__name__] = res
-		return res
-	call.__name__ = fn.__name__
-	call.__doc__ = fn.__doc__
-	call.__dict__.update(fn.__dict__)
-	return call
 
-@cached
+
+external_hostname = "tomato-lab.org" # should also be pingable.
+external_ip = "8.8.8.8"
+
+@cached(timeout=None)
 def cpuinfo():
 	with open("/proc/cpuinfo", "r") as fp:
 		bogomips = []
@@ -60,15 +53,15 @@ def uptime():
 	with open("/proc/uptime", "r") as fp:
 		return float(fp.readline().split()[0])
 
-@cached
+@cached(timeout=24*3600)
 def hostmanagerVersion():
 	return getDpkgVersionStr("tomato-hostmanager") or "devel"
 
-@cached
+@cached(timeout=24*3600)
 def updaterVersion():
 	return getDpkgVersionStr("tomato-updater")
 
-@cached
+@cached(timeout=24*3600)
 def system():
 	pve_ver = getDpkgVersionStr("pve-manager")
 	return {
@@ -85,11 +78,44 @@ def diskinfo(path):
 
 def problems():
 	problems = []
+	
+	#disk problems
 	for disk in [config.DATA_DIR]:
 		probs = diskproblems(disk)  
 		if probs:
 			problems.append("Disk: %s on %s" % (probs, disk))
+			
+	#/etc/vz/conf readable?
+	if not os.access("/etc/vz/conf", os.F_OK):
+		problems.append("Config: /etc/vz/conf does not exist")
+	else:
+		if not os.access("/etc/vz/conf", os.R_OK):
+			problems.append("Config: /etc/vz/conf is not readable")
+			
+	#hostname resolvable?
+	try:
+		etchostname = socket.gethostname()
+		try:
+			hostnameip = socket.gethostbyname(etchostname)
+		except:
+			problems.append("Config: cannot resolve hostname from /etc/hostname")
+	except:
+		problems.append("Config: Cannot read own hostname")
+		
+	#try to resolve external_hostname
+	try:
+		ip = socket.gethostbyname(external_hostname)
+	except:
+		problems.append("Network: Cannot resolve %s" % external_hostname)
+	
+	#try to ping external_ip
+	if not ping_test(external_ip):
+		problems.append("Network: ping test to %s failed" % external_ip)
+	
 	return problems
+
+def ping_test(ip_address): #return a boolean whether the test was successful
+	return net.ping(ip_address, count=1)["received"] == 1
 
 def diskproblems(path):
 	testFile = os.path.join(path, ".test")

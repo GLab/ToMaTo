@@ -25,7 +25,7 @@ from ..accounting import UsageStatistics, Usage
 from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
-from .. import config, dump
+from .. import config, dump, scheduler
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 ST_CREATED = "created"
@@ -362,6 +362,7 @@ class RexTFVElement:
 				self._clear_nlxtp_contents__already_mounted()
 			finally:
 				self._nlxtp_close()
+				
 	def _clear_nlxtp_contents__already_mounted(self): #same function, but does not use the lock mechanism. Use if called inside a "with lock"
 		folder = self._nlxtp_path("")
 		if os.path.exists(folder):
@@ -371,7 +372,6 @@ class RexTFVElement:
 					os.remove(file_path)
 				else:
 					shutil.rmtree(file_path)
-		
 		
 	#copies the contents of the archive "filename" to the nlXTP directory.
 	def _use_rextfv_archive(self, filename, keepOldFiles=False):
@@ -430,8 +430,12 @@ class RexTFVElement:
 				# now, check the timestamp in the file.
 				with open(self._nlxtp_path(os.path.join("exec_status","running")), 'r') as f:
 					timestamp = f.read()
+				try:
+					timestamp = int(timestamp)
+				except:
+					return {"readable": False}
 				timeout=10*60 #seconds
-				diff = time.time() - int(timestamp)
+				diff = time.time() - timestamp
 				if diff > timeout: # timeout occured.
 					return {"readable": True, "done": False, "isAlive": False, "custom":customstat}
 				return {"readable": True, "done": False, "isAlive": True, "custom":customstat}
@@ -476,6 +480,7 @@ def create(type_, parent=None, attrs={}):
 	logging.logMessage("info", category="element", id=el.id, info=el.info())	
 	return el
 
+@util.wrap_task
 def checkTimeout():
 	for el in Element.objects.filter(timeout__lte=time.time()):
 		el = el.upcast()
@@ -485,7 +490,7 @@ def checkTimeout():
 		except:
 			logging.logException()
 
-timeoutTask = util.RepeatedTimer(3600, checkTimeout)
+scheduler.scheduleRepeated(3600, checkTimeout) #@UndefinedVariable
 
 from .. import fault, currentUser, resources
 		

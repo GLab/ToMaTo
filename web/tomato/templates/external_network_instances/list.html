@@ -9,7 +9,7 @@
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
   	<span class="glyphicon glyphicon-filter"></span>
     {% if network %}
-      Showing instances of network '{{network_kind}}'
+      Showing instances of '{{network_label}}'
     {% else %}
       Showing instances of all networks
     {% endif %}
@@ -51,7 +51,7 @@
 	      	{% endif %}
 	      {% endif %}
 	      
-	      Show instances of network '{{net.attrs.kind}}'</a></li>    
+	      Show instances of '{{net.attrs.label}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -63,10 +63,10 @@
       Showing instances on host '{{host}}'
     {% else %}
     	{% if site %}
-    		Showing instances on site '{{site}}'
+    		Showing instances on site '{{site_description}}'
     	{% else %}
     		{% if organization %}
-    			Showing instances on organization '{{organization}}'
+    			Showing instances on organization '{{organization_description}}'
     		{% else %}
       			Showing instances on all hosts
       		{% endif %}
@@ -81,9 +81,9 @@
     <li class="dropdown-header">Organizations</li>
     {% for o in organizations %}
     	{% if network %}
-      		<li><a href="{%url organization_external_network o.name network %}">Show instances on '{{o.name}}'</a></li>    
+      		<li><a href="{%url organization_external_network o.name network %}">Show instances on '{{o.description}}'</a></li>    
     	{% else %}
-    		<li><a href="{%url organization_external_networks o.name %}">Show instances on '{{o.name}}'</a></li>    
+    		<li><a href="{%url organization_external_networks o.name %}">Show instances on '{{o.description}}'</a></li>    
     	{% endif %}
     {% endfor %}
     
@@ -91,9 +91,9 @@
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
     	{% if network %}
-     		<li><a href="{%url site_external_network s.name network %}">Show instances on '{{s.name}}'</a></li>
+     		<li><a href="{%url site_external_network s.name network %}">Show instances on '{{s.description}}'</a></li>
      	{% else %}
-     		<li><a href="{%url site_external_networks s.name %}">Show instances on '{{s.name}}'</a></li>
+     		<li><a href="{%url site_external_networks s.name %}">Show instances on '{{s.description}}'</a></li>
      	{% endif %}   
     {% endfor %}
     
@@ -101,9 +101,9 @@
     <li class="dropdown-header">Hosts</li>
     {% for h in hosts %}
     	{% if network %}
-      		<li><a href="{%url host_external_network h.address network %}">Show instances on '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_network h.name network %}">Show instances on '{{h.name}}'</a></li> 
     	{% else %}
-      		<li><a href="{%url host_external_networks h.address %}">Show instances on '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_networks h.name %}">Show instances on '{{h.name}}'</a></li> 
       	{% endif %}   
     {% endfor %}
   </ul>

@@ -1,3 +1,30 @@
+tomato-web (3.2.3) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 17 Feb 2014 12:11:44 +0100
+
+tomato-web (3.2.2) stable; urgency=low
+
+  * Bugfix release
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 07 Feb 2014 11:30:54 +0100
+
+tomato-web (3.2.1) stable; urgency=low
+
+  * Bugfix release
+  * Fixed aup link
+  * Fixed settings for django 1.3
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 28 Jan 2014 10:14:55 +0100
+
+tomato-web (3.2) stable; urgency=low
+
+  * Restructed and redesigned web-interface
+  * Various bugfixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 27 Jan 2014 15:25:10 +0100
+
 tomato-web (3.1) stable; urgency=low
 
   * Organizations

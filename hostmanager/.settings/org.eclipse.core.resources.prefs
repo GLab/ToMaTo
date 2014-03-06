@@ -24,6 +24,7 @@ encoding//tomato/fault.py=utf-8
 encoding//tomato/lib/attributes.py=utf-8
 encoding//tomato/lib/cmd/__init__.py=utf-8
 encoding//tomato/lib/cmd/bittorrent.py=utf-8
+encoding//tomato/lib/cmd/dhcp.py=utf-8
 encoding//tomato/lib/cmd/hostinfo.py=utf-8
 encoding//tomato/lib/cmd/net.py=utf-8
 encoding//tomato/lib/cmd/path.py=utf-8

@@ -17,10 +17,10 @@
 
 from . import config, currentUser
 from auth import Flags, mailFlaggedUsers, getUser
-from lib.cmd import getDpkgVersion #@UnresolvedImport
+from lib.cmd import getDpkgVersionStr #@UnresolvedImport
 
 def getVersion():
-	return getDpkgVersion("tomato-backend") or "devel"
+	return getDpkgVersionStr("tomato-backend") or "devel"
 
 def getPublicKey():
 	lines = []
