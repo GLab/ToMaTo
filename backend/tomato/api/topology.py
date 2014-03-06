@@ -323,11 +323,11 @@ def topology_export(id): #@ReservedAssignment
 		blacklist = ['usage', 'debug', 'bridge', 'capture_port', 'websocket_pid', 'vmid', 'vncpid',
 					 'host', 'websocket_port', 'vncport', 'peers', 'pubkey', 'path', 'port', 
 					 'host_fileserver_port', 'capture_pid', 'topology', 'state', 'vncpassword', 
-					 'host_info', 'custom_template']
+					 'host_info', 'custom_template', 'timeout']
 		blacklist_elements = ['children',
 							  'connection']
 		blacklist_connections = []
-		blacklist_attrs = []
+		blacklist_attrs = ['_initialized']
 		data = reduceData_rec(data, blacklist)
 		data['elements'] = reduceData_rec(data['elements'],blacklist_elements)
 		data['connections'] = reduceData_rec(data['connections'],blacklist_connections)
