@@ -20,7 +20,7 @@ from django.shortcuts import render, redirect
 from django import forms
 from django.http import HttpResponse
 
-import json, re
+import json, re, time
 
 from tutorial import loadTutorial
 from lib import wrap_rpc, AuthError, serverInfo
@@ -52,6 +52,7 @@ def list(api, request, show_all=False, organization=None):
 			top['attrs']['tutorial_disabled'] = top['attrs']['_tutorial_disabled']
 			if top['attrs']['tutorial_disabled']:
 				tut_in_top_list = tut_in_top_list_old
+		top['processed'] = {'timeout_critical': top['timeout'] - time.time() < serverInfo()['topology_timeout']['warning']}
 	return render(request, "topology/list.html", {'top_list': toplist, 'organization': organization, 'orgas': orgas, 'show_all': show_all, 'tut_in_top_list':tut_in_top_list})
 
 def _display(api, request, info, tut_url, tut_stat):

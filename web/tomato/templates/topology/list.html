@@ -90,7 +90,7 @@ While waiting for the account activation you can create and design topologies bu
     		{% endif %}
     	{% endfor %}
     </td>
-    <td>{{top.timeout|todate|timeuntil}}</td>
+    <td {% if top.processed.timeout_critical %}class="critical-timeout"{%endif%}>{{top.timeout|todate|timeuntil}}</td>
     <td>{{top.elements|length}}</td>
     <td enhancetable_customkey="{{top.usage.usage.cputime}}">{{top.usage.usage.cputime|div:300|floatformat}} CPUs</td>
     <td enhancetable_customkey="{{top.usage.usage.traffic}}">{{top.usage.usage.traffic|div:300|filesizeformat}}/s</td>
