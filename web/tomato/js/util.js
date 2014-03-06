@@ -195,7 +195,7 @@ if (!Array.prototype.forEach) {
   };
 }
 
-if (Raphael && !Raphael.el.conditionalClass) {
+if (typeof Raphael != 'undefined' && !Raphael.el.conditionalClass) {
   Raphael.el.conditionalClass = function(cls, value) {
 	var classes = (this.node.getAttribute("class") || "").split(" ");
 	if ((classes.indexOf(cls) > -1) == value) return;

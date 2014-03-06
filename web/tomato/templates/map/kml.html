@@ -13,13 +13,12 @@
 			{% endif %}
 			<p>Hosted by:<br />
 				{% if site.organization.image_url %}
-					<img style="max-width:8cm; max-height:6cm;" src="{{site.organization.image_url}}" title="{{site.organization.description}}" />
+					<img style="max-width:6cm; max-height:4cm;" src="{{site.organization.image_url}}" title="{{site.organization.description}}" />
 				{% else %}
 					{{site.organization.description}}
 				{% endif %}
 				<br />
-				<a href="{{site.organization.homepage_url}}">{{site.organization.homepage_url}}</a></p>
-			<p><a href="{% url tomato.site.details_site site.name %}">Statistics for intra-site traffic</a></p>
+				<a href="{{site.organization.homepage_url}}">{{site.organization.homepage_url}}</a></p>			
 ]]></description>
 			<Point><coordinates>{{site.geolocation.longitude}},{{site.geolocation.latitude}}</coordinates></Point>
 		</Placemark>
@@ -38,27 +37,5 @@
 				<hotSpot x="0.5" y="0.0" xunits="fraction" yunits="fraction"/>
 			</IconStyle>
 		</Style>
-{% for link in links %}
-		<Placemark>
-			<styleUrl>#link_{{link.src}}_{{link.dst}}</styleUrl>
-			<name>Link between {{link.src_data.name}} and {{link.dst_data.name}}</name>
-			<description><![CDATA[
-{{link.src_data.name}}: {{link.src_data.displayName}}, {{link.src_data.location}}<br/>
-{{link.dst_data.name}}: {{link.dst_data.displayName}}, {{link.dst_data.location}}<br/>
-<br/>
-<a href="{% url tomato.site.details_link link.src_data.name link.dst_data.name %}">Link statistics</a>
-]]></description>
-			<LineString>
-				<tessellate>0</tessellate>
-				<coordinates>{{link.src_data.geolocation.longitude}},{{link.src_data.geolocation.latitude}} {{link.dst_data.geolocation.longitude}},{{link.dst_data.geolocation.latitude}}</coordinates>
-			</LineString>
-		</Placemark>
-		<Style id='link_{{link.src}}_{{link.dst}}'>
-			<LineStyle>
-				<color>{{link.color}}</color>
-				<width>4</width>
-			</LineStyle>
-		</Style>
-{% endfor %}
 	</Document>
 </kml>
