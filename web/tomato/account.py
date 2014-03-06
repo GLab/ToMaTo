@@ -53,9 +53,9 @@ category_order = [
 		'user'
 	]
 
-def render_account_flag_fixedlist(api, value):
-	FlagTranslationDict = api.account_flags()
-	categories = api.account_flag_categories()
+def render_account_flag_fixedlist(api, value, flags=None, flag_categories=None):
+	FlagTranslationDict = flags or api.account_flags()
+	categories = flag_categories or api.account_flag_categories()
 	
 	catlist = category_order
 	for cat in categories.keys():
@@ -250,6 +250,8 @@ def list(api, request, with_flag=None, organization=True):
 		organization_description = api.organization_info(organization)['description']
 	accs = api.account_list(organization=organization)
 	orgas = api.organization_list()
+	flags = api.account_flags()
+	flag_categories = api.account_flag_categories()
 	if with_flag:
 		acclist_new = []
 		for acc in accs:
@@ -257,7 +259,7 @@ def list(api, request, with_flag=None, organization=True):
 				acclist_new.append(acc)
 		accs = acclist_new
 	for acc in accs:
-		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'])))
+		acc['flags_name'] = mark_safe(u'\n'.join(render_account_flag_fixedlist(api,acc['flags'],flags=flags, flag_categories=flag_categories)))
 	return render(request, "account/list.html", {'accounts': accs, 'orgas': orgas, 'with_flag': with_flag, 'organization':organization, 'organization_description':organization_description})
 
 @wrap_rpc
