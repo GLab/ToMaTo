@@ -67,7 +67,10 @@ DATABASES = {}
 
 DATABASES['default'] = {
 	'ENGINE': 'django.db.backends.postgresql_psycopg2',
-	'NAME': 'tomato'
+	'NAME': 'tomato',
+	'OPTIONS': {
+			'autocommit': True
+	}
 }
 
 RPC_TIMEOUT = 60
