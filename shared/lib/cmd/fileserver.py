@@ -178,7 +178,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         with open(filename, "rb") as file_:
             self.send_response(200)
             if name:
-                self.send_header('Content-Disposition', "attachment; filename=%s" % name)
+                self.send_header('Content-Disposition', 'attachment; filename="%s"' % name)
             self.send_header('Content-Type', mimetype)
             self.send_header('Content-Length', os.path.getsize(filename))
             self.end_headers()
