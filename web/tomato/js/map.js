@@ -82,7 +82,7 @@ var Site = Class.extend({
 		var html = '<div id="content"><h4>' + this.displayName + ', ' + this.location + ' (' + this.name + ')</h4><div id="bodyContent">';
 		if (this.description) html += '<p>' + this.description + '</p>';
 		html += '<p>Hosted by: <br/>';
-		if (this.organization.image_url) html += '<img style="max-width:4cm; max-height:3cm;" src="'+this.organization.image_url+'" title="'+this.organization.description+'"/>';
+		if (this.organization.image_url) html += '<img style="max-width:6cm; max-height:4cm;" src="'+this.organization.image_url+'" title="'+this.organization.description+'"/>';
 		else html += this.organization.description;
 		html += '<br /><a href="'+this.organization.homepage_url+'" target="_blank">'+this.organization.homepage_url+'</a></p>';
 		html += '<p><a href="/link_stats/'+this.name+'" target="_blank">Statistics for intra-site traffic</a></p>'; 
