@@ -86,7 +86,7 @@ def _combine():
 			lastType = TYPES[0]
 			for type_ in TYPES[1:]:
 				begin, end = _lastRange(type_)
-				if link.filter(type=type_, begin=begin, end=end).exists():
+				if link.filter(type=type_, end=end).exists():
 					break
 				records = link.filter(type=lastType, begin__gte=begin, end__lte=end)
 				if not records.exists():
