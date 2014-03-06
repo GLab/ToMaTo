@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
-from lib import wrap_rpc
+from lib import wrap_rpc, serverInfo
 from django.shortcuts import render, redirect
 import json
 import urllib2
@@ -48,7 +48,9 @@ def start(api, request):
 	_, _, top_dict = loadTutorial(url)
 	top_dict['topology']['attrs']['_tutorial_url'] = url
 	top_dict['topology']['attrs']['_tutorial_status'] = 0
+	top_dict['topology']['attrs']['_initialized'] = True
 	top_id, _, _, _ = api.topology_import(top_dict)
+	api.topology_action(top_id,"renew",{'timeout':serverInfo()["topology_timeout"]["maximum"]})
 	return redirect("tomato.topology.info", id=top_id)
 
 def loadTutorial(url):
