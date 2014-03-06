@@ -267,3 +267,8 @@ a.logobacklink:hover {
 textarea {
 	white-space: nowrap;
 }
+
+td.critical-timeout {
+	font-weight: bold;
+	color:red;
+}
