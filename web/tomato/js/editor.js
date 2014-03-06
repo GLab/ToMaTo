@@ -3768,7 +3768,16 @@ var Editor = Class.extend({
 				if (t.topology.data.attrs._initialized) {
 					if (t.topology.data.timeout - new Date().getTime()/1000.0 < t.topology.editor.options.timeout_settings.warning) t.topology.renewDialog();
 					if (t.topology.data.attrs._notes_autodisplay) t.topology.notesDialog();
-				} else t.topology.initialDialog();
+				} else 
+					if (t.topology.data.attrs._tutorial_url) {
+						t.topology.modify({
+							"_initialized": true
+						});
+						t.topology.action("renew", {params:{
+							"timeout": t.options.timeout_settings["default"]
+						}});
+					} else
+						t.topology.initialDialog();
 			}
 		});
 	},
