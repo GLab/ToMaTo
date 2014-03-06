@@ -33,7 +33,7 @@ class OpenVZ(generic.VMElement):
 	
 	def modify_name(self, value):
 		generic.VMElement.modify_name(self, value)
-		self._modify({"hostname": util.filterStr(value)})
+		self._modify({"hostname": util.filterStr(value, substitute="x")})
 	
 	class Meta:
 		db_table = "tomato_openvz"
