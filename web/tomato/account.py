@@ -247,6 +247,7 @@ def list(api, request, with_flag=None, organization=True):
 	organization_description = None
 	if organization is True:
 		organization = api.user.organization
+	if organization:
 		organization_description = api.organization_info(organization)['description']
 	accs = api.account_list(organization=organization)
 	orgas = api.organization_list()
