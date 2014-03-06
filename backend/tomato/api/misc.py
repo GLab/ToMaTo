@@ -49,5 +49,43 @@ def mailUser(user, subject, text):
 		raise ErrorUnauthorized()
 	misc.mailUser(user, subject, text)
 
-from .. import misc, config, link, currentUser
+@cached(timeout=3600)
+def statistics():
+	stats = {}
+	resources = {}
+	stats['resources'] = resources
+	resources['hosts'] = 0
+	resources['cpus'] = 0
+	resources['memory'] = 0
+	resources['diskspace'] = 0
+	resources['load'] = 0
+	resources['availability'] = 0
+	for h in host.getAll():
+		resources['hosts'] += 1
+		try:
+			r = h.hostInfo['resources']
+			resources['cpus'] += r['cpus_present']['count']
+			resources['memory'] += int(r['memory']['total'])
+			for v in r['diskspace'].values():
+				resources['diskspace'] += int(v['total'])
+		except:
+			pass
+		resources['load'] += h.getLoad()
+		resources['availability'] += h.availability
+	for k in ['load', 'availability']:
+		resources[k] /= resources['hosts'] if resources['hosts'] else 1.0
+	for k in ['memory', 'diskspace']:
+		resources[k] = str(resources[k])
+	usage = {}
+	stats['usage'] = usage
+	usage['topologies'] = topology.Topology.objects.count()
+	usage['elements'] = elements.Element.objects.count()
+	usage['connections'] = connections.Connection.objects.count()
+	types = elements.Element.objects.values('type').order_by().annotate(models.Count('type'))
+	usage['element_types'] = dict([(t['type'], t['type__count']) for t in types])
+	usage['users'] = auth.User.objects.count()
+	return stats
+
+from django.db import models
+from .. import misc, config, link, currentUser, host, topology, auth, elements, connections
 from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
