@@ -73,7 +73,7 @@ class NetworkInstance(resources.Resource):
 			fault.check(attr in attrs, "Network_Instance needs attribute %s", attr)
 		self.network = get(attrs["network"])
 		fault.check(self.network, "Network %s does not exist", attrs["kind"])
-		self.host = host.get(address=attrs["host"])
+		self.host = host.get(name=attrs["host"])
 		fault.check(self.network, "Host %s does not exist", attrs["host"])
 		self.bridge = attrs["bridge"]
 		resources.Resource.init(self, *args, **kwargs)
@@ -96,14 +96,14 @@ class NetworkInstance(resources.Resource):
 		self.network = net
 	
 	def modify_host(self, val):
-		h = host.get(address=val)
+		h = host.get(name=val)
 		fault.check(h, "No such host: %s", val)
 		self.host = h
 	
 	def info(self):
 		info = resources.Resource.info(self)
 		info["attrs"]["network"] = self.network.kind
-		info["attrs"]["host"] = self.host.address
+		info["attrs"]["host"] = self.host.name
 		info["attrs"]["bridge"] = self.bridge
 		return info
 

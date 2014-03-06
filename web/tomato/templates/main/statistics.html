@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Statistics</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<h2>Resources</h2>
+
+<table class="table">
+	<tr>
+		<th>Host count:</th>
+		<td>{{stats.resources.hosts}}</td>
+	</tr>
+	<tr>
+		<th>Average availability:</th>
+		<td>{{stats.resources.availability|percentage}}</td>
+	</tr>
+	<tr>
+		<th>Average load:</th>
+		<td>{{stats.resources.load|percentage}}</td>
+	</tr>
+	<tr>
+		<th>Total CPUs:</th>
+		<td>{{stats.resources.cpus}}</td>
+	</tr>
+	<tr>
+		<th>Total memory:</th>
+		<td>{{stats.resources.memory|mult:1024|filesizeformat}}</td>
+	</tr>
+	<tr>
+		<th>Total disk space:</th>
+		<td>{{stats.resources.diskspace|mult:1024|filesizeformat}}</td>
+	</tr>
+</table>
+
+<div class="skip-sm"></div>
+
+
+<h2>Usage</h2>
+
+<table class="table">
+	<tr>
+		<th>Users:</th>
+		<td>{{stats.usage.users}}</td>
+	</tr>
+	<tr>
+		<th>Topologies:</th>
+		<td>{{stats.usage.topologies}}</td>
+	</tr>
+	<tr>
+		<th>Elements:</th>
+		<td>{{stats.usage.elements}}</td>
+	</tr>
+	<tr>
+		<th>Connections:</th>
+		<td>{{stats.usage.connections}}</td>
+	</tr>
+	<tr>
+		<th>Virtual machines:</th>
+		<td>
+			<dl class="dl-horizontal">
+				<dt>KVM</dt><dd>{{stats.usage.element_types.kvmqm}}</dd>
+				<dt>OpenVZ</dt><dd>{{stats.usage.element_types.openvz}}</dd>
+				<dt>Repy</dt><dd>{{stats.usage.element_types.repy}}</dd>
+			</dl>
+		</td>
+	</tr>
+	<tr>
+		<th>Virtual networks:</th>
+		<td>
+			<dl class="dl-horizontal">
+				<dt>Tinc</dt><dd>{{stats.usage.element_types.tinc_vpn}}</dd>
+				<dt>External</dt><dd>{{stats.usage.element_types.external_network}}</dd>
+			</dl>
+		</td>
+	</tr>
+</table>
+
+{% load tomato %}
+
+{% endblock %}

@@ -6,7 +6,7 @@
   <button type="submit" formaction="{%url host_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Hosts</button>
 </form>
 
-<h1>Host {{host.address}}</h1>
+<h1>Host {{host.name}}</h1>
 
 <div class="skip-sm"></div>
 
@@ -26,6 +26,10 @@
 {% load tomato %}
 
 <table class="table">
+	<tr>
+		<th>Name:</th>
+		<td>{{host.name}}</td>
+	</tr>
 	<tr>
 		<th>Address:</th>
 		<td>{{host.address}}</td>
@@ -169,9 +173,9 @@
 {% load tomato %}
 
 <form>
-  <button type="submit" formaction="{%url host_external_networks host.address%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
-  <button type="submit" formaction="{%url host.edit host.address%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
-  <button type="submit" formaction="{%url host.remove host.address%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
+  <button type="submit" formaction="{%url host_external_networks host.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
+  <button type="submit" formaction="{%url host.edit host.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
+  <button type="submit" formaction="{%url host.remove host.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
 </form>
 
 {% endblock %}

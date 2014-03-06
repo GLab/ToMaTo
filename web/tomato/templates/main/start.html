@@ -7,7 +7,7 @@
 	height:250px;
 }
 </style>
-    {% if rssurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{% rssurl %}">{% endif %}
+    {% if rssurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{%externalurl 'rssfeed' %}">{% endif %}
 {% endblock %}
 
 {% block content %}

@@ -25,7 +25,7 @@ from ..accounting import UsageStatistics, Usage
 from ..lib import db, attributes, util, logging, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.decorators import *
-from .. import config, dump
+from .. import config, dump, scheduler
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 
 ST_CREATED = "created"
@@ -476,6 +476,7 @@ def create(type_, parent=None, attrs={}):
 	logging.logMessage("info", category="element", id=el.id, info=el.info())	
 	return el
 
+@util.wrap_task
 def checkTimeout():
 	for el in Element.objects.filter(timeout__lte=time.time()):
 		el = el.upcast()
@@ -485,7 +486,7 @@ def checkTimeout():
 		except:
 			logging.logException()
 
-timeoutTask = util.RepeatedTimer(3600, checkTimeout)
+scheduler.scheduleRepeated(3600, checkTimeout) #@UndefinedVariable
 
 from .. import fault, currentUser, resources
 		

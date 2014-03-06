@@ -179,7 +179,7 @@ def element_remove(id): #@ReservedAssignment
 	el = _getElement(id)
 	el.remove()
 
-def element_info(id): #@ReservedAssignment
+def element_info(id, fetch=False): #@ReservedAssignment
 	"""
 	Retrieves information about an element.
 	
@@ -284,6 +284,8 @@ def element_info(id): #@ReservedAssignment
 	if not currentUser():
 		raise ErrorUnauthorized()
 	el = _getElement(id)
+	if fetch:
+		el.fetchInfo()
 	return el.info()
 	
 def element_usage(id): #@ReservedAssignment

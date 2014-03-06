@@ -70,6 +70,7 @@ DATABASES['default'] = {
 	'NAME': 'tomato'
 }
 
+RPC_TIMEOUT = 60
 HOST_UPDATE_INTERVAL = 60
 HOST_AVAILABILITY_HALFTIME = 60.0 * 60 * 24 * 90 # 90 days 
 RESOURCES_SYNC_INTERVAL = 600
@@ -77,6 +78,12 @@ RESOURCES_SYNC_INTERVAL = 600
 EMAIL_FROM = "ToMaTo backend <tomato@localhost>"
 EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
+
+TOPOLOGY_TIMEOUT_INITIAL = 3600.0
+TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 6 # 6 hours
+TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 14 # 14 days
+TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
+TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 6, 3600.0 * 24 * 5, 3600.0 * 24 * 14]
 
 # Django mail config
 #EMAIL_HOST = ""

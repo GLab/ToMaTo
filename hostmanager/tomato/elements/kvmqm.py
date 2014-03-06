@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, json, shutil
+import os, sys, json, shutil, re
 from django.db import models
 from .. import connections, elements, resources, fault, config
 from ..resources import template
@@ -401,6 +401,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
+			interface._start()
 		fault.check(util.waitFor(lambda :os.path.exists(self._controlPath())), "Control path does not exist")
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
 		net.freeTcpPort(self.vncport)
@@ -419,6 +420,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 			con = interface.getConnection()
 			if con:
 				con.disconnectInterface(self._interfaceName(interface.num))
+			interface._stop()
 		if self.vncpid:
 			process.kill(self.vncpid)
 			del self.vncpid
@@ -544,8 +546,13 @@ Actions: None
 class KVMQM_Interface(elements.Element):
 	num_attr = Attr("num", type="int")
 	num = num_attr.attribute()
+	name_attr = Attr("name", desc="Name", type="str", regExp="^eth[0-9]+$", states=[ST_CREATED])
 	mac_attr = Attr("mac", desc="MAC Address", type="str")
 	mac = mac_attr.attribute()
+	ipspy_pid_attr = Attr("ipspy_pid", type="int")
+	ipspy_pid = ipspy_pid_attr.attribute()
+	used_addresses_attr = Attr("used_addresses", type=list, default=[])
+	used_addresses = used_addresses_attr.attribute()
 	
 	TYPE = "kvmqm_interface"
 	CAP_ACTIONS = {
@@ -553,6 +560,7 @@ class KVMQM_Interface(elements.Element):
 	}
 	CAP_NEXT_STATE = {}
 	CAP_ATTRS = {
+		"name": name_attr,				
 		"timeout": elements.Element.timeout_attr
 	}
 	CAP_CHILDREN = {}
@@ -572,9 +580,12 @@ class KVMQM_Interface(elements.Element):
 		assert isinstance(self.getParent(), KVMQM)
 		self.num = self.getParent()._nextIfaceNum()
 		self.mac = net.randomMac()
-		
+
+	def modify_name(self, val):
+		self.num = int(re.match("^eth([0-9]+)$", val).groups()[0])
+			
 	def interfaceName(self):
-		if self.state == ST_STARTED:
+		if self.state != ST_CREATED:
 			return self.getParent()._interfaceName(self.num)
 		else:
 			return None
@@ -582,8 +593,23 @@ class KVMQM_Interface(elements.Element):
 	def upcast(self):
 		return self
 
+	def _start(self):
+		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
+		self.save()
+	
+	def _stop(self):
+		if self.ipspy_pid:
+			process.kill(self.ipspy_pid)
+			del self.ipspy_pid
+		self.save()
+
 	def info(self):
+		if self.state == ST_STARTED:
+			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
+		else:
+			self.used_addresses = []
 		info = elements.Element.info(self)
+		info["attrs"]["name"] = "eth%d" % self.num
 		return info
 
 	def updateUsage(self, usage, data):
@@ -613,6 +639,8 @@ def register(): #pragma: no cover
 	if not dosfstoolsVersion:
 		print >>sys.stderr, "Warning: KVMQM needs dosfstools, disabled"
 		return
+	if not ipspyVersion:
+		print >>sys.stderr, "Warning: ipspy not available"
 	elements.TYPES[KVMQM.TYPE] = KVMQM
 	elements.TYPES[KVMQM_Interface.TYPE] = KVMQM_Interface
 
@@ -622,4 +650,5 @@ if not config.MAINTENANCE:
 	socatVersion = cmd.getDpkgVersion("socat")
 	qmVersion = cmd.getDpkgVersion("pve-qemu-kvm")
 	dosfstoolsVersion = cmd.getDpkgVersion("dosfstools")
+	ipspyVersion = cmd.getDpkgVersion("ipspy")
 	register()

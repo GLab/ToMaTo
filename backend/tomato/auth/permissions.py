@@ -84,6 +84,8 @@ class PermissionMixin:
 	def getRole(self, user=None):
 		if not user:
 			user = currentUser()
+		if user is True:
+			return Role.owner
 		role = Role.null
 		# Global permissions, thats easy
 		if user.hasFlag(Flags.GlobalToplUser):

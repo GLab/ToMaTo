@@ -19,6 +19,10 @@
 		<div class="col-md-4 col-sm-6 col-xs-12">
 			<h3>{{orga.description}} <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
 			{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
+			<p><b>
+				{{orga.hosts.count}} hosts
+				{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
+			</b></p>
 			{% if orga.description_text %}
 				<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
 			{% endif %}

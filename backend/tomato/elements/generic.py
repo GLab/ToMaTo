@@ -18,7 +18,7 @@
 from django.db import models
 from .. import elements, resources, host, fault
 from ..resources import profile as r_profile, template as r_template
-from ..lib.attributes import Attr #@UnresolvedImport
+from ..lib.attributes import Attr, attribute #@UnresolvedImport
 from ..lib import util, attributes #@UnresolvedImport
 import time
 
@@ -39,6 +39,7 @@ class VMElement(elements.Element):
 	rextfv_last_started = models.FloatField(default = 0) #whenever an action which may trigger the rextfv autostarted script is done, set this to current time. set by self.set_rextfv_last_started
 	next_sync = models.FloatField(default = 0, db_index=True) #updated on updateInfo. If != 0: will be synced when current time >= self.next_sync.
 	last_sync = attributes.attribute("last_sync", float, 0)
+	custom_template = attribute("custom_template", bool, default=False) #is set to true after an image has been uploaded
 	
 	CUSTOM_ACTIONS = {
 		"stop": [ST_STARTED],
@@ -129,6 +130,7 @@ class VMElement(elements.Element):
 
 	def modify_profile(self, val):
 		profile = resources.profile.get(self.TYPE, val)
+		fault.check(profile, "No such profile: %s", val)
 		if profile.restricted and not self.profile == profile:
 			fault.check(currentUser().hasFlag(Flags.RestrictedProfiles), "Profile is restricted")
 		self.profile = profile
@@ -137,9 +139,10 @@ class VMElement(elements.Element):
 
 	def modify_template(self, tmplName):
 		template = resources.template.get(self.TYPE, tmplName)
+		fault.check(template, "No such template: %s", tmplName)
 		if template.restricted and not self.template == template:
 			fault.check(currentUser().hasFlag(Flags.RestrictedTemplates), "Template is restricted")
-		self.template = resources.template.get(self.TYPE, tmplName)
+		self.template = template
 		if self.element:
 			self.element.modify({"template": self._template().name})
 
@@ -203,6 +206,7 @@ class VMElement(elements.Element):
 				iface._remove()
 			self.element.remove()
 			self.element = None
+			self.custom_template = False
 		self.setState(ST_CREATED, True)
 		
 	def action_stop(self):
@@ -223,8 +227,8 @@ class VMElement(elements.Element):
 			ch.triggerConnectionStart()
 
 	def after_upload_use(self):
-		if self.element:
-			self.element.after_upload_use()
+		self.custom_template = True
+		self.save()
 
 	def upcast(self):
 		return self
@@ -235,13 +239,13 @@ class VMElement(elements.Element):
 		info["attrs"]["template"] = self._template().name
 		info["attrs"]["profile"] = self._profile().name
 		info["attrs"]["site"] = self.site.name if self.site else None
-		info["attrs"]["host"] = self.element.host.address if self.element else None
+		info["attrs"]["host"] = self.element.host.name if self.element else None
 		info["attrs"]["host_info"] = {
+									'address':			self.element.host.address if self.element else None,
 									'problems': 		self.element.host.problems() if self.element else None,
 									'site':				self.element.host.site.name if self.element else None,
 									'fileserver_port': 	self.element.host.hostInfo.get('fileserver_port', None) if self.element else None
 									}
-		info["attrs"]["custom_template"] = self.element.custom_template if self.element else False
 		return info
 
 

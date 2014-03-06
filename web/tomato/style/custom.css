@@ -263,3 +263,7 @@ a.logobacklink:hover {
 	margin-top:-20px;
 	margin-bottom:15px;
 }
+
+textarea {
+	white-space: nowrap;
+}

@@ -101,9 +101,9 @@
     <li class="dropdown-header">Hosts</li>
     {% for h in hosts %}
     	{% if network %}
-      		<li><a href="{%url host_external_network h.address network %}">Show instances on '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_network h.name network %}">Show instances on '{{h.name}}'</a></li> 
     	{% else %}
-      		<li><a href="{%url host_external_networks h.address %}">Show instances on '{{h.address}}'</a></li> 
+      		<li><a href="{%url host_external_networks h.name %}">Show instances on '{{h.name}}'</a></li> 
       	{% endif %}   
     {% endfor %}
   </ul>
