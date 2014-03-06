@@ -145,11 +145,13 @@ var Map = Class.extend({
 		this.render();
 	},
 	render: function() {
+		var bounds = new google.maps.LatLngBounds();
+		for (var name in this.sites) bounds.extend(this.sites[name].coords);
 		this.map = new google.maps.Map(this.options.canvas, {
-			mapTypeId: google.maps.MapTypeId.ROADMAP,
-			zoom: 3,
-			center: new google.maps.LatLng(50, -55)
+			mapTypeId: google.maps.MapTypeId.ROADMAP
 		});
+		this.map.fitBounds(bounds);
+		this.map.panToBounds(bounds);
 		for (var name in this.sites) this.sites[name].render(this.map);
 		for (var i=0; i<this.links.length; i++) {
 			var link = this.links[i];
