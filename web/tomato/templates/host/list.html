@@ -118,7 +118,7 @@
 			    
 			    <td enhancetable_customkey="{{host.host_info_timestamp}}"><nobr>{{host.host_info_timestamp|age|toduration}}</nobr></td>
 			    <td enhancetable_customkey="{{host.host_info.uptime}}">{{host.host_info.uptime|toduration}}</td>
-			    <td enhancetable_customkey="{{host.host_info.time_diff|absolute}}"><nobr>{{host.host_info.time_diff|floatformat:2}} s</nobr></td>
+			    <td enhancetable_customkey="{{host.host_info.time_diff|absolute}}"><nobr>{{host.host_info.time_diff|floatformat:1}} s</nobr></td>
 			    <td enhancetable_customkey="{{host.host_info.query_time}}"><nobr>{{host.host_info.query_time|mult:1000|floatformat:0}} ms</nobr></td>
 	
 			    <td title="{{host.host_info.resources.cpus_present.count}} * {{host.host_info.resources.cpus_present.model}}">{{host.host_info.resources.cpus_present.count}}</td>
