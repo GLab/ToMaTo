@@ -1,3 +1,13 @@
+tomato-hostmanager (3.3) unstable; urgency=low
+
+  * Used IP addresses are displayed on interfaces
+  * Allowing qm version up to 1.7
+  * New flexible task system with reduced multi-threading
+  * Fixed filenames for downloads from hosts
+  * Various fixes for executable archive status reading/display
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 07 Mar 2014 09:53:50 +0100
+
 tomato-hostmanager (3.2.2) unstable; urgency=low
 
   * Added websockify dependency

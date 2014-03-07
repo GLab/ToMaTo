@@ -1,3 +1,21 @@
+tomato-backend (3.3) stable; urgency=low
+
+  * Topology timeouts
+  * New statistics page
+  * Used IP addresses are displayed on interfaces
+  * OpenVZ uses element name as hostname
+  * New flexible task system with reduced multi-threading
+  * Using host names instead of IPs as entity key
+  * Added timeout to all RPC calls
+  * Deactivated hosts are not checked any more
+  * Allowing qm version up to 1.7
+  * Calling transaction.rallback on database errors
+  * Fixed link emulation for multi-host connections
+  * Fixes to profile management
+  * Fixed topology import
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 07 Mar 2014 10:16:24 +0100
+
 tomato-backend (3.2.3) stable; urgency=low
 
   * Bugfix release

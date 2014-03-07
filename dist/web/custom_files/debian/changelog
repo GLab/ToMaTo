@@ -1,3 +1,20 @@
+tomato-web (3.3) stable; urgency=low
+
+  * Topology timeouts
+  * New statistics page
+  * Used IP addresses are displayed on interfaces
+  * Rewritten sites map
+  * New organization list
+  * Redesign of some editor attribute windows
+  * Rewritten initial topology dialog
+  * Using host names instead of IPs as entity key
+  * Fixes to profile management
+  * Fixed slow account list
+  * Fixed organization selection in account list
+  * Various fixes for executable archive status reading/display
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 07 Mar 2014 10:18:07 +0100
+
 tomato-web (3.2.3) stable; urgency=low
 
   * Bugfix release
