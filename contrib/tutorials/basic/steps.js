@@ -247,8 +247,8 @@
 								if you are unsure, choose NoVNC.</p>\
 							<p class="tutorialCommand">\
 								Please open a console for one of your two devices.',
-					},
 					help_page: 'Consoleaccess'
+					},
 					{
 						text:	'<p class="tutorialExplanation">\
 									You can now play around with these two devices.</p>\
