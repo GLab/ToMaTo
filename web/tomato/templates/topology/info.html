@@ -7,12 +7,12 @@
 <link type="text/css" href="style/ui.ribbon.css" rel="stylesheet" />
 <link type="text/css" href="style/jquery.contextMenu.css" rel="stylesheet" />
 <link type="text/css" href="style/editor.css" rel="stylesheet" />
-<script language="JavaScript" type="text/javascript" src="js/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/jquery-ui.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/ui.ribbon.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/jquery.contextMenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/raphael.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/browser_issues.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
 
@@ -37,12 +37,14 @@
 
 
 <div id="editor" style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
+	<div id="browser_issues"></div>
 	<h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
 	<div id="menu" style="width:800px;"></div>
 	<div id="workspace" style="width:800px; height:600px;"></div>
 </div>
 
 <script language="JavaScript" type="text/javascript">
+  display_issues($("#browser_issues"));
   help_baseUrl = "{%externalurl 'help' %}";
   {% if tutorial_data %}
   var tutorial_base_url = "{{tutorial_data.base_url}}";
