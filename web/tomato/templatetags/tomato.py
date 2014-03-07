@@ -60,7 +60,7 @@ def toduration(value):
 	
 @register.filter
 def todate(value):
-	return datetime.datetime.utcfromtimestamp(float(value or "0.0"))
+	return datetime.datetime.fromtimestamp(float(value or "0.0"))
 	
 @register.filter
 def age(value):
