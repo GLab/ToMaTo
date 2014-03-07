@@ -266,7 +266,7 @@ def host_ping(dst):
 def host_networks():
 	res = []
 	for br in net.bridgeList():
-		if not net.bridgeInterfaces(br):
+		if not filter(lambda iface: iface.startswith("eth"), net.bridgeInterfaces(br)):
 			continue
 		data = {"bridge": br}
 		data["bytes_received"], data["bytes_sent"] = map(str, net.trafficInfo(br))
