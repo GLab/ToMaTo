@@ -119,7 +119,6 @@ def bridgeAddInterface(brname, ifname):
 	
 def bridgeRemoveInterface(brname, ifname):
 	assert bridgeExists(brname)
-	assert ifaceExists(ifname)
 	if ifname in bridgeInterfaces(brname):
 		run(["brctl", "delif", brname, ifname])
 		
