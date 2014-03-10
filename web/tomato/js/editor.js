@@ -2706,55 +2706,78 @@ var Element = Component.extend({
 			}
 		);
 	},
-	uploadImage: function() {
+	uploadFile: function(window_title, grant_action,use_action) {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
-		this.action("upload_grant", {callback: function(el, res) {
+		this.action(grant_action, {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
-			var div = $('<div/>');
+
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
+
+		
+		
 			// iframe.load will be triggered a moment after iframe is added to body
 			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
+			
 			iframe.load(function(){ 
 				iframe.off("load");
 				iframe.load(function(){
 					iframe.remove();
-					info.hide();
-					el.action("upload_use");
+					this.info.hide();
+					this.info = null;	
+					el.action(use_action);
 				});
-				var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
+				var t = this;			
+				
+				var div = $('<div/>');
+				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/></form>');
+
+				div.append(this.upload_form);
+				this.info = new Window({title: window_title, 
+										content: div, 
+										autoShow: true, 
+										width:300,
+										buttons: [
+											{
+											text: "Upload",
+											id: "upload_window_upload",
+											click: function() {		
+												t.upload_form.css("display","none");
+												
+												$('#upload_window_upload').attr("disabled",true);
+												$('#upload_window_upload').css("background-color","grey");
+												$('#upload_window_cancel').attr("disabled",true);
+												$('#upload_window_cancel').css("background-color","grey");
+												t.upload_form.submit();
+												div.append($('<div style="text-align:center;"><img src="../img/loading_big.gif" /></div>'))
+												
+												},
+											},
+											{
+											text: "Cancel",
+											id: "upload_window_cancel",
+											click: function() {
+												t.info.hide();
+												t.info = null;
+												},
+											}
+											]										
+										});
+				
 			});
 			iframe.css("display", "none");
 			$('body').append(iframe);
-			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
+			
 		}});
+		
+	},
+	uploadImage: function() {
+		this.uploadFile("Upload Image","upload_grant","upload_use");	
 	},
 	uploadRexTFV: function() {
-		if (window.location.protocol == 'https:') { //TODO: fix this.
-			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
-			return;
-		}
-		this.action("rextfv_upload_grant", {callback: function(el, res) {
-			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
-			var div = $('<div/>');
-			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
-			// iframe.load will be triggered a moment after iframe is added to body
-			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
-			iframe.load(function(){ 
-				iframe.off("load");
-				iframe.load(function(){
-					iframe.remove();
-					info.hide();
-					el.action("rextfv_upload_use");
-				});
-				var info = new Window({title: "Upload Executable Archive", content: div, autoShow: true, width:300});
-			});
-			iframe.css("display", "none");
-			$('body').append(iframe);
-			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
-		}});
+		this.uploadFile("Upload Executable Archive","rextfv_upload_grant","rextfv_upload_use");
 	},
 	action_start: function() {
 		this.action("start");
