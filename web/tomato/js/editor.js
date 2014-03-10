@@ -2732,8 +2732,10 @@ var Element = Component.extend({
 				var t = this;			
 				
 				var div = $('<div/>');
-				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/></form>');
+				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onClick="Javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
 
+				//#428BCA
+				
 				div.append(this.upload_form);
 				this.info = new Window({title: window_title, 
 										content: div, 
@@ -2743,13 +2745,12 @@ var Element = Component.extend({
 											{
 											text: "Upload",
 											id: "upload_window_upload",
+											disabled: true,
 											click: function() {		
 												t.upload_form.css("display","none");
 												
-												$('#upload_window_upload').attr("disabled",true);
-												$('#upload_window_upload').css("background-color","grey");
-												$('#upload_window_cancel').attr("disabled",true);
-												$('#upload_window_cancel').css("background-color","grey");
+												$('#upload_window_upload').button("disable");
+												$('#upload_window_cancel').button("disable");
 												t.upload_form.submit();
 												div.append($('<div style="text-align:center;"><img src="../img/loading_big.gif" /></div>'))
 												
