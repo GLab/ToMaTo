@@ -1254,6 +1254,7 @@ var Topology = Class.extend({
 		this.editor = editor;
 		this.elements = {};
 		this.connections = {};
+		this.pendingNames = [];
 	},
 	_getCanvas: function() {
 		return this.editor.workspace.canvas;
@@ -1419,7 +1420,7 @@ var Topology = Class.extend({
 				base = data.type;
 		}
 		var num = 1;
-		while (names.indexOf(base+num) != -1) num++;
+		while (names.indexOf(base+num) != -1 || this.pendingNames.indexOf(base+num) != -1) num++;
 		return base+num;
 	},
 	createElement: function(data, callback) {
@@ -1428,11 +1429,13 @@ var Topology = Class.extend({
 		var obj = this.loadElement(data);
 		this.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "begin", attrs: data});
 		obj.setBusy(true);
+		this.pendingNames.push(data.name);
 		var t = this;
 		ajax({
 			url: "topology/" + this.id + "/create_element",
 			data: data,
 			successFn: function(data) {
+				t.pendingNames.remove(data.name);
 				t.elements[data.id] = obj;
 				obj.setBusy(false);
 				obj.updateData(data);
@@ -1443,6 +1446,7 @@ var Topology = Class.extend({
 			errorFn: function(error) {
 				showError(error);
 				obj.paintRemove();
+				t.pendingNames.remove(data.name);
 				t.editor.triggerEvent({component: "element", object: obj, operation: "create", phase: "error", attrs: data});
 			}
 		});
