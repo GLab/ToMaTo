@@ -2702,7 +2702,8 @@ var Element = Component.extend({
  		var win = new Window({
  			title: "VNC info",
  			content: '<p>Link: <a href="'+link+'">'+link+'</a><p>Host: '+host+"</p><p>Port: "+port+"</p><p>Websocket-Port: "+wport+"</p><p>Password: <pre>"+passwd+"</pre></p>",
- 			autoShow: true
+ 			autoShow: true,
+ 			width: 500,
  		});
 		this.triggerEvent({operation: "console-dialog"});
 	},
