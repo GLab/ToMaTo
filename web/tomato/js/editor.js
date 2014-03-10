@@ -2732,7 +2732,7 @@ var Element = Component.extend({
 				var t = this;			
 				
 				var div = $('<div/>');
-				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onClick="Javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
+				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onChange="Javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
 
 				//#428BCA
 				
