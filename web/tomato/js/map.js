@@ -6,6 +6,69 @@ function rgb2color(rgb) {
 	return "#" + rgb.join("") 
 }
 
+
+var Window = Class.extend({
+	init: function(options) {
+		log(options);
+		this.options = options;
+		this.options.position = options.position || ['center',200];
+		this.div = $('<div style="overflow:visible;"/>').dialog({
+			autoOpen: false,
+			draggable: options.draggable != null ? options.draggable : true,
+			resizable: options.resizable != null ? options.resizable : true,
+			height: options.height || "auto",
+			width: options.width || "",
+			maxHeight:600,
+			maxWidth:800,
+			title: options.title,
+			show: "slide",
+			hide: "slide",
+			minHeight:50,
+			minWidth:250,
+			modal: options.modal != null ? options.modal : true,
+			buttons: options.buttons || {},
+			closeOnEscape: false,
+			open: function(event, ui) { 
+				if (options.closable === false) $(".ui-dialog-titlebar-close").hide(); 
+			}
+		});
+		if (options.closeOnEscape != undefined)
+			this.div.closeOnEscape = options.closeOnEscape;
+		this.setPosition(options.position);
+		if (options.content) this.div.append(options.content);
+		if (options.autoShow) this.show();
+		
+		var statistics = $('<div style="width: 100%; height: 100%;"><iframe src="' + options.source + '" style="width: 100%; height: 100%;border:0px;">test</iframe></div>');
+		this.div.append(statistics);
+		
+		
+	},
+	setTitle: function(title) {
+		this.div.dialog("option", "title", title);
+	},
+	setPosition: function(position) {
+		this.div.dialog("option", "position", position);
+	},
+	show: function() {
+		this.setPosition(this.position);
+		this.div.dialog("open");
+	},
+	hide: function() {
+		this.div.dialog("close");
+	},
+	toggle: function() {
+		if (this.div.dialog("isOpen")) this.hide();
+		else this.show();
+	},
+	add: function(div) {
+		this.div.append(div);
+	},
+	getDiv: function() {
+		return this.div;
+	}
+});
+
+
 var Link = Class.extend({
 	init: function(map, src, dst, data) {
 		this.map = map;
@@ -17,7 +80,14 @@ var Link = Class.extend({
 		var html = '<div id="content"><h4>Link from ' + this.src.name + ' to ' + this.dst.name + '</h4><div id="bodyContent">';
 		html += this.src.name + ': ' + this.src.displayName + ' (' + this.src.location + ')<br/>';
 		html += this.dst.name + ': ' + this.dst.displayName + ' (' + this.dst.location + ')<br/>';
-		html += '<br/><a href="/link_stats/'+this.src.name+'/'+this.dst.name+'" target="_blank">Link statistics</a>';
+		
+		
+		html += '<br/><a href="Javascript: \
+		var statistic_window = new Window({source: \'\/link_stats\/'+this.src.name+'\/'+this.dst.name+'\', height: 450, width:800, title: \'Link statistics\'}).show();">Link statistics</a>';
+		
+		
+		
+		//
 		html += '</div></div>';
 		return html;
 	},
@@ -85,7 +155,8 @@ var Site = Class.extend({
 		if (this.organization.image_url) html += '<img style="max-width:6cm; max-height:4cm;" src="'+this.organization.image_url+'" title="'+this.organization.description+'"/>';
 		else html += this.organization.description;
 		html += '<br /><a href="'+this.organization.homepage_url+'" target="_blank">'+this.organization.homepage_url+'</a></p>';
-		html += '<p><a href="/link_stats/'+this.name+'" target="_blank">Statistics for intra-site traffic</a></p>'; 
+		html += '<p><a href="Javascript: \
+			var statistic_window = new Window({source: \'\/link_stats\/'+this.name+'\', height: 600, width:800, title: \'Statistics for intra-site traffic\'}).show();">Statistics for intra-site traffic</a></p>'; 
 		html += '</div></div>';
 		return html;
 	},
