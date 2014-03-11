@@ -1505,7 +1505,7 @@ var Topology = Class.extend({
 			if (ids <= 0 && options.callback) options.callback();
 			t.editor.triggerEvent({component: "topology", object: this, operation: "action", phase: "end", action: action});
 		}
-		for (var id in this.elements) {
+		for (var id in options.elements||this.elements) {
 			var el = this.elements[id];
 			if (el.busy) continue;
 			if (el.parent) continue;
@@ -1520,19 +1520,43 @@ var Topology = Class.extend({
 		if (ids <= 0 && options.callback) options.callback();
 		this.onUpdate();
 	},
-	action_start: function() {
+	_twoStepPrepare: function(callback) {
+		var vmids = {};
+		var rest = {};
+		for (var id in this.elements) {
+			var element = this.elements[id];
+			switch (element.data.type) {
+				case 'openvz':
+				case 'kvmqm':
+				case 'repy':
+					vmids[id] = element;
+					break;
+				default:
+					rest[id] = element;
+			}
+		}
 		var t = this;
 		this.action_delegate("prepare", {
-			callback: function(){
-				t.action_delegate("start", {});
+			elements: vmids,
+			callback: function() {
+				t.action_delegate("prepare", {
+					elements: rest,
+					callback: callback
+				})
 			}
+		})
+	},
+	action_start: function() {
+		var t = this;
+		this._twoStepPrepare(function(){
+			t.action_delegate("start", {});
 		});
 	},
 	action_stop: function() {
 		this.action_delegate("stop");
 	},
 	action_prepare: function() {
-		this.action_delegate("prepare");
+		this._twoStepPrepare();
 	},
 	action_destroy: function() {
 		var t = this;
