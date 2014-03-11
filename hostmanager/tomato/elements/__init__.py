@@ -89,7 +89,7 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
 		dump.dumpException(connection=data, **kwargs)
 
-	def getUsageStatistics(self):
+	def getUsageStatistics(self):
 		if not self.usageStatistics:
 			# only happens during object creation or when object creation failed
 			stats = UsageStatistics()
@@ -399,19 +399,19 @@ class RexTFVElement:
                     
                 # try to pack 3 times. If this fails, throw a fault.
 				tries_left = 3
-                tar_success = False
+				tar_success = False
 				while tries_left>0:
 					try:
 						cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
 						tar_success = True
-                        break
+						break
 					except:
 						tries_left -= 1
 					if tries_left > 0:
 						time.sleep(1)
 				fault.check(tar_success, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.")
 			
-            finally:
+			finally:
 				self._nlxtp_close()
 		
 	#nlXTP's running status.
