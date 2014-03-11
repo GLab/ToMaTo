@@ -396,7 +396,15 @@ class RexTFVElement:
 			try:
 				if os.path.exists(filename):
 					os.remove(filename)
-				cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+				tries_left = 3
+				while tries_left>0:
+					try:
+						cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
+						tries_left = -5
+					except:
+						tries_left -= 1
+						time.sleep(1)
+				fault.check(tries_left == -5, "Error while packing the archive for download.")
 			finally:
 				self._nlxtp_close()
 		
