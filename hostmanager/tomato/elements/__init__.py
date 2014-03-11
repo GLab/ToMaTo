@@ -404,7 +404,7 @@ class RexTFVElement:
 					except:
 						tries_left -= 1
 						time.sleep(1)
-				fault.check(tries_left == -5, "Error while packing the archive for download.")
+				fault.check(tries_left == -5, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.")
 			finally:
 				self._nlxtp_close()
 		
