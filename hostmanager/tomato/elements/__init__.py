@@ -396,17 +396,22 @@ class RexTFVElement:
 			try:
 				if os.path.exists(filename):
 					os.remove(filename)
+                    
+                # try to pack 3 times. If this fails, throw a fault.
 				tries_left = 3
+                tar_success = False
 				while tries_left>0:
 					try:
 						cmd.run(["tar", "--numeric-owner", "-czvf", filename, "-C", self._nlxtp_path(""), "."])
-						tries_left = -5
+						tar_success = True
+                        break
 					except:
 						tries_left -= 1
-						if tries_left > 0:
-							time.sleep(1)
-				fault.check(tries_left == -5, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.")
-			finally:
+					if tries_left > 0:
+						time.sleep(1)
+				fault.check(tar_success, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.")
+			
+            finally:
 				self._nlxtp_close()
 		
 	#nlXTP's running status.
