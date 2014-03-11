@@ -77,8 +77,8 @@ function updateRexTFVStatus() {
 		document.getElementById("info_age").innerHTML = info_date.toLocaleTimeString() + " &nbsp; " + /\((.*)\)/.exec(info_date.toString())[1];
 		
 		rextfv_status = element_info['attrs']['rextfv_run_status'];
-		if (rextfv_status['state'] == 'started') {
-			s = rextfv_status['rextfv_run_status'];
+		if (element_info['state'] == 'started') {
+			s = rextfv_status;
 			if (s['readable']) {
 				document.getElementById('rextfv_readable').innerHTML = "Yes"
 				document.getElementById('overall_status_p').innerHTML = '<h2>RexTFV Status:</h2><div id="overall_status"></div>';	
