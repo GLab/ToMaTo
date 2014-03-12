@@ -1,3 +1,13 @@
+tomato-web (3.3.1) stable; urgency=low
+
+  * fixed a bug that RexTFV status window did not display the status
+  * Fixed vnc info dialog too small
+  * Fixed duplicate names race condition
+  * Added warning messages for browser issues
+  * Timeouts in topology list now correct
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:46:49 +0100
+
 tomato-web (3.3) stable; urgency=low
 
   * Topology timeouts

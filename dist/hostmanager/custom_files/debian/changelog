@@ -1,3 +1,10 @@
+tomato-hostmanager (3.3.1) unstable; urgency=low
+
+  * Filtering host networks and only reporting those with eth* interfaces as external
+  * Fix task running twice in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:45:35 +0100
+
 tomato-hostmanager (3.3) unstable; urgency=low
 
   * Used IP addresses are displayed on interfaces

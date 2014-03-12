@@ -1,3 +1,9 @@
+tomato-backend (3.3.1) stable; urgency=low
+
+  * Fix task running twice in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:48:03 +0100
+
 tomato-backend (3.3) stable; urgency=low
 
   * Topology timeouts
