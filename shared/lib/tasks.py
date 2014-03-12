@@ -95,6 +95,8 @@ class TaskScheduler(threading.Thread):
 			task = self.tasks[taskId]
 			if task.next > time.time():
 				return
+			if task.busy:
+				return
 			task.busy = True
 		task.execute()
 		with self.tasksLock:
