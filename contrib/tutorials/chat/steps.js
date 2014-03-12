@@ -41,7 +41,7 @@
 			}
 			return false;
 		},
-		help_page: 'OpenVZDevice'
+		help_page: 'TopologyDesign'
 	},
 	{
 		text: '<p class="tutorialExplanation">Currently your virtual machine has the default template, which is a plain debian installation. <br />\
@@ -59,8 +59,7 @@
 				component: "connection",
 				phase: "end"
 			});
-		},
-		help_page: 'connections'
+		}
 	},
 	{
 		text: '<p class="tutorialExplanation">Before we can install the chat client we have to prepare and start our virtual machines.<br/> Preparing will create the VM on one of the testbed hosts but not start it yet.<br /> We have two options to do this. The first option is to right-click our devices and select </i>Prepare</i><br />The other way to do this is to use the <i>Prepare</i>-Button in the menu.<br/></p>\
@@ -80,8 +79,7 @@
 					return true;
 			}
 			return false;
-		},
-		help_page: 'devices'
+		}
 	},
 	{
 		text: '<p class="tutorialExplanation">After we prepared the VMs we have to start them. You can start the VM by using the <i>start</i> command. Just right-click on a device and select <i>Start</i>.<br /> The icons beside the element icon reflect the current state of the element.</p>\
@@ -93,8 +91,7 @@
 				action: "start",
 				phase: "end"
 			});
-		},
-		help_page: 'devices'
+		}
 	},
 	{
 		text: '<p class="tutorialExplanation">For bigger topologies, this would be a lot of work. Therefore you can start, stop, prepare and destroy all of the topology elements at once using the buttons in the tag <i>Home</i> of the menu.<br/>\
@@ -107,8 +104,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 				action: "start",
 				phase: "end"
 			});
-		},
-		help_page: 'devices'
+		}
 	},
 	{
 		text: '<p class="tutorialExplanation">Now we will install python via executable archives. We will need it for the chat client. <br /> \
@@ -131,7 +127,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 			}
 			return false;
 		},
-		help_page: 'executablearchives'
+		help_page: 'ExecutableArchives'
 	}, 
 	{
 		text: '<p class="tutorialExplanation">If you want to get information about the execution of your archive, just go to executable archive status window</p>\
@@ -142,12 +138,12 @@ These buttons are smart and know the states of the elements. If you select <i>st
 					component: "element"
 				});
 		},
-		help_page: 'executablearchives'
+		help_page: 'ExecutableArchives'
 	},
 	{ 
 		text: '<p class="tutorialCommand">Wait untill the executable archive status page shows "Finish". Then click on "Continue".</p>',
 		skip_button: 'Continue',
-		help_page: 'executablearchives'
+		help_page: 'ExecutableArchives'
 	
 	},
 	{
@@ -167,7 +163,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 			}
 			return false;
 		},
-		help_page: 'executablearchives'
+		help_page: 'ExecutableArchives'
 	}, 
 	{
 		text: '<p class="tutorialCommand">Again, open the executable archive status page by right-clicking the virtual machine <pre>&gt; Executable archive &gt; Status</pre> to get information about the status of your upload. </p>',
@@ -177,7 +173,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 					component: "element"
 				});
 		},
-		help_page: 'executablearchives'
+		help_page: 'ExecutableArchives'
 	},
 	{ 
 		text: '<p class="tutorialCommand">Wait untill the executable archive status page shows "Finish". Then click on "Continue".</p>',
@@ -200,7 +196,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 			}
 			return false;
 		},
-		help_page: 'consoleaccess'
+		help_page: 'TopologyInteraction'
 	},
 	{
 		text: '<p class="tutorialExplanation">Now you can test the chat client. Type <i>chat</i> into the consoles to start the software. This software will send every line that you type to all connected nodes using UDP broadcast. All received lines will be displayed together with a timestamp, a sequence number and the senders IP address.<br/>\
@@ -248,7 +244,7 @@ That is one advantage of using switches: Once your VM is connected to a switch, 
 			}
 			return false;
 		},
-		help_page: 'devices'
+		help_page: 'NetworkTypes'
 	},
 	{
 		text: '<p class="tutorialExplanation">Now we can change the connections. Remove the connection between the two VMs by clicking on the blue handle in the middle of the connection and select <i>Delete</i>.</p>\
@@ -296,7 +292,7 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 				}
 			});
 		},
-		help_page: 'Programmabledevice'
+		help_page: 'DeviceTypes'
 	},
 	{ 
 		text: '<p class="tutorialCommand">Upload the <i>chat_monitor.repy</i> from the beginning of the tutorial</p>',
@@ -307,8 +303,7 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 				component: "element",
 				phase: "end",
 			});
-		},
-		help_page: 'programmabledevice'
+		}
 	},
 	{
 		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Monitor" using the configure window of the right-click menu.</p>',
@@ -335,8 +330,7 @@ This chat agent will send a message every 3 seconds.</p>\
 					}
 				}
 			});
-		},
-		help_page: 'programmabledevice'
+		}
 	},
 	{ 
 		text: '<p class="tutorialCommand">Upload the <i>chat_sender.repy</i> from the beginning of the tutorial</p>',
@@ -347,8 +341,7 @@ This chat agent will send a message every 3 seconds.</p>\
 				component: "element",
 				phase: "end",
 			});
-		},
-		help_page: 'programmabledevice'
+		}
 	},
 	{
 		text: '<p class="tutorialCommand">Change the name of this repy device to "Chat Sender" using the configure window of the right-click menu.</p>',
@@ -408,7 +401,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 		text: '<h3>Third part</h3>\
 <p class="tutorialExplanation">Now that we learned how to create and manage topologies we will have a look at some advanced functionality of ToMaTo. In this part we will change the link characteristics between the elements and have a look at the packets that travel over them.</p>',
 		skip_button: 'Continue',
-		help_page: 'linkemulation'
+		help_page: 'LinkEmulation'
 	},
 	{
 		text: '<p class="tutorialExplanation">Now we will add a delay of 2 seconds to a link and check if we can see the difference. Open the attributes ofthe link of one OpenVZ VM as you learned in the the first part. Enable link emulation and add a delay of 2000 ms on one of the directions.</p>\
@@ -430,14 +423,14 @@ Note that you can not type any text into the consoles of these agents as the Rep
 				}
 			});
 		},
-		help_page: 'linkemulation'
+		help_page: 'LinkEmulation'
 	},
 	{
 		text: '<p class="tutorialExplanation">You should see the delay when you send messages between your OpenVZ VMs. The delay should only exist in one direction.<br/>\
 Now you can play around with the settings a little. Maybe add some jitter to the connection. If you apply packet duplication or packet loss you can use the sequence numbers to check this functionality.</p>\
 <p class="tutorialCommand">Click continue when you want to continue</p>',
 		skip_button: 'Continue',
-		help_page: 'linkemulation'
+		help_page: 'LinkEmulation'
 	},
 	{
 		text: '<p class="tutorialExplanation">Now we will have a look at how the packets of our chat client look like. Open the attribute window of a connection again and activate packet capturing. Please keep the mode at <i>for download</i> and do not apply a filter.</p>\
@@ -452,7 +445,7 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 				}
 			});
 		},
-		help_page: 'packetcapturing'
+		help_page: 'PacketCapturing'
 	},
 	{
 		text: '<p class="tutorialExplanation">Make sure that some chat messages go over that link and then we can have a look at them. To view them, we will use an online service called <i>Cloudshark</i>. Right click on the link and choose <i>View capture in Cloudshark</i>.</p>\
@@ -465,14 +458,14 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 				phase: "end"
 			});
 		},
-		help_page: 'packetcapturing'
+		help_page: 'PacketCapturing'
 	},
 	{
  		text: '<p class="tutorialExplanation">Have a look at the packets and try to figure out how they are encoded and what the fields could mean.</p>\
 <p class="tutorialExplanation">It might happen that your pop-up blocker prevents the Cloudshark window from opening. You should disable the blocker for ToMaTo.</p>\
 <p class="tutorialCommand">Click on continue when you are done</p>',
 		skip_button: 'Continue',
-		help_page: 'packetcapturing'
+		help_page: 'PacketCapturing'
 	},
 	{
 		text: '<h3>Fourth part</h3>\

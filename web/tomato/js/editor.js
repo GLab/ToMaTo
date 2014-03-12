@@ -12,6 +12,7 @@ var settings = {
 	                		attrs: {mode: "switch"}  
 	                      }
 	],
+	supported_configwindow_help_pages: ['kvmqm','openvz','connection'],
 }
 
 var ignoreErrors = false;
@@ -2005,7 +2006,7 @@ var Component = Class.extend({
 		var settings = this.configWindowSettings();
 		
 		var helpTarget = undefined;
-		if ($.inArray(this.data.type,this.editor.supported_configwindow_help_pages)) {
+		if ($.inArray(this.data.type,settings.supported_configwindow_help_pages)) {
 			helpTarget = help_baseUrl+"/editor:configwindow_"+this.data.type;
 		}
 		
@@ -3807,10 +3808,7 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
-		
-		
-		
-		this.supported_configwindow_help_pages = options.supported_configwindow_help_pages || [];
+				
 		var t = this;
 		this.workspace.setBusy(true);
 		ajax ({

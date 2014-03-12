@@ -39,7 +39,7 @@
 							<p class="tutorialExplanation">\
 								In the workspace, you will model the topology.</p>',
 					skip_button: 'Continue',
-					help_page: "GraphicalEditor"
+					help_page: 'TopologyDesign'
 					},
 					{
 					text: '<p class="tutorialExplanation">\
@@ -91,7 +91,7 @@
 								which also means you can only run Linux systems in OpenVZ devices.</p>\
 							<p class="tutorialExplanation">Did you notice the ? button, which just appeared in the top-right corner of this window?\
 								This leads you to a help page which tells you more about what you just did (Don\'t worry, it opens in a new browser tab).</p>',
-					help_page:'OpenVZDevice',
+					help_page:'DeviceTypes',
 					skip_button: 'Continue'
 					},
 					{
@@ -118,6 +118,7 @@
 					{
 					text:	'<p class="tutorialExplanation">\
 								You can disable moving elements or enable <i>snap-to-grid</i> in the options tab.</p>',
+					help_page:'EditorSettings',
 					skip_button: 'Continue'
 					},
 					{
@@ -147,7 +148,6 @@
 								KVM devices can be identified by a green screen.\
 								Contrary to OpenVZ, KVM devices run completely separated from their host systems.\
 								This means that you can modify the kernel and/or use any operating system.</p>',
-					help_page:'KVMDevice',
 					skip_button:'continue'
 					},
 					{
@@ -174,7 +174,6 @@
 								You have created a network connection between the two devices. The connection is shown as a line between them.</p>\
 							<p class="tutorialExplanation">\
 								To learn more about connections, take a look at the \'connections\' tutorial later.</p>',
-					help_page: 'connections',
 					skip_button: 'Continue'
 					},
 					{
@@ -203,7 +202,6 @@
 							<p class="tutorialExplanation">\
 								Your topology is ready to run when you see the prepared (<img src="/img/prepared.png" />) symbol on every device. Please wait for this, and click "Continue" when it\'s finished.</p>',
 					skip_button: 'Continue',
-					help_page: 'Devices'
 					},
 					{
 					trigger:function(obj) {
@@ -230,7 +228,6 @@
 							<p class="tutorialExplanation">\
 								Note also that you did not connect the devices to the internet yet (We\'ll do that in the \'connections\' tutorial).</p>',
 					skip_button: 'Continue',
-					help_page: 'Devices'
 					},
 					{
 					trigger:function(obj) {
@@ -247,7 +244,7 @@
 								if you are unsure, choose NoVNC.</p>\
 							<p class="tutorialCommand">\
 								Please open a console for one of your two devices.',
-					help_page: 'Consoleaccess'
+					help_page: 'TopologyInteraction'
 					},
 					{
 						text:	'<p class="tutorialExplanation">\
@@ -276,8 +273,7 @@
 									The devices are stopped when you see the prepared (<img src="/img/prepared.png" />) icon again.</p>\
 								<p class="tutorialExplanation">\
 									Devices will not be stopped by closing the window etc, but only when you stop them (although there might be other cases where a stop may be forced by the system or administrators).</p>',
-						skip_button: 'Continue',
-						help_page: 'devices'
+						skip_button: 'Continue'
 						},
 						{
 						trigger:function(obj) {
@@ -299,8 +295,7 @@
 									You have now destroyed the devices and connections. This means, you have undone the preparation.</p>\
 								<p class="tutorialExplanation">\
 									You can also start, stop, prepare and destroy individual devices in their right-click menu.</p>',
-						skip_button: 'Continue',
-						help_page: 'devices'
+						skip_button: 'Continue'
 						},
 						{
 						trigger:function(obj) {
