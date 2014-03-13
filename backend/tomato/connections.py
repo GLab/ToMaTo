@@ -440,8 +440,14 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 					"host_connections": [(o.host.name, o.num) for o in self.getHostConnections()],
 			}
 		}
-		info["attrs"]["host"] = self.connection1.host.name if self.connection1 else None
-		info["attrs"]["host_fileserver_port"] = self.connection1.host.hostInfo.get('fileserver_port', None) if self.connection1 else None
+		h = self.connection1.host if self.connection1 else None
+		info["attrs"]["host"] = h.name if h else None
+		info["attrs"]["host_info"] = {
+			'address': h.address if h else None,
+			'problems': h.problems() if h else None,
+			'site': h.site.name if h else None,
+			'fileserver_port': h.hostInfo.get('fileserver_port', None) if h else None
+		}
 		mcon = self.mainConnection()
 		if mcon:
 			info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
