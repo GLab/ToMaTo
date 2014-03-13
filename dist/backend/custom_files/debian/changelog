@@ -1,3 +1,9 @@
+tomato-backend (3.3.2) stable; urgency=low
+
+  * Fixed switches
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 13 Mar 2014 16:25:42 +0100
+
 tomato-backend (3.3.1) stable; urgency=low
 
   * Fix task running twice in parallel
