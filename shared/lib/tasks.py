@@ -102,7 +102,7 @@ class TaskScheduler(threading.Thread):
 		with self.tasksLock:
 			task.busy = False
 			if not task.repeated:
-				del self.tasks[key]
+				del self.tasks[taskId]
 	def run(self):
 		with self.workersLock:
 			self.workers += 1

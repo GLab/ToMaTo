@@ -11,10 +11,10 @@
 		text: '<p class="tutorialExplanation">For this tutorial you need 4 files. We will use them later to create our chat servers and show some aspects of ToMaTo.<br />\
 			Please save them to your disk now.<br/>\
 			<ul>\
-			<li><a href="'+tutorial_base_url+'install_python.tar.gz" style="color: blue;" download="install_python.tar.gz">Python install package</li>\
-			<li><a href="'+tutorial_base_url+'chat_client.tar.gz" style="color: blue;"  download="chat_client.tar.gz">Chat client</li>\
-			<li><a href="'+tutorial_base_url+'chat_monitor.repy" style="color: blue;"  download="chat_monitor.repy">Chat monitor (Repository)</li>\
-			<li><a href="'+tutorial_base_url+'chat_sender.repy" style="color: blue;"  download="chat_sender.repy">Chat sender (Repository)</li>\
+			<li><a href="'+tutorial_base_url+'install_python.tar.gz" class="download" download="install_python.tar.gz">Python install package</a></li>\
+			<li><a href="'+tutorial_base_url+'chat_client.tar.gz"  class="download" download="chat_client.tar.gz">Chat client software</a></li>\
+			<li><a href="'+tutorial_base_url+'chat_monitor.repy"  class="download" download="chat_monitor.repy">Chat monitor script</a></li>\
+			<li><a href="'+tutorial_base_url+'chat_sender.repy"  class="download" download="chat_sender.repy">Chat sender script</a></li>\
 			</ul></p>',
 		skip_button: 'Continue'
 	},
@@ -24,7 +24,6 @@
 			You can move this tutorial window if it covers your work space.</p>\
 			<p class="tutorialCommand">Add two OpenVZ devices to your topology</p>',
 		trigger: function(event) {
-
 			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "create",
@@ -46,10 +45,23 @@
 	{
 		text: '<p class="tutorialExplanation">Currently your virtual machine has the default template, which is a plain debian installation. <br />\
 			With a right-click on your virtual machine icon in your work space you can select <i>configure</i> to open the attribute window of this element.<br/>\
-			As your virtual machine is not started yet you can change nearly every attribute of it, even the template.<br/>\
-			You can also change the name of your devices and its hostname if you want to.</p>',
-		skip_button: 'Continue'
-	},,
+			As your virtual machine is not started yet you can change nearly every attribute of it, even the template. For this tutorial, we will use the default template, so please keep this setting.<br/>\
+			You can also change the name of your devices and its hostname if you want to.</p>\
+			<p class="tutorialCommand">Rename the devices to "alice" and "bob"</p>',
+			trigger: function(event) {
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				if (compareToMask(event, {
+					operation: "modify",
+					component: "element",
+					phase: "end"
+				})) tutorial_data.tmp++;
+				if (tutorial_data.tmp >= 2) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+			}
+	},
 	{
 		text: '<p class="tutorialExplanation">To be able to exchange messages between these VMs, we need to connect them. Right-click on one of the machines, select <i>Connect</i> and then click on the other node to establish a connection between the two topology elements.</p>\
 <p class="tutorialCommand">Create a connection between the two VMs</p>',
@@ -63,9 +75,8 @@
 	},
 	{
 		text: '<p class="tutorialExplanation">Before we can install the chat client we have to prepare and start our virtual machines.<br/> Preparing will create the VM on one of the testbed hosts but not start it yet.<br /> We have two options to do this. The first option is to right-click our devices and select </i>Prepare</i><br />The other way to do this is to use the <i>Prepare</i>-Button in the menu.<br/></p>\
-<p class="tutorialCommand">Prepare your virtual devices. This may take a few minutes.</p>',
+<p class="tutorialCommand">Prepare your virtual devices. This may take a few seconds.</p>',
 		trigger: function(event) {
-
 			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
 			var match = compareToMask(event, {
 				operation: "action",
@@ -110,7 +121,9 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		text: '<p class="tutorialExplanation">Now we will install python via executable archives. We will need it for the chat client. <br /> \
 			This archive has a <i>auto_exec.sh</i> file in it.  <br /> \
 			It will automaticly be executed after it is uploaded.<br /> \
-			Right-click on the virtual machines and select <i>Executable archive &gt; Upload Archive</i>;</p><p class="tutorialCommand">Upload the <i>install_python.tar.gz</i> archive from the beginning of the tutorial to both VMs.</p>',
+			Right-click on the virtual machines and select <i>Executable archive &gt; Upload Archive</i>;</p>\
+			<p>Download: <a href="'+tutorial_base_url+'install_python.tar.gz"  class="download" download="install_python.tar.gz">Python install package</a></p>\
+			<p class="tutorialCommand">Upload the <i>install_python.tar.gz</i> archive to both VMs.</p>',
 		trigger: function(event) {
 
 			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
@@ -131,7 +144,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 	}, 
 	{
 		text: '<p class="tutorialExplanation">If you want to get information about the execution of your archive, just go to executable archive status window</p>\
-<p class="tutorialCommand">Open the executable archive status page by right-clicking the virtual machine <pre>&gt; Executable archive &gt; Status</pre></p>',
+<p class="tutorialCommand">Open the executable archive status page by right-clicking the virtual machine and seelecting <i>Executable archive &gt; Status</i></p>',
 		trigger: function(event) {
 				return compareToMask(event, {
 					operation: "rextfv-status",
@@ -147,7 +160,9 @@ These buttons are smart and know the states of the elements. If you select <i>st
 	
 	},
 	{
-		text: '<p class="tutorialExplanation">Now we will install the chat client via executable archives. <br /></p><p class="tutorialCommand">Upload the <i>chat_client.tar.gz</i> archive from the beginning of the tutorial to both VMs.</p>',
+		text: '<p class="tutorialExplanation">Now we will install the chat client via executable archives. <br /></p>\
+		<p>Download: <a href="'+tutorial_base_url+'chat_client.tar.gz" class="download" download="chat_client.tar.gz">Chat client software</a></p>\
+		<p class="tutorialCommand">Upload the <i>chat_client.tar.gz</i> archive to both VMs.</p>',
 		trigger: function(event) {
 			if (! tutorial_data.tmp) tutorial_data.tmp = 0;
 			var match = compareToMask(event, {
@@ -166,7 +181,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		help_page: 'ExecutableArchives'
 	}, 
 	{
-		text: '<p class="tutorialCommand">Again, open the executable archive status page by right-clicking the virtual machine <pre>&gt; Executable archive &gt; Status</pre> to get information about the status of your upload. </p>',
+		text: '<p class="tutorialCommand">Again, open the executable archive status page by right-clicking the virtual machine and selecting <i>Executable archive &gt; Status</i> to get information about the status of your upload. </p>',
 		trigger: function(event) {
 				return compareToMask(event, {
 					operation: "rextfv-status",
@@ -279,7 +294,8 @@ That is one advantage of using switches: Once your VM is connected to a switch, 
 		text: '<p class="tutorialExplanation">Now we can add the chat agents. First select the <i>Repy Script</i> from the "upload own images" group at the <i>Devices</i> tab of the menu and add it to the topology. The icon of this element will be orange as it uses the Repy technology.<br/>\
 You will later have to upload the Chat Tutorial Monitor Repy script from the beginning of the Tutorial.<br/>\
 This chat agent is passive, it will just display all messages it receives.</p>\
-<p class="tutorialCommand">Add a <i>Repy Script Device</i> to the topology and upload the <i>chat_monitor.repy</i></p>',
+<p>Download: <a href="'+tutorial_base_url+'chat_monitor.repy" class="download" download="chat_monitor.repy">Chat monitor script</a></p>\
+<p class="tutorialCommand">Add a <i>Repy Script Device</i> to the topology and upload the script <i>chat_monitor.repy</i></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
@@ -295,7 +311,7 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 		help_page: 'DeviceTypes'
 	},
 	{ 
-		text: '<p class="tutorialCommand">Upload the <i>chat_monitor.repy</i> from the beginning of the tutorial</p>',
+		text: '<p class="tutorialCommand">Upload the script <i>chat_monitor.repy</i></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "action",
@@ -318,7 +334,8 @@ This chat agent is passive, it will just display all messages it receives.</p>\
 	{
 		text: '<p class="tutorialExplanation">As a second chat agent we will add the <i>Chat Tutorial Sender</i> to the topology.<br/>\
 This chat agent will send a message every 3 seconds.</p>\
-<p class="tutorialCommand">Add a second <i>Repy Script Device</i> to the topology and upload the <i>chat_sender.repy</i></p>',
+<p>Download: <a href="'+tutorial_base_url+'chat_sender.repy" class="download" download="chat_sender.repy">Chat sender script</a></p>\
+<p class="tutorialCommand">Add a second <i>Repy Script Device</i> to the topology and upload the file <i>chat_sender.repy</i></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
@@ -333,7 +350,7 @@ This chat agent will send a message every 3 seconds.</p>\
 		}
 	},
 	{ 
-		text: '<p class="tutorialCommand">Upload the <i>chat_sender.repy</i> from the beginning of the tutorial</p>',
+		text: '<p class="tutorialCommand">Upload the script <i>chat_sender.repy</i></p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "action",
@@ -491,7 +508,7 @@ This external network is an opening of your topology. Whatever is connected to t
 	{
 		text: '<p class="tutorialExplanation">Now we have to change the topology a litte:\
 <ol>\
-  <li>Stop the switch so you can change its connections.</li>\
+  <li>Stop and destroy the switch so you can change its connections.</li>\
   <li>Stop and disconnect the sender chat agent, you do not want to spam the Internet.</li>\
   <li>Connect the Internet to the switch.</li>\
   <li>Start everything again.</li>\
