@@ -249,8 +249,9 @@ a.logobacklink:hover {
 }
 
 
-
-
+a.download {
+	color: #428bca !important;
+}
 
 #javascriptwarning {
 	background-color:#ffffaa;
