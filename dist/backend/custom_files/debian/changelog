@@ -1,3 +1,11 @@
+tomato-backend (3.3.4) stable; urgency=low
+
+  * Removed duplicate component sync call
+  * Fixed tasks that only run once
+  * Only disabling emulation on connections that support it
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 14 Mar 2014 14:02:33 +0100
+
 tomato-backend (3.3.3) stable; urgency=low
 
   * Fixed packet capturing

@@ -1,3 +1,11 @@
+tomato-web (3.3.4) stable; urgency=low
+
+  * Fixed colors of downloads in tutorials
+  * Fixed uploads after first upload
+  * Removing more windows to avoid problems
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 14 Mar 2014 14:00:45 +0100
+
 tomato-web (3.3.1) stable; urgency=low
 
   * fixed a bug that RexTFV status window did not display the status
