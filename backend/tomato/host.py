@@ -930,7 +930,6 @@ def synchronizeHost(host):
 def synchronize():
 	for host in getAll():
 		synchronizeHost(host)
-	synchronizeComponents()
 
 @util.wrap_task
 def synchronizeComponents():
