@@ -322,7 +322,9 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				"connect": "%s:%d" % (el1.host.address, self.connectionElement1.attrs["attrs"]["port"])
 			}, ownerConnection=self)
 			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
-			self.connection2 = el2.connectWith(self.connectionElement2, attrs={"emulation": False}, ownerConnection=self)
+			self.connection2 = el2.connectWith(self.connectionElement2, attrs={}, ownerConnection=self)
+			if "emulation" in self.connection2.getAllowedAttributes():
+				self.connection2.modify({"emulation": False});
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
