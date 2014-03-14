@@ -474,6 +474,9 @@ var Window = Class.extend({
 	hide: function() {
 		this.div.dialog("close");
 	},
+	remove: function() {
+		this.div.remove();
+	},
 	toggle: function() {
 		if (this.div.dialog("isOpen")) this.hide();
 		else this.show();
@@ -2769,73 +2772,60 @@ var Element = Component.extend({
 			}
 		);
 	},
-	uploadFile: function(window_title, grant_action,use_action) {
+	uploadFile: function(window_title, grant_action, use_action) {
 		if (window.location.protocol == 'https:') { //TODO: fix this.
 			showError("Upload is currently not available over HTTPS. Load this page via HTTP to do uploads.");
 			return;
 		}
 		this.action(grant_action, {callback: function(el, res) {
 			var url = "http://" + el.data.attrs.host_info.address + ":" + el.data.attrs.host_info.fileserver_port + "/" + res + "/upload";
-
 			var iframe = $('<iframe id="upload_target" name="upload_target">Test</iframe>');
-
-		
-		
 			// iframe.load will be triggered a moment after iframe is added to body
 			// this happens in a seperate thread so we cant simply wait for it (esp. on slow Firefox)
-			
 			iframe.load(function(){ 
 				iframe.off("load");
 				iframe.load(function(){
 					iframe.remove();
-					this.info.hide();
+					this.info.remove();
 					this.info = null;	
 					el.action(use_action);
+					$('#upload_from').remove();
+					iframe.remove();
 				});
-				var t = this;			
-				
+				var t = this;							
 				var div = $('<div/>');
-				this.upload_form = $('<form method="post" id="upload_form"  enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onChange="Javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
-
-				//#428BCA
-				
+				this.upload_form = $('<form method="post" id="upload_form" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload" onChange="javascript: $(\'#upload_window_upload\').button(\'enable\');"/></form>');
 				div.append(this.upload_form);
-				this.info = new Window({title: window_title, 
-										content: div, 
-										autoShow: true, 
-										width:300,
-										buttons: [
-											{
-											text: "Upload",
-											id: "upload_window_upload",
-											disabled: true,
-											click: function() {		
-												t.upload_form.css("display","none");
-												
-												$('#upload_window_upload').button("disable");
-												$('#upload_window_cancel').button("disable");
-												t.upload_form.submit();
-												div.append($('<div style="text-align:center;"><img src="../img/loading_big.gif" /></div>'))
-												
-												},
-											},
-											{
-											text: "Cancel",
-											id: "upload_window_cancel",
-											click: function() {
-												t.info.hide();
-												t.info = null;
-												},
-											}
-											]										
-										});
-				
+				this.info = new Window({
+					title: window_title, 
+					content: div, 
+					autoShow: true, 
+					width:300,
+					buttons: [{
+						text: "Upload",
+						id: "upload_window_upload",
+						disabled: true,
+						click: function() {		
+							t.upload_form.css("display","none");
+							$('#upload_window_upload').button("disable");
+							$('#upload_window_cancel').button("disable");
+							t.upload_form.submit();
+							div.append($('<div style="text-align:center;"><img src="../img/loading_big.gif" /></div>'));
+						},
+					},
+					{
+						text: "Cancel",
+						id: "upload_window_cancel",
+						click: function() {
+							t.info.hide();
+							t.info = null;
+						},
+					}]										
+				});
 			});
 			iframe.css("display", "none");
-			$('body').append(iframe);
-			
+			$('body').append(iframe);			
 		}});
-		
 	},
 	uploadImage: function() {
 		this.uploadFile("Upload Image","upload_grant","upload_use");	
