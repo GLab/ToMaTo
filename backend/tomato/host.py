@@ -19,6 +19,7 @@ from django.db import models
 from . import config, currentUser, starttime, scheduler
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
+from lib.cache import cached #@UnresolvedImport
 from auth import Flags
 import xmlrpclib, time, hashlib
 
@@ -884,12 +885,14 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 			site_prefs=dict([(k.name, v) for k, v in sitePrefs.iteritems()]))
 	return hosts[0]
 
+@cached(timeout=3600)
 def getElementTypes():
 	types = set()
 	for h in getAll():
 		types += set(h.elementTypes.keys())
 	return types
 
+@cached(timeout=3600)
 def getElementCapabilities(type_):
 	#FIXME: merge capabilities
 	caps = {}
@@ -899,12 +902,14 @@ def getElementCapabilities(type_):
 			caps = hcaps
 	return caps
 	
+@cached(timeout=3600)
 def getConnectionTypes():
 	types = set()
 	for h in getAll():
 		types += set(h.connectionTypes.keys())
 	return types
 
+@cached(timeout=3600)
 def getConnectionCapabilities(type_):
 	#FIXME: merge capabilities
 	caps = {}

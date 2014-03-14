@@ -24,6 +24,7 @@ from auth.permissions import Permissions, PermissionMixin, Role
 from lib import db, attributes, logging #@UnresolvedImport
 from accounting import UsageStatistics
 from lib.decorators import *
+from lib.cache import cached #@UnresolvedImport
 from host import HostConnection, HostElement, getConnectionCapabilities, getAll as getAllHosts
 
 REMOVE_ACTION = "(remove)"
@@ -391,6 +392,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				pass
 		
 	@classmethod
+	@cached(timeout=3600)
 	def getCapabilities(cls, type_, host_):
 		if not host_:
 			host_ = getAllHosts()[0]

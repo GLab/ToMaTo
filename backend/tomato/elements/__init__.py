@@ -25,6 +25,7 @@ from ..topology import Topology
 from ..lib import db, attributes, util, logging #@UnresolvedImport
 from ..accounting import UsageStatistics
 from ..lib.decorators import *
+from ..lib.cache import cached #@UnresolvedImport
 from .. import config
 
 TYPES = {}
@@ -399,6 +400,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		pass
 		
 	@classmethod
+	@cached(timeout=3600)
 	def getCapabilities(cls, host_):
 		if not host_:
 			host_ = host.getAll()[0]
