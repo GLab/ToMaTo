@@ -473,6 +473,9 @@ var Window = Class.extend({
 	hide: function() {
 		this.div.dialog("close");
 	},
+	remove: function() {
+		this.div.remove();
+	},
 	toggle: function() {
 		if (this.div.dialog("isOpen")) this.hide();
 		else this.show();
@@ -2759,7 +2762,7 @@ var Element = Component.extend({
 				iframe.off("load");
 				iframe.load(function(){
 					iframe.remove();
-					info.hide();
+					info.remove();
 					el.action("upload_use");
 				});
 				var info = new Window({title: "Upload image", content: div, autoShow: true, width:300});
@@ -2790,7 +2793,7 @@ var Element = Component.extend({
 				var info = new Window({title: "Upload Executable Archive", content: div, autoShow: true, width:300});
 			});
 			iframe.css("display", "none");
-			$('body').append(iframe);
+			$('body').append(iframe);			
 			div.append('<form method="post" enctype="multipart/form-data" action="'+url+'" target="upload_target"><input type="file" name="upload"/><br/><input type="submit" value="upload"/></form>');
 		}});
 	},
