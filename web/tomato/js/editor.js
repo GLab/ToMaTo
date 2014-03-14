@@ -474,7 +474,11 @@ var Window = Class.extend({
 		this.div.dialog("close");
 	},
 	remove: function() {
-		this.div.remove();
+		var t = this;
+		this.div.on("dialogclose", function() {
+			t.div.dialog('destroy').remove();
+		});
+		this.div.dialog("close");
 	},
 	toggle: function() {
 		if (this.div.dialog("isOpen")) this.hide();
@@ -1681,13 +1685,13 @@ var Topology = Class.extend({
 								t.action("renew", {params:{
 									"timeout": timeout.getValue()
 								}});
-								dialog.hide();
+								dialog.remove();
 							}
 						},
 						{
 							text: "Close",
 							click: function() {
-								dialog.hide();
+								dialog.remove();
 							}
 						}
 					],
@@ -1729,7 +1733,7 @@ var Topology = Class.extend({
 									t.action("renew", {params:{
 										"timeout": timeout.getValue()
 									}});
-									dialog.hide();
+									dialog.remove();
 									dialog = null;
 								}
 							}
@@ -2003,11 +2007,12 @@ var Component = Class.extend({
 						// Tread "" like null
 						if (values[name] === "" && t.data.attrs[name] === null) delete values[name];
 					}
-					t.modify(values);					
+					t.modify(values);	
+					t.configWindow.remove();
 					t.configWindow = null;
 				},
 				Cancel: function() {
-					t.configWindow.hide();
+					t.configWindow.remove();
 					t.configWindow = null;
 				} 
 			}
@@ -2393,11 +2398,12 @@ var Connection = Component.extend({
 					t.configWindow.hide();
 					var values = t.configWindow.getValues();
 					for (var name in values) if (values[name] === t.data.attrs[name]) delete values[name];
-					t.modify(values);					
+					t.modify(values);		
+					t.configWindow.remove();
 					t.configWindow = null;
 				},
 				Cancel: function() {
-					t.configWindow.hide();
+					t.configWindow.remove();
 					t.configWindow = null;
 				} 
 			}
