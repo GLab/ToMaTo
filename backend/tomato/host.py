@@ -20,7 +20,7 @@ from . import config, currentUser, starttime, scheduler
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from auth import Flags
-import xmlrpclib, time, hashlib
+import xmlrpclib, time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
@@ -914,22 +914,32 @@ def getConnectionCapabilities(type_):
 			caps = hcaps
 	return caps
 
+checkingHostsLock = threading.RLock()
+checkingHosts = set()
+
+@util.wrap_task
 @db.commit_after
 def synchronizeHost(host):
-	#TODO: implement more than resource sync
+	with checkingHostsLock:
+		if host in checkingHosts:
+			return
+		checkingHosts.add(host)
 	try:
-		host.update()
-		host.synchronizeResources()
-	except:
-		logging.logException(host=host.name)
-		print "Error updating information from %s" % host
-	host.checkProblems()
+		try:
+			host.update()
+			host.synchronizeResources()
+		except:
+			logging.logException(host=host.name)
+			print "Error updating information from %s" % host
+		host.checkProblems()
+	finally:
+		with checkingHostsLock:
+			checkingHosts.remove(host)
 
-	
 @util.wrap_task
 def synchronize():
 	for host in getAll():
-		synchronizeHost(host)
+		scheduler.scheduleOnce(0, synchronizeHost, host) #@UndefinedVariable
 
 @util.wrap_task
 def synchronizeComponents():
