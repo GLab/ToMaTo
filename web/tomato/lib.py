@@ -18,7 +18,7 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
-import xmlrpclib, json, urllib, socket
+import xmlrpclib, json, urllib, socket, hashlib
 import settings 
 
 def getauth(request):
@@ -204,6 +204,9 @@ def getNews():
 @cached(3600)
 def getVersion():
 	return getDpkgVersionStr("tomato-web") or "devel"
+
+def security_token(data):
+	return hashlib.md5("%s|%s" % (data, settings.SECRET_KEY)).hexdigest()
 
 class UserObj:
 	def __init__(self, api):
