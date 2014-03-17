@@ -232,6 +232,9 @@ var TextElement = FormElement.extend({
 		this.textfieldbox.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
+		if (options.onChangeFct) {
+			this.textfield.change(options.onChangeFct);
+		}
 		var t = this;
 		this.textfield.change(function() {
 			t.onChanged(this.value);
@@ -725,7 +728,7 @@ var AttributeWindow = Window.extend({
 
 var InputWindow = Window.extend({
 	init: function(options) {
-		this.element = new TextElement({name: options.inputname});
+		this.element = new TextElement({name: options.inputname, onChangeFct: options.onChangeFct});
 		this.element.setValue(options.inputvalue);
 		this._super(options);
 		var form = $('<form class="form-horizontal" role="form" />');
@@ -1673,9 +1676,17 @@ var Topology = Class.extend({
 			inputname: "newname",
 			inputlabel: "New Name:",
 			inputvalue: t.data.attrs.name,
+			onChangeFct: function () {
+				if(this.value == '') { 
+					$('#rename_topology_window_save').button('disable');
+				} else { 
+					$('#rename_topology_window_save').button('enable');
+				}
+			},
 			buttons: [
 				{ 
 					text: "Save",
+					id: "rename_topology_window_save",
 					click: function() {
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
@@ -1747,6 +1758,8 @@ var Topology = Class.extend({
 			buttons: [
 						{ 
 							text: "Save",
+							disabled: true,
+							id: "new_topology_window_save",
 							click: function() {
 								if (name.getValue() && timeout.getValue()) {
 									t.modify({
@@ -1768,7 +1781,14 @@ var Topology = Class.extend({
 		name = dialog.add(new TextElement({
 			name: "name",
 			label: "Name",
-			help_text: "The name for your topology"
+			help_text: "The name for your topology",
+			onChangeFct:  function () {
+				if(this.value == '') { 
+					$('#new_topology_window_save').button('disable');
+				} else { 
+					$('#new_topology_window_save').button('enable');
+				}
+			}
 		}));
 		var choices = {};
 		var timeout_settings = t.editor.options.timeout_settings;
