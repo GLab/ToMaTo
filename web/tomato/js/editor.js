@@ -232,6 +232,10 @@ var TextElement = FormElement.extend({
 		this.textfieldbox.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
+		if (options.onChangeFct) {
+			console.log('Die Funktion ist zumindest vorhanden');
+			this.textfield.attr({onChange: options.onChangeFct});
+		}
 		var t = this;
 		this.textfield.change(function() {
 			t.onChanged(this.value);
@@ -1747,6 +1751,8 @@ var Topology = Class.extend({
 			buttons: [
 						{ 
 							text: "Save",
+							disabled: true,
+							id: "new_topology_window_save",
 							click: function() {
 								if (name.getValue() && timeout.getValue()) {
 									t.modify({
@@ -1768,7 +1774,8 @@ var Topology = Class.extend({
 		name = dialog.add(new TextElement({
 			name: "name",
 			label: "Name",
-			help_text: "The name for your topology"
+			help_text: "The name for your topology",
+			onChangeFct: "javascript: if(this.value == '') { $(\'#new_topology_window_save\').button(\'disable\');} else { $(\'#new_topology_window_save\').button(\'enable\'); }"
 		}));
 		var choices = {};
 		var timeout_settings = t.editor.options.timeout_settings;
