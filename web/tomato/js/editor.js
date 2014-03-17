@@ -729,7 +729,7 @@ var AttributeWindow = Window.extend({
 
 var InputWindow = Window.extend({
 	init: function(options) {
-		this.element = new TextElement({name: options.inputname});
+		this.element = new TextElement({name: options.inputname, onChangeFct: options.onChangeFct});
 		this.element.setValue(options.inputvalue);
 		this._super(options);
 		var form = $('<form class="form-horizontal" role="form" />');
@@ -1677,9 +1677,11 @@ var Topology = Class.extend({
 			inputname: "newname",
 			inputlabel: "New Name:",
 			inputvalue: t.data.attrs.name,
+			onChangeFct: "javascript: if(this.value == '') { $(\'#rename_topology_window_save\').button(\'disable\');} else { $(\'#rename_topology_window_save\').button(\'enable\'); }",
 			buttons: [
 				{ 
 					text: "Save",
+					id: "rename_topology_window_save",
 					click: function() {
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
