@@ -233,8 +233,7 @@ var TextElement = FormElement.extend({
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
 		if (options.onChangeFct) {
-			console.log('Die Funktion ist zumindest vorhanden');
-			this.textfield.attr({onChange: options.onChangeFct});
+			this.textfield.change(options.onChangeFct);
 		}
 		var t = this;
 		this.textfield.change(function() {
@@ -1677,7 +1676,13 @@ var Topology = Class.extend({
 			inputname: "newname",
 			inputlabel: "New Name:",
 			inputvalue: t.data.attrs.name,
-			onChangeFct: "javascript: if(this.value == '') { $(\'#rename_topology_window_save\').button(\'disable\');} else { $(\'#rename_topology_window_save\').button(\'enable\'); }",
+			onChangeFct: function () {
+				if(this.value == '') { 
+					$('#rename_topology_window_save').button('disable');
+				} else { 
+					$('#rename_topology_window_save').button('enable');
+				}
+			},
 			buttons: [
 				{ 
 					text: "Save",
@@ -1777,7 +1782,13 @@ var Topology = Class.extend({
 			name: "name",
 			label: "Name",
 			help_text: "The name for your topology",
-			onChangeFct: "javascript: if(this.value == '') { $(\'#new_topology_window_save\').button(\'disable\');} else { $(\'#new_topology_window_save\').button(\'enable\'); }"
+			onChangeFct:  function () {
+				if(this.value == '') { 
+					$('#new_topology_window_save').button('disable');
+				} else { 
+					$('#new_topology_window_save').button('enable');
+				}
+			}
 		}));
 		var choices = {};
 		var timeout_settings = t.editor.options.timeout_settings;
