@@ -1983,6 +1983,7 @@ var Component = Class.extend({
 		 			buttons: {
 		 				Close: function() {
 		 					win.hide();
+		 					win.remove();
 		 				}
 					} 
 		 		});
@@ -2824,6 +2825,7 @@ var Element = Component.extend({
 						id: "upload_window_cancel",
 						click: function() {
 							t.info.hide();
+							t.info.remove();
 							t.info = null;
 						},
 					}]										
