@@ -58,7 +58,7 @@ def login(credentials, sslCert):
 	return user or not credentials
 
 from lib import tasks #@UnresolvedImport
-scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
+scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
 starttime = None
 
