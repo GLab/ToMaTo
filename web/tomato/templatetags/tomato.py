@@ -11,8 +11,8 @@ from django.utils import simplejson
 register = template.Library()
 
 @register.filter
-def jsonify(o):
-	return mark_safe(simplejson.dumps(o))
+def jsonify(o, pretty=False):
+	return mark_safe(simplejson.dumps(o, indent=bool(pretty)))
 
 @register.simple_tag
 def externalurl(name):

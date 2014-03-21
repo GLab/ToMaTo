@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Users of host {{host}}</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<script src="/js/enhancetable.js"></script>	
+<table class="sortable,filterable, table table-striped">
+	<tr>
+		<th>ID on host</th>
+		<th>Type</th>
+		<th>State</th>
+		<th>Topology</th>
+		<th>Element</th>
+		<th>Connection</th>
+	</tr>
+	{% for u in users %}
+	<tr>
+		<td>{{u.onhost_id}}</td>
+		<td>{{u.type}}</td>
+		<td>{{u.state}}</td>
+		<td>{% if u.topology_id %}<a href="{%url debug.topology u.topology_id %}">{{u.topology_id}}</a>{% endif %}</td>
+		<td>{% if u.element_id %}<a href="{%url debug.element u.element_id %}">{{u.element_id}}</a>{% endif %}</td>
+		<td>{% if u.connection_id %}<a href="{%url debug.connection u.connection_id %}">{{u.connection_id}}</a>{% endif %}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<div class="skip-sm"></div>
+
+{% endblock %}

@@ -441,6 +441,22 @@ class Host(attributes.Mixin, models.Model):
 		from elements import Element
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 	
+	def getUsers(self):
+		fault.check(self.checkPermissions(), "Not enough permissions")
+		res = []
+		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in self.connections.all()]:
+			data = {"type": type_, "onhost_id": obj.id, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
+			if obj.topology_element:
+				tel = obj.topology_element
+				data["element_id"] = tel.id
+				data["topology_id"] = tel.topology_id
+			if obj.topology_connection:
+				tcon = obj.topology_connection
+				data["connection_id"] = tcon.id
+				data["topology_id"] = tcon.topology_id
+			res.append(data)
+		return res
+
 	def checkPermissions(self):
 		return self.site.checkPermissions()
 	
