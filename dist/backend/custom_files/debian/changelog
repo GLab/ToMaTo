@@ -1,3 +1,9 @@
+tomato-backend (3.3.5) stable; urgency=low
+
+  * Running host syncs in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 19 Mar 2014 11:26:52 +0100
+
 tomato-backend (3.3.4) stable; urgency=low
 
   * Removed duplicate component sync call
