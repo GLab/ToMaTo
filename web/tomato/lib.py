@@ -205,8 +205,8 @@ def getNews():
 def getVersion():
 	return getDpkgVersionStr("tomato-web") or "devel"
 
-def security_token(data):
-	return hashlib.md5("%s|%s" % (data, settings.SECRET_KEY)).hexdigest()
+def security_token(data, session=""):
+	return hashlib.md5("%s|%s|%s" % (data, session, settings.SECRET_KEY)).hexdigest()
 
 class UserObj:
 	def __init__(self, api):
