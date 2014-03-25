@@ -125,4 +125,8 @@ urlpatterns = patterns('',
 	(r'^ajax/connection/(?P<id>\d+)/modify$', 'tomato.ajax.connection_modify'),
 	(r'^ajax/connection/(?P<id>\d+)/remove$', 'tomato.ajax.connection_remove'),
 	(r'^ajax/account/(?P<name>.*)/info', 'tomato.ajax.account_info'),
+	(r'^debug/host_users/(?P<name>[^/]+)$', 'tomato.debug.host_users'),
+	(r'^debug/topology/(?P<id>\d+)$', 'tomato.debug.topology'),
+	(r'^debug/element/(?P<id>\d+)$', 'tomato.debug.element'),
+	(r'^debug/connection/(?P<id>\d+)$', 'tomato.debug.connection'),
 )

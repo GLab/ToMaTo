@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{title}}</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+<pre><tt>
+{{data|jsonify:1}}
+</pre></tt>
+
+<div class="skip-sm"></div>
+
+{% endblock %}

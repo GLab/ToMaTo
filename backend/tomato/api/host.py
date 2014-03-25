@@ -172,4 +172,12 @@ def host_remove(name):
 	h.remove()
 	host_list.invalidate()
 
+@checkauth
+def host_users(name):
+	"""
+	undocumented
+	"""
+	h = _getHost(name)
+	return h.getUsers()
+
 from .. import host, fault
