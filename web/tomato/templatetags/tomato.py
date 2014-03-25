@@ -2,7 +2,7 @@ import datetime, time
 
 from django.template.defaultfilters import timesince
 from django import template
-from ..lib import getVersion, serverInfo
+from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
 from django.utils import simplejson
 
@@ -97,3 +97,5 @@ def args(obj, arg):
 def newsitem_bettertime(value):
 	v = value.split(" ")
 	return v[0]+" "+v[1]+" "+v[2]+" "+v[3]
+
+register.filter(security_token)

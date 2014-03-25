@@ -17,12 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
-from lib import wrap_rpc
+from lib import wrap_rpc, security_token
+from admin_common import ConfirmForm
 from django.shortcuts import render, redirect
-import json
-import urllib2
+from django.core.urlresolvers import reverse
+import json, uuid
+import urllib2, urllib
 from urlparse import urljoin
 from settings import tutorial_list_url
+
 
 
 #This is a list of available tutorials (values should be self-explaining):
@@ -39,12 +42,21 @@ def list(api, request):
 			if not attr in tut:
 				continue
 			tut[attr] = urljoin(tutorial_list_url, tut[attr])
-	return render(request, "topology/tutorials_list.html",{'tutorials':tutorials})
+	session_id = uuid.uuid4()
+	request.session["id"] = session_id
+	return render(request, "topology/tutorials_list.html",{'tutorials':tutorials, 'session_id': session_id})
 
 
 @wrap_rpc
 def start(api, request):
 	url = request.REQUEST["url"]
+	session_id = request.session.get("id", uuid.uuid4())
+	token = request.REQUEST.get("token")
+	correct_token = security_token(url, session_id)
+	if token != correct_token:
+		request.session["id"] = session_id
+		form = ConfirmForm.build(reverse("tomato.tutorial.start")+"?"+urllib.urlencode({"token": correct_token, "url": url}))
+		return render(request, "form.html", {"heading": "Load tutorial", "message_before": "Are you sure you want to load the tutorial from the following URL? <pre>"+url+"</pre>", 'form': form})
 	_, _, top_dict = loadTutorial(url)
 	top_dict['topology']['attrs']['_tutorial_url'] = url
 	top_dict['topology']['attrs']['_tutorial_status'] = 0
