@@ -2662,7 +2662,10 @@ var Element = Component.extend({
 		return this;
 	},
 	getPos: function() {
-		if (! this.data.attrs._pos) this.data.attrs._pos = {x: Math.random(), y: Math.random()};
+		if (! this.data.attrs._pos) {
+			this.data.attrs._pos = {x: Math.random(), y: Math.random()};
+			this.modify_value("_pos", this.data.attrs._pos);
+		}
 		return this.data.attrs._pos;
 	},
 	setPos: function(pos) {
