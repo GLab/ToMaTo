@@ -30,7 +30,8 @@ def logCall(function, args, kwargs):
 @db.commit_after
 def handleError(error, function, args, kwargs):
 	if isinstance(error, xmlrpclib.Fault):
-		fault.errors_add(error, traceback.format_exc())
+		if error.faultCode != fault.USER_ERROR:
+			fault.errors_add(error, traceback.format_exc())
 	elif isinstance(error, rpc.ErrorUnauthorized):
 		fault.errors_add(error, traceback.format_exc())
 	else:
