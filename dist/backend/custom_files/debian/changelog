@@ -1,3 +1,9 @@
+tomato-backend (3.3.6) stable; urgency=low
+
+  * Treating execute errors as user errors
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:16:21 +0100
+
 tomato-backend (3.3.5) stable; urgency=low
 
   * Running host syncs in parallel

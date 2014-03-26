@@ -1,3 +1,9 @@
+tomato-web (3.3.6) stable; urgency=low
+
+  * Fixed css problems in tutorials
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:15:35 +0100
+
 tomato-web (3.3.4) stable; urgency=low
 
   * Fixed colors of downloads in tutorials

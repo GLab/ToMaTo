@@ -1,3 +1,9 @@
+tomato-hostmanager (3.3.6) unstable; urgency=low
+
+  * Treating execute errors as user errors
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:14:46 +0100
+
 tomato-hostmanager (3.3.1) unstable; urgency=low
 
   * Filtering host networks and only reporting those with eth* interfaces as external
