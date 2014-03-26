@@ -21,7 +21,7 @@ from .. import connections, elements, fault, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
-from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
@@ -515,7 +515,10 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("rextfv.tar.gz"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 
 	def action_execute(self, cmd):
-		return self._execute(cmd)
+		try:
+			return self._execute(cmd)
+		except CommandError, err:
+			fault.raise_("Command failed with error code %d: %s" % (err.errorCode, err.errorMessage), code=fault.USER_ERROR)
 
 	def upcast(self):
 		return self
