@@ -89,7 +89,7 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
 		dump.dumpException(connection=data, **kwargs)
 
-	def getUsageStatistics(self):
+	def getUsageStatistics(self):
 		if not self.usageStatistics:
 			# only happens during object creation or when object creation failed
 			stats = UsageStatistics()

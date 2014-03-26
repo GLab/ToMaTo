@@ -633,7 +633,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			self.host.incrementErrors()
+			if f.faultCode != fault.USER_ERROR:
+				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -649,7 +650,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			self.host.incrementErrors()
+			if f.faultCode != fault.USER_ERROR:
+				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -749,6 +751,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode != fault.USER_ERROR:
+				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -764,6 +768,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode != fault.USER_ERROR:
+				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
