@@ -1620,7 +1620,7 @@ var Topology = Class.extend({
 		var t = this;
 		dialog.dialog({
 			autoOpen: true,
-			draggable: false,
+			draggable: true,
 			resizable: true,
 			height: "auto",
 			width: 550,
