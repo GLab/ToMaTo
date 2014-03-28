@@ -1,3 +1,9 @@
+tomato-backend (3.3.7) stable; urgency=low
+
+  * blacklisted some more attributes on topology export
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 28 Mar 2014 09:47:27 +0100
+
 tomato-backend (3.3.6) stable; urgency=low
 
   * Treating execute errors as user errors

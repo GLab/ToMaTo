@@ -1,3 +1,9 @@
+tomato-hostmanager (3.3.7) unstable; urgency=low
+
+  * Fixed templates not being created properly
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 28 Mar 2014 09:46:19 +0100
+
 tomato-hostmanager (3.3.6) unstable; urgency=low
 
   * Treating execute errors as user errors
