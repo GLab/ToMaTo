@@ -141,12 +141,8 @@ def getAll(**kwargs):
 def create(type_, attrs={}):
 	fault.check(type_ in TYPES, "Unknown resource type: %s" % type_, fault.USER_ERROR)
 	res = TYPES[type_](owner=currentUser())
-	try:
-		res.init(attrs)
-		res.save()
-	except:
-		res.remove()
-		raise
+	res.init(attrs)
+	res.save()
 	logging.logMessage("create", category="resource", type=res.type, id=res.id, attrs=attrs)
 	logging.logMessage("info", category="resource", type=res.type, id=res.id, info=res.info())
 	return res
