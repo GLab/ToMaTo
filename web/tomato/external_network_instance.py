@@ -140,7 +140,7 @@ def remove(api, request, res_id=None):
 		if form.is_valid():
 			res = api.resource_info(res_id)
 			api.resource_remove(res_id)
-			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": res['network']}))
+			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, res["attrs"]['network'])}))
 	form = RemoveConfirmForm.build(reverse("tomato.external_network_instance.remove", kwargs={"res_id": res_id}))
 	res = api.resource_info(res_id)
 	return render(request, "form.html", {"heading": "Remove External Network Instance", "message_before": "Are you sure you want to remove the external network instance?", 'form': form})	
