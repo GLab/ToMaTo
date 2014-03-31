@@ -39,7 +39,6 @@ class TaskScheduler(threading.Thread):
 		self.stopped = False
 		self.wakeup = threading.Event()
 		self.stopped_confirm = threading.Event()
-		self.daemon = True
 		self.maxLateTime = maxLateTime
 		self.maxWorkers = maxWorkers
 		self.minWorkers = minWorkers

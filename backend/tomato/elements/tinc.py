@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import threading
 from django.db import models
-from .. import elements, host, fault
+from .. import elements, host, fault, currentUser, setCurrentUser
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
 
@@ -95,29 +96,49 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 			others = filter(lambda p: p["pubkey"] != info["attrs"]["pubkey"], peers)
 			ch.modify({"peers": others})
 
-	def action_prepare(self):
+	def _parallelChildActions(self, childList, action, params={}, maxThreads=10):
+		lock = threading.RLock()
+		user = currentUser()
+		class WorkerThread(threading.Thread):
+			def run(self):
+				setCurrentUser(user)
+				while True:
+					with lock:
+						if not childList:
+							return
+						ch = childList.pop()
+					ch.action(action, params)
+		threads = []
+		for _ in xrange(0, min(len(childList), maxThreads)):
+			thread = WorkerThread()
+			threads.append(thread)
+			thread.start()
+		for thread in threads:
+			thread.join()
+
+	def _childsByState(self):
+		childs = {ST_CREATED:[], ST_PREPARED:[], ST_STARTED:[]}
 		for ch in self.getChildren():
-			if ch.state == ST_CREATED:
-				ch.action("prepare", {})
+			childs[ch.state].append(ch)
+		return childs
+
+	def action_prepare(self):
+		self._parallelChildActions(self._childsByState()[ST_CREATED], "prepare")
 		self.setState(ST_PREPARED)
 		self._crossConnect()
 		
 	def action_destroy(self):
-		for ch in self.getChildren():
-			if ch.state == ST_PREPARED:
-				ch.action("destroy", {})
+		self._parallelChildActions(self._childsByState()[ST_STARTED], "stop")
+		self._parallelChildActions(self._childsByState()[ST_PREPARED], "destroy")
 		self.setState(ST_CREATED)
 
 	def action_stop(self):
-		for ch in self.getChildren():
-			if ch.state == ST_STARTED:
-				ch.action("stop", {})
+		self._parallelChildActions(self._childsByState()[ST_STARTED], "stop")
 		self.setState(ST_PREPARED)
 
 	def action_start(self):
-		for ch in self.getChildren():
-			if ch.state != ST_STARTED:
-				ch.action("start", {})
+		self._parallelChildActions(self._childsByState()[ST_CREATED], "prepare")
+		self._parallelChildActions(self._childsByState()[ST_PREPARED], "start")
 		self.setState(ST_STARTED)
 
 	def upcast(self):
