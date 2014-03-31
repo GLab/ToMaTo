@@ -446,7 +446,7 @@ class Host(attributes.Mixin, models.Model):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in self.connections.all()]:
-			data = {"type": type_, "onhost_id": obj.id, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
+			data = {"type": type_, "onhost_id": obj.num, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
 			if obj.topology_element:
 				tel = obj.topology_element
 				data["element_id"] = tel.id
