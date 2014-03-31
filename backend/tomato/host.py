@@ -307,8 +307,9 @@ class Host(attributes.Mixin, models.Model):
 		assert hel2.host == self
 		try:
 			con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
-		except:
+		except Exception, exc:
 			self.incrementErrors()
+			exc.faultCode = fault.INTERNAL_ERROR
 			raise
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
