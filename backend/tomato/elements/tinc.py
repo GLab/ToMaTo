@@ -164,7 +164,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
-	SAME_HOST_AFFINITY = 40 #we definitely want to be on the same host as our connected elements
+	SAME_HOST_AFFINITY = 1000 #we definitely want to be on the same host as our connected elements
 	
 	class Meta:
 		db_table = "tomato_tinc_endpoint"
