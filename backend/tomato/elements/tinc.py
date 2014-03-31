@@ -104,6 +104,8 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 		
 	def action_destroy(self):
 		for ch in self.getChildren():
+			if ch.state == ST_STARTED:
+				ch.action("stop", {})
 			if ch.state == ST_PREPARED:
 				ch.action("destroy", {})
 		self.setState(ST_CREATED)
@@ -116,7 +118,9 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 
 	def action_start(self):
 		for ch in self.getChildren():
-			if ch.state != ST_STARTED:
+			if ch.state == ST_CREATED:
+				ch.action("prepare", {})
+			if ch.state == ST_PREPARED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
