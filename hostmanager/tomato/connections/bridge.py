@@ -87,7 +87,7 @@ class Bridge(connections.Connection):
 	CAP_ACTIONS = {
 		"start": [ST_CREATED],
 		"stop": [ST_STARTED],
-		connections.REMOVE_ACTION: [ST_CREATED],
+		connections.REMOVE_ACTION: [ST_CREATED, ST_STARTED],
 	}
 	CAP_NEXT_STATE = {
 		"start": ST_STARTED,
@@ -299,6 +299,10 @@ class Bridge(connections.Connection):
 			net.ifDown(self.bridge)
 			net.bridgeRemove(self.bridge)
 		self.setState(ST_CREATED)
+
+	def remove(self):
+		self.action_stop()
+		connections.Connection.remove(self)
 
 	def connectInterface(self, ifname):
 		if self.state == ST_CREATED:
