@@ -416,7 +416,6 @@ var TemplateElement = FormElement.extend({
 			changebutton.prop("disabled",true);
 		}
 		
-		//this.element = $('<div class="col-sm-6"/>').append(this.template.label);
 		this.labelarea.empty();
 		this.changebuttonarea.empty();
 		this.infoarea.empty();
