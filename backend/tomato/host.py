@@ -307,8 +307,9 @@ class Host(attributes.Mixin, models.Model):
 		assert hel2.host == self
 		try:
 			con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
-		except:
+		except Exception, exc:
 			self.incrementErrors()
+			exc.faultCode = fault.INTERNAL_ERROR
 			raise
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
@@ -445,7 +446,7 @@ class Host(attributes.Mixin, models.Model):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in self.connections.all()]:
-			data = {"type": type_, "onhost_id": obj.id, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
+			data = {"type": type_, "onhost_id": obj.num, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
 			if obj.topology_element:
 				tel = obj.topology_element
 				data["element_id"] = tel.id
@@ -633,6 +634,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -650,6 +653,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -751,6 +756,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -768,6 +775,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise

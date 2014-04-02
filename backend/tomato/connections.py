@@ -46,6 +46,11 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
+starting_list = set()
+starting_list_lock = threading.RLock()
+stopping_list = set()
+stopping_list_lock = threading.RLock()
+
 class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
@@ -378,20 +383,36 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		# the connection start at the same time, a lock is used to guarantee that only one instance
 		# of _start runs at the same time.
 		# To avoid the case that the second element uses old connection data and runs _start again,
-		# the object is fetched freshly from the database. 
-		with getLock(self):
-			obj = Connection.objects.get(id=self.id)
-			obj._start()
+		# the object is fetched freshly from the database.
+		with starting_list_lock:
+			if self in starting_list:
+				return
+			starting_list.add(self)
+		try: 
+			with getLock(self):
+				obj = Connection.objects.get(id=self.id)
+				obj._start()
+		finally:
+			with starting_list_lock:
+				starting_list.remove(self)
 		
 	def triggerStop(self):
 		# This is very important, see the comment on triggerStart 
-		with getLock(self):
-			try:
-				obj = Connection.objects.get(id=self.id)
-				obj._stop()
-			except Connection.DoesNotExist:
-				# Other end of connection deleted the connection, no need to stop it
-				pass
+		with stopping_list_lock:
+			if self in stopping_list:
+				return
+			stopping_list.add(self)
+		try: 
+			with getLock(self):
+				try:
+					obj = Connection.objects.get(id=self.id)
+					obj._stop()
+				except Connection.DoesNotExist:
+					# Other end of connection deleted the connection, no need to stop it
+					pass
+		finally:
+			with stopping_list_lock:
+				stopping_list.remove(self)
 		
 	@classmethod
 	@cached(timeout=3600)
