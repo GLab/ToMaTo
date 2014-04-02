@@ -375,7 +375,14 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		//this.element.before($('<div>'+this.template.label+'</div>'));
+		this.element = $('<div style="display:none;"></div>');
+		this.labelarea = $('<div class="col-sm-6"/>');
+		this.changebuttonarea = $('<div class="col-sm-3"/>');
+		this.infoarea = $('<div class="col-sm-3"/>');
+		
+		this.element.after(this.labelarea);
+		this.element.after(this.changebuttonarea);
+		this.element.after(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
 		if (options.custom_template) {
@@ -396,16 +403,26 @@ var TemplateElement = FormElement.extend({
 		
 		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
-			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
+			t.call_element.showTemplateWindow(function(value) {
+				t.change_value(
+					editor.templates.get(
+						t.options.type,value
+					)
+				);
+			});
 		})
 		
 		if (this.disabled) {
 			changebutton.prop("disabled",true);
 		}
 		
-		this.element = $('<div class="col-sm-6"/>').append(this.template.label);
-		this.element.after($('<div class="col-sm-3"/>').append(changebutton));
-		this.element.after($('<div class="col-sm-3"/>').append($(this.template.infobox())));
+		this.labelarea.empty();
+		this.changebuttonarea.empty();
+		this.infoarea.empty();
+		
+		this.labelarea.append(this.template.label);
+		this.changebuttonarea.append(changebutton);
+		this.infoarea.append($(this.template.infobox()));
 	}
 });
 
