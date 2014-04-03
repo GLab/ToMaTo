@@ -1,0 +1,12 @@
+{
+  "data": {
+    "templates": {
+      "switch": "openvswitch",
+      "controller": "floodlight"
+    }
+  },
+  "steps_file": "steps.js",
+  "topology_file": "topology.json",
+  "base_url": "."
+}
+
