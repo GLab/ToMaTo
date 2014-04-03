@@ -1,3 +1,10 @@
+tomato-hostmanager (3.3.8) unstable; urgency=low
+
+  * Allowing active bridges to be removed
+  * Fixed vncterm so that it restarts after 30 minutes instead of shutting down
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:11:25 +0200
+
 tomato-hostmanager (3.3.7) unstable; urgency=low
 
   * Fixed templates not being created properly

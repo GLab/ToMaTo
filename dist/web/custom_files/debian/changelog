@@ -1,3 +1,11 @@
+tomato-web (3.3.8) stable; urgency=low
+
+  * Setting imported topolgies to initialized so only the timeout dialog appears
+  * Fixed network instance removal
+  * fixed the bug that the template label in element config window was no updated after cahnging it
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:08:29 +0200
+
 tomato-web (3.3.7) stable; urgency=low
 
   * The note window is now draggable

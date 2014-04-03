@@ -1,3 +1,14 @@
+tomato-backend (3.3.8) stable; urgency=low
+
+  * Allowing tinc to recover from inconsistent member states
+  * Forcing tinc even more to put endpoints near vms
+  * Treating connection creation errors on hosts as internal error
+  * Reloading information on invalid state error
+  * Clustering tinc peers to avoid n^2 connections
+  * More locking for connections
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:06:14 +0200
+
 tomato-backend (3.3.7) stable; urgency=low
 
   * blacklisted some more attributes on topology export
