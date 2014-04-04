@@ -3177,9 +3177,11 @@ var UnknownElement = Element.extend({
 var IconElement = Element.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.type + "32.png";
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
+	},
+	iconUrl: function() {
+		return "img/" + this.data.type + "32.png";
 	},
 	isMovable: function() {
 		return this._super() && !this.busy;
@@ -3222,7 +3224,7 @@ var IconElement = Element.extend({
 	},
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
-		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
+		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
 		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
 		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
@@ -3247,7 +3249,7 @@ var IconElement = Element.extend({
 	},
 	paintUpdate: function() {
 		var pos = this.getAbsPos();
-		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.icon.attr({src: this.iconUrl(), x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
 		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
@@ -3262,8 +3264,10 @@ var IconElement = Element.extend({
 var VPNElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.mode + "32.png";
 		this.iconSize = {x: 32, y:16};
+	},
+	iconUrl: function() {
+		return "img/" + this.data.attrs.mode + "32.png";
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3282,8 +3286,10 @@ var VPNElement = IconElement.extend({
 var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
 		this.iconSize = {x: 32, y:32};
+	},
+	iconUrl: function() {
+		return "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
 	},
 	configWindowSettings: function() {
 		var config = this._super();
@@ -3347,6 +3353,9 @@ var createMap = function(listOfObj, keyAttr, valueAttr, startMap) {
 var VMElement = IconElement.extend({
 	isConnectable: function() {
 		return this._super() && !this.busy;
+	},
+	iconUrl: function() {
+		return (this.getTemplate() && this.getTemplate().customIcon) ? this.getTemplate().customIcon : this._super(); 
 	},
 	isRemovable: function() {
 		return this._super() && !this.busy;
@@ -3592,6 +3601,7 @@ var Template = Class.extend({
 		this.restricted = options.restricted;
 		this.preference = options.preference;
 		this.showAsCommon = options.show_as_common;
+		this.customIcon = options.custom_icon;
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+

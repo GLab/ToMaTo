@@ -67,6 +67,16 @@
 		</td>
 	</tr>	
 	<tr>
+		<th>Custom Icon:</th>
+		<td>
+		{% if template.attrs.custom_icon %}
+			<img src="{{template.attrs.custom_icon}}" />
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
 		<th>Availability:</th>
 		<td>
 			<dl class="dl-horizontal">
