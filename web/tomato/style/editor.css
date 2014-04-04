@@ -37,6 +37,10 @@ div.windowHelp {
 	cursor:pointer;
 }
 
+.ui-icon {
+	background-size: contain;
+}
+
 .icon-22x22 {
 	width: 22px !important;
 	height: 22px !important;
