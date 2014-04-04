@@ -67,12 +67,12 @@
 		</td>
 	</tr>	
 	<tr>
-		<th>Custom Icon:</th>
+		<th>Icon:</th>
 		<td>
-		{% if template.attrs.custom_icon %}
-			<img src="{{template.attrs.custom_icon}}" />
+		{% if template.attrs.icon %}
+			<img src="{{template.attrs.icon}}" />
 		{% else %}
-			no
+			<img src="/img/{{template.attrs.tech}}32.png" />
 		{% endif %}
 		</td>
 	</tr>	

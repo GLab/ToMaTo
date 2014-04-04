@@ -3355,7 +3355,7 @@ var VMElement = IconElement.extend({
 		return this._super() && !this.busy;
 	},
 	iconUrl: function() {
-		return (this.getTemplate() && this.getTemplate().customIcon) ? this.getTemplate().customIcon : this._super(); 
+		return this.getTemplate() ? this.getTemplate().iconUrl() : this._super(); 
 	},
 	isRemovable: function() {
 		return this._super() && !this.busy;
@@ -3601,7 +3601,10 @@ var Template = Class.extend({
 		this.restricted = options.restricted;
 		this.preference = options.preference;
 		this.showAsCommon = options.show_as_common;
-		this.customIcon = options.custom_icon;
+		this.icon = options.icon;
+	},
+	iconUrl: function() {
+		return this.icon || "img/" + this.type + (this.subtype?("_"+this.subtype):"") + "32.png";
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3615,7 +3618,7 @@ var Template = Class.extend({
 		return Menu.button({
 			name: options.name || (this.type + "-" + this.name),
 			label: options.label || this.label || (this.type + "-" + this.name),
-			icon: "img/"+this.type+((this.subtype&&!options.small)?("_"+this.subtype):"")+(options.small?16:32)+".png",
+			icon: this.iconUrl(),
 			toggle: true,
 			toggleGroup: options.toggleGroup,
 			small: options.small,
@@ -4164,7 +4167,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "KVM image",
 				name: "kvm-custom",
-				icon: "img/kvm16.png",
+				icon: "img/kvm32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4173,7 +4176,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "OpenVZ image",
 				name: "openvz-custom",
-				icon: "img/openvz16.png",
+				icon: "img/openvz32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4182,7 +4185,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Repy script",
 				name: "repy-custom",
-				icon: "img/repy16.png",
+				icon: "img/repy32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4245,25 +4248,19 @@ var Editor = Class.extend({
 		var buttonstack = [];
 		for (var i=0; i < common.length; i++) {
 			var net = common[i];
-			var inet_icon = 'img/internet16.png';
-			var is_big_button = (net.big_icon);
-			if (is_big_button) {
-				inet_icon = 'img/internet32.png';
-			}
-				
 			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: inet_icon,
+				icon: 'img/internet32.png',
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: !is_big_button,
+				small: !net.big_icon,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
 					attrs: {kind: net.kind}					
 				}))
 			});
-			if (is_big_button) {
+			if (net.big_icon) {
 				if(buttonstack.length>0) {
 					group.addStackedElements(buttonstack);
 					buttonstack=[];

@@ -45,7 +45,7 @@ class TemplateForm(BootstrapForm):
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
-	custom_icon = forms.URLField(label="Custom icon", help_text="URL of a 32x32 icon to use for elements of this template", required=False)
+	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
@@ -67,7 +67,7 @@ class AddTemplateForm(TemplateForm):
             'show_as_common',
             'restricted',
             'nlXTP_installed',
-            'custom_icon',
+            'icon',
             'creation_date',
             'torrentfile',
             Buttons.cancel_add
@@ -87,7 +87,7 @@ class EditTemplateForm(TemplateForm):
             'show_as_common',
             'restricted',
             'nlXTP_installed',
-			'custom_icon',
+			'icon',
             'creation_date',
             Buttons.cancel_save
         )
@@ -150,7 +150,7 @@ def add(api, request):
 											'description':formData['description'],
 											'nlXTP_installed':formData['nlXTP_installed'],
 											'creation_date':creation_date,
-											'custom_icon':formData['custom_icon'],
+											'icon':formData['icon'],
 											'show_as_common':formData['show_as_common']})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
@@ -216,7 +216,7 @@ def edit(api, request, res_id=None):
 														'description':formData['description'],
 														'creation_date':creation_date,
 														'nlXTP_installed':formData['nlXTP_installed'],
-														'custom_icon':formData['custom_icon'],
+														'icon':formData['icon'],
 														'show_as_common':formData['show_as_common']})
 				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
