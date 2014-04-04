@@ -104,6 +104,9 @@ html {
   float:right;
 }
 
+.noVNC_status_secure {
+  background: #4f4;
+}
 .noVNC_status_normal {
   background: #eee;
 }
