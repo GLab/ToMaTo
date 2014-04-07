@@ -21,7 +21,7 @@ from lib import db, attributes, util, logging #@UnresolvedImport
 from lib.decorators import *
 from datetime import datetime, timedelta
 import time
-from . import scheduler
+from . import scheduler, starttime
 
 #TODO: aggregate per user
 #TODO: fetch and save current records of to-be-deleted objects
@@ -142,26 +142,39 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			self.createRecord(type_, begin, end, coverage, usage)
 			lastType = type_
 				
-	def updateFrom(self, now, others):
-		for ts in [now-900, now-600, now-300, now]:
+	def updateFrom(self, now, sources):
+		ts = now
+		while True:
 			begin, end = _lastRange("5minutes", ts)
 			if self.getRecords(type="5minutes", end=end).exists():
-				continue
+				break # end loop here, older records exist all
+			data = []
+			for s in sources:
+				data += s.getRecords(type="5minutes", end=end)
+			if len(data) < len(sources):
+				if ts > now - 900:
+					continue # not all sources ready, continue with older time frame
+				elif now - starttime < 900:
+					break # we just started, give it some time to fetch all data
+				elif not data:
+					break # no sources available (any more), break
+				else:
+					pass # some sources missing but old time frame, continue with what we got
 			usage = Usage()
 			measurements = 0
 			records = 0
-			for o in others:
-				for rec in o.getRecords(type="5minutes", end=end):
-					usage.cputime += rec.cputime
-					usage.traffic += rec.traffic
-					usage.memory += rec.memory * (rec.end - rec.begin) / (end-begin)
-					usage.diskspace += rec.diskspace * (rec.end - rec.begin) / (end-begin)
-					measurements += rec.measurements
-					records += 1
+			for d in data:
+				usage.cputime += d.cputime
+				usage.traffic += d.traffic
+				usage.memory += d.memory * (d.end - d.begin) / (end-begin)
+				usage.diskspace += d.diskspace * (d.end - d.begin) / (end-begin)
+				measurements += d.measurements
+				records += 1
 			self.createRecord("5minutes", begin, end, measurements, usage)
+			ts -= 300
 		self.combine(now)
 		self.removeOld()
-		   
+
 class UsageRecord(models.Model):
 	statistics = models.ForeignKey(UsageStatistics, related_name="records")
 	type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES], db_index=True) #@ReservedAssignment
@@ -203,33 +216,24 @@ def synchronize():
 	logging.logMessage("sync begin", category="accounting")		
 	from . import host, elements, connections, topology, auth
 	now = time.time()
-	print "Accounting..."
-	print "- host data"
 	for h in host.getAll():
 		try:
 			h.updateAccountingData(now)
 		except:
 			logging.logException(host=h.name)
 			print "Error fetching accounting data from %s" % h
-	print "- elements"
 	for el in elements.getAll():
-		el.updateUsage(now-900)
-	print "- connections"
+		el.updateUsage(now)
 	for con in connections.getAll():
-		con.updateUsage(now-900)
-	print "- topologies"
+		con.updateUsage(now)
 	for top in topology.getAll():
-		top.updateUsage(now-900)
-	print "- users"
+		top.updateUsage(now)
 	for user in auth.getAllUsers():
-		user.updateUsage(now-900)
-	print "- organizations"
+		user.updateUsage(now)
 	for orga in host.getAllOrganizations():
-		orga.updateUsage(now-900)
-	print "- hosts"
+		orga.updateUsage(now)
 	for host in host.getAll():
-		host.updateUsage(now-900)
-	print "End"
+		host.updateUsage(now)
 	logging.logMessage("sync end", category="accounting")		
 
 scheduler.scheduleRepeated(300, synchronize) #every 5 minutes @UndefinedVariable

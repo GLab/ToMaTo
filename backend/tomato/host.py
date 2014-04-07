@@ -409,7 +409,7 @@ class Host(attributes.Mixin, models.Model):
 		return len(self.templates.filter(template=tpl, ready=True))
 
 	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [hel.totalUsage for hel in self.elements.all()]+[hcon.totalUsage for hcon in self.connections.all()])
+		self.totalUsage.updateFrom(now, [hel.usageStatistics for hel in self.elements.all()]+[hcon.usageStatistics for hcon in self.connections.all()])
 
 	def updateAccountingData(self, now):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)		
