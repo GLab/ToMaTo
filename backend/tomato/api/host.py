@@ -75,6 +75,11 @@ def organization_remove(name):
 	orga.remove()
 	organization_list.invalidate()
 
+@checkauth
+def organization_usage(name): #@ReservedAssignment
+	orga = _getOrganization(name)
+	return orga.totalUsage.info()	
+
 @cached(timeout=6*3600)
 def site_list(organization=None):
 	"""
@@ -179,5 +184,10 @@ def host_users(name):
 	"""
 	h = _getHost(name)
 	return h.getUsers()
+
+@checkauth
+def host_usage(name): #@ReservedAssignment
+	h = _getHost(name)
+	return h.totalUsage.info()	
 
 from .. import host, fault

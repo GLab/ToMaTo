@@ -18,7 +18,7 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser, scheduler
+from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
 
 class Flags:
 	Debug = "debug"
@@ -123,6 +123,8 @@ class User(attributes.Mixin, models.Model):
 	password = models.CharField(max_length=250, null=True)
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
+	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+')
+
 	
 	realname = attributes.attribute("realname", unicode)
 	email = attributes.attribute("email", unicode)
@@ -271,6 +273,11 @@ class User(attributes.Mixin, models.Model):
 		if fromUser:
 			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email) 
 		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
+		
+	def updateUsage(self, now):
+		from .. import topology
+		#FIXME: do something useful with topologies with multiple owners
+		self.totalUsage.updateFrom(now, [top.totalUsage for top in topology.getAll(permissions__entries__user=self, permissions__entries__role="owner")])
 		
 	def __str__(self):
 		return self.__unicode__()

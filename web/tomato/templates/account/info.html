@@ -72,6 +72,7 @@ While waiting for the account activation you can create and design topologies bu
   <button type="submit" formaction="{%url account.accept id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-check"></span> accept account</button>
 {% endif %}  
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags or account.id == request.session.user.id %}
+  <a class="btn btn-info" href="javascript:window.open('{%url account.usage account.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
   <button type="submit" formaction="{%url account.edit id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit account</button>
 {% endif %}
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}

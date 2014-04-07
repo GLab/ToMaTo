@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser, starttime, scheduler
+from . import config, currentUser, starttime, scheduler, accounting
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
@@ -25,6 +25,7 @@ import xmlrpclib, time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
@@ -69,6 +70,9 @@ class Organization(attributes.Mixin, models.Model):
 		fault.check(not self.users.all(), "Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.delete()
+		
+	def updateUsage(self, now):
+		self.totalUsage.updateFrom(now, [user.totalUsage for user in self.users.all()])		
 		
 	def info(self):
 		return {
@@ -204,6 +208,7 @@ class Host(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
+	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
@@ -402,6 +407,9 @@ class Host(attributes.Mixin, models.Model):
 
 	def hasTemplate(self, tpl):
 		return len(self.templates.filter(template=tpl, ready=True))
+
+	def updateUsage(self, now):
+		self.totalUsage.updateFrom(now, [hel.totalUsage for hel in self.elements.all()]+[hcon.totalUsage for hcon in self.connections.all()])
 
 	def updateAccountingData(self, now):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)		

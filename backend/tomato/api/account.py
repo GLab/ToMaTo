@@ -190,6 +190,12 @@ def account_mail(name, subject, message, from_support=False):
 	fault.check(currentUser().isAdminOf(acc), "No permissions")
 	acc.sendMail(subject, message, None if from_support else currentUser())
 	
+def account_usage(name): #@ReservedAssignment
+	if not currentUser():
+		raise ErrorUnauthorized()
+	acc = _getAccount(name)
+	return acc.totalUsage.info()	
+	
 from host import _getOrganization
 from .. import fault, currentUser
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
