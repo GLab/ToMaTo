@@ -143,8 +143,9 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			lastType = type_
 				
 	def updateFrom(self, now, sources):
-		ts = now
+		ts = now + 300
 		while True:
+			ts -= 300
 			begin, end = _lastRange("5minutes", ts)
 			if self.getRecords(type="5minutes", end=end).exists():
 				break # end loop here, older records exist all
@@ -171,7 +172,6 @@ class UsageStatistics(attributes.Mixin, models.Model):
 				measurements += d.measurements
 				records += 1
 			self.createRecord("5minutes", begin, end, measurements, usage)
-			ts -= 300
 		self.combine(now)
 		self.removeOld()
 
