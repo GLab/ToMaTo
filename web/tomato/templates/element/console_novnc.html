@@ -6,6 +6,7 @@
         <meta http-equiv="X-UA-Compatible" content="chrome=1">
         <link rel="stylesheet" href="include/base.css" title="plain">
         <script src="include/vnc.js"></script>
+        <script src="/js/jquery.min.js"></script>
     </head>
 	<style>
 	#noVNC_screen {
@@ -18,10 +19,9 @@
             <div id="noVNC_status_bar" class="noVNC_status_bar" style="margin: 0px; height: 35px;">
                 <table border=0 width="100%"><tr>
                     <td><div id="noVNC_status">Loading</div></td>
-                    <td width="1%"><div id="noVNC_buttons">
-                        <input type=button value="Send CtrlAltDel"
-                            id="sendCtrlAltDelButton">
-                            </div></td>
+                    <td width="1%"><div id="noVNC_buttons" style="white-space: nowrap;">
+                        <input type=button value="Send CtrlAltDel" id="sendCtrlAltDelButton">
+                    </div></td>
                 </tr></table>
             </div>
             <canvas id="noVNC_canvas" width="640px" height="20px" style="margin: 0px;">
@@ -34,21 +34,11 @@
         "use strict";
 
         var rfb;
+        var host = '{{info.attrs.host_info.address}}';
+        var port = {{info.attrs.websocket_port}};
+        var password = '{{info.attrs.vncpassword}}';
+		var ssl = window.location.protocol === "https:";
 
-        function passwordRequired(rfb) {
-            var msg;
-            msg = '<form onsubmit="return setPassword();"';
-            msg += '  style="margin-bottom: 0px">';
-            msg += 'Password Required: ';
-            msg += '<input type=password size=10 id="password_input" class="noVNC_status">';
-            msg += '<\/form>';
-            $D('noVNC_status_bar').setAttribute("class", "noVNC_status_warn");
-            $D('noVNC_status').innerHTML = msg;
-        }
-        function setPassword() {
-            rfb.sendPassword($D('password_input').value);
-            return false;
-        }
         function sendCtrlAltDel() {
             rfb.sendCtrlAltDel();
             return false;
@@ -61,14 +51,26 @@
             switch (state) {
                 case 'failed':       level = "error";  break;
                 case 'fatal':        level = "error";  break;
-                case 'normal':       level = "normal"; break;
                 case 'disconnected': level = "normal"; break;
                 case 'loaded':       level = "normal"; break;
+                case 'normal':       
+                	level = rfb.get_encrypt() ? "secure" : "normal";
+                	break;
                 default:             level = "warn";   break;
             }
 
-            if (state === "normal") { cad.disabled = false; }
-            else                    { cad.disabled = true; }
+            cad.disabled = (state !== "normal");
+            
+            if (state === "failed" && rfb.get_encrypt()) {
+            	rfb.set_encrypt(false);
+            	window.setTimeout("connect()", 1000);
+				var workaround = $('<input type=button value="SSL workaround">');
+				workaround.click(function() {
+					alert("Please clear any certificate problems on the following site and then reload the console window.");
+					window.open('https://'+host+':'+port);
+				});
+				$("#noVNC_buttons").append(workaround);
+            }
 
             if (typeof(msg) !== 'undefined') {
                 sb.setAttribute("class", "noVNC_status_" + level);
@@ -84,23 +86,22 @@
 				console.log(width, height);
 			}
         }
-
+        function connect() {
+           	rfb.connect(host, port, password, 'websockify');
+        }
         window.onload = function () {
-            var host, port, password, path, token;
-
             $D('sendCtrlAltDelButton').style.display = "inline";
             $D('sendCtrlAltDelButton').onclick = sendCtrlAltDel;
 
-            rfb = new RFB({'target':       $D('noVNC_canvas'),
-                           'encrypt':      WebUtil.getQueryVar('encrypt', false),
-                           'repeaterID':   WebUtil.getQueryVar('repeaterID', ''),
-                           'true_color':   WebUtil.getQueryVar('true_color', true),
+           	rfb = new RFB({'target':       $D('noVNC_canvas'),
+               	           'encrypt':      WebUtil.getQueryVar('encrypt', ssl),
+                   	       'repeaterID':   WebUtil.getQueryVar('repeaterID', ''),
+                       	   'true_color':   WebUtil.getQueryVar('true_color', true),
                            'local_cursor': WebUtil.getQueryVar('cursor', true),
-                           'shared':       WebUtil.getQueryVar('shared', true),
-                           'view_only':    WebUtil.getQueryVar('view_only', false),
-                           'updateState':  updateState,
-                           'onPasswordRequired':  passwordRequired});
-            rfb.connect('{{info.attrs.host_info.address}}', {{info.attrs.websocket_port}}, '{{info.attrs.vncpassword}}', 'websockify');
+   	                       'shared':       WebUtil.getQueryVar('shared', true),
+       	                   'view_only':    WebUtil.getQueryVar('view_only', false),
+           	               'onUpdateState':  updateState});
+            connect();
         };
         </script>
     </body>
