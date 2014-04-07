@@ -143,6 +143,7 @@ class User(attributes.Mixin, models.Model):
 		fault.check(orga, "No organization with name %s" % organization)
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
+		user.totalUsage = accounting.UsageStatistics.objects.create()
 		user.last_login = time.time()
 		return user
 	
@@ -386,6 +387,8 @@ def login(username, password):
 
 def remove(user):
 	user.delete()
+	#user.totalUsage will be deleted automatically
+
 
 def register(username, password, organization, attrs={}, provider=""):
 	for prov in providers:

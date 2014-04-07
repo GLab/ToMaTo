@@ -38,6 +38,7 @@ class Organization(attributes.Mixin, models.Model):
 		pass
 	
 	def init(self, attrs):
+		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
 		
 	def checkPermissions(self):
@@ -69,6 +70,7 @@ class Organization(attributes.Mixin, models.Model):
 		fault.check(not self.sites.all(), "Organization still has sites")
 		fault.check(not self.users.all(), "Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
+		#self.totalUsage will be deleted automatically
 		self.delete()
 		
 	def updateUsage(self, now):
@@ -233,6 +235,7 @@ class Host(attributes.Mixin, models.Model):
 
 	def init(self, attrs={}):
 		self.attrs = {}
+		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
 		self.update()
 
@@ -479,6 +482,7 @@ class Host(attributes.Mixin, models.Model):
 				self.getProxy().resource_remove(res["id"])
 		except:
 			pass
+		#self.totalUsage will be deleted automatically
 		self.delete()
 
 	def modify(self, attrs):
