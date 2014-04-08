@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import json
+
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, serverInfo
+from lib import wrap_rpc, serverInfo, AuthError
 from django.http import HttpResponseRedirect
 
 from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
@@ -132,3 +134,10 @@ def edit(api, request, name=None):
 			return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+
+@wrap_rpc
+def usage(api, request, name): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
+	usage=api.host_usage(name)
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})
