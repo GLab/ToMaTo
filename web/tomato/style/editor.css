@@ -1,10 +1,13 @@
 #menu.ui-ribbon {
   border: none;
 }
-#menu .ui-ribbon-panel ul {
+#menu .ui-ribbon-panel {
   overflow-x: auto;
+}
+#menu .ui-ribbon-panel ul {
   overflow-y: hidden;
   white-space: nowrap;
+  display: inline-table;
 }
 #menu li.ui-ribbon-group {
   float: none;
