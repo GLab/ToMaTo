@@ -86,6 +86,17 @@ def statistics():
 	usage['users'] = auth.User.objects.count()
 	return stats
 
+def task_list():
+	if not currentUser():
+		raise ErrorUnauthorized()
+	return scheduler.info()
+
+def task_execute(id):
+	if not currentUser():
+		raise ErrorUnauthorized()
+	fault.check(currentUser().hasFlag(auth.Flags.GlobalAdmin), "Not enough permissions")
+	return scheduler.executeTask(id, force=True)
+
 from django.db import models
-from .. import misc, config, link, currentUser, host, topology, auth, elements, connections
+from .. import misc, config, link, currentUser, host, topology, auth, elements, connections, scheduler, fault
 from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport

@@ -28,6 +28,7 @@ def wrap_task(fn):
 				transaction.rollback()
 			from .. import fault
 			fault.errors_add(exc, traceback.format_exc())
+	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)

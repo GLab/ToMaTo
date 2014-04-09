@@ -39,7 +39,12 @@ def upload(url, file, name="upload"):
     resps = conn.getresponse()
     data = resps.read()
     
-def testCase(name, topologyName=None):
+class Result:
+	SUCCESS = 0
+	FAILURE = 1
+	SKIPPED = 2
+    
+def testCase(name, topologyName=None, withoutTopology=False, requiredFlags=[]):
 	def wrap(method):
 		def call(automated=False, *args, **kwargs):
 			import time
@@ -47,16 +52,27 @@ def testCase(name, topologyName=None):
 			print "=" * 50
 			print "Test case: %s" % name
 			print "-" * 50
-			success = False
+			result = Result.FAILURE
 			start = time.time()
 			try:
-				print "Creating topology..."
-				topInfo = topology_create()
-				topId = topInfo["id"]
-				print "Topology ID: %d" % topId
-				topology_modify(topId, {"name": topologyName or "Test: %s" % name})
-				method(topId, *args, **kwargs)
-				success = True
+				if requiredFlags:
+					flags = account_info()["flags"]
+					for flag in requiredFlags:
+						if not flag in flags:
+							print "Skipping test because of missing flag: %s" % flag
+							result = Result.SKIPPED
+							return result
+				if not withoutTopology:
+					print "Creating topology..."
+					topInfo = topology_create()
+					topId = topInfo["id"]
+					print "Topology ID: %d" % topId
+					topology_modify(topId, {"name": topologyName or "Test: %s" % name})
+				if withoutTopology:
+					method(*args, **kwargs)
+				else:
+					method(topId, *args, **kwargs)
+				result = Result.SUCCESS
 			except:
 				print "-" * 50
 				import traceback
@@ -70,23 +86,32 @@ def testCase(name, topologyName=None):
 					print "Removing topology..."
 					topology_remove(topId)
 					print "Done"
-			print "-" * 50
-			print "Test succeeded" if success else "TEST FAILED", "duration: %.1f sec" % (time.time() - start)
-			print "=" * 50
-			return success
+				print "-" * 50
+				if result == Result.SUCCESS:
+					print "Test succeeded", "duration: %.1f sec" % (time.time() - start)
+				if result == Result.SKIPPED:
+					print "Test skipped"
+				if result == Result.FAILURE:
+					print "TEST FAILED", "duration: %.1f sec" % (time.time() - start)
+				print "=" * 50
+			return result
 		return call
 	return wrap
 
 def testSuite(tests, automated=False):
 	import time
 	failed = 0
+	skipped = 0
 	start = time.time()
 	for test in tests:
 		result = test(automated=automated)
-		failed += int(not result)
+		if result == Result.FAILURE:
+			failed += 1
+		if result == Result.SKIPPED:
+			skipped += 1
 		print
 	print "*" * 50
-	print "Tests complete, %d of %d tests failed, total duration: %.1f sec" % (failed, len(tests), time.time() - start)
+	print "Tests complete, %d of %d tests failed (%d skipped), total duration: %.1f sec" % (failed, len(tests), skipped, time.time() - start)
 	print "*" * 50
 	
 def createStarTopology(topId, nodeCount=3, nodeType="openvz", prepare=False, start=False):

@@ -1,7 +1,7 @@
 from lib import testCase, testSuite, unicodeTestString, createStarTopology
 
-@testCase("api.topology_permissions")
-def testTopologyPermissions(topId):
+@testCase("api.topology_permissions", withoutTopology=True)
+def testTopologyPermissions():
 	print "Calling topology_permissions..."
 	res = topology_permissions()
 	assert "owner" in res, "Permissions did not contain owner"
@@ -45,8 +45,8 @@ def testTopologyAction(topId):
 	print "Calling action destroy..."
 	topology_action(topId, "destroy")
 
-@testCase("api.topology_list")
-def testTopologyList(topId):
+@testCase("api.topology_list", withoutTopology=True)
+def testTopologyList():
 	res = topology_list()
 	assert isinstance(res, list), "List was no list"
 	assert len(res) >= 1, "List was empty" 
