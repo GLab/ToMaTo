@@ -473,9 +473,13 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			'site': h.site.name if h else None,
 			'fileserver_port': h.hostInfo.get('fileserver_port', None) if h else None
 		}
-		mcon = self.mainConnection()
-		if mcon:
-			info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
+		try:
+			mcon = self.mainConnection()
+			if mcon:
+				info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
+		except:
+			import traceback
+			traceback.print_exc()
 		return info
 
 		
