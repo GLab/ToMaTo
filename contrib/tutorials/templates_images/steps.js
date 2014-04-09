@@ -23,6 +23,8 @@
 			  },
 			text:	'<p class="tutorialExplanation">\
 						Right click on your device and use the <i>Configure</i> window to change the template from <i>Ubuntu 12.04 (x86_64)</i> to <i>Debian 7.0 (x86_64)</i></p>\
+				<p class="tutorialExplanation">If you change the template of one of our devices the image will be deleted and there is no way to restore it.<br/>\
+						So be careful with changing templates or uploading images.\
 					<p class="tutorialCommand">\
 						Change the template for your device to <i>Debian 7.0 (x86_64)</i></p>'
 			},
@@ -44,18 +46,20 @@
 					phase: "begin"
 				};				
 				if(compareToMask(obj,mask) && tutorial_data.tmp >= 1) {
-					tutorial_data.tmp = 0;
-					return true;
+					tutorial_data.tmp++;
 					
 				}
-
+				if(tutorial_data.tmp >= 3) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
 				return false;
 				
 			  },
 			text:	'<p class="tutorialExplanation">\
 						With preparing devices, images from those templates will be created.</p>\
 				<p class="tutorialExplanation">\
-						We also want to start our device for the next steps.</p>\
+						We also need to start our topologie for the next steps.</p>\
 				<p class="tutorialCommand">\
 						Prepare and start your device</p>',
 			skip_button: "Continue"
@@ -63,11 +67,23 @@
 			{ 
 			trigger:function(obj) { 
 				
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
 				mask = {
 					component: "element",
 					operation: "console-dialog",
 				};
-				return compareToMask(obj,mask);
+				if(compareToMask(obj,mask)) tutorial_data.tmp +=1;
+				mask = {
+					action: "start",
+					component: "element",
+					operation: "action",
+					phase: "begin"
+				};					
+				if(compareToMask(obj,mask) && tutorial_data.tmp >= 1) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
 				
 				
 			  },
@@ -100,9 +116,10 @@
 			  },
 			text:	'<p class="tutorialExplanation">\
 						Now we want to backup our device\'s disk image for use as a configured image on a new device.<br />\
-						You can download the disk image of any prepared device by right-clicking on the device and select "Download image".</p>\
+						You can download the disk image of any prepared device by right-clicking on the device and select "Download image".<br/>\
+						We have to stop the device first, bevor we can download or upload an image.</p>\
 					<p class="tutorialCommand">\
-						Download a disk image.</p>\
+						Stop the device and download a disk image.</p>\
 					<p class="tutorialExplanation">\
 						Warning: The download might be big. Skip this step if you are on a metered connection!</p>'
 			},
@@ -161,13 +178,26 @@
 						creating the image in one device, and then distributing it to many might be the best method to accomplish this.</p>',
 			},
 			{
+			//TODO
+			trigger:function(obj) {
+				mask = {
+					action: 'upload_use',
+					component: "element",
+					operation: "action",
+					phase: "end"
+				};
+				return compareToMask(obj,mask);
+			},
 			text:	'<p class="tutorialExplanation">\
 						There is another way to create a device and using your own image. In the "Devices" tab, on the right side, you can find "upload own images" devices.<br />\
 						When you place such a device on your topology, it will be prepared immediately, and then you will be asked to upload an image</p>\
 					<p class="tutorialCommand">\
-						Place suche a device on your topology (cancel the upload if you want). After this, click "Continue"</p>\
+						Place suche a device on your topology (cancel the upload if you want). If you do so, click "Continue"</p>\
 					<p class="tutorialExplanation">\
 						Ignore this device for the rest of the tutorial, or delete it.</p>',
 			skip_button: "Continue"
 			},
+			{
+				text: '<p class="tutorialExplanation">Now we are at the end of the tutorial, I hope you enjoyed it.</p>'
+			}
 ]
