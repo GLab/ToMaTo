@@ -124,26 +124,29 @@ class UsageStatistics(attributes.Mixin, models.Model):
 		
 	def removeOld(self):
 		for type_ in TYPES:
-			for r in self.getRecords(type=type_).order_by("-begin")[KEEP_RECORDS[type_]:]:
-				r.delete()
+			records = self.getRecords(type=type_).order_by("-end")
+			keep = records[:KEEP_RECORDS[type_]]
+			records.exclude(pk__in=keep).delete()
 		
 	def update(self, now):
 		self.combine(now)
 		self.removeOld()
 		
-	def combine(self, now):
+	def combine(self):
 		lastType = TYPES[0]
 		for type_ in TYPES[1:]:
-			begin, end = _lastRange(type_, now)
+			begin, end = _lastRange(type_, time.time())
 			if self.getRecords(type=type_, begin=begin, end=end).exists():
 				break
 			records = self.getRecords(type=lastType, begin__gte=begin, end__lte=end)
+			if not records:
+				continue
 			usage, coverage = _combine(begin, end, records)
 			self.createRecord(type_, begin, end, coverage, usage)
 			lastType = type_
 				
-	def updateFrom(self, now, sources):
-		ts = now + 300
+	def updateFrom(self, sources):
+		ts = time.time() + 300
 		while True:
 			ts -= 300
 			begin, end = _lastRange("5minutes", ts)
@@ -153,9 +156,9 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			for s in sources:
 				data += s.getRecords(type="5minutes", end=end)
 			if len(data) < len(sources):
-				if ts > now - 900:
+				if ts > time.time() - 900:
 					continue # not all sources ready, continue with older time frame
-				elif now - starttime < 900:
+				elif time.time() - starttime < 900:
 					break # we just started, give it some time to fetch all data
 				elif not data:
 					break # no sources available (any more), break
@@ -172,7 +175,7 @@ class UsageStatistics(attributes.Mixin, models.Model):
 				measurements += d.measurements
 				records += 1
 			self.createRecord("5minutes", begin, end, measurements, usage)
-		self.combine(now)
+		self.combine()
 		self.removeOld()
 
 class UsageRecord(models.Model):
@@ -211,29 +214,21 @@ class UsageRecord(models.Model):
 			"usage": {"cputime": self.cputime, "diskspace": self.diskspace, "memory": self.memory, "traffic": self.traffic},
 		}
 
-@util.wrap_task		
-def synchronize():
-	logging.logMessage("sync begin", category="accounting")		
+@util.wrap_task
+@db.commit_after
+def aggregate():
 	from . import host, elements, connections, topology, auth
-	now = time.time()
-	for h in host.getAll():
-		try:
-			h.updateAccountingData(now)
-		except:
-			logging.logException(host=h.name)
-			print "Error fetching accounting data from %s" % h
 	for el in elements.getAll():
-		el.updateUsage(now)
+		el.updateUsage()
 	for con in connections.getAll():
-		con.updateUsage(now)
+		con.updateUsage()
 	for top in topology.getAll():
-		top.updateUsage(now)
+		top.updateUsage()
 	for user in auth.getAllUsers():
-		user.updateUsage(now)
+		user.updateUsage()
 	for orga in host.getAllOrganizations():
-		orga.updateUsage(now)
+		orga.updateUsage()
 	for host in host.getAll():
-		host.updateUsage(now)
-	logging.logMessage("sync end", category="accounting")		
+		host.updateUsage()
 
-scheduler.scheduleRepeated(300, synchronize) #every 5 minutes @UndefinedVariable
+scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
