@@ -113,6 +113,8 @@ _socket.connect(("8.8.8.8",80))
 PUBLIC_ADDRESS = _socket.getsockname()[0]
 _socket.close()
 
+socket.setdefaulttimeout(1800)
+
 try:
 	import sys
 	for path in filter(os.path.exists, ["/etc/tomato/backend.conf", os.path.expanduser("~/.tomato/backend.conf"), "backend.conf"]):
