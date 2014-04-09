@@ -24,7 +24,7 @@ if __name__ == "__main__":
 		run()
 	elif sys.argv[1] == "--coverage":
 		import coverage #@UnresolvedImport
-		cov = coverage.coverage(source=["tomato", "tomato.lib"], omit=["tomato/migrations/*", "../shared/lib/cmd/*"])
+		cov = coverage.coverage(source=["tomato", "tomato.lib"], omit=["tomato/migrations/*", "../shared/lib/*"])
 		cov.start()
 		from tomato import run
 		run()
