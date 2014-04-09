@@ -334,6 +334,7 @@ class Bridge(connections.Connection):
 		net.bridgeRemoveInterface(self.bridge, ifname)
 
 	def action_download_grant(self, limitSize=None):
+		fault.check(os.path.exists(self.dataPath("capture")), "Nothing captured so far")
 		entries = [os.path.join(self.dataPath("capture"), f) for f in path.entries(self.dataPath("capture"))]
 		fault.check(entries, "Nothing captured so far")
 		net.tcpslice(self.dataPath("capture.pcap"), entries, limitSize)

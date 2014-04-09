@@ -3,6 +3,7 @@
 }
 #menu .ui-ribbon-panel ul {
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
 }
 #menu li.ui-ribbon-group {

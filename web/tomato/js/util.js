@@ -167,7 +167,7 @@ formatDuration = function(value, recursed) {
 	for (var i = units.length-1; i >= 0; i--) {
 		var val = units[i][0];
 		var unit = units[i][1];
-		if (value >= val) {
+		if (value > val) {
 			var str = Math.floor(value/val) + " " + unit;
 			var rest = value - Math.floor(value/val)*val;
 			if (rest && !recursed) str += ", " + formatDuration(rest, true);

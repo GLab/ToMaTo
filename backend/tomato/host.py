@@ -73,8 +73,8 @@ class Organization(attributes.Mixin, models.Model):
 		#self.totalUsage will be deleted automatically
 		self.delete()
 		
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [user.totalUsage for user in self.users.all()])		
+	def updateUsage(self):
+		self.totalUsage.updateFrom([user.totalUsage for user in self.users.all()])		
 		
 	def info(self):
 		return {
@@ -411,10 +411,10 @@ class Host(attributes.Mixin, models.Model):
 	def hasTemplate(self, tpl):
 		return len(self.templates.filter(template=tpl, ready=True))
 
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [hel.usageStatistics for hel in self.elements.all()]+[hcon.usageStatistics for hcon in self.connections.all()])
+	def updateUsage(self):
+		self.totalUsage.updateFrom([hel.usageStatistics for hel in self.elements.all()]+[hcon.usageStatistics for hcon in self.connections.all()])
 
-	def updateAccountingData(self, now):
+	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)		
 		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp-900)
 		for el in self.elements.all():
@@ -435,7 +435,7 @@ class Host(attributes.Mixin, models.Model):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name, records=data["connections"][str(con.num)], object=("connection", con.id))		
 			con.updateAccountingData(data["connections"][str(con.num)])
-		self.accountingTimestamp=now
+		self.accountingTimestamp=time.time()
 		self.save()
 		logging.logMessage("accounting_sync end", category="host", name=self.name)		
 	
@@ -976,6 +976,7 @@ def synchronizeHost(host):
 		try:
 			host.update()
 			host.synchronizeResources()
+			host.updateAccountingData()
 		except:
 			logging.logException(host=host.name)
 			print "Error updating information from %s" % host
