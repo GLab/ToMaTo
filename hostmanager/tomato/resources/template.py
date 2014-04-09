@@ -48,6 +48,7 @@ class Template(resources.Resource):
 		for attr in ["name", "tech", "torrent_data"]:
 			fault.check(attr in attrs, "Template needs attribute %s", attr) 
 		self.modify_tech(attrs["tech"])
+		self.modify_name(attrs["name"])
 		resources.Resource.init(self, *args, **kwargs)
 				
 	def upcast(self):

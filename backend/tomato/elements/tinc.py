@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import random, math
 from django.db import models
 from .. import elements, host, fault
 from ..lib.attributes import Attr #@UnresolvedImport
@@ -80,30 +81,113 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 			ch.modify({"mode": self.mode})
 
 	def _crossConnect(self):
+		def _isEndpoint(obj):
+			return not isinstance(obj, list)
+		def _clusterByFilter(nodes, fn):
+			clustered = {}
+			for n in nodes:
+				id_ = fn(n)
+				if not id_ in clustered:
+					clustered[id_] = []
+				clustered[id_].append(n)
+			return clustered.values()
+		def _balance(nodes, max_):
+			if _isEndpoint(nodes):
+				return nodes
+			if len(nodes) == 1:
+				return _balance(nodes[0], max_)
+			if len(nodes) > max_:
+				clusters = []
+				for i in xrange(0, max_):
+					clusters.append([])
+				i = 0
+				while nodes:
+					clusters[i].append(nodes.pop())
+					i = (i+1) % max_
+				nodes = _balance(clusters, max_)
+			nodes = map(lambda n: _balance(n, max_), nodes)
+			if sum(map(lambda n: 1 if _isEndpoint(n) else len(n), nodes)) <= max_:
+				nodes = sum([[n] if _isEndpoint(n) else n for n in nodes], [])
+			return nodes				
+		def _cluster(nodes):
+			clustered = _clusterByFilter(nodes, lambda n: n.element.host.site)
+			clustered = map(lambda cluster: _clusterByFilter(cluster, lambda n: n.element.host), clustered)
+			clustered = _balance(clustered, 5)
+			return clustered
+		def _representative(cluster):
+			if _isEndpoint(cluster):
+				return cluster
+			return _representative(random.choice(cluster))
+		def _connections(clusters):
+			cons = []
+			if _isEndpoint(clusters):
+				return []
+			for c in clusters:
+				cons += _connections(c)
+			for c1 in clusters:
+				for c2 in clusters:
+					if c2 == c1:
+						if _isEndpoint(c1):	break
+						else: continue
+					r1 = _representative(c1)
+					r2 = _representative(c2)
+					cons.append((r1, r2))
+					cons.append((r2, r1))
+			return cons
+		def _check(nodes, connections):
+			fault.check(len(cons)/2 <= len(nodes) * len(nodes), "Tinc clustering resulted in too many connections", code=fault.INTERNAL_ERROR)
+			if not nodes:
+				return
+			connected = set()
+			connected.add(random.choice(nodes).id)
+			changed = True
+			iterations = 0
+			while changed and len(connected) < len(nodes):
+				changed = False
+				for src, dst in cons:
+					if src.id in connected and not dst.id in connected:
+						connected.add(dst.id)
+						changed = True
+				iterations += 1
+			fault.check(len(connected) == len(nodes), "Tinc clustering resulted in disconnected nodes", code=fault.INTERNAL_ERROR)
+			fault.check(iterations <= math.ceil(math.log(len(nodes), 5)), "Tinc clustering resulted in too many hops", code=fault.INTERNAL_ERROR)					
 		assert self.state == ST_PREPARED
-		peers = []
-		for ch in self.getChildren():
+		children = self.getChildren()
+		peerInfo = {}
+		peers = {}
+		for ch in children:
 			assert ch.element
 			info = ch.info()
-			peers.append({
+			peerInfo[ch.id] = {
 				"host": ch.element.host.address,
 				"port": info["attrs"]["port"],
 				"pubkey": info["attrs"]["pubkey"],
-			})
-		for ch in self.getChildren():
+			}
+			peers[ch.id] = []
+		clusters = _cluster(children)
+		cons = _connections(clusters)
+		_check(children, cons)
+		for src, dst in cons:
+			peers[src.id].append(peerInfo[dst.id])
+		for ch in children:
 			info = ch.info()
-			others = filter(lambda p: p["pubkey"] != info["attrs"]["pubkey"], peers)
-			ch.modify({"peers": others})
+			ch.modify({"peers": peers[ch.id]})
 
 	def action_prepare(self):
 		for ch in self.getChildren():
 			if ch.state == ST_CREATED:
 				ch.action("prepare", {})
 		self.setState(ST_PREPARED)
-		self._crossConnect()
+		try:
+			self._crossConnect()
+		except:
+			self.action_destroy()
+			raise
 		
 	def action_destroy(self):
 		for ch in self.getChildren():
+			if ch.state == ST_STARTED:
+				ch.action("stop", {})
 			if ch.state == ST_PREPARED:
 				ch.action("destroy", {})
 		self.setState(ST_CREATED)
@@ -116,7 +200,9 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 
 	def action_start(self):
 		for ch in self.getChildren():
-			if ch.state != ST_STARTED:
+			if ch.state == ST_CREATED:
+				ch.action("prepare", {})
+			if ch.state == ST_PREPARED:
 				ch.action("start", {})
 		self.setState(ST_STARTED)
 
@@ -160,7 +246,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	CAP_CHILDREN = {}
 	CAP_CONNECTABLE = True
 	
-	SAME_HOST_AFFINITY = 40 #we definitely want to be on the same host as our connected elements
+	SAME_HOST_AFFINITY = 1000 #we definitely want to be on the same host as our connected elements
 	
 	class Meta:
 		db_table = "tomato_tinc_endpoint"

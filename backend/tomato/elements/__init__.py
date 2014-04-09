@@ -453,8 +453,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		if mel:
 			mel.updateInfo()
 
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])
 
 	def __str__(self):

@@ -67,6 +67,16 @@
 		</td>
 	</tr>	
 	<tr>
+		<th>Icon:</th>
+		<td>
+		{% if template.attrs.icon %}
+			<img src="{{template.attrs.icon}}" />
+		{% else %}
+			<img src="/img/{{template.attrs.tech}}32.png" />
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
 		<th>Availability:</th>
 		<td>
 			<dl class="dl-horizontal">

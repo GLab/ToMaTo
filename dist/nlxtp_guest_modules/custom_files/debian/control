@@ -1,5 +1,6 @@
 Source: nlxtp-guest-modules
 Priority: extra
+Section: misc
 Maintainer: Tim Gerhard <t_gerhard10@cs.uni-kl.de>
 Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.8.4

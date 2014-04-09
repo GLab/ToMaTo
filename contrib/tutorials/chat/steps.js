@@ -433,7 +433,7 @@ Note that you can not type any text into the consoles of these agents as the Rep
 				}
 			}) || compareToMask(event, {
 				operation: "modify",
-				component: "element",
+				component: "connection",
 				phase: "end",
 				attrs: {
 					delay_to: tutorial_data.delay

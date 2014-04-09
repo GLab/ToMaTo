@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import random, string
+import random, string, json
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -380,3 +380,10 @@ def remove(api, request, id=None):
 			return HttpResponseRedirect(reverse("account_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
+
+@wrap_rpc
+def usage(api, request, id): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
+	usage=api.account_usage(id)
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Account %s' % id})

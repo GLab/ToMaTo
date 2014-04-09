@@ -44,6 +44,7 @@
   <button type="submit" formaction="{%url organization_topologies organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Topologies</button>
   <button type="submit" formaction="{%url organization_hosts organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> Hosts</button>
   <button type="submit" formaction="{%url organization_external_networks organization.name%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> External Network Instances</button>
+  <a class="btn btn-info" href="javascript:window.open('{%url organization.usage organization.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
   {% if request.session.user and request.session.user|args:organization.name|call:"isAdmin" %}
   <div class="skip-xs"></div>
   <button type="submit" formaction="{%url site.add organization.name%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> add site</button>

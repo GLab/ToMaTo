@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from . import config, currentUser, starttime, scheduler
+from . import config, currentUser, starttime, scheduler, accounting
 from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
@@ -25,6 +25,7 @@ import xmlrpclib, time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
@@ -37,6 +38,7 @@ class Organization(attributes.Mixin, models.Model):
 		pass
 	
 	def init(self, attrs):
+		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
 		
 	def checkPermissions(self):
@@ -68,7 +70,11 @@ class Organization(attributes.Mixin, models.Model):
 		fault.check(not self.sites.all(), "Organization still has sites")
 		fault.check(not self.users.all(), "Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
+		#self.totalUsage will be deleted automatically
 		self.delete()
+		
+	def updateUsage(self):
+		self.totalUsage.updateFrom([user.totalUsage for user in self.users.all()])		
 		
 	def info(self):
 		return {
@@ -204,6 +210,7 @@ class Host(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
+	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+')
 	attrs = db.JSONField()
 	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
@@ -228,6 +235,7 @@ class Host(attributes.Mixin, models.Model):
 
 	def init(self, attrs={}):
 		self.attrs = {}
+		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
 		self.update()
 
@@ -307,8 +315,9 @@ class Host(attributes.Mixin, models.Model):
 		assert hel2.host == self
 		try:
 			con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
-		except:
+		except Exception, exc:
 			self.incrementErrors()
+			exc.faultCode = fault.INTERNAL_ERROR
 			raise
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
@@ -402,7 +411,10 @@ class Host(attributes.Mixin, models.Model):
 	def hasTemplate(self, tpl):
 		return len(self.templates.filter(template=tpl, ready=True))
 
-	def updateAccountingData(self, now):
+	def updateUsage(self):
+		self.totalUsage.updateFrom([hel.usageStatistics for hel in self.elements.all()]+[hcon.usageStatistics for hcon in self.connections.all()])
+
+	def updateAccountingData(self):
 		logging.logMessage("accounting_sync begin", category="host", name=self.name)		
 		data = self.getProxy().accounting_statistics(type="5minutes", after=self.accountingTimestamp-900)
 		for el in self.elements.all():
@@ -423,7 +435,7 @@ class Host(attributes.Mixin, models.Model):
 				continue
 			logging.logMessage("host_records", category="accounting", host=self.name, records=data["connections"][str(con.num)], object=("connection", con.id))		
 			con.updateAccountingData(data["connections"][str(con.num)])
-		self.accountingTimestamp=now
+		self.accountingTimestamp=time.time()
 		self.save()
 		logging.logMessage("accounting_sync end", category="host", name=self.name)		
 	
@@ -445,7 +457,7 @@ class Host(attributes.Mixin, models.Model):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in self.connections.all()]:
-			data = {"type": type_, "onhost_id": obj.id, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
+			data = {"type": type_, "onhost_id": obj.num, "element_id": None, "connection_id": None, "topology_id": None, "state": obj.state, "type": obj.type}
 			if obj.topology_element:
 				tel = obj.topology_element
 				data["element_id"] = tel.id
@@ -470,6 +482,7 @@ class Host(attributes.Mixin, models.Model):
 				self.getProxy().resource_remove(res["id"])
 		except:
 			pass
+		#self.totalUsage will be deleted automatically
 		self.delete()
 
 	def modify(self, attrs):
@@ -633,6 +646,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -650,6 +665,8 @@ class HostElement(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -751,6 +768,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -768,6 +787,8 @@ class HostConnection(attributes.Mixin, models.Model):
 			if f.faultCode == fault.UNKNOWN_OBJECT:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
+			if f.faultCode == fault.INVALID_STATE:
+				self.updateInfo()
 			if f.faultCode != fault.USER_ERROR:
 				self.host.incrementErrors()
 			raise
@@ -955,6 +976,7 @@ def synchronizeHost(host):
 		try:
 			host.update()
 			host.synchronizeResources()
+			host.updateAccountingData()
 		except:
 			logging.logException(host=host.name)
 			print "Error updating information from %s" % host

@@ -3,6 +3,7 @@
 }
 #menu .ui-ribbon-panel ul {
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
 }
 #menu li.ui-ribbon-group {
@@ -35,6 +36,10 @@ p.tutorialCommand {
 div.windowHelp {
 	float:right;
 	cursor:pointer;
+}
+
+.ui-icon {
+	background-size: contain;
 }
 
 .icon-22x22 {

@@ -255,8 +255,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			"timeout": self.timeout
 		}
 		
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.totalUsage for el in self.getElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.totalUsage for el in self.getElements()]
 								 + [con.totalUsage for con in self.getConnections()])
 
 	def __str__(self):

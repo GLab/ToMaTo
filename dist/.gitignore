@@ -21,6 +21,5 @@ ipspy/ipspy/debian/files
 hostserver/tomato-hostserver/debian/files
 hostserver/tomato-hostserver/debian/tomato-hostserver
 kernel/pve-kernel-*
-websockify/websockify*
 nlxtp_guest_modules/nlxtp-guest-modules*
 repository
