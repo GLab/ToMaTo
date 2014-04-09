@@ -275,10 +275,10 @@ class User(attributes.Mixin, models.Model):
 			from_ = "%s <%s>" % (fromUser.realname or fromUser.name, fromUser.email) 
 		mail.send("%s <%s>" % (self.realname or self.name, self.email), subject, message, from_=from_)
 		
-	def updateUsage(self, now):
+	def updateUsage(self):
 		from .. import topology
 		#FIXME: do something useful with topologies with multiple owners
-		self.totalUsage.updateFrom(now, [top.totalUsage for top in topology.getAll(permissions__entries__user=self, permissions__entries__role="owner")])
+		self.totalUsage.updateFrom([top.totalUsage for top in topology.getAll(permissions__entries__user=self, permissions__entries__role="owner")])
 		
 	def __str__(self):
 		return self.__unicode__()

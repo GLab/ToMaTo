@@ -479,8 +479,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		return info
 
 		
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])
 		
 		
