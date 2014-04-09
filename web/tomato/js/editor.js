@@ -3248,6 +3248,7 @@ var IconElement = Element.extend({
 		this.rect.remove();
 	},
 	paintUpdate: function() {
+		if (! this.icon) return;
 		var pos = this.getAbsPos();
 		this.icon.attr({src: this.iconUrl(), x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
