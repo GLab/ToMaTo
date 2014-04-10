@@ -18,6 +18,7 @@
 from .. import elements, scheduler
 import generic, time
 from ..lib import util #@UnresolvedImport
+from . import getLock
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
@@ -50,7 +51,8 @@ class OpenVZ_Interface(generic.VMInterface):
 @util.wrap_task
 def syncRexTFV():
 	for e in OpenVZ.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
-		e.updateInfo()
+		with getLock(e):
+			e.updateInfo()
 
 scheduler.scheduleRepeated(1, syncRexTFV)
 	
