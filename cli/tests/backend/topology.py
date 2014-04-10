@@ -1,12 +1,29 @@
 from lib import testCase, testSuite, unicodeTestString, createStarTopology
 
-@testCase("api.topology_permissions", withoutTopology=True)
+def setUp(name):
+	print "Creating topology..."
+	topInfo = topology_create()
+	topId = topInfo["id"]
+	print "Topology ID: %d" % topId
+	topology_modify(topId, {"name": "Test: %s" % name})
+	return topId
+
+def tearDown(topId):
+	if not topId:
+		return
+	print "Destroying topology..."
+	topology_action(topId, "destroy")
+	print "Removing topology..."
+	topology_remove(topId)
+	print "Done"
+
+@testCase("api.topology_permissions")
 def testTopologyPermissions():
 	print "Calling topology_permissions..."
 	res = topology_permissions()
 	assert "owner" in res, "Permissions did not contain owner"
 
-@testCase("api.topology_permissions")
+@testCase("api.topology_modify", setUp=setUp, tearDown=tearDown)
 def testTopologyModify(topId):
 	print "Changing name of topology..."
 	top = topology_info(topId)
@@ -27,13 +44,13 @@ def testTopologyModify(topId):
 	top = topology_modify(topId, {"_unicode": unicodeTestString})
 	assert top["attrs"]["_unicode"] == unicodeTestString, "Unicode string has been altered"
 
-@testCase("api.topology_info")
+@testCase("api.topology_info", setUp=setUp, tearDown=tearDown)
 def testTopologyInfo(topId):
 	createStarTopology(topId)
 	print "Calling topology_info..."
 	top = topology_info(topId)
 	
-@testCase("api.topology_action")
+@testCase("api.topology_action", setUp=setUp, tearDown=tearDown)
 def testTopologyAction(topId):
 	createStarTopology(topId)
 	print "Calling action prepare..."
@@ -45,20 +62,20 @@ def testTopologyAction(topId):
 	print "Calling action destroy..."
 	topology_action(topId, "destroy")
 
-@testCase("api.topology_list", withoutTopology=True)
+@testCase("api.topology_list")
 def testTopologyList():
 	res = topology_list()
 	assert isinstance(res, list), "List was no list"
 	assert len(res) >= 1, "List was empty" 
 
-@testCase("api.topology_export")
+@testCase("api.topology_export", setUp=setUp, tearDown=tearDown)
 def testTopologyExport(topId):
 	createStarTopology(topId)
 	print "Exporting topology..."
 	res = topology_export(topId)
 	assert res, "Exporting topology did not return anything"
 
-@testCase("api.topology_import")
+@testCase("api.topology_import", setUp=setUp, tearDown=tearDown)
 def testTopologyImport(topId):
 	createStarTopology(topId, 3)
 	print "Exporting topology..."

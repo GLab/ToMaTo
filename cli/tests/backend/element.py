@@ -1,6 +1,8 @@
 from lib import testCase, testSuite, unicodeTestString
 
-@testCase("api.element_create()")
+from topology import setUp, tearDown
+
+@testCase("api.element_create()", setUp=setUp, tearDown=tearDown)
 def testElementCreate(topId):
 	print "Creating simple element..."
 	el1 = element_create(topId, "openvz")
@@ -17,7 +19,7 @@ def testElementCreate(topId):
 	el3 = element_create(topId, "openvz_interface", el2_id)
 	assert el3["parent"] == el2_id
 	 
-@testCase("api.element_modify()")
+@testCase("api.element_modify()", setUp=setUp, tearDown=tearDown)
 def testElementModify(topId):
 	print "Creating element..."
 	el = element_create(topId, "openvz")
@@ -42,7 +44,7 @@ def testElementModify(topId):
 	el = element_info(el_id)
 	assert el["attrs"]["_unicode"] == unicodeTestString, "Unicode string has been altered"
 
-@testCase("api.element_action()")
+@testCase("api.element_action()", setUp=setUp, tearDown=tearDown)
 def testElementAction(topId):
 	print "Creating element..."
 	el = element_create(topId, "openvz")
@@ -57,7 +59,7 @@ def testElementAction(topId):
 	el = element_info(el_id)
 	assert el["state"] == "created"
 
-@testCase("api.element_remove()")
+@testCase("api.element_remove()", setUp=setUp, tearDown=tearDown)
 def testElementRemove(topId):
 	print "Creating element..."
 	el = element_create(topId, "openvz")
@@ -67,7 +69,7 @@ def testElementRemove(topId):
 	top = topology_info(topId)
 	assert not top["elements"], "Element exists after remove"
 
-@testCase("api.element_info()")
+@testCase("api.element_info()", setUp=setUp, tearDown=tearDown)
 def testElementInfo(topId):
 	print "Creating element..."
 	el = element_create(topId, "openvz")
@@ -82,7 +84,7 @@ def testElementInfo(topId):
 	print "Fetching element info..."
 	el_info = element_info(el_id, fetch=True)
 
-@testCase("api.element_usage()")
+@testCase("api.element_usage()", setUp=setUp, tearDown=tearDown)
 def testElementUsage(topId):
 	print "Creating element..."
 	el = element_create(topId, "openvz")

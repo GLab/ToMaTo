@@ -1,7 +1,7 @@
 from lib import testCase, testSuite
 
 @testCase("dummy")
-def testDummy(topId):
+def testDummy():
 	print "Doing something important"
 	assert False, "Do not use this dummy test"
 	

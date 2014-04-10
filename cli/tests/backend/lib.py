@@ -43,17 +43,17 @@ class Result:
 	SUCCESS = 0
 	FAILURE = 1
 	SKIPPED = 2
-    
-def testCase(name, topologyName=None, withoutTopology=False, requiredFlags=[]):
+	
+def testCase(name, setUp=None, tearDown=None, requiredFlags=[], *args, **kwargs):
 	def wrap(method):
 		def call(automated=False, *args, **kwargs):
-			import time
-			topId = None
+			import time, traceback
 			print "=" * 50
 			print "Test case: %s" % name
 			print "-" * 50
 			result = Result.FAILURE
 			start = time.time()
+			setUpResult = None
 			try:
 				if requiredFlags:
 					flags = account_info()["flags"]
@@ -61,31 +61,36 @@ def testCase(name, topologyName=None, withoutTopology=False, requiredFlags=[]):
 						if not flag in flags:
 							print "Skipping test because of missing flag: %s" % flag
 							result = Result.SKIPPED
-							return result
-				if not withoutTopology:
-					print "Creating topology..."
-					topInfo = topology_create()
-					topId = topInfo["id"]
-					print "Topology ID: %d" % topId
-					topology_modify(topId, {"name": topologyName or "Test: %s" % name})
-				if withoutTopology:
-					method(*args, **kwargs)
-				else:
-					method(topId, *args, **kwargs)
-				result = Result.SUCCESS
+							return
+				try:
+					setUpResult = setUp(name, *args, **kwargs) if setUp else None
+				except:
+					print "-" * 50
+					print "Setup failed"
+					traceback.print_exc()
+					result = Result.FAILURE
+					return
+				start = time.time()
+				try:
+					method(setUpResult, *args, **kwargs)
+					result = Result.SUCCESS
+				except:
+					print "-" * 50
+					traceback.print_exc()
+					if not automated:
+						raw_input("Press enter to continue")
+				try:
+					if tearDown:
+						tearDown(setUpResult)
+				except:
+					print "-" * 50
+					print "Teardown failed, some resources are still used"
+					traceback.print_exc()
+					result = Result.FAILURE
+					return
 			except:
-				print "-" * 50
-				import traceback
-				traceback.print_exc()
-				if not automated:
-					raw_input("Press enter to remove topology")
+				pass
 			finally:
-				if topId:
-					print "Destroying topology..."
-					topology_action(topId, "destroy")
-					print "Removing topology..."
-					topology_remove(topId)
-					print "Done"
 				print "-" * 50
 				if result == Result.SUCCESS:
 					print "Test succeeded", "duration: %.1f sec" % (time.time() - start)
@@ -94,7 +99,7 @@ def testCase(name, topologyName=None, withoutTopology=False, requiredFlags=[]):
 				if result == Result.FAILURE:
 					print "TEST FAILED", "duration: %.1f sec" % (time.time() - start)
 				print "=" * 50
-			return result
+				return result
 		return call
 	return wrap
 

@@ -1,10 +1,12 @@
-from lib import testCase
+from lib import testCase, testSuite
+
+from topology import setUp, tearDown
 
 @testCase("Dummy Test")
-def testDummy(topId):
+def testDummy(_):
 	pass
 
-@testCase("Simple Topology Lifecycle")
+@testCase("Simple Topology Lifecycle", setUp=setUp, tearDown=tearDown)
 def testSimpleTopologyLifecycle(topId):
 	print "Creating simple topology..."
 	kvm = element_create(topId, "kvmqm")
@@ -25,6 +27,10 @@ def testSimpleTopologyLifecycle(topId):
 	print "Destroying topology..."
 	topology_action(topId, "destroy")
 	
+tests = [
+	testDummy,
+	testSimpleTopologyLifecycle
+]
+	
 if __name__ == "__main__":
-	testDummy()
-	testSimpleTopologyLifecycle()
+	testSuite(tests)
