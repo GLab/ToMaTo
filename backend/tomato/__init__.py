@@ -112,7 +112,7 @@ def _stopHelper():
 	stopped.wait(10)
 	if stopped.isSet():
 		return
-	print >>sys.stderr, "Ok last change, killing process in 10 seconds..."
+	print >>sys.stderr, "Ok last chance, killing process in 10 seconds..."
 	stopped.wait(10)
 	if stopped.isSet():
 		return
