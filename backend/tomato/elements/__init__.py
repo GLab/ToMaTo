@@ -45,7 +45,7 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
-class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
+class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
 	type = models.CharField(max_length=30, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
@@ -110,7 +110,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		return self.
 		"""
 		try:
-			return getattr(self, self.type)
+			return getattr(self, self.type).reload()
 		except:
 			pass
 		fault.raise_("Failed to cast element #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
@@ -247,6 +247,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		@type params: dict
 		"""
 		with getLock(self):
+			self.reload()
 			return self._action(action, params)
 		
 	def _action(self, action, params):
