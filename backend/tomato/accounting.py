@@ -147,7 +147,7 @@ class UsageStatistics(attributes.Mixin, models.Model):
 				
 	def updateFrom(self, sources):
 		ts = time.time() + 300
-		while True:
+		for _ in xrange(KEEP_RECORDS["5minutes"]):
 			ts -= 300
 			begin, end = _lastRange("5minutes", ts)
 			if self.getRecords(type="5minutes", end=end).exists():
