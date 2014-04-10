@@ -18,7 +18,7 @@
 from .. import elements, scheduler
 import generic, time
 from ..lib import util #@UnresolvedImport
-from ..lib.attributes import Attr #@UnresolvedImport
+from . import getLock
 
 class KVMQM(generic.VMElement):
 	TYPE = "kvmqm"
@@ -43,7 +43,8 @@ class KVMQM_Interface(generic.VMInterface):
 @util.wrap_task
 def syncRexTFV():
 	for e in KVMQM.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
-		e.updateInfo()
+		with getLock(e):
+			e.updateInfo()
 		
 scheduler.scheduleRepeated(1, syncRexTFV)
 	

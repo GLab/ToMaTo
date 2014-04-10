@@ -51,7 +51,7 @@ starting_list_lock = threading.RLock()
 stopping_list = set()
 stopping_list_lock = threading.RLock()
 
-class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
+class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
@@ -100,7 +100,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		return el1.CAP_CONNECTABLE and el2.CAP_CONNECTABLE
 		
 	def upcast(self):
-		return self
+		return self.reload()
 	
 	def mainConnection(self):
 		return self.connection1
