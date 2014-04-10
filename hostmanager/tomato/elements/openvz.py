@@ -225,7 +225,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
 		self.vmid = self.getResource("vmid")
 		self.vncport = self.getResource("port")
-		self.websocket_port = self.getResource("port")
+		self.websocket_port = self.getResource("port", config.WEBSOCKIFY_PORT_BLACKLIST)
 		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 	

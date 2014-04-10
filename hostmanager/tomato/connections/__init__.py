@@ -303,10 +303,10 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			"elements": sorted(els), #sort elements so that first one is from and second one is to
 		}
 		
-	def getResource(self, type_):
+	def getResource(self, type_, blacklist=[]):
 		from .. import resources #needed to break import cycle
-		return resources.take(type_, self)
-	
+		return resources.take(type_, self, blacklist=blacklist)
+			
 	def returnResource(self, type_, num):
 		from .. import resources #needed to break import cycle
 		resources.give(type_, num, self)
