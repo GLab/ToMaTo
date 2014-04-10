@@ -87,6 +87,11 @@ def testTopologyImport(topId):
 	assert len(elements) == 10, "Imported topology was malformed"
 	assert len(connections) == 3, "Imported topology was malformed"
 	
+@testCase("api.topology_usage", setUp=setUp, tearDown=tearDown)
+def testTopologyUsage(topId):
+	print "Fetching resource statistics..."
+	usage = topology_usage(topId)
+	
 tests = [
 	testTopologyPermissions,
 	testTopologyModify,
@@ -94,7 +99,8 @@ tests = [
 	testTopologyAction,
 	testTopologyList,
 	testTopologyExport,
-	testTopologyImport
+	testTopologyImport,
+	testTopologyUsage,
 ]
 
 if __name__ == "__main__":
