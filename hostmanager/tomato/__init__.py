@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, sys, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
@@ -83,9 +83,36 @@ def reload_(*args):
 	reload(config)
 	logging.openDefault(config.LOG_FILE)
 
+def _printStackTraces():
+	import traceback
+	for threadId, stack in sys._current_frames().items():
+		print >>sys.stderr, "ThreadID: %s" % threadId
+		for filename, lineno, name, line in traceback.extract_stack(stack):
+			print >>sys.stderr, '\tFile: "%s", line %d, in %s' % (filename, lineno, name)
+			if line:
+				print >>sys.stderr, "\t\t%s" % (line.strip())
+	
+def _stopHelper():
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Stopping takes long, waiting some more time..."
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Ok last chance, killing process in 10 seconds..."
+	stopped.wait(10)
+	if stopped.isSet():
+		return
+	print >>sys.stderr, "Some threads are still running:"
+	_printStackTraces()
+	print >>sys.stderr, "Killing process..."
+	process.kill(os.getpid(), force=True)
+	
 def stop(*args):
 	try:
 		print >>sys.stderr, "Shutting down..."
+		thread.start_new_thread(_stopHelper, ())
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()
