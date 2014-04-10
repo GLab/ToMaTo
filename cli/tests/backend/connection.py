@@ -20,7 +20,7 @@ def prepare(topId, createConnection=True):
 	else:
 		return el1_id, el2_id, if1_id, if2_id, None
 
-@testCase('api.connection_create()', setUp=setUp, tearDown=tearDown)
+@testCase('api.connection_create', setUp=setUp, tearDown=tearDown)
 def testConnectionCreate(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId, createConnection=False)
 	print "Creating a connection..."
@@ -29,14 +29,14 @@ def testConnectionCreate(topId):
 	con_id = con["id"]
 	assert con == connection_info(con_id), "Return value of connection_create was different from connection_info"
 	
-@testCase('api.connection_remove()', setUp=setUp, tearDown=tearDown)
+@testCase('api.connection_remove', setUp=setUp, tearDown=tearDown)
 def testConnectionRemove(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId)
 	connection_remove(con_id)
 	top = topology_info(topId)
 	assert not top["connections"], "Connection exists after connection_remove"
 
-@testCase("api.connection_info()", setUp=setUp, tearDown=tearDown)
+@testCase("api.connection_info", setUp=setUp, tearDown=tearDown)
 def testConnectionInfo(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId, createConnection=False)
 	print "Creating a connection..."
@@ -48,7 +48,7 @@ def testConnectionInfo(topId):
 	print "Fetching connection info..."
 	con_info = connection_info(con_id, fetch=True)
 
-@testCase("api.connection_action()", setUp=setUp, tearDown=tearDown)
+@testCase("api.connection_action", setUp=setUp, tearDown=tearDown)
 def testConnectionAction(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId)
 	print "Enabling packet capturing on connection..."
@@ -60,13 +60,13 @@ def testConnectionAction(topId):
 	print "Executing action download_grant on connection..."
 	connection_action(con_id, "download_grant")
 
-@testCase("api.connection_usage()", setUp=setUp, tearDown=tearDown)
+@testCase("api.connection_usage", setUp=setUp, tearDown=tearDown)
 def testConnectionUsage(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId)
 	print "Fetching resource statistics..."
 	usage = connection_usage(con_id)
 
-@testCase("api.connection_modify()", setUp=setUp, tearDown=tearDown)
+@testCase("api.connection_modify", setUp=setUp, tearDown=tearDown)
 def testConnectionModify(topId):
 	el1_id, el2_id, if1_id, if2_id, con_id = prepare(topId)
 	con = connection_info(con_id)

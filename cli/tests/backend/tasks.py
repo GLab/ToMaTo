@@ -25,32 +25,32 @@ def runTask(method):
 	assert ret, "Task did not execute successfully"
 	
 
-@testCase("tomato.accounting.aggregate()", requiredFlags=["global_admin"])
-def testAccountingTask():
+@testCase("tomato.accounting.aggregate", requiredFlags=["global_admin"])
+def testAccountingTask(_):
 	runTask("tomato.accounting.aggregate")
 	 
-@testCase("tomato.host.synchronize()", requiredFlags=["global_admin"])
-def testHostSyncTask():
+@testCase("tomato.host.synchronize", requiredFlags=["global_admin"])
+def testHostSyncTask(_):
 	runTask("tomato.host.synchronize")
 
-@testCase("tomato.host.synchronizeComponents()", requiredFlags=["global_admin"])
-def testHostComponentSyncTask():
+@testCase("tomato.host.synchronizeComponents", requiredFlags=["global_admin"])
+def testHostComponentSyncTask(_):
 	runTask("tomato.host.synchronizeComponents")
 
-@testCase("tomato.auth.cleanup()", requiredFlags=["global_admin"])
-def testAuthCleanupTask():
+@testCase("tomato.auth.cleanup", requiredFlags=["global_admin"])
+def testAuthCleanupTask(_):
 	runTask("tomato.auth.cleanup")
 
-@testCase("tomato.topology.timeout_task()", requiredFlags=["global_admin"])
-def testTopologyTimeoutTask():
+@testCase("tomato.topology.timeout_task", requiredFlags=["global_admin"])
+def testTopologyTimeoutTask(_):
 	runTask("tomato.topology.timeout_task")
 
-@testCase("tomato.link.taskRun()", requiredFlags=["global_admin"])
-def testLinkStatisticsTask():
+@testCase("tomato.link.taskRun", requiredFlags=["global_admin"])
+def testLinkStatisticsTask(_):
 	runTask("tomato.link.taskRun")
 
-@testCase("tomato.elements.*.syncRexTFV()", requiredFlags=["global_admin"])
-def testRexTFVTask():
+@testCase("tomato.elements.*.syncRexTFV", requiredFlags=["global_admin"])
+def testRexTFVTask(_):
 	runTask("tomato.elements.openvz.syncRexTFV")
 	runTask("tomato.elements.kvmqm.syncRexTFV")
 

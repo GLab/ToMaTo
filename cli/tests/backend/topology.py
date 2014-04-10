@@ -18,7 +18,7 @@ def tearDown(topId):
 	print "Done"
 
 @testCase("api.topology_permissions")
-def testTopologyPermissions():
+def testTopologyPermissions(_):
 	print "Calling topology_permissions..."
 	res = topology_permissions()
 	assert "owner" in res, "Permissions did not contain owner"
@@ -63,7 +63,7 @@ def testTopologyAction(topId):
 	topology_action(topId, "destroy")
 
 @testCase("api.topology_list")
-def testTopologyList():
+def testTopologyList(_):
 	res = topology_list()
 	assert isinstance(res, list), "List was no list"
 	assert len(res) >= 1, "List was empty" 
