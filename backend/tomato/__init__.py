@@ -94,6 +94,16 @@ def reload_(*args):
 	#stopRPCserver()
 	#startRPCserver()
 
+def _printStackTraces():
+	import traceback
+	for threadId, stack in sys._current_frames().items():
+		print >>sys.stderr, "ThreadID: %s" % threadId
+		for filename, lineno, name, line in traceback.extract_stack(stack):
+			print >>sys.stderr, '\tFile: "%s", line %d, in %s' % (filename, lineno, name)
+			if line:
+				print >>sys.stderr, "\t\t%s" % (line.strip())
+	
+
 def _stopHelper():
 	stopped.wait(10)
 	if stopped.isSet():
@@ -106,6 +116,8 @@ def _stopHelper():
 	stopped.wait(10)
 	if stopped.isSet():
 		return
+	print >>sys.stderr, "Some threads are still running:"
+	_printStackTraces()
 	print >>sys.stderr, "Killing process..."
 	process.kill(os.getpid(), force=True)
 
