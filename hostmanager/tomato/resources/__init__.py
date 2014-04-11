@@ -35,11 +35,13 @@ def give(type_, num, owner):
 		fault.raise_("Owner must either be Element or Connection, was %s" % owner.__class__.__name__, fault.INTERNAL_ERROR)
 	instance.delete()
 
-def take(type_, owner):
+def take(type_, owner, blacklist=[]):
 	range_ = config.RESOURCES.get(type_)
 	fault.check(range_, "No resource entry for type %s found", type_, fault.INTERNAL_ERROR)
 	for try_ in xrange(0, 100): 
 		num = random.choice(range_)
+		if num in blacklist:
+			continue
 		try:
 			ResourceInstance.objects.get(type=type_, num=num)
 			continue

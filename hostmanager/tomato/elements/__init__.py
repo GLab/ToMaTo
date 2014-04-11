@@ -306,8 +306,8 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 			ch.tearDown()
 		self.remove()			
 			
-	def getResource(self, type_):
-		return resources.take(type_, self)
+	def getResource(self, type_, blacklist=[]):
+		return resources.take(type_, self, blacklist=blacklist)
 	
 	def returnResource(self, type_, num):
 		resources.give(type_, num, self)
