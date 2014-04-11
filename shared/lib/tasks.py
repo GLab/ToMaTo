@@ -27,6 +27,14 @@ class Task:
 			self.next = time.time() + self.timeout
 		else:
 			self.next = 0
+	def info(self):
+		return {
+			"method": self.fn.__module__+"."+self.fn.__name__,
+			"busy": self.busy,
+			"repeated": self.repeated,
+			"timeout": self.timeout,
+			"next": self.next
+		}
 
 class TaskScheduler(threading.Thread):
 	def __init__(self, maxLateTime=2.0, maxWorkers=5, minWorkers=1):
@@ -82,18 +90,18 @@ class TaskScheduler(threading.Thread):
 				if self.stopped:
 					break
 			taskId, _ = self._nextTask()
-			self._executeTask(taskId)
+			self.executeTask(taskId)
 		with self.workersLock:
 			self.waitFrac = 0.5
 			self.workers -= 1
 			if not self.workers:			
 				self.stopped_confirm.set()
-	def _executeTask(self, taskId):
+	def executeTask(self, taskId, force=False):
 		with self.tasksLock:
 			if not taskId in self.tasks:
 				return
 			task = self.tasks[taskId]
-			if task.next > time.time():
+			if task.next > time.time() and not force:
 				return
 			if task.busy:
 				return
@@ -103,6 +111,7 @@ class TaskScheduler(threading.Thread):
 			task.busy = False
 			if not task.repeated:
 				del self.tasks[taskId]
+		return True
 	def run(self):
 		with self.workersLock:
 			self.workers += 1
@@ -131,3 +140,11 @@ class TaskScheduler(threading.Thread):
 	def cancelTask(self, taskId):
 		with self.tasksLock:
 			del self.tasks[taskId]
+	def info(self):
+		tasks = []
+		with self.tasksLock:
+			for id_, t in self.tasks.iteritems():
+				info = t.info()
+				info["id"] = id_
+				tasks.append(info)
+		return tasks

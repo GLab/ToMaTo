@@ -108,6 +108,7 @@ def commit_after(fn):
 		finally:
 			if transaction.is_dirty():
 				transaction.commit()
+	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)

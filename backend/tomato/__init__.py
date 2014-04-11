@@ -60,7 +60,7 @@ def login(credentials, sslCert):
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
-starttime = None
+starttime = time.time()
 
 from models import *
 	
