@@ -26,7 +26,7 @@ from elements.tinc import Tinc_VPN, Tinc_Endpoint #@UnusedImport
 from elements.external_network import External_Network_Endpoint, External_Network #@UnusedImport
 from elements.udp import UDP_Endpoint #@UnusedImport
 from connections import Connection #@UnusedImport
-from resources import Resource, ResourceInstance #@UnusedImport
+from resources import Resource #@UnusedImport
 from resources.template import Template #@UnusedImport
 from resources.network import Network #@UnusedImport
 from resources.profile import Profile #@UnusedImport
