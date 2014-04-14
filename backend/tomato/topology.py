@@ -31,7 +31,7 @@ class TimeoutStep:
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	timeout = models.FloatField()
 	timeout_step = models.IntegerField(default=TimeoutStep.INITIAL)
 	attrs = db.JSONField()
@@ -211,7 +211,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)
 		self.permissions.delete()
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		self.delete()
 
 	def getElements(self):

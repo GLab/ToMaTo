@@ -118,13 +118,13 @@ class User(attributes.Mixin, models.Model):
 	from ..host import Organization
 	name = models.CharField(max_length=255)
 	origin = models.CharField(max_length=50)
-	organization = models.ForeignKey(Organization, null=False, related_name="users")
+	organization = models.ForeignKey(Organization, related_name="users")
 	attrs = db.JSONField()
 	password = models.CharField(max_length=250, null=True)
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
-	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+')
-
+	totalUsage = models.OneToOneField(accounting.UsageStatistics, related_name='+', on_delete=models.PROTECT)
+	quota = models.OneToOneField(accounting.Quota, null=True, related_name='+', on_delete=models.PROTECT)
 	
 	realname = attributes.attribute("realname", unicode)
 	email = attributes.attribute("email", unicode)
@@ -144,6 +144,8 @@ class User(attributes.Mixin, models.Model):
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
 		user.totalUsage = accounting.UsageStatistics.objects.create()
+		user.quota = accounting.Quota()
+		user.quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
 		user.last_login = time.time()
 		return user
 	
@@ -209,6 +211,8 @@ class User(attributes.Mixin, models.Model):
 		fault.check(orga, "No organization with name %s" % value)
 		self.organization=orga
 		
+	def modify_quota(self, value):
+		self.quota.modify(value)
 
 	def isAdminOf(self, user):
 		if self.hasFlag(Flags.GlobalAdmin):
@@ -261,6 +265,8 @@ class User(attributes.Mixin, models.Model):
 		if not includeInfos:
 			info["email"] = None
 			info["flags"] = None
+		else:
+			info["quota"] = self.quota.info()
 		return info
 		
 	def sendMail(self, subject, message, fromUser=None):
@@ -279,6 +285,17 @@ class User(attributes.Mixin, models.Model):
 		from .. import topology
 		#FIXME: do something useful with topologies with multiple owners
 		self.totalUsage.updateFrom([top.totalUsage for top in topology.getAll(permissions__entries__user=self, permissions__entries__role="owner")])
+		
+	def updateQuota(self):
+		self.quota.update(self.totalUsage)
+		
+	def enforceQuota(self):
+		if not self.hasFlag(Flags.NewAccount):
+			if self.quota.getFactor() >= 1.0:
+				self.addFlag(Flags.OverQuota)
+			else:
+				self.removeFlag(Flags.OverQuota)
+		#FIXME: send warning emails, etc
 		
 	def __str__(self):
 		return self.__unicode__()
@@ -386,9 +403,11 @@ def login(username, password):
 	return stored
 
 def remove(user):
+	usage = user.totalUsage
+	quota = user.quota
 	user.delete()
-	#user.totalUsage will be deleted automatically
-
+	usage.remove()
+	quota.remove()
 
 def register(username, password, organization, attrs={}, provider=""):
 	for prov in providers:

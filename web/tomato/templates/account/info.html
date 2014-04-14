@@ -2,6 +2,8 @@
 
 {% block content %}
 
+{% load tomato %}
+
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
 <form>
   <button type="submit" formaction="{%url account_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Accounts</button>
@@ -59,6 +61,19 @@ While waiting for the account activation you can create and design topologies bu
 	<tr>
 		<th>Reason for registering:</th>
 		<td>{{account.reason}}</td>
+	</tr>
+{% endif %}
+{% if account.quota %}
+	<tr>
+		<th>Quota:</th>
+		<td>
+			<dl class="dl-horizontal">
+				<dt>CPU time</dt><dd>{{account.quota.used.cputime|toduration}} / {{account.quota.monthly.cputime|toduration}} ({{account.quota.used.cputime|percentage:account.quota.monthly.cputime}})</dd>
+				<dt>Memory</dt><dd>{{account.quota.used.memory|filesizeformat}} / {{account.quota.monthly.memory|filesizeformat}} ({{account.quota.used.memory|percentage:account.quota.monthly.memory}})</dd>
+				<dt>Disk space</dt><dd>{{account.quota.used.diskspace|filesizeformat}} / {{account.quota.monthly.diskspace|filesizeformat}} ({{account.quota.used.diskspace|percentage:account.quota.monthly.diskspace}})</dd>
+				<dt>Traffic</dt><dd>{{account.quota.used.traffic|filesizeformat}} / {{account.quota.monthly.traffic|filesizeformat}} ({{account.quota.used.traffic|percentage:account.quota.monthly.traffic}})</dd>
+			</dl>
+		</td>
 	</tr>
 {% endif %}
 </table>

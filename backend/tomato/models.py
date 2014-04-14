@@ -30,7 +30,7 @@ from resources import Resource #@UnusedImport
 from resources.template import Template #@UnusedImport
 from resources.network import Network #@UnusedImport
 from resources.profile import Profile #@UnusedImport
-from accounting import UsageStatistics, UsageRecord #@UnusedImport
+from accounting import Usage, UsageStatistics, UsageRecord, Quota #@UnusedImport
 from link import LinkMeasurement #@UnusedImport
 from host import Host
 

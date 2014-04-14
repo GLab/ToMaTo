@@ -55,7 +55,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	#elements: [elements.Element]
 	connection1 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
@@ -274,7 +274,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 			el.connection = None
 			el.save()
 		self.elements.clear() #Important, otherwise elements will be deleted
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
