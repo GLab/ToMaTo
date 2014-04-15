@@ -136,7 +136,7 @@
 	{
 		text: '<p class="tutorialExplanation">Those pings should have worked and display a new line every second.</p>\
 		<p class="tutorialExplanation">In its default setting the OpenFlow switch is configured to behave like a normal learning switch. We are now going to change this behaviour and set it secure mode. This means that if there is no controller that manages the switch, it will block all new flows.</p>\
-		<p class="tutorialExplanation">You can set the switch to secure mode using thwe following command:<pre><tt>ovs-vsctl set-fail-mode br0 secure</tt></pre>\
+		<p class="tutorialExplanation">You can set the switch to secure mode using the following command:<pre><tt>ovs-vsctl set-fail-mode br0 secure</tt></pre>\
 		Click on continue when you are done.</p>\
 		<br/>\
 		<p class="tutorialCommand">Set the <i>fail-mode</i> on the switch to <i>secure</i> and save that setting.</p>',
@@ -176,7 +176,7 @@
 	{
 		text: '<p class="tutorialExplanation">Before we start the switch and the controller again, we will first configure the IP address of the controller.</p>\
 		<br/>\
-		<p class="tutorialCommand">Configure the controller to use the IP <i>10.0.0.4</i>.</p>',
+		<p class="tutorialCommand">Configure the controller to use the IP <i>10.0.0.4/24</i>.</p>',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "modify",
