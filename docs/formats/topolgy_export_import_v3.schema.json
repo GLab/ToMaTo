@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "file_information": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "enum": [3]
+        }
+      },
+      "additionalProperties": false,
+      "required": ["version"]
+    },
+    "topology": {
+      "type": "object",
+      "properties": {
+        "connections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              },
+              "elements": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "uniqueItems": true
+              },
+              "attrs": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true,
+            "required": ["elements", "type", "id", "attrs"]
+          }
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              },
+              "parent": {
+                "type": ["number", "null"]
+              },
+              "attrs": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true,
+            "required": ["id", "parent", "type", "attrs"]
+          }
+        },
+        "attrs": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false,
+      "required": ["connections", "elements", "attrs"]
+    }
+  },
+  "required": ["file_information", "topology"]
+}
