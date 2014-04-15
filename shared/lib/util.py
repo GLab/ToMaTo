@@ -221,3 +221,17 @@ def filterStr(s, allowedChars=string.ascii_letters+string.digits+"_", substitute
 			if substitute:
 				res += substitute
 	return res
+
+def getYearMonth(ts):
+	import datetime
+	d = datetime.datetime.utcfromtimestamp(time.time())
+	return (d.year, d.month)
+
+def startOfMonth(year, month):
+	return time.mktime((year, month, 1, 1, 0, 0, 0, 0, 0))
+
+def secondsInMonth(year, month):
+	start = startOfMonth(year, month)
+	end = startOfMonth(year, month+1) if month < 12 else startOfMonth(year+1, 1)
+	return end-start
+

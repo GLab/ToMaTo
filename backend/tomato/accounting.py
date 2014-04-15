@@ -17,7 +17,7 @@
 
 from django.db import models
 
-from lib import db, attributes, util, logging #@UnresolvedImport
+from lib import db, attributes, util #@UnresolvedImport
 from lib.decorators import *
 from datetime import datetime, timedelta
 import time
@@ -70,18 +70,38 @@ def _combine(begin, end, records):
 	combined = Usage()
 	if not measurements:
 		return (combined, 0)
-	combined.cputime = _sum([(r.cputime, r.measurements) for r in records], measurements)
-	combined.diskspace = _avg([(r.diskspace, r.measurements) for r in records], measurements)
-	combined.memory = _avg([(r.memory, r.measurements) for r in records], measurements)
-	combined.traffic = _sum([(r.traffic, r.measurements) for r in records], measurements)
+	combined.cputime = _sum([(r.usage.cputime, r.measurements) for r in records], measurements)
+	combined.diskspace = _avg([(r.usage.diskspace, r.measurements) for r in records], measurements)
+	combined.memory = _avg([(r.usage.memory, r.measurements) for r in records], measurements)
+	combined.traffic = _sum([(r.usage.traffic, r.measurements) for r in records], measurements)
 	return (combined, measurements)
 
-class Usage:
-	def __init__(self):
-		self.cputime = 0.0
-		self.memory = 0.0
-		self.diskspace = 0.0
-		self.traffic = 0.0
+class Usage(models.Model):
+	memory = models.FloatField(default=0.0) #unit: bytes
+	diskspace = models.FloatField(default=0.0) #unit: bytes
+	traffic = models.FloatField(default=0.0) #unit: bytes
+	cputime = models.FloatField(default=0.0) #unit: cpu seconds
+
+	def init(self, cputime, diskspace, memory, traffic):
+		self.cputime = cputime
+		self.diskspace = diskspace
+		self.memory = memory
+		self.traffic = traffic
+
+	class Meta:
+		pass
+
+	def remove(self):
+		self.delete()
+
+	def info(self):
+		return {
+			"cputime": self.cputime,
+			"diskspace": self.diskspace,
+			"memory": self.memory,
+			"traffic": self.traffic
+		}
+
 
 class UsageStatistics(attributes.Mixin, models.Model):
 	#records: [UsageRecord]
@@ -96,14 +116,16 @@ class UsageStatistics(attributes.Mixin, models.Model):
 		self.save()
 		
 	def remove(self):
-		self.delete()	
+		for rec in self.records.all():
+			rec.remove()
+		self.delete()
 	
 	def info(self):
 		return dict([(t, [r.info() for r in self.getRecords(type=t)]) for t in TYPES])
-	   
+
 	def getRecords(self, **kwargs):
 		return self.records.filter(**kwargs)
-	   
+
 	def importRecords(self, data):
 		for rec in data:
 			if self.getRecords(type=rec["type"], begin=rec["begin"], end=rec["end"]).exists():
@@ -114,8 +136,9 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			usage.diskspace = rec["usage"]["diskspace"]				
 			usage.traffic = rec["usage"]["traffic"]
 			self.createRecord(type_=rec["type"], begin=rec["begin"], end=rec["end"], measurements=rec["measurements"], usage=usage)
-	   
+
 	def createRecord(self, type_, begin, end, measurements, usage):
+		usage.save()
 		record = UsageRecord()
 		record.init(self, type_, begin, end, measurements, usage)
 		record.save()
@@ -126,7 +149,8 @@ class UsageStatistics(attributes.Mixin, models.Model):
 		for type_ in TYPES:
 			records = self.getRecords(type=type_).order_by("-end")
 			keep = records[:KEEP_RECORDS[type_]]
-			records.exclude(pk__in=keep).delete()
+			for rec in records.exclude(pk__in=keep):
+				rec.remove()
 		
 	def update(self, now):
 		self.combine(now)
@@ -168,10 +192,10 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			measurements = 0
 			records = 0
 			for d in data:
-				usage.cputime += d.cputime
-				usage.traffic += d.traffic
-				usage.memory += d.memory * (d.end - d.begin) / (end-begin)
-				usage.diskspace += d.diskspace * (d.end - d.begin) / (end-begin)
+				usage.cputime += d.usage.cputime
+				usage.traffic += d.usage.traffic
+				usage.memory += d.usage.memory * (d.end - d.begin) / (end-begin)
+				usage.diskspace += d.usage.diskspace * (d.end - d.begin) / (end-begin)
 				measurements += d.measurements
 				records += 1
 			self.createRecord("5minutes", begin, end, measurements, usage)
@@ -179,16 +203,12 @@ class UsageStatistics(attributes.Mixin, models.Model):
 		self.removeOld()
 
 class UsageRecord(models.Model):
-	statistics = models.ForeignKey(UsageStatistics, related_name="records")
+	statistics = models.ForeignKey(UsageStatistics, related_name="records", on_delete=models.CASCADE)
 	type = models.CharField(max_length=10, choices=[(t, t) for t in TYPES], db_index=True) #@ReservedAssignment
 	begin = models.FloatField()
 	end = models.FloatField(db_index=True)
 	measurements = models.IntegerField()
-	#using fields to save space
-	memory = models.FloatField() #unit: bytes
-	diskspace = models.FloatField() #unit: bytes
-	traffic = models.FloatField() #unit: bytes
-	cputime = models.FloatField() #unit: cpu seconds
+	usage = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
 	
 	class Meta:
 		unique_together=(("statistics", "type", "end"),)
@@ -199,11 +219,14 @@ class UsageRecord(models.Model):
 		self.begin = begin
 		self.end = end
 		self.measurements = measurements
-		self.cputime = usage.cputime
-		self.memory = usage.memory
-		self.diskspace = usage.diskspace
-		self.traffic = usage.traffic
+		usage.save()
+		self.usage = usage
 		self.save()
+
+	def remove(self):
+		usage = self.usage
+		self.delete()
+		usage.remove()
 
 	def info(self):
 		return {
@@ -211,7 +234,96 @@ class UsageRecord(models.Model):
 			"begin": self.begin,
 			"end": self.end,
 			"measurements": self.measurements,
-			"usage": {"cputime": self.cputime, "diskspace": self.diskspace, "memory": self.memory, "traffic": self.traffic},
+			"usage": self.usage.info()
+		}
+
+class Quota(models.Model):
+	monthly = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
+	used = models.ForeignKey(Usage, related_name="+", on_delete=models.PROTECT)
+	used_time = models.FloatField()
+	continous_factor = models.FloatField()
+	
+	def init(self, cputime, memory, diskspace, traffic, continous_factor):
+		self.monthly = Usage(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
+		self.used = Usage()
+		self.used_time = time.time()
+		self.continous_factor = continous_factor
+		self.save()
+	
+	def remove(self):
+		monthly = self.monthly
+		used = self.used
+		self.delete()
+		monthly.remove()
+		used.remove()
+
+	def getFactor(self):
+		return max(self.used.cputime/self.monthly.cputime,
+				self.used.memory/self.monthly.memory,
+				self.used.diskspace/self.monthly.diskspace,
+				self.used.traffic/self.monthly.traffic)
+
+	def update(self, usageStats):
+		start_of_month = util.startOfMonth(*util.getYearMonth(time.time()))
+		if self.used_time < start_of_month:
+			self.used.cputime = 0.0
+			self.used.memory = 0.0
+			self.used.diskspace = 0.0
+			self.used.traffic = 0.0
+			self.used.save()
+			self.used_time = start_of_month
+			self.save()
+		recs = usageStats.getRecords(type="5minutes", end__gt=self.used_time)
+		factor = 300.0 / util.secondsInMonth(*util.getYearMonth(time.time())) 
+		end = self.used_time
+		for rec in recs:
+			if rec.usage.cputime > self.monthly.cputime * factor * self.continous_factor:
+				self.used.cputime += rec.usage.cputime - self.monthly.cputime * factor * self.continous_factor
+			if rec.usage.memory > self.monthly.memory * self.continous_factor:
+				self.used.memory += rec.usage.memory * factor - self.monthly.memory * self.continous_factor
+			if rec.usage.diskspace > self.monthly.diskspace * self.continous_factor:
+				self.used.diskspace += rec.usage.diskspace * factor - self.monthly.diskspace * self.continous_factor
+			if rec.usage.traffic > self.monthly.traffic * factor * self.continous_factor:
+				self.used.traffic += rec.usage.traffic - self.monthly.traffic * factor * self.continous_factor
+			if rec.end > end:
+				end = rec.end
+		self.used_time = end
+		self.used.save()
+		self.save()
+
+	def modify(self, value):
+		if "monthly" in value:
+			m = value["monthly"]
+			if "cputime" in m:
+				self.monthly.cputime = m["cputime"]
+			if "memory" in m:
+				self.monthly.memory = m["memory"]
+			if "diskspace" in m:
+				self.monthly.diskspace = m["diskspace"]
+			if "traffic" in m:
+				self.monthly.traffic = m["traffic"]
+			self.monthly.save()
+		if "used" in value:
+			u = value["used"]
+			if "cputime" in u:
+				self.used.cputime = u["cputime"]
+			if "memory" in u:
+				self.used.memory = u["memory"]
+			if "diskspace" in u:
+				self.used.diskspace = u["diskspace"]
+			if "traffic" in u:
+				self.used.traffic = u["traffic"]
+			self.used.save()
+		if "continous_factor" in value:
+			self.continous_factor = value["continous_factor"]
+			self.save()
+
+	def info(self):
+		return {
+			"used": self.used.info(),
+			"monthly": self.monthly.info(),
+			"used_time": self.used_time,
+			"continous_factor": self.continous_factor
 		}
 
 @util.wrap_task
@@ -231,4 +343,17 @@ def aggregate():
 	for host in host.getAll():
 		host.updateUsage()
 
+@util.wrap_task
+@db.commit_after
+def updateQuota():
+	from . import auth
+	try:
+		for user in auth.getAllUsers():
+			user.updateQuota()
+			user.enforceQuota()
+	except:
+		import traceback
+		traceback.print_exc()
+
 scheduler.scheduleRepeated(60, aggregate) #every minute @UndefinedVariable
+scheduler.scheduleRepeated(60, updateQuota) #every minute @UndefinedVariable

@@ -25,7 +25,7 @@ import xmlrpclib, time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	description = attributes.attribute("description", unicode, "")
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
@@ -70,7 +70,7 @@ class Organization(attributes.Mixin, models.Model):
 		fault.check(not self.sites.all(), "Organization still has sites")
 		fault.check(not self.users.all(), "Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		self.delete()
 		
 	def updateUsage(self):
@@ -210,7 +210,7 @@ class Host(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
-	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
@@ -482,7 +482,7 @@ class Host(attributes.Mixin, models.Model):
 				self.getProxy().resource_remove(res["id"])
 		except:
 			pass
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		self.delete()
 
 	def modify(self, attrs):
@@ -623,7 +623,7 @@ class HostElement(attributes.Mixin, models.Model):
 	num = models.IntegerField(null=False) #not id, since this is reserved
 	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_elements")
 	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_elements")
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	connection = attributes.attribute("connection", int)
 	state = attributes.attribute("state", str)
@@ -751,7 +751,7 @@ class HostConnection(attributes.Mixin, models.Model):
 	num = models.IntegerField(null=False) #not id, since this is reserved
 	topology_element = models.ForeignKey("tomato.Element", null=True, related_name="host_connections")
 	topology_connection = models.ForeignKey("tomato.Connection", null=True, related_name="host_connections")
-	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	usageStatistics = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	elements = attributes.attribute("elements", list)
 	state = attributes.attribute("state", str)

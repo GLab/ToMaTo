@@ -52,7 +52,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, on_delete=models.SET_NULL, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	#host_elements: [host.HostElement]
 	#host_connections: [host.HostConnections]
@@ -304,7 +304,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			ch.remove(recurse=True)
 		if self.connection:
 			self.getConnection().remove()
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
