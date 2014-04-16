@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "caller": {
+      "type": "array"
+    }
+  },
+  "required": ["category", "message", "timestamp"]
+}
