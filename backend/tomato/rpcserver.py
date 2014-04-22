@@ -23,7 +23,6 @@ import config
 from . import fault, currentUser, api, login
 from lib import db, util, rpc, logging #@UnresolvedImport
 
-
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
 
@@ -32,7 +31,7 @@ def handleError(error, function, args, kwargs):
 	if isinstance(error, xmlrpclib.Fault):
 		if error.faultCode != fault.USER_ERROR:
 			fault.errors_add(error, traceback.format_exc())
-	elif isinstance(error, rpc.ErrorUnauthorized):
+	elif isinstance(error, rpc.xmlrpc.ErrorUnauthorized):
 		fault.errors_add(error, traceback.format_exc())
 	else:
 		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
@@ -61,8 +60,8 @@ def start():
 		server_address = ('', settings["PORT"])
 		sslOpts = None
 		if settings["SSL"]:
-			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
-		server = rpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
+			sslOpts = rpc.xmlrpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
+		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)

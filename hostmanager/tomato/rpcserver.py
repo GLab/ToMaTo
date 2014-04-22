@@ -21,7 +21,7 @@ import xmlrpclib, sys, traceback
 
 from . import config, login, api
 from . import dump, fault, currentUser
-from .lib import db, util, rpc, logging #@UnresolvedImport
+from .lib import db, util, xmlrpc, logging #@UnresolvedImport
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)

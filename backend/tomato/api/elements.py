@@ -304,4 +304,4 @@ def element_usage(id): #@ReservedAssignment
 
 from .. import fault, elements, currentUser
 from topology import _getTopology
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport

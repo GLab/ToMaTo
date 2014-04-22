@@ -199,4 +199,4 @@ def account_usage(name): #@ReservedAssignment
 from host import _getOrganization
 from .. import fault, currentUser
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport

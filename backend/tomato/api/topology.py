@@ -347,4 +347,4 @@ from account import _getAccount
 from .. import fault, topology, currentUser
 from elements import element_create, element_modify 
 from connections import connection_create, connection_modify
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport

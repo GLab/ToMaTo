@@ -225,4 +225,4 @@ def connection_usage(id): #@ReservedAssignment
 	con = _getConnection(id)
 	return con.totalUsage.info()
 
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport

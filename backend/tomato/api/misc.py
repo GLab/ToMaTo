@@ -99,4 +99,4 @@ def task_execute(id):
 
 from django.db import models
 from .. import misc, config, link, currentUser, host, topology, auth, elements, connections, scheduler, fault
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport
