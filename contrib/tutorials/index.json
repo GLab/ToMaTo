@@ -30,6 +30,12 @@
     "icon": "executable_archives/icon.png"
   },
   {
+    "url":  "templates_images/tutorial.json",
+    "name": "Templates and Images",
+    "desc": "Learn how to use templates and images.",
+    "icon": "templates_images/icon.png"
+  }, 
+  {
     "url":   "openflow/tutorial.json",
     "name": "OpenFlow",
     "desc": "Learn how to use software OpenFlow switches in your topology.",
