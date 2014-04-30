@@ -1,10 +1,8 @@
 [
 			{
 			text:	'<p class="tutorialExplanation">\
-						Welcome to the Data Access tutorial!<br />\
-						This tutorial will teach you how you can upload and/or download data to or from your devices.</p>\
-					<p class="tutorialExplanation">\
-						Let\'s assume you have created this topology, and now you need to put files on your devices to execute your experiment.</p>\
+						Welcome to the Device and Data Access tutorial!<br />\
+						This tutorial will teach you how you can upload and/or download data to or from your devices and also how to use different remote control tools to get  access to your devices.</p>\
 					<p class="tutorialExplanation">\
 						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial, and a basic knowledge about the Linux command line (especially ifconfig, ssh, and scp)</i></p>',
 			skip_button: 'Start tutorial'
@@ -22,6 +20,8 @@
 				
 			  },
 			text:	'<p class="tutorialExplanation">\
+						Let\'s assume you have created this topology, and now you need to put files on your devices to install software in order to execute your experiment.</p>\
+<p class="tutorialExplanation">\
 						Currently, your topology does only exist as a "plan". This means, that devices do not have any hard drive images or similar.</p>\
 					<p class ="tutorialExplanation">\
 						When you prepare the devices, those images will be created from the templates.</p>\
@@ -29,10 +29,19 @@
 						Prepare your topology\'s devices.</p>'
 			},
 			{
+			//TODO: Add trigger
 			text:	'<p class="tutorialExplanation">\
-						Wait for both devices to be prepared. Then press the "Continue" button.</p>',
+						 Wait for both devices to be prepared. Then press the "Continue" button.</p>',
 			skip_button: "Continue"
 			},
+			{
+			//TODO: Add Downloadlink and archive
+			text:	'<p class="tutoraiExplanation">\
+					For our next step we need an executable archive to run on one of our devices. So please download the following archive:\
+					It will install a litte &quot;simulation&quot; for us in order to create some data.</p>\
+				<p class="tutorialCommand">\
+					Download the executable archive.',
+			skip_button: "Continue"
 			{
 			trigger:function(obj) { 
 				
@@ -66,7 +75,7 @@
 			  },
 			text:	'<p class="tutorialExplanation">\
 						The download might take a bit longer.</p>\
-					<p class="tutorialExplanation">\
+					<p clas s="tutorialExplanation">\
 						You can upload any image to a device of the same technology. You can not use images accross technologies (e.g., you can\'t upload an OpenVZ image to a KVM device, and vice versa).</p>\
 					<p class="tutorialCommand">\
 						Upload your image again.</p>\
