@@ -9,14 +9,21 @@
 			},
 			{
 			trigger:function(obj) {
-						
-				mask = {
+					
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var match = compareToMask(obj, {
 					action: "prepare",
 					component: "element",
 					operation: "action",
-					phase: "begin"
-				};
-				return compareToMask(obj,mask);
+					phase: "end"
+				});
+				if (match) tutorial_data.tmp++;
+				if (tutorial_data.tmp >= 2) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+	
 				
 			  },
 			text:	'<p class="tutorialExplanation">\
@@ -24,191 +31,186 @@
 <p class="tutorialExplanation">\
 						Currently, your topology does only exist as a "plan". This means, that devices do not have any hard drive images or similar.</p>\
 					<p class ="tutorialExplanation">\
-						When you prepare the devices, those images will be created from the templates.</p>\
+						When you prepare the devices, those images will be created from the templates. We also need the devices to be running so start them too.</p>\
 					<p class="tutorialCommand">\
-						Prepare your topology\'s devices.</p>'
+						Prepare and Start your topology\'s devices.</p>'
 			},
 			{
-			//TODO: Add trigger
 			text:	'<p class="tutorialExplanation">\
-						 Wait for both devices to be prepared. Then press the "Continue" button.</p>',
-			skip_button: "Continue"
-			},
-			{
-			//TODO: Add Downloadlink and archive
-			text:	'<p class="tutoraiExplanation">\
-					For our next step we need an executable archive to run on one of our devices. So please download the following archive:\
+					Wait for both devices to be prepared and started.</p>\
+				<p class="tutorialExplanation">\
+					Until this is finished you can already download the following executable archive we need for our next step. We will run it on one of our devices, so please download the following archive:\
+			<ul>\
+			<li><a href="'+tutorial_base_url+'simulation_installer.tar.gz" class="download" download="simulation_installer.tar.gz">Simulation</a></li>\
+			</ul>\
 					It will install a litte &quot;simulation&quot; for us in order to create some data.</p>\
 				<p class="tutorialCommand">\
-					Download the executable archive.',
+					Wait for both devices to be prepared and started and download the executable archive. Press "Continue" afterwards.</p>',
 			skip_button: "Continue"
-			{
-			trigger:function(obj) { 
-				
-				mask = {
-					action: 'download_grant',
-					component: "element",
-					operation: "action",
-					phase: "end"
-				};
-				return compareToMask(obj,mask);
-			
-			  },
-			text:	'<p class="tutorialExplanation">\
-						Let\'s assume you have changed some files, and now you want to backup your device\'s disk image.<br />\
-						You can download the disk image of any prepared device by right-clicking on the device and select "Download image".</p>\
-					<p class="tutorialCommand">\
-						Download a disk image.</p>\
-					<p class="tutorialExplanation">\
-						Warning: The download might be big. Skip this step if you are on a metered connection!</p>'
 			},
 			{
-			trigger:function(obj) {	
-				mask = {
-					action: 'upload_use',
+			text:	'<p class="tutorialExplanation">\
+					Now after the devices started right click on the left device (openvz1) and use <pre>Executable archives -> Upload archive</pre> to run the archive on your device</p>\
+<p class="tutorialExplanation">\
+					After uploaded the archive will directly executed running the <i>auto_exec.sh</i> file inside it if the file exists.<br /> Executable archives are one good way to run programms on a device. If you want to learn more about them feel free to visite the <i>Executable Archives tutorial</i>.</p>',
+			skip_button: "Continue"
+			},			
+			{
+			trigger: function(obj) { 
+				var match = compareToMask(obj, {
+					component: "element",
+					operation: "console-dialog",
+				});
+				return match;
+			},
+			text:	'<p class="tutorialExplanation">\
+					This archive will install a litte programm we will run manually, because we want to enjoy possibilitys to access our device and run programms.</p>\
+				<p class="tutorialExplanation">\
+					Use right click again on your device and open a console using NoVNC. It is a HTML5 based VNC (Virtual Network Computing) client. <br/>\
+					You could also use the Java VNC applet or directly copy the vnc link for any vnc client you prefer to use.</p>\
+				<p class="tutorialCommand">\
+					Right click on the left device and open a console using NoVNC</p>',
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						Now let\'s start the simulation. Just use the command <pre>simulation_start</pre>. <br/>\
+The simulation will create some output on your console and also create data in a special file.</p>\
+					<p class="tutorialCommand">\
+						Run the simulation on your device using the <i>simulation_start</i> command. Press "Continue" afterwards.</p>',
+			skip_button: "Continue"
+
+			},
+			{
+			trigger: function(obj) { 
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var match = compareToMask(obj, {
+					action: "stop",
 					component: "element",
 					operation: "action",
 					phase: "end"
-				};
-				return compareToMask(obj,mask);
-			
-			  },
+				});
+				if (match) tutorial_data.tmp++;
+				if (tutorial_data.tmp >= 2) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+			},
 			text:	'<p class="tutorialExplanation">\
-						The download might take a bit longer.</p>\
-					<p clas s="tutorialExplanation">\
+						Maybe you want to collect the data from your device or you want to share your configuration to over devices.\
+						<br/>Therefor it is usefull to download your device image and use it as a template for other devices. <br/>\
+						To do this you have to stop your device. <br/>\
+						We also want to change our topology for a different reason so top the whole topology.</p>\
+					<p class="tutorialCommand">\
+						Stop the topology.</p>',
+			skip_button: "Continue"
+			},
+			{
+			text:	<'p class="tutorialExplanation">\
+						Now download the device image from the device. This might take a bit longer. <br/> \
+						You can continue the tutorial during the download. We will do some changes first befor we need the image again.</p>',
+			skip_button: "Continue"
+			{
+			trigger: function(obj) { 
+				var match = compareToMask(obj, {
+					component: "element",
+					operation: "create",
+					phase: "end",
+					object: {
+						data: {
+							attrs: {
+								kind: "internet",
+							}
+						}
+					},
+				}); 
+				if(match) tutorial_data.tmp++;
+				match = compareToMask(obj, {
+					component: "connection",
+					operation: "create",
+					phase: "end",
+				});
+				if(match) tutorial_data.tmp++;
+				if(match>=2) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+			},
+			text:	'</p>\
+					<p class ="tutorialExplanation">\
+						The easiest way to transmit files to or from your devices is the internet.<br />\
+						Devices don\'t have an internet connection by default. To connect them, the first thing you need to do is to create an internet interface</p>\
+				<p class="tutorialExplanation">\
+						If you want to get access to your device using SSH or similar technology you need to connect them to the internet too. <br />VNC instead works also in topologys without a internet connection.</p>\
+<p class="tutorialCommand">\
+						Add a internet interface and connect it to the switch.</p>',
+			skip_button: "C//TODO: Triggerontinue"
+			{			
+			{
+			trigger: function(obj) { 
+				var match = compareToMask(obj, {
+					component: "element",
+					operation: "action",
+					action: "upload_grant",
+					phase: "end",
+				});
+				return match;
+			},
+			text:	'<p clas s="tutorialExplanation">\
 						You can upload any image to a device of the same technology. You can not use images accross technologies (e.g., you can\'t upload an OpenVZ image to a KVM device, and vice versa).</p>\
 					<p class="tutorialCommand">\
-						Upload your image again.</p>\
+						Upload your image again to the second device (openvz2).</p>\
 					<p class="tutorialExplanation">\
-						Again, skip this step if a big upload might cause you any troubles.</p>\
+					//TODO: Trigger	You can skip this step  if a big upload might cause you trouble. Then please run the executable archive on the second device so we can continue the tutorial.</p>\
 					<p class="tutorialExplanation">\
 						The tutorial will continue after the upload has been finished.<br />\
 						If you need to create multiple devices with certain modifications to their template,\
 						creating the image in one device, and then distributing it to many might be the best method to accomplish this.</p>'
 			},
 			{
-			text:	'<p class="tutorialExplanation">\
-						In the "Devices" tab, on the right side, you can find "upload own images" devices.<br />\
-						When you place such a device on your topology, it will be prepared immediately, and then you\'ll be asked to upload an image</p>\
-					<p class="tutorialCommand">\
-						Place suche a device on your topology (cancel the upload if you want). After this, click "Continue"</p>\
-					<p class="tutorialExplanation">\
-						Ignore this device for the rest of the tutorial, or delete it.</p>',
-			skip_button: "Continue"
-			},
-			{
-			trigger:function(obj) { 
-					
-				mask = {
-					attrs: {
-						state: "created",
-						type: "external_network"
-					},
-					component: "element",
-					operation: "create",
-					phase: "end"
-				};
-				return compareToMask(obj,mask);
-			
-			  },
-			text:	'<p class="tutorialExplanation">\
-						The easiest way to transmit files to or from your devices is the internet.</p>\
-					<p class ="tutorialExplanation">\
-						Devices don\'t have an internet connection by default. To connect them, the first thing you need to do is to create an internet interface</p>\
-					<p class="tutorialCommand">\
-						Add an "Internet" to your topology. You can find it in the "Home" tab.</p>',
-			},
-			{
-			trigger:function(obj) { 
-				console.log("TODO: check if this is a connection between the Internet and a device");
-				mask = {
-					attrs: {
-						state: "created",
-					},
-					component: "connection",
-					operation: "create",
-					phase: "end"
-				};
-				return compareToMask(obj,mask);
-				
-			  },
-			text:	'<p class="tutorialCommand">\
-						Now, connect your devices with the internet.</p>',
-			},
-			{
-			trigger:function(obj) { 
-				console.log("TODO: check if this is a connection between the Internet and a device");
-				mask = {
-					attrs: {
-						state: "created",
-					},
-					component: "connection",
-					operation: "create",
-					phase: "end"
-				};
-				return compareToMask(obj,mask);
-				
-			  },
-			text:	'<p class="tutorialCommand">\
-						Also, connect the other device to the internet.</p>',
-			},
-				
-			{
-			trigger:function(obj) {
-						
-				mask = {
+			trigger: function(obj) { 
+				if (! tutorial_data.tmp) tutorial_data.tmp = 0;
+				var match = compareToMask(obj, {
 					action: "start",
 					component: "element",
 					operation: "action",
-					phase: "begin"
-				};
-				return compareToMask(obj,mask);
-				
-			  },
+					phase: "end"
+				});
+				if (match) tutorial_data.tmp++;
+				if (tutorial_data.tmp >= 2) {
+					tutorial_data.tmp = 0;
+					return true;
+				}
+				return false;
+			},
 			text:	'<p class="tutorialExplanation">\
-						<i>In case you wonder about the different look of the connections: You\'ll learn more about this in the "Connections" tutorial. You can ignore it in this tutorial.</i></p>\
-					<p class="tutorialExplanation">\
-						Of course your devices must be running to be able to access the internet.</p>\
+						If you want to learn more about images and templates feel free to try the Images & Templates tutorial after this tutorial.</p>\
+				<p class="tutorialExplanation">\
+						After the upload has finished please start your topology again.</p>\
 					<p class="tutorialCommand">\
-						Start your topology\'s devices.</p>'
-			},
-			{
-			text:	'<p class="tutorialExplanation">\
-						Wait for both all devices to be running. Then press "Continue" button.</p>',
-			skip_button: "Continue"
-			},
-			{
-					trigger:function(obj) {
-						
-						mask = {
-							component: "element",
-							operation: "console-dialog"
-						};
-						return compareToMask(obj,mask);
-						
-					  },
-			text:	'<p class="tutorialCommand">\
-						Please open a terminal connection to one of your devices.</p>'
-			},
-			{
-			text:	'<p class="tutorialExplanation">\
-						You should now be able to ping any server in the Internet. Try it! You can also see your device\'s global IP address using commands like ifconfig.</p>\
-					<p class="tutorialExplanation">\
-						If you need to install software, you can use your device\'s OS preferred way to do this.</p>',
+						Start the topology.</p>',
 			skip_button: "Continue"
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						You might want to connect to the device using ssh or scp.</p>\
-					<p class="tutorialExplanation">\
-						Use the command "ssh-enable" to enable ssh access.<p>\
-					<p class="tutorialExplanation">\
-						You will be asked to set a root password. Using ifconfig, you can determine your global IP address. You can then connect to the device via ssh, or transmit data to or from it via scp (Try it!)</p>',
+						SSH is deactivated by default. In order to use it you have to log onto your device and run <i>ssh-enable</i>. <br/> Let\'s use NoVNC to do so, so we can use SSH to get access to our device.</p>\
+				<p class="tutorialCommand">\
+						Use NoVNC to run <i>ssh-enable</i> on the second device (openvz2). Press "Continue" if you did so.</p>',
 			skip_button: "Continue"
-			},
-			
+			}
 			{
 			text:	'<p class="tutorialExplanation">\
-						That was it for this tutorial! More ways to access data will be coming soon.</p>'
+						You can now use your locals SSH client to get access to the device. You can find the ip address of your device by using <i>ipconfig</i>.</p>\
+				<p class="tutorialExplanation">\
+						If you want to copy data from or to a device you can use <i>SCP</i>. It is like SSH pre-installed in most of the templates.</p>\
+				<p class="tutorialCommand">\
+						Try to connect to your device using SSH. After that press "Continue".</p>',
+			skip_button: "Continue"
+			},
+			{
+			text:	'<p class="tutorialExplanation">\
+						That was it for this tutorial! More ways to access data will be coming soon. <br />\
+						Don\'t forget to take a look at the <i>executable archives</i> and <i>template and images</i> tutorials</p>'
 			}
 ]
