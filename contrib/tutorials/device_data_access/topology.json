@@ -1,0 +1,123 @@
+{
+  "file_information": {
+    "version": 3
+  }, 
+  "topology": {
+    "connections": [
+      {
+        "elements": [
+          6427, 
+          6428
+        ], 
+        "type": "bridge", 
+        "attrs": {
+          "bandwidth_to": 10000, 
+          "bandwidth_from": 10000, 
+          "emulation": true
+        }, 
+        "id": 1802
+      }, 
+      {
+        "elements": [
+          6425, 
+          6426
+        ], 
+        "type": "bridge", 
+        "attrs": {
+          "bandwidth_to": 10000, 
+          "bandwidth_from": 10000, 
+          "emulation": true
+        }, 
+        "id": 1801
+      }
+    ], 
+    "elements": [
+      {
+        "type": "tinc_endpoint", 
+        "attrs": {
+          "name": "tinc_endpoint6428", 
+          "mode": "switch"
+        }, 
+        "parent": 6423, 
+        "id": 6428
+      }, 
+      {
+        "type": "openvz_interface", 
+        "attrs": {
+          "name": "eth0", 
+          "ip4address": "10.0.0.1/24"
+        }, 
+        "parent": 6424, 
+        "id": 6427
+      }, 
+      {
+        "type": "openvz_interface", 
+        "attrs": {
+          "name": "eth0"
+        }, 
+        "parent": 6422, 
+        "id": 6426
+      }, 
+      {
+        "type": "tinc_endpoint", 
+        "attrs": {
+          "name": "tinc_endpoint6425", 
+          "mode": "switch"
+        }, 
+        "parent": 6423, 
+        "id": 6425
+      }, 
+      {
+        "info_sync_date": 0, 
+        "type": "openvz", 
+        "id": 6424, 
+        "parent": null, 
+        "attrs": {
+          "profile": "normal", 
+          "name": "openvz2", 
+          "hostname": "openvz2", 
+          "site": null, 
+          "_pos": {
+            "y": 0.042092427720118612, 
+            "x": 0.55213903743315518
+          }, 
+          "template": "debian-7.0_x86_64"
+        }
+      }, 
+      {
+        "type": "tinc_vpn", 
+        "attrs": {
+          "mode": "switch", 
+          "name": "switch1", 
+          "_pos": {
+            "y": 0.038442792683622259, 
+            "x": 0.37566844919786097
+          }
+        }, 
+        "parent": null, 
+        "id": 6423
+      }, 
+      {
+        "info_sync_date": 0, 
+        "type": "openvz", 
+        "id": 6422, 
+        "parent": null, 
+        "attrs": {
+          "profile": "normal", 
+          "name": "openvz1", 
+          "hostname": "openvz1", 
+          "site": null, 
+          "_pos": {
+            "y": 0.036617975165374086, 
+            "x": 0.19919786096256684
+          }, 
+          "template": "debian-7.0_x86_64"
+        }
+      }
+    ], 
+    "attrs": {
+      "_notes": "", 
+      "name": "Device and Data Access Tutorial"
+    }
+  }
+}
