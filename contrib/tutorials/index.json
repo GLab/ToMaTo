@@ -12,6 +12,12 @@
     "icon": "basic/icon.png"
   },
   {
+    "url":   "device_data_access/tutorial.json",
+    "name": "Device and Data Access",
+    "desc": "Teaches different ways to access your device and how to download data from devices.",
+    "icon": "device_data_access/icon.png"
+  },
+  {
     "url":   "link_emulation/tutorial.json",
     "name": "Link Emulation",
     "desc": "Learn how to use link emulation.",
