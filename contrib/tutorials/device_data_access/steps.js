@@ -4,7 +4,7 @@
 						Welcome to the Device and Data Access tutorial!<br />\
 						This tutorial will teach you how you can upload and/or download data to or from your devices and also how to use different remote control tools to get  access to your devices.</p>\
 					<p class="tutorialExplanation">\
-						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial, and a basic knowledge about the Linux command line (especially ifconfig, ssh, and scp)</i></p>',
+						<i>This tutorial requires knowledge which has been taught in the beginners\' tutorial, and a basic knowledge about the Linux command line (especially ifconfig, ssh, and scp)</i>.</p>',
 			skip_button: 'Start tutorial'
 			},
 			{
@@ -59,9 +59,10 @@
 					});
 				},
 			text:	'<p class="tutorialExplanation">\
-					Now after the devices started right click on the left device (openvz1) and use <pre>&gt; Executable archive &gt; Upload Archive</pre> to run the archive on your device</p>\
+					Now after the devices started right click on the left device (openvz1) and use <pre>&gt; Executable archive &gt; Upload Archive</pre> to upload and run the archive on your device</p>\
 <p class="tutorialExplanation">\
-					After uploaded the archive will directly executed running the <i>auto_exec.sh</i> file inside it if the file exists.<br /> Executable archives are one good way to run programms on a device. If you want to learn more about them feel free to visite the <i>Executable Archives tutorial</i>.</p>',
+					After the upload, the archive will be automatically executed by running the <i>auto_exec.sh</i> file inside it if the file exists.\
+Executable archives are a good way to run programms on a device. If you want to learn more about them feel free to visite the <i>Executable Archives tutorial</i>.</p>',
 			skip_button: "Continue"
 			},			
 			{
@@ -73,7 +74,7 @@
 				return match;
 			},
 			text:	'<p class="tutorialExplanation">\
-					This archive will install a litte programm we will run manually, because we want to enjoy possibilitys to access our device and run programms.</p>\
+					This archive will install a little programm, which we will run manually.</p>\
 				<p class="tutorialExplanation">\
 					Use right click again on your device and open a console using NoVNC. It is a HTML5 based VNC (Virtual Network Computing) client. <br/>\
 					You could also use the Java VNC applet or directly copy the vnc link for any vnc client you prefer to use.</p>\
@@ -82,7 +83,7 @@
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						Now let\'s start the simulation. Just use the command <pre>simulation</pre> <br/>\
+						Now let\'s start the simulation. Just run the command <pre>simulation</pre> on the device.<br/>\
 The simulation will create some output on your console and also create data in a special file.</p>\
 					<p class="tutorialCommand">\
 						Run the simulation on your device using the <i>simulation</i> command. Press "Continue" afterwards.</p>',
@@ -106,7 +107,7 @@ The simulation will create some output on your console and also create data in a
 				return false;
 			},
 			text:	'<p class="tutorialExplanation">\
-						Maybe you want to collect the data from your device or you want to share your configuration to otherer devices.\
+						Maybe you want to create multiple copies of the fully configured device in your topology or run it in a virtual machine on your computer.\
 						<br/>Therefor it is usefull to download your device image and use it as a template. <br/>\
 						To do this you have to stop your device. <br/>\
 						We also want to change our topology for a different reason so stop the whole topology.</p>\
@@ -117,7 +118,7 @@ The simulation will create some output on your console and also create data in a
 			{
 			text:	'<p class="tutorialExplanation">\
 						Now download the device image from the device. This might take a bit longer. <br/> \
-						You can continue the tutorial during the download. We will do some changes first befor we need the image again.</p>',
+						You can continue the tutorial during the download. We will do some changes first before we need the image again.</p>',
 			skip_button: "Continue"
 			},
 			{
@@ -150,13 +151,13 @@ The simulation will create some output on your console and also create data in a
 			},
 			text:	'</p>\
 					<p class ="tutorialExplanation">\
-						The easiest way to transmit files to or from your devices is the internet.<br />\
-						Devices don\'t have an internet connection by default. To connect them, the first thing you need to do is to create an internet interface</p>\
+						The easiest way to transmit files to or from your devices is the Internet.<br />\
+						Devices don\'t have an Internet connection by default. To connect them, the first thing you need to do is to create an Internet interface</p>\
 				<p class="tutorialExplanation">\
-						If you want to get access to your device using SSH or similar technology you need to connect them to the internet too.\
-						<br />VNC instead works also in topologys without a internet connection.</p>\
+						If you want to get access to your device using SSH or similar technologies you need to connect them to the Internet too.\
+						<br />VNC instead works also in topologys without an Internet connection.</p>\
 						<p class="tutorialCommand">\
-						Add a internet interface and connect it to the switch.</p>',
+						Add an Internet element and connect it to the switch.</p>',
 			skip_button: "Continue"
 			},	
 			{
@@ -213,7 +214,7 @@ The simulation will create some output on your console and also create data in a
 			},
 			{
 			text:	'<p class="tutorialExplanation">\
-						You can now use your locals SSH client to get access to the device. You can find the ip address of your device by using <i>ipconfig</i>.</p>\
+						You can now use your local SSH client to get access to the device. You can find the ip address of your device by using <i>ipconfig</i>.</p>\
 				<p class="tutorialExplanation">\
 						If you want to copy data from or to a device you can use <i>SCP</i>. It is like SSH pre-installed in most of the templates.</p>\
 				<p class="tutorialCommand">\
