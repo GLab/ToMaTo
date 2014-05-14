@@ -102,7 +102,7 @@ head.appendChild(style);
 						{% endif %}
 						{% if not "no_topology_create" in request.session.user.flags %}
 							<li class="divider"></li>
-							<li><a href="{%url topology.create%}">Create Topology</a></li>
+							<li><a href="{%url topology.create%}" onClick="loadbusy(event)">Create Topology</a></li>
 							<li><a href="{%url topology.import_%}">Import Topology</a></li>
 							<li class="divider"></li>
 							<li><a href="{%url tutorial.list%}">Tutorials</a></li>
@@ -165,6 +165,14 @@ head.appendChild(style);
       </div>
 
     </div> <!-- /container -->
+
+
+
+
+<!-- make loadbusy available -->
+<img src="/img/loading_big.gif" class="preload"/>
+<script src="/js/loading_popup.js"></script>
+
 
 </body> 
 {% endblock %}
