@@ -19,7 +19,7 @@ from lib import cmd #@UnresolvedImport
 import threading
 from resources import network
 
-_enabled_bridges = []
+_enabled_bridges = [] #multiset containing all bridges which have ebtables entries. The number of entries is the current counter (see doc of add_bridge and delete_bridge)
 lock = threading.Lock()
 
 def _run_ebtables_cmd(bridge,add_bool):
