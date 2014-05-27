@@ -49,7 +49,7 @@ def _run_ebtables_cmd(bridge,add_bool):
                  
                  "--ip-protocol","17", #udp
                  "--ip-source-port","67",
-                 "--ip-destination-port","68"
+                 "--ip-destination-port","68",
                  
                  "-j","DROP"])
     
