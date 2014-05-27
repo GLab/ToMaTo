@@ -55,17 +55,17 @@ class Network(resources.Resource):
 	def modify_bridge(self, val):
 		
 		#check whether the firewall has to be modified.
-		apply_firewall_now = False
+		old_bridge = None
 		if self.bridge:
-			apply_firewall_now = True
+			old_bridge = self.bridge
 		
 		#set the new value
 		self.bridge = val
 		
 		#if the firewall check returned true, apply the changes
-		if apply_firewall_now:
-			firewall.add_bridge(val)
-			firewall.remove_bridge(self.bridge)
+		if old_bridge:
+			firewall.add_bridge(val) # if no old bridge was there, this will be done by init.
+			firewall.remove_bridge(old_bridge)
 
 	def modify_preference(self, val):
 		self.preference = val
