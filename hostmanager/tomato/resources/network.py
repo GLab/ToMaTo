@@ -57,13 +57,13 @@ class Network(resources.Resource):
 		#check whether the firewall has to be modified.
 		apply_firewall_now = False
 		if self.bridge:
-			add_firewall_now = True
+			apply_firewall_now = True
 		
 		#set the new value
 		self.bridge = val
 		
 		#if the firewall check returned true, apply the changes
-		if add_firewall_now:
+		if apply_firewall_now:
 			firewall.add_bridge(val)
 			firewall.remove_bridge(self.bridge)
 
