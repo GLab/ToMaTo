@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import resources
+from .. import resources, firewall
 from ..user import User
 
 
@@ -36,6 +36,12 @@ class Network(resources.Resource):
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		resources.Resource.init(self, *args, **kwargs)
+		self.save()
+		firewall.add_bridge(self.bridge)
+		
+	def remove(self):
+		firewall.remove_bridge(self.bridge)
+		resources.Resource.remove(self)
 				
 	def upcast(self):
 		return self
@@ -47,7 +53,19 @@ class Network(resources.Resource):
 		self.kind = val
 	
 	def modify_bridge(self, val):
+		
+		#check whether the firewall has to be modified.
+		apply_firewall_now = False
+		if self.bridge:
+			add_firewall_now = True
+		
+		#set the new value
 		self.bridge = val
+		
+		#if the firewall check returned true, apply the changes
+		if add_firewall_now:
+			firewall.add_bridge(val)
+			firewall.remove_bridge(self.bridge)
 
 	def modify_preference(self, val):
 		self.preference = val
@@ -61,5 +79,8 @@ class Network(resources.Resource):
 
 def get(kind):
 	return Network.objects.filter(models.Q(kind=kind)|models.Q(kind__startswith=kind+"/")).order_by("-preference")[0]
+
+def getAll():
+	return Network.objects.all()
 
 resources.TYPES[Network.TYPE] = Network
