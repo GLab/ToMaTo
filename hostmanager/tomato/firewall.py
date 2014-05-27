@@ -89,7 +89,7 @@ def add_all_networks(networks):
     Should be run on program startup.
     """
     for nw in networks:
-        add_bridge(nw.getBridge)
+        add_bridge(nw.getBridge())
         
 def remove_all_networks(networks):
     """
@@ -97,5 +97,5 @@ def remove_all_networks(networks):
     Should be run on program shutdown.
     """
     for nw in networks:
-        remove_bridge(nw.getBridge)
+        remove_bridge(nw.getBridge())
         
