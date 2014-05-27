@@ -35,6 +35,9 @@ def _run_ebtables_cmd(bridge,add_bool):
       If True, the rule will be added. If False, the rule will be deleted.
     """
     
+    if not bridge: #do not allow an empty bridge. this would result in an unwanted rule.
+        return
+    
     add_delete = "-D"
     if add_bool:
         add_delete = "-A"
