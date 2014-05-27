@@ -40,8 +40,9 @@ class Network(resources.Resource):
 		firewall.add_bridge(self.bridge)
 		
 	def remove(self):
-		firewall.remove_bridge(self.bridge)
+		br = self.bridge
 		resources.Resource.remove(self)
+		firewall.remove_bridge(br)
 				
 	def upcast(self):
 		return self
