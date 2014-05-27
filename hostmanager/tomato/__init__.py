@@ -70,7 +70,7 @@ stopped = threading.Event()
 
 def start():
 	logging.openDefault(config.LOG_FILE)
-	firewall.add_all_networks()
+	firewall.add_all_networks(resources.network.getAll())
 	dump.init()
 	db_migrate()
 	bittorrent.startClient(config.TEMPLATE_DIR)
@@ -114,7 +114,7 @@ def stop(*args):
 	try:
 		print >>sys.stderr, "Shutting down..."
 		thread.start_new_thread(_stopHelper, ())
-		firewall.remove_all_networks()
+		firewall.remove_all_networks(resources.network.getAll())
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()

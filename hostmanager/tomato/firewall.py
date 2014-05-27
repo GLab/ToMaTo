@@ -17,7 +17,6 @@
 
 from lib import cmd #@UnresolvedImport
 import threading
-from resources import network
 
 _enabled_bridges = [] #multiset containing all bridges which have ebtables entries. The number of entries is the current counter (see doc of add_bridge and delete_bridge)
 lock = threading.Lock()
@@ -83,20 +82,20 @@ def remove_bridge(bridge):
             _run_ebtables_cmd(bridge, False)
             
             
-def add_all_networks():
+def add_all_networks(networks):
     """
     Iterate over all networks and add all bridges by these networks to the firewall.
     The counter of each bridge will then be equal to the number of occurences.
     Should be run on program startup.
     """
-    for nw in network.getAll():
+    for nw in networks:
         add_bridge(nw.getBridge)
         
-def remove_all_networks():
+def remove_all_networks(networks):
     """
     Iterate over all networks and remove them from the firewall.
     Should be run on program shutdown.
     """
-    for nw in network.getAll():
+    for nw in networks:
         remove_bridge(nw.getBridge)
         
