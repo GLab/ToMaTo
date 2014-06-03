@@ -838,7 +838,7 @@ var TemplateWindow = Window.extend({
 		var table = this.getList();
 		
 		
-		
+		this.div.append($('<div style="margin-bottom:0.5cm; margin-top:0.5cm;"><table style="vertical-align:top;"><tr><th style="vertical-align:top;">Warning:</th><td style="vertical-align:top; font-size: 10pt; white-space:normal; font-style:italic;">You will lose all data on this device if you change the template.</td></tr></table></div>'));
 		this.div.append(table);
 	},
 	getValue: function() {
