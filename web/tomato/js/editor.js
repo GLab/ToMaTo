@@ -430,8 +430,6 @@ var TemplateElement = FormElement.extend({
 			changebutton.prop("disabled",true);
 		}
 		
-		console.log(loading);
-		
 		this.labelarea.empty();
 		this.changebuttonarea.empty();
 		this.infoarea.empty();
@@ -822,10 +820,14 @@ var TemplateWindow = Window.extend({
 		this.callback = function(value) {};
 		if (options.callback_after_finish != undefined && options.callback_after_finish != null) {
 			this.callback_after_finish = options.callback_after_finish;
+		} else {
+			this.callback_after_finish = function(value) {};
 		}
 		
 		if (options.callback_before_finish != undefined && options.callback_before_finish != null) {
 			this.callback_before_finish = options.callback_before_finish;
+		} else {
+			this.callback_before_finish = function(value) {};
 		}
 		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
