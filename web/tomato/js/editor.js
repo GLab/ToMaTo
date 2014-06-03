@@ -1446,12 +1446,12 @@ var Topology = Class.extend({
 				break;		
 			default:
 				if (data.attrs && data.attrs.template) {
-					base = data.attrs.template;
+					base = editor.templates.get(data.type, data.attrs.template).label;
 				} else {
 					base = data.type;
 				}
 		}
-		base = base+"_#";
+		base = base+" #";
 		var num = 1;
 		while (names.indexOf(base+num) != -1 || this.pendingNames.indexOf(base+num) != -1) num++;
 		return base+num;
