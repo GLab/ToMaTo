@@ -787,7 +787,6 @@ var TemplateWindow = Window.extend({
 		                    	text: "Cancel",
 		                    	click: function() {
 		                			t.hide();
-		                			t.callback(t.getValue());
 		                		}
 		                    }];
 		
