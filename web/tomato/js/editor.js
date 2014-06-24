@@ -793,7 +793,9 @@ var TemplateWindow = Window.extend({
 		
 		this._super(options);
 		this.element = options.element;
-		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
+		var windowTitle = "Change Template for "+this.element.data.attrs.name;
+		if (editor.options.show_ids) windowTitle = windowTitle + ' (#'+this.element.data.id+')'
+		this.setTitle(windowTitle);
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
 		} else {
@@ -1274,6 +1276,11 @@ var Workspace = Class.extend({
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
 		this.container.addClass("mode_" + mode);
+	},
+	
+	updateTopologyTitle: function() {
+		var t = editor.topology;
+		$('#topology_name').text("Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : ""));
 	}
 });
 
@@ -1359,7 +1366,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -1708,7 +1715,7 @@ var Topology = Class.extend({
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
 							t.modify_value("name", t.rename.element.getValue());
-							$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+							editor.workspace.updateTopologyTitle();
 						}
 						t.rename = null;
 					}
@@ -1784,7 +1791,7 @@ var Topology = Class.extend({
 										"_notes": description.getValue(),
 										"_initialized": true
 									});
-									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+									editor.workspace.updateTopologyTitle();
 									t.action("renew", {params:{
 										"timeout": timeout.getValue()
 									}});
@@ -1885,7 +1892,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+'<br />Topology #'+obj.id+'</span>',
+				html:'<span>'+obj.name()+(editor.options.show_ids ? '<br />Topology #'+obj.id : "")+'</span>',
 				type:"html"
 			},
 			"actions": {
@@ -2511,7 +2518,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+"<br />Connection #"+obj.id+'</span>', type:"html"
+				html:'<span>'+obj.name()+(editor.options.show_ids ? "<br />Connection #"+obj.id : "")+'</span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -2953,7 +2960,20 @@ var createElementMenu = function(obj) {
 	var menu = {
 		callback: function(key, options) {},
 		items: {
-			"header": {html:'<span>'+obj.name()+"<br />Element #"+obj.id+'</span>', type:"html"},
+			"header": {
+				html:'<span>'+obj.name()+
+					(editor.options.show_ids ? 
+							"<br />Element #"+obj.id : 
+							"")+
+					(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data.attrs && "site" in obj.data.attrs ? "<br />"+
+							(obj.data.attrs.host_info && obj.data.attrs.host_info.site ? 
+									"at "+editor.sites_dict[obj.data.attrs.host_info.site].description : 
+									(obj.data.attrs.site ? 
+											"will be at " + editor.sites_dict[obj.data.attrs.site].description : 
+											"no site selected")  ) : 
+							"")+
+					'</span>', 
+				type:"html"},
 			"connect": obj.isConnectable() ? {
 				name:'Connect',
 				icon:'connect',
@@ -3142,6 +3162,7 @@ var createComponentMenu = function(obj) {
 		selector: 'rect,circle', //filtering on classes of SVG objects does not work
 		trigger: trigger,
 		build: function(trigger, e) {
+			console.log(trigger[0].obj);
 			return createComponentMenu(trigger[0].obj);
 		}
 	});	
@@ -3860,6 +3881,11 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
+		
+		this.sites_dict = {};
+		for (s in this.sites) {
+			this.sites_dict[this.sites[s].name] = this.sites[s];
+		}
 				
 		var t = this;
 		this.workspace.setBusy(true);
@@ -3897,6 +3923,7 @@ var Editor = Class.extend({
 	onOptionChanged: function(name) {
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
+		this.workspace.updateTopologyTitle();
 	},
 	optionMenuItem: function(options) {
 		var t = this;
@@ -4374,6 +4401,18 @@ var Editor = Class.extend({
 		        tooltip:"Paint different network segments with different colors"
 		    }),
 		    
+		    show_ids: this.optionMenuItem({
+		        name:"show_ids",
+		        label:"Show IDs",
+		        tooltip:"Show IDs in right-click menus"
+		    }),
+		    
+		    show_sites_on_elements: this.optionMenuItem({
+		        name:"show_sites_on_elements",
+		        label:"Show Element Sites",
+		        tooltip:"Show the site an element is located at in its right-click menu"
+		    }),
+		    
 		    debug_mode: this.optionMenuItem({
 		        name:"debug_mode",
 		        label:"Debug mode",
@@ -4385,6 +4424,8 @@ var Editor = Class.extend({
 									this.optionCheckboxes.snap_to_grid,
 									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.show_ids,
+									this.optionCheckboxes.show_sites_on_elements,
 									this.optionCheckboxes.debug_mode
 								]);
 
