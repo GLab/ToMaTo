@@ -150,3 +150,12 @@ Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our adm
 You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
 Best Wishes,\nThe ToMaTo Testbed"
 }
+
+# E-Mail sent to administrators when a new user registers
+NEW_USER_ADMIN_INFORM_MESSAGE = {
+'subject': "User Registration",
+'body': "Dear ToMaTo administrator,\n\n\
+A new user, %s, has just registered at the ToMaTo testbed.\n\
+You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
+Best Wishes,\nThe ToMaTo Testbed"								
+}
