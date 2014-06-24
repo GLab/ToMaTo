@@ -140,3 +140,13 @@ if not isinstance(SERVER, list):
 	
 import math
 HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)
+
+
+# E-Mail sent to new users after registering
+NEW_USER_WELCOME_MESSAGE = {
+'subject': "Registration at ToMaTo-Lab",
+'body': "Dear %s,\n\n\
+Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).\n\
+You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
+Best Wishes,\nThe ToMaTo Testbed"
+}
