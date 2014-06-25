@@ -1476,8 +1476,13 @@ var Topology = Class.extend({
 				base = "tinc";
 				break;		
 			default:
-				base = data.type;
+				if (data.attrs && data.attrs.template) {
+					base = editor.templates.get(data.type, data.attrs.template).label;
+				} else {
+					base = data.type;
+				}
 		}
+		base = base+" #";
 		var num = 1;
 		while (names.indexOf(base+num) != -1 || this.pendingNames.indexOf(base+num) != -1) num++;
 		return base+num;
