@@ -1892,7 +1892,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+(editor.options.show_ids ? '<br />Topology #'+obj.id : "")+'</span>',
+				html:"<span>"+obj.name()+"<small><br />Topology "+(editor.options.show_ids ? ' #'+obj.id : "")+'</small></span>',
 				type:"html"
 			},
 			"actions": {
@@ -2510,6 +2510,9 @@ var Connection = Component.extend({
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
+	},
+	name_vertical: function() {
+		return this.fromElement().name() + "<br/>&#x21C5;<br/>" + this.toElement().name();
 	}
 });
 
@@ -2518,7 +2521,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+(editor.options.show_ids ? "<br />Connection #"+obj.id : "")+'</span>', type:"html"
+				html:'<span>'+obj.name_vertical()+"<small><br>Connection"+(editor.options.show_ids ? " #"+obj.id : "")+'</small></span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -2961,9 +2964,9 @@ var createElementMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+
+				html:'<span>'+obj.name()+'<small><br />Element'+
 					(editor.options.show_ids ? 
-							"<br />Element #"+obj.id : 
+							" #"+obj.id : 
 							"")+
 					(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data.attrs && "site" in obj.data.attrs ? "<br />"+
 							(obj.data.attrs.host_info && obj.data.attrs.host_info.site ? 
@@ -2972,7 +2975,7 @@ var createElementMenu = function(obj) {
 											"will be at " + editor.sites_dict[obj.data.attrs.site].description : 
 											"no site selected")  ) : 
 							"")+
-					'</span>', 
+					'</small></span>', 
 				type:"html"},
 			"connect": obj.isConnectable() ? {
 				name:'Connect',
