@@ -3162,7 +3162,6 @@ var createComponentMenu = function(obj) {
 		selector: 'rect,circle', //filtering on classes of SVG objects does not work
 		trigger: trigger,
 		build: function(trigger, e) {
-			console.log(trigger[0].obj);
 			return createComponentMenu(trigger[0].obj);
 		}
 	});	
