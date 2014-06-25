@@ -396,23 +396,37 @@ var TemplateElement = FormElement.extend({
 		return this.value;
 	},
 	
-	change_value: function(template) {
+	change_value: function(template,loading) {
 		this.value = template.name;
 		this.template = template;
 		var t = this;
 		
 		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
-			t.call_element.showTemplateWindow(function(value) {
-				t.change_value(
-					editor.templates.get(
-						t.options.type,value
-					)
-				);
-			});
+			t.call_element.showTemplateWindow(
+				
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						true
+					);
+				},
+					
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						false
+					);
+				}
+				
+			);
 		})
 		
-		if (this.disabled) {
+		if (this.disabled || loading) {
 			changebutton.prop("disabled",true);
 		}
 		
@@ -423,6 +437,10 @@ var TemplateElement = FormElement.extend({
 		this.labelarea.append(this.template.label);
 		this.changebuttonarea.append(changebutton);
 		this.infoarea.append($(this.template.infobox()));
+		
+		if (loading) {
+			this.labelarea.append($(' <img src="/img/loading.gif" />'));
+		}
 	}
 });
 
@@ -777,9 +795,9 @@ var TemplateWindow = Window.extend({
 		                    {
 		                    	text: "Save",
 		                    	click: function() {
-		                			t.save();
 		                			t.hide();
-		                			t.callback(t.getValue());
+		                    		t.callback_before_finish(t.getValue());
+		                			t.save();
 		                		}
 		         
 		                    },
@@ -787,7 +805,6 @@ var TemplateWindow = Window.extend({
 		                    	text: "Cancel",
 		                    	click: function() {
 		                			t.hide();
-		                			t.callback(t.getValue());
 		                		}
 		                    }];
 		
@@ -801,8 +818,16 @@ var TemplateWindow = Window.extend({
 		}
 		
 		this.callback = function(value) {};
-		if (options.callback != undefined && options.callback != null) {
-			this.callback = options.callback;
+		if (options.callback_after_finish != undefined && options.callback_after_finish != null) {
+			this.callback_after_finish = options.callback_after_finish;
+		} else {
+			this.callback_after_finish = function(value) {};
+		}
+		
+		if (options.callback_before_finish != undefined && options.callback_before_finish != null) {
+			this.callback_before_finish = options.callback_before_finish;
+		} else {
+			this.callback_before_finish = function(value) {};
 		}
 		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
@@ -815,14 +840,20 @@ var TemplateWindow = Window.extend({
 		var table = this.getList();
 		
 		
-		
+		this.div.append($('<div style="margin-bottom:0.5cm; margin-top:0.5cm;"><table style="vertical-align:top;"><tr><th style="vertical-align:top;">Warning:</th><td style="vertical-align:top; font-size: 10pt; white-space:normal; font-style:italic;">You will lose all data on this device if you change the template.</td></tr></table></div>'));
 		this.div.append(table);
 	},
 	getValue: function() {
 		return this.value;
 	},
 	save: function() {
-		this.element.changeTemplate(this.getValue());
+		var t = this;
+		this.element.changeTemplate(
+			this.getValue(),
+			function(){
+				t.callback_after_finish(t.getValue());
+			}
+		);
 	},
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
@@ -2811,11 +2842,12 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
-	changeTemplate: function(tmplName) {
+	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
 				tmplName: tmplName
-				}
+				},
+			callback: action_callback
 			}
 		);
 	},
@@ -3373,11 +3405,12 @@ var VMElement = IconElement.extend({
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
 	},
-	showTemplateWindow: function(callback) {
+	showTemplateWindow: function(callback_before_finish,callback_after_finish) {
 		var window = new TemplateWindow({
 			element: this,
 			width: 400,
-			callback: callback
+			callback_after_finish: callback_after_finish,
+			callback_before_finish: callback_before_finish
 		});
 		window.show();
 	},
