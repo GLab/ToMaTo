@@ -17,15 +17,25 @@
 	<div class="row">		
 	{% for orga in organizations %}
 		<div class="col-md-4 col-sm-6 col-xs-12">
-			<h3>{{orga.description}} <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
-			{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
-			<p><b>
-				{{orga.hosts.count}} hosts
-				{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
-			</b></p>
-			{% if orga.description_text %}
-				<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
-			{% endif %}
+			<div style="box-shadow: 10px 10px 10px grey; border: 1px solid #dddddd; margin-right:11px; margin-bottom:11px; padding-left:15px;">
+				<a href="{%url organization.info orga.name%}" style="color:black; text-decoration:none;">
+					<h3>{{orga.description}}</h3>
+					
+					{% if orga.image_url %}
+						<p style="margin-top:2cm; margin-bottom:1cm"><img src="{{orga.image_url}}" class="site" /></p>
+					{% endif %}
+					
+					<p><b>
+						{{orga.hosts.count}} hosts
+						{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
+					</b></p>
+					
+					{% if orga.description_text %}
+						<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
+					{% endif %}
+					
+				</a>
+			</div>
 		</div>
 		<div class="visible-xs skip-sm"></div>
 		{% cycle "" '<div class="clearfix visible-sm"></div><div class="visible-sm skip-sm"></div>' %}
