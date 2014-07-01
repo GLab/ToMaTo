@@ -3305,7 +3305,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return "img/" + this.data.attrs.mode + "32.png";
+		return "dynimg/vpn/32/" + this.data.attrs.mode + "/32";
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3327,7 +3327,7 @@ var ExternalNetworkElement = IconElement.extend({
 		this.iconSize = {x: 32, y:32};
 	},
 	iconUrl: function() {
-		return "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
+		return editor.networks.getNetworkIcon(this.data.attrs.kind);
 	},
 	configWindowSettings: function() {
 		var config = this._super();
@@ -3643,7 +3643,7 @@ var Template = Class.extend({
 		this.icon = options.icon;
 	},
 	iconUrl: function() {
-		return this.icon || "img/" + this.type + (this.subtype?("_"+this.subtype):"") + "32.png";
+		return this.icon || "dynimg/"+this.type+"/32/"+(this.subtype?this.subtype:"none")+"/"+(this.name?this.name:"none");
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3850,9 +3850,15 @@ var NetworkStore = Class.extend({
 			return 0;
 		});
 		this.nets = [];
-		for (var i=0; i<data.length; i++)
-		 if (data[i].type == "network")
-		  this.nets.push(data[i].attrs);
+		for (var i=0; i<data.length; i++) {
+		 if (data[i].type == "network") {
+			 net = data[i].attrs;
+			 if (!net.icon) {
+				 net.icon = this.getNetworkIcon(net.kind);
+			 }
+			 this.nets.push(net);
+		 }
+		}
 	},
 	all: function() {
 		return this.nets;
@@ -3863,6 +3869,9 @@ var NetworkStore = Class.extend({
 		 if (this.nets[i].show_as_common)
 		   common.push(this.nets[i]);
 		return common;
+	},
+	getNetworkIcon: function(kind) {
+		return "dynimg/network/32/" + kind.split("/")[0] + "/" + (kind.split("/")[1]?kind.split("/")[1]:"none");
 	}
 });
 
@@ -4290,7 +4299,7 @@ var Editor = Class.extend({
 			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: 'img/internet32.png',
+				icon: net.icon,
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: !net.big_icon,
