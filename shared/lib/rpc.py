@@ -75,13 +75,28 @@ if not hasattr(SocketServer.BaseServer, "shutdown_request"):
 		self.shutdown_request(request)
 	SocketServer.BaseServer.process_request = process_request
 
+#Bugfix: _fileobject does not handle OpenSSL WantReadErrors well
+class WrappedSSLConnection:
+	def __init__(self, con):
+		self._con = con
+	def recv(self, *args, **kwargs):
+		try:
+			return self._con.recv(*args, **kwargs)
+		except SSL.WantReadError, err:
+			raise socket.error(socket.EINTR)
+	def fileno(self, *args, **kwargs):
+		return self._con.fileno(*args, **kwargs)
+	def sendall(self, *args, **kwargs):
+		return self._con.sendall(*args, **kwargs)
+	def close(self, *args, **kwargs):
+		return self._con.close(*args, **kwargs)
 
 class SecureRequestHandler:
 	def setup(self):
 		self.connection = self.request
 		if self.server.sslOpts:
-			self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
-			self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+			self.rfile = socket._fileobject(WrappedSSLConnection(self.request), "rb", self.rbufsize)
+			self.wfile = socket._fileobject(WrappedSSLConnection(self.request), "wb", self.wbufsize)
 		else:
 			self.rfile = self.connection.makefile('rb', self.rbufsize)
 			self.wfile = self.connection.makefile('wb', self.wbufsize)	
