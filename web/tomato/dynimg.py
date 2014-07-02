@@ -32,26 +32,36 @@ def dynimg(request,size,objtype,arg1,arg2):
 	
 	# handle devices
 	if objtype=="openvz" or objtype=="kvmqm" or objtype=="repy":
-		found_templ = False
-		for i in ["ubuntu","debian"]:
-			if i in arg2:
-				arg2 = i
-				found_templ = True
-		#if the template is known, first try to find a template-specific image. On error, redirect to a non-template dynimg url
-		if found_templ:
-			filepath_pref="img/"+objtype+"_"+arg2+size+".png"
-			url_alt = "/dynimg/"+objtype+"/"+size+"/"+arg1+"/none"
-		#if the template is not known, try to match the subtype
+		subtype=arg1
+		template_name=arg2
+		
+		#handle non-(repy-network) devices
+		if objtype!="repy" or subtype=="device":
+			found_templ = False
+			for i in []:
+				if i in template_name:
+					template_name = i
+					found_templ = True
+			#if the template is known, first try to find a template-specific image. On error, redirect to a non-template dynimg url
+			if found_templ:
+				filepath_pref="img/"+objtype+"_"+template_name+size+".png"
+				url_alt = "/dynimg/"+objtype+"/"+size+"/"+subtype+"/none"
+			#if the template is not known, try to match the subtype
+			else:
+				filepath_pref="img/"+objtype+"_"+subtype+size+".png"
+				url_alt ="/img/"+objtype+size+".png"
+		# handle repy network devices
 		else:
-			filepath_pref="img/"+objtype+"_"+arg1+size+".png"
-			url_alt ="/img/"+objtype+size+".png"
+			filepath_pref="img/switch_repy32.png"
+			url_alt="/img/network32.png"
 		
 	# handle networks
 	elif objtype=="network" or objtype=="vpn":
+		kind=arg1
 		for i in ["openflow","private"]:
-			if i in arg1:
-				arg1 = i
-		filepath_pref="img/"+arg1+size+".png"
+			if i in kind:
+				kind = i
+		filepath_pref="img/"+kind+size+".png"
 		url_alt="/img/"+objtype+size+".png"
 		
 	# handle everything else
