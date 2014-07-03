@@ -21,6 +21,7 @@ encoding//tomato/elements/repy.py=utf-8
 encoding//tomato/elements/tinc.py=utf-8
 encoding//tomato/elements/udp_tunnel.py=utf-8
 encoding//tomato/fault.py=utf-8
+encoding//tomato/firewall.py=utf-8
 encoding//tomato/lib/attributes.py=utf-8
 encoding//tomato/lib/cmd/__init__.py=utf-8
 encoding//tomato/lib/cmd/bittorrent.py=utf-8
