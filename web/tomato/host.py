@@ -83,7 +83,7 @@ def info(api, request, name):
 	return render(request, "host/info.html", {'host': host, 'organization': organization, 'site': site})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, site=None):
 	message_after = '<h2>Public key</h2>	The public key of this backend is:	<pre><tt>'+serverInfo()['public_key']+'</tt></pre>'
 	if request.method == 'POST':
 		form = HostForm(api, request.POST)
@@ -96,6 +96,8 @@ def add(api, request):
 	else:
 		form = HostForm(api)
 		if api.site_list():
+			if site:
+				form.fields['site'].initial=site
 			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
 		else:
 			return render(request, "main/error.html",{'type':'No site available','text':'You need a site first before you can add hosts.'})
