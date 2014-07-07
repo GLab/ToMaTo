@@ -117,7 +117,7 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_description':site_description, 'organization_description': organization_description, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, network=None, host=None):
 	if request.method == 'POST':
 		form = NetworkInstanceForm(api, request.POST)
 		if form.is_valid():
@@ -131,6 +131,11 @@ def add(api, request):
 			return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
 	else:
 		form = NetworkInstanceForm(api)
+		if network:
+			network = api.resource_info(network)['attrs']['kind']
+			form.fields["network"].initial=network
+		if host:
+			form.fields['host'].initial=host
 		return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
 	
 @wrap_rpc
