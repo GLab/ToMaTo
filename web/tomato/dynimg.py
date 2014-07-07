@@ -58,7 +58,7 @@ def dynimg(request,size,objtype,arg1,arg2):
 	# handle networks
 	elif objtype=="network" or objtype=="vpn":
 		kind=arg1
-		for i in ["openflow","private"]:
+		for i in ["openflow"]:
 			if i in kind:
 				kind = i
 		filepath_pref="img/"+kind+size+".png"
