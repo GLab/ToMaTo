@@ -5,8 +5,6 @@ from .cmd import run, CommandError #@UnresolvedImport
 from .. import config
 
 envCmds = None
-def setEnvCmds(hbenvcmds):
-    envCmds = hbenvcmds
     
 def getEnv():
 	data = {}
@@ -49,6 +47,9 @@ def dumpException(**kwargs):
 def getCount():
 	return len(os.listdir(config.DUMP_DIR))
 	
-def init():
-	if not os.path.exists(config.DUMP_DIR):
+def init(env_cmds):
+    global envCmds
+    envCmds = env_cmds
+    
+    if not os.path.exists(config.DUMP_DIR):
 		os.mkdir(config.DUMP_DIR)

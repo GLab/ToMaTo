@@ -24,7 +24,7 @@ def getEnv():
 	return dump_lib.getEnv()
 
 def getCaller(self):
-	return dump_lib.getCaller
+	return dump_lib.getCaller()
 
 def dump(timestamp=None, caller=None, **kwargs):
 	return dump_lib.dump(timestamp,caller,**kwargs)
@@ -38,5 +38,4 @@ def getCount():
 
 
 def init():
-	dump_lib.setEnvCmds(envCmds)
-    dump_lib.init()
+    dump_lib.init(envCmds)
