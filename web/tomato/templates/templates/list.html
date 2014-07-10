@@ -28,7 +28,13 @@
 
 {% if templ_list|length > 10 and request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url template.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
+  <button type="submit" 
+  {% if tech %}
+  	formaction="{%url template.add tech%}"
+  {%else%}
+  	formaction="{%url template.add%}"
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
 </form>
 {% endif %}
 
@@ -136,7 +142,13 @@
 
 {% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url template.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
+  <button type="submit" 
+  {% if tech %}
+  	formaction="{%url template.add tech%}"
+  {%else%}
+  	formaction="{%url template.add%}"
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
 </form>
 {% endif %}
 

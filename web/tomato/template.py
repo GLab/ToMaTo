@@ -131,7 +131,7 @@ def info(api, request, res_id):
 	return render(request, "templates/info.html", {"template": template, "techs_dict": techs_dict})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, tech=None):
 	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+serverInfo()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
@@ -157,6 +157,8 @@ def add(api, request):
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
 		form = AddTemplateForm()
+		if tech:
+			form.fields['tech'].initial = tech
 		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
 
 @wrap_rpc
