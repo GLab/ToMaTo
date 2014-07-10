@@ -75,8 +75,11 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{%url external_network_instances_all %}">Show instances on all host</a></li>
-    
+    {% if network %}
+      <li><a href="{%url external_network_instances network %}">Show instances on all hosts</a></li>
+    {% else %}
+      <li><a href="{%url external_network_instances_all %}">Show instances on all hosts</a></li>
+    {%endif%}
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for o in organizations %}
