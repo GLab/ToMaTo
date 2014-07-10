@@ -116,13 +116,13 @@
   <button type="submit"
   {%if host%}
   	{%if network%}
-  	  formaction="{%url external_network_instance.add%}/{{network}}/{{host}}"
+  	  formaction="{%url external_network_instance.add network=network host=host%}"
   	{%else%}
-  	  formaction="{%url external_network_instance.add%}/all/{{host}}"
+  	  formaction="{%url external_network_instance.add host=host%}"
   	{%endif%}
   {%else%}
   {%if network%}
-  	  formaction="{%url external_network_instance.add%}/{{network}}"
+  	  formaction="{%url external_network_instance.add network=network%}"
   	{%else%}
   	  formaction="{%url external_network_instance.add%}"
   	{%endif%}
@@ -172,13 +172,13 @@
   <button type="submit"
   {%if host%}
   	{%if network%}
-  	  formaction="{%url external_network_instance.add%}/{{network}}/{{host}}"
+  	  formaction="{%url external_network_instance.add network=network host=host%}"
   	{%else%}
-  	  formaction="{%url external_network_instance.add%}/all/{{host}}"
+  	  formaction="{%url external_network_instance.add host=host%}"
   	{%endif%}
   {%else%}
   {%if network%}
-  	  formaction="{%url external_network_instance.add%}/{{network}}"
+  	  formaction="{%url external_network_instance.add network=network%}"
   	{%else%}
   	  formaction="{%url external_network_instance.add%}"
   	{%endif%}
