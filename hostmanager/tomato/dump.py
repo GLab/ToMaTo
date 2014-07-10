@@ -1,8 +1,7 @@
 from datetime import datetime
 import sys, os, time, json, traceback, hashlib
 
-from .lib.cmd import run, CommandError #@UnresolvedImport
-from . import config
+import .lib.dump as dump_lib #@UnresolvedImport
 
 envCmds = {
   "disks": ["df", "-h"],
@@ -22,46 +21,22 @@ envCmds = {
 }
 
 def getEnv():
-	data = {}
-	for name, cmd in envCmds.iteritems():
-		try:
-			data[name] = run(cmd).splitlines()
-		except CommandError, err:
-			data[name] = str(err)
-	return data
+	return dump_lib.getEnv()
 
 def getCaller(self):
-	caller = None
-	for t in traceback.extract_stack():
-			if t[0] == __file__:
-					break
-			caller = list(t[0:3])
-	if caller:
-			caller[0] = "..."+caller[0][-22:]
-	return caller
+	return dump_lib.getCaller
 
 def dump(timestamp=None, caller=None, **kwargs):
-	if not timestamp:
-		timestamp = time.time()
-	filename = os.path.join(config.DUMP_DIR, "%s.json" % timestamp)
-	timestr = datetime.strftime(datetime.fromtimestamp(timestamp), "%Y-%m-%dT%H:%M:%S.%f%z")
-	data = {"environment": getEnv(), "timestamp": timestr}
-	if not caller is False:
-		data["caller"] = getCaller()
-	data.update(kwargs)
-	with open(filename, "w") as f:
-		json.dump(data, f, indent=2)
+	return dump_lib.dump(timestamp,caller,**kwargs)
 
 def dumpException(**kwargs):
-	(type_, value, trace) = sys.exc_info()
-	trace = traceback.extract_tb(trace) if trace else None
-	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
-	exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
-	dump(caller=False, exception=exception, excid=exception_id, **kwargs)
+	return dump_lib.dumpException(**kwargs)
 
 def getCount():
-	return len(os.listdir(config.DUMP_DIR))
+	return dump_lib.getCount()
 	
+
+
 def init():
-	if not os.path.exists(config.DUMP_DIR):
-		os.mkdir(config.DUMP_DIR)
+	dump_lib.setEnvCmds(envCmds)
+    dump_lib.init()
