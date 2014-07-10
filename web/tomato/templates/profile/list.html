@@ -28,7 +28,13 @@
 
 {% if profile_list|length > 10 and request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url profile.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
+  <button type="submit" 
+  {% if tech %}
+  	formaction="{%url profile.add tech%}"
+  {%else%}
+  	formaction="{%url profile.add%}"
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
 </form>
 {% endif %}
 
@@ -96,7 +102,13 @@
 
 {% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url profile.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
+  <button type="submit" 
+  {% if tech %}
+  	formaction="{%url profile.add tech%}"
+  {%else%}
+  	formaction="{%url profile.add%}"
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
 </form>
 {% endif %}
 

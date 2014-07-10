@@ -143,7 +143,7 @@ def info(api, request, res_id):
 	return render(request, "profile/info.html", {"profile": profile, "techs_dict": techs_dict})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, tech=None):
 	if request.method == 'POST':
 		form = AddProfileForm(request.POST)
 		if form.is_valid():
@@ -167,7 +167,9 @@ def add(api, request):
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 	else:
-		form = AddProfileForm
+		form = AddProfileForm()
+		if tech:
+			form.fields['tech'].initial = tech
 		return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 
 @wrap_rpc

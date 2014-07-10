@@ -113,7 +113,21 @@
 
 {% if nis|length > 10 and request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+  <button type="submit"
+  {%if host%}
+  	{%if network%}
+  	  formaction="{%url external_network_instance.add network=network host=host%}"
+  	{%else%}
+  	  formaction="{%url external_network_instance.add host=host%}"
+  	{%endif%}
+  {%else%}
+  {%if network%}
+  	  formaction="{%url external_network_instance.add network=network%}"
+  	{%else%}
+  	  formaction="{%url external_network_instance.add%}"
+  	{%endif%}
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
 </form>
 {% endif %}
 
@@ -155,7 +169,21 @@
 
 {% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+  <button type="submit"
+  {%if host%}
+  	{%if network%}
+  	  formaction="{%url external_network_instance.add network=network host=host%}"
+  	{%else%}
+  	  formaction="{%url external_network_instance.add host=host%}"
+  	{%endif%}
+  {%else%}
+  {%if network%}
+  	  formaction="{%url external_network_instance.add network=network%}"
+  	{%else%}
+  	  formaction="{%url external_network_instance.add%}"
+  	{%endif%}
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
 </form>
 {% endif %}
 
