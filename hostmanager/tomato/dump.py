@@ -29,8 +29,8 @@ def getAll(after=None,list_only=False,include_env=False,compress_env=True):
 def remove_all_where(before=None,excid=None):
     return dump_lib.remove_all_where(before=before,excid=excid):
 
-def get(filename,include_env=False,compress_env=False):
-    return dump_lib.load_dump(filename,load_env=include_env,compress=compress_env)
+def get(dump_id,include_env=False,compress_env=False):
+    return dump_lib.load_dump(dump_id,load_env=include_env,compress=compress_env)
 
 
 def init():

@@ -14,7 +14,7 @@ envCmds = {}
 
 #this will contain all dumps, except for environment data, since environment data may be huge (about 20K if compressed, around 1M if not compressed)
 #environment data is saved to disk loaded on demand if needed.
-#the keys are the dumps filename, for faster access.
+#the keys are the dumps IDs, for faster access.
 dumps = {}
 
 #structure for dumps:
@@ -22,7 +22,7 @@ dumps = {}
 #   exception_details:dict  # the exception object
 #   excid:string         # an id given to an exception. ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
 #   environment          # not in RAM, only in the file. a dict consisting of key,value. has the same keys as the envCmds dict, and values are the excecution results of the values in envCmds
-#   filename:string      # filename inside the dump directory. used to load environment data on request
+#   dump_id:string      # ID of the dump. used to address the dump
 # }
     
 #use envCmds to get the environment data.
@@ -45,12 +45,15 @@ def getCaller(self):
 			caller[0] = "..."+caller[0][-22:]
 	return caller
 
-#dumps are identified by their filename relative to the dump directory.
+#resolve a dump to a filename inside the dumps directory
 #get the absolute path of a dump for the given filename    
-def get_absolute_path(filename):
+def get_absolute_path(dump_id):
+    filename = dump_id
+    if not filename.ends_with(".json"):
+        filename=dump_id+".json"
     return os.path.join(config.DUMP_DIR, filename)
     
-#save dump to a file and store it in the dumps dict.
+#save dump to a file and store it in the dumps dict. return the dump's ID
 def save_dump(timestamp=None, caller=None, **kwargs):
     global dumps
     
@@ -60,27 +63,30 @@ def save_dump(timestamp=None, caller=None, **kwargs):
     timestr = datetime.strftime(datetime.fromtimestamp(timestamp), timestamp_format)
     if not caller is False:
 		data["caller"] = getCaller()
+    dump_id = timestamp
         
     #create the dump
-    data = {"environment": getEnv(), "timestamp": timestr, 'filename':filename}
+    data = {"environment": getEnv(), "timestamp": timestr, 'dump_id': dump_id}
     data.update(kwargs)
     
     #save it (in the dumps array, and on disk)
-    filename = "%s.json" % timestamp
-    with open(get_absolute_path(filename), "w") as f:
+    with open(get_absolute_path(dump_id), "w") as f:
 		json.dump(data, f, indent=2)
     del data['environment']
     data['timestamp'] = timestamp
-    dumps[filename] = data
+    dumps[dump_id] = data
+    
+    return dump_id
     
 #load a dump from file.
 #similar arguments as list()
 #param push_to_dumps: if true, the dump will be stored in the dumps dict. this is only useful for the init function.
-def load_dump(filename,load_env=False,compress=False,push_to_dumps=False):
-    with open(get_absolute_path(filename),"r") as f:
+def load_dump(dump_id,load_env=False,compress=False,push_to_dumps=False):
+    with open(get_absolute_path(dump_id),"r") as f:
         dump = json.load(f)
         
     dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
+
     if not load_env:
         del dump['environment']
     elif compress:
@@ -88,16 +94,19 @@ def load_dump(filename,load_env=False,compress=False,push_to_dumps=False):
         
     if push_to_dumps:
         global dumps
-        dumps[d]=dump
+        dump_p = dump
+        if load_env:
+            del dump_p['environment']
+        dumps[dump['dump_id']]=dump_p
         
     return dump
 
 #remove a dump
-def remove_dump(filename):
+def remove_dump(dump_id):
     global dumps
-    if filename in dumps:
-        os.remove(get_absolute_path(filename))
-        del dumps[filename]
+    if dump_id in dumps:
+        os.remove(get_absolute_path(dump_id))
+        del dumps[dump_id]
         
 #remove all dumps matching a criterion. If criterion is set to None, ignore this criterion.
 #before: remove only if the exception is older than this argument. time.Time object
@@ -134,12 +143,12 @@ def getAll(after=None,list_only=False,include_env=False,compress=True):
     global dumps
     return_list = []
     for d in dumps:
-        if (after is None) or (d['timestamp_unix'] >= after):
+        if (after is None) or (d['timestamp'] >= after):
             dump = dumps[d]
             if list_only:
-                dump = d['filename']
+                dump = d['dump_id']
             elif include_env:
-                dump = load_dump(d['filename'],True,True)
+                dump = load_dump(d['dump_id'],True,True)
             return_list.append(dump)
     return return_list
         
