@@ -107,7 +107,7 @@ def load_dump(dump_id,load_env=False,compress=False,push_to_dumps=False):
     if not load_env:
         del dump['environment']
     elif compress:
-        dump['environment'] = zlib.compress(str(dump['environment']),9)
+        dump['environment'] = zlib.compress(json.dumps(dump['environment']),9)
         
     if push_to_dumps:
         with dumps_lock:
@@ -158,7 +158,7 @@ def getCount():
 #param after: if set, only return dumps with timestamp after this
 #param list_only: if true, only return dumps with timestamp after this time (time.Time object)
 #param include_env: include environment data (may be about 1M!, or set compress true). Only used if not list_only
-#param compress: use zlib to compress environment data. only used if include_env==True. decompress with eval(zlib.decompress(dump['environment']))
+#param compress: use zlib to compress environment data. only used if include_env==True. decompress with json.loads(zlib.decompress(dump['environment']))
 def getAll(after=None,list_only=False,include_env=False,compress=True):
     global dumps
     return_list = []
