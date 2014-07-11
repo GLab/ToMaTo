@@ -41,6 +41,7 @@ def db_migrate():
 
 
 import config
+import dump
 
 	
 import threading
@@ -85,6 +86,7 @@ def start():
 	rpcserver.start()
 	starttime = time.time()
 	scheduler.start()
+	dump.init()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."

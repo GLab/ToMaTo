@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import xmlrpclib
+import dump
 
 XMLRPCError = xmlrpclib.Error
 
@@ -48,6 +49,7 @@ def errors_add(error, trace):
 	if isinstance(error, Fault) and UNKNOWN_ERROR < error.faultCode < INTERNAL_ERROR:
 		return
 	print trace
+	dump.dumpException()
 
 def wrap(exc):
 	if isinstance(exc, Fault):

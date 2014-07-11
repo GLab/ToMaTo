@@ -113,6 +113,11 @@ DISABLE_TRANSACTION_MANAGEMENT = True
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
+DUMP_DIR = "/var/log/tomato/dumps"
+"""
+The location of the dump files that are created when unexpected errors occur.
+"""
+
 ERROR_NOTIFY = []
 
 import socket
