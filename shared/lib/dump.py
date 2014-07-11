@@ -12,6 +12,10 @@ timestamp_format = "%Y-%m-%dT%H:%M:%S.%f%z"
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
 envCmds = {}
 
+#Some version information about ToMaTo. Filled in the Init function
+tomato_component = None
+tomato_version = None
+
 #this will contain all dumps, except for environment data, since environment data may be huge (about 20K if compressed, around 1M if not compressed)
 #environment data is saved to disk loaded on demand if needed.
 #the keys are the dumps IDs, for faster access.
@@ -95,7 +99,8 @@ def save_dump(timestamp=None, caller=None, description={}, origin=None, group_id
             "origin":origin,
             "group_id":origin + "__" + group_id,
             "data":data,
-            'dump_id': dump_id
+            'dump_id': dump_id,
+            "software_version":{"component": tomato_component, "version": tomato_version}
             }
         
         
@@ -187,11 +192,15 @@ def getAll(after=None,list_only=False,include_data=False,compress_data=True):
 	
     
 #initialize dump management on server startup.
-def init(env_cmds):
+def init(env_cmds,tomatoComponent,tomatoVersion):
     with dumps_lock:
         global envCmds
         global dumps
+        global tomato_component
+        global tomato_version
         envCmds = env_cmds
+        tomato_component = tomatoComponent
+        tomato_version = tomatoVersion
         
         if not os.path.exists(config.DUMP_DIR):
     		os.mkdir(config.DUMP_DIR)

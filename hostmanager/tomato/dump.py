@@ -1,4 +1,5 @@
 import .lib.dump as dump_lib #@UnresolvedImport
+from .lib.cmd import hostinfo
 
 envCmds = {
   "disks": ["df", "-h"],
@@ -34,4 +35,4 @@ def get(dump_id,include_data=False,compress_data=False):
 
 
 def init():
-    dump_lib.init(envCmds)
+    dump_lib.init(envCmds,"Hostmanager",hostinfo.hostmanagerVersion())

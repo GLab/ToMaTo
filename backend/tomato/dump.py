@@ -1,4 +1,5 @@
 import .lib.dump as dump_lib #@UnresolvedImport
+import misc
 
 envCmds = {
   "disks": ["df", "-h"],
@@ -31,4 +32,4 @@ def get(dump_id,include_data=False,compress_data=False):
 
 
 def init():
-    dump_lib.init(envCmds)
+    dump_lib.init(envCmds,"Backend",misc.getVersion())
