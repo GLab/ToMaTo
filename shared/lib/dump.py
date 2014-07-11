@@ -21,10 +21,11 @@ dumps_lock = threading.RLock()
 
 #structure for dumps:
 # { timestamp:time.Time  # time the error was detected
-#   exception_details:dict  # the exception object
-#   excid:string         # an id given to an exception. ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
-#   environment          # not in RAM, only in the file. a dict consisting of key,value. has the same keys as the envCmds dict, and values are the excecution results of the values in envCmds
-#   dump_id:string      # ID of the dump. used to address the dump
+#   description:dict     # short description about what happened (i.e., for an exception: position in code, exception subject)
+#   origin:string        # Teason why the dump was created (i.e., "Exception"). 
+#   group_id:string      # an id given to what happened. Group ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
+#   data:any             # anything, depending on what happened. not in RAM due to size, only in the file. a dict consisting of key,value. has the same keys as the envCmds dict, and values are the excecution results of the values in envCmds
+#   dump_id:string       # ID of the dump. used to address the dump
 # }
     
 #use envCmds to get the environment data.
@@ -68,7 +69,11 @@ def get_free_dumpid(timestamp):
         return dump_id+"_"+i
     
 #save dump to a file and store it in the dumps dict. return the dump's ID
-def save_dump(timestamp=None, caller=None, **kwargs):
+#arguments are mostly according to the dump structure.
+#param caller: ???
+#data should not contain environment data. this will be inserted automatically.
+#group_id will be extended to origin__group_id. this way, origin becomes a namespace.
+def save_dump(timestamp=None, caller=None, description={}, origin=None, group_id=None, data={}):
     global dumps
     
     #collect missing info
@@ -77,21 +82,29 @@ def save_dump(timestamp=None, caller=None, **kwargs):
     timestr = datetime.strftime(datetime.fromtimestamp(timestamp), timestamp_format)
     if not caller is False:
 		data["caller"] = getCaller()
+    data["environment"] = getEnv()
         
     #we need to lock between choosing an ID and saving it to the array.
     with dumps_lock:
         dump_id = get_free_dumpid(timestamp)
             
         #create the dump
-        data = {"environment": getEnv(), "timestamp": timestr, 'dump_id': dump_id}
-        data.update(kwargs)
+        dump = {
+            "timestamp": timestr,
+            "description":description,
+            "origin":origin,
+            "group_id":origin + "__" + group_id,
+            "data":data,
+            'dump_id': dump_id
+            }
+        
         
         #save it (in the dumps array, and on disk)
         with open(get_absolute_path(dump_id), "w") as f:
-    		json.dump(data, f, indent=2)
-        del data['environment']
-        data['timestamp'] = timestamp
-        dumps[dump_id] = data
+    		json.dump(dump, f, indent=2)
+        del dump['data']
+        dump['timestamp'] = timestamp
+        dumps[dump_id] = dump
     
     return dump_id
     
@@ -105,16 +118,16 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False):
     dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
 
     if not load_data:
-        del dump['environment']
+        del dump['data']
     elif compress_data:
-        dump['environment'] = zlib.compress(json.dumps(dump['environment']),9)
+        dump['data'] = zlib.compress(json.dumps(dump['data']),9)
         
     if push_to_dumps:
         with dumps_lock:
             global dumps
             dump_p = dump
-            if load_data:
-                del dump_p['environment']
+            if not load_data:
+                del dump_p['data']
             dumps[dump['dump_id']]=dump_p
         
     return dump
@@ -129,8 +142,8 @@ def remove_dump(dump_id):
         
 #remove all dumps matching a criterion. If criterion is set to None, ignore this criterion.
 #before: remove only if the exception is older than this argument. time.Time object
-#excid: remove only if it is an instance of the given exception id
-def remove_all_where(before=None,excid=None):
+#group_id: remove only if it is an instance of the given group_id
+def remove_all_where(before=None,group_id=None):
     global dumps
     #if no criterion is selected, do nothing.
     if before is None and excid is None:
@@ -144,7 +157,7 @@ def remove_all_where(before=None,excid=None):
             matches_criteria = True
             if before is not None and before<dump['timestamp_unix']:
                 matches_criteria = False
-            if excid is not None and excid!=dump['excid']:
+            if excid is not None and excid!=dump['group_id']:
                 matches_criteria = False
             
             if matches_criteria:
@@ -171,15 +184,6 @@ def getAll(after=None,list_only=False,include_data=False,compress_data=True):
                 dump = load_dump(d['dump_id'],True,True)
             return_list.append(dump)
     return return_list
-        
-
-
-def dumpException(**kwargs):
-	(type_, value, trace) = sys.exc_info()
-	trace = traceback.extract_tb(trace) if trace else None
-	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
-	exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
-	dump(caller=False, exception=exception, excid=exception_id, **kwargs)
 	
     
 #initialize dump management on server startup.
@@ -195,3 +199,22 @@ def init(env_cmds):
             dump_list = os.listdir(config.DUMP_DIR)
             for d in dump_list:
                 dump = load_dump(d,push_to_dumps=True)
+
+
+
+
+
+
+
+def dumpException(**kwargs):
+    (type_, value, trace) = sys.exc_info()
+    trace = traceback.extract_tb(trace) if trace else None
+    
+    exception = {"type": type_.__name__, "value": str(value), "trace": trace}
+    exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
+    description={"subject":exception['value'],"type":exception['type']}
+    
+    data={"exception":exception}
+    data.update(**kwargs)
+    
+    return save_dump(caller=False, description=description, origin="Exception", group_id=exception_id, data=data)

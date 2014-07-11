@@ -33,11 +33,11 @@ def dump_list(after=None,list_only=False,include_data=False,compress_data=True):
     Parameter *list_only*:
       If True, only include dump IDs.
       
-    Parameter *include_env*:
-      If True, include environment data. Environment data may be about 1M per dump.
+    Parameter *include_data*:
+      If True, include detailed data. This may be about 1M per dump.
       
-    Parameter *compress_env*:
-      If True and include_env, compress the environment data before returning. It may still be around 20M per dump after compressing.
+    Parameter *compress_data*:
+      If True and include_data, compress the detailed data before returning. It may still be around 20M per dump after compressing.
     """
 	return dump.getAll(after=after, list_only=list_only, include_data=include_data, compress_data=compress_data)
 
@@ -48,10 +48,10 @@ def dump_info(dump_id,include_data=False,compress_data=True):
 	Parameter *dump_id*:
 	  The internal id of the dump
 	  
-	Parameter *include_env*:
-      If True, include environment data. Environment data may be about 1M.
+	Parameter *include_data*:
+      If True, include detailed data. This may be about 1M.
       
-    Parameter *compress_env*:
-      If True and include_env, compress the environment data before returning. It may still be around 20M after compressing.
+    Parameter *compress_data*:
+      If True and include_data, compress the detailed data before returning. It may still be around 20M after compressing.
 	"""
 	return dump.get(dump_id, include_data=include_data, compress_data=compress_data)
