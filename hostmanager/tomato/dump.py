@@ -1,6 +1,3 @@
-from datetime import datetime
-import sys, os, time, json, traceback, hashlib
-
 import .lib.dump as dump_lib #@UnresolvedImport
 
 envCmds = {
@@ -19,15 +16,6 @@ envCmds = {
   "tc": ["tc", "-s", "qdisc", "show"],
   "files": ["find", "/var/lib/tomato/", "-exec", "ls", "-lhd", "{}", ";"],
 }
-
-def getEnv():
-	return dump_lib.getEnv()
-
-def getCaller(self):
-	return dump_lib.getCaller()
-
-def dump(timestamp=None, caller=None, **kwargs):
-	return dump_lib.dump(timestamp,caller,**kwargs)
 
 def dumpException(**kwargs):
 	return dump_lib.dumpException(**kwargs)
