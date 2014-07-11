@@ -38,7 +38,7 @@ def dynimg(request,size,objtype,arg1,arg2):
 		#handle non-(repy-network) devices
 		if objtype!="repy" or subtype=="device":
 			found_templ = False
-			for i in []:
+			for i in ['floodlight']:
 				if i in template_name:
 					template_name = i
 					found_templ = True
