@@ -28,7 +28,7 @@ dumps_lock = threading.RLock()
 #   description:dict     # short description about what happened (i.e., for an exception: position in code, exception subject)
 #   origin:string        # Teason why the dump was created (i.e., "Exception"). 
 #   group_id:string      # an id given to what happened. Group ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
-#   data:any             # anything, depending on what happened. not in RAM due to size, only in the file. a dict consisting of key,value. has the same keys as the envCmds dict, and values are the excecution results of the values in envCmds
+#   data:any             # anything, depending on what happened. not in RAM due to size, only in the file.
 #   dump_id:string       # ID of the dump. used to address the dump
 #   software_version     # Information about software component (i.e., hostmanager or backend) and the version
 # }
