@@ -23,7 +23,7 @@ def dump_count():
 	"""
 	return dump.getCount()
 
-def dump_list(after=None,list_only=False,include_env=False,compress_env=True):
+def dump_list(after=None,list_only=False,include_data=False,compress_data=True):
 	"""
 	returns a list of dumps.
 	
@@ -39,9 +39,9 @@ def dump_list(after=None,list_only=False,include_env=False,compress_env=True):
     Parameter *compress_env*:
       If True and include_env, compress the environment data before returning. It may still be around 20M per dump after compressing.
     """
-	return dump.getAll(after=after, list_only=list_only, include_env=include_env, compress_env=compress_env)
+	return dump.getAll(after=after, list_only=list_only, include_data=include_data, compress_data=compress_data)
 
-def dump_info(dump_id,include_env=False,compress_env=True):
+def dump_info(dump_id,include_data=False,compress_data=True):
 	"""
 	returns info of a single dump
 	
@@ -54,4 +54,4 @@ def dump_info(dump_id,include_env=False,compress_env=True):
     Parameter *compress_env*:
       If True and include_env, compress the environment data before returning. It may still be around 20M after compressing.
 	"""
-	return dump.get(dump_id, include_env=include_env, compress_env=compress_env)
+	return dump.get(dump_id, include_data=include_data, compress_data=compress_data)

@@ -98,22 +98,22 @@ def save_dump(timestamp=None, caller=None, **kwargs):
 #load a dump from file.
 #similar arguments as list()
 #param push_to_dumps: if true, the dump will be stored in the dumps dict. this is only useful for the init function.
-def load_dump(dump_id,load_env=False,compress=False,push_to_dumps=False):
+def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False):
     with open(get_absolute_path(dump_id),"r") as f:
         dump = json.load(f)
         
     dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
 
-    if not load_env:
+    if not load_data:
         del dump['environment']
-    elif compress:
+    elif compress_data:
         dump['environment'] = zlib.compress(json.dumps(dump['environment']),9)
         
     if push_to_dumps:
         with dumps_lock:
             global dumps
             dump_p = dump
-            if load_env:
+            if load_data:
                 del dump_p['environment']
             dumps[dump['dump_id']]=dump_p
         
@@ -157,9 +157,9 @@ def getCount():
 
 #param after: if set, only return dumps with timestamp after this
 #param list_only: if true, only return dumps with timestamp after this time (time.Time object)
-#param include_env: include environment data (may be about 1M!, or set compress true). Only used if not list_only
-#param compress: use zlib to compress environment data. only used if include_env==True. decompress with json.loads(zlib.decompress(dump['environment']))
-def getAll(after=None,list_only=False,include_env=False,compress=True):
+#param include_data: include environment data (may be about 1M!, or set compress_data true). Only used if not list_only
+#param compress_data: use zlib to compress environment data. only used if include_data==True. decompress with json.loads(zlib.decompress(dump['environment']))
+def getAll(after=None,list_only=False,include_data=False,compress_data=True):
     global dumps
     return_list = []
     for d in dumps:
@@ -167,7 +167,7 @@ def getAll(after=None,list_only=False,include_env=False,compress=True):
             dump = dumps[d]
             if list_only:
                 dump = d['dump_id']
-            elif include_env:
+            elif include_data:
                 dump = load_dump(d['dump_id'],True,True)
             return_list.append(dump)
     return return_list
