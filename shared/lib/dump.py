@@ -137,7 +137,7 @@ def remove_all_where(before=None,excid=None):
         return
     
     with dumps_lock:
-        for d in dumps:
+        for d in list(dumps):
             dump = dumps[d]
             
             #for every criterion: if it is not none and does not apply, do not remove the dump file
