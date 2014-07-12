@@ -26,11 +26,11 @@ dumps_lock = threading.RLock()
 #structure for dumps:
 # { timestamp:time.Time  # time the error was detected
 #   description:dict     # short description about what happened (i.e., for an exception: position in code, exception subject)
-#   origin:string        # Teason why the dump was created (i.e., "Exception"). 
+#   type:string        # Teason why the dump was created (i.e., "Exception"). 
 #   group_id:string      # an id given to what happened. Group ID should be the same iff it happened due to the same reason (same stack trace, same position in code, same exception, etc).
 #   data:any             # anything, depending on what happened. not in RAM due to size, only in the file.
 #   dump_id:string       # ID of the dump. used to address the dump
-#   software_version     # Information about software component (i.e., hostmanager or backend) and the version
+#   software_version:dict     # Information about software component (i.e., hostmanager or backend) and the version
 # }
     
 #use envCmds to get the environment data.
@@ -77,8 +77,8 @@ def get_free_dumpid(timestamp):
 #arguments are mostly according to the dump structure.
 #param caller: ???
 #data should not contain environment data. this will be inserted automatically.
-#group_id will be extended to origin__group_id. this way, origin becomes a namespace.
-def save_dump(timestamp=None, caller=None, description={}, origin=None, group_id=None, data={}):
+#group_id will be extended to type__group_id. this way, type becomes a namespace.
+def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=None, data={}):
     global dumps
     
     #collect missing info
@@ -97,8 +97,8 @@ def save_dump(timestamp=None, caller=None, description={}, origin=None, group_id
         dump = {
             "timestamp": timestr,
             "description":description,
-            "origin":origin,
-            "group_id":origin + "__" + group_id,
+            "type":type,
+            "group_id":type + "__" + group_id,
             "data":data,
             'dump_id': dump_id,
             "software_version":{"component": tomato_component, "version": tomato_version}
@@ -227,4 +227,4 @@ def dumpException(**kwargs):
     data={"exception":exception}
     data.update(**kwargs)
     
-    return save_dump(caller=False, description=description, origin="Exception", group_id=exception_id, data=data)
+    return save_dump(caller=False, description=description, type="Exception", group_id=exception_id, data=data)
