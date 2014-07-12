@@ -118,25 +118,28 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
 #similar arguments as list()
 #param push_to_dumps: if true, the dump will be stored in the dumps dict. this is only useful for the init function.
 def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False):
-    with open(get_absolute_path(dump_id),"r") as f:
-        dump = json.load(f)
-        
-    dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
-
-    if not load_data:
-        del dump['data']
-    elif compress_data:
-        dump['data'] = zlib.compress(json.dumps(dump['data']),9)
-        
-    if push_to_dumps:
-        with dumps_lock:
-            global dumps
-            dump_p = dump
-            if not load_data:
-                del dump_p['data']
-            dumps[dump['dump_id']]=dump_p
-        
-    return dump
+    global dumps
+    with lock:
+        if not dump_id in dumps:
+            return None
+        with open(get_absolute_path(dump_id),"r") as f:
+            dump = json.load(f)
+            
+        dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
+    
+        if not load_data:
+            del dump['data']
+        elif compress_data:
+            dump['data'] = zlib.compress(json.dumps(dump['data']),9)
+            
+        if push_to_dumps:
+            with dumps_lock:
+                dump_p = dump
+                if not load_data:
+                    del dump_p['data']
+                dumps[dump['dump_id']]=dump_p
+            
+        return dump
 
 #remove a dump
 def remove_dump(dump_id):

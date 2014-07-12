@@ -185,7 +185,7 @@ class HostDumpSource(DumpSource):
     def _fetch_list(self,after): #TODO: return None if unreachable
         return self.host_obj.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
     
-    def _fetch_with_data(self,dump_id,keep_compressed=True):
+    def _fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
         dump = self.host_obj.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
         if not keep_compressed:
             dump['data'] = json.loads(zlib.decompress(dump['data']))
