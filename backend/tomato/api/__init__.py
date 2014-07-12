@@ -24,4 +24,4 @@ from resources import *
 from docs import *
 from capabilities import *
 from misc import *
-
+from ..dumpmanager import api_errordump_info as errordump_info, api_errordump_list as errordump_list, api_errorgroup_info as errorgroup_info, api_errorgroup_list as errorgroup_list, api_errorgroup_modify as errorgroup_modify

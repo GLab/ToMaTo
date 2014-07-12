@@ -5,7 +5,7 @@ import dump
 import host
 from lib import attributes, db
 from auth import mailFlaggedUsers, Flags
-from . import scheduler,config
+from . import scheduler,config,currentUser,fault
     
     
 #Zero-th part: database stuff
@@ -39,6 +39,9 @@ def get_group(group_id):
         return ErrorGroup.objects.get(group_id=group_id)
     except ErrorGroup.DoesNotExist:
         return None
+    #
+def getAll_group():
+    return ErrorGroup.objects.all()
 
 
 class ErrorDump(attributes.Mixin, models.Model):
@@ -115,7 +118,8 @@ def get_dump(source_name,dump_id):
     except ErrorDump.DoesNotExist:
         return None
 
-
+def getAll_dumps():
+    return ErrorDump.objects.all()
 
 
 
@@ -233,7 +237,7 @@ def find_source_by_name(source_name):
                 return s
     return None
 
-def insert_dump(dump,source): #TODO: add database table and actually do this
+def insert_dump(dump,source):
     with lock_db:
         source_name = source._source_name()
         must_fetch_data = False
@@ -298,6 +302,61 @@ def init():
 
 
 
-# Second Part: Access to known dumps
+# Second Part: Access to known dumps for API
 
-#TODO: actually provide these methods
+def checkPermissions():
+        user = currentUser()
+        if not user.hasFlag(Flags.GlobalAdmin):
+            fault.raise_("Not enough permissions")
+            return False
+        return True
+
+def api_errorgroup_list():
+    if checkPermissions():
+        with lock_db:
+            return getAll_group()
+
+def api_errorgroup_modify(group_id,attrs):
+    if checkPermissions():
+        with lock_db:
+            for i in attrs.keys():
+                if not i=="description":
+                    fault.raise_("Unsupported attribute for error group: %s" % i, fault.USER_ERROR)
+            get_group(group_id).update_description(attrs['description'])
+
+def api_errorgroup_info(group_id):
+    if checkPermissions():
+        with lock_db:
+            group = get_group(group_id)
+            res = group.info()
+            res['faults'] = []
+            for i in list(group.dumps):
+                res['faults'].append(i.info())
+            return res
+        
+        
+def api_errordump_list(group_id=None, source=None, data_available=None):
+    if checkPermissions():
+        with lock_db:
+            dumps = getAll_dumps()
+            res = []
+            for d in dumps:
+                di = d.info(include_data=False)
+                
+                append_to_res=True
+                if not group_id is None and di['group_id'] == group_id:
+                    append_to_res = False
+                if not source is None and di['source'] == source:
+                    append_to_res = False
+                if not data_available is None and di['data_available'] == data_available:
+                    append_to_res = False
+                
+                if append_to_res:
+                    res.append(di)
+            return res
+
+def api_errordump_info(source,dump_id,include_data=False):
+    if checkPermissions():
+        with lock_db:
+            return get_dump(source, dump_id).info(include_data = include_data)
+    
