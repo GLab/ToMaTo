@@ -5,6 +5,7 @@ import dump
 import host
 from lib import attributes, db
 from auth import mailFlaggedUsers, Flags
+from . import scheduler,config
     
     
 #Zero-th part: database stuff
@@ -264,9 +265,11 @@ def update_source(source):
     
 def update_all():
     global dumpsources
-    for s in list(dumpsources): #a removed host while iterating is caught by this, since dumpSource.getUpdates() will return [] in this case
-        threading.thread.start_new(update_source,(s)) #host might need longer to respond. no reason not to parallelize this
-        time.sleep(1) #do not connect to all hosts at the same time. There is no need to rush.
+    def cycle_all():
+        for s in list(dumpsources): #a removed host while iterating is caught by this, since dumpSource.getUpdates() will return [] in this case
+            threading.thread.start_new(update_source,(s)) #host might need longer to respond. no reason not to parallelize this
+            time.sleep(1) #do not connect to all hosts at the same time. There is no need to rush.
+    threading.thread.start_new(cycle_all)
 
 def remove_host(host_obj):
     global dumpsources
@@ -291,7 +294,7 @@ def init():
         dumpsources.append(BackendDumpSource())
         for h in host.getAll():
             dumpsources.append(HostDumpSource(h))
-    #TODO: start a task to call updateAll repeatedly
+    scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_all, immediate=True)
 
 
 

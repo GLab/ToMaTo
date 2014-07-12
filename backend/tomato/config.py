@@ -118,6 +118,11 @@ DUMP_DIR = "/var/log/tomato/dumps"
 The location of the dump files that are created when unexpected errors occur.
 """
 
+DUMP_COLLECTION_INTERVAL = 30*60
+"""
+Interval in which the dump manager will collect error dumps from hosts and backend.
+"""
+
 ERROR_NOTIFY = []
 
 import socket
