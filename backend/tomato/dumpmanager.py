@@ -45,7 +45,8 @@ class ErrorDump(attributes.Mixin, models.Model):
     dump_id = models.CharField(max_length=255)
     group = models.ForeignKey(ErrorGroup, related_name="dumps")
     description = db.JSONField()
-    data = attributes.attribute()
+    data = attributes.attribute("data", unicode, None)
+    data_available = attributes.attribute("data_available", bool, False)
     type = attributes.attribute("origin", unicode, "")
     software_version = attributes.attribute("software_version", dict, "")
     timestamp = attributes.attribute("timestamp", float, 0)
@@ -57,12 +58,18 @@ class ErrorDump(attributes.Mixin, models.Model):
         return find_source_by_name(self.source)
 
     def modify_data(self,data,is_compressed=True):
+        if data is None:
+            self.data = None
+            self.data_available = False
+            self.save()
+            return
         data_toinsert = None
         if is_compressed:
             data_toinsert = data
         else:
             data_toinsert = zlib.compress(json.dumps(data),9)
         self.data = data_toinsert
+        self.data_available = True
         self.save()
         
     def fetch_data_from_source(self):
@@ -81,7 +88,11 @@ class ErrorDump(attributes.Mixin, models.Model):
             'timestamp':self.timestamp
             }
         if include_data:
+            if not self.data_available:
+                self.fetch_data_from_source()
             dump['data'] = json.loads(zlib.decompress(self.data))
+        else:
+            dump['data_available'] = self.data_available
         return dump
         
 def create_dump(dump,source):
