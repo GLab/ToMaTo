@@ -268,7 +268,7 @@ def update_all():
         threading.thread.start_new(update_source,(s)) #host might need longer to respond. no reason not to parallelize this
         time.sleep(1) #do not connect to all hosts at the same time. There is no need to rush.
 
-def remove_host(host_obj): #TODO: call this from host.py
+def remove_host(host_obj):
     global dumpsources
     with lock_sources:
         for s in list(dumpsources):
@@ -277,7 +277,7 @@ def remove_host(host_obj): #TODO: call this from host.py
                 break
             
 
-def add_host(host_obj): #TODO: call this from host.py
+def add_host(host_obj):
     global dumpsources
     s = HostDumpSource(host_obj)
     with lock_sources:

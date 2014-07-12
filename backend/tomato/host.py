@@ -21,6 +21,7 @@ from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
 from auth import Flags
+from dumpmanager import add_host as register_in_dumpmanager, remove_host as remove_from_dumpmanager
 import xmlrpclib, time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
@@ -238,6 +239,7 @@ class Host(attributes.Mixin, models.Model):
 		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
 		self.update()
+		register_in_dumpmanager(self)
 
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving
@@ -483,6 +485,7 @@ class Host(attributes.Mixin, models.Model):
 		except:
 			pass
 		self.totalUsage.remove()
+		remove_from_dumpmanager(self)
 		self.delete()
 
 	def modify(self, attrs):
