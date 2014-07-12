@@ -42,6 +42,7 @@ def db_migrate():
 
 import config
 import dump
+import dumpmanager
 
 	
 import threading
@@ -87,6 +88,7 @@ def start():
 	starttime = time.time()
 	scheduler.start()
 	dump.init()
+	dumpmanager.init()# important: must be called after dump.init()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."
