@@ -113,9 +113,17 @@ DISABLE_TRANSACTION_MANAGEMENT = True
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
-DUMP_DIR = "/var/log/tomato/dumps"
+DUMP_DIR = "/var/log/tomato/dumps_backend"
 """
 The location of the dump files that are created when unexpected errors occur.
+"""
+
+DUMP_LIFETIME = 60*60*24*7
+"""
+Time in seconds until a dump file may be deleted.
+If it has been collected by the dumpmanager until then, it will still be saved
+in the dumpmanager's database.
+dumps will only be deleted daily, and only one day after the program has started.
 """
 
 DUMP_COLLECTION_INTERVAL = 30*60

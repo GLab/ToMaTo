@@ -2,7 +2,7 @@ from datetime import datetime
 import sys, os, time, json, traceback, hashlib, zlib
 
 from .cmd import run, CommandError #@UnresolvedImport
-from .. import config
+from .. import config, scheduler
 
 #the format used to convert datetime objects to strings, and back.
 #changing this makes all previously created error dumps incompatible and may break the server initialization after upgrades.
@@ -172,6 +172,11 @@ def remove_all_where(before=None,group_id=None):
             if matches_criteria:
                 remove_dump(d)
 
+#this will be done daily.                
+def auto_cleanup():
+    before = time.time() - datetime.timedelta(seconds=config.DUMP_LIFETIME)
+    remove_all_where(before=before)
+    
 #return the total number of error dumps
 def getCount():
     global dumps
@@ -212,6 +217,7 @@ def init(env_cmds,tomatoComponent,tomatoVersion):
             dump_list = os.listdir(config.DUMP_DIR)
             for d in dump_list:
                 dump = load_dump(d,push_to_dumps=True)
+    scheduler.scheduleRepeated(60*60*24, auto_cleanup, immediate=True)
 
 
 
