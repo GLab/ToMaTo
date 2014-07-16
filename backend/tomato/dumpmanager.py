@@ -306,7 +306,7 @@ def init():
 
 def checkPermissions():
         user = currentUser()
-        if not user.hasFlag(Flags.GlobalAdmin):
+        if not user.hasFlag(Flags.Debug):
             fault.raise_("Not enough permissions")
             return False
         return True
