@@ -3,7 +3,7 @@ from django.db import models
 
 import dump
 import host
-from lib import attributes, db
+from .lib import attributes, db #@UnresolvedImport
 from auth import mailFlaggedUsers, Flags
 from . import scheduler,config,currentUser,fault
     
