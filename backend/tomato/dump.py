@@ -1,7 +1,7 @@
 import .lib.dump as dump_lib #@UnresolvedImport
 import misc
 
-envCmds = {
+envCmds = { #TODO: are these correct?
   "disks": ["df", "-h"],
   "processes": ["ps", "faux"],
   "network connections": ["netstat", "-tupen"],

@@ -324,14 +324,15 @@ def api_errorgroup_modify(group_id,attrs):
                     fault.raise_("Unsupported attribute for error group: %s" % i, fault.USER_ERROR)
             get_group(group_id).update_description(attrs['description'])
 
-def api_errorgroup_info(group_id):
+def api_errorgroup_info(group_id,include_dumps=False):
     if checkPermissions():
         with lock_db:
             group = get_group(group_id)
             res = group.info()
-            res['faults'] = []
-            for i in list(group.dumps):
-                res['faults'].append(i.info())
+            if include_dumps:
+                res['dumps'] = []
+                for i in list(group.dumps):
+                    res['dumps'].append(i.info())
             return res
         
         
