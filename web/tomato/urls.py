@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.conf.urls.defaults import *
+from django.conf.urls import patterns, url, include
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -24,11 +24,11 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
 	(r'^$', 'tomato.main.index'),
-	(r'^fonts/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'fonts'}),
-	(r'^img/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'img'}),
-	(r'^js/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'js'}),
-	(r'^style/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'style'}),
-	(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'static'}),
+	(r'^fonts/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/fonts'}),
+	(r'^img/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/img'}),
+	(r'^js/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/js'}),
+	(r'^style/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/style'}),
+	(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/static'}),
 	(r'^help$', 'tomato.help.help'),
 	(r'^help/contact$', 'tomato.help.contact_form'),
 	(r'^help/(?P<page>.*)$', 'tomato.help.help'),

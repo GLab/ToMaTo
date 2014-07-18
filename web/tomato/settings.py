@@ -97,12 +97,7 @@ tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 
-if DJANGO_VERSION < (1,4):
-    TEMPLATE_LOADERS = (
-        'django.template.loaders.filesystem.load_template_source',
-        'django.template.loaders.app_directories.load_template_source',
-    )
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_SERIALIZER='django.contrib.sessions.serializers.PickleSerializer'
 
 try:
     import sys
