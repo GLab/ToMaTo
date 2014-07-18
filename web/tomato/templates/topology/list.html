@@ -21,14 +21,14 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url topology_list %}">Show user topologies</a></li>
+    <li><a href="{% url "topology_list" %}">Show user topologies</a></li>
     {% if request.session.user.hasGlobalToplFlags %}
       {% for orga in orgas %}
-        <li><a href="{% url organization_topologies organization=orga.name %}">Show all topologies of '{{orga.name}}'</a></li>    
+        <li><a href="{% url "organization_topologies" organization=orga.name %}">Show all topologies of '{{orga.name}}'</a></li>    
       {% endfor %}
-      <li><a href="{% url topology_list_all %}">Show all topologies</a></li>
+      <li><a href="{% url "topology_list_all" %}">Show all topologies</a></li>
     {% else %}
-      <li><a href="{% url organization_topologies organization=request.session.user.organization %}">Show all topologies of '{{request.session.user.organization}}'</a></li>        
+      <li><a href="{% url "organization_topologies" organization=request.session.user.organization %}">Show all topologies of '{{request.session.user.organization}}'</a></li>        
     {% endif %}
   </ul>
 </div>
@@ -50,9 +50,9 @@ While waiting for the account activation you can create and design topologies bu
 
 {% if top_list|length > 10 and not 'no_topology_create' in request.session.user.flags %}
     <form>
-    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url tutorial.list%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
-	<button type="submit" formaction="{%url topology.import_%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
+    <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}
 
@@ -81,11 +81,11 @@ While waiting for the account activation you can create and design topologies bu
   <tr>
     <td>{{top.id}}</td>
     <td>{% if top.attrs.tutorial_url and not top.attrs.tutorial_disabled %}<img src="/img/tutorial.png"/>{% endif %}</td>
-    <td><a href="{% url topology.info top.id %}" onclick="loadbusy(event);">{{top.attrs.name}}</a></td>
+    <td><a href="{% url "topology.info" top.id %}" onclick="loadbusy(event);">{{top.attrs.name}}</a></td>
     <td>
     	{% for user, role in top.permissions.items %}
     		{% if role == "owner" %}
-    			<a href="{%url account.info user%}">{{user}}</a>{% if forloop.revcounter0 %}, {% endif %}
+    			<a href="{%url "account.info" user%}">{{user}}</a>{% if forloop.revcounter0 %}, {% endif %}
     		{% endif %}
     	{% endfor %}
     </td>
@@ -96,7 +96,7 @@ While waiting for the account activation you can create and design topologies bu
     <td enhancetable_customkey="{{top.usage.usage.memory}}">{{top.usage.usage.memory|filesizeformat}}</td>
     <td enhancetable_customkey="{{top.usage.usage.diskspace}}">{{top.usage.usage.diskspace|filesizeformat}}</td>
     <td class="icononly">
-    	<a href="javascript:window.open('{%url topology.usage top.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><img src="/img/chart_bar.png"/></a>
+    	<a href="javascript:window.open('{%url "topology.usage" top.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><img src="/img/chart_bar.png"/></a>
     </td>
   </tr>
 {% endfor %}
@@ -115,9 +115,9 @@ While waiting for the account activation you can create and design topologies bu
 	<p>You may not create any topologies. Contact the administrator for more information.</p>
 {% else %}
     <form>
-    <button type="submit" formaction="{%url topology.create%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
-	<button type="submit" formaction="{%url tutorial.list%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
-	<button type="submit" formaction="{%url topology.import_%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
+    <button type="submit" formaction="{%url "topology.create"%}" onClick="loadbusy(event)" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Topology</button>
+	<button type="submit" formaction="{%url "tutorial.list"%}" class="btn btn-default"><img src="/img/tutorial.png" /> Start Tutorial</button>
+	<button type="submit" formaction="{%url "topology.import_"%}" class="btn btn-default"><span class="glyphicon glyphicon-import"></span> Import from file</button>
     </form>
 {% endif %}
 

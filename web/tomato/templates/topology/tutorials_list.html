@@ -13,8 +13,8 @@
 
 {% for tut in tutorials %}
   <tr>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event)"><img src="{{tut.icon}}" /></a></td>
-    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url tutorial.start %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event)">{{tut.name}}</a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event)"><img src="{{tut.icon}}" /></a></td>
+    <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm; padding-right: 0.5cm;"><a href="{%url "tutorial.start" %}?url={{tut.url}}&token={{tut.url|security_token:session_id}}" onclick="loadbusy(event)">{{tut.name}}</a></td>
     <td style="vertical-align:middle; background-color: inherit; padding-bottom:0.4cm;">{{tut.desc}}</td>
   </tr>
 {% endfor %}
@@ -42,7 +42,7 @@
 			buttons: {
 				Open: function() {
 		        	dialog.dialog("close");
-			      	window.location = "{%url tutorial.start %}?url="+ta.val();
+			      	window.location = "{%url "tutorial.start" %}?url="+ta.val();
 			    },
 		        Cancel: function() {
 		        	dialog.dialog("close");

@@ -3,7 +3,7 @@
 {% block content %}
 
 <form>
-  <button type="submit" formaction="{%url host_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Hosts</button>
+  <button type="submit" formaction="{%url "host_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Hosts</button>
 </form>
 
 <h1>Host {{host.name}}</h1>
@@ -36,11 +36,11 @@
 	</tr>
 	<tr>
 		<th>Site:</th>
-		<td><a href="{%url organization.info organization.name%}#{{site.name}}">{{site.description}} ({{site.name}})</a></td>
+		<td><a href="{%url "organization.info" organization.name%}#{{site.name}}">{{site.description}} ({{site.name}})</a></td>
 	</tr>
 	<tr>
 		<th>Organization:</th>
-		<td><a href="{%url organization.info organization.name%}">{{organization.description}} ({{organization.name}})</a></td>
+		<td><a href="{%url "organization.info" organization.name%}">{{organization.description}} ({{organization.name}})</a></td>
 	</tr>
 	<tr>
 		<th>Availability:</th>
@@ -172,11 +172,11 @@
 
 {% load tomato %}
 <form>
-  <button type="submit" formaction="{%url host_external_networks host.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
-  <button type="submit" formaction="{%url debug.host_users host.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> host users</button>
-  <a class="btn btn-info" href="javascript:window.open('{%url host.usage host.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
-  <button type="submit" formaction="{%url host.edit host.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
-  <button type="submit" formaction="{%url host.remove host.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
+  <button type="submit" formaction="{%url "host_external_networks" host.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> external networks on this host</button>
+  <button type="submit" formaction="{%url "debug.host_users" host.name%}" class="btn btn-primary"><span class="glyphicon glyphicon-list"></span> host users</button>
+  <a class="btn btn-info" href="javascript:window.open('{%url "host.usage" host.name%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
+  <button type="submit" formaction="{%url "host.edit" host.name%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit host</button>
+  <button type="submit" formaction="{%url "host.remove" host.name%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove host</button>
 </form>
 
 {% endblock %}

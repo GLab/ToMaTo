@@ -18,16 +18,16 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url host_list %}">Show all hosts</a></li>
+    <li><a href="{% url "host_list" %}">Show all hosts</a></li>
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in organizations %}
-      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of '{{orga.description}}'</a></li>    
+      <li><a href="{% url "organization_hosts" organization=orga.name %}">Show all hosts of '{{orga.description}}'</a></li>    
     {% endfor %}
     <li class="divider"></li>
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
-      <li><a href="{% url site_hosts site=s.name %}">Show all hosts on '{{s.description}}'</a></li>    
+      <li><a href="{% url "site_hosts" site=s.name %}">Show all hosts on '{{s.description}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -56,9 +56,9 @@
 <form>
   <button type="submit" 
   {%if site%}
-    formaction="{%url host.add site%}"
+    formaction="{%url "host.add" site%}"
   {%else%}
-    formaction="{%url host.add%}" 
+    formaction="{%url "host.add"%}" 
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>
@@ -108,11 +108,11 @@
 	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
 			{% endif %}
 			
-	    	<td><a href="{%url host.info host.name %}">{{host.name}}</a></td>
+	    	<td><a href="{%url "host.info" host.name %}">{{host.name}}</a></td>
 
 	    	<td>{{host.address}}</td>
 	    	
-	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}#{{host.site}}">{{host.site}}</a></td>
+	    	<td title="{{site_map|get:host.site}}"><a href="{%url "organization.info" host.organization %}#{{host.site}}">{{host.site}}</a></td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
 			{% if host.host_info %}
@@ -221,9 +221,9 @@
 <form>
   <button type="submit" 
   {%if site%}
-    formaction="{%url host.add site%}"
+    formaction="{%url "host.add" site%}"
   {%else%}
-    formaction="{%url host.add%}" 
+    formaction="{%url "host.add"%}" 
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>

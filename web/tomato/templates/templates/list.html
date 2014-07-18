@@ -16,10 +16,10 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url template_list %}">Show all templates</a></li>
+    <li><a href="{% url "template_list" %}">Show all templates</a></li>
     <li class="divider"></li>
     {% for name, label in techs_dict.iteritems %}
-      <li><a href="{% url template_list_bytech tech=name %}">Show all template of tech '{{label}}'</a></li>    
+      <li><a href="{% url "template_list_bytech" tech=name %}">Show all template of tech '{{label}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -30,9 +30,9 @@
 <form>
   <button type="submit" 
   {% if tech %}
-  	formaction="{%url template.add tech%}"
+  	formaction="{%url "template.add" tech%}"
   {%else%}
-  	formaction="{%url template.add%}"
+  	formaction="{%url "template.add"%}"
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
 </form>
@@ -56,7 +56,7 @@
 	  	<td enhancetable_customkey="{{templ.attrs.tech}}" align="right" class="icononly">
 	  		<img src="/img/{{templ.attrs.tech}}16.png" title="{{techs_dict|get:templ.attrs.tech}}" />
 		</td>
-	    <td><a href="{%url template.info templ.id%}">{{templ.attrs.name}}</a></td>
+	    <td><a href="{%url "template.info" templ.id%}">{{templ.attrs.name}}</a></td>
 	    <td>{{templ.attrs.label}}</td>
 	    <td>{{templ.attrs.subtype}}</td>
 	    <td>{{templ.attrs.preference}}</td>
@@ -144,9 +144,9 @@
 <form>
   <button type="submit" 
   {% if tech %}
-  	formaction="{%url template.add tech%}"
+  	formaction="{%url "template.add" tech%}"
   {%else%}
-  	formaction="{%url template.add%}"
+  	formaction="{%url "template.add"%}"
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add template</button>
 </form>
