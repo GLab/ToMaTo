@@ -22,6 +22,7 @@ from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
 
 class Flags:
 	Debug = "debug"
+	ErrorNotify = "error_notify"
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
@@ -45,6 +46,7 @@ class Flags:
 
 flags = {
 	Flags.Debug: "Debug: See everything",
+	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
@@ -95,11 +97,12 @@ categories = {
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
 						Flags.RestrictedTemplates,
-						Flags.NewAccount
-						],
-	'other': [
-						Flags.Debug,
+						Flags.NewAccount,
 						Flags.NoMails
+						],
+	'error_management': [
+						Flags.Debug,
+						Flags.ErrorNotify
 						]
 	}
 

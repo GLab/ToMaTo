@@ -42,6 +42,7 @@ CategoryTranslationDict = {
 		   'manager_host_global':'Global Host Management',
 		   'manager_host_orga':'Organization-Internal Host Management',
 		   'user':'User',
+		   'error_management':"Error Management",
 		   'other':'Other'
 		}
 
@@ -50,6 +51,7 @@ category_order = [
 		'manager_user_orga',
 		'manager_host_global',
 		'manager_host_orga',
+		'error_management',
 		'user'
 	]
 

@@ -136,13 +136,15 @@ class DumpSource:
         self.last_fetch = datetime.datetime.utcfromtimestamp(0)
         
     #to be implemented in subclass
-    #fetches all dumps from the source, which were thrown after after.
+    #fetches all dumps from the source, which were thrown after *after*.
     #after is a datetime object and will be used unchanged.
+    #if this throws an exception, the fetching is assumed to have been unsuccessful.
     def _fetch_list(self,after):
         return None
     
     #to be implemented in subclass
     #fetches all data about the given dump.
+    #if this throws an exception, the fetching is assumed to have been unsuccessful.
     def _fetch_with_data(self,dump_id,keep_compressed=True):
         return None
     
@@ -165,11 +167,11 @@ class DumpSource:
     
     def getUpdates(self):
         this_fetch_time = datetime.datetime.now() - self._clock_offset()
-        fetch_results = self._fetch_list(self.last_fetch)
-        if fetch_results is not None: # this might have happened due to source downtime. we still need the dumps we just tried to fetch.
+        try:
+            fetch_results = self._fetch_list(self.last_fetch)
             self.last_fetch = this_fetch_time
             return fetch_results
-        else:
+        except:
             return []
     
 #fetches from a host (host is given in constructor)
@@ -250,8 +252,7 @@ def insert_dump(dump,source):
         if get_group(dump['group_id']) is None:
             must_fetch_data = True
             create_group(dump['group_id'])
-            mailFlaggedUsers(Flags.Debug, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
-            #TODO: is this the right flag?
+            mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
         
         #insert the dump.
         dump_db = create_dump(dump, source)
