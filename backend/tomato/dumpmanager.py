@@ -164,9 +164,8 @@ class DumpSource:
         return False
     
     def getUpdates(self):
-        this_fetch_time = datetime.datetime.now()
-        last_fetch_better = self.last_fetch - self._clock_offset()
-        fetch_results = self._fetch_list(last_fetch_better)
+        this_fetch_time = datetime.datetime.now() - self._clock_offset()
+        fetch_results = self._fetch_list(self.last_fetch)
         if fetch_results is not None: # this might have happened due to source downtime. we still need the dumps we just tried to fetch.
             self.last_fetch = this_fetch_time
             return fetch_results
@@ -192,7 +191,7 @@ class HostDumpSource(DumpSource):
         return dump
     
     def _clock_offset(self):
-        diff = max(0,self.host_obj.hostInfo['time_diff']) #TODO: what does time_diff>0 mean? host ahead or backend ahead? iff >0 == host ahead, negate time_diff
+        diff = max(0,-self.host_obj.hostInfo['time_diff'])
         return datetime.timedelta(seconds=diff)
     
     def _source_name(self):
