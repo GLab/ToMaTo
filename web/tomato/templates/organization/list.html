@@ -18,12 +18,12 @@
 	<div class="row">		
 	{% for orga in organizations %}
 		<div class="col-md-4 col-sm-6 col-xs-12">
-			<div style="box-shadow: 10px 10px 10px grey; border: 1px solid #dddddd; margin-right:11px; margin-bottom:11px; padding-left:15px;">
+			<div class="organization">
 				<a href="{%url "organization.info" orga.name%}" style="color:black; text-decoration:none;">
-					<h3>{{orga.description}}</h3>
+					<div class="page-header"><h3>{{orga.description}}</h3></div>
 					
 					{% if orga.image_url %}
-						<p style="margin-top:2cm; margin-bottom:1cm"><img src="{{orga.image_url}}" class="site" /></p>
+						<p style="margin-top:0.7cm; margin-bottom:0.7cm; min-height:5em;"><img src="{{orga.image_url}}" class="site" /></p>
 					{% endif %}
 					
 					<p><b>

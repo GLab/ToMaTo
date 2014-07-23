@@ -89,6 +89,25 @@
 img.site {
   max-height: 5em;
   max-width: 100%;
+  margin-bottom:auto; margin-top:auto;
+}
+
+div.organization {
+  box-shadow: 0.5em 0.5em 0.5em grey;
+  border: 1px solid #dddddd;
+  padding: 1em;
+  padding-top:0em;
+  padding-bottom:0em;
+  margin-bottom:0em;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 4px;
+}
+div.organization h3 {
+	margin:0;
+}
+div.organization div.page-header {
+	margin-top:1em;
 }
 
 table th {
