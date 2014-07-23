@@ -1,3 +1,94 @@
+tomato-web (3.4) stable; urgency=medium
+
+  * Quota support per user/organization
+  * List of topologies/elements per host/site
+  * Preselecting host/network when adding external network instances from a 
+    filtered view
+  * Dynamic element icons per template/network kind
+  * Editor option to show element ids
+  * New VM elements named after template rather than element type
+  * Warning message when changing the template
+  * Loading indicator when creating a topology
+  * Card layout for organizations
+  * New tutorial: Device and Data Access
+  * New tutorial: Templates and Images
+  * New tutorial: OpenFlow
+  * Templates can have custom icons
+  * Button to load custom tutorial URLs
+  * Draggable note window
+  * Debug pages for hosts, topologies, elements and connections
+  * New help pages
+  * Physical links stats open in popup windows
+  * Added warning messages for browser issues
+  * Supported django versions: 1.3 to 1.6
+  * Supported python versions: 2.6 and 2.7
+  * Removed dependency for simplejson in web
+  * Running websockify with SSL support
+  * Saving random positions assigned to elements without position
+  * Caching capabilities
+  * Preparing virtual machines first and then everything else to help placement
+  * Fixed bug with external network instance filtering
+  * Some fixes to template selection window
+  * Some fixes for existing tutorials
+  * Fixed long template names not being displayed
+  * Fixed scroll bars in editor
+  * Fixed network instance removal
+  * Not asking for names on imported topologies
+  * Removing closed windows from DOM
+  * Fixed uploads after first upload
+  * Fixed duplicate names race condition
+  * Fixed timeouts in topology list
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Jul 2014 11:26:55 +0200
+
+tomato-web (3.3.9) stable; urgency=low
+
+  * Fixed template help url
+  * fixed scrollbar in editor
+  * Fixed assigning random positions
+  * Fixed long template names not being displayed under certain circumstances
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 09 Apr 2014 16:17:08 +0200
+
+tomato-web (3.3.8) stable; urgency=low
+
+  * Setting imported topolgies to initialized so only the timeout dialog appears
+  * Fixed network instance removal
+  * fixed the bug that the template label in element config window was no updated after cahnging it
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:08:29 +0200
+
+tomato-web (3.3.7) stable; urgency=low
+
+  * The note window is now draggable
+  * Saving random positions
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 28 Mar 2014 09:47:59 +0100
+
+tomato-web (3.3.6) stable; urgency=low
+
+  * Fixed css problems in tutorials
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:15:35 +0100
+
+tomato-web (3.3.4) stable; urgency=low
+
+  * Fixed colors of downloads in tutorials
+  * Fixed uploads after first upload
+  * Removing more windows to avoid problems
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 14 Mar 2014 14:00:45 +0100
+
+tomato-web (3.3.1) stable; urgency=low
+
+  * fixed a bug that RexTFV status window did not display the status
+  * Fixed vnc info dialog too small
+  * Fixed duplicate names race condition
+  * Added warning messages for browser issues
+  * Timeouts in topology list now correct
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:46:49 +0100
+
 tomato-web (3.3) stable; urgency=low
 
   * Topology timeouts
