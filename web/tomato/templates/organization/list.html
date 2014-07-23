@@ -8,7 +8,7 @@
 
 {% if organizations %}
 
-	{% if organizations|length > 10 and request.session.user and request.session.user.isAdmin %}
+	{% if organizations|length > 10 and request.session.user and request.session.user.isGlobalHostManager %}
       <form>
     	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
       </form>
@@ -47,7 +47,7 @@
 	No organizations
 {% endif %}
 
-{% if request.session.user and request.session.user.isAdmin %}
+{% if request.session.user and request.session.user.isGlobalHostManager %}
 	<form>
 	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
 	</form>
