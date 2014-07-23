@@ -230,12 +230,12 @@ class UserObj:
 	def isAdmin(self, orgaName=None):
 		if "global_admin" in self.flags:
 			return True
-		if "orga_admin" in self.flags and self.organization == orgaName:
+		if "orga_admin" in self.flags and (self.organization == orgaName or orgaName is None):
 			return True
 		return False
 	def isHostManager(self, orgaName=None):
 		if "global_host_manager" in self.flags:
 			return True
-		if "orga_host_manager" in self.flags and self.organization == orgaName:
+		if "orga_host_manager" in self.flags and (self.organization == orgaName or orgaName is None):
 			return True
 		return False
