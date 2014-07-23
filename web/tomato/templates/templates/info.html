@@ -110,10 +110,12 @@
 
 {% load tomato %}
 
+{% if request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" formaction="{%url "template.edit_torrent" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
   <button type="submit" formaction="{%url "template.edit" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
   <button type="submit" formaction="{%url "template.remove" template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
 </form>
+{%endif%}
 
 {% endblock %}
