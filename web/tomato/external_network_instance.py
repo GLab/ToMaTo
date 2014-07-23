@@ -100,8 +100,6 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 			if net["id"] == network:
 				network_kind = net["attrs"]["kind"]
 				network_label = net["attrs"]["label"]
-	print networks
-	print network_kind
 	nis = filter(lambda ni: (not network or ni["attrs"]["network"] == network_kind) and (not host or ni["attrs"]["host"] == host), nis)
 	
 	if organization or site:
