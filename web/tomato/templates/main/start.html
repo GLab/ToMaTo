@@ -27,6 +27,27 @@
 	<p>
 	{% if request.session.user %}
 		<a href="{%url "topology_list"%}" class="btn btn-primary btn-lg">My Topologies</a>
+		
+		{% if request.session.user.isAdmin or request.session.user.isHostManager %}
+			<div class="skip-xs""></div>
+			
+			{% if request.session.user.isAdmin %}
+				<a href="{%url "account.list"%}" class="btn btn-default btn-lg">Manage Users</a>
+			{% endif %}
+			
+			{% if request.session.user.isAdmin and request.session.user.isHostManager %}
+				<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>
+			{%endif%}
+			
+			{% if request.session.user.isHostManager %}
+				<a href="{%url "host.list"%}" class="btn btn-default btn-lg">Manage Hosts</a>
+			{%endif%}
+		{%else%}
+			<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>
+			<a href="{%url "topology.create"%}" class="btn btn-default btn-lg">Create New Topology</a>
+		{%endif%}
+		
+		
 	{% else %}
 		<a href="{%url "topology_list"%}" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-user"></span> Login</a>
 		<span style="margin-left:0.3cm; margin-right:0.3cm;">or</span>
