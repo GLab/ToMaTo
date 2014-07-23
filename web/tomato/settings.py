@@ -74,6 +74,7 @@ CACHES = {
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SESSION_SERIALIZER='django.contrib.sessions.serializers.PickleSerializer'
 
 TEMPLATE_CONTEXT_PROCESSORS = ('django.core.context_processors.request',)
 
@@ -97,7 +98,12 @@ tutorial_list_url="http://packages.tomato-lab.org/tutorials/index.json"
 
 CRISPY_TEMPLATE_PACK = "bootstrap3"
 
-SESSION_SERIALIZER='django.contrib.sessions.serializers.PickleSerializer'
+if DJANGO_VERSION < (1,4):
+    TEMPLATE_LOADERS = (
+        'django.template.loaders.filesystem.load_template_source',
+        'django.template.loaders.app_directories.load_template_source',
+    )
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 try:
     import sys
