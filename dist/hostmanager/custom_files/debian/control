@@ -8,8 +8,8 @@ Standards-Version: 3.8.3
 Package: tomato-hostmanager
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python (>=2.6),
- python-django (>=1.3), python-django-south (>=0.7), python-psycopg2, postgresql, dbconfig-common,
- daemon, bittorrent, openssl, ssl-cert, python-openssl, websockify
+ python-django (>=1.2), python-django-south (>=0.7), python-psycopg2, postgresql, dbconfig-common,
+ daemon, bittorrent, openssl, ssl-cert, python-openssl, websockify, ebtables
 Recommends: ${misc:Depends}, pve-qemu-kvm, vzctl, vzdump, bridge-utils, iproute,
  tinc, ucspi-tcp, rdiff, socat, tcpdump, vncterm, tcpslice, tomato-repy (>=0.5), vtun,
  logrotate, dosfstools, tomato-updater, ipspy
