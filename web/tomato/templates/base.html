@@ -114,7 +114,7 @@ head.appendChild(style);
 				</li>
 	        	{% if request.session.user.isAdmin %} 
 					<li class="dropdown">
-						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin <span class="caret"></span></a>
+						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Users <span class="caret"></span></a>
 						<ul class="dropdown-menu">
 							<li><a href="{%url "account_list"%}">Account list</a></li>
 							<li><a href="{%url "account_list_all"%}">All accounts</a></li>
@@ -124,7 +124,7 @@ head.appendChild(style);
 				{% endif %}
 				{% endif %}
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info <span class="caret"></span></a>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">{% if request.session.user.isHostManager %}Hosts/Resources{%else%}Info{%endif%} <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="{%url "organization.list"%}">Organizations</a></li>
 						<li><a href="{%url "site.map"%}">Sites map</a></li>
