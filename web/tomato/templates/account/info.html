@@ -2,6 +2,7 @@
 
 {% block content %}
 
+{% load url from future %}
 {% load tomato %}
 
 {% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
