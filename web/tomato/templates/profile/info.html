@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
+{% load url from future %}
+
 {% block content %}
 
 <form>
-  <button type="submit" formaction="{%url profile_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Device Profiles</button>
+  <button type="submit" formaction="{%url "profile_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Device Profiles</button>
 </form>
 
 <h1>Device profile {{profile.attrs.name}}</h1>
@@ -62,8 +64,8 @@
 {% load tomato %}
 
 <form>
-  <button type="submit" formaction="{%url profile.edit profile.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit device profile</button>
-  <button type="submit" formaction="{%url profile.remove profile.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove device profile</button>
+  <button type="submit" formaction="{%url "profile.edit" profile.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit device profile</button>
+  <button type="submit" formaction="{%url "profile.remove" profile.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove device profile</button>
 </form>
 
 {% endblock %}

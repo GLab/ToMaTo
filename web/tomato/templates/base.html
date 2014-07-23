@@ -29,6 +29,7 @@
   <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
   <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
 <![endif]-->
+{% load url from future %}
 {% load tomato %}
 
 <script src="/js/jquery.js"></script>
@@ -62,7 +63,7 @@ head.appendChild(style);
 {% block page %}
 
 {% if not request.session.user %}
-<form id="loginnavbarform" method="post" action="{%url main.login%}" style="display:none;">
+<form id="loginnavbarform" method="post" action="{%url "main.login"%}" style="display:none;">
   <input type="hidden" name="forward_url" value="{{request.path}}" />
 </form>
 {% endif %}
@@ -80,7 +81,7 @@ head.appendChild(style);
         <td style="text-align: right;vertical-align:bottom;">
         <small>
         {% if request.session.user %}
-        Logged in as {{request.session.user.realname}} (<a href="{%url main.logout %}">logout</a>)
+        Logged in as {{request.session.user.realname}} (<a href="{%url "main.logout" %}">logout</a>)
         {% else %}
         &nbsp;
         {% endif %}
@@ -90,24 +91,24 @@ head.appendChild(style);
         </table>
         <ul class="nav nav-justified">
             {% if not request.session.user %}
-				<li><a href="{%url account.register%}">Register</a></li>
+				<li><a href="{%url "account.register"%}">Register</a></li>
 				<li><a onclick="document.getElementById('loginnavbarform').submit();" href="#">Login</a></li>
             {% endif %}
 			{% if request.session.user %}
-				<li><a href="{%url account.info%}">My Account</a></li>
+				<li><a href="{%url "account.info"%}">My Account</a></li>
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Topologies <span class="caret"></span></a>
 			        <ul class="dropdown-menu">
-			        	<li><a href="{%url topology_list%}">My Topologies</a></li>
+			        	<li><a href="{%url "topology_list"%}">My Topologies</a></li>
 			        	{% if request.session.user.hasGlobalToplFlags or request.session.user.hasOrgaToplFlags %} 
-						  	<li><a href="{%url topology_list_all%}">All Topologies</a></li>
+						  	<li><a href="{%url "topology_list_all"%}">All Topologies</a></li>
 						{% endif %}
 						{% if not "no_topology_create" in request.session.user.flags %}
 							<li class="divider"></li>
-							<li><a href="{%url topology.create%}" onClick="loadbusy(event)">Create Topology</a></li>
-							<li><a href="{%url topology.import_%}">Import Topology</a></li>
+							<li><a href="{%url "topology.create"%}" onClick="loadbusy(event)">Create Topology</a></li>
+							<li><a href="{%url "topology.import_"%}">Import Topology</a></li>
 							<li class="divider"></li>
-							<li><a href="{%url tutorial.list%}">Tutorials</a></li>
+							<li><a href="{%url "tutorial.list"%}">Tutorials</a></li>
 						{% endif %}
 					</ul>
 				</li>
@@ -115,9 +116,9 @@ head.appendChild(style);
 					<li class="dropdown">
 						<a class="dropdown-toggle" data-toggle="dropdown" href="#">Admin <span class="caret"></span></a>
 						<ul class="dropdown-menu">
-							<li><a href="{%url account_list%}">Account list</a></li>
-							<li><a href="{%url account_list_all%}">All accounts</a></li>
-							<li><a href="{%url account_list_registrations%}">Pending account registrations</a></li>
+							<li><a href="{%url "account_list"%}">Account list</a></li>
+							<li><a href="{%url "account_list_all"%}">All accounts</a></li>
+							<li><a href="{%url "account_list_registrations"%}">Pending account registrations</a></li>
 						</ul>
 					</li>
 				{% endif %}
@@ -125,18 +126,18 @@ head.appendChild(style);
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">Info <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="{%url organization.list%}">Organizations</a></li>
-						<li><a href="{%url site.map%}">Sites map</a></li>
+						<li><a href="{%url "organization.list"%}">Organizations</a></li>
+						<li><a href="{%url "site.map"%}">Sites map</a></li>
 						{% if request.session.user %}
 							<li class="divider"></li>
-							<li><a href="{%url host.list%}">Hosts</a></li>
+							<li><a href="{%url "host.list"%}">Hosts</a></li>
 							<li class="divider"></li>
-							<li><a href="{%url template.list%}">Templates</a></li>
-							<li><a href="{%url profile.list%}">Device profiles</a></li>
-							<li><a href="{%url external_network.list%}">External networks</a></li>
+							<li><a href="{%url "template.list"%}">Templates</a></li>
+							<li><a href="{%url "profile.list"%}">Device profiles</a></li>
+							<li><a href="{%url "external_network.list"%}">External networks</a></li>
 						{% endif %}
 						<li class="divider"></li>
-						<li><a href="{%url main.statistics%}">Statistics</a></li>
+						<li><a href="{%url "main.statistics"%}">Statistics</a></li>
 					</ul>
 				</li>
 				<li class="dropdown">
@@ -146,7 +147,7 @@ head.appendChild(style);
 						<li><a href="{%externalurl 'help' %}" target="_help">Help</a></li>
 						<li><a href="{%externalurl 'bugtracker' %}" target="_help">Bugtracker</a></li>
 			   			<li><a href="{%externalurl 'aup' %}" target="_blank">Acceptable Use Policy</a></li>
-   						<li><a href="{%url help.contact_form%}">Contact</a></li>
+   						<li><a href="{%url "help.contact_form"%}">Contact</a></li>
 					</ul>
 				</li>
         </ul>
@@ -159,7 +160,7 @@ head.appendChild(style);
       <!-- Site footer -->
       <div class="footer">		
       	<ul>
-   			<li><a href="{%url help.help "license/license"%}">License</a></li>
+   			<li><a href="{%url "help.help" "license/license"%}">License</a></li>
    			<li><a href="{%externalurl 'impressum' %}">Impressum</a></li>
    		</ul>
         <p>&copy; Copyright 2013, Regionales Hochschulrechenzentrum Kaiserslautern (RHRK), Technische Universität Kaiserslautern</p>
