@@ -10,7 +10,6 @@ set -e
 dbc_go tomato $@
 
 if [ "$1" = "purge" ]; then
-        rm -rf /var/tmp/tomato
         rm -rf /var/log/tomato
 	rm -f /etc/tomato/tomato-*.pem
 	rm -f /etc/tomato/backend.pem
