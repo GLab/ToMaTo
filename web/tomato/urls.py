@@ -16,7 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.conf.urls import patterns, url, include
+from django import VERSION as DJANGO_VERSION
+if DJANGO_VERSION < (1,6):
+    from django.conf.urls.defaults import *
+else:
+    from django.conf.urls import patterns, url, include
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
