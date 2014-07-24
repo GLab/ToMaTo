@@ -24,7 +24,7 @@ def dynimg(request,size,objtype,arg1,arg2):
 	Uses 2 arguments to build a path to an image file for a specific object type. It then checks whether this image file exists. On success, it redirects to this file. If it does not exist, it redirects to a generic image file for this object type.
 	for templates: tech/size/subtype/name
 	for networks:  network/size/kind/none
-	for vpns:      vpn/size/kind/none
+	for vpns:	  vpn/size/kind/none
 	"""
 	filepath_pref = ""
 	url_alt = ""
@@ -72,7 +72,8 @@ def dynimg(request,size,objtype,arg1,arg2):
 		
 	# now, check whether the file exists and redirect to the preferred or alternate url
 	url_pref="/"+filepath_pref
-	if os.path.exists(filepath_pref):
+	prefix = os.path.dirname(os.path.realpath(__file__))
+	if os.path.exists(os.path.join(prefix, filepath_pref)):
 		return redirect(url_pref)
 	else:
 		return redirect(url_alt)
