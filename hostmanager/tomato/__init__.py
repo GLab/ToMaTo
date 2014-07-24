@@ -70,9 +70,9 @@ stopped = threading.Event()
 
 def start():
 	logging.openDefault(config.LOG_FILE)
-	firewall.add_all_networks(resources.network.getAll())
 	dump.init()
 	db_migrate()
+	firewall.add_all_networks(resources.network.getAll())
 	bittorrent.startClient(config.TEMPLATE_DIR)
 	fileserver.start()
 	rpcserver.start()
