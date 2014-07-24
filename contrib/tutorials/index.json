@@ -12,6 +12,12 @@
     "icon": "basic/icon.png"
   },
   {
+    "url":   "device_data_access/tutorial.json",
+    "name": "Device and Data Access",
+    "desc": "Teaches different ways to access your device and how to download data from devices.",
+    "icon": "device_data_access/icon.png"
+  },
+  {
     "url":   "link_emulation/tutorial.json",
     "name": "Link Emulation",
     "desc": "Learn how to use link emulation.",
@@ -29,6 +35,12 @@
     "desc": "Use executable archives to control your devices and access data.",
     "icon": "executable_archives/icon.png"
   },
+  {
+    "url":  "templates_images/tutorial.json",
+    "name": "Templates and Images",
+    "desc": "Learn how to use templates and images.",
+    "icon": "templates_images/icon.png"
+  }, 
   {
     "url":   "openflow/tutorial.json",
     "name": "OpenFlow",

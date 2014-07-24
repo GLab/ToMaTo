@@ -60,7 +60,7 @@ from models import *
 	
 import api
 
-from . import dump, lib, resources, accounting, rpcserver, elements #@UnresolvedImport
+from . import dump, lib, resources, accounting, rpcserver, elements, firewall #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import logging, util #@UnresolvedImport
 
@@ -72,6 +72,7 @@ def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
+	firewall.add_all_networks(resources.network.getAll())
 	bittorrent.startClient(config.TEMPLATE_DIR)
 	fileserver.start()
 	rpcserver.start()
@@ -113,6 +114,7 @@ def stop(*args):
 	try:
 		print >>sys.stderr, "Shutting down..."
 		thread.start_new_thread(_stopHelper, ())
+		firewall.remove_all_networks(resources.network.getAll())
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()

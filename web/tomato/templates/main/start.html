@@ -1,4 +1,6 @@
 {% extends "main/base.html" %}
+
+{% load url from future %}
 {% load tomato %}
 
 {% block header %}
@@ -7,7 +9,7 @@
 	height:250px;
 }
 </style>
-    {% if rssurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{%externalurl 'rssfeed' %}">{% endif %}
+    {% if 'rss_feed'|externalurl %}<link rel="alternate" type="application/rss+xml" title="RSS" href="{%externalurl 'rss_feed' %}">{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -24,11 +26,37 @@
 <div class="alert alert-info col-xs-8 col-xs-offset-2 text-center" style="background-color:#eeeeee !important; color:black !important; border-color:grey !important;">
 	<p>
 	{% if request.session.user %}
-		<a href="{%url topology_list%}" class="btn btn-primary btn-lg">My Topologies</a>
+		<a href="{%url "topology_list"%}" class="btn btn-primary btn-lg">My Topologies</a>
+		
+		{% if request.session.user.isAdmin or request.session.user.isHostManager %}
+		
+			{% if request.session.user.isAdmin and request.session.user.isHostManager %}
+				<div class="skip-xs""></div>
+			{% else %}
+				<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>
+			{%endif%}
+			
+			{% if request.session.user.isAdmin %}
+				<a href="{%url "account.list"%}" class="btn btn-default btn-lg">Manage Users</a>
+			{% endif %}
+			
+			{% if request.session.user.isAdmin and request.session.user.isHostManager %}
+				<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>
+			{%endif%}
+			
+			{% if request.session.user.isHostManager %}
+				<a href="{%url "host.list"%}" class="btn btn-default btn-lg">Manage Hosts</a>
+			{%endif%}
+		{%else%}
+			<span style="margin-left:0.3cm; margin-right:0.3cm;"></span>
+			<a href="{%url "topology.create"%}" class="btn btn-default btn-lg">Create New Topology</a>
+		{%endif%}
+		
+		
 	{% else %}
-		<a href="{%url topology_list%}" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-user"></span> Login</a>
+		<a href="{%url "topology_list"%}" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-user"></span> Login</a>
 		<span style="margin-left:0.3cm; margin-right:0.3cm;">or</span>
-		<a href="{%url account.register%}" class="btn btn-default btn-lg">Register</a>
+		<a href="{%url "account.register"%}" class="btn btn-default btn-lg">Register</a>
 	{% endif %}
 	</p>
 	<div class="skip-xs""></div>

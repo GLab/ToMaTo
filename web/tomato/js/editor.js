@@ -396,23 +396,37 @@ var TemplateElement = FormElement.extend({
 		return this.value;
 	},
 	
-	change_value: function(template) {
+	change_value: function(template,loading) {
 		this.value = template.name;
 		this.template = template;
 		var t = this;
 		
 		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
-			t.call_element.showTemplateWindow(function(value) {
-				t.change_value(
-					editor.templates.get(
-						t.options.type,value
-					)
-				);
-			});
+			t.call_element.showTemplateWindow(
+				
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						true
+					);
+				},
+					
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						false
+					);
+				}
+				
+			);
 		})
 		
-		if (this.disabled) {
+		if (this.disabled || loading) {
 			changebutton.prop("disabled",true);
 		}
 		
@@ -423,6 +437,10 @@ var TemplateElement = FormElement.extend({
 		this.labelarea.append(this.template.label);
 		this.changebuttonarea.append(changebutton);
 		this.infoarea.append($(this.template.infobox()));
+		
+		if (loading) {
+			this.labelarea.append($(' <img src="/img/loading.gif" />'));
+		}
 	}
 });
 
@@ -777,9 +795,9 @@ var TemplateWindow = Window.extend({
 		                    {
 		                    	text: "Save",
 		                    	click: function() {
-		                			t.save();
 		                			t.hide();
-		                			t.callback(t.getValue());
+		                    		t.callback_before_finish(t.getValue());
+		                			t.save();
 		                		}
 		         
 		                    },
@@ -787,13 +805,14 @@ var TemplateWindow = Window.extend({
 		                    	text: "Cancel",
 		                    	click: function() {
 		                			t.hide();
-		                			t.callback(t.getValue());
 		                		}
 		                    }];
 		
 		this._super(options);
 		this.element = options.element;
-		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
+		var windowTitle = "Change Template for "+this.element.data.attrs.name;
+		if (editor.options.show_ids) windowTitle = windowTitle + ' (#'+this.element.data.id+')'
+		this.setTitle(windowTitle);
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
 		} else {
@@ -801,8 +820,16 @@ var TemplateWindow = Window.extend({
 		}
 		
 		this.callback = function(value) {};
-		if (options.callback != undefined && options.callback != null) {
-			this.callback = options.callback;
+		if (options.callback_after_finish != undefined && options.callback_after_finish != null) {
+			this.callback_after_finish = options.callback_after_finish;
+		} else {
+			this.callback_after_finish = function(value) {};
+		}
+		
+		if (options.callback_before_finish != undefined && options.callback_before_finish != null) {
+			this.callback_before_finish = options.callback_before_finish;
+		} else {
+			this.callback_before_finish = function(value) {};
 		}
 		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
@@ -815,14 +842,20 @@ var TemplateWindow = Window.extend({
 		var table = this.getList();
 		
 		
-		
+		this.div.append($('<div style="margin-bottom:0.5cm; margin-top:0.5cm;"><table style="vertical-align:top;"><tr><th style="vertical-align:top;">Warning:</th><td style="vertical-align:top; font-size: 10pt; white-space:normal; font-style:italic;">You will lose all data on this device if you change the template.</td></tr></table></div>'));
 		this.div.append(table);
 	},
 	getValue: function() {
 		return this.value;
 	},
 	save: function() {
-		this.element.changeTemplate(this.getValue());
+		var t = this;
+		this.element.changeTemplate(
+			this.getValue(),
+			function(){
+				t.callback_after_finish(t.getValue());
+			}
+		);
 	},
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
@@ -1274,6 +1307,11 @@ var Workspace = Class.extend({
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
 		this.container.addClass("mode_" + mode);
+	},
+	
+	updateTopologyTitle: function() {
+		var t = editor.topology;
+		$('#topology_name').text("Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : ""));
 	}
 });
 
@@ -1359,7 +1397,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -1445,8 +1483,13 @@ var Topology = Class.extend({
 				base = "tinc";
 				break;		
 			default:
-				base = data.type;
+				if (data.attrs && data.attrs.template) {
+					base = editor.templates.get(data.type, data.attrs.template).label;
+				} else {
+					base = data.type;
+				}
 		}
+		base = base+" #";
 		var num = 1;
 		while (names.indexOf(base+num) != -1 || this.pendingNames.indexOf(base+num) != -1) num++;
 		return base+num;
@@ -1708,7 +1751,7 @@ var Topology = Class.extend({
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
 							t.modify_value("name", t.rename.element.getValue());
-							$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+							editor.workspace.updateTopologyTitle();
 						}
 						t.rename = null;
 					}
@@ -1784,7 +1827,7 @@ var Topology = Class.extend({
 										"_notes": description.getValue(),
 										"_initialized": true
 									});
-									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+									editor.workspace.updateTopologyTitle();
 									t.action("renew", {params:{
 										"timeout": timeout.getValue()
 									}});
@@ -1885,7 +1928,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+'<br />Topology #'+obj.id+'</span>',
+				html:"<span>"+obj.name()+"<small><br />Topology "+(editor.options.show_ids ? ' #'+obj.id : "")+'</small></span>',
 				type:"html"
 			},
 			"actions": {
@@ -2503,6 +2546,9 @@ var Connection = Component.extend({
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
+	},
+	name_vertical: function() {
+		return this.fromElement().name() + "<br/>&#x21C5;<br/>" + this.toElement().name();
 	}
 });
 
@@ -2511,7 +2557,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+"<br />Connection #"+obj.id+'</span>', type:"html"
+				html:'<span>'+obj.name_vertical()+"<small><br>Connection"+(editor.options.show_ids ? " #"+obj.id : "")+'</small></span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -2811,11 +2857,12 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
-	changeTemplate: function(tmplName) {
+	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
 				tmplName: tmplName
-				}
+				},
+			callback: action_callback
 			}
 		);
 	},
@@ -2953,7 +3000,20 @@ var createElementMenu = function(obj) {
 	var menu = {
 		callback: function(key, options) {},
 		items: {
-			"header": {html:'<span>'+obj.name()+"<br />Element #"+obj.id+'</span>', type:"html"},
+			"header": {
+				html:'<span>'+obj.name()+'<small><br />Element'+
+					(editor.options.show_ids ? 
+							" #"+obj.id : 
+							"")+
+					(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data.attrs && "site" in obj.data.attrs ? "<br />"+
+							(obj.data.attrs.host_info && obj.data.attrs.host_info.site ? 
+									"at "+editor.sites_dict[obj.data.attrs.host_info.site].description : 
+									(obj.data.attrs.site ? 
+											"will be at " + editor.sites_dict[obj.data.attrs.site].description : 
+											"no site selected")  ) : 
+							"")+
+					'</small></span>', 
+				type:"html"},
 			"connect": obj.isConnectable() ? {
 				name:'Connect',
 				icon:'connect',
@@ -3268,7 +3328,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return "img/" + this.data.attrs.mode + "32.png";
+		return "dynimg/vpn/32/" + this.data.attrs.mode + "/32";
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3290,7 +3350,7 @@ var ExternalNetworkElement = IconElement.extend({
 		this.iconSize = {x: 32, y:32};
 	},
 	iconUrl: function() {
-		return "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
+		return editor.networks.getNetworkIcon(this.data.attrs.kind);
 	},
 	configWindowSettings: function() {
 		var config = this._super();
@@ -3373,11 +3433,12 @@ var VMElement = IconElement.extend({
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
 	},
-	showTemplateWindow: function(callback) {
+	showTemplateWindow: function(callback_before_finish,callback_after_finish) {
 		var window = new TemplateWindow({
 			element: this,
 			width: 400,
-			callback: callback
+			callback_after_finish: callback_after_finish,
+			callback_before_finish: callback_before_finish
 		});
 		window.show();
 	},
@@ -3605,7 +3666,7 @@ var Template = Class.extend({
 		this.icon = options.icon;
 	},
 	iconUrl: function() {
-		return this.icon || "img/" + this.type + (this.subtype?("_"+this.subtype):"") + "32.png";
+		return this.icon || "dynimg/"+this.type+"/32/"+(this.subtype?this.subtype:"none")+"/"+(this.name?this.name:"none");
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3812,9 +3873,15 @@ var NetworkStore = Class.extend({
 			return 0;
 		});
 		this.nets = [];
-		for (var i=0; i<data.length; i++)
-		 if (data[i].type == "network")
-		  this.nets.push(data[i].attrs);
+		for (var i=0; i<data.length; i++) {
+		 if (data[i].type == "network") {
+			 net = data[i].attrs;
+			 if (!net.icon) {
+				 net.icon = this.getNetworkIcon(net.kind);
+			 }
+			 this.nets.push(net);
+		 }
+		}
 	},
 	all: function() {
 		return this.nets;
@@ -3825,6 +3892,9 @@ var NetworkStore = Class.extend({
 		 if (this.nets[i].show_as_common)
 		   common.push(this.nets[i]);
 		return common;
+	},
+	getNetworkIcon: function(kind) {
+		return "dynimg/network/32/" + kind.split("/")[0] + "/" + (kind.split("/")[1]?kind.split("/")[1]:"none");
 	}
 });
 
@@ -3860,6 +3930,11 @@ var Editor = Class.extend({
 		this.networks = new NetworkStore(this.options.resources);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
+		
+		this.sites_dict = {};
+		for (s in this.sites) {
+			this.sites_dict[this.sites[s].name] = this.sites[s];
+		}
 				
 		var t = this;
 		this.workspace.setBusy(true);
@@ -3897,6 +3972,7 @@ var Editor = Class.extend({
 	onOptionChanged: function(name) {
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
+		this.workspace.updateTopologyTitle();
 	},
 	optionMenuItem: function(options) {
 		var t = this;
@@ -4252,7 +4328,7 @@ var Editor = Class.extend({
 			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: 'img/internet32.png',
+				icon: net.icon,
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: !net.big_icon,
@@ -4374,6 +4450,18 @@ var Editor = Class.extend({
 		        tooltip:"Paint different network segments with different colors"
 		    }),
 		    
+		    show_ids: this.optionMenuItem({
+		        name:"show_ids",
+		        label:"Show IDs",
+		        tooltip:"Show IDs in right-click menus"
+		    }),
+		    
+		    show_sites_on_elements: this.optionMenuItem({
+		        name:"show_sites_on_elements",
+		        label:"Show Element Sites",
+		        tooltip:"Show the site an element is located at in its right-click menu"
+		    }),
+		    
 		    debug_mode: this.optionMenuItem({
 		        name:"debug_mode",
 		        label:"Debug mode",
@@ -4385,6 +4473,8 @@ var Editor = Class.extend({
 									this.optionCheckboxes.snap_to_grid,
 									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.show_ids,
+									this.optionCheckboxes.show_sites_on_elements,
 									this.optionCheckboxes.debug_mode
 								]);
 

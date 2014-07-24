@@ -1,3 +1,92 @@
+tomato-backend (3.4) stable; urgency=medium
+
+  * Quota support per user/organization
+  * Improved test case coverage
+  * List of topologies/elements per host/site
+  * New configurable messages, send upon user registration
+  * Relaxed topology timeouts a bit
+  * Supported django versions: 1.3 to 1.6
+  * Supported python versions: 2.6 and 2.7
+  * Running host syncs in separate tasks
+  * Blocking DHCP servers in topologies from offering leases to external 
+    networks
+  * Created JSON schemas for file formats
+  * Print stack trace when force-stopping backend
+  * Speeding up accounting by some magnitudes
+  * Default TCP timeout is 30 minutes
+  * Clustering tinc network to reduce overhead of huge networks
+  * Removing some more attributes from topology exports
+  * OpenVZ execute errors are user errors
+  * Fixed curios SSL "WantReadError"
+  * Fixed some caching issues
+  * Fixed race condition when stopping connections
+  * Filtering host networks and only reporting those with eth* interfaces 
+    as external
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Jul 2014 11:12:19 +0200
+
+tomato-backend (3.3.9) stable; urgency=low
+
+  * Fixed broken connection info
+  * Setting default TCP timeout to 30 minutes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 09 Apr 2014 16:18:20 +0200
+
+tomato-backend (3.3.8) stable; urgency=low
+
+  * Allowing tinc to recover from inconsistent member states
+  * Forcing tinc even more to put endpoints near vms
+  * Treating connection creation errors on hosts as internal error
+  * Reloading information on invalid state error
+  * Clustering tinc peers to avoid n^2 connections
+  * More locking for connections
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:06:14 +0200
+
+tomato-backend (3.3.7) stable; urgency=low
+
+  * blacklisted some more attributes on topology export
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 28 Mar 2014 09:47:27 +0100
+
+tomato-backend (3.3.6) stable; urgency=low
+
+  * Treating execute errors as user errors
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:16:21 +0100
+
+tomato-backend (3.3.5) stable; urgency=low
+
+  * Running host syncs in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 19 Mar 2014 11:26:52 +0100
+
+tomato-backend (3.3.4) stable; urgency=low
+
+  * Removed duplicate component sync call
+  * Fixed tasks that only run once
+  * Only disabling emulation on connections that support it
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 14 Mar 2014 14:02:33 +0100
+
+tomato-backend (3.3.3) stable; urgency=low
+
+  * Fixed packet capturing
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 13 Mar 2014 21:26:31 +0100
+
+tomato-backend (3.3.2) stable; urgency=low
+
+  * Fixed switches
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 13 Mar 2014 16:25:42 +0100
+
+tomato-backend (3.3.1) stable; urgency=low
+
+  * Fix task running twice in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:48:03 +0100
+
 tomato-backend (3.3) stable; urgency=low
 
   * Topology timeouts

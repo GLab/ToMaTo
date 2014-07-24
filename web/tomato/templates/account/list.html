@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
 
 {% block content %}
@@ -21,11 +22,11 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url account_list_all %}">Show all accounts</a></li>
+    <li><a href="{% url "account_list_all" %}">Show all accounts</a></li>
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in orgas %}
-      <li><a href="{% url organization_accounts organization=orga.name %}">Show all accounts of '{{orga.description}}'</a></li>    
+      <li><a href="{% url "organization_accounts" organization=orga.name %}">Show all accounts of '{{orga.description}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -44,18 +45,18 @@
   </button>
   <ul class="dropdown-menu" role="menu">
     {% if organization %}
-      <li><a href="{% url account_list %}">Show regular accounts</a></li>
+      <li><a href="{% url "account_list" %}">Show regular accounts</a></li>
     {% else %}
-      <li><a href="{% url account_list_all %}">Show regular accounts</a></li>
+      <li><a href="{% url "account_list_all" %}">Show regular accounts</a></li>
     {% endif %}
     {% if 'global_admin' in request.session.user.flags %}
       {% ifequal organization request.session.user.organization %}
-        <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
+        <li><a href="{% url "account_list_registrations" %}">Show pending registrations</a></li>
       {% else %}    
-        <li><a href="{% url account_list_registrations_all %}">Show pending registrations</a></li>
+        <li><a href="{% url "account_list_registrations_all" %}">Show pending registrations</a></li>
       {% endifequal %}
     {% else %}
-      <li><a href="{% url account_list_registrations %}">Show pending registrations</a></li>
+      <li><a href="{% url "account_list_registrations" %}">Show pending registrations</a></li>
     {% endif %}
   </ul>
 </div>
@@ -85,7 +86,7 @@
       {% else %}
       <span class="glyphicon glyphicon-user" title="Regular user"></span>
       {% endif %}{% endif %}{% endif %}
-      <a href="{%url account.info account.name%}">{{account.name}}</a>
+      <a href="{%url "account.info" account.name%}">{{account.name}}</a>
     </td>
     <td>{{account.origin}}</td>
     <td>{{account.realname}}</td>
@@ -110,7 +111,7 @@
 {% endif %}
 
 <form>
-  <button type="submit" formaction="{%url account.register%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Account</button>
+  <button type="submit" formaction="{%url "account.register"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Create new Account</button>
 </form>
 
 {% endblock %}

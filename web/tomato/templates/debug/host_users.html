@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load url from future %}
+
 {% block content %}
 
 <h1>Users of host {{host}}</h1>
@@ -23,9 +25,9 @@
 		<td>{{u.onhost_id}}</td>
 		<td>{{u.type}}</td>
 		<td>{{u.state}}</td>
-		<td>{% if u.topology_id %}<a href="{%url debug.topology u.topology_id %}">{{u.topology_id}}</a>{% endif %}</td>
-		<td>{% if u.element_id %}<a href="{%url debug.element u.element_id %}">{{u.element_id}}</a>{% endif %}</td>
-		<td>{% if u.connection_id %}<a href="{%url debug.connection u.connection_id %}">{{u.connection_id}}</a>{% endif %}</td>
+		<td>{% if u.topology_id %}<a href="{%url "debug.topology" u.topology_id %}">{{u.topology_id}}</a>{% endif %}</td>
+		<td>{% if u.element_id %}<a href="{%url "debug.element" u.element_id %}">{{u.element_id}}</a>{% endif %}</td>
+		<td>{% if u.connection_id %}<a href="{%url "debug.connection" u.connection_id %}">{{u.connection_id}}</a>{% endif %}</td>
 	</tr>
 	{% endfor %}
 </table>

@@ -17,6 +17,7 @@
 
 from ..auth import User, Provider as AuthProvider, mailFilteredUsers, Flags
 from .. import fault, setCurrentUser 
+from ..config import NEW_USER_WELCOME_MESSAGE, NEW_USER_ADMIN_INFORM_MESSAGE
 
 class Provider(AuthProvider):
 	def parseOptions(self, allow_registration=True, default_flags=["over_quota"], **kwargs):
@@ -49,7 +50,8 @@ class Provider(AuthProvider):
 		user.save()
 		mailFilteredUsers(lambda u: u.hasFlag(Flags.GlobalAdminContact)
 					or u.hasFlag(Flags.OrgaAdminContact) and user.organization == u.organization,
-		            "User registration", "A new user '%s' has registered an account." % username)
+		            NEW_USER_ADMIN_INFORM_MESSAGE['subject'], NEW_USER_ADMIN_INFORM_MESSAGE['body'] % username)
+		user.sendMail(NEW_USER_WELCOME_MESSAGE['subject'], NEW_USER_WELCOME_MESSAGE['body'] % username)
 		return user
 		
 def init(**kwargs):

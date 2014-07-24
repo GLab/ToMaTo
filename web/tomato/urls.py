@@ -16,7 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from django.conf.urls.defaults import *
+from django import VERSION as DJANGO_VERSION
+if DJANGO_VERSION < (1,6):
+    from django.conf.urls.defaults import *
+else:
+    from django.conf.urls import patterns, url, include
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -24,17 +28,18 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
 	(r'^$', 'tomato.main.index'),
-	(r'^fonts/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'fonts'}),
-	(r'^img/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'img'}),
-	(r'^js/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'js'}),
-	(r'^style/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'style'}),
-	(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'static'}),
+	(r'^fonts/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/fonts'}),
+	(r'^img/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/img'}),
+	(r'^js/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/js'}),
+	(r'^style/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/style'}),
+	(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'tomato/static'}),
 	(r'^help$', 'tomato.help.help'),
 	(r'^help/contact$', 'tomato.help.contact_form'),
 	(r'^help/(?P<page>.*)$', 'tomato.help.help'),
 	(r'^login$', 'tomato.main.login'),
 	(r'^logout$', 'tomato.main.logout'),
 	(r'^account/register$', 'tomato.account.register'),	
+	(r'^dynimg/(?P<objtype>[A-Za-z0-9\-._]+)/(?P<size>[^/]+)/(?P<arg1>[A-Za-z0-9\-._]+)/(?P<arg2>[A-Za-z0-9\-._]+)$', 'tomato.dynimg.dynimg'),
 	url(r'^account/list$', 'tomato.account.list', {"organization": True}, name="account_list"),	
 	url(r'^account/list/all$', 'tomato.account.list', {"organization": False}, name="account_list_all"),	
 	url(r'^account/registrations$', 'tomato.account.list', {"organization": True, "with_flag": "new_account"}, name="account_list_registrations"),	
@@ -71,6 +76,7 @@ urlpatterns = patterns('',
 	url(r'^organization/(?P<organization>\w+)/hosts$', 'tomato.host.list', name="organization_hosts"),
 	url(r'^site/(?P<site>\w+)/hosts$', 'tomato.host.list', name="site_hosts"),
 	(r'^host/add$', 'tomato.host.add'),
+	(r'^host/add/(?P<site>\w+)$', 'tomato.host.add'),
 	(r'^host/(?P<name>[^/]+)$', 'tomato.host.info'),
 	(r'^host/(?P<name>[^/]+)/edit$', 'tomato.host.edit'),
 	(r'^host/(?P<name>[^/]+)/remove$', 'tomato.host.remove'),
@@ -87,6 +93,7 @@ urlpatterns = patterns('',
 	url(r'^template/$', 'tomato.template.list', {"tech": None}, name="template_list"),
 	url(r'^template/bytech/(?P<tech>\w+)$', 'tomato.template.list', name="template_list_bytech"),
 	(r'^template/add$', 'tomato.template.add'),
+	(r'^template/add/(?P<tech>\w+)$', 'tomato.template.add'),
 	(r'^template/(?P<res_id>\d+)$', 'tomato.template.info'),
 	(r'^template/(?P<res_id>\d+)/edit$', 'tomato.template.edit'),
 	(r'^template/(?P<res_id>\d+)/edit/torrent$', 'tomato.template.edit_torrent'),
@@ -94,6 +101,7 @@ urlpatterns = patterns('',
 	url(r'^profile/$', 'tomato.profile.list', {"tech": None}, name="profile_list"),
 	url(r'^profile/bytech/(?P<tech>\w+)$', 'tomato.profile.list', name="profile_list_bytech"),
 	(r'^profile/add/$', 'tomato.profile.add'),
+	(r'^profile/add/(?P<tech>\w+)$', 'tomato.profile.add'),
 	(r'^profile/(?P<res_id>\d+)$', 'tomato.profile.info'),
 	(r'^profile/(?P<res_id>\d+)/edit$', 'tomato.profile.edit'),
 	(r'^profile/(?P<res_id>\d+)/remove$', 'tomato.profile.remove'),
@@ -104,6 +112,9 @@ urlpatterns = patterns('',
 	url(r'^external_network/(?P<network>\d+)/instances$', 'tomato.external_network_instance.list', name="external_network_instances"),
 	url(r'^external_network_instance$', 'tomato.external_network_instance.list', name="external_network_instances_all"),
 	(r'^external_network_instance/add$', 'tomato.external_network_instance.add'),
+	(r'^external_network_instance/add/(?P<network>\d+)$', 'tomato.external_network_instance.add'),
+	(r'^external_network_instance/add/all/(?P<host>[^/]+)$', 'tomato.external_network_instance.add'),
+	(r'^external_network_instance/add/(?P<network>\d+)/(?P<host>[^/]+)$', 'tomato.external_network_instance.add'),
 	(r'^external_network_instance/(?P<res_id>\d+)/edit$', 'tomato.external_network_instance.edit'),
 	(r'^external_network_instance/(?P<res_id>\d+)/remove$', 'tomato.external_network_instance.remove'),
 	url(r'^host/(?P<host>[^/]+)/external_networks$', 'tomato.external_network_instance.list', name="host_external_networks"),

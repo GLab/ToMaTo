@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
+{% load url from future %}
+
 {% block content %}
 
 <form>
-  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
+  <button type="submit" formaction="{%url "template_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
 </form>
 
 <h1>Template {{template.attrs.name}}</h1>
@@ -72,7 +74,7 @@
 		{% if template.attrs.icon %}
 			<img src="{{template.attrs.icon}}" />
 		{% else %}
-			<img src="/img/{{template.attrs.tech}}32.png" />
+			<img src="/dynimg/{{template.attrs.tech}}/32/{{template.attrs.subtype}}/{{template.attrs.name}}.png" />
 		{% endif %}
 		</td>
 	</tr>	
@@ -108,10 +110,12 @@
 
 {% load tomato %}
 
+{% if request.session.user.isGlobalHostManager %}
 <form>
-  <button type="submit" formaction="{%url template.edit_torrent template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
-  <button type="submit" formaction="{%url template.edit template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
-  <button type="submit" formaction="{%url template.remove template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
+  <button type="submit" formaction="{%url "template.edit_torrent" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
+  <button type="submit" formaction="{%url "template.edit" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
+  <button type="submit" formaction="{%url "template.remove" template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
 </form>
+{%endif%}
 
 {% endblock %}

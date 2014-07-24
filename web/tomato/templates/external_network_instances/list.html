@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
 
 {% block content %}
@@ -19,15 +20,15 @@
   
     <li>
     {% if organization %}
-      		<a href="{%url organization_external_networks organization %}">
+      		<a href="{%url "organization_external_networks" organization %}">
       	{% else %}
       		{% if site %}
-      			<a href="{%url site_external_networks site %}">
+      			<a href="{%url "site_external_networks" site %}">
       		{% else %}
       			{% if host %}
-      				<a href="{%url host_external_networks host  %}">
+      				<a href="{%url "host_external_networks" host  %}">
       			{% else %}
-	      			<a href="{%url external_network_instances_all %}">
+	      			<a href="{%url "external_network_instances_all" %}">
 	      		{% endif %}
 	      	{% endif %}
 	      {% endif %}
@@ -38,15 +39,15 @@
     {% for net in networks %}
     	<li>
     	{% if organization %}
-      		<a href="{%url organization_external_network organization net.id %}">
+      		<a href="{%url "organization_external_network" organization net.id %}">
       	{% else %}
       		{% if site %}
-      			<a href="{%url site_external_network site net.id %}">
+      			<a href="{%url "site_external_network" site net.id %}">
       		{% else %}
       			{% if host %}
-      				<a href="{%url host_external_network host net.id %}">
+      				<a href="{%url "host_external_network" host net.id %}">
       			{% else %}
-	      			<a href="{%url external_network_instances net.id %}">
+	      			<a href="{%url "external_network_instances" net.id %}">
 	      		{% endif %}
 	      	{% endif %}
 	      {% endif %}
@@ -75,15 +76,18 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{%url external_network_instances_all %}">Show instances on all host</a></li>
-    
+    {% if network %}
+      <li><a href="{%url "external_network_instances" network %}">Show instances on all hosts</a></li>
+    {% else %}
+      <li><a href="{%url "external_network_instances_all" %}">Show instances on all hosts</a></li>
+    {%endif%}
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for o in organizations %}
     	{% if network %}
-      		<li><a href="{%url organization_external_network o.name network %}">Show instances on '{{o.description}}'</a></li>    
+      		<li><a href="{%url "organization_external_network" o.name network %}">Show instances on '{{o.description}}'</a></li>    
     	{% else %}
-    		<li><a href="{%url organization_external_networks o.name %}">Show instances on '{{o.description}}'</a></li>    
+    		<li><a href="{%url "organization_external_networks" o.name %}">Show instances on '{{o.description}}'</a></li>    
     	{% endif %}
     {% endfor %}
     
@@ -91,9 +95,9 @@
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
     	{% if network %}
-     		<li><a href="{%url site_external_network s.name network %}">Show instances on '{{s.description}}'</a></li>
+     		<li><a href="{%url "site_external_network" s.name network %}">Show instances on '{{s.description}}'</a></li>
      	{% else %}
-     		<li><a href="{%url site_external_networks s.name %}">Show instances on '{{s.description}}'</a></li>
+     		<li><a href="{%url "site_external_networks" s.name %}">Show instances on '{{s.description}}'</a></li>
      	{% endif %}   
     {% endfor %}
     
@@ -101,9 +105,9 @@
     <li class="dropdown-header">Hosts</li>
     {% for h in hosts %}
     	{% if network %}
-      		<li><a href="{%url host_external_network h.name network %}">Show instances on '{{h.name}}'</a></li> 
+      		<li><a href="{%url "host_external_network" h.name network %}">Show instances on '{{h.name}}'</a></li> 
     	{% else %}
-      		<li><a href="{%url host_external_networks h.name %}">Show instances on '{{h.name}}'</a></li> 
+      		<li><a href="{%url "host_external_networks" h.name %}">Show instances on '{{h.name}}'</a></li> 
       	{% endif %}   
     {% endfor %}
   </ul>
@@ -113,7 +117,21 @@
 
 {% if nis|length > 10 and request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+  <button type="submit"
+  {%if host%}
+  	{%if network%}
+  	  formaction="{%url "external_network_instance.add" network=network host=host%}"
+  	{%else%}
+  	  formaction="{%url "external_network_instance.add" host=host%}"
+  	{%endif%}
+  {%else%}
+  {%if network%}
+  	  formaction="{%url "external_network_instance.add" network=network%}"
+  	{%else%}
+  	  formaction="{%url "external_network_instance.add"%}"
+  	{%endif%}
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
 </form>
 {% endif %}
 
@@ -133,15 +151,15 @@
 	  </tr>
 	{% for ni in nis %}
 	  <tr>
-	  	<td><a href="{%url host.info ni.attrs.host%}">{{ni.attrs.host}}</a></td>
+	  	<td><a href="{%url "host.info" ni.attrs.host%}">{{ni.attrs.host}}</a></td>
 	  	<td>{{ni.attrs.bridge}}</td>
 	  	<td>{{ni.attrs.network}}</td>
 	    
 	    {% if request.session.user.isHostManager %}
 	    <td>
 	    	<form>
-	    		<button type="submit" formaction="{%url external_network_instance.edit ni.id%}" class="btn btn-xs btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
-  				<button type="submit" formaction="{%url external_network_instance.remove ni.id%}" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
+	    		<button type="submit" formaction="{%url "external_network_instance.edit" ni.id%}" class="btn btn-xs btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
+  				<button type="submit" formaction="{%url "external_network_instance.remove" ni.id%}" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
   			</from>
 		</td>
 	    {% endif %}
@@ -155,7 +173,21 @@
 
 {% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network_instance.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
+  <button type="submit"
+  {%if host%}
+  	{%if network%}
+  	  formaction="{%url "external_network_instance.add" network=network host=host%}"
+  	{%else%}
+  	  formaction="{%url "external_network_instance.add" host=host%}"
+  	{%endif%}
+  {%else%}
+  {%if network%}
+  	  formaction="{%url "external_network_instance.add" network=network%}"
+  	{%else%}
+  	  formaction="{%url "external_network_instance.add"%}"
+  	{%endif%}
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network instance</button>
 </form>
 {% endif %}
 

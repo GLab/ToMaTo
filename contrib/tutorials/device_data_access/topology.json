@@ -6,8 +6,8 @@
     "connections": [
       {
         "elements": [
-          6201, 
-          6202
+          6427, 
+          6428
         ], 
         "type": "bridge", 
         "attrs": {
@@ -15,71 +15,74 @@
           "bandwidth_from": 10000, 
           "emulation": true
         }, 
-        "id": 1739
+        "id": 1802
       }, 
       {
         "elements": [
-          6203, 
-          6204
+          6425, 
+          6426
         ], 
-        "type": "fixed_bridge", 
+        "type": "bridge", 
         "attrs": {
           "bandwidth_to": 10000, 
           "bandwidth_from": 10000, 
           "emulation": true
         }, 
-        "id": 1740
+        "id": 1801
       }
     ], 
     "elements": [
       {
         "type": "tinc_endpoint", 
         "attrs": {
-          "name": "tinc_endpoint6204", 
+          "name": "tinc_endpoint6428", 
           "mode": "switch"
         }, 
-        "parent": 6199, 
-        "id": 6204
-      }, 
-      {
-        "type": "external_network_endpoint", 
-        "attrs": {
-          "name": "external_network_endpoint6203"
-        }, 
-        "parent": 6200, 
-        "id": 6203
+        "parent": 6423, 
+        "id": 6428
       }, 
       {
         "type": "openvz_interface", 
         "attrs": {
-          "use_dhcp": true, 
+          "name": "eth0", 
+          "ip4address": "10.0.0.1/24"
+        }, 
+        "parent": 6424, 
+        "id": 6427
+      }, 
+      {
+        "type": "openvz_interface", 
+        "attrs": {
           "name": "eth0"
         }, 
-        "parent": 6198, 
-        "id": 6202
+        "parent": 6422, 
+        "id": 6426
       }, 
       {
         "type": "tinc_endpoint", 
         "attrs": {
-          "name": "tinc_endpoint6201", 
+          "name": "tinc_endpoint6425", 
           "mode": "switch"
         }, 
-        "parent": 6199, 
-        "id": 6201
+        "parent": 6423, 
+        "id": 6425
       }, 
       {
-        "type": "external_network", 
-        "attrs": {
-          "kind": "internet", 
-          "samenet": false, 
-          "name": "internet1", 
-          "_pos": {
-            "y": 0.043917245238366785, 
-            "x": 0.5227272727272727
-          }
-        }, 
+        "info_sync_date": 0, 
+        "type": "openvz", 
+        "id": 6424, 
         "parent": null, 
-        "id": 6200
+        "attrs": {
+          "profile": "normal", 
+          "name": "openvz2", 
+          "hostname": "openvz2", 
+          "site": null, 
+          "_pos": {
+            "y": 0.042092427720118612, 
+            "x": 0.55213903743315518
+          }, 
+          "template": "debian-7.0_x86_64"
+        }
       }, 
       {
         "type": "tinc_vpn", 
@@ -87,37 +90,34 @@
           "mode": "switch", 
           "name": "switch1", 
           "_pos": {
-            "y": 0.043917245238366785, 
-            "x": 0.3663101604278075
+            "y": 0.038442792683622259, 
+            "x": 0.37566844919786097
           }
         }, 
         "parent": null, 
-        "id": 6199
+        "id": 6423
       }, 
       {
         "info_sync_date": 0, 
         "type": "openvz", 
-        "id": 6198, 
+        "id": 6422, 
         "parent": null, 
         "attrs": {
           "profile": "normal", 
-          "_endpoint": true, 
+          "name": "openvz1", 
           "hostname": "openvz1", 
           "site": null, 
           "_pos": {
-            "y": 0.04026761020187044, 
-            "x": 0.25
+            "y": 0.036617975165374086, 
+            "x": 0.19919786096256684
           }, 
-          "gateway6": "", 
-          "gateway4": "", 
-          "template": "ubuntu-12.04_x86_64", 
-          "rootpassword": "", 
-          "name": "openvz1"
+          "template": "debian-7.0_x86_64"
         }
       }
     ], 
     "attrs": {
-      "name": "Tutorial: Templates & Images"
+      "_notes": "", 
+      "name": "Device and Data Access Tutorial"
     }
   }
 }

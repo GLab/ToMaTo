@@ -144,7 +144,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 	}, 
 	{
 		text: '<p class="tutorialExplanation">If you want to get information about the execution of your archive, just go to executable archive status window</p>\
-<p class="tutorialCommand">Open the executable archive status page by right-clicking the virtual machine and seelecting <i>Executable archive &gt; Status</i></p>',
+<p class="tutorialCommand">Open the executable archive status page by right-clicking the virtual machine and selecting <i>Executable archive &gt; Status</i></p>',
 		trigger: function(event) {
 				return compareToMask(event, {
 					operation: "rextfv-status",
@@ -154,7 +154,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		help_page: 'ExecutableArchives'
 	},
 	{ 
-		text: '<p class="tutorialCommand">Wait untill the executable archive status page shows "Finish". Then click on "Continue".</p>',
+		text: '<p class="tutorialCommand">Wait until the executable archive status page shows "Finish". Then click on "Continue".</p>',
 		skip_button: 'Continue',
 		help_page: 'ExecutableArchives'
 	
@@ -191,7 +191,7 @@ These buttons are smart and know the states of the elements. If you select <i>st
 		help_page: 'ExecutableArchives'
 	},
 	{ 
-		text: '<p class="tutorialCommand">Wait untill the executable archive status page shows "Finish". Then click on "Continue".</p>',
+		text: '<p class="tutorialCommand">Wait until the executable archive status page shows "Finish". Then click on "Continue".</p>',
 		skip_button: 'Continue',
 	
 	},
@@ -488,12 +488,14 @@ Now you can play around with the settings a little. Maybe add some jitter to the
 		text: '<h3>Fourth part</h3>\
 <p class="tutorialExplanation">Ok, now you have seen some of the features of ToMaTo. The only important thing that is missing now is external connectivity.<br/>\
 In this part we will open our topology to the Internet.</p>',
-		skip_button: 'Continue'
+		skip_button: 'Continue',
+		help_page: 'NetworkTypes',
 	},
 	{
 		text: '<p class="tutorialExplanation">Select the Internet from the menu and add it to the topology. In the attribute window you can select the type of external network that you want but Internet is the default.<br/>\
 This external network is an opening of your topology. Whatever is connected to this element is connected to that network, i.e. to the Internet in our case.</p>\
 <p class="tutorialCommand">Add an <i>Internet</i> external network to your topology</p>',
+		help_page: 'NetworkTypes'
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
@@ -515,7 +517,8 @@ This external network is an opening of your topology. Whatever is connected to t
 </ol>\
 You know how to do this from the earlier tutorial parts.</p>\
 <p class="tutorialCommand">Click on continue when you are finished</p>',
-		skip_button: 'Continue'
+		skip_button: 'Continue',
+		help_page: 'NetworkTypes'
 	},
 	{
 		text: '<p class="tutorialExplanation">When your topology is connected to the Internet, you can reach the Internet from the connected VMs.<br/>\
@@ -524,7 +527,8 @@ If you do not get a reply, you might need to obtain a network address first by r
 If you see high latencies or lost packets, you might still have link emulation enabled.</br>\
 You can use this connection to exchange files with your nodes and to use external services.</p><br/>\
 <p class="tutorialCommand">Click on continue when you are done</p>',
-		skip_button: 'Continue'
+		skip_button: 'Continue',
+		help_page: 'NetworkTypes'
 	},
 	{
 		text: '<p class="tutorialExplanation">If you want to, you can start a chat client on one of the VMs and maybe someone answers.</p>\
