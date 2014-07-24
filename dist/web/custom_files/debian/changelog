@@ -1,3 +1,11 @@
+tomato-web (3.4.1) stable; urgency=medium
+
+  * added some more buttons to start page
+  * bugfix: users with orgaAdmin or orgaHostsManager flags are now assumed to 
+    be admins/hostsmanagers by the webfrontend when no organization is given
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 24 Jul 2014 09:31:15 +0200
+
 tomato-web (3.4) stable; urgency=medium
 
   * Quota support per user/organization
