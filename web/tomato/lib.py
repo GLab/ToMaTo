@@ -222,20 +222,25 @@ class UserObj:
 			if flag in self.flags:
 				return True
 		return False
-	def hasOrgaToplFlags(self):
+	def hasOrgaToplFlags(self, orgaName=None):
 		for flag in ["orga_topl_owner", "orga_topl_manager", "orga_topl_user"]:
-			if flag in self.flags:
+			if flag in self.flags and (self.organization == orgaName or orgaName is None):
 				return True
 		return False
 	def isAdmin(self, orgaName=None):
 		if "global_admin" in self.flags:
 			return True
-		if "orga_admin" in self.flags and self.organization == orgaName:
+		if "orga_admin" in self.flags and (self.organization == orgaName or orgaName is None):
 			return True
 		return False
+	def isGlobalAdmin(self):
+		return "global_admin" in self.flags
 	def isHostManager(self, orgaName=None):
 		if "global_host_manager" in self.flags:
 			return True
-		if "orga_host_manager" in self.flags and self.organization == orgaName:
+		print self.flags
+		if "orga_host_manager" in self.flags and (self.organization == orgaName or orgaName is None):
 			return True
 		return False
+	def isGlobalHostManager(self):
+		return "global_host_manager" in self.flags

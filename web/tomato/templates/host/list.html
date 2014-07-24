@@ -218,7 +218,7 @@
 	<p>No hosts</p>
 {% endif %}
 
-{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
+{% if request.session.user.isHostManager %}
 <form>
   <button type="submit" 
   {%if site%}
