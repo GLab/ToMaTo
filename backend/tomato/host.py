@@ -239,10 +239,8 @@ class Host(attributes.Mixin, models.Model):
 		pass #disable automatic attribute saving
 
 	def getProxy(self):
-		if not hasattr(self, "_proxy"):
-			self._proxy = rpc.getProxy(self.rpcurl, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
-		return self._proxy
-		
+		return rpc.getProxy(self.rpcurl, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
+
 	def incrementErrors(self):
 		# count all component errors {element|connection}_{create|action|modify}
 		# this value is reset on every sync

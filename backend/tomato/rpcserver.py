@@ -60,7 +60,7 @@ def start():
 		server_address = ('', settings["PORT"])
 		sslOpts = None
 		if settings["SSL"]:
-			sslOpts = rpc.xmlrpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
+			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
 		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
@@ -70,3 +70,4 @@ def start():
 def stop():
 	for server in servers:
 		server.shutdown()
+	rpc.stopCaching()

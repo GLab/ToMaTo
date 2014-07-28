@@ -55,8 +55,8 @@ def start():
 	for settings in config.SERVER:
 		server_address = ('', settings["PORT"])
 		sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=settings["SSL_OPTS"]["client_certs"])
-		server = rpc.runServer(type=settings["TYPE"], address=server_address, sslOpts=sslOpts, certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError, api=api)
-		print >>sys.stderr, " - %s %s:%d" % (type, server_address[0], server_address[1])
+		server = rpc.runServer(type=settings.get("TYPE", "https+xmlrpc"), address=server_address, sslOpts=sslOpts, certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError, api=api)
+		print >>sys.stderr, " - %s %s:%d" % (settings.get("TYPE", "https+xmlrpc"), server_address[0], server_address[1])
 		servers.append(server)
 		
 def stop():

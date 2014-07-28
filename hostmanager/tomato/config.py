@@ -68,15 +68,23 @@ field is set to ``None`` (the default), the template directory will be a
 subdirectory of the data directory.
 """
 
-SERVER = {
+SERVER = [{
     "TYPE": "https+xmlrpc",
 	"PORT": 8000,
 	"SSL_OPTS": {
-		"cert_file" : "/etc/tomato/server.cert",
-		"key_file": "/etc/tomato/server.cert",
+		"cert_file" : "/etc/tomato/server.pem",
+		"key_file": "/etc/tomato/server.pem",
 		"client_certs": "/etc/tomato/client_certs",
 	}
-}
+}, {
+    "TYPE": "ssl+jsonrpc",
+	"PORT": 8003,
+	"SSL_OPTS": {
+		"cert_file" : "/etc/tomato/server.pem",
+		"key_file": "/etc/tomato/server.pem",
+		"client_certs": "/etc/tomato/client_certs.pem",
+	}
+}]
 """
 This field defines where and how to start the API server. It is a list of 
 server entries where each server entry is a dict containing the following
@@ -93,7 +101,7 @@ values:
    ``SSL_OPTS``
       This dict contains the following options for the SSL usage:
       
-      ``key_file``, ``cert_file`` (default: ``'/etc/tomato/server.cert'``)
+      ``key_file``, ``cert_file`` (default: ``'/etc/tomato/server.pem'``)
          The paths of the files containing the private key and the SSL 
          certificate for the server in PEM format.
          If one file contains both information, these fields can point to the

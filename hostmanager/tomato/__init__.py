@@ -94,15 +94,15 @@ def _printStackTraces():
 	
 def _stopHelper():
 	stopped.wait(10)
-	if stopped.isSet():
+	if stopped.isSet() and threading.activeCount() == 1:
 		return
 	print >>sys.stderr, "Stopping takes long, waiting some more time..."
 	stopped.wait(10)
-	if stopped.isSet():
+	if stopped.isSet() and threading.activeCount() == 1:
 		return
 	print >>sys.stderr, "Ok last chance, killing process in 10 seconds..."
 	stopped.wait(10)
-	if stopped.isSet():
+	if stopped.isSet() and threading.activeCount() == 1:
 		return
 	print >>sys.stderr, "Some threads are still running:"
 	_printStackTraces()
