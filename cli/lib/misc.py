@@ -1,10 +1,8 @@
 def jsonToMods(data):
 	"""
 	%TODO
-	Something Something
 
 	Parameter *data*:
-		Something Something 
 	
 	"""
 	import simplejson as json, zlib, base64
@@ -29,26 +27,27 @@ def jsonToMods(data):
 def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 	
 	"""
-	%TODO
-	Something Something
+	Pings a target IP address from a certain device and returns the results.
+	The number of samples and the maximum wait time for responds can be set.
+	Also a one-way adaption of the results is possible. 
 
 	Parameter *top*:
-		Topology in which the link can be find	
+		Topology in which the device can be find	
 		
 	Parameter *dev*:
-		Device ID 
+		ID of device which should be used
 		
 	Parameter *ip*:
-		Something Something
+		IP address of the ping target
 
 	Parameter *samples*:
-		Something Something 	
+		Number of messages to send
 		
 	Parameter *maxWait*:
-		Something Something 	
+		Time to wait for a responds in seconds
 		
 	Parameter *oneWayAdapt*:
-		Something Something  
+		Change results to a one-way adaption
 	
 	"""
 	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
@@ -82,23 +81,22 @@ def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 	
 def link_check(top, dev, ip, tries=5, waitBetween=5):
 	"""
-	%TODO
-	Something Something
+	Checks the availability of a link by trying to reach him a certain number of tries. 
 
 	Parameter *top*:
-		Something Something 
-
+		Topology in which the device can be found	
+		
 	Parameter *dev*:
-		Something Something 
-
+		ID of device which should be reached
+		
 	Parameter *ip*:
-		Something Something 
+		IP address of the ping target
 
 	Parameter *tries*:
-		Something Something 
+		Number of tries
 
 	Parameter *waitBetween*:
-		Something Something 
+		Time between each try
 	
 	"""
 	import time
@@ -109,22 +107,25 @@ def link_check(top, dev, ip, tries=5, waitBetween=5):
 	
 def link_config(top, con, c, attrs):
 	"""
-	%TODO
-	Something Something
-
-	Parameter *data*:
-		Something Something 
+	Configures an link by modifying the certain attributes
 	
+	Parameter *top*:
+		Topology in which the link can be found
+		
+	Parameter *con*:
+		Link which should be modified
+		
+	Parameter *c*:
+		Target interface
+		
+	Parameter *attrs*:
+		Key value pair of attributes which should be configured 
 	"""
 	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)
 	
 def errors_print():
 	"""
-	%TODO
-	Something Something
-
-	Parameter *data*:
-		Something Something 
+	Prints all error messages 
 	
 	"""
 	for err in errors_all():
@@ -133,14 +134,17 @@ def errors_print():
 
 def is_superset(obj1, obj2, path=""):
 	"""
-	%TODO
-	Something Something
+	Checks whether obj1 is a superset of obj2.
 
-	Parameter *data*:
-		Something Something 
+	Parameter *obj1*:
+		Superset object
 	
+	Parameter *obj2*:
+		Subset object
+		
+	Parameter *path*:
+		Should be "" in initial call
 	"""
-	#checks whether obj1 is a superset of obj2
 	if obj2 is None:
 		return (True, None)
 	if isinstance(obj1, dict):
