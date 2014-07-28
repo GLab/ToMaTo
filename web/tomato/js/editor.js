@@ -1311,7 +1311,9 @@ var Workspace = Class.extend({
 	
 	updateTopologyTitle: function() {
 		var t = editor.topology;
-		$('#topology_name').text("Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : ""));
+		var new_name="Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : "");
+		$('#topology_name').text(new_name);
+		document.title = new_name+" - G-Lab ToMaTo";
 	}
 });
 
@@ -3956,6 +3958,7 @@ var Editor = Class.extend({
 						}});
 					} else
 						t.topology.initialDialog();
+				t.workspace.updateTopologyTitle();
 			}
 		});
 	},
