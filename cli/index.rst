@@ -4,7 +4,7 @@ Command-Line-Client Documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   ./lib/index
+   lib/index
  

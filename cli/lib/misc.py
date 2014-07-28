@@ -1,40 +1,12 @@
-def jsonToMods(data):
-	"""
-	%TODO
 
-	Parameter *data*:
-	
-	"""
-	import simplejson as json, zlib, base64
-	try:
-		top = json.loads(data)
-	except:
-		data = zlib.decompress(base64.b64decode(data))
-		top = json.loads(data)
-	mods = []
-	mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
-	for devname, dev in top["devices"].iteritems():
-		mods.append({"type": "device-create", "element": None, "subelement": None, "properties": dev["attrs"]})
-		for iface in dev["interfaces"].values():
-			mods.append({"type": "interface-create", "element": devname, "subelement": None, "properties": iface["attrs"]})
-	for conname, con in top["connectors"].iteritems():
-		mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
-		for c in con["connections"].values():
-			c["attrs"]["interface"] = c["interface"]
-			mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
-	return mods
-
-def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
-	
+def link_info(id, ip, samples=10, maxWait=5, oneWayAdapt=False):
 	"""
 	Pings a target IP address from a certain device and returns the results.
 	The number of samples and the maximum wait time for responds can be set.
 	Also a one-way adaption of the results is possible. 
 
-	Parameter *top*:
-		Topology in which the device can be find	
-		
-	Parameter *dev*:
+
+	Parameter *id*:
 		ID of device which should be used
 		
 	Parameter *ip*:
@@ -50,7 +22,8 @@ def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 		Change results to a one-way adaption
 	
 	"""
-	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
+	
+	res = element_action(id, "execute", {"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
 	if not res:
 		return
 	import re
@@ -79,14 +52,12 @@ def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 		stddev = stddev * 1000.0
 	return {"lossratio": loss, "delay": avg, "delay_stddev": stddev}
 	
-def link_check(top, dev, ip, tries=5, waitBetween=5):
+def link_check(id, ip, tries=5, waitBetween=5):
 	"""
 	Checks the availability of a link by trying to reach him a certain number of tries. 
 
-	Parameter *top*:
-		Topology in which the device can be found	
 		
-	Parameter *dev*:
+	Parameter *id*:
 		ID of device which should be reached
 		
 	Parameter *ip*:
@@ -100,7 +71,7 @@ def link_check(top, dev, ip, tries=5, waitBetween=5):
 	
 	"""
 	import time
-	while tries>0 and not link_info(top, dev, ip):
+	while tries>0 and not link_info(id,ip):
 		tries -= 1
 		time.sleep(waitBetween)
 	return tries > 0
@@ -121,16 +92,7 @@ def link_config(top, con, c, attrs):
 	Parameter *attrs*:
 		Key value pair of attributes which should be configured 
 	"""
-	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)
-	
-def errors_print():
-	"""
-	Prints all error messages 
-	
-	"""
-	for err in errors_all():
-		print err["message"] + "\n\n"
-		
+	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)	
 
 def is_superset(obj1, obj2, path=""):
 	"""
