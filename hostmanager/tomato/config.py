@@ -69,8 +69,8 @@ subdirectory of the data directory.
 """
 
 SERVER = {
+    "TYPE": "https+xmlrpc",
 	"PORT": 8000,
-	"SSL": True,
 	"SSL_OPTS": {
 		"cert_file" : "/etc/tomato/server.cert",
 		"key_file": "/etc/tomato/server.cert",
@@ -82,13 +82,13 @@ This field defines where and how to start the API server. It is a list of
 server entries where each server entry is a dict containing the following
 values:
 
+   ``TYPE`` (default: ``https+xmlrpc``)
+      The type/protocol of the server. Available protocols are ``https+xmlrpc``
+      and ``ssl+jsonrpc``.
+
    ``PORT`` (default: ``8000``)
       The port number of the API server. This defaults to 8000. If several
       server entries are configured, each one needs its own free port number.
-   
-   ``SSL`` (default: ``True``)
-      Whether SSL should be used or not. Since the authentication uses SSL
-      client certificates, this setting must be ``True``.
    
    ``SSL_OPTS``
       This dict contains the following options for the SSL usage:

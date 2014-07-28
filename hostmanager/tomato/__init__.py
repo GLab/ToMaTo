@@ -45,13 +45,12 @@ def currentUser():
 def setCurrentUser(user):
 	_currentUser.user = user
 
-def login(credentials, sslCert):
-	if not sslCert:
+def login(commonName):
+	if not commonName:
 		return False
-	username = sslCert.get_subject().commonName
-	user, _ = User.objects.get_or_create(name=username)
+	user, _ = User.objects.get_or_create(name=commonName)
 	setCurrentUser(user)
-	return bool(sslCert)
+	return bool(commonName)
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)

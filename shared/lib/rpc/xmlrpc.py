@@ -104,9 +104,6 @@ class SecureRequestHandler:
 			self.wfile = self.connection.makefile('wb', self.wbufsize)	
 
 
-SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate", "client_certs"])
-
-
 class SecureServer():
 	def _verifyClientCert(self, connection, x509, errnum, errdepth, ok):
 		return ok

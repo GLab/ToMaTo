@@ -21,7 +21,7 @@ import xmlrpclib, sys, traceback
 
 from . import config, login, api
 from . import dump, fault, currentUser
-from .lib import db, util, xmlrpc, logging #@UnresolvedImport
+from .lib import db, util, rpc, logging #@UnresolvedImport
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
@@ -54,13 +54,9 @@ def start():
 	print >>sys.stderr, "Starting RPC servers"
 	for settings in config.SERVER:
 		server_address = ('', settings["PORT"])
-		sslOpts = None
-		if settings["SSL"]:
-			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=settings["SSL_OPTS"]["client_certs"])
-		server = rpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
-		server.register(api)
-		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
-		util.start_thread(server.serve_forever)
+		sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=settings["SSL_OPTS"]["client_certs"])
+		server = rpc.runServer(type=settings["TYPE"], address=server_address, sslOpts=sslOpts, certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError, api=api)
+		print >>sys.stderr, " - %s %s:%d" % (type, server_address[0], server_address[1])
 		servers.append(server)
 		
 def stop():
