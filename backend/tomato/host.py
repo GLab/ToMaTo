@@ -21,7 +21,7 @@ from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
 from auth import Flags
-import xmlrpclib, time, hashlib, threading
+import time, hashlib, threading
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
@@ -201,18 +201,14 @@ def createSite(name, organization, description=""):
 	site.init({"description": description})
 	return site
 
-def _connect(address, port):
-	transport = rpc.xmlrpc.SafeTransportWithCerts(config.CERTIFICATE, config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
-	return rpc.xmlrpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
-
 
 class Host(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=255, unique=True)
-	address = models.CharField(max_length=255, unique=True)
+	address = models.CharField(max_length=255, unique=False)
+	rpcurl = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
 	totalUsage = models.OneToOneField(accounting.UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
-	port = attributes.attribute("port", int, 8000)
 	elementTypes = attributes.attribute("element_types", dict, {})
 	connectionTypes = attributes.attribute("connection_types", dict, {})
 	hostInfo = attributes.attribute("info", dict, {})
@@ -244,7 +240,7 @@ class Host(attributes.Mixin, models.Model):
 
 	def getProxy(self):
 		if not hasattr(self, "_proxy"):
-			self._proxy = _connect(self.address, self.port)
+			self._proxy = rpc.getProxy(self.rpcurl, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
 		return self._proxy
 		
 	def incrementErrors(self):
@@ -315,10 +311,9 @@ class Host(attributes.Mixin, models.Model):
 		assert hel2.host == self
 		try:
 			con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
-		except Exception, exc:
+		except rpc.RemoteError:
 			self.incrementErrors()
-			exc.faultCode = fault.INTERNAL_ERROR
-			raise
+			raise rpc.RemoteInternalError(code="host_error", message="Failed to create connection", data={"host": self.name})
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement, topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
 		hcon.attrs = con
@@ -493,6 +488,8 @@ class Host(attributes.Mixin, models.Model):
 				self.site = getSite(value)
 			elif key == "address":
 				self.address = value
+			elif key == "rpcurl":
+				self.rpcurl = value
 			elif key == "name":
 				self.name = value
 			elif key == "enabled":
@@ -597,6 +594,7 @@ class Host(attributes.Mixin, models.Model):
 		return {
 			"name": self.name,
 			"address": self.address,
+			"rpcurl": self.rpcurl,
 			"site": self.site.name,
 			"organization": self.site.organization.name,
 			"enabled": self.enabled,
@@ -642,15 +640,12 @@ class HostElement(attributes.Mixin, models.Model):
 		logging.logMessage("element_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:		
 			self.attrs = self.host.getProxy().element_modify(self.num, attrs)
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			if f.faultCode == fault.INVALID_STATE:
+			if err.code == rpc.RemoteUserError.INVALID_STATE:
 				self.updateInfo()
-			if f.faultCode != fault.USER_ERROR:
-				self.host.incrementErrors()
-			raise
 		except:
 			self.host.incrementErrors()
 			raise
@@ -661,19 +656,16 @@ class HostElement(attributes.Mixin, models.Model):
 		logging.logMessage("element_action begin", category="host", host=self.host.name, id=self.num, action=action, params=params)		
 		try:
 			res = self.host.getProxy().element_action(self.num, action, params)
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			if f.faultCode == fault.INVALID_STATE:
+			if err.code == rpc.RemoteUserError.INVALID_STATE:
 				self.updateInfo()
-			if f.faultCode != fault.USER_ERROR:
-				self.host.incrementErrors()
-			raise
 		except:
 			self.host.incrementErrors()
 			raise
-		logging.logMessage("element_action end", category="host", host=self.host.name, id=self.num, action=action, params=params, result=res)		
+		logging.logMessage("element_action end", category="host", host=self.host.name, id=self.num, action=action, params=params, result=res)
 		self.updateInfo()
 		return res
 			
@@ -681,8 +673,8 @@ class HostElement(attributes.Mixin, models.Model):
 		try:
 			logging.logMessage("element_remove", category="host", host=self.host.name, id=self.num)		
 			self.host.getProxy().element_remove(self.num)
-		except xmlrpclib.Fault, f:
-			if f.faultCode != fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code != rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
@@ -695,8 +687,8 @@ class HostElement(attributes.Mixin, models.Model):
 	def updateInfo(self):
 		try:
 			self.attrs = self.host.getProxy().element_info(self.num)
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing element", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise
@@ -740,8 +732,8 @@ class HostElement(attributes.Mixin, models.Model):
 				self.remove()
 				return
 			self.modify({"timeout": time.time() + 14 * 24 * 60 * 60})
-		except xmlrpclib.Fault, f:
-			if f.faultCode != fault.UNSUPPORTED_ATTRIBUTE:
+		except rpc.RemoteUserError, err:
+			if err.code != rpc.RemoteUserError.UNSUPPORTED_ATTRIBUTE:
 				raise
 		except:
 			logging.logException(host=self.host.address)
@@ -764,14 +756,12 @@ class HostConnection(attributes.Mixin, models.Model):
 		logging.logMessage("connection_modify", category="host", host=self.host.name, id=self.num, attrs=attrs)
 		try:		
 			self.attrs = self.host.getProxy().connection_modify(self.num, attrs)
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			if f.faultCode == fault.INVALID_STATE:
+			if err.code == rpc.RemoteUserError.INVALID_STATE:
 				self.updateInfo()
-			if f.faultCode != fault.USER_ERROR:
-				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -783,14 +773,12 @@ class HostConnection(attributes.Mixin, models.Model):
 		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action, params=params)
 		try:		
 			res = self.host.getProxy().connection_action(self.num, action, params)
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
-			if f.faultCode == fault.INVALID_STATE:
+			if err.code == rpc.RemoteUserError.INVALID_STATE:
 				self.updateInfo()
-			if f.faultCode != fault.USER_ERROR:
-				self.host.incrementErrors()
 			raise
 		except:
 			self.host.incrementErrors()
@@ -803,8 +791,8 @@ class HostConnection(attributes.Mixin, models.Model):
 		try:
 			logging.logMessage("connection_remove", category="host", host=self.host.name, id=self.num)		
 			self.host.getProxy().connection_remove(self.num)
-		except xmlrpclib.Fault, f:
-			if f.faultCode != fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code != rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				self.host.incrementErrors()
 		except:
 			self.host.incrementErrors()
@@ -818,8 +806,8 @@ class HostConnection(attributes.Mixin, models.Model):
 		try:
 			self.attrs = self.host.getProxy().connection_info(self.num)
 			self.state = self.attrs["state"]
-		except xmlrpclib.Fault, f:
-			if f.faultCode == fault.UNKNOWN_OBJECT:
+		except rpc.RemoteUserError, err:
+			if err.code == rpc.RemoteUserError.ENTITY_DOES_NOT_EXIST:
 				logging.logMessage("missing connection", category="host", host=self.host.name, id=self.num)
 				self.remove()
 			raise

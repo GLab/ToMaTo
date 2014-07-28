@@ -1,4 +1,5 @@
 import ssl, socket, SocketServer, json, inspect, threading, thread
+from . import RemoteError, RemoteInternalError, RemoteUserError, RemoteTransportError
 
 class SSLServer(SocketServer.TCPServer):
 
@@ -82,6 +83,7 @@ class RPCError(Exception):
 		JSON = "json"
 		FORMAT = "format"
 		CALL = "call"
+		INTERNAL = "internal"
 		METHOD = "method"
 
 	def __init__(self, id, category, type, message, data=None):
@@ -338,12 +340,12 @@ class RPCServer(SocketServer.ThreadingMixIn, SSLServer):
 			return res
 		except Exception, exc:
 			if callable(self.onError):
-				res = self.onError(exc, func, args, kwargs)
+				res = self.onError(exc, request.method, request.args, request.kwargs)
 				if res:
 					exc = res
 			if isinstance(exc, RPCError):
 				raise exc
-			raise RPCError(request.id, RPCError.Category.CALL, type(exc).__name__, str(exc))
+			raise RPCError(request.id, RPCError.Category.INTERNAL, type(exc).__name__, str(exc))
 
 	def _list(self):
 		return self.funcs.keys()
@@ -450,7 +452,7 @@ class RPCProxy:
 		#print "IN: %s" % line.strip()
 		return line
 	
-	def _call(self, name, args=[], kwargs={}):
+	def _callInternal(self, name, args=[], kwargs={}):
 		with self._wlock:
 			request_id = self._nextId()
 			request_line = RPCRequest(id=request_id, method=name, args=args, kwargs=kwargs).encode()
@@ -492,6 +494,19 @@ class RPCProxy:
 				with self._resCond:
 					# Wait for a message to come in
 					self._resCond.wait()
+
+	def _call(self, name, args=[], kwargs={}):
+		try:
+			return self._callInternal(name, args, kwargs)
+		except RPCError, err:
+			if err.category == RPCError.Category.CALL:
+				raise RemoteUserError(code=err.type, message=err.message, data=err.data)
+			if err.category == RPCError.Category.INTERNAL:
+				raise RemoteInternalError(code=err.type, message=err.message, data=err.data)
+			else:
+				raise RemoteTransportError(code="%s.%s" % (err.category, err.type), message=err.message, data=err.data)
+		except Exception, exc:
+			pass
 	
 	def multicall(self, *callargs):
 		return MultiCallProxy(self, callargs)
@@ -526,7 +541,7 @@ class MethodProxy:
 			res = self(*args, **kwargs)
 		except Exception, exc:
 			if error:
-				errror(exc)
+				error(exc)
 			return
 		callback(res)
 	
