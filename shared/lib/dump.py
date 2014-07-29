@@ -53,10 +53,15 @@ def getCaller(self):
 			caller[0] = "..."+caller[0][-22:]
 	return caller
 
-#resolve a dump to a filename inside the dumps directory
-#get the absolute path of a dump for the given filename    
-def get_absolute_path(dump_id):
-    filename = dump_id
+#resolve a dump_id to a filename for a file inside the dumps directory
+#get the absolute path of a dump for the given filename
+#is_meta: if true, this is the filename for the meta file, if false, this is the filename for the data file
+def get_absolute_path(dump_id, is_meta):
+    filename = None
+    if is_meta:
+        filename = dump_id + ".meta.json"
+    else:
+        filename = dump_id + ".data.json"
     if not filename.ends_with(".json"):
         filename=dump_id+".json"
     return os.path.join(config.DUMP_DIR, filename)
@@ -93,22 +98,25 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     with dumps_lock:
         dump_id = get_free_dumpid(timestamp)
             
-        #create the dump
-        dump = {
+        #create the dump for saving
+        dump_meta = {
             "timestamp": timestr,
             "description":description,
             "type":type,
             "group_id":type + "__" + group_id,
-            "data":data,
             'dump_id': dump_id,
             "software_version":{"component": tomato_component, "version": tomato_version}
             }
-        
+        dump_data = {
+            "data": zlib.compress(json.dumps(dump['data']),9),
+            "compressed": True
+            }
         
         #save it (in the dumps array, and on disk)
-        with open(get_absolute_path(dump_id), "w") as f:
-    		json.dump(dump, f, indent=2)
-        del dump['data']
+        with open(get_absolute_path(dump_id, True), "w") as f:
+    		json.dump(dump_meta, f, indent=2)
+        with open(get_absolute_path(dump_id, False), "w") as f:
+            json.dump(dump_data, f, indent=2)
         dump['timestamp'] = timestamp
         dumps[dump_id] = dump
     
@@ -116,28 +124,39 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     
 #load a dump from file.
 #similar arguments as list()
-#param push_to_dumps: if true, the dump will be stored in the dumps dict. this is only useful for the init function.
-def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False):
+#param push_to_dumps: if true, the dump will stored in the dumps dict. this is only useful for the init function.
+#param load_from_file: if true, the dump will be loaded from the meta file. if false, the dump will be taken from the dumps dict.
+def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,load_from_file=False):
     global dumps
-    with lock:
-        if not dump_id in dumps:
+    with dumps_lock:
+        dump = None
+        if load_from_file:
+            with open(get_absolute_path(dump_id,True),"r") as f:
+                dump = json.load(f)
+            dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
+        elif dump_id in dumps:
+            dump = dumps[dump_id]
+        else:
             return None
-        with open(get_absolute_path(dump_id),"r") as f:
-            dump = json.load(f)
-            
-        dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
-    
-        if not load_data:
-            del dump['data']
-        elif compress_data:
-            dump['data'] = zlib.compress(json.dumps(dump['data']),9)
-            
+        
         if push_to_dumps:
-            with dumps_lock:
-                dump_p = dump
-                if not load_data:
-                    del dump_p['data']
-                dumps[dump['dump_id']]=dump_p
+            dumps[dump_id]=dump
+        
+        if load_data:
+            with open(get_absolute_path(dump_id,False),"r") as f:
+                dump_data = json.load(f)
+                data = dump_data['data']
+                is_compressed = dump_data['compressed']
+            if compress_data:
+                if is_compressed:
+                    dump['data'] = data
+                else:
+                    dump['data']
+            else:
+                if is_compressed:
+                    dump['data'] = json.loads(zlib.decompress(data))
+                else:
+                    dump['data'] = zlib.compress(json.dumps(dump['data']),9)
             
         return dump
 
@@ -146,7 +165,8 @@ def remove_dump(dump_id):
     with dumps_lock:
         global dumps
         if dump_id in dumps:
-            os.remove(get_absolute_path(dump_id))
+            os.remove(get_absolute_path(dump_id,True))
+            os.remove(get_absolute_path(dump_id,False))
             del dumps[dump_id]
         
 #remove all dumps matching a criterion. If criterion is set to None, ignore this criterion.
@@ -214,9 +234,11 @@ def init(env_cmds,tomatoComponent,tomatoVersion):
         if not os.path.exists(config.DUMP_DIR):
     		os.mkdir(config.DUMP_DIR)
         else:
-            dump_list = os.listdir(config.DUMP_DIR)
-            for d in dump_list:
-                dump = load_dump(d,push_to_dumps=True)
+            dump_file_list = os.listdir(config.DUMP_DIR)
+            for d in dump_file_list:
+                if d.endswith('.meta.json'):
+                    dump_id = re.sub('\.meta\.json', '', d)
+                    dump = load_dump(dump_id,push_to_dumps=True,load_data=False,load_from_file=True)
     scheduler.scheduleRepeated(60*60*24, auto_cleanup, immediate=True)
 
 
