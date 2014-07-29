@@ -1,6 +1,12 @@
 {% extends "help/base.html" %}
 
+{% block title %}
+<title>Help page does not exist - G-Lab ToMaTo</title> 
+{% endblock %}
+
+{% load url from future %}
+
 {% block content %}
 <h1>This help page {{page}} does not exist (404).</h1>
-<p><a href="{%url main.help ''%}">Back to help index</a></p>
+<p><a href="{%url "main.help" ''%}">Back to help index</a></p>
 {% endblock %}

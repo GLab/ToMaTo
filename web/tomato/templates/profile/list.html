@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
+
+{% block title %}
+<title>Device Profile list - G-Lab ToMaTo</title> 
+{% endblock %}
 
 {% block content %}
 <h1>Device Profile list</h1>
@@ -16,23 +21,23 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url profile_list %}">Show all device profiles</a></li>
+    <li><a href="{% url "profile_list" %}">Show all device profiles</a></li>
     <li class="divider"></li>
     {% for name, label in techs_dict.iteritems %}
-      <li><a href="{% url profile_list_bytech tech=name %}">Show all device profiles of tech '{{label}}'</a></li>    
+      <li><a href="{% url "profile_list_bytech" tech=name %}">Show all device profiles of tech '{{label}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
 
 <div class="skip-sm"></div>
 
-{% if profile_list|length > 10 and request.session.user.isHostManager %}
+{% if profile_list|length > 10 and request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
   {% if tech %}
-  	formaction="{%url profile.add tech%}"
+  	formaction="{%url "profile.add" tech%}"
   {%else%}
-  	formaction="{%url profile.add%}"
+  	formaction="{%url "profile.add"%}"
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
 </form>
@@ -57,7 +62,7 @@
 	  	<td enhancetable_customkey="{{profile.attrs.tech}}" align="right" class="icononly">
 	  		<img src="/img/{{profile.attrs.tech}}16.png" title="{{techs_dict|get:profile.attrs.tech}}" />
 		</td>
-	    <td><a href="{%url profile.info profile.id%}">{{profile.attrs.name}}</a></td>
+	    <td><a href="{%url "profile.info" profile.id%}">{{profile.attrs.name}}</a></td>
 	    <td>{{profile.attrs.label}}</td>
 		<td>
 			{% if profile.attrs.tech != 'repy' %}
@@ -100,13 +105,13 @@
 	<p>No profiles</p>
 {% endif %}
 
-{% if request.session.user.isHostManager %}
+{% if request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
   {% if tech %}
-  	formaction="{%url profile.add tech%}"
+  	formaction="{%url "profile.add" tech%}"
   {%else%}
-  	formaction="{%url profile.add%}"
+  	formaction="{%url "profile.add"%}"
   {%endif%}
   class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add device profile</button>
 </form>

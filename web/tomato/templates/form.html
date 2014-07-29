@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
 
+{% block title %}
+<title>{{heading}} - G-Lab ToMaTo</title> 
+{% endblock %}
 {% block header %}
 <script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/jquery-ui.js"></script>

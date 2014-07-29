@@ -1,3 +1,55 @@
+tomato-hostmanager (3.4) stable; urgency=medium
+
+  * Supported django versions: 1.3 to 1.6
+  * Supported python versions: 2.6 and 2.7
+  * Blocking DHCP servers in topologies from offering leases to external 
+    networks
+  * Using force-stop on hostmanager if it takes too long to stop
+  * Added some locking to RexTFV
+  * Default TCP timeout is 30 minutes
+  * Bumped version of websockify from 0.2 to 0.6
+  * Running websockify with SSL support
+  * VNCterm will restart after 30 minutes instead of shutting down
+  * RexTFV retring to load data 3 times
+  * Blacklisted ports 6666 and 6000 for websockets as major browsers block 
+    those ports
+  * Filtering host networks and only reporting those with eth* interfaces as 
+    external
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 23 Jul 2014 11:35:12 +0200
+
+tomato-hostmanager (3.3.9) unstable; urgency=low
+
+  * better fault when the bridge capture folder does not exist
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 09 Apr 2014 16:16:01 +0200
+
+tomato-hostmanager (3.3.8) unstable; urgency=low
+
+  * Allowing active bridges to be removed
+  * Fixed vncterm so that it restarts after 30 minutes instead of shutting down
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Thu, 03 Apr 2014 10:11:25 +0200
+
+tomato-hostmanager (3.3.7) unstable; urgency=low
+
+  * Fixed templates not being created properly
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 28 Mar 2014 09:46:19 +0100
+
+tomato-hostmanager (3.3.6) unstable; urgency=low
+
+  * Treating execute errors as user errors
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 26 Mar 2014 10:14:46 +0100
+
+tomato-hostmanager (3.3.1) unstable; urgency=low
+
+  * Filtering host networks and only reporting those with eth* interfaces as external
+  * Fix task running twice in parallel
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Wed, 12 Mar 2014 11:45:35 +0100
+
 tomato-hostmanager (3.3) unstable; urgency=low
 
   * Used IP addresses are displayed on interfaces
