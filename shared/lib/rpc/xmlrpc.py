@@ -20,8 +20,6 @@
 import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections, gzip
 from OpenSSL import SSL
 
-from . import RemoteError, RemoteInternalError, RemoteUserError, RemoteTransportError
-
 """
 SSL CLient certs:
 
@@ -290,7 +288,8 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 
 
 class ServerProxy(object):
-	def __init__(self, url, **kwargs):
+	def __init__(self, url, onError=(lambda x: x), **kwargs):
+		self._onError = onError
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
 	def __getattr__(self, name):
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
@@ -298,24 +297,9 @@ class ServerProxy(object):
 			try:
 				return call_proxy(args, kwargs)
 			except xmlrpclib.Fault, f:
-				if f.faultCode == 300:
-					raise RemoteTransportError(code=RemoteTransportError.UNAUTHORIZED)
-				elif f.faultCode == 500:
-					raise RemoteInternalError(code=RemoteInternalError.UNKNOWN, message=f.faultString)
-				elif f.faultCode == 401:
-					raise RemoteUserError(code=RemoteUserError.INVALID_STATE, message=f.faultString)
-				elif f.faultCode == 402:
-					raise RemoteUserError(code=RemoteUserError.ENTITY_DOES_NOT_EXIST, message=f.faultString)
-				elif f.faultCode == 403:
-					raise RemoteUserError(code=RemoteUserError.UNSUPPORTED_ACTION, message=f.faultString)
-				elif f.faultCode == 404:
-					raise RemoteUserError(code=RemoteUserError.ENTITY_BUSY, message=f.faultString)
-				elif f.faultCode == 400:
-					raise RemoteUserError(code=RemoteUserError.UNKNOWN, message=f.faultString)
-				else:
-					raise RemoteInternalError(code=RemoteInternalError.UNKNOWN, message=f.faultString)
+				raise self._onError(f)
 			except Exception, exc:
-				raise RemoteTransportError(code=RemoteTransportError.UNKNOWN, message=repr(exc))
+				raise self._onError(exc)
 		return _call
 	
 class TimeoutTransport(xmlrpclib.SafeTransport):

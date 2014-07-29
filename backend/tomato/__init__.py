@@ -19,13 +19,8 @@ import os, sys, signal, time, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
+os.environ['TOMATO_MODULE'] = "hostmanager"
 
-#TODO: debian package
-#TODO: tinc clustering
-#TODO: external network management
-#TODO: interface auto-config
-#TODO: topology timeout
-#TODO: link measurement
 
 def db_migrate():
 	"""

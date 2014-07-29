@@ -1,5 +1,4 @@
 import ssl, socket, SocketServer, inspect, threading, thread
-from . import RemoteError, RemoteInternalError, RemoteUserError, RemoteTransportError
 
 JSON = False
 try:
@@ -119,7 +118,6 @@ class RPCError(Exception):
 		JSON = "json"
 		FORMAT = "format"
 		CALL = "call"
-		INTERNAL = "internal"
 		METHOD = "method"
 
 	def __init__(self, id, category, type, message, data=None):
@@ -469,13 +467,14 @@ class RPCHandler(SocketServer.StreamRequestHandler):
 
 
 class RPCProxy:
-	def __init__(self, address, **args):
+	def __init__(self, address, onError=(lambda x: x), **args):
 		self._con = None
+		self._onError = onError
 		self._methods = {}
 		try:
 			self._con = SSLConnection(address, **args)
 		except socket.error, err:
-			raise RemoteTransportError(code=RemoteTransportError.CONNECT, message=repr(err), data={"address": address})
+			raise self._onError(RPCError(category=RPCError.Category.NETWORK, type="connect", message=repr(err), data={"address": address}))
 		self._id = 0
 		self._rlock = threading.RLock()
 		self._wlock = threading.RLock()
@@ -546,14 +545,9 @@ class RPCProxy:
 		try:
 			return self._callInternal(name, args, kwargs)
 		except ssl.SSLError, err:
-			raise RemoteTransportError(code=RemoteTransportError.SSL_ERROR, message=err.message)
+			raise self._onError(RPCError(category=RPCError.Category.NETWORK, type="ssl", message=err.message))
 		except RPCError, err:
-			if err.category == RPCError.Category.CALL:
-				raise RemoteUserError(code=err.type, message=err.message, data=err.data)
-			if err.category == RPCError.Category.INTERNAL:
-				raise RemoteInternalError(code=err.type, message=err.message, data=err.data)
-			else:
-				raise RemoteTransportError(code="%s.%s" % (err.category, err.type), message=err.message, data=err.data)
+			raise self._onError(err)
 
 	def multicall(self, *callargs):
 		return MultiCallProxy(self, callargs)

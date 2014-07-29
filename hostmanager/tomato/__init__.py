@@ -19,6 +19,7 @@ import os, sys, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
+os.environ['TOMATO_MODULE'] = "hostmanager"
 
 def db_migrate():
 	"""

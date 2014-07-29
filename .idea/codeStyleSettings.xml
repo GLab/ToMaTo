@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectCodeStyleSettingsManager">
+    <option name="PER_PROJECT_SETTINGS">
+      <value>
+        <Python>
+          <option name="ALIGN_COLLECTIONS_AND_COMPREHENSIONS" value="false" />
+          <option name="ALIGN_MULTILINE_IMPORTS" value="false" />
+          <option name="NEW_LINE_AFTER_COLON" value="true" />
+        </Python>
+        <codeStyleSettings language="HTML">
+          <indentOptions>
+            <option name="USE_TAB_CHARACTER" value="true" />
+          </indentOptions>
+        </codeStyleSettings>
+        <codeStyleSettings language="Python">
+          <option name="BLANK_LINES_AFTER_IMPORTS" value="0" />
+          <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
+          <option name="ALIGN_MULTILINE_PARAMETERS_IN_CALLS" value="false" />
+          <indentOptions>
+            <option name="USE_TAB_CHARACTER" value="true" />
+          </indentOptions>
+        </codeStyleSettings>
+        <codeStyleSettings language="XML">
+          <indentOptions>
+            <option name="USE_TAB_CHARACTER" value="true" />
+          </indentOptions>
+        </codeStyleSettings>
+      </value>
+    </option>
+    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
+  </component>
+</project>
+

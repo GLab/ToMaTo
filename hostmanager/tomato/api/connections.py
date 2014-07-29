@@ -216,5 +216,6 @@ def connection_list():
     """
     return [con.info() for con in connections.getAll(owner=currentUser())]
 
+from ..lib.error import RemoteInternalError
 from .. import fault, connections, currentUser
 from elements import _getElement
