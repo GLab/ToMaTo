@@ -7,20 +7,32 @@ def link_info(id, ip, samples=10, maxWait=5, oneWayAdapt=False):
 
 
 	Parameter *id*:
-		ID of device which should be used
+		ID of device which should be used.
 		
 	Parameter *ip*:
-		IP address of the ping target
+		IP address of the ping target.
 
 	Parameter *samples*:
-		Number of messages to send
+		Number of messages to send.
 		
 	Parameter *maxWait*:
-		Time to wait for a responds in seconds
+		Time to wait for a responds in seconds.
 		
 	Parameter *oneWayAdapt*:
-		Change results to a one-way adaption
-	
+		Change results to a one-way adaption.
+		
+	Return value:
+	  The return value of this method is a dict containing information
+	  about the route between the link and the destination. 
+
+	``lossratio``
+	  The loss ratio of the route between the link and the destination.
+	  
+	``delay``
+	  The average round-trip time.
+	  
+	``delay_stddev``
+	  The average standard deviation for the delay.	
 	"""
 	
 	res = element_action(id, "execute", {"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
@@ -68,6 +80,9 @@ def link_check(id, ip, tries=5, waitBetween=5):
 
 	Parameter *waitBetween*:
 		Time between each try
+		
+	Return value:
+	  Returns a boolean which is true, if the link was available within the number of tries, false otherwise.
 	
 	"""
 	import time
@@ -106,6 +121,11 @@ def is_superset(obj1, obj2, path=""):
 		
 	Parameter *path*:
 		Should be "" in initial call
+	
+	Return value:
+	  Returns a tuple with 2 arguments. The first argument is a boolean which is true, if obj1 is superset of obj2, false otherwise.
+	  The second argument returns a string if the first argument is false. The string contains the reason why obj1 is not a superset of obj2. 
+	
 	"""
 	if obj2 is None:
 		return (True, None)

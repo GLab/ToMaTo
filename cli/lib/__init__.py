@@ -9,6 +9,10 @@ def tcpPortOpen(host, port):
     Parameter *port*:
         TCP port that will be opened
     
+    Return value:
+      This method returns a boolean which is true, if the TCP Port is open and false otherwise. 
+
+    
     """
     from socket import socket, AF_INET, SOCK_STREAM
     s = socket(AF_INET, SOCK_STREAM)
