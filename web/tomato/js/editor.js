@@ -224,12 +224,10 @@ var TextElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.pattern = options.pattern || /^.*$/;
-		this.element = $('<div />');
-		this.textfieldbox = $('<div class="col-sm-12" />');
+		this.element = $('<div class="col-sm-12" />');
 		this.textfield = $('<input class="form-control" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
-		
-		this.element.append(this.textfieldbox);
-		this.textfieldbox.append(this.textfield);
+
+		this.element.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
 		if (options.onChangeFct) {
@@ -256,12 +254,10 @@ var TextElement = FormElement.extend({
 var TextAreaElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		this.element = $('<div class="row" />');
-		this.textfieldbox = $('<div class="col-md-9">');
+		this.element = $('<div class="col-sm-12">');
 		this.textfield = $('<textarea class="form-control" name="'+this.name+'"></textarea>');
 		
-		this.element.append(this.textfieldbox);
-		this.textfieldbox.append(this.textfield);
+		this.element.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
 		var t = this;
@@ -281,7 +277,8 @@ var TextAreaElement = FormElement.extend({
 var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		this.element = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		
+		this.element = $('<div class="col-sm-12">').append('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
 		this.element.change(function() {
@@ -708,10 +705,17 @@ var AttributeWindow = Window.extend({
 		tr.append($('<label for="'+element.getElement().name+'" class="col-sm-4 control-label" />').append(element.getLabel()));
 		elem = $('<div class="col-sm-8" />')
 		elem.append($('<p style="padding:0px; margin:0px;"></p>').append($(element.getElement())));
-		if (element.options.help_text)
-			elem.append($('<p style="padding:0px; margin:0px; color:#888888;"></p>').append(element.options.help_text));
 		tr.append(elem);
 		this.table.append(tr);
+		if (element.options.help_text) {
+			var helptr = $('<div class="form-group" />');
+			helptr.append($('<div class="col-sm-4 control-label" />'));
+			helptr.append($('<p style="padding:0px; margin:0px;"></p>')
+					.append($('<div class="col-sm-8" style="color:#888888;"></div>')
+					.append($('<div class="col-sm-12" style="color:#888888;"></div>')
+					.append(element.options.help_text))));
+			this.table.append(helptr);
+		}
 		return element;
 	},
 	autoElement: function(info, value, enabled) {
@@ -2245,7 +2249,8 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var link_emulation = $('<div class="tab-pane active" id="Link_Emulation" />');
 			var link_emulation_elements = $('<div class="form-group" />')
 						.append($('<label class="col-sm-4 control-label">Enabled</label>'))
-						.append($('<div class="col-sm-8">').append(el.getElement()));
+						.append($('<div class="col-sm-8" style="padding: 0px" />')
+						.append(el.getElement()));
 			
 			//direction arrows
 			var size = 30;
@@ -2316,10 +2321,9 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			});
 			this.elements.push(el);
 			var packet_capturing_elements = $('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">Enabled</div>')
-					.after($('<div class="col-sm-6" />')
-					.append($('<div class="col-sm-12" />')
-					.append(el.getElement()))));
+			.append($('<label class="col-sm-6 control-label">Enabled</label>'))
+			.append($('<div class="col-sm-6" />')
+			.append(el.getElement()));
 		
 			
 			var order = ["capture_mode", "capture_filter"];
