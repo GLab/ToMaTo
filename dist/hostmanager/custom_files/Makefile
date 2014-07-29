@@ -15,3 +15,5 @@ install:
 	install -d $(DESTDIR)/var/log/tomato
 	install -d $(DESTDIR)/etc/logrotate.d
 	install -m 644 logrotate.conf $(DESTDIR)/etc/logrotate.d/tomato-hostmanager
+	install -d $(DESTDIR)/usr/bin
+	install -m 755 update-tomato-client-certs.sh $(DESTDIR)/usr/bin/update-tomato-client-certs
