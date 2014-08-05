@@ -639,6 +639,9 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	def dump_matches_host(self, host_obj):
 		return host_obj.dump_source_name() == self.dump_source_name()
 
+	def dump_set_last_fetch(self,last_fetch):
+		self.dump_last_fetch = last_fetch
+		self.save()
 
 
 class HostElement(attributes.Mixin, models.Model):

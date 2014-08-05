@@ -160,11 +160,15 @@ class DumpSource:
     def dump_matches_host(self,host_obj):
         return False
     
+    #override in subclass
+    def dump_set_last_fetch(self,last_fetch):
+        return
+    
     def dump_getUpdates(self):
         this_fetch_time = datetime.datetime.now() - self.dump_clock_offset()
         try:
             fetch_results = self.dump_fetch_list(self.dump_last_fetch)
-            self.dump_last_fetch = this_fetch_time
+            self.dump_set_last_fetch(this_fetch_time)
             return fetch_results
         except:
             return []
@@ -191,6 +195,11 @@ class BackendDumpSource(DumpSource):
     
     def dump_source_name(self):
         return "backend"
+    
+    def dump_set_last_fetch(self,last_fetch):
+        self.dump_last_fetch = last_fetch
+    
+    
         
         
 def getDumpSources():
