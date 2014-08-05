@@ -88,7 +88,7 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     #collect missing info
     if not timestamp:
 		timestamp = time.time()
-    timestr = datetime.strftime(datetime.fromtimestamp(timestamp), timestamp_format)
+    timestr = datetime.datetime.strftime(datetime.datetime.fromtimestamp(timestamp), timestamp_format)
     if not caller is False:
 		data["caller"] = getCaller()
     data["environment"] = getEnv()
@@ -132,7 +132,7 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
         if load_from_file:
             with open(get_absolute_path(dump_id,True),"r") as f:
                 dump = json.load(f)
-            dump['timestamp'] = datetime.strptime(dump['timestamp'], timestamp_format)
+            dump['timestamp'] = datetime.datetime.strptime(dump['timestamp'], timestamp_format)
         elif dump_id in dumps:
             dump = dumps[dump_id]
         else:
@@ -193,7 +193,7 @@ def remove_all_where(before=None,group_id=None):
 
 #this will be done daily.                
 def auto_cleanup():
-    before = datetime.datetime.now() - datetime.timedelta(seconds=config.DUMP_LIFETIME)
+    before = datetime.datetime.now() - datetime.datetime.timedelta(seconds=config.DUMP_LIFETIME)
     remove_all_where(before=before)
     
 #return the total number of error dumps
