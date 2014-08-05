@@ -367,6 +367,32 @@ def mailFilteredUsers(filterfn, subject, message, organization = None):
 
 def mailFlaggedUsers(flag, subject, message, organization=None):
 	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
+	
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
+	user = currentUser()
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	
+	if flag is None:
+		fault.raise_("issue '%s' does not exist" % issue)
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
+	
+def mailUser(user, subject, text):
+	from_ = currentUser()
+	to = getUser(user)
+	fault.check(to, "User not found")
+	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
 
 def getAllUsers(organization = None):
 	if organization is None:
