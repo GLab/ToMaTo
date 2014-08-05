@@ -99,7 +99,7 @@ class ErrorDump(attributes.Mixin, models.Model):
         
 def create_dump(dump,source):
     d = ErrorDump.objects.create(
-        source=source._source_name(),
+        source=source.dump_source_name(),
         dump_id=dump['dump_id'],
         group_id=dump['group_id'],
         description=dump['description'],
