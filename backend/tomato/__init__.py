@@ -60,9 +60,6 @@ def login(credentials, sslCert):
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
-import dump
-import dumpmanager
-
 starttime = time.time()
 
 from models import *
@@ -76,6 +73,9 @@ from lib import logging, util #@UnresolvedImport
 scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
 stopped = threading.Event()
+
+import dump
+import dumpmanager
 
 def start():
 	logging.openDefault(config.LOG_FILE)
