@@ -185,7 +185,7 @@ def remove_all_where(before=None,group_id=None):
             matches_criteria = True
             if before is not None and before<dump['timestamp']:
                 matches_criteria = False
-            if excid is not None and group_id!=dump['group_id']:
+            if group_id is not None and group_id!=dump['group_id']:
                 matches_criteria = False
             
             if matches_criteria:
