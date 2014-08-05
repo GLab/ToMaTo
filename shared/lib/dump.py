@@ -107,7 +107,7 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
             "software_version":{"component": tomato_component, "version": tomato_version}
             }
         dump_data = {
-            "data": zlib.compress(json.dumps(dump['data']),9),
+            "data": zlib.compress(json.dumps(data),9),
             "compressed": True
             }
         
@@ -116,8 +116,8 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     		json.dump(dump_meta, f, indent=2)
         with open(get_absolute_path(dump_id, False), "w") as f:
             json.dump(dump_data, f, indent=2)
-        dump['timestamp'] = timestamp
-        dumps[dump_id] = dump
+        dump_meta['timestamp'] = timestamp
+        dumps[dump_id] = dump_meta
     
     return dump_id
     
