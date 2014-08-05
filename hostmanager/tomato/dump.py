@@ -9,7 +9,7 @@ envCmds = {
   "network interfaces": ["ifconfig", "-a"],
   "routing": ["route", "-n"],
   "routing (ipv6)": ["route", "-6", "-n"],
-  "dmesg": ["dmesg -xT -s 4096"],
+  "dmesg": ["dmesg", "-xT", "-s", "4096"],
   "syslog": ["tail", "/var/log/syslog"],
   "vzctl.log": ["tail", "/var/log/vzctl.log"],
   "openvz": ["vzlist", "-a"],
