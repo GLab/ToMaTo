@@ -47,7 +47,7 @@ class ErrorDump(attributes.Mixin, models.Model):
     dump_id = models.CharField(max_length=255)
     group = models.ForeignKey(ErrorGroup, related_name="dumps")
     description = db.JSONField()
-    attrs = db.JSONField()
+    attrs = db.JSONField(default={})
     data = attributes.attribute("data", unicode, None)
     data_available = attributes.attribute("data_available", bool, False)
     type = attributes.attribute("origin", unicode, "")
