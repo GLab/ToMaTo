@@ -167,7 +167,7 @@ class DumpSource:
     def dump_getUpdates(self):
         this_fetch_time = datetime.datetime.now() - self.dump_clock_offset()
         try:
-            fetch_results = self.dump_fetch_list(self.dump_last_fetch)
+            fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
             self.dump_set_last_fetch(this_fetch_time)
             return fetch_results
         except:
