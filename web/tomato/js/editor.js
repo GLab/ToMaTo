@@ -3334,7 +3334,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return "dynimg/vpn/32/" + this.data.attrs.mode + "/32";
+		return dynimg(32,"vpn",this.data.attrs.mode,null);
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3672,7 +3672,7 @@ var Template = Class.extend({
 		this.icon = options.icon;
 	},
 	iconUrl: function() {
-		return this.icon || "dynimg/"+this.type+"/32/"+(this.subtype?this.subtype:"none")+"/"+(this.name?this.name:"none");
+		return this.icon || dynimg(32,this.type,(this.subtype?this.subtype:null),(this.name?this.name:null));
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3900,7 +3900,7 @@ var NetworkStore = Class.extend({
 		return common;
 	},
 	getNetworkIcon: function(kind) {
-		return "dynimg/network/32/" + kind.split("/")[0] + "/" + (kind.split("/")[1]?kind.split("/")[1]:"none");
+		return dynimg(32,"network",kind.split("/")[0],(kind.split("/")[1]?kind.split("/")[1]:null));
 	}
 });
 
