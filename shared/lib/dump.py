@@ -183,7 +183,7 @@ def remove_all_where(before=None,group_id=None):
             
             #for every criterion: if it is not none and does not apply, do not remove the dump file
             matches_criteria = True
-            if before is not None and before<dump['timestamp_unix']:
+            if before is not None and before<dump['timestamp']:
                 matches_criteria = False
             if excid is not None and excid!=dump['group_id']:
                 matches_criteria = False
