@@ -105,8 +105,10 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
             "software_version":{"component": tomato_component, "version": tomato_version}
             }
         dump_data = {
-            "data": zlib.compress(json.dumps(data),9),
-            "compressed": True
+            #"data": zlib.compress(json.dumps(data),9),
+            #"compressed": True
+            "data": json.dumps(data),
+            "compressed": False
             }
         
         #save it (in the dumps array, and on disk)
