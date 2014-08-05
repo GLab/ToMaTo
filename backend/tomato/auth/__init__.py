@@ -18,7 +18,7 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, currentUser, setCurrentUser, scheduler, accounting
 
 class Flags:
 	Debug = "debug"
@@ -436,3 +436,5 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
+		
+from .. import fault

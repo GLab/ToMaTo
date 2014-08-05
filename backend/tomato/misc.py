@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from . import config, currentUser
-from auth import Flags, mailFlaggedUsers, getUser
 from lib.cmd import getDpkgVersionStr #@UnresolvedImport
 
 def getVersion():
 	return getDpkgVersionStr("tomato-backend") or "devel"
+
+from . import config, currentUser
+from auth import Flags, mailFlaggedUsers, getUser
 
 def getPublicKey():
 	lines = []

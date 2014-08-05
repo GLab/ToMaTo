@@ -1,7 +1,6 @@
 import datetime, time, json, zlib, threading
 from django.db import models
 
-import dump
 import host
 from .lib import attributes, db #@UnresolvedImport
 from auth import mailFlaggedUsers, Flags
@@ -179,9 +178,11 @@ class BackendDumpSource(DumpSource):
         self.dump_last_fetch = datetime.datetime.utcfromtimestamp(0)
         
     def dump_fetch_list(self,after):
+        import dump
         return dump.getAll(after=after,list_only=False,include_data=False,compress_data=True)
     
     def dump_fetch_with_data(self,dump_id,keep_compressed=True):
+        import dump
         dump = dump.get(dump_id,include_data=True,compress_data=True)
         if not keep_compressed:
             dump['data'] = json.loads(zlib.decompress(dump['data']))
