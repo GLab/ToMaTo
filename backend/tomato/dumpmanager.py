@@ -4,7 +4,7 @@ from django.db import models
 import dump
 import host
 from .lib import attributes, db #@UnresolvedImport
-import auth
+from auth import mailFlaggedUsers, Flags
 from . import scheduler,config,currentUser,fault
     
     
@@ -224,7 +224,7 @@ def insert_dump(dump,source):
         if get_group(dump['group_id']) is None:
             must_fetch_data = True
             create_group(dump['group_id'])
-            auth.mailFlaggedUsers(auth.Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
+            mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
         
         #insert the dump.
         dump_db = create_dump(dump, source)
