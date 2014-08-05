@@ -69,7 +69,7 @@ def get_absolute_path(dump_id, is_meta):
 def get_free_dumpid(timestamp):
     with dumps_lock:
         global dumps
-        dump_id = timestamp
+        dump_id = str(timestamp)
         if not dump_id in dumps:
             return dump_id
         i = 0
