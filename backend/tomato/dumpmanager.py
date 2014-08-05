@@ -1,4 +1,4 @@
-import datetime, time, json, zlib, threading
+import datetime, time, json, zlib, threading, thread
 from django.db import models
 
 import host
@@ -243,9 +243,9 @@ def update_source(source):
 def update_all():
     def cycle_all():
         for s in getDumpSources(): #a removed host while iterating is caught by this, since dumpSource.getUpdates() will return [] in this case
-            threading.thread.start_new(update_source,(s)) #host might need longer to respond. no reason not to parallelize this
+            thread.start_new_thread(update_source,(s,)) #host might need longer to respond. no reason not to parallelize this
             time.sleep(1) #do not connect to all hosts at the same time. There is no need to rush.
-    threading.thread.start_new(cycle_all)
+    thread.start_new_thread(cycle_all)
 
 def init():
     scheduler.scheduleRepeated(config.DUMP_COLLECTION_INTERVAL, update_all, immediate=True)
