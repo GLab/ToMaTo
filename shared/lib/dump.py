@@ -209,10 +209,10 @@ def getAll(after=None,list_only=False,include_data=False,compress_data=True):
     global dumps
     return_list = []
     for d in dumps:
-        if (after is None) or (d['timestamp'] >= after):
+        if (after is None) or (dumps[d]['timestamp'] >= after):
             dump = dumps[d]
             if list_only:
-                dump = d['dump_id']
+                dump = d
             elif include_data:
                 dump = load_dump(d['dump_id'],True,True)
             return_list.append(dump)
