@@ -173,7 +173,7 @@ class DumpSource:
 class BackendDumpSource(DumpSource):
     dump_last_fetch = None
     def __init__(self):
-        super(BackendDumpSource, self).__init__()
+        DumpSource.__init__(self)
         self.dump_last_fetch = datetime.datetime.utcfromtimestamp(0)
         
     def dump_fetch_list(self,after):
