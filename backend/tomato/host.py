@@ -227,7 +227,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
 	description_text = attributes.attribute("description_text", unicode, "")
-	dump_last_fetch = attributes.attribute("dump_last_fetch", datetime.datetime, datetime.datetime.utcfromtimestamp(0))
+	dump_last_fetch = attributes.attribute("dump_last_fetch", unicode, "1970.00.00T00:00:00.00")
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -640,8 +640,11 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return host_obj.dump_source_name() == self.dump_source_name()
 
 	def dump_set_last_fetch(self,last_fetch):
-		self.dump_last_fetch = last_fetch
+		self.dump_last_fetch = datetime.datetime.strftime(datetime.datetime.fromtimestamp(last_fetch), "%Y-%m-%dT%H:%M:%S.%f")
 		self.save()
+		
+	def dump_get_last_fetch(self):
+		return datetime.datetime.strptime(self.dump_last_fetch, "%Y-%m-%dT%H:%M:%S.%f")
 
 
 class HostElement(attributes.Mixin, models.Model):

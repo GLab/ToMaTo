@@ -198,6 +198,9 @@ class BackendDumpSource(DumpSource):
     
     def dump_set_last_fetch(self,last_fetch):
         self.dump_last_fetch = last_fetch
+        
+    def dump_get_last_fetch(self):
+        return self.dump_last_fetch
     
     
         
