@@ -19,7 +19,10 @@
 
 {% block content %}
 	<h1>{{heading}}</h1>
-	{{message_before|safe}}
+	{%if message_before%}
+		{{message_before|safe}}
+		<div class="skip-xs"></div>
+	{%endif%}
 	{% load crispy_forms_tags %}
 	{% crispy form %}
 	{{message_after|safe}}
