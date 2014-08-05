@@ -264,7 +264,7 @@ def checkPermissions():
 def api_errorgroup_list():
     if checkPermissions():
         with lock_db:
-            return getAll_group()
+            return list(getAll_group())
 
 def api_errorgroup_modify(group_id,attrs):
     if checkPermissions():
