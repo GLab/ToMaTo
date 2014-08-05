@@ -3,7 +3,6 @@ from django.db import models
 
 import host
 from .lib import attributes, db #@UnresolvedImport
-from auth import mailFlaggedUsers, Flags
 from . import scheduler,config,currentUser,fault
     
     
@@ -223,6 +222,7 @@ def insert_dump(dump,source):
         # check whether the group ID already exists. If not, create it,
         # remember to fetch dump data in the end, and email developer users
         if get_group(dump['group_id']) is None:
+            from auth import mailFlaggedUsers, Flags
             must_fetch_data = True
             create_group(dump['group_id'])
             mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
