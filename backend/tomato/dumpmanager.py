@@ -254,11 +254,12 @@ def init():
 # Second Part: Access to known dumps for API
 
 def checkPermissions():
-        user = currentUser()
-        if not user.hasFlag(Flags.Debug):
-            fault.raise_("Not enough permissions")
-            return False
-        return True
+    from auth import Flags
+    user = currentUser()
+    if not user.hasFlag(Flags.Debug):
+        fault.raise_("Not enough permissions")
+        return False
+    return True
 
 def api_errorgroup_list():
     if checkPermissions():
