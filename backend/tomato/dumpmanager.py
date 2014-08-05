@@ -236,7 +236,7 @@ def insert_dump(dump,source):
             from auth import mailFlaggedUsers, Flags
             must_fetch_data = True
             create_group(dump['group_id'])
-            mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source._source_name()))
+            mailFlaggedUsers(Flags.ErrorNotify, "[ToMaTo Devs] New Error Group", "A new group of error has been found, with ID %s. It has first been observed on %s." % (dump['group_id'],source.dump_source_name()))
         
         #insert the dump.
         dump_db = create_dump(dump, source)

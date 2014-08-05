@@ -228,7 +228,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	availability = attributes.attribute("availability", float, 1.0)
 	description_text = attributes.attribute("description_text", unicode, "")
 	dump_last_fetch = attributes.attribute("dump_last_fetch", unicode, 
-										datetime.datetime.strftime(datetime.datetime.fromtimestamp(datetime.datetime.utcfromtimestamp(0)),"%Y-%m-%dT%H:%M:%S.%f"))
+										datetime.datetime.strftime(datetime.datetime.utcfromtimestamp(0),"%Y-%m-%dT%H:%M:%S.%f"))
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -574,7 +574,6 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					self.problemMailTime = time.time()
 					from django.template.defaultfilters import timesince
-					import datetime
 					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 						or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
@@ -641,7 +640,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return host_obj.dump_source_name() == self.dump_source_name()
 
 	def dump_set_last_fetch(self,last_fetch):
-		self.dump_last_fetch = datetime.datetime.strftime(datetime.datetime.fromtimestamp(last_fetch), "%Y-%m-%dT%H:%M:%S.%f")
+		self.dump_last_fetch = datetime.datetime.strftime(last_fetch, "%Y-%m-%dT%H:%M:%S.%f")
 		self.save()
 		
 	def dump_get_last_fetch(self):
