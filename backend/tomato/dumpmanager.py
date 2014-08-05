@@ -196,8 +196,8 @@ class BackendDumpSource(DumpSource):
 def getDumpSources():
     sources = [BackendDumpSource()]
     hosts = host.getAll()
-    for host in hosts:
-        sources.append(host)
+    for h in hosts:
+        sources.append(h)
     return sources
 
 #only one thread may write to the dump table at a time.
