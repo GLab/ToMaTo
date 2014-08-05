@@ -621,12 +621,16 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return "Host(%s)" % self.name
 	
 	def dump_fetch_list(self,after): #TODO: return None if unreachable
-		return self.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
+		dumps = self.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
+		for dump in dumps:
+			dump['timestamp'] = datetime.datetime.strptime(dump['timestamp'], "%Y-%m-%dT%H:%M:%S.%f") #format must be the same as in hostmanager.api.dump
+		return dump
 
 	def dump_fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
 		dump = self.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
 		if not keep_compressed:
 			dump['data'] = json.loads(zlib.decompress(dump['data']))
+		dump['timestamp'] = datetime.datetime.strptime(dump['timestamp'], "%Y-%m-%dT%H:%M:%S.%f") #format must be the same as in hostmanager.api.dump
 		return dump
 
 	def dump_clock_offset(self):

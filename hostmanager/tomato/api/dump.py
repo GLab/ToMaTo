@@ -39,7 +39,11 @@ def dump_list(after=None,list_only=False,include_data=False,compress_data=True):
     Parameter *compress_data*:
       If True and include_data, compress the detailed data before returning. It may still be around 20M per dump after compressing.
     """
-	return dump.getAll(after=after, list_only=list_only, include_data=include_data, compress_data=compress_data)
+	import datetime
+	dumps = dump.getAll(after=after, list_only=list_only, include_data=include_data, compress_data=compress_data)
+	for dump in dumps:
+		dump['timestamp'] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(dump['timestamp']), "%Y-%m-%dT%H:%M:%S.%f") #format must be the same as in backend.host.dump*
+	return dumps	
 
 def dump_info(dump_id,include_data=False,compress_data=True):
 	"""
@@ -54,4 +58,8 @@ def dump_info(dump_id,include_data=False,compress_data=True):
     Parameter *compress_data*:
       If True and include_data, compress the detailed data before returning. It may still be around 20M after compressing.
 	"""
-	return dump.get(dump_id, include_data=include_data, compress_data=compress_data)
+	import datetime
+	dump = dump.get(dump_id, include_data=include_data, compress_data=compress_data)
+	dump['timestamp'] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(dump['timestamp']), "%Y-%m-%dT%H:%M:%S.%f") #format must be the same as in backend.host.dump*
+	return dump
+	
