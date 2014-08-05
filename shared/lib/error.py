@@ -46,6 +46,15 @@ def ErrorType(Type):
 class InternalError(Error):
 	TYPE = "internal"
 	HOST_ERROR = "host_error"
+	INVALID_NEXT_STATE = "invalid_next_state"
+	UPCAST = "upcast"
+	MUST_OVERRIDE = "must_override"
+	WRONG_DATA = "wrong_data"
+	INVALID_STATE = "invalid_state"
+	COMMAND_FAILED = "command_failed"
+	INVALID_PARAMETER = "invalid_parameter"
+	CONFIGURATION_ERROR = "configuration_error"
+	RESOURCE_ERROR = "resource_error"
 
 
 @ErrorType
@@ -56,6 +65,14 @@ class UserError(Error):
 	UNSUPPORTED_ATTRIBUTE = "unsupported_attribute"
 	INVALID_STATE = "invalid_state"
 	ENTITY_BUSY = "entity_busy"
+	UNABLE_TO_CONNECT = "unable_to_connect"
+	ALREADY_CONNECTED = "already_connected"
+	DIFFERENT_USER = "different_user"
+	UNSUPPORTED_TYPE = "usupported_type"
+	INVALID_CONFIGURATION = "invalid_configuration"
+	INVALID_VALUE = "invalid_value"
+	NO_DATA_AVAILABLE = "no_data_available"
+	COMMAND_FAILED = "command_failed"
 
 
 @ErrorType

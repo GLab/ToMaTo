@@ -30,7 +30,7 @@ def getEnv():
 			data[name] = str(err)
 	return data
 
-def getCaller(self):
+def getCaller():
 	caller = None
 	for t in traceback.extract_stack():
 			if t[0] == __file__:

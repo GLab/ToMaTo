@@ -60,11 +60,16 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 
 	def init(self, parent=None, attrs={}):
 		if parent:
-			fault.check(parent.type in self.CAP_PARENT, "Parent type %s not allowed for type %s", (parent.type, self.type))
-			fault.check(self.type in parent.CAP_CHILDREN, "Parent type %s does not allow children of type %s", (parent.type, self.type))
-			fault.check(parent.state in parent.CAP_CHILDREN[self.type], "Parent type %s does not allow children of type %s in state %s", (parent.type, self.type, parent.state))
+			UserError.check(parent.type in self.CAP_PARENT, "Parent type not allowed", code=UserError.UNABLE_TO_CONNECT,
+				data={"type": self.type, "parent_type": self.type})
+			UserError.check(self.type in parent.CAP_CHILDREN, "Parent type does not allow children of this type",
+				code=UserError.UNABLE_TO_CONNECT, data={"type": self.type, "parent_type": parent.type})
+			UserError.check(parent.state in parent.CAP_CHILDREN[self.type],
+				"Parent type does not allow children of this type in its current state", code=UserError.INVALID_STATE,
+				data={"type": self.type, "parent_type": parent.type, "parent_state": parent.state})
 		else:
-			fault.check(None in self.CAP_PARENT, "Type %s needs parent", self.type)
+			UserError.check(None in self.CAP_PARENT, "Type needs parent", code=UserError.INVALID_CONFIGURATION,
+				data={"type": self.type})
 		self.parent = parent
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
@@ -137,7 +142,8 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 			return getattr(self, self.type)
 		except:
 			pass
-		fault.raise_("Failed to cast element #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+		raise InternalError(message="Failed to cast element", code=InternalError.UPCAST,
+			data={"id": self.id, "type": self.type})
 
 	def hasParent(self):
 		return not self.parent is None
@@ -152,14 +158,16 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
-		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
+		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
 		for key in attrs.keys():
-			fault.check(key in self.CAP_ATTRS, "Unsuported attribute for %s: %s", (self.type, key), code=fault.UNSUPPORTED_ATTRIBUTE)
+			UserError.check(key in self.CAP_ATTRS, "Unsupported attribute", code=UserError.UNSUPPORTED_ATTRIBUTE,
+				data={"element_type": self.type, "attribute": key})
 			self.CAP_ATTRS[key].check(self, attrs[key])
-		
+
 	def modify_timeout(self, value):
-		fault.check(value > time.time(), "Refusing to set timeout into the past")
-		fault.check(value <= time.time() + config.MAX_TIMEOUT, "Refusing to set timeout too far into the future")
+		UserError.check(value > time.time(), "Refusing to set timeout into the past", code=UserError.INVALID_VALUE)
+		UserError.check(value <= time.time() + config.MAX_TIMEOUT, "Refusing to set timeout too far into the future",
+			code=UserError.INVALID_VALUE)
 		self.timeout = value
 		
 	def modify(self, attrs):
@@ -182,9 +190,8 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		try:
 			for key, value in attrs.iteritems():
 				getattr(self, "modify_%s" % key)(value)
-		except Exception, exc:
-			if fault.unexpectedError(exc):
-				self.dumpException()
+		except InternalError, exc:
+			self.dumpException()
 			raise
 		finally:
 			self.setBusy(False)				
@@ -200,10 +207,12 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param action: Action to check
 		@type action: str
 		"""
-		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
-		fault.check(action in self.CAP_ACTIONS, "Unsuported action for %s: %s", (self.type, action), code=fault.UNSUPPORTED_ACTION)
-		fault.check(self.state in self.CAP_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state), code=fault.INVALID_STATE)
-	
+		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
+		UserError.check(action in self.CAP_ACTIONS, "Unsuported action", code=UserError.UNSUPPORTED_ACTION,
+			data={"element_type": self.type, "action": action})
+		UserError.check(self.state in self.CAP_ACTIONS[action], "Action can not be executed in this state",
+			code=UserError.INVALID_STATE, data={"action": action, "element_type": self.type, "state": self.state})
+
 	def action(self, action, params):
 		"""
 		Executes the action with the given parameters. This method first
@@ -224,23 +233,27 @@ class Element(db.ChangesetMixin, attributes.Mixin, models.Model):
 		self.setBusy(True)
 		try:
 			res = getattr(self, "action_%s" % action)(**params)
-		except Exception, exc:
-			if fault.unexpectedError(exc):
-				self.dumpException()
+		except InternalError, exc:
+			self.dumpException()
 			raise
 		finally:
 			self.setBusy(False)
 		self.save()
 		if action in self.CAP_NEXT_STATE:
-			fault.check(self.state == self.CAP_NEXT_STATE[action], "Action %s of %s lead to wrong state, should be %s, was %s", (action, self.type, self.CAP_NEXT_STATE[action], self.state), fault.INTERNAL_ERROR)
+			InternalError.check(self.state == self.CAP_NEXT_STATE[action], "Action lead to wrong state",
+				code=InternalError.INVALID_NEXT_STATE, data={"action": action, "element_type": self.type,
+				"expected_state": self.CAP_NEXT_STATE[action], "reached_state": self.state})
 		logging.logMessage("action end", category="element", id=self.id, action=action, params=params, res=res)
 		logging.logMessage("info", category="element", id=self.id, info=self.info())			
 		return res
 
 	def checkRemove(self, recurse=True):
-		fault.check(not self.isBusy(), "Object is busy", code=fault.OBJECT_BUSY)
-		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
-		fault.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state), code=fault.INVALID_STATE)
+		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
+		UserError.check(recurse or self.children.empty(), "Cannot remove element with children",
+			code=UserError.INVALID_STATE)
+		UserError.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION],
+			"Element can not be removed in its current state", code=UserError.INVALID_STATE,
+			data={"element_type": self.type, "state": self.state})
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
@@ -342,17 +355,17 @@ class RexTFVElement:
 	@abc.abstractmethod
 	def _nlxtp_path(self, filename):
 		"""returns a join of the nlXTP path and filename"""
-		return
+		raise InternalError(code=InternalError.MUST_OVERRIDE)
 	
 	#overwrite if needed. called at the beginning/end of each nlxtp function.:
 	def _nlxtp_make_readable(self):
-		return
+		raise InternalError(code=InternalError.MUST_OVERRIDE)
 	
 	def _nlxtp_make_writeable(self):
-		return
+		raise InternalError(code=InternalError.MUST_OVERRIDE)
 	
 	def _nlxtp_close(self):
-		return
+		raise InternalError(code=InternalError.MUST_OVERRIDE)
 
 	#deletes all contents in the nlXTP folder. If needed inside a "with lock" block, call the function below.
 	def _clear_nlxtp_contents(self):
@@ -378,9 +391,10 @@ class RexTFVElement:
 		with self.lock:
 			self._nlxtp_make_writeable()
 			try:
-				fault.check(os.path.exists(filename), "No file has been uploaded")
+				UserError.check(os.path.exists(filename), "No file has been uploaded", code=UserError.NO_DATA_AVAILABLE)
 				if self.rextfv_max_size is not None:
-					fault.check(os.path.getsize(filename) < self.rextfv_max_size, "uploaded file is too large")
+					UserError.check(os.path.getsize(filename) < self.rextfv_max_size, "Uploaded file is too large",
+						code=UserError.INVALID_VALUE)
 				if not keepOldFiles:
 					self._clear_nlxtp_contents__already_mounted()
 				if not os.path.exists(self._nlxtp_path("")):
@@ -397,7 +411,7 @@ class RexTFVElement:
 				if os.path.exists(filename):
 					os.remove(filename)
                     
-                # try to pack 3 times. If this fails, throw a fault.
+				# try to pack 3 times. If this fails, throw a fault.
 				tries_left = 3
 				tar_success = False
 				while tries_left>0:
@@ -409,7 +423,8 @@ class RexTFVElement:
 						tries_left -= 1
 					if tries_left > 0:
 						time.sleep(1)
-				fault.check(tar_success, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.")
+				UserError.check(tar_success, "Error while packing the archive for download. This usually happens because the device is currently writing for this directory. Please try again later. If this error continues to occur, try to download while the device is stopped.",
+					code=UserError.ENTITY_BUSY)
 			
 			finally:
 				self._nlxtp_close()
@@ -479,8 +494,9 @@ def getAll(**kwargs):
 	return (el.upcast() for el in Element.objects.filter(**kwargs))
 
 def create(type_, parent=None, attrs={}):
-	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
-	fault.check(not parent or parent.owner == currentUser(), "Parent element belongs to different user")
+	UserError.check(type_ in TYPES, "Unsupported type", code=UserError.UNSUPPORTED_TYPE, data={"type": type_})
+	UserError.check(not parent or parent.owner == currentUser(), "Parent element belongs to different user",
+		code=UserError.DIFFERENT_USER)
 	el = TYPES[type_]()
 	try:
 		el.init(parent, attrs)
@@ -506,6 +522,6 @@ def checkTimeout():
 
 scheduler.scheduleRepeated(3600, checkTimeout) #@UndefinedVariable
 
-from .. import fault, currentUser, resources
-		
+from .. import currentUser, resources
+from ..lib.error import InternalError, UserError
 

@@ -20,23 +20,21 @@
 import xmlrpclib, sys, traceback
 
 from . import config, login, api
-from . import dump, fault, currentUser
+from . import dump, currentUser
 from .lib import db, util, rpc, logging #@UnresolvedImport
+from .lib.error import Error, InternalError
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
-	if isinstance(error, xmlrpclib.Fault):
-		fault.errors_add(error, traceback.format_exc())
-	else:
-		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
-			# not a wrong API call
-			fault.errors_add(error, traceback.format_exc())
-		logging.logException()
+	if not isinstance(error, Error):
+		error = InternalError.wrap(error)
+	if isinstance(error, InternalError):
 		dump.dumpException()
-		return fault.wrap(error)
+		logging.logException()
+	return error
 
 @db.commit_after
 def afterCall(*args, **kwargs):

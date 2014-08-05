@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import resources, fault, config
+from .. import resources, config
 from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent, path #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 import os, base64, hashlib
 
 PATTERNS = {
@@ -46,7 +47,7 @@ class Template(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["name", "tech", "torrent_data"]:
-			fault.check(attr in attrs, "Template needs attribute %s", attr) 
+			UserError.check(attr in attrs, "Attribute missing", code=UserError.INVALID_CONFIGURATION, data={"attribute": attr})
 		self.modify_tech(attrs["tech"])
 		self.modify_name(attrs["name"])
 		resources.Resource.init(self, *args, **kwargs)
@@ -62,7 +63,7 @@ class Template(resources.Resource):
 		return self.getPath() + ".torrent"
 
 	def modify_tech(self, val):
-		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
+		UserError.check(val in PATTERNS.keys(), "Unsupported template tech", code=UserError.UNSUPPORTED_TYPE, data={"tech": val})
 		self.tech = val
 	
 	def modify_name(self, val):
@@ -120,7 +121,7 @@ def get(tech, name):
 	
 def getPreferred(tech):
 	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
-	fault.check(tmpls, "No template of type %s registered", tech) 
+	InternalError.check(tmpls, "No template registered", code=InternalError.CONFIGURATION_ERROR, data={"tech": tech})
 	return tmpls[0]
 
 resources.TYPES[Template.TYPE] = Template
