@@ -41,8 +41,6 @@ def db_migrate():
 
 
 import config
-import dump
-import dumpmanager
 
 	
 import threading
@@ -61,6 +59,9 @@ def login(credentials, sslCert):
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
+
+import dump
+import dumpmanager
 
 starttime = time.time()
 
