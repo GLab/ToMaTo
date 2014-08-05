@@ -1,4 +1,4 @@
-import sys, os, time, json, traceback, hashlib, zlib, threading, datetime
+import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re
 
 from .cmd import run, CommandError #@UnresolvedImport
 from .. import config, scheduler
