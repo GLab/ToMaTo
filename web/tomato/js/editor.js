@@ -2093,7 +2093,7 @@ var Component = Class.extend({
 			special: {}
 		} 
 	},
-	showConfigWindow: function() {
+	showConfigWindow: function(showTemplate=true,callback=null) {
 		var absPos = this.getAbsPos();
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
@@ -2122,6 +2122,11 @@ var Component = Class.extend({
 					t.modify(values);	
 					t.configWindow.remove();
 					t.configWindow = null;
+					
+					
+					if(callback != null) {
+						callback(t);
+					}
 				},
 				Cancel: function() {
 					t.configWindow.remove();
@@ -2131,8 +2136,10 @@ var Component = Class.extend({
 		});
 		for (var i=0; i<settings.order.length; i++) {
 			var name = settings.order[i];
-			if (settings.special[name]) this.configWindow.add(settings.special[name]);
-			else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			if(showTemplate || !(name == 'template')) {
+				if (settings.special[name]) this.configWindow.add(settings.special[name]);
+				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			}
 		}
 		if (settings.unknown) {
 			for (var name in this.caps.attrs) {
@@ -3163,7 +3170,7 @@ var createElementMenu = function(obj) {
 				name:'Configure',
 				icon:'configure',
 				callback:function(){
-					obj.showConfigWindow();
+					obj.showConfigWindow(true);
 				}
 			},
 			"debug": obj.editor.options.debug_mode ? {
@@ -4063,13 +4070,15 @@ var Editor = Class.extend({
 		var t = this;
 		return function(pos) {
 			var data = {type: type, attrs: {_pos: pos}};
-			t.topology.createElement(data, function(el) {
-				el.action("prepare", {callback: function(el){
-					el.uploadImage();
-				}});
-			});
+			t.topology.createElement(data, function(el1) {
+					el1.showConfigWindow(false, function (el2) { 
+							el2.action("prepare", { callback: function(el3) {el3.uploadImage();} });	
+						}
+				);
+				}
+			);
 			t.selectBtn.click();
-		}
+		};
 	},
 	createTemplateFunc: function(tmpl) {
 		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
