@@ -86,7 +86,7 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     #collect missing info
     if not timestamp:
 		timestamp = datetime.datetime.now()
-    timestr = datetime.datetime.strftime(datetime.datetime.fromtimestamp(timestamp), timestamp_format)
+    timestr = datetime.datetime.strftime(timestamp, timestamp_format)
     if not caller is False:
 		data["caller"] = getCaller()
     data["environment"] = getEnv()
