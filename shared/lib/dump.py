@@ -5,7 +5,7 @@ from .. import config, scheduler
 
 #the format used to convert datetime objects to strings, and back.
 #changing this makes all previously created error dumps incompatible and may break the server initialization after upgrades.
-timestamp_format = "%Y-%m-%dT%H:%M:%S.%f%z"
+timestamp_format = "%Y-%m-%dT%H:%M:%S.%f"
 
 #in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
