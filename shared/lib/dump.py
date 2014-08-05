@@ -174,7 +174,7 @@ def remove_dump(dump_id):
 def remove_all_where(before=None,group_id=None):
     global dumps
     #if no criterion is selected, do nothing.
-    if before is None and excid is None:
+    if before is None and group_id is None:
         return
     
     with dumps_lock:
