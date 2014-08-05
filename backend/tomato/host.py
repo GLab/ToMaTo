@@ -227,7 +227,8 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
 	description_text = attributes.attribute("description_text", unicode, "")
-	dump_last_fetch = attributes.attribute("dump_last_fetch", unicode, "1970.00.00T00:00:00.00")
+	dump_last_fetch = attributes.attribute("dump_last_fetch", unicode, 
+										datetime.datetime.strftime(datetime.datetime.fromtimestamp(datetime.datetime.utcfromtimestamp(0)),"%Y-%m-%dT%H:%M:%S.%f"))
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
