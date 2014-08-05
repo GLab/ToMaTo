@@ -61,8 +61,6 @@ def get_absolute_path(dump_id, is_meta):
         filename = dump_id + ".meta.json"
     else:
         filename = dump_id + ".data.json"
-    if not filename.ends_with(".json"):
-        filename=dump_id+".json"
     return os.path.join(config.DUMP_DIR, filename)
 
 #get a free dump ID
