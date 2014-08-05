@@ -193,7 +193,7 @@ def remove_all_where(before=None,group_id=None):
 
 #this will be done daily.                
 def auto_cleanup():
-    before = datetime.datetime.now() - datetime.datetime.timedelta(seconds=config.DUMP_LIFETIME)
+    before = datetime.datetime.now() - datetime.timedelta(seconds=config.DUMP_LIFETIME)
     remove_all_where(before=before)
     
 #return the total number of error dumps
