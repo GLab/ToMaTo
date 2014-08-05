@@ -73,9 +73,9 @@ def get_free_dumpid(timestamp):
         if not dump_id in dumps:
             return dump_id
         i = 0
-        while dump_id+"_"+i in dumps:
+        while dump_id+"_"+str(i) in dumps:
             i+=1
-        return dump_id+"_"+i
+        return dump_id+"_"+str(i)
     
 #save dump to a file and store it in the dumps dict. return the dump's ID
 #arguments are mostly according to the dump structure.
