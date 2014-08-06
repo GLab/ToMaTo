@@ -30,7 +30,7 @@ from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
-from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons
+from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -158,7 +158,7 @@ class AccountForm(BootstrapForm):
 	send_mail = forms.BooleanField(label="Inform user", required=False, initial=True)
 	def __init__(self, api, *args, **kwargs):
 		super(AccountForm, self).__init__(*args, **kwargs)
-		self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
+		self.fields["organization"].widget = forms.widgets.Select(choices=append_empty_choice(organization_name_list(api)))
 		
 	def clean_password(self):
 		if self.data.get('password') != self.data.get('password2'):

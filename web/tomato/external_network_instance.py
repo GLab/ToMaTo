@@ -20,7 +20,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
-from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
+from admin_common import RemoveConfirmForm, BootstrapForm, Buttons, append_empty_choice
 
 from tomato.crispy_forms.layout import Layout
 
@@ -32,8 +32,8 @@ class NetworkInstanceForm(BootstrapForm):
 	network = forms.CharField(label="Network")
 	def __init__(self, api, *args, **kwargs):
 		super(NetworkInstanceForm, self).__init__(*args, **kwargs)
-		self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
-		self.fields["host"].widget = forms.widgets.Select(choices=host_list(api))
+		self.fields["network"].widget = forms.widgets.Select(choices=append_empty_choice(external_network_list(api)))
+		self.fields["host"].widget = forms.widgets.Select(choices=append_empty_choice(host_list(api)))
 		self.helper.form_action = reverse(add)
 		self.helper.layout = Layout(
 			'host',
