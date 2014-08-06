@@ -1,34 +1,41 @@
-def waitForTask(task, assertSuccess=False):
-	import time
-	time.sleep(0.25)
-	while not task_status(task)["done"]:
-		time.sleep(0.25)
-	ts = task_status(task)
-	assert not assertSuccess or ts["status"] == "succeeded", "Task failed: %s" % ts
-	return ts
 
-def jsonToMods(data):
-	import simplejson as json, zlib, base64
-	try:
-		top = json.loads(data)
-	except:
-		data = zlib.decompress(base64.b64decode(data))
-		top = json.loads(data)
-	mods = []
-	mods.append({"type": "topology-rename", "element": None, "subelement": None, "properties": {"name": top["attrs"]["name"]}})
-	for devname, dev in top["devices"].iteritems():
-		mods.append({"type": "device-create", "element": None, "subelement": None, "properties": dev["attrs"]})
-		for iface in dev["interfaces"].values():
-			mods.append({"type": "interface-create", "element": devname, "subelement": None, "properties": iface["attrs"]})
-	for conname, con in top["connectors"].iteritems():
-		mods.append({"type": "connector-create", "element": None, "subelement": None, "properties": con["attrs"]})
-		for c in con["connections"].values():
-			c["attrs"]["interface"] = c["interface"]
-			mods.append({"type": "connection-create", "element": conname, "subelement": None, "properties": c["attrs"]})
-	return mods
+def link_info(id, ip, samples=10, maxWait=5, oneWayAdapt=False):
+	"""
+	Pings a target IP address from a certain device and returns the results.
+	The number of samples and the maximum wait time for responds can be set.
+	Also a one-way adaption of the results is possible. 
 
-def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
-	res = top_action(top, "execute", "device", dev, attrs={"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
+
+	Parameter *id*:
+		ID of device which should be used.
+		
+	Parameter *ip*:
+		IP address of the ping target.
+
+	Parameter *samples*:
+		Number of messages to send.
+		
+	Parameter *maxWait*:
+		Time to wait for a responds in seconds.
+		
+	Parameter *oneWayAdapt*:
+		Change results to a one-way adaption.
+		
+	Return value:
+	  The return value of this method is a dict containing information
+	  about the route between the link and the destination. 
+
+	``lossratio``
+	  The loss ratio of the route between the link and the destination.
+	  
+	``delay``
+	  The average round-trip time.
+	  
+	``delay_stddev``
+	  The average standard deviation for the delay.	
+	"""
+	
+	res = element_action(id, "execute", {"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
 	if not res:
 		return
 	import re
@@ -57,26 +64,69 @@ def link_info(top, dev, ip, samples=10, maxWait=5, oneWayAdapt=False):
 		stddev = stddev * 1000.0
 	return {"lossratio": loss, "delay": avg, "delay_stddev": stddev}
 	
-def link_check(top, dev, ip, tries=5, waitBetween=5):
+def link_check(id, ip, tries=5, waitBetween=5):
+	"""
+	Checks the availability of a link by trying to reach him a certain number of tries. 
+
+		
+	Parameter *id*:
+		ID of device which should be reached
+		
+	Parameter *ip*:
+		IP address of the ping target
+
+	Parameter *tries*:
+		Number of tries
+
+	Parameter *waitBetween*:
+		Time between each try
+		
+	Return value:
+	  Returns a boolean which is true, if the link was available within the number of tries, false otherwise.
+	
+	"""
 	import time
-	while tries>0 and not link_info(top, dev, ip):
+	while tries>0 and not link_info(id,ip):
 		tries -= 1
 		time.sleep(waitBetween)
 	return tries > 0
 	
 def link_config(top, con, c, attrs):
-	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)
+	"""
+	Configures an link by modifying the certain attributes
 	
-def errors_print():
-	for err in errors_all():
-		print err["message"] + "\n\n"
+	Parameter *top*:
+		Topology in which the link can be found
 		
-def download(url, file):
-	import urllib
-	urllib.urlretrieve(url, file)
+	Parameter *con*:
+		Link which should be modified
+		
+	Parameter *c*:
+		Target interface
+		
+	Parameter *attrs*:
+		Key value pair of attributes which should be configured 
+	"""
+	top_modify(top, [{"type": "connection-configure", "element": con, "subelement": c, "properties": attrs}], True)	
 
 def is_superset(obj1, obj2, path=""):
-	#checks whether obj1 is a superset of obj2
+	"""
+	Checks whether obj1 is a superset of obj2.
+
+	Parameter *obj1*:
+		Superset object
+	
+	Parameter *obj2*:
+		Subset object
+		
+	Parameter *path*:
+		Should be "" in initial call
+	
+	Return value:
+	  Returns a tuple with 2 arguments. The first argument is a boolean which is true, if obj1 is superset of obj2, false otherwise.
+	  The second argument returns a string if the first argument is false. The string contains the reason why obj1 is not a superset of obj2. 
+	
+	"""
 	if obj2 is None:
 		return (True, None)
 	if isinstance(obj1, dict):
@@ -97,31 +147,3 @@ def is_superset(obj1, obj2, path=""):
 	else:
 		return (obj1 == obj2, "Value mismatch: %s, is %s instead of %s" % (path, repr(obj1), repr(obj2)))
 	return (True, None)
-	
-def upload(url, file, name="upload"):
-	import httplib, urlparse, os
-	parts = urlparse.urlparse(url)
-	conn = httplib.HTTPConnection(parts.netloc)
-	req = parts.path
-	if parts.query:
-		req += "?" + parts.query
-	conn.putrequest("POST",req)
-	filename = os.path.basename(file)
-	filesize = os.path.getsize(file)
-	BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
-	CRLF = '\r\n'
-	prepend = "--" + BOUNDARY + CRLF + 'Content-Disposition: form-data; name="%s"; filename="%s"' % (name, filename) + CRLF + "Content-Type: application/data" + CRLF + CRLF 
-	append = CRLF + "--" + BOUNDARY + "--" + CRLF + CRLF 
-	conn.putheader("Content-Length", len(prepend) + filesize + len(append))
-	conn.putheader("Content-Type", 'multipart/form-data; boundary=%s' % BOUNDARY)
-	conn.endheaders()
-	conn.send(prepend)
-	fd = open(file, "r")
-	data = fd.read(8192)
-	while data:
-		conn.send(data)
-		data = fd.read(8192)
-	fd.close()
-	conn.send(append)
-	resps = conn.getresponse()
-	data = resps.read()

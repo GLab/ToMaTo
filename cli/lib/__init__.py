@@ -1,5 +1,19 @@
 
 def tcpPortOpen(host, port):
+    """
+
+    Opens a connection to a remote socket at address (host, port) and closes it to open the TCP port.
+
+    Parameter *host*:
+        Host address of the socket 
+    Parameter *port*:
+        TCP port that will be opened
+    
+    Return value:
+      This method returns a boolean which is true, if the TCP Port is open and false otherwise. 
+
+    
+    """
     from socket import socket, AF_INET, SOCK_STREAM
     s = socket(AF_INET, SOCK_STREAM)
     result = s.connect_ex((host, port))
@@ -7,10 +21,35 @@ def tcpPortOpen(host, port):
     return not result
 
 def download(url, file):
+    """
+    Downloads a network object from an URL to a local file.
+
+    Parameter *url*:
+        Url to the network object
+  
+    Parameter *file*:
+        File to copy the network object to.
+    
+    """
     import urllib
     urllib.urlretrieve(url, file)
     
+    
 def upload(url, file, name="upload"):
+    """
+    
+    Uploads a file to the target URL via the HTTP post command using name as content key.
+
+    Parameter *url*:
+        Target URL for the upload
+  
+    Parameter *file*:
+        Path to the file to be uploaded
+    
+    Parameter *name*:
+        Should always stay "upload". Content key for transmitted file.
+    
+    """
     import httplib, urlparse, os
     parts = urlparse.urlparse(url)
     conn = httplib.HTTPConnection(parts.netloc)
@@ -37,33 +76,3 @@ def upload(url, file, name="upload"):
     conn.send(append)
     resps = conn.getresponse()
     data = resps.read()
-    
-def link_info(id, ip, samples=10, maxWait=5, oneWayAdapt=False):
-    res = element_action(id, "execute", {"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
-    if not res:
-        return
-    import re
-    spattern = re.compile("(\d+) packets transmitted, (\d+) received(, \+(\d+) errors)?, (\d+)% packet loss, time (\d+)(m?s)")
-    dpattern = re.compile("rtt min/avg/max/mdev = (\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+) (m?s)(, pipe \d+)?, ipg/ewma (\d+\.\d+)/(\d+\.\d+) (m?s)")
-    summary = False
-    details = False
-    for line in res.splitlines():
-        if spattern.match(line):
-            (transmitted, received, dummy, errors, loss, total, unit) = spattern.match(line).groups()
-            (transmitted, received, errors, loss, total) = (int(transmitted), int(received), int(errors) if errors else None, float(loss)/100.0, float(total))
-            summary = True
-        if dpattern.match(line):
-            (rttmin, rttavg, rttmax, rttstddev, rttunit, dummy, ipg, ewma, ipg_ewma_unit) = dpattern.match(line).groups()
-            (rttmin, avg, rttmax, stddev, ipg, ewma) = (float(rttmin), float(rttavg), float(rttmax), float(rttstddev), float(ipg), float(ewma))
-            details = True
-    if not summary or not details or errors:
-        return
-    if oneWayAdapt:
-        import math
-        loss = 1.0 - math.sqrt(1.0 - loss)
-        avg = avg / 2.0
-        stddev = stddev / 2.0
-    if rttunit == "s":
-        avg = avg * 1000.0
-        stddev = stddev * 1000.0
-    return {"lossratio": loss, "delay": avg, "delay_stddev": stddev}
