@@ -218,7 +218,7 @@ lock_db = threading.RLock()
 
 def find_source_by_name(source_name):
     for s in getDumpSources():
-        if s.dump_source_name == source_name:
+        if s.dump_source_name() == source_name:
             return s
     return None
 

@@ -150,7 +150,7 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
                 if is_compressed:
                     dump['data'] = data
                 else:
-                    dump['data'] = zlib.compress(json.dumps(dump['data']),9)
+                    dump['data'] = zlib.compress(json.dumps(data),9)
             else:
                 if is_compressed:
                     dump['data'] = json.loads(zlib.decompress(data))
