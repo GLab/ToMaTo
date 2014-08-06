@@ -22,7 +22,7 @@ from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
 from auth import Flags
 from dumpmanager import DumpSource
-import xmlrpclib, time, hashlib, threading, datetime, json, zlib
+import xmlrpclib, time, hashlib, threading, datetime, json, zlib, base64
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
@@ -626,7 +626,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	def dump_fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
 		dump = self.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
 		if not keep_compressed:
-			dump['data'] = json.loads(zlib.decompress(dump['data']))
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
 		return dump
 
 	def dump_clock_offset(self):

@@ -1,4 +1,4 @@
-import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re
+import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re, base64
 
 from .cmd import run, CommandError #@UnresolvedImport
 from .. import config, scheduler
@@ -105,10 +105,8 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
             "software_version":{"component": tomato_component, "version": tomato_version}
             }
         dump_data = {
-            #"data": zlib.compress(json.dumps(data),9),
-            #"compressed": True
-            "data": json.dumps(data),
-            "compressed": False
+            "data": base64.b64encode(zlib.compress(json.dumps(data),9)),
+            "compressed": True
             }
         
         #save it (in the dumps array, and on disk)
@@ -150,10 +148,10 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
                 if is_compressed:
                     dump['data'] = data
                 else:
-                    dump['data'] = zlib.compress(json.dumps(data),9)
+                    dump['data'] = base64.b64encode(zlib.compress(json.dumps(data),9))
             else:
                 if is_compressed:
-                    dump['data'] = json.loads(zlib.decompress(data))
+                    dump['data'] = json.loads(zlib.decompress(base64.b64decode(data)))
                 else:
                     dump['data'] = data
             
@@ -204,7 +202,7 @@ def getCount():
 #param after: if set, only return dumps with timestamp after this
 #param list_only: if true, only return dumps with timestamp after this time (time.Time object)
 #param include_data: include environment data (may be about 1M!, or set compress_data true). Only used if not list_only
-#param compress_data: use zlib to compress environment data. only used if include_data==True. decompress with json.loads(zlib.decompress(dump['environment']))
+#param compress_data: use zlib to compress environment data. only used if include_data==True. decompress with json.loads(zlib.decompress(base64.decode(dump['environment'])))
 def getAll(after=None,list_only=False,include_data=False,compress_data=True):
     global dumps
     return_list = []

@@ -1,4 +1,4 @@
-import datetime, time, json, zlib, threading, thread
+import datetime, time, json, zlib, threading, thread, base64
 from django.db import models
 
 import host
@@ -70,7 +70,7 @@ class ErrorDump(attributes.Mixin, models.Model):
         if is_compressed:
             data_toinsert = data
         else:
-            data_toinsert = zlib.compress(json.dumps(data),9)
+            data_toinsert = base64.b64encode(zlib.compress(json.dumps(data),9))
         self.data = data_toinsert
         self.data_available = True
         self.save()
@@ -93,7 +93,7 @@ class ErrorDump(attributes.Mixin, models.Model):
         if include_data:
             if not self.data_available:
                 self.fetch_data_from_source()
-            dump['data'] = json.loads(zlib.decompress(self.data))
+            dump['data'] = json.loads(zlib.decompress(base64.b64decode(self.data)))
         else:
             dump['data_available'] = self.data_available
         return dump
@@ -188,7 +188,7 @@ class BackendDumpSource(DumpSource):
         import dump
         dump = dump.get(dump_id,include_data=True,compress_data=True)
         if not keep_compressed:
-            dump['data'] = json.loads(zlib.decompress(dump['data']))
+            dump['data'] = json.loads(zlib.decompress(base64.decode(dump['data'])))
         return dump
     
     def dump_clock_offset(self):
