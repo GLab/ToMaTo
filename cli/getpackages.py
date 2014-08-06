@@ -5,6 +5,15 @@ def progname_short():
 	return "rextfv-packetmanager"
 
 
+class Debugger:
+	def log(self,string):
+		print string
+debugger = Debugger()
+
+
+
+
+
 ##### Generic Helper Functions
 
 tmplock = threading.RLock()
@@ -279,10 +288,12 @@ class GetPacketArchive(object):
 		return self._createArchiveFile()
 	
 	def uploadAndRun(self,test_topology):
+		if not self.archive_filename:
+			return None
 		try:
 			test_topology.create()
 			test_topology.prepare()
-			test_topology.uploadAndUseArchive(filename)
+			test_topology.uploadAndUseArchive(self.archive_filename)
 			test_topology.start()
 			result_raw = test_topology.getArchiveResult()
 		finally:
@@ -321,8 +332,12 @@ class QueryArchive(GetPacketArchive):
 		order = []
 		for line in lines:
 			l = line.split()
+			url = l[0]
+			url = re.sub("^'","",url)
+			url = re.sub("'$","",url)
+			filename = l[1]
 			urlList.append(l[0])
-			order.append(l[1])
+			order.append(filename)
 		return { 'urls':urlList, 'order':order}
 			
 	def _interpret_result(self,lines_string,ident):
@@ -338,17 +353,60 @@ class QueryArchive(GetPacketArchive):
 		result = self._interpret_result(lines,ident)
 		result['os_id'] = os_id
 		return result
+	
+	
+	
+class PacketArchive(GetPacketArchive):
+	configs = [] #will contain multiple results. format of entries: {'os_id','order','urls'}
+	
+	def __init__(self,*args,**kwargs):
+		super(QueryArchive, self).__init__(*args, **kwargs)
 		
-		
-		
+	def addOS(self,os_config):
+		self.configs.append(os_config)
+			
+	def _writeAdditionalContents(self):
+		dir = os.path.join(self.directory,"packages")
+		for conf in self.configs:
+			installorder=""
+			for i in range(len(info['order'])):
+				filename = conf['order'][i]
+				absfilename = os.path.join(packetdir,filename)
+				url = conf['urls'][i]
+				installorder = installorder + filename + "\n"
+				if not os.path.exists(absfilename):
+					with open(absfilename,'w+') as f:
+						debugger.log('Fetching '+filename)
+						response = urllib2.urlopen(url)
+						f.write(response.read())
+			self._addFileToArchive("installorder_"+pac['os_id'], installorder)
 
 
 
+#packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
+#template_configs: list of template configs: [{'tech','site','template'}]
+def create_archive(template_configs, packetlist):
+	#create query archive
+	debugger.log('Creating query archive')
+	qarch = QueryArchive()
+	qarch.setUpgrade(True)
+	for pac in packetlist:
+		qarch.setUpgrade(False)
+		qarch.addToInstall(pac)
+	qarch.createArchive()
+	
+	#get os configs for all templates
+	parch = PacketArchive()
+	for templ in template_configs:
+		debugger.log('querying '+templ['template'])
+		conf = qarch.getTemplateDetails(templ['tech'], templ['template'], templ['site'])
+		parch.addOS(conf)
+	return parch.createArchive()
+	
+	
 
 
 
-
-arch = QueryArchive()
-arch.addToInstall("testpacket")
-arch.addToInstall("testpacket2")
-print arch.createArchive()
+template_configs = [{'tech':'openvz','site':'ukl','template':'debian-7.0_x86_64'}]
+packetlist = ['openjdk-6-jre']
+return create_archive(template_configs, packetlist)
