@@ -18,10 +18,11 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, currentUser, setCurrentUser, scheduler, accounting
 
 class Flags:
 	Debug = "debug"
+	ErrorNotify = "error_notify"
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
@@ -45,6 +46,7 @@ class Flags:
 
 flags = {
 	Flags.Debug: "Debug: See everything",
+	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
@@ -95,11 +97,12 @@ categories = {
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
 						Flags.RestrictedTemplates,
-						Flags.NewAccount
-						],
-	'other': [
-						Flags.Debug,
+						Flags.NewAccount,
 						Flags.NoMails
+						],
+	'error_management': [
+						Flags.Debug,
+						Flags.ErrorNotify
 						]
 	}
 
@@ -364,6 +367,32 @@ def mailFilteredUsers(filterfn, subject, message, organization = None):
 
 def mailFlaggedUsers(flag, subject, message, organization=None):
 	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
+	
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
+	user = currentUser()
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	
+	if flag is None:
+		fault.raise_("issue '%s' does not exist" % issue)
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
+	
+def mailUser(user, subject, text):
+	from_ = currentUser()
+	to = getUser(user)
+	fault.check(to, "User not found")
+	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
 
 def getAllUsers(organization = None):
 	if organization is None:
@@ -433,3 +462,5 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
+		
+from .. import fault

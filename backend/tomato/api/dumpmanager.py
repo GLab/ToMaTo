@@ -15,13 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from account import *
-from topology import *
-from host import *
-from elements import *
-from connections import *
-from resources import *
-from docs import *
-from capabilities import *
-from misc import *
-from dumpmanager import *
+
+def errordump_info(source, dump_id, include_data=False):
+    from ..dumpmanager import api_errordump_info
+    return api_errordump_info(source, dump_id, include_data)
+
+def errordump_list(group_id=None, source=None, data_available=None):
+    from ..dumpmanager import api_errordump_list
+    return api_errordump_list(group_id, source, data_available)
+
+def errorgroup_info(group_id, include_dumps=False):
+    from ..dumpmanager import api_errorgroup_info
+    return api_errorgroup_info(group_id, include_dumps)
+
+def errorgroup_list():
+    from ..dumpmanager import api_errorgroup_list
+    return api_errorgroup_list()
+
+def errorgroup_modify(group_id, attrs):
+    from ..dumpmanager import api_errorgroup_modify
+    return api_errorgroup_modify(group_id, attrs)

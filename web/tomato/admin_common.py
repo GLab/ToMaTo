@@ -92,3 +92,8 @@ def organization_name_list(api):
 
 def help_url():
 	return serverInfo()["external_urls"]['help']
+
+def append_empty_choice(choicelist):
+	res = list(choicelist)
+	res.insert(0,("","Please Select:"))
+	return res

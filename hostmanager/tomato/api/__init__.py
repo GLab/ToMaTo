@@ -21,3 +21,4 @@ from connections import *
 from resources import *
 from docs import *
 from accounting import *
+from dump import *

@@ -23,7 +23,7 @@ from django.shortcuts import render
 from django import forms
 import base64
 from lib import wrap_rpc, serverInfo
-from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons
+from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
 
 from tomato.crispy_forms.layout import Layout
@@ -35,6 +35,9 @@ techs=[
 		{"name": "repy", "label": "Repy"}
 	  ]
 techs_dict=dict([(t["name"], t["label"]) for t in techs])
+def techs_choices():
+	tdict = [(t["name"], t["label"]) for t in techs]
+	return append_empty_choice(tdict)
 
 class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -53,7 +56,7 @@ class TemplateForm(BootstrapForm):
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="http://tomato.readthedocs.org/en/latest/docs/templates" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
-	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[(t["name"], t["label"]) for t in techs]))
+	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=techs_choices()))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)

@@ -2093,7 +2093,7 @@ var Component = Class.extend({
 			special: {}
 		} 
 	},
-	showConfigWindow: function() {
+	showConfigWindow: function(showTemplate=true,callback=null) {
 		var absPos = this.getAbsPos();
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
@@ -2122,6 +2122,11 @@ var Component = Class.extend({
 					t.modify(values);	
 					t.configWindow.remove();
 					t.configWindow = null;
+					
+					
+					if(callback != null) {
+						callback(t);
+					}
 				},
 				Cancel: function() {
 					t.configWindow.remove();
@@ -2131,8 +2136,10 @@ var Component = Class.extend({
 		});
 		for (var i=0; i<settings.order.length; i++) {
 			var name = settings.order[i];
-			if (settings.special[name]) this.configWindow.add(settings.special[name]);
-			else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			if(showTemplate || !(name == 'template')) {
+				if (settings.special[name]) this.configWindow.add(settings.special[name]);
+				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			}
 		}
 		if (settings.unknown) {
 			for (var name in this.caps.attrs) {
@@ -3179,7 +3186,7 @@ var createElementMenu = function(obj) {
 					name:'Configure',
 					icon:'configure',
 					callback:function(){
-						obj.showConfigWindow();
+					obj.showConfigWindow(true);
 					}
 				},
 				"debug": obj.editor.options.debug_mode ? {
@@ -3351,7 +3358,7 @@ var VPNElement = IconElement.extend({
 		this.iconSize = {x: 32, y:16};
 	},
 	iconUrl: function() {
-		return "dynimg/vpn/32/" + this.data.attrs.mode + "/32";
+		return dynimg(32,"vpn",this.data.attrs.mode,null);
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3689,7 +3696,7 @@ var Template = Class.extend({
 		this.icon = options.icon;
 	},
 	iconUrl: function() {
-		return this.icon || "dynimg/"+this.type+"/32/"+(this.subtype?this.subtype:"none")+"/"+(this.name?this.name:"none");
+		return this.icon || dynimg(32,this.type,(this.subtype?this.subtype:null),(this.name?this.name:null));
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3917,7 +3924,7 @@ var NetworkStore = Class.extend({
 		return common;
 	},
 	getNetworkIcon: function(kind) {
-		return "dynimg/network/32/" + kind.split("/")[0] + "/" + (kind.split("/")[1]?kind.split("/")[1]:"none");
+		return dynimg(32,"network",kind.split("/")[0],(kind.split("/")[1]?kind.split("/")[1]:null));
 	}
 });
 
@@ -4080,13 +4087,15 @@ var Editor = Class.extend({
 		var t = this;
 		return function(pos) {
 			var data = {type: type, attrs: {_pos: pos}};
-			t.topology.createElement(data, function(el) {
-				el.action("prepare", {callback: function(el){
-					el.uploadImage();
-				}});
-			});
+			t.topology.createElement(data, function(el1) {
+					el1.showConfigWindow(false, function (el2) { 
+							el2.action("prepare", { callback: function(el3) {el3.uploadImage();} });	
+						}
+				);
+				}
+			);
 			t.selectBtn.click();
-		}
+		};
 	},
 	createTemplateFunc: function(tmpl) {
 		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
