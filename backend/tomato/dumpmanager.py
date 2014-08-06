@@ -77,7 +77,7 @@ class ErrorDump(attributes.Mixin, models.Model):
         
     def fetch_data_from_source(self):
         d = self.getSource().dump_fetch_with_data(self.dump_id,True)
-        self.modify_data(d, True)
+        self.modify_data(d['data'], True)
         
     def info(self,include_data=False):
         dump = {
