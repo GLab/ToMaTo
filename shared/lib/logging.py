@@ -15,11 +15,7 @@ class JSONLogger:
     self._fp.close()
     self._fp = None
   def _write(self, data):
-    data=None
-    try:
-        data = json.dumps(data)
-    except:
-        data = str(data)
+    data = json.dumps(data)
     self._fp.write(data+"\n")
   def _caller(self):
     caller = None
