@@ -1,4 +1,4 @@
-import datetime, time, json, zlib, threading, thread, base64
+import time, json, zlib, threading, thread, base64
 from django.db import models
 
 import host
@@ -133,7 +133,7 @@ class DumpSource:
         
     #to be implemented in subclass
     #fetches all dumps from the source, which were thrown after *after*.
-    #after is a datetime object and will be used unchanged.
+    #after is a float and will be used unchanged.
     #if this throws an exception, the fetching is assumed to have been unsuccessful.
     def dumps_fetch_list(self,after):
         return None
@@ -148,7 +148,7 @@ class DumpSource:
     #if the source has its clock before the backend, and an error is thrown in exactly this difference,
     #the dump would be skipped.
     #Thus, use the known clock offset to fetch dumps that might have occurred in this phase (i.e., right after the last fetch)
-    #returns a datetime.timedelta. should be 0 if the source's clock is ahead, and >0 if the source's clock is behind
+    #returns a float. should be ==0 if the source's clock is ahead, and >0 if the source's clock is behind
     def dump_clock_offset(self):
         return None
     
@@ -166,7 +166,7 @@ class DumpSource:
         return
     
     def dump_getUpdates(self):
-        this_fetch_time = datetime.datetime.now() - self.dump_clock_offset()
+        this_fetch_time = time.time() - self.dump_clock_offset()
         try:
             fetch_results = self.dump_fetch_list(self.dump_get_last_fetch())
             self.dump_set_last_fetch(this_fetch_time)
@@ -178,7 +178,7 @@ class DumpSource:
 class BackendDumpSource(DumpSource):
     dump_last_fetch = None
     def __init__(self):
-        self.dump_last_fetch = datetime.datetime.utcfromtimestamp(0)
+        self.dump_last_fetch = 0
         
     def dump_fetch_list(self,after):
         import dump
@@ -192,7 +192,7 @@ class BackendDumpSource(DumpSource):
         return dump
     
     def dump_clock_offset(self):
-        return datetime.timedelta(seconds=0)
+        return 0
     
     def dump_source_name(self):
         return "backend"

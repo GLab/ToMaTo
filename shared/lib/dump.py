@@ -3,10 +3,6 @@ import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re, b
 from .cmd import run, CommandError #@UnresolvedImport
 from .. import config, scheduler
 
-#the format used to convert datetime objects to strings, and back.
-#changing this makes all previously created error dumps incompatible and may break the server initialization after upgrades.
-timestamp_format = "%Y-%m-%dT%H:%M:%S.%f"
-
 #in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
 envCmds = {}
@@ -85,8 +81,7 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     
     #collect missing info
     if not timestamp:
-		timestamp = datetime.datetime.now()
-    timestr = datetime.datetime.strftime(timestamp, timestamp_format)
+		timestamp = time.time()
     if not caller is False:
 		data["caller"] = getCaller()
     data["environment"] = getEnv()
@@ -97,7 +92,7 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
             
         #create the dump for saving
         dump_meta = {
-            "timestamp": timestr,
+            "timestamp": timestamp,
             "description":description,
             "type":type,
             "group_id":type + "__" + group_id,
@@ -114,7 +109,6 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
     		json.dump(dump_meta, f, indent=2)
         with open(get_absolute_path(dump_id, False), "w") as f:
             json.dump(dump_data, f, indent=2)
-        dump_meta['timestamp'] = timestamp
         dumps[dump_id] = dump_meta
     
     return dump_id
@@ -130,7 +124,6 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
         if load_from_file:
             with open(get_absolute_path(dump_id,True),"r") as f:
                 dump = json.load(f)
-            dump['timestamp'] = datetime.datetime.strptime(dump['timestamp'], timestamp_format)
         elif dump_id in dumps:
             dump = dumps[dump_id]
         else:
@@ -191,7 +184,7 @@ def remove_all_where(before=None,group_id=None):
 
 #this will be done daily.                
 def auto_cleanup():
-    before = datetime.datetime.now() - datetime.timedelta(seconds=config.DUMP_LIFETIME)
+    before = time.time() - config.DUMP_LIFETIME
     remove_all_where(before=before)
     
 #return the total number of error dumps
