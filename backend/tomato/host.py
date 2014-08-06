@@ -21,7 +21,8 @@ from accounting import UsageStatistics
 from lib import attributes, db, rpc, util, logging #@UnresolvedImport
 from lib.cache import cached #@UnresolvedImport
 from auth import Flags
-import xmlrpclib, time, hashlib, threading
+from dumpmanager import DumpSource
+import xmlrpclib, time, hashlib, threading, datetime, json, zlib, base64
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
@@ -206,7 +207,7 @@ def _connect(address, port):
 	return rpc.ServerProxy('https://%s:%d' % (address, port), allow_none=True, transport=transport)
 
 
-class Host(attributes.Mixin, models.Model):
+class Host(attributes.Mixin, DumpSource, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=True)
 	site = models.ForeignKey(Site, null=False, related_name="hosts")
@@ -226,6 +227,7 @@ class Host(attributes.Mixin, models.Model):
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
 	description_text = attributes.attribute("description_text", unicode, "")
+	dump_last_fetch = attributes.attribute("dump_last_fetch", float, 0)
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -571,7 +573,6 @@ class Host(attributes.Mixin, models.Model):
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					self.problemMailTime = time.time()
 					from django.template.defaultfilters import timesince
-					import datetime
 					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 						or user.hasFlag(Flags.OrgaHostContact) and user.organization == self.site.organization,
@@ -617,6 +618,32 @@ class Host(attributes.Mixin, models.Model):
 
 	def __repr__(self):
 		return "Host(%s)" % self.name
+	
+	def dump_fetch_list(self,after): #TODO: return None if unreachable
+		return self.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
+
+	def dump_fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
+		dump = self.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
+		if not keep_compressed:
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
+		return dump
+
+	def dump_clock_offset(self):
+		return max(0,-self.hostInfo['time_diff'])
+
+	def dump_source_name(self):
+		return "host:%s" % self.info()['name']
+
+	def dump_matches_host(self, host_obj):
+		return host_obj.dump_source_name() == self.dump_source_name()
+
+	def dump_set_last_fetch(self,last_fetch):
+		self.dump_last_fetch = last_fetch
+		self.save()
+		
+	def dump_get_last_fetch(self):
+		return self.dump_last_fetch
+
 
 class HostElement(attributes.Mixin, models.Model):
 	host = models.ForeignKey(Host, null=False, related_name="elements")
