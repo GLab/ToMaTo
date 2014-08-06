@@ -1,333 +1,354 @@
-import tomato,lib
-import shutil, os, random
-import tarfile, json, time
-import urllib2
-import re
+import os, random, textwrap,threading, tarfile
 
-#TODO:
-# be a better command-line tool. currently everything is set in last line.
-# better output
-# internet connection seems broken?
-# support more packet managers
-# allow upgrade queryer
-# check authentication/authorization before starting
-# timeout for "waiting for script to finish"
-# better error handling than brute-force try-until-success. Understand ^C
-
-config={
-	'rextfv-archive':'rextfv-getpackages_archive.tar.gz',
-	'tmpdir':'/tmp'
-}
-
-def progname():
-	return "RexTFV Packet Manager for ToMaTo"
 
 def progname_short():
 	return "rextfv-packetmanager"
-		
-
-def get_topology_json(tech,template,site):
-	attrs={'name':"tmp_"+progname_short()}
-	file_info={'version':3}
-	connections=[{
-			"elements": [2314, 2315],
-			"type": "fixed_bridge", 
-			"attrs": {
-				"bandwidth_to": 10000, 
-				"bandwidth_from": 10000, 
-				"emulation": True
-			}, 
-			"id": 615
-	}]
-	elements=[{
-	    	"type": "external_network_endpoint", 
-    		"attrs": {"name": "external_network_endpoint2315"},
-			"parent":2313,
-			"id":2315
-		},{
-			"type": tech+"_interface", 
-			"attrs": {
-				"use_dhcp": True, 
-        	}, 
-			"parent": 2312,
-			"id": 2314
-		},{
-			"type": "external_network", 
-			"attrs": {
-				"kind": "internet", 
-				"samenet": False, 
-				"name": "internet1", 
-				"_pos": {
-					"y": 0.14545454545454545, 
-					"x": 0.51200000000000001
-	          	}
-			}, 
-			"parent": None, 
-			"id": 2313
-		},{
-			"type": tech, 
-			"attrs": {
-				"profile": "normal", 
-				"_pos": {
-					"y": 0.12545454545454546, 
-					"x": 0.30399999999999999
-				}, 
-				"site": site, 
-				"template": template, 
-				"name": "openvz1"
-			}, 
-			"parent": None, 
-			"id": 2312
-		}]
-	return {
-		"file_information":file_info,
-		"topology":{
-			"connections":connections,
-			"elements":elements,
-			"attrs":attrs
-		}
-	}
 
 
+##### Generic Helper Functions
 
-def get_upload_url(conn,element,grant):
-	elinfo=conn.element_info(element)
-	return "http://%(hostname)s:%(port)s/%(grant)s/upload" % \
-		{	"hostname":elinfo['attrs']['host'],
-			"port":elinfo['attrs']['host_fileserver_port'],
-			"grant":grant }
-		
-def get_download_url(conn,element,grant):
-	elinfo=conn.element_info(element)
-	return "http://%(hostname)s:%(port)s/%(grant)s/download" % \
-		{	"hostname":elinfo['attrs']['host'],
-			"port":elinfo['attrs']['host_fileserver_port'],
-			"grant":grant }
-
-
-class packetman_urlgetter:
-	conn=None
-
-	target_topology=None
-	target_element=None
-
-	def __init__(self,conn,*args,**kwargs):
-		self.conn=conn
-
-	def _template_exists(self,tech,template):
-		for i in self.conn.resource_list('template'):
-			if i['attrs']['tech']==tech and i['attrs']['name']==template:
-				return True
-		return False
-
-	def create_target_topology(self,tech,template,site):
-		if not self._template_exists(tech,template):
-			return {"success":False, "message":"template does not exist"}
-		res=self.conn.topology_import(get_topology_json(tech,template,site))
-		self.target_topology=res[0]
-		for i in res:
-			if type(i) is list:
-				for j in i:
-					if type(j) is list:
-						if len(j) == 2:
-							if j[0]==2312:
-								self.target_element=j[1]
-		return {"success":True}
-
-	def topology_action(self,action):
-		if self.target_topology:
-			return self.conn.topology_action(self.target_topology,action)
-
-	def element_action(self,action):
-		if self.target_element:
-			return self.conn.element_action(self.target_element,action)
-
-	def get_target(self):
-		return {
-			"element":self.target_element,
-			"topology":self.target_topology
-		}
-
-	def get_conn():
-		return self.conn
-
-	def clean_up(self):
-		if self.target_topology:
-			self.topology_action('destroy')
-			self.conn.topology_remove(self.target_topology)
-
-
-#conn: a connection to tomato
-#templates: target templates to get packages for. This is a list of templates.
-#tech: the tech to use when running the query. use 'openvz' if possible.
-#filename: output of the final rextfv archive
-#packages: packages to be installed by archive
-#site: site to host the element on. None to let ToMaTo choose.
-def create_package(conn,templates,tech,filename,packages,site=None):
-    def get_workingdir():
-		tmpdir = config['tmpdir']
+tmplock = threading.RLock()
+def get_workingdir():
+	with tmplock:
+		tmpdir = "/tmp"
 		workingdir = str(random.randint(10000,99999))
-		while os.path.isdir(os.path.join(tmpdir,progname_short()+'_'+workingdir)):
+		while os.path.exists(os.path.join(tmpdir,progname_short()+'_'+workingdir)):
 			workingdir = str(random.randint(10000,99999))
 		workingdir = os.path.join(tmpdir,progname_short()+'_'+workingdir)
 		os.makedirs(workingdir)
 		return workingdir
 	
-    def create_query_archive(list):
-		#create working dir and filenames
-		wdir = get_workingdir()
-		geturls_archive=os.path.join(wdir,'geturls.tar.gz')
-		packetlistfile = os.path.join(wdir,'toinstall')
-
-		#copy unconfigured archive
-		with tarfile.open(config['rextfv-archive'],'r:gz') as tar:
-			tar.extractall(wdir)
 	
-		#write config file
-		with open(packetlistfile,'w+') as f:
-			f.write(" ".join(list))
+	
+	
+	
+	
+	
+class TestTopology:
+	top_id = None
+	el_id = None
+	
+	template = None
+	site = None
+	tech = None
+	
+	def __init__(self,tech,template,site,*args,**kwargs):
+		self.template = template
+		self.site = site
+		self.tech = tech
+	
+	# Topology to be used to query
+	def _topology_json(tech):
+		attrs={'name':"tmp_"+progname_short()}
+		file_info={'version':3}
+		connections=[{
+				"elements": [2314, 2315],
+				"type": "fixed_bridge", 
+				"attrs": {
+					"bandwidth_to": 10000, 
+					"bandwidth_from": 10000, 
+					"emulation": True
+				}, 
+				"id": 615
+		}]
+		elements=[{
+		    	"type": "external_network_endpoint", 
+	    		"attrs": {"name": "external_network_endpoint2315"},
+				"parent":2313,
+				"id":2315
+			},{
+				"type": self.tech+"_interface", 
+				"attrs": {
+					"use_dhcp": True, 
+	        	}, 
+				"parent": 2312,
+				"id": 2314
+			},{
+				"type": "external_network", 
+				"attrs": {
+					"kind": "internet", 
+					"samenet": False, 
+					"name": "internet1", 
+					"_pos": {
+						"y": 0.14545454545454545, 
+						"x": 0.51200000000000001
+		          	}
+				}, 
+				"parent": None, 
+				"id": 2313
+			},{
+				"type": self.tech, 
+				"attrs": {
+					"profile": "normal", 
+					"_pos": {
+						"y": 0.12545454545454546, 
+						"x": 0.30399999999999999
+					}, 
+					"site": self.site, 
+					"template": self.template, 
+					"name": "openvz1"
+				}, 
+				"parent": None, 
+				"id": 2312
+			}]
+		return {
+			"file_information":file_info,
+			"topology":{
+				"connections":connections,
+				"elements":elements,
+				"attrs":attrs
+			}
+		}
+	
+	def create(self):
+		return
+	
+	def prepare(self):
+		return
+	
+	def start(self):
+		return
+	
+	def stop(self):
+		return
+	
+	def destroy(self):
+		return
+	
+	def delete(self):
+		return
+	
+	
+	def uploadAndUseArchive(self,filename):
+		return #TODO
+	
+	def getArchiveResult(self):
+		return
+	
+	
+	
 
-		#pack archive
-		with tarfile.open(geturls_archive,'w:gz') as tar:
-			tar.add(wdir,arcname='.')
 
-		return geturls_archive
 
-    def query_packageinfo(conn,template,tech,packages,site):
-		res=None
-		#first, create the rextfv archive which will fetch the package info
-		print 'creating query archive'
-		f1=create_query_archive(packages)
 
-		#create the fetcher topology
-		t = packetman_urlgetter(conn)
+
+
+###### Build the archive
+
+class GetPacketArchive(object):
+	directory = None
+	archive_filename = None
+	
+	def __init__(self,*args,**kwargs):
+		self.directory = get_workingdir()
+	
+	def _getScriptContents(self):
+		return textwrap.dedent("""#!/bin/bash
+					#
+					# modes.
+					#  assumption: only one mode file.
+					#  the modes are: prepare-install, prepare-upgrade, install
+					#  mode is selected by presence of mode file. filenames:
+					#   toinstall - prepare-install; file contains whitespace-seperated packet list
+					#   upgrade - prepare-upgrade; content does not matter.
+					#   packages - install; packages is a directory.
+					#			there must be a installorder_$os_id file, which is a 
+					#			linebreak-seperated file list of files inside the packages directory
+					#
+					# identifiers
+					apt_get_ident="aptget"
+					
+					get_os_id() {
+						DISTRO=""
+						ISSUE=$(cat /etc/issue)
+						case "$ISSUE" in
+						  Debian*5.0*)
+						    DISTRO="debian_5"
+						    ;;
+						  Debian*6.0*)
+						    DISTRO="debian_6"
+						    ;;
+						  Debian*7*)
+						    DISTRO="debian_7"
+						    ;;
+						  Ubuntu*10.04*)
+						    DISTRO="ubuntu_1004"
+						    ;;
+						  Ubuntu*10.10*)
+						    DISTRO="ubuntu_1010"
+						    ;;
+						  Ubuntu*11.04*)
+						    DISTRO="ubuntu_1104"
+						    ;;
+						  Ubuntu*11.10*)
+						    DISTRO="ubuntu_1110"
+						    ;;
+						  Ubuntu*12.04*)
+						    DISTRO="ubuntu_1204"
+						    ;;
+						  Ubuntu*12.10*)
+						    DISTRO="ubuntu_1210"
+						    ;;
+						  Ubuntu*13.04*)
+						    DISTRO="ubuntu_1304"
+						    ;;
+						  Ubuntu*13.10*)
+						    DISTRO="ubuntu_1310"
+						    ;;
+						  *)
+						    DISTRO="UNKNOWN"
+						esac
+						echo "${DISTRO}_$(uname -m)"
+					}
+					
+					os_id=$(get_os_id)
+					
+					
+					
+					# handlers for apt-get
+					need_apt_get () {
+						if which apt-get; then
+							return 0;
+						else
+							return 1;
+						fi
+					}
+					
+					update_apt_get () {
+						dhclient eth0
+						apt-get update
+					}
+					setstatus_prepare_upgrade_apt_get () {
+						archive_setstatus "$apt_get_ident.$os_id.$(apt-get --print-uris -y -qq upgrade)"
+					}
+					setstatus_prepare_install_apt_get() {
+						archive_setstatus "$apt_get_ident.$os_id.$(apt-get --print-uris -y -qq install $@)"
+					}
+					install_file_apt_get() {
+						dpkglist=""
+						for i in $(cat $archive_dir/installorder_$os_id); do
+							dpkglist="${dpkglist} $archive_dir/packages/$i"
+						done#TODO
+						dpkg -i $dpkglist
+					}
+					
+					if [ -e $archive_dir/toinstall ]; then
+						update_apt_get
+						setstatus_prepare_install_apt_get $(cat $archive_dir/toinstall)
+					fi
+					
+					if [ -e $archive_dir/upgrade ]; then
+						update_apt_get
+						setstatus_prepare_upgrade_apt_get
+					fi
+					
+					
+					if [ -d $archive_dir/packages ]; then
+						if [ ! -e $archive_dir/installorder_$os_id ]; then
+							echo "no installorder for this OS: $os_id"
+							exit 1
+						fi
+						install_file_apt_get $archive_dir/installorder_$os_id
+					fi
+					""")
+	
+	def _addFileToArchive(self,filename,content,path=None):
+		directory = self.directory
+		if path:
+			directory = os.path.join(self.directory,path)
+			if not os.path.exists(directory):
+				os.mkdir(directory)
+		with open(os.path.join(self.directory,filename),"w+") as auto_exec:
+			auto_exec.write(content)
+		
+	def _writeMainScript(self):
+		self._addFileToArchive("auto_exec.sh", self._getScriptContents())
+		
+	def _createArchiveFile(self):
+		with tarfile.open(self.archive_filename,'w:gz') as tar:
+			tar.add(self.directory,arcname='.')
+		return self.archive_filename
+	
+	#to be implemented in a subclass
+	def _writeAdditionalContents(self):
+		return
+
+	def createArchive(self):
+		self._writeMainScript()
+		self._writeAdditionalContents()
+		return self._createArchiveFile()
+	
+	def uploadAndRun(self,test_topology):
 		try:
-			print 'creating topology'
-			err = t.create_target_topology(tech,template,site)
-			if not err['success']:
-				print 'Error: '+err['message']
-				return
-			top = t.get_target()['topology']
-			el  = t.get_target()['element']
-
-			#prepare topology
-			print 'preparing topology'
-			t.topology_action('prepare')
-
-			#upload query archive
-			print 'uploading query archive'
-			grant = t.element_action('rextfv_upload_grant')
-			#with open(f1,"r") as file:
-			lib.upload(get_upload_url(conn,el,grant),f1)
-			print 'using upload'
-			t.element_action('rextfv_upload_use')
-
-			#start topology, wait for rextfv to finish
-			print 'starting topology'
-			t.topology_action('start')
-			print 'waiting for query archive to finish'
-			elinfo = conn.element_info(el)
-			sleepdelay=1
-			while not (elinfo['attrs']['rextfv_run_status']['readable'] and elinfo['attrs']['rextfv_run_status']['done']):
-				time.sleep(sleepdelay)
-				sleepdelay += 1
-				elinfo = conn.element_info(el)
-
-			#download and read result ---- TODO: if this becomes easier by better rextfv integration of json into rextfv_run_status, use this way instead
-			print 'fetching query result'
-			wdir = get_workingdir()
-			targetfile = os.path.join(wdir,'res.tar.gz')
-			grant = t.element_action('rextfv_download_grant')
-			
-			custominfo_splitted = elinfo['attrs']['rextfv_run_status']['custom'].split(".",2)
-			ident = custominfo_splitted[0]
-			os_id = custominfo_splitted[1]
-			lines = custominfo_splitted[2]
-			
-			def interpret_lines_aptget(lines_string):
-				lines = lines_string.splitlines()
-				urlList = []
-				order = []
-				for line in lines:
-					l = line.split()
-					urlList.append(l[0])
-					order.append(l[1])
-				return { 'urls':urlList, 'order':order}
-			
-			if ident == "aptget":
-				res = interpret_lines_aptget(lines)
-				res['os_id'] = os_id
-			
-
+			test_topology.create()
+			test_topology.prepare()
+			test_topology.uploadAndUseArchive(filename)
+			test_topology.start()
+			result_raw = test_topology.getArchiveResult()
 		finally:
-			t.clean_up()
-		
-		return res
-
+			test_topology.stop()
+			test_topology.destroy()
+			test_topology.delete()
+		return result_raw
 	
-    def create_result(filename,infos):
-		wdir = get_workingdir()
-		pacdir = os.path.join(wdir,'packages')
-		os.makedirs(pacdir)
-		#copy unconfigured archive
-		with tarfile.open(config['rextfv-archive'],'r:gz') as tar:
-			tar.extractall(wdir)
-			
-		#fetch all packages
-		for info in infos:
-			#create dirs and filenames
-			installorderfile = os.path.join(wdir,'installorder_'+info['os_id'])
+	
+class QueryArchive(GetPacketArchive):
+	toinstall = []
+	upgrade = False
+	
+	def __init__(self,*args,**kwargs):
+		super(QueryArchive, self).__init__(*args, **kwargs)
+		self.archive_filename = os.path.join(self.directory,"geturls.tar.gz")
+	
+	def addToInstall(self,packetname):
+		self.toinstall.append(packetname)
 		
-			#TODO: load all packages into pacdir
-			ordstruct = []
-			for i in range(len(info['order'])):
-				ordstruct.append({
-					'filename':info['order'][i],
-					'url':info['urls'][i]
-				})
+	def setUpgrade(self,upgrade):
+		self.upgrade = upgrade
+		
+	def _writeAdditionalContents(self):
+		if self.upgrade:
+			self._addFileToArchive("upgrade", "")
+		else:
+			toinstall_str = ""
+			for pac in self.toinstall:
+				toinstall_str = toinstall_str+pac+"\n"
+			self._addFileToArchive("toinstall", toinstall_str)
+		
+	def _interpret_result_aptget(self,lines_string):
+		lines = lines_string.splitlines()
+		urlList = []
+		order = []
+		for line in lines:
+			l = line.split()
+			urlList.append(l[0])
+			order.append(l[1])
+		return { 'urls':urlList, 'order':order}
 			
-			with open(installorderfile,'w+') as installfile:
-				for pac in ordstruct:
-					pacfilename = os.path.join(pacdir,pac['filename'])
-					if not os.path.exists(pacfilename):
-						print 'fetching '+pac['filename']
-						with open(pacfilename,'w+') as file:
-							pac['url'] = re.sub("^'","",pac['url'])
-							pac['url'] = re.sub("'$","",pac['url'])
-							response = urllib2.urlopen(pac['url'])
-							file.write(response.read())
-					installfile.write(pac['filename']+'\n')
-
-		with tarfile.open(filename,'w:gz') as tar:
-			tar.add(wdir,arcname='.')
-            
-    infos = []
-
-    tnr = 1
-    for template in templates:
-        print "  ("+str(tnr)+"/"+str(len(templates))+") querying packets for template "+template
-        finished_current = False
-        while not finished_current:
-            try:
-                infos.append(query_packageinfo(conn,template,tech,packages,site))
-                finished_current = True
-                tnr = tnr + 1
-            except:
-                print ""
-                print "There was an error. Retrying..."
-                print ""
-                continue
-
-            
-    
-    
-    
-                #infos.append(query_packageinfo(conn,template,tech,packages,site))
-
-	#create result package
-    create_result(filename,infos)
-
-    return infos
+	def _interpret_result(self,lines_string,ident):
+		if ident == "aptget":
+			return self._interpret_result_aptget(lines_string)
+		
+	def getTemplateDetails(self,tech,template,site):
+		custominfo = self.uploadAndRun(TestTopology(tech,template,site))
+		custominfo_splitted = custominfo.split(".",2)
+		ident = custominfo_splitted[0]
+		os_id = custominfo_splitted[1]
+		lines = custominfo_splitted[2]
+		result = self._interpret_result(lines,ident)
+		result['os_id'] = os_id
+		return result
+		
+		
+		
 
 
 
+
+
+
+
+arch = QueryArchive()
+arch.addToInstall("testpacket")
+arch.addToInstall("testpacket2")
+print arch.createArchive()
