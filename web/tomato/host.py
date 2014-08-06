@@ -23,7 +23,7 @@ from django import forms
 from lib import wrap_rpc, serverInfo, AuthError
 from django.http import HttpResponseRedirect
 
-from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
+from admin_common import BootstrapForm, RemoveConfirmForm, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -36,7 +36,7 @@ class HostForm(BootstrapForm):
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
-		self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+		self.fields["site"].widget = forms.widgets.Select(choices=append_empty_choice(site_name_list(api)))
 		self.helper.form_action = reverse(add)
 		self.helper.layout = Layout(
 			'name',
