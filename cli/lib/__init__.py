@@ -76,3 +76,75 @@ def upload(url, file, name="upload"):
     conn.send(append)
     resps = conn.getresponse()
     data = resps.read()
+    
+    
+class SafeTransportWithCerts(xmlrpclib.SafeTransport):
+    """
+    A class containing a SSL connection to a host using the xmlrpclib.
+    
+    Parameter *xmlrpclib.SafeTransport*:
+        A internal transport factory instance for the connection
+
+    """
+    def __init__(self, keyFile, certFile, *args, **kwargs):
+        xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
+        self.certFile = certFile
+        self.keyFile = keyFile
+    def make_connection(self,host):
+        host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
+        return xmlrpclib.SafeTransport.make_connection(self,host_with_cert)
+    
+class ServerProxy(object):
+    """
+    A server proxy class with a connection to a remote XML-RPC server.
+
+    Parameter *object*:
+        Dictionary which contains the host url and different optional arguments for the proxy connection.
+        See the xmlrpclib documentation for details.
+
+    """
+    def __init__(self, url, **kwargs):
+        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+    def __getattr__(self, name):
+        call_proxy = getattr(self._xmlrpc_server_proxy, name)
+        def _call(*args, **kwargs):
+            return call_proxy(args, kwargs)
+        return _call
+
+def getConnection(hostname, port, ssl, username=None, password=None, sslCert=None):
+    """
+    Creates a server proxy to a host using ssl transport optional.
+    
+    Parameter *hostname*:
+        Address of the host of the server
+    Parameter *port*:
+        Port of the host server
+    Parameter *ssl*:
+        Boolean whether ssl should be used or not
+    Parameter *username*:
+        The username to use for login
+    Parameter *password*:
+        The password to user for login
+    Parameter *sslCert*:
+        SSL certificate to use for a ssl connection
+    
+    Return value:
+        This method returns a server proxy object.
+    
+    """
+    proto = 'https' if ssl else 'http'
+    auth = ""
+    if username:
+        username = urllib.quote_plus(username)
+        auth = username
+        if password:
+            password = urllib.quote_plus(password)
+            auth += ":" + password
+    if auth:
+        auth += "@"
+    transport = None
+    if ssl and sslCert:
+        transport = SafeTransportWithCerts(sslCert, sslCert)
+    #print '%s://%s%s:%s' % (proto, auth, hostname, port)
+    return ServerProxy('%s://%s%s:%s' % (proto, auth, hostname, port), allow_none=True, transport=transport)
+    
