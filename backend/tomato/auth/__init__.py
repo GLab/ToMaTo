@@ -124,7 +124,7 @@ class User(attributes.Mixin, models.Model):
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
 	totalUsage = models.OneToOneField(accounting.UsageStatistics, related_name='+', on_delete=models.PROTECT)
-	quota = models.OneToOneField(accounting.Quota, null=True, related_name='+', on_delete=models.PROTECT)
+	quota = models.OneToOneField(accounting.Quota, related_name='+', on_delete=models.PROTECT)
 	
 	realname = attributes.attribute("realname", unicode)
 	email = attributes.attribute("email", unicode)
@@ -143,12 +143,18 @@ class User(attributes.Mixin, models.Model):
 		fault.check(orga, "No organization with name %s" % organization)
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
-		user.totalUsage = accounting.UsageStatistics.objects.create()
-		user.quota = accounting.Quota()
-		user.quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
 		user.last_login = time.time()
 		return user
-	
+
+	def save(self, *args, **kwargs):
+		if not hasattr(self, "totalUsage"):
+			self.totalUsage = accounting.UsageStatistics.objects.create()
+		if not hasattr(self, "quota"):
+			quota = accounting.Quota()
+			quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
+			self.quota = quota
+		models.Model.save(self, *args, **kwargs)
+
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving
 	
