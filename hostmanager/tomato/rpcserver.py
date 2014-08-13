@@ -19,10 +19,11 @@
 
 import xmlrpclib, sys, traceback
 
-from . import config, login, api
+from . import config, login, api, handleError
 from . import dump, currentUser
 from .lib import db, util, rpc, logging #@UnresolvedImport
 from .lib.error import Error, InternalError
+from .lib.rpc.sslrpc import RPCError
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
@@ -32,9 +33,8 @@ def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):
 		error = InternalError.wrap(error)
 	if isinstance(error, InternalError):
-		dump.dumpException()
-		logging.logException()
-	return error
+		handleError()
+	return RPCError(None, category=RPCError.Category.CALL, type="call_error", message="", data=error.raw)
 
 @db.commit_after
 def afterCall(*args, **kwargs):

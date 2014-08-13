@@ -25,7 +25,8 @@ from auth import Flags
 import time, hashlib, threading
 
 class RemoteWrapper:
-	def __init__(self, host, *args, **kwargs):
+	def __init__(self, url, host, *args, **kwargs):
+		self._url = url
 		self._host = host
 		self._args = args
 		self._kwargs = kwargs
@@ -34,13 +35,15 @@ class RemoteWrapper:
 	def __getattr__(self, name):
 		def call(*args, **kwargs):
 			if not self._proxy:
-				self._proxy = rpc.createProxy(*self._args, **self._kwargs)
+				self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
 			try:
 				return getattr(self._proxy, name)(*args, **kwargs)
 			except TransportError:
 				self._proxy = None
 				raise
 			except Exception, exc:
+				import traceback
+				traceback.print_exc()
 				raise _convertError(exc, self._host)
 		return call
 
@@ -48,7 +51,7 @@ _caching = True
 _proxies = {}
 
 def _convertError(err, host):
-	from sslrpc import RPCError
+	from lib.rpc.sslrpc import RPCError
 	if isinstance(err, RPCError):
 		if err.category == RPCError.Category.CALL:
 			e = Error.parse(err.data)
@@ -1079,6 +1082,8 @@ def synchronizeHost(host):
 			host.synchronizeResources()
 			host.updateAccountingData()
 		except:
+			import traceback
+			traceback.print_exc()
 			logging.logException(host=host.name)
 			print "Error updating information from %s" % host
 		host.checkProblems()

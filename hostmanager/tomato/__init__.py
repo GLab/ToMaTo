@@ -53,6 +53,12 @@ def login(commonName):
 	setCurrentUser(user)
 	return bool(commonName)
 
+from . import dump
+from lib import logging, error
+def handleError():
+	dump.dumpException()
+	logging.logException()
+
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
 
@@ -60,9 +66,9 @@ from models import *
 	
 import api
 
-from . import dump, lib, resources, accounting, rpcserver, elements, firewall #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver, elements, firewall #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
-from lib import logging, util #@UnresolvedImport
+from lib import util #@UnresolvedImport
 
 scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 

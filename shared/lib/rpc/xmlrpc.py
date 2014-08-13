@@ -296,8 +296,6 @@ class ServerProxy(object):
 		def _call(*args, **kwargs):
 			try:
 				return call_proxy(args, kwargs)
-			except xmlrpclib.Fault, f:
-				raise self._onError(f)
 			except Exception, exc:
 				raise self._onError(exc)
 		return _call

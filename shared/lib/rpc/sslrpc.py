@@ -378,8 +378,9 @@ class RPCServer(SocketServer.ThreadingMixIn, SSLServer):
 				if res:
 					exc = res
 			if isinstance(exc, RPCError):
+				exc.id = request.id
 				raise exc
-			raise RPCError(request.id, RPCError.Category.INTERNAL, type(exc).__name__, str(exc))
+			raise RPCError(request.id, RPCError.Category.CALL, type(exc).__name__, str(exc))
 
 	def _list(self):
 		return self.funcs.keys()

@@ -26,8 +26,8 @@ def wrap_task(fn):
 		except Exception, exc:
 			if isinstance(exc, DatabaseError):
 				transaction.rollback()
-			from .. import dump
-			dump.dumpException()
+			from .. import handleError
+			handleError()
 	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__

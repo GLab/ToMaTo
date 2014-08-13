@@ -70,4 +70,3 @@ def start():
 def stop():
 	for server in servers:
 		server.shutdown()
-	rpc.stopCaching()

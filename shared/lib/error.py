@@ -40,6 +40,7 @@ class Error(Exception):
 
 def ErrorType(Type):
 	TYPES[Type.TYPE]=Type
+	return Type
 
 
 @ErrorType
