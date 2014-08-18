@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
-
+from lib import getConnection, SafeTransportWithCerts, ServerProxy
 def parseArgs():
 	"""
 	Defines required and optional arguments for the cli and parses them out of sys.argv.
