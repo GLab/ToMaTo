@@ -1,4 +1,6 @@
 
+import xmlrpclib, ssl, urllib
+
 def tcpPortOpen(host, port):
     from socket import socket, AF_INET, SOCK_STREAM
     s = socket(AF_INET, SOCK_STREAM)

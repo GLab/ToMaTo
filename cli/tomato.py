@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
-
+from lib import getConnection, SafeTransportWithCerts, ServerProxy
 def parseArgs():
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
 	parser.add_argument('--help', action='help')
