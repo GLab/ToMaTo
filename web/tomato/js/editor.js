@@ -3824,7 +3824,7 @@ var TemplateStore = Class.extend({
 	},
 	getAllowed: function(type) {
 		var templates = this.getAll(type)
-		if (!editor.allowRestrictedTemplates) {
+		if (!this.editor.allowRestrictedTemplates) {
 			var templates_filtered = [];
 			for (var i = 0; i<templates.length;i++) {
 				if (!(templates[i].restricted))
@@ -3862,7 +3862,8 @@ var Profile = Class.extend({
 });
 
 var ProfileStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+		this.editor = editor
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3888,7 +3889,7 @@ var ProfileStore = Class.extend({
 	getAllowed: function(type) {
 		var profs = this.getAll(type)
 		console.log(profs);
-		if (!editor.allowRestrictedProfiles) {
+		if (!this.editor.allowRestrictedProfiles) {
 			var profs_filtered = [];
 			for (var i = 0; i<profs.length;i++) {
 				if (!(profs[i].restricted))
@@ -3906,7 +3907,9 @@ var ProfileStore = Class.extend({
 });
 
 var NetworkStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+
+		this.editor = editor
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3930,7 +3933,7 @@ var NetworkStore = Class.extend({
 	},
 	getAllowed: function() {
 		var allowedNets = this.getAll()
-		if (!editor.allowRestrictedNetworks) {
+		if (!this.editor.allowRestrictedNetworks) {
 			var nets_filtered = [];
 			for (var i = 0; i<allowedNets.length;i++) {
 				if (!(allowedNets[i].restricted))
@@ -3981,9 +3984,9 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
-		this.profiles = new ProfileStore(this.options.resources);
+		this.profiles = new ProfileStore(this.options.resources,this);
 		this.templates = new TemplateStore(this.options.resources,this);
-		this.networks = new NetworkStore(this.options.resources);
+		this.networks = new NetworkStore(this.options.resources,this);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
 		
