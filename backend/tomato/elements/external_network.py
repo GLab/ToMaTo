@@ -77,7 +77,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def modify_kind(self, val):
 		network = resources.network.get(val)
 		if network.restricted and not self.kind == val:
-			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Profile is restricted")
+			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Network is restricted")
 		self.kind = val
 		for ch in self.getChildren():
 			ch.modify({"kind": val})
