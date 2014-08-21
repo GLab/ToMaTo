@@ -75,7 +75,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		self.samenet = val
 
 	def modify_kind(self, val):
-		network = resources.network.get(self.TYPE, val)
+		network = resources.network.get(val)
 		if network.restricted and not self.kind == val:
 			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Profile is restricted")
 		self.kind = val
@@ -101,7 +101,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["samenet"] = self.samenet
-		info["attrs"]["restricted"] = resources.network.get(self.TYPE,self.kind).restricted
+		info["attrs"]["restricted"] = resources.network.get(self.kind).restricted
 		return info
 
 
