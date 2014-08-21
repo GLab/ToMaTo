@@ -1,4 +1,7 @@
 import os, random, textwrap,threading, tarfile
+import argparse, getpass
+from time import sleep
+from lib import getConnection, upload
 
 
 def progname_short():
@@ -27,51 +30,52 @@ def get_workingdir():
 		os.makedirs(workingdir)
 		return workingdir
 	
-	
-	
+
 	
 	
 	
 	
 class TestTopology:
-	top_id = None
-	el_id = None
+    top_id = None
+    el_id = None
+
+    template = None
+    site = None
+    tech = None
+    api = None
 	
-	template = None
-	site = None
-	tech = None
-	
-	def __init__(self,tech,template,site,*args,**kwargs):
-		self.template = template
-		self.site = site
-		self.tech = tech
+    def __init__(self,api,tech,template,site,*args,**kwargs):
+        self.template = template
+        self.api = api
+        self.site = site
+        self.tech = tech
 	
 	# Topology to be used to query
-	def _topology_json(tech):
+    def _topology_json(self):
 		attrs={'name':"tmp_"+progname_short()}
 		file_info={'version':3}
 		connections=[{
-				"elements": [2314, 2315],
+				"elements": [11, 12],
 				"type": "fixed_bridge", 
 				"attrs": {
 					"bandwidth_to": 10000, 
 					"bandwidth_from": 10000, 
 					"emulation": True
 				}, 
-				"id": 615
+				"id": 10
 		}]
 		elements=[{
 		    	"type": "external_network_endpoint", 
 	    		"attrs": {"name": "external_network_endpoint2315"},
-				"parent":2313,
-				"id":2315
+				"parent":2,
+				"id":12
 			},{
 				"type": self.tech+"_interface", 
 				"attrs": {
 					"use_dhcp": True, 
 	        	}, 
-				"parent": 2312,
-				"id": 2314
+				"parent": 1,
+				"id": 11
 			},{
 				"type": "external_network", 
 				"attrs": {
@@ -84,7 +88,7 @@ class TestTopology:
 		          	}
 				}, 
 				"parent": None, 
-				"id": 2313
+				"id": 2
 			},{
 				"type": self.tech, 
 				"attrs": {
@@ -98,7 +102,7 @@ class TestTopology:
 					"name": "openvz1"
 				}, 
 				"parent": None, 
-				"id": 2312
+				"id": 1
 			}]
 		return {
 			"file_information":file_info,
@@ -109,30 +113,46 @@ class TestTopology:
 			}
 		}
 	
-	def create(self):
-		return
+    def create(self):
+        import_res = self.api.topology_import(self._topology_json())
+        self.top_id = import_res[0]
+        for i in import_res[1]:
+            if i[0]==1:
+                self.el_id = i[1]
+        
 	
-	def prepare(self):
-		return
+    def prepare(self):
+		self.api.topology_action(self.top_id,"prepare")
 	
-	def start(self):
-		return
+    def start(self):
+		self.api.topology_action(self.top_id,"start")
 	
-	def stop(self):
-		return
+    def stop(self):
+		self.api.topology_action(self.top_id,"stop")
 	
-	def destroy(self):
-		return
+    def destroy(self):
+		self.api.topology_action(self.top_id,"destroy")
 	
-	def delete(self):
-		return
+    def delete(self):
+		self.api.topology_remove(self.top_id)
 	
 	
-	def uploadAndUseArchive(self,filename):
-		return #TODO
+    def uploadAndUseArchive(self,filename):
+        elinfo=self.api.element_info(self.el_id)
+        grant = self.api.element_action(self.el_id,"rextfv_upload_grant")
+        upload_url = "http://%(hostname)s:%(port)s/%(grant)s/upload" % {"hostname":elinfo['attrs']['host_info']["address"], "port":elinfo['attrs']['host_info']["fileserver_port"], "grant":grant }
+        upload(upload_url,filename)
+        self.api.element_action(self.el_id,"rextfv_upload_use")
 	
-	def getArchiveResult(self):
-		return
+    def getArchiveResult(self):
+        elinfo=self.api.element_info(self.el_id)
+        while not elinfo["attrs"]["rextfv_run_status"]["done"]:
+            if not elinfo["attrs"]["rextfv_run_status"]["isAlive"]:
+                return None
+            sleep(1)
+            elinfo=self.api.element_info(self.el_id)
+        print elinfo
+        return elinfo["attrs"]["rextfv_run_status"]["custom"]
 	
 	
 	
@@ -145,13 +165,13 @@ class TestTopology:
 ###### Build the archive
 
 class GetPacketArchive(object):
-	directory = None
-	archive_filename = None
+    directory = None
+    archive_filename = None
 	
-	def __init__(self,*args,**kwargs):
+    def __init__(self,*args,**kwargs):
 		self.directory = get_workingdir()
 	
-	def _getScriptContents(self):
+    def _getScriptContents(self):
 		return textwrap.dedent("""#!/bin/bash
 					#
 					# modes.
@@ -237,7 +257,7 @@ class GetPacketArchive(object):
 						dpkglist=""
 						for i in $(cat $archive_dir/installorder_$os_id); do
 							dpkglist="${dpkglist} $archive_dir/packages/$i"
-						done#TODO
+						done
 						dpkg -i $dpkglist
 					}
 					
@@ -261,7 +281,7 @@ class GetPacketArchive(object):
 					fi
 					""")
 	
-	def _addFileToArchive(self,filename,content,path=None):
+    def _addFileToArchive(self,filename,content,path=None):
 		directory = self.directory
 		if path:
 			directory = os.path.join(self.directory,path)
@@ -270,37 +290,42 @@ class GetPacketArchive(object):
 		with open(os.path.join(self.directory,filename),"w+") as auto_exec:
 			auto_exec.write(content)
 		
-	def _writeMainScript(self):
+    def _writeMainScript(self):
 		self._addFileToArchive("auto_exec.sh", self._getScriptContents())
 		
-	def _createArchiveFile(self):
+    def _createArchiveFile(self):
 		with tarfile.open(self.archive_filename,'w:gz') as tar:
 			tar.add(self.directory,arcname='.')
 		return self.archive_filename
 	
 	#to be implemented in a subclass
-	def _writeAdditionalContents(self):
+    def _writeAdditionalContents(self):
 		return
 
-	def createArchive(self):
+    def createArchive(self):
 		self._writeMainScript()
 		self._writeAdditionalContents()
 		return self._createArchiveFile()
 	
-	def uploadAndRun(self,test_topology):
-		if not self.archive_filename:
-			return None
-		try:
-			test_topology.create()
-			test_topology.prepare()
-			test_topology.uploadAndUseArchive(self.archive_filename)
-			test_topology.start()
-			result_raw = test_topology.getArchiveResult()
-		finally:
-			test_topology.stop()
-			test_topology.destroy()
-			test_topology.delete()
-		return result_raw
+    def uploadAndRun(self,test_topology):
+        if not self.archive_filename:
+            return None
+        test_topology.create()
+        try:
+            debugger.log("  preparing topology")
+            test_topology.prepare()
+            debugger.log("  uploading archive")
+            test_topology.uploadAndUseArchive(self.archive_filename)
+            debugger.log("  starting topology")
+            test_topology.start()
+            debugger.log("  waiting for results")
+            result_raw = test_topology.getArchiveResult()
+        finally:
+            debugger.log("  cleaning up.")
+            test_topology.stop()
+            test_topology.destroy()
+            test_topology.delete()
+        return result_raw
 	
 	
 class QueryArchive(GetPacketArchive):
@@ -344,8 +369,8 @@ class QueryArchive(GetPacketArchive):
 		if ident == "aptget":
 			return self._interpret_result_aptget(lines_string)
 		
-	def getTemplateDetails(self,tech,template,site):
-		custominfo = self.uploadAndRun(TestTopology(tech,template,site))
+	def getTemplateDetails(self,api,tech,template,site):
+		custominfo = self.uploadAndRun(TestTopology(api,tech,template,site))
 		custominfo_splitted = custominfo.split(".",2)
 		ident = custominfo_splitted[0]
 		os_id = custominfo_splitted[1]
@@ -360,7 +385,7 @@ class PacketArchive(GetPacketArchive):
 	configs = [] #will contain multiple results. format of entries: {'os_id','order','urls'}
 	
 	def __init__(self,*args,**kwargs):
-		super(QueryArchive, self).__init__(*args, **kwargs)
+		super(PacketArchive, self).__init__(*args, **kwargs)
 		
 	def addOS(self,os_config):
 		self.configs.append(os_config)
@@ -385,7 +410,7 @@ class PacketArchive(GetPacketArchive):
 
 #packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
 #template_configs: list of template configs: [{'tech','site','template'}]
-def create_archive(template_configs, packetlist):
+def create_archive(api,template_configs, packetlist):
 	#create query archive
 	debugger.log('Creating query archive')
 	qarch = QueryArchive()
@@ -399,14 +424,101 @@ def create_archive(template_configs, packetlist):
 	parch = PacketArchive()
 	for templ in template_configs:
 		debugger.log('querying '+templ['template'])
-		conf = qarch.getTemplateDetails(templ['tech'], templ['template'], templ['site'])
+		conf = qarch.getTemplateDetails(api,templ['tech'], templ['template'], templ['site'])
 		parch.addOS(conf)
 	return parch.createArchive()
-	
-	
 
 
 
-template_configs = [{'tech':'openvz','site':'ukl','template':'debian-7.0_x86_64'}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# get connection
+def parseArgs():
+    """
+    Defines required and optional arguments for the cli and parses them out of sys.argv.
+    
+    Available Arguments are:
+        Argument *--help*:
+            Prints a help text for the available arguments
+        Argument *--hostname*:
+            Address of the host of the server
+        Argument *--port*:
+            Port of the host server
+        Argument *--ssl*:
+            Whether to use ssl or not
+        Argument *--client_cert*:
+            Path to the ssl certificate of the client
+        Argument *--username*:
+            The username to use for login
+        Argument *--password*:
+            The password to user for login
+        Argument *--file*:
+            Path to a file to execute
+        Argument *arguments*
+            Python code to execute directly
+        
+    Return value:
+        Parsed command-line arguments
+    
+    """
+    parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
+    parser.add_argument('--help', action='help')
+    parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
+    parser.add_argument("--port", "-p", default=8000, help="the port of the server")
+    parser.add_argument("--ssl", "-s", action="store_true", default=False, help="whether to use ssl")
+    parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
+    parser.add_argument("--username", "-U", help="the username to use for login")
+    parser.add_argument("--password", "-P", help="the password to use for login")
+    parser.add_argument("arguments", nargs="*", help="python code to execute directly")
+    options = parser.parse_args()
+    if not options.username and not options.client_cert:
+        options.username=raw_input("Username: ")
+    if not options.password and not options.client_cert:
+        options.password=getpass.getpass("Password: ")
+    return options
+
+options = parseArgs()
+api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
+
+
+template_configs = [{'tech':'openvz',
+                     'site':'ukl',
+                     'template':'debian-7.0_x86_64'
+                     }]
 packetlist = ['openjdk-6-jre']
-return create_archive(template_configs, packetlist)
+res_filename = create_archive(api, template_configs, packetlist)
+print "saved file as "+res_filename
