@@ -919,7 +919,6 @@ var PermissionsWindow = Window.extend({
 		this.options = options;
 		this.topology = options.topology;
 		this.permissions = options.permissions;
-		console.log(this.topology);
 		
 		this.options.allowChange = this.options.isGlobalOwner;
 		
@@ -3378,6 +3377,7 @@ var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
 		this.iconSize = {x: 32, y:32};
+
 	},
 	iconUrl: function() {
 		return editor.networks.getNetworkIcon(this.data.attrs.kind);
@@ -3414,7 +3414,7 @@ var ExternalNetworkElement = IconElement.extend({
 			label: "Network kind",
 			name: "kind",
 			info: networkInfo,
-			choices: createMap(this.editor.networks.getAllowed(), "kind", "label"),
+			choices: createMap(this.editor.networks.getAll(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
 		});
@@ -3584,7 +3584,7 @@ var VMElement = IconElement.extend({
 			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
-			choices: createMap(this.editor.profiles.getAllowed(this.data.type), "name", "label"),
+			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile"),
 			help_text: profile_helptext
@@ -3798,7 +3798,7 @@ var DummyForCustomTemplate = Template.extend({
 
 var TemplateStore = Class.extend({
 	init: function(data,editor) {
-		this.editor = editor
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3829,8 +3829,8 @@ var TemplateStore = Class.extend({
 			for (var i = 0; i<templates.length;i++) {
 				if (!(templates[i].restricted))
 					templates_filtered.push(templates[i]);
-				templates = templates_filtered;
 			}
+			templates = templates_filtered;
 		}
 		return templates;
 	},
@@ -3888,16 +3888,14 @@ var ProfileStore = Class.extend({
 	},
 	getAllowed: function(type) {
 		var profs = this.getAll(type)
-		console.log(profs);
 		if (!this.editor.allowRestrictedProfiles) {
 			var profs_filtered = [];
 			for (var i = 0; i<profs.length;i++) {
 				if (!(profs[i].restricted))
 					profs_filtered.push(profs[i]);
-			profs = profs_filtered;
 			}
+			profs = profs_filtered;
 		}
-		console.log(profs);
 		return profs;
 	},
 	get: function(type, name) {
@@ -3935,11 +3933,13 @@ var NetworkStore = Class.extend({
 		var allowedNets = this.getAll()
 		if (!this.editor.allowRestrictedNetworks) {
 			var nets_filtered = [];
+			
 			for (var i = 0; i<allowedNets.length;i++) {
-				if (!(allowedNets[i].restricted))
+				if (!(allowedNets[i].restricted)) {
 					nets_filtered.push(allowedNets[i]);
-			profs = nets_filtered;
+				}
 			}
+			allowedNets = nets_filtered;
 		}
 		return allowedNets;
 	},
@@ -4159,7 +4159,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Delete",
 				name: "mode-remove",
-				icon: "img/eraser16.png",
+				icon: "img/eraser16.0png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,

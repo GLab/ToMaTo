@@ -20,6 +20,8 @@ from .. import elements, host, fault
 from ..resources import network
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
+from .. import currentUser
+from ..auth import Flags
 
 class External_Network(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name")
@@ -74,6 +76,8 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 
 	def modify_kind(self, val):
 		self.kind = val
+		if val.restricted and not self.profile == val:
+			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Profile is restricted")
 		for ch in self.getChildren():
 			ch.modify({"kind": val})
 
@@ -96,6 +100,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["samenet"] = self.samenet
+		info["attrs"]["restricted"] = self.kind.restricted
 		return info
 
 
