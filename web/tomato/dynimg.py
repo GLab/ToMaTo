@@ -20,8 +20,7 @@ import os, json
 from django.http import HttpResponse
 from tomato.lib import cached
 
-@cached(3600)
-def ls_img(api):
+def ls_img(request):
 	prefix = os.path.dirname(os.path.realpath(__file__))
 	dir_tols = os.path.join(prefix, 'img')
 	ls_res = os.listdir(dir_tols)
