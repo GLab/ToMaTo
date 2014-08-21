@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import elements, host, fault
-from ..resources import network
+from .. import elements, resources, host, fault
+from ..resources import network as r_network
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
 from .. import currentUser
@@ -30,7 +30,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	samenet = samenet_attr.attribute()
 	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
 	kind = kind_attr.attribute()
-	network = models.ForeignKey(network.Network, null=True)
+	network = models.ForeignKey(r_network.Network, null=True)
 	
 	CUSTOM_ACTIONS = {
 		"start": [ST_CREATED],
@@ -75,9 +75,10 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 		self.samenet = val
 
 	def modify_kind(self, val):
-		self.kind = val
-		if val.restricted and not self.profile == val:
+		network = resources.network.get(self.TYPE, val)
+		if network.restricted and not self.kind == val:
 			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Profile is restricted")
+		self.kind = val
 		for ch in self.getChildren():
 			ch.modify({"kind": val})
 
@@ -88,7 +89,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 
 	def action_start(self):
 		if self.samenet:
-			self.network = network.get(self.kind)
+			self.network = r_network.get(self.kind)
 		for ch in self.getChildren():
 			if not ch.state == ST_STARTED:
 				ch.action("start", {})
@@ -100,7 +101,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def info(self):
 		info = elements.Element.info(self)
 		info["attrs"]["samenet"] = self.samenet
-		info["attrs"]["restricted"] = self.kind.restricted
+		info["attrs"]["restricted"] = resources.network.get(self.TYPE,self.kind).restricted
 		return info
 
 
@@ -110,7 +111,7 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 	name = name_attr.attribute()
 	kind_attr = Attr("kind", type="str", states=[ST_CREATED], default="internet")
 	kind = kind_attr.attribute()
-	network = models.ForeignKey(network.NetworkInstance, null=True)
+	network = models.ForeignKey(r_network.NetworkInstance, null=True)
 
 	TYPE = "external_network_endpoint"
 	HOST_TYPE = "external_network"
@@ -174,9 +175,9 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		_host = host.select(elementTypes=["external_network"], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
 		fault.check(_host, "No matching host found for element %s", self.TYPE)
 		if self.parent and self.getParent().samenet:
-			self.network = network.getInstance(_host, self.getParent().network.kind)
+			self.network = r_network.getInstance(_host, self.getParent().network.kind)
 		else:
-			self.network = network.getInstance(_host, self.kind)			
+			self.network = r_network.getInstance(_host, self.kind)			
 		attrs = {"network": self.network.network.kind}
 		self.element = _host.createElement("external_network", parent=None, attrs=attrs, ownerElement=self)
 		self.setState(ST_STARTED)
