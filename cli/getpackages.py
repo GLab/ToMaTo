@@ -1,4 +1,4 @@
-import os, random, textwrap,threading, tarfile
+import os, random, textwrap,threading, tarfile, shutil
 import argparse, getpass
 from time import sleep
 from lib import getConnection, upload
@@ -18,7 +18,7 @@ debugger = Debugger()
 
 
 ##### Generic Helper Functions
-
+workingdirs = []
 tmplock = threading.RLock()
 def get_workingdir():
 	with tmplock:
@@ -28,7 +28,13 @@ def get_workingdir():
 			workingdir = str(random.randint(10000,99999))
 		workingdir = os.path.join(tmpdir,progname_short()+'_'+workingdir)
 		os.makedirs(workingdir)
-		return workingdir
+        global workingdirs
+        workingdirs.append(workingdir)
+        return workingdir
+def clear_workingdirs():
+    global workingdirs
+    for dir in workingdirs:
+        os.remove(dir)
 	
 
 	
@@ -410,23 +416,26 @@ class PacketArchive(GetPacketArchive):
 
 #packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
 #template_configs: list of template configs: [{'tech','site','template'}]
-def create_archive(api,template_configs, packetlist):
+def create_archive(api,template_configs, packetlist, targetfilename):
 	#create query archive
-	debugger.log('Creating query archive')
-	qarch = QueryArchive()
-	qarch.setUpgrade(True)
-	for pac in packetlist:
+    debugger.log('Creating query archive')
+    qarch = QueryArchive()
+    qarch.setUpgrade(True)
+    for pac in packetlist:
 		qarch.setUpgrade(False)
 		qarch.addToInstall(pac)
-	qarch.createArchive()
+    qarch.createArchive()
 	
 	#get os configs for all templates
-	parch = PacketArchive()
-	for templ in template_configs:
+    parch = PacketArchive()
+    for templ in template_configs:
 		debugger.log('querying '+templ['template'])
 		conf = qarch.getTemplateDetails(api,templ['tech'], templ['template'], templ['site'])
 		parch.addOS(conf)
-	return parch.createArchive()
+    filename = parch.createArchive()
+    shutil.move(filename, targetfilename)
+    clear_workingdirs()
+    return targetfilename
 
 
 
@@ -503,7 +512,7 @@ def parseArgs():
     parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
     parser.add_argument("--username", "-U", help="the username to use for login")
     parser.add_argument("--password", "-P", help="the password to use for login")
-    parser.add_argument("arguments", nargs="*", help="python code to execute directly")
+    parser.add_argument("--target", "-t", help="the target filename", required=True)
     options = parser.parse_args()
     if not options.username and not options.client_cert:
         options.username=raw_input("Username: ")
@@ -520,5 +529,5 @@ template_configs = [{'tech':'openvz',
                      'template':'debian-7.0_x86_64'
                      }]
 packetlist = ['openjdk-6-jre']
-res_filename = create_archive(api, template_configs, packetlist)
+res_filename = create_archive(api, template_configs, packetlist, options.target)
 print "saved file as "+res_filename
