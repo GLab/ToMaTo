@@ -1,7 +1,14 @@
 Command-Line-Client Documentation
 ===================================
 
-Contents:
+
+Basic CLI functionality
+------------------------
+.. automodule:: cli.tomato
+ :members:
+
+Additional functionality
+------------------------
 
 .. toctree::
    :maxdepth: 1
