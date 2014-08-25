@@ -3823,7 +3823,7 @@ var TemplateStore = Class.extend({
 		return tmpls;
 	},
 	getAllowed: function(type) {
-		var templates = this.getAll(type)
+		var templates = this.getAll(type);
 		if (!this.editor.allowRestrictedTemplates) {
 			var templates_filtered = [];
 			for (var i = 0; i<templates.length;i++) {
@@ -3863,7 +3863,7 @@ var Profile = Class.extend({
 
 var ProfileStore = Class.extend({
 	init: function(data,editor) {
-		this.editor = editor
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3887,7 +3887,7 @@ var ProfileStore = Class.extend({
 		return tmpls;
 	},
 	getAllowed: function(type) {
-		var profs = this.getAll(type)
+		var profs = this.getAll(type);
 		if (!this.editor.allowRestrictedProfiles) {
 			var profs_filtered = [];
 			for (var i = 0; i<profs.length;i++) {
@@ -3907,7 +3907,7 @@ var ProfileStore = Class.extend({
 var NetworkStore = Class.extend({
 	init: function(data,editor) {
 
-		this.editor = editor
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -4159,7 +4159,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Delete",
 				name: "mode-remove",
-				icon: "img/eraser16.0png",
+				icon: "img/eraser16.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
