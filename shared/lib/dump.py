@@ -125,17 +125,17 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
             with open(get_absolute_path(dump_id,True),"r") as f:
                 dump = json.load(f)
         elif dump_id in dumps:
-            dump = dumps[dump_id]
+            dump = dumps[dump_id].copy()
         else:
             return None
+        
+        if push_to_dumps:
+            dumps[dump_id]=dump.copy()
         
         dump_file_version = 0
         if "dump_file_version" in dump:
             dump_file_version = dump["dump_file_version"]
         del dump["dump_file_version"]
-        
-        if push_to_dumps:
-            dumps[dump_id]=dump
         
         if load_data:
             if dump_file_version == 0:
@@ -154,8 +154,8 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
                     else:
                         dump['data'] = data
             elif dump_file_version == 1:
-                with gzip.GzipFile(get_absolute_path(dump_id, False), "r") as f:
-                    dump['data'] = json.loads(zlib.decompress(f.read()))
+                with gzip.GzipFile(get_absolute_path(dump_id, False,1), "r") as f:
+                    dump['data'] = json.loads(f.read())
                     if compress_data:
                         base64.b64encode(zlib.compress(json.dumps(dump['data']),9))
         return dump
