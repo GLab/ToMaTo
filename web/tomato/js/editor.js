@@ -1855,7 +1855,6 @@ var Topology = Class.extend({
 				}
 			}
 		}));
-		name.setValue(t.attrs.name);
 		var choices = {};
 		var timeout_settings = t.editor.options.timeout_settings;
 		for (var i = 0; i < timeout_settings.options.length; i++) choices[timeout_settings.options[i]] = formatDuration(timeout_settings.options[i]); 
@@ -4015,7 +4014,8 @@ var Editor = Class.extend({
 							"timeout": t.options.timeout_settings["default"]
 						}});
 					} else
-						t.topology.initialDialog();
+						if (t.topology.data.attrs._initialized!=undefined)
+							t.topology.initialDialog();
 				t.workspace.updateTopologyTitle();
 			}
 		});

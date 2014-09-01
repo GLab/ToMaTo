@@ -116,6 +116,7 @@ def create(api, request):
 	if not api.user:
 		raise AuthError()
 	info=api.topology_create()
+	api.topology_modify(info['id'],{'_initialized':False})
 	return redirect("tomato.topology.info", id=info["id"])
 
 @wrap_rpc
