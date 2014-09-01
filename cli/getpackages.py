@@ -125,8 +125,6 @@ class TestTopology:
         for i in import_res[1]:
             if i[0]==1:
                 self.el_id = i[1]
-        self.api.topology_modify(self.top_id,{'_initialized': True})
-        
 	
     def prepare(self):
 		self.api.topology_action(self.top_id,"prepare")
