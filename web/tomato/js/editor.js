@@ -919,7 +919,6 @@ var PermissionsWindow = Window.extend({
 		this.options = options;
 		this.topology = options.topology;
 		this.permissions = options.permissions;
-		console.log(this.topology);
 		
 		this.options.allowChange = this.options.isGlobalOwner;
 		
@@ -3378,6 +3377,7 @@ var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
 		this.iconSize = {x: 32, y:32};
+
 	},
 	iconUrl: function() {
 		return editor.networks.getNetworkIcon(this.data.attrs.kind);
@@ -3387,7 +3387,7 @@ var ExternalNetworkElement = IconElement.extend({
 		config.order = ["name", "kind"];
 		
 		var networkInfo = {};
-		var networks = this.editor.networks.all();
+		var networks = this.editor.networks.getAllowed();
 		
 		for (var i=0; i<networks.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
@@ -3414,7 +3414,7 @@ var ExternalNetworkElement = IconElement.extend({
 			label: "Network kind",
 			name: "kind",
 			info: networkInfo,
-			choices: createMap(this.editor.networks.all(), "kind", "label"),
+			choices: createMap(this.editor.networks.getAll(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
 		});
@@ -3477,7 +3477,7 @@ var VMElement = IconElement.extend({
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
 		
 		var profileInfo = {};
-		var profiles = this.editor.profiles.getAll(this.data.type);
+		var profiles = this.editor.profiles.getAllowed(this.data.type);
 		var profile_helptext = null;
 		if (!editor.allowRestrictedProfiles)
 			profile_helptext = 'If you need more performance, contact your administrator.';
@@ -3584,7 +3584,7 @@ var VMElement = IconElement.extend({
 			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
-			choices: createMap(this.editor.profiles.getAllowed(this.data.type), "name", "label"),
+			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile"),
 			help_text: profile_helptext
@@ -3798,7 +3798,7 @@ var DummyForCustomTemplate = Template.extend({
 
 var TemplateStore = Class.extend({
 	init: function(data,editor) {
-		this.editor = editor
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3821,6 +3821,18 @@ var TemplateStore = Class.extend({
 		for (var name in this.types[type])
 			tmpls.push(this.types[type][name]);
 		return tmpls;
+	},
+	getAllowed: function(type) {
+		var templates = this.getAll(type);
+		if (!this.editor.allowRestrictedTemplates) {
+			var templates_filtered = [];
+			for (var i = 0; i<templates.length;i++) {
+				if (!(templates[i].restricted))
+					templates_filtered.push(templates[i]);
+			}
+			templates = templates_filtered;
+		}
+		return templates;
 	},
 	get: function(type, name) {
 		if (! this.types[type]) return null;
@@ -3850,7 +3862,8 @@ var Profile = Class.extend({
 });
 
 var ProfileStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3874,17 +3887,15 @@ var ProfileStore = Class.extend({
 		return tmpls;
 	},
 	getAllowed: function(type) {
-		var profs = this.getAll(type)
-		console.log(profs);
-		if (!editor.allowRestrictedProfiles) {
+		var profs = this.getAll(type);
+		if (!this.editor.allowRestrictedProfiles) {
 			var profs_filtered = [];
 			for (var i = 0; i<profs.length;i++) {
 				if (!(profs[i].restricted))
 					profs_filtered.push(profs[i]);
-			profs = profs_filtered;
 			}
+			profs = profs_filtered;
 		}
-		console.log(profs);
 		return profs;
 	},
 	get: function(type, name) {
@@ -3894,7 +3905,9 @@ var ProfileStore = Class.extend({
 });
 
 var NetworkStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3913,13 +3926,27 @@ var NetworkStore = Class.extend({
 		 }
 		}
 	},
-	all: function() {
+	getAll: function() {
 		return this.nets;
+	},
+	getAllowed: function() {
+		var allowedNets = this.getAll()
+		if (!this.editor.allowRestrictedNetworks) {
+			var nets_filtered = [];
+			
+			for (var i = 0; i<allowedNets.length;i++) {
+				if (!(allowedNets[i].restricted)) {
+					nets_filtered.push(allowedNets[i]);
+				}
+			}
+			allowedNets = nets_filtered;
+		}
+		return allowedNets;
 	},
 	getCommon: function() {
 		var common = [];
 		for (var i = 0; i < this.nets.length; i++)
-		 if (this.nets[i].show_as_common)
+		 if (this.nets[i].show_as_common && (!this.nets[i].restricted || this.editor.allowRestrictedNetworks))
 		   common.push(this.nets[i]);
 		return common;
 	},
@@ -3942,9 +3969,11 @@ var Editor = Class.extend({
 		
 		this.allowRestrictedTemplates= false;
 		this.allowRestrictedProfiles = false;
+		this.allowRestrictedNetworks = false;
 		for (var i=0; i<this.options.user.flags.length; i++) {
 			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
 			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;
+			if (this.options.user.flags[i] == "restricted_networks") this.allowRestrictedNetworks= true;
 		}
 		
 		this.options.grid_size = this.options.grid_size || 25;
@@ -3955,9 +3984,9 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
-		this.profiles = new ProfileStore(this.options.resources);
+		this.profiles = new ProfileStore(this.options.resources,this);
 		this.templates = new TemplateStore(this.options.resources,this);
-		this.networks = new NetworkStore(this.options.resources);
+		this.networks = new NetworkStore(this.options.resources,this);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
 		
@@ -4223,10 +4252,9 @@ var Editor = Class.extend({
 		var tab = this.menu.addTab("Devices");
 
 		var group = tab.addGroup("Linux (OpenVZ)");
-		var tmpls = t.templates.getAll("openvz");
+		var tmpls = t.templates.getAllowed("openvz");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			 btns.push(tmpls[i].menuButton({
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4235,11 +4263,10 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Linux (KVM)");
-		var tmpls = t.templates.getAll("kvmqm", "linux");
+		var tmpls = t.templates.getAllowed("kvmqm", "linux");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "linux")
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			  btns.push(tmpls[i].menuButton({
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4248,11 +4275,10 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Other (KVM)");
-		var tmpls = t.templates.getAll("kvmqm");
+		var tmpls = t.templates.getAllowed("kvmqm");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "linux")
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			  btns.push(tmpls[i].menuButton({
 			  	toggleGroup: toggleGroup,
 				small: true,
@@ -4261,7 +4287,7 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Scripts (Repy)");
-		var tmpls = t.templates.getAll("repy");
+		var tmpls = t.templates.getAllowed("repy");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "device")
@@ -4342,7 +4368,7 @@ var Editor = Class.extend({
 			small: false,
 			func: this.createPositionElementFunc(this.createUploadFunc("repy"))
 		}));
-		var tmpls = t.templates.getAll("repy");
+		var tmpls = t.templates.getAllowed("repy");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "device")
@@ -4354,7 +4380,7 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Networks");
-		var common = t.networks.all();
+		var common = t.networks.getAllowed();
 		var buttonstack = [];
 		for (var i=0; i < common.length; i++) {
 			var net = common[i];
