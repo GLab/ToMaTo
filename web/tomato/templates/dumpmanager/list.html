@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+{% load tomato %}
+
+{% block title %}
+<title>Dumpmanager - G-Lab ToMaTo</title> 
+{% endblock %}
+
+{% block content %}
+<h1>Error Group list</h1>
+
+
+{% if errorgroup_list %}
+	<script src="/js/enhancetable.js"></script>	
+	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5" stddev_threshold_high="2.5">
+	{% for errorgroup in errorgroup_list %}
+	  	<tr>
+	    	<td><a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a></td>  
+	  	</tr>
+	{% endfor %}
+	</table>
+
+{% else %}
+	<p>No Dumps</p>
+{% endif %}
+
+
+{% endblock %}

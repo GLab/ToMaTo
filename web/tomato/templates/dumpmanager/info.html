@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% block title %}
+<title>Host {{host.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
+{% block content %}
+
+<h1>Errorgroup {{errorgroup.description}}</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+{% if errorgroup.dumps %}
+<table class="table">
+	<tr>
+		<th>Source</th>
+		<th>ID</th>
+		<th>Software version</th>
+		<th>Type</th>
+		<th>Description</th>	
+	</tr>
+{% for errordump in errorgroup.dumps %}
+	<tr>
+		<td>{{errordump.source}}</td>
+		<td>{{errordump.dump_id}}</td>
+		<td>{{errordump.software_version.version}}</td>
+		<td>{{errordump.type}}</td>
+		{% if errordump.type == "Exception" %}
+			<td>{{errordump.description.subject}}</td>	
+		{% else %}
+			<td>{{errordump.description}}</td>	
+		{% endif %}
+		
+		{% if errordump.data_available %}
+			<td></td>
+		{% else %}
+			<td></td>
+		{% endif %}
+	</tr>
+{% endfor %}
+
+</table>
+{% endif %}
+<div class="skip-sm"></div>
+
+{% endblock %}
