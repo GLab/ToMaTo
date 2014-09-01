@@ -310,7 +310,10 @@ def checkPermissions():
 def api_errorgroup_list():
     if checkPermissions():
         with lock_db:
-            return list(getAll_group())
+            res = []
+            for grp in getAll_group():
+                res.append(grp.info())
+            return res
 
 def api_errorgroup_modify(group_id,attrs):
     if checkPermissions():
