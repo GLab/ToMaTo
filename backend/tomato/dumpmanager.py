@@ -24,7 +24,7 @@ class ErrorGroup(models.Model):
         }
         
     def remove(self):
-        fault.check(self.dumps == [], "Group is not empty")
+        fault.check(self.dumps.all() == [], "Group is not empty")
         self.delete()
         
         
@@ -310,7 +310,7 @@ def api_errorgroup_info(group_id,include_dumps=False):
             res = group.info()
             if include_dumps:
                 res['dumps'] = []
-                for i in list(group.dumps):
+                for i in group.dumps.all():
                     res['dumps'].append(i.info())
             return res
         
