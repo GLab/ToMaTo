@@ -415,23 +415,25 @@ class PacketArchive(GetPacketArchive):
 
 
 #packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
-#template_configs: list of template configs: [{'tech','site','template'}]
-def create_archive(api,template_configs, packetlist, targetfilename):
+#template_configs: list of template configs: [{'tech','site','template','packets':[]}]
+def create_archive(api,template_configs, targetfilename):
 	#create query archive
     debugger.log('Creating query archive')
-    qarch = QueryArchive()
-    qarch.setUpgrade(True)
-    for pac in packetlist:
-		qarch.setUpgrade(False)
-		qarch.addToInstall(pac)
-    qarch.createArchive()
+    
 	
 	#get os configs for all templates
     parch = PacketArchive()
     for templ in template_configs:
-		debugger.log('querying '+templ['template'])
-		conf = qarch.getTemplateDetails(api,templ['tech'], templ['template'], templ['site'])
-		parch.addOS(conf)
+        debugger.log('querying '+templ['template'])
+        debugger.log('  creating query archive')
+        qarch = QueryArchive()
+        qarch.setUpgrade(True)
+        for pac in templ['packets']:
+            qarch.setUpgrade(False)
+            qarch.addToInstall(pac)
+        qarch.createArchive()
+        conf = qarch.getTemplateDetails(api,templ['tech'], templ['template'], templ['site'])
+        parch.addOS(conf)
     filename = parch.createArchive()
     shutil.move(filename, targetfilename)
     clear_workingdirs()
@@ -526,8 +528,8 @@ api = getConnection(options.hostname, options.port, options.ssl, options.usernam
 
 template_configs = [{'tech':'openvz',
                      'site':'ukl',
-                     'template':'debian-7.0_x86_64'
+                     'template':'debian-7.0_x86_64',
+                     'packets':['openjdk-6-jre']
                      }]
-packetlist = ['openjdk-6-jre']
-res_filename = create_archive(api, template_configs, packetlist, options.target)
+res_filename = create_archive(api, template_configs, options.target)
 print "saved file as "+res_filename
