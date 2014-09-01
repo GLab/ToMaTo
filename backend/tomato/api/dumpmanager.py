@@ -24,6 +24,10 @@ def errordump_list(group_id=None, source=None, data_available=None):
     from ..dumpmanager import api_errordump_list
     return api_errordump_list(group_id, source, data_available)
 
+def errordump_remove(source, dump_id):
+    from ..dumpmanager import remove_dump
+    remove_dump(source, dump_id)
+
 def errorgroup_info(group_id, include_dumps=False):
     from ..dumpmanager import api_errorgroup_info
     return api_errorgroup_info(group_id, include_dumps)
@@ -35,3 +39,7 @@ def errorgroup_list():
 def errorgroup_modify(group_id, attrs):
     from ..dumpmanager import api_errorgroup_modify
     return api_errorgroup_modify(group_id, attrs)
+
+def errorgroup_remove(group_id):
+    from ..dumpmanager import remove_group
+    remove_group(group_id)
