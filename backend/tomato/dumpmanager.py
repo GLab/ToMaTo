@@ -23,6 +23,11 @@ class ErrorGroup(models.Model):
             'description':self.description
         }
         
+    def remove(self):
+        fault.check(self.dumps.all() == [], "Group is not empty")
+        self.delete()
+        
+        
 def create_group(group_id):
     gr = ErrorGroup.objects.create(
         group_id=group_id,
@@ -40,6 +45,10 @@ def get_group(group_id):
     #
 def getAll_group():
     return ErrorGroup.objects.all()
+
+def remove_group(group_id):
+    grp = get_group(group_id)
+    grp.remove()
 
 
 class ErrorDump(attributes.Mixin, models.Model):
@@ -97,6 +106,9 @@ class ErrorDump(attributes.Mixin, models.Model):
         else:
             dump['data_available'] = self.data_available
         return dump
+    
+    def remove(self):
+        self.delete()
         
 def create_dump(dump,source):
     d = ErrorDump.objects.create(
@@ -119,6 +131,10 @@ def get_dump(source_name,dump_id):
 
 def getAll_dumps():
     return ErrorDump.objects.all()
+
+def remove_dump(source_name,dump_id):
+    dmp = get_dump(source_name, dump_id)
+    dmp.remove()
 
 
 
@@ -294,7 +310,7 @@ def api_errorgroup_info(group_id,include_dumps=False):
             res = group.info()
             if include_dumps:
                 res['dumps'] = []
-                for i in list(group.dumps):
+                for i in group.dumps.all():
                     res['dumps'].append(i.info())
             return res
         
@@ -323,5 +339,3 @@ def api_errordump_info(source,dump_id,include_data=False):
     if checkPermissions():
         with lock_db:
             return get_dump(source, dump_id).info(include_data = include_data)
-    
-#TODO: functionality to remove error dumps and error groups.
