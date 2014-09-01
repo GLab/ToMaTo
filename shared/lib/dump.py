@@ -157,7 +157,7 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
                 with gzip.GzipFile(get_absolute_path(dump_id, False,1), "r") as f:
                     dump['data'] = json.loads(f.read())
                     if compress_data:
-                        base64.b64encode(zlib.compress(json.dumps(dump['data']),9))
+                        dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']),9))
         return dump
 
 #remove a dump
