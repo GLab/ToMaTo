@@ -125,6 +125,7 @@ class TestTopology:
         for i in import_res[1]:
             if i[0]==1:
                 self.el_id = i[1]
+        self.api.topology_modify(self.top_id,{'_initialized': True})
         
 	
     def prepare(self):
@@ -316,6 +317,7 @@ class GetPacketArchive(object):
     def uploadAndRun(self,test_topology):
         if not self.archive_filename:
             return None
+        debugger.log("  creating topology")
         test_topology.create()
         try:
             debugger.log("  preparing topology")
@@ -328,8 +330,11 @@ class GetPacketArchive(object):
             result_raw = test_topology.getArchiveResult()
         finally:
             debugger.log("  cleaning up.")
+            debugger.log("   stopping topology.")
             test_topology.stop()
+            debugger.log("   destroying topology.")
             test_topology.destroy()
+            debugger.log("   removing topology.")
             test_topology.delete()
         return result_raw
 	
