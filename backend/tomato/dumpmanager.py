@@ -18,10 +18,27 @@ class ErrorGroup(models.Model):
         self.save()
         
     def info(self):
-        return {
+        res = {
             'group_id':self.group_id,
-            'description':self.description
+            'description':self.description,
+            'count':0,
+            'data_available':False
         }
+        
+        select_unique_values = ['software_version','source','type','description']
+        for val in select_unique_values:
+            res[val] = []
+            
+        for dump in self.dumps.all():
+            res['count'] += 1
+            dmp = dump.info()
+            if dmp['data_available']:
+                res['data_available'] = True
+            for val in select_unique_values:
+                if not dmp[val] in res[val]:
+                    res[val].append(dmp[val])
+        
+        return res
         
     def remove(self):
         fault.check(self.dumps.all() == [], "Group is not empty")
@@ -293,7 +310,10 @@ def checkPermissions():
 def api_errorgroup_list():
     if checkPermissions():
         with lock_db:
-            return list(getAll_group())
+            res = []
+            for grp in getAll_group():
+                res.append(grp.info())
+            return res
 
 def api_errorgroup_modify(group_id,attrs):
     if checkPermissions():
