@@ -339,5 +339,3 @@ def api_errordump_info(source,dump_id,include_data=False):
     if checkPermissions():
         with lock_db:
             return get_dump(source, dump_id).info(include_data = include_data)
-    
-#TODO: functionality to remove error dumps and error groups.
