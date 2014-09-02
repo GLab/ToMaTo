@@ -2092,7 +2092,10 @@ var Component = Class.extend({
 			special: {}
 		} 
 	},
-	showConfigWindow: function(showTemplate=true,callback=null) {
+	showConfigWindow: function(showTemplate,callback) {
+		
+		if(showTemplate == null) showTemplate=true;
+		
 		var absPos = this.getAbsPos();
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
