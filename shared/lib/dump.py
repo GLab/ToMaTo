@@ -1,4 +1,4 @@
-import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re, base64
+import sys, os, time, json, traceback, hashlib, zlib, threading, datetime, re, base64, gzip
 
 from .cmd import run, CommandError #@UnresolvedImport
 from .. import config, scheduler
@@ -51,12 +51,15 @@ def getCaller(self):
 #resolve a dump_id to a filename for a file inside the dumps directory
 #get the absolute path of a dump for the given filename
 #is_meta: if true, this is the filename for the meta file, if false, this is the filename for the data file
-def get_absolute_path(dump_id, is_meta):
+def get_absolute_path(dump_id, is_meta, dump_file_version=1):
     filename = None
     if is_meta:
         filename = dump_id + ".meta.json"
     else:
-        filename = dump_id + ".data.json"
+        if dump_file_version == 0:
+            filename = dump_id + ".data.json"
+        elif dump_file_version == 1:
+            filename = dump_id + ".data.gz"
     return os.path.join(config.DUMP_DIR, filename)
 
 #get a free dump ID
@@ -97,18 +100,15 @@ def save_dump(timestamp=None, caller=None, description={}, type=None, group_id=N
             "type":type,
             "group_id":type + "__" + group_id,
             'dump_id': dump_id,
-            "software_version":{"component": tomato_component, "version": tomato_version}
+            "software_version":{"component": tomato_component, "version": tomato_version},
+            "dump_file_version":1
             }
-        dump_data = {
-            "data": base64.b64encode(zlib.compress(json.dumps(data),9)),
-            "compressed": True
-            }
-        
+
         #save it (in the dumps array, and on disk)
         with open(get_absolute_path(dump_id, True), "w") as f:
     		json.dump(dump_meta, f, indent=2)
-        with open(get_absolute_path(dump_id, False), "w") as f:
-            json.dump(dump_data, f, indent=2)
+        with gzip.GzipFile(get_absolute_path(dump_id, False), "w", 9) as f:
+            f.write(json.dumps(data, indent=2))
         dumps[dump_id] = dump_meta
     
     return dump_id
@@ -125,29 +125,39 @@ def load_dump(dump_id,load_data=False,compress_data=False,push_to_dumps=False,lo
             with open(get_absolute_path(dump_id,True),"r") as f:
                 dump = json.load(f)
         elif dump_id in dumps:
-            dump = dumps[dump_id]
+            dump = dumps[dump_id].copy()
         else:
             return None
         
         if push_to_dumps:
-            dumps[dump_id]=dump
+            dumps[dump_id]=dump.copy()
+        
+        dump_file_version = 0
+        if "dump_file_version" in dump:
+            dump_file_version = dump["dump_file_version"]
+        del dump["dump_file_version"]
         
         if load_data:
-            with open(get_absolute_path(dump_id,False),"r") as f:
-                dump_data = json.load(f)
-                data = dump_data['data']
-                is_compressed = dump_data['compressed']
-            if compress_data:
-                if is_compressed:
-                    dump['data'] = data
+            if dump_file_version == 0:
+                with open(get_absolute_path(dump_id,False,0),"r") as f:
+                    dump_data = json.load(f)
+                    data = dump_data['data']
+                    is_compressed = dump_data['compressed']
+                if compress_data:
+                    if is_compressed:
+                        dump['data'] = data
+                    else:
+                        dump['data'] = base64.b64encode(zlib.compress(json.dumps(data),9))
                 else:
-                    dump['data'] = base64.b64encode(zlib.compress(json.dumps(data),9))
-            else:
-                if is_compressed:
-                    dump['data'] = json.loads(zlib.decompress(base64.b64decode(data)))
-                else:
-                    dump['data'] = data
-            
+                    if is_compressed:
+                        dump['data'] = json.loads(zlib.decompress(base64.b64decode(data)))
+                    else:
+                        dump['data'] = data
+            elif dump_file_version == 1:
+                with gzip.GzipFile(get_absolute_path(dump_id, False,1), "r") as f:
+                    dump['data'] = json.loads(f.read())
+                    if compress_data:
+                        dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']),9))
         return dump
 
 #remove a dump
