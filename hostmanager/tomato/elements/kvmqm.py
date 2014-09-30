@@ -442,6 +442,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
 	def action_rextfv_upload_use(self):
+		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		
 	def action_download_grant(self):
