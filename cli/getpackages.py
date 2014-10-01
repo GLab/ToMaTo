@@ -1,4 +1,4 @@
-import os, random, textwrap,threading, tarfile, shutil
+import os, random, textwrap,threading, tarfile, shutil, re, urllib2
 import argparse, getpass
 from time import sleep
 from lib import getConnection, upload
@@ -133,10 +133,22 @@ class TestTopology:
 		self.api.topology_action(self.top_id,"start")
 	
     def stop(self):
-		self.api.topology_action(self.top_id,"stop")
+        try:
+            self.api.topology_action(self.top_id,"stop")
+        except:
+            try:
+                self.api.topology_action(self.top_id,"stop")
+            except:
+                self.api.topology_action(self.top_id,"stop")
 	
     def destroy(self):
-		self.api.topology_action(self.top_id,"destroy")
+        try:
+            self.api.topology_action(self.top_id,"destroy")
+        except:
+            try:
+                self.api.topology_action(self.top_id,"destroy")
+            except:
+                self.api.topology_action(self.top_id,"destroy")
 	
     def delete(self):
 		self.api.topology_remove(self.top_id)
@@ -156,7 +168,6 @@ class TestTopology:
                 return None
             sleep(1)
             elinfo=self.api.element_info(self.el_id)
-        print elinfo
         return elinfo["attrs"]["rextfv_run_status"]["custom"]
 	
 	
@@ -370,7 +381,7 @@ class QueryArchive(GetPacketArchive):
 			url = re.sub("^'","",url)
 			url = re.sub("'$","",url)
 			filename = l[1]
-			urlList.append(l[0])
+			urlList.append(url)
 			order.append(filename)
 		return { 'urls':urlList, 'order':order}
 			
@@ -391,29 +402,31 @@ class QueryArchive(GetPacketArchive):
 	
 	
 class PacketArchive(GetPacketArchive):
-	configs = [] #will contain multiple results. format of entries: {'os_id','order','urls'}
+    configs = [] #will contain multiple results. format of entries: {'os_id','order','urls'}
 	
-	def __init__(self,*args,**kwargs):
-		super(PacketArchive, self).__init__(*args, **kwargs)
+    def __init__(self,filename,*args,**kwargs):
+        super(PacketArchive, self).__init__(*args, **kwargs)
+        self.archive_filename = filename
 		
-	def addOS(self,os_config):
-		self.configs.append(os_config)
+    def addOS(self,os_config):
+        self.configs.append(os_config)
 			
-	def _writeAdditionalContents(self):
-		dir = os.path.join(self.directory,"packages")
-		for conf in self.configs:
-			installorder=""
-			for i in range(len(info['order'])):
-				filename = conf['order'][i]
-				absfilename = os.path.join(packetdir,filename)
-				url = conf['urls'][i]
-				installorder = installorder + filename + "\n"
-				if not os.path.exists(absfilename):
-					with open(absfilename,'w+') as f:
-						debugger.log('Fetching '+filename)
-						response = urllib2.urlopen(url)
-						f.write(response.read())
-			self._addFileToArchive("installorder_"+pac['os_id'], installorder)
+    def _writeAdditionalContents(self):
+        packetdir = os.path.join(self.directory,"packages")
+        os.makedirs(packetdir)
+        for conf in self.configs:
+            installorder=""
+            for i in range(len(conf['order'])):
+                filename = conf['order'][i]
+                absfilename = os.path.join(packetdir,filename)
+                url = conf['urls'][i]
+                installorder = installorder + filename + "\n"
+                if not os.path.exists(absfilename):
+                    with open(absfilename,'w+') as f:
+                        debugger.log('Fetching '+filename)
+                        response = urllib2.urlopen(url)
+                        f.write(response.read())
+            self._addFileToArchive("installorder_"+conf['os_id'], installorder)
 
 
 
@@ -425,7 +438,7 @@ def create_archive(api,template_configs, targetfilename):
     
 	
 	#get os configs for all templates
-    parch = PacketArchive()
+    parch = PacketArchive(targetfilename)
     for templ in template_configs:
         debugger.log('querying '+templ['template'])
         debugger.log('  creating query archive')
@@ -438,9 +451,7 @@ def create_archive(api,template_configs, targetfilename):
         conf = qarch.getTemplateDetails(api,templ['tech'], templ['template'], templ['site'])
         parch.addOS(conf)
     filename = parch.createArchive()
-    shutil.move(filename, targetfilename)
-    clear_workingdirs()
-    return targetfilename
+    return filename
 
 
 
