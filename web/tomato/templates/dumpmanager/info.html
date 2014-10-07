@@ -22,6 +22,7 @@
 		<th>Software version</th>
 		<th>Type</th>
 		<th>Description</th>	
+		<th>Timestamp</th>
 	</tr>
 {% for errordump in errorgroup.dumps %}
 	<tr>
@@ -34,7 +35,7 @@
 		{% else %}
 			<td>{{errordump.description}}</td>	
 		{% endif %}
-		
+		<td>{{errordump.timestamp|todate}}</td>
 		{% if errordump.data_available %}
 			<td></td>
 		{% else %}
@@ -47,4 +48,10 @@
 {% endif %}
 <div class="skip-sm"></div>
 
+{% if request.session.user.isGlobalHostManager %}
+<form>
+  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.remove" errorgroup.group_id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
+</form>
+{%endif%}
 {% endblock %}

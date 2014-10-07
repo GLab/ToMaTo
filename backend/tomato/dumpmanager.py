@@ -22,12 +22,13 @@ class ErrorGroup(models.Model):
             'group_id':self.group_id,
             'description':self.description,
             'count':0,
-            'data_available':False
+            'data_available':False,
+            'dump_contents':{}
         }
         
         select_unique_values = ['software_version','source','type','description']
         for val in select_unique_values:
-            res[val] = []
+            res['dump_contents'][val] = []
             
         for dump in self.dumps.all():
             res['count'] += 1
@@ -35,13 +36,13 @@ class ErrorGroup(models.Model):
             if dmp['data_available']:
                 res['data_available'] = True
             for val in select_unique_values:
-                if not dmp[val] in res[val]:
-                    res[val].append(dmp[val])
+                if not dmp[val] in res['dump_contents'][val]:
+                    res['dump_contents'][val].append(dmp[val])
         
         return res
         
     def remove(self):
-        fault.check(self.dumps.all() == [], "Group is not empty")
+        fault.check(list(self.dumps.all()) == [], "Group is not empty")
         self.delete()
         
         

@@ -27,39 +27,22 @@ from admin_common import BootstrapForm, RemoveConfirmForm, Buttons, append_empty
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
-class HostForm(BootstrapForm):
-	name = forms.CharField(max_length=255,help_text="The host's name. This is also its unique id.")
-	address = forms.CharField(max_length=255,help_text="The host's IP address.")
-	site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
-	enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
-	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
+class ErrorGroupForm(BootstrapForm):
+	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.")
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
-		super(HostForm, self).__init__(*args, **kwargs)
-		self.fields["site"].widget = forms.widgets.Select(choices=append_empty_choice(site_name_list(api)))
-		self.helper.form_action = reverse(add)
+		super(ErrorGroupForm, self).__init__(*args, **kwargs)
 		self.helper.layout = Layout(
-			'name',
-			'address',
-			'site',
-			'enabled',
-			'description_text',
+			'description',
 			self.buttons
 		)
 	
-class EditHostForm(HostForm):
+class EditErrorGroupForm(ErrorGroupForm):
 	buttons = Buttons.cancel_save
-	def __init__(self, api, name, *args, **kwargs):
-		super(EditHostForm, self).__init__(api, *args, **kwargs)
-		self.helper.form_action = reverse(edit, kwargs={"name": name})
-		
-def site_name_list(api):
-	l = api.site_list()
-	res = []
-	for site in l:
-		res.append((site["name"],site["description"] or site["name"]))
-	res.sort()
-	return res
+	def __init__(self, api, group_id, *args, **kwargs):
+		super(EditErrorGroupForm, self).__init__(api, *args, **kwargs)
+		self.helper.form_action = reverse(group_edit, kwargs={"group_id": group_id})
+	
 
 @wrap_rpc
 def group_list(api, request, site=None, organization=None):	
@@ -76,65 +59,38 @@ def dump_info(api, request, id):
 	errordump = api.errordump_info(id,False)
 	return render(request, "dumpmanager/info.html", {'errordump': errordump})
 
-
 @wrap_rpc
-def add(api, request, site=None):
-	message_after = '<h2>Public key</h2>	The public key of this backend is:	<pre><tt>'+serverInfo()['public_key']+'</tt></pre>'
-	if request.method == 'POST':
-		form = HostForm(api, request.POST)
-		if form.is_valid():
-			formData = form.cleaned_data
-			api.host_create(formData["name"], formData["site"], {"address": formData["address"], "enabled": formData["enabled"],'description_text':formData['description_text']})
-			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"name": formData["name"]}))
-		else:
-			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
-	else:
-		form = HostForm(api)
-		if api.site_list():
-			if site:
-				form.fields['site'].initial=site
-			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
-		else:
-			return render(request, "main/error.html",{'type':'No site available','text':'You need a site first before you can add hosts.'})
-
-@wrap_rpc
-def remove(api, request, name=None):
+def remove(api, request, group_id):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
-			api.host_remove(name)
+			errordumps = api.errordump_list(group_id)
+			for dump in errordumps:
+				api.errordump_remove(dump['source'],dump['dump_id'])
+			api.errorgroup_remove(group_id)
 			return HttpResponseRedirect(reverse("host_list"))
-	form = RemoveConfirmForm.build(reverse("tomato.host.remove", kwargs={"name": name}))
-	return render(request, "form.html", {"heading": "Remove Host", "message_before": "Are you sure you want to remove the host '"+name+"'?", 'form': form})
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.remove", kwargs={"group_id": group_id}))
+	return render(request, "form.html", {"heading": "Remove Errogroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_id+"'?", 'form': form})
 
 @wrap_rpc
-def edit(api, request, name=None):
+def group_edit(api, request, group_id):
 	if request.method=='POST':
-		form = EditHostForm(api, name, request.POST)
+		form = ErrorGroupForm(api, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.host_modify(name,{"name": formData["name"], "address": formData["address"], 'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
-			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"name": formData["name"]}))
+			api.errorgroup_modify(group_id,{"description": formData["description"]})
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info", kwargs={"group_id": group_id}))
 		else:
-			if not name:
-				name=request.POST["name"]
-			if name:
-				return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
+			if not group_id:
+				group_id=request.POST["group_id"]
+			if group_id:
+				return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 			else:
 				return render(request, "main/error.html",{'type':'Transmission Error','text':'There was a problem transmitting your data.'})
 	else:
-		if name:
-			hostinfo=api.host_info(name)
-			form = EditHostForm(api, name, hostinfo)
-			form.fields["site"].initial = hostinfo["site"]
-			form.fields["enabled"].initial = hostinfo["enabled"]
-			return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
+		if group_id:
+			errorgroupinfo=api.errorgroup_info(group_id,False)
+			form = EditErrorGroupForm(api, group_id, errorgroupinfo)
+			return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
-
-@wrap_rpc
-def usage(api, request, name): #@ReservedAssignment
-	if not api.user:
-		raise AuthError()
-	usage=api.host_usage(name)
-	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})

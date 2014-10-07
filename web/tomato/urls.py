@@ -145,4 +145,6 @@ urlpatterns = patterns('',
 	(r'^debug/connection/(?P<id>\d+)$', 'tomato.debug.connection'),
     (r'^dumpmanager/$',  'tomato.dumpmanager.group_list'),
     (r'^dumpmanager/group/(?P<group_id>\w+)$', 'tomato.dumpmanager.group_info'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/edit$', 'tomato.dumpmanager.group_edit'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/remove$', 'tomato.dumpmanager.remove'),
 )
