@@ -131,12 +131,12 @@ def create_dump(dump,source):
     d = ErrorDump.objects.create(
         source=source.dump_source_name(),
         dump_id=dump['dump_id'],
-        group_id=dump['group_id'],
-        description=dump['description'],
-        type=dump['type'],
-        software_version=dump['software_version'],
-        timestamp=dump['timestamp']
+        group_id=dump['group_id']
       )
+    d.timestamp=dump['timestamp']
+    d.description=dump['description']
+    d.type=dump['type']
+    d.software_version=dump['software_version']
     d.save()
     return d
 
