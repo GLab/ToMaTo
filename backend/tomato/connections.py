@@ -266,6 +266,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.
 		removeLock(self)
 			
 	def _removeLocked(self):
+		try:
+			self.reload()
+		except Connection.DoesNotExist:
+			return
 		self.checkRemove()
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)		
