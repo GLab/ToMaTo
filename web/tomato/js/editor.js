@@ -234,6 +234,7 @@ var TextElement = FormElement.extend({
 		if (options.disabled) this.textfield.attr({disabled: true});
 		if (options.onChangeFct) {
 			this.textfield.change(options.onChangeFct);
+			this.textfield.keypress(options.onChangeFct);
 		}
 		var t = this;
 		this.textfield.change(function() {
