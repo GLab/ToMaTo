@@ -2680,6 +2680,7 @@ var Element = Component.extend({
 		var usedMajors = {};
 		for (var i=0; i < seg.elements.length; i++) {
 			var el = this.topology.elements[seg.elements[i]];
+			if (!el || !el.data) continue; //Element is being created
 			if (el.data.type == "external_network_endpoint") return "dhcp";
 			var addr = el.getUsedAddress();
 			if (! addr) continue;
@@ -2703,6 +2704,7 @@ var Element = Component.extend({
 				var seg = segs[i];
 				for (var j=0; j < seg.elements.length; j++) {
 					var el = this.topology.elements[seg.elements[j]];
+					if (!el || !el.data) continue; //Element is being created
 					var addr = el.getUsedAddress();
 					if (! addr || addr == "dhcp") continue;
 					usedMajors[addr[0]] = (usedMajors[addr[0]] || 0) + 1; 
@@ -2717,6 +2719,7 @@ var Element = Component.extend({
 			var usedMinors = {};
 			for (var j=0; j < seg.elements.length; j++) {
 				var el = this.topology.elements[seg.elements[j]];
+				if (!el || !el.data) continue; //Element is being created
 				var addr = el.getUsedAddress();
 				if (! addr || addr == "dhcp") continue;
 				if (addr[0] == major) usedMinors[addr[1]] = (usedMinors[addr[1]] || 0) + 1; 
