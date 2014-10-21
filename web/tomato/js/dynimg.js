@@ -34,13 +34,7 @@ function dynimg(size,objtype,arg1,arg2) {
 	for networks:  objtype==network  arg1:kind  arg2:null   
 	for vpns:	   objtype==vpn  arg1:kind  arg2:null
 	*/
-	
-	var special_templates = ['floodlight'];
-	var special_networks = ["openflow"];
-	
-	
-	
-	
+
 	//templates
 	if (objtype=="openvz" || objtype=="kvmqm" || objtype=="repy") {
 		var subtype=arg1;
@@ -48,16 +42,7 @@ function dynimg(size,objtype,arg1,arg2) {
 		
 		//non-(repy-network) templates
 		if (objtype!="repy" || subtype=="device") {
-			var found_templ = false;
 			if (template_name!=null) {
-				for(var i=0; i<special_templates.length; i++) {
-					if (template_name.indexOf(special_templates[i])>-1) {
-						found_templ = true;
-						template_name=special_templates[i];
-					}
-				}
-			}
-			if (found_templ) { //if this is a known template, check whether a fitting file exists and return it if yes.
 				var filename=objtype+"_"+template_name+size+".png";
 				if (dynimg_imgExists(filename)) {
 					return "/img/"+filename;
@@ -82,24 +67,15 @@ function dynimg(size,objtype,arg1,arg2) {
 		}
 	}
 	
-	
+
 	
 	
 	//networks or vpns
 	if (objtype=="network" || objtype=="vpn") {
 		var kind=arg1;
-		var found_kind = false;
-		for(var i=0; i<special_networks.length; i++) {
-			if (kind.indexOf(special_networks[i])>0) {
-				fount_templ = true;
-				template_name=special_networks[i];
-			}
-		}
-		if (found_kind) {
-			var filename=kind+size+".png"
-			if (dynimg_imgExists(filename)) {
-				return "/img/"+filename;
-			}
+		var filename=kind+size+".png"
+		if (dynimg_imgExists(filename)) {
+			return "/img/"+filename;
 		}
 		var filename = objtype+size+".png";
 		if (dynimg_imgExists(filename)) {
