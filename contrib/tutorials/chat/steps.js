@@ -495,7 +495,7 @@ In this part we will open our topology to the Internet.</p>',
 		text: '<p class="tutorialExplanation">Select the Internet from the menu and add it to the topology. In the attribute window you can select the type of external network that you want but Internet is the default.<br/>\
 This external network is an opening of your topology. Whatever is connected to this element is connected to that network, i.e. to the Internet in our case.</p>\
 <p class="tutorialCommand">Add an <i>Internet</i> external network to your topology</p>',
-		help_page: 'NetworkTypes'
+		help_page: 'NetworkTypes',
 		trigger: function(event) {
 			return compareToMask(event, {
 				operation: "create",
