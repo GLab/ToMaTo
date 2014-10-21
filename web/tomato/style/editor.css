@@ -91,19 +91,19 @@ div.windowHelp {
 }
 
 .tomato.workspace.mode_connect .tomato, .tomato.workspace.mode_connect_once .tomato {
-	cursor: url(../img/cursor_invalid.png);
+	cursor: url(../img/cursor_invalid.png), pointer;
 }
 
 .tomato.workspace.mode_connect .tomato.connectable, .tomato.workspace.mode_connect_once .tomato.connectable {
-	cursor: url(../img/cursor_connect.png);
+	cursor: url(../img/cursor_connect.png), crosshair;
 }
 
 .tomato.workspace.mode_remove .tomato {
-	cursor: url(../img/cursor_invalid.png);
+	cursor: url(../img/cursor_invalid.png), pointer;
 }
 
 .tomato.workspace.mode_remove .tomato.removable {
-	cursor: url(../img/cursor_remove.png);
+	cursor: url(../img/cursor_remove.png), crosshair;
 }
 
 .form-element.invalid {
