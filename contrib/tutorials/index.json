@@ -42,9 +42,9 @@
     "icon": "templates_images/icon.png"
   }, 
   {
-    "url":   "openflow/tutorial.json",
+    "url":   "openflow_ryu/tutorial.json",
     "name": "OpenFlow",
     "desc": "Learn how to use software OpenFlow switches in your topology.",
-    "icon": "openflow/icon.png"
+    "icon": "openflow_ryu/icon.png"
   }
 ]
