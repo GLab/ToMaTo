@@ -168,9 +168,12 @@ class DumpSource:
     #fetches all dumps from the source, which were thrown after *after*.
     #after is a float and will be used unchanged.
     #if this throws an exception, the fetching is assumed to have been unsuccessful.
-    def dumps_fetch_list(self,after):
+    def dump_fetch_list(self,after):
         return None
-    
+
+    def dump_get_last_fetch(self):
+        return None
+
     #to be implemented in subclass
     #fetches all data about the given dump.
     #if this throws an exception, the fetching is assumed to have been unsuccessful.

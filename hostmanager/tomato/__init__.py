@@ -53,7 +53,6 @@ def login(commonName):
 	setCurrentUser(user)
 	return bool(commonName)
 
-from . import dump
 from lib import logging, error
 def handleError():
 	dump.dumpException()
@@ -66,7 +65,7 @@ from models import *
 	
 import api
 
-from . import lib, resources, accounting, rpcserver, elements, firewall #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver, elements, firewall, dump #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import util #@UnresolvedImport
 

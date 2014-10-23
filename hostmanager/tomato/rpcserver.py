@@ -19,26 +19,30 @@
 
 import xmlrpclib, sys, traceback
 
-from . import config, login, api, handleError
+from . import config, login, api, handleError as handleCurrentError
 from . import dump, currentUser
-from .lib import db, util, rpc, logging #@UnresolvedImport
+from .lib import db, util, rpc, logging  # @UnresolvedImport
 from .lib.error import Error, InternalError
 from .lib.rpc.sslrpc import RPCError
 
+
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name)
+
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
 	if not isinstance(error, Error):
 		error = InternalError.wrap(error)
 	if isinstance(error, InternalError):
-		handleError()
-	return RPCError(None, category=RPCError.Category.CALL, type="call_error", message="", data=error.raw)
+		handleCurrentError()
+	return error
+
 
 @db.commit_after
 def afterCall(*args, **kwargs):
 	pass
+
 
 def runServer(server):
 	try:
@@ -46,17 +50,25 @@ def runServer(server):
 	except KeyboardInterrupt:
 		pass
 
+
 servers = []
 
+
 def start():
-	print >>sys.stderr, "Starting RPC servers"
+	print >> sys.stderr, "Starting RPC servers"
 	for settings in config.SERVER:
 		server_address = ('', settings["PORT"])
-		sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=settings["SSL_OPTS"]["client_certs"])
-		server = rpc.runServer(type=settings.get("TYPE", "https+xmlrpc"), address=server_address, sslOpts=sslOpts, certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError, api=api)
-		print >>sys.stderr, " - %s %s:%d" % (settings.get("TYPE", "https+xmlrpc"), server_address[0], server_address[1])
+		sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"],
+							  certificate=settings["SSL_OPTS"]["cert_file"],
+							  client_certs=settings["SSL_OPTS"]["client_certs"])
+		server = rpc.runServer(type=settings.get("TYPE", "https+xmlrpc"), address=server_address, sslOpts=sslOpts,
+							   certCheck=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError,
+							   api=api)
+		print >> sys.stderr, " - %s %s:%d" % (
+		settings.get("TYPE", "https+xmlrpc"), server_address[0], server_address[1])
 		servers.append(server)
-		
+
+
 def stop():
 	for server in servers:
 		server.shutdown()

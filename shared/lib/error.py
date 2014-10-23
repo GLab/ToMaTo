@@ -83,3 +83,4 @@ class TransportError(Error):
 	UNAUTHORIZED = "unauthorized"
 	SSL = "ssl"
 	CONNECT = "connect"
+	RPC = "rpc"

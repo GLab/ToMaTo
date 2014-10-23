@@ -23,7 +23,7 @@ from lib.cache import cached  # @UnresolvedImport
 from lib.error import TransportError, InternalError, UserError, Error
 from auth import Flags
 from dumpmanager import DumpSource
-import xmlrpclib, time, hashlib, threading, datetime, json, zlib, base64
+import time, hashlib, threading, datetime, json, zlib, base64, sys
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -35,50 +35,34 @@ class RemoteWrapper:
 
 	def __getattr__(self, name):
 		def call(*args, **kwargs):
-			if not self._proxy:
-				self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
-			try:
-				return getattr(self._proxy, name)(*args, **kwargs)
-			except TransportError:
-				self._proxy = None
-				raise
-			except Exception, exc:
-				import traceback
-				traceback.print_exc()
-				raise _convertError(exc, self._host)
+			retries = 3
+			while True:
+				retries -= 1
+				if not self._proxy or not rpc.isReusable(self._proxy):
+					self._proxy = rpc.createProxy(self._url, *self._args, **self._kwargs)
+				try:
+					return getattr(self._proxy, name)(*args, **kwargs)
+				except Error, err:
+					if isinstance(err, TransportError):
+						self._proxy = None
+						if retries:
+							print "Retrying after error on %s: %s" % (self._host, err)
+							continue
+						if not err.data:
+							err.data = {}
+						err.data["host"] = self._host
+					raise
+				except Exception, exc:
+					print "Warning: received unwrapped error:"
+					import traceback
+					traceback.print_exc()
+					raise InternalError(code=InternalError.UNKNOWN, message=repr(exc), module="hostmanager",
+							data={"host": self._host}), None, sys.exc_info()[2]
 		return call
+
 
 _caching = True
 _proxies = {}
-
-def _convertError(err, host):
-	from lib.rpc.sslrpc import RPCError
-	if isinstance(err, RPCError):
-		if err.category == RPCError.Category.CALL:
-			e = Error.parse(err.data)
-			e.data["host"] = host
-			return e
-		else:
-			return TransportError(code="%s.%s" % (err.category, err.type), message=err.message, data=err.data)
-	from xmlrpclib import Fault
-	if isinstance(err, Fault):
-		if err.faultCode == 300:
-			return TransportError(code=TransportError.UNAUTHORIZED, module="hostmanager", data={"host": host})
-		elif err.faultCode == 500:
-			return InternalError(code=InternalError.UNKNOWN, message=err.faultString, module="hostmanager", data={"host": host})
-		elif err.faultCode == 401:
-			return UserError(code=UserError.INVALID_STATE, message=err.faultString, module="hostmanager", data={"host": host})
-		elif err.faultCode == 402:
-			return UserError(code=UserError.ENTITY_DOES_NOT_EXIST, message=err.faultString, module="hostmanager", data={"host": host})
-		elif err.faultCode == 403:
-			return UserError(code=UserError.UNSUPPORTED_ACTION, message=err.faultString, module="hostmanager", data={"host": host})
-		elif err.faultCode == 404:
-			return UserError(code=UserError.ENTITY_BUSY, message=err.faultString, module="hostmanager", data={"host": host})
-		elif err.faultCode == 400:
-			return UserError(code=UserError.UNKNOWN, message=err.faultString, module="hostmanager", data={"host": host})
-		else:
-			return InternalError(code=InternalError.UNKNOWN, message=err.faultString, module="hostmanager", data={"host": host})
-	return err
 
 
 def stopCaching():
@@ -86,6 +70,7 @@ def stopCaching():
 	_proxies = {}
 	global _caching
 	_caching = False
+
 
 class Organization(attributes.Mixin, models.Model):
 	name = models.CharField(max_length=50, unique=True)
@@ -95,16 +80,16 @@ class Organization(attributes.Mixin, models.Model):
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
 	image_url = attributes.attribute("image_url", unicode, "")
 	description_text = attributes.attribute("description_text", unicode, "")
-	#sites: [Site]
-	#users: [User]
+	# sites: [Site]
+	# users: [User]
 
 	class Meta:
 		pass
-	
+
 	def init(self, attrs):
 		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
-		
+
 	def checkPermissions(self):
 		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
@@ -128,7 +113,7 @@ class Organization(attributes.Mixin, models.Model):
 			else:
 				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
 		self.save()
-		
+
 	def remove(self):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		fault.check(not self.sites.all(), "Organization still has sites")
@@ -136,7 +121,7 @@ class Organization(attributes.Mixin, models.Model):
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.totalUsage.remove()
 		self.delete()
-		
+
 	def updateUsage(self):
 		self.totalUsage.updateFrom([user.totalUsage for user in self.users.all()])
 
@@ -271,7 +256,6 @@ def createSite(name, organization, description=""):
 	return site
 
 
-
 class Host(attributes.Mixin, DumpSource, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=False)
@@ -315,7 +299,8 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		if not _caching:
 			return RemoteWrapper(self.rpcurl, self.name, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
 		if not self.rpcurl in _proxies:
-			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=config.CERTIFICATE, timeout=config.RPC_TIMEOUT)
+			_proxies[self.rpcurl] = RemoteWrapper(self.rpcurl, self.name, sslcert=config.CERTIFICATE,
+												  timeout=config.RPC_TIMEOUT)
 		return _proxies[self.rpcurl]
 
 	def incrementErrors(self):
@@ -368,7 +353,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		assert not parent or parent.host == self
 		try:
 			el = self.getProxy().element_create(type_, parent.num if parent else None, attrs)
-		except:
+		except error.Error:
 			self.incrementErrors()
 			raise
 		hel = HostElement(host=self, num=el["id"], topology_element=ownerElement, topology_connection=ownerConnection)
@@ -379,7 +364,8 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 						   ownerElement=(
 							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
 						   ownerConnection=(
-							   ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)
+							   ownerConnection.__class__.__name__.lower(),
+							   ownerConnection.id) if ownerConnection else None)
 		return hel
 
 	def getElement(self, num):
@@ -394,7 +380,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 			con = self.getProxy().connection_create(hel1.num, hel2.num, type_, attrs)
 		except error.Error:
 			self.incrementErrors()
-			raise error.InternalError(code="host_error", message="Failed to create connection", data={"host": self.name}, module="hostmanager")
+			raise
 		hcon = HostConnection(host=self, num=con["id"], topology_element=ownerElement,
 							  topology_connection=ownerConnection)
 		hcon.usageStatistics = UsageStatistics.objects.create()
@@ -404,7 +390,8 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 						   ownerElement=(
 							   ownerElement.__class__.__name__.lower(), ownerElement.id) if ownerElement else None,
 						   ownerConnection=(
-							   ownerConnection.__class__.__name__.lower(), ownerConnection.id) if ownerConnection else None)
+							   ownerConnection.__class__.__name__.lower(),
+							   ownerConnection.id) if ownerConnection else None)
 		return hcon
 
 	def getConnection(self, num):
@@ -419,9 +406,11 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		if not self.enabled:
 			return
 		from models import TemplateOnHost
+
 		logging.logMessage("resource_sync begin", category="host", name=self.name)
 		# TODO: implement for other resources
 		from . import resources
+
 		hostNets = {}
 		for net in self.getProxy().resource_list("network"):
 			hostNets[net["attrs"]["bridge"]] = net
@@ -432,13 +421,13 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 			attrs["kind"] = net.getKind()
 			attrs["preference"] = net.network.preference
 			if not key in hostNets:
-				#create resource
+				# create resource
 				self.getProxy().resource_create("network", attrs)
 				logging.logMessage("network create", category="host", name=self.name, network=attrs)
 			else:
 				hNet = hostNets[key]
 				if hNet["attrs"] != attrs:
-					#update resource
+					# update resource
 					self.getProxy().resource_modify(hNet["id"], attrs)
 					logging.logMessage("network update", category="host", name=self.name, network=attrs)
 		tpls = {}
@@ -454,7 +443,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 			except TemplateOnHost.DoesNotExist:
 				toh = TemplateOnHost.objects.create(host=self, template=tpl, ready=False, date=time.time())
 			if not attrs["tech"] in tpls or not attrs["name"] in tpls[attrs["tech"]]:
-				#create resource
+				# create resource
 				self.getProxy().resource_create("template", attrs)
 				logging.logMessage("template create", category="host", name=self.name, template=attrs)
 				toh.ready = False
@@ -474,9 +463,9 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 					attrs["torrent_data"]).hexdigest() if "torrent_data" in attrs else None
 				del shouldAttrs["torrent_data"]
 				if isAttrs != shouldAttrs:
-					#update resource
+					# update resource
 					if isAttrs["torrent_data_hash"] == shouldAttrs["torrent_data_hash"]:
-						#only send torrent data when needed
+						# only send torrent data when needed
 						del attrs["torrent_data"]
 					else:
 						toh.ready = False
@@ -535,6 +524,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 
 	def getTopologyElements(self):
 		from elements import Element
+
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 
 	def getUsers(self):
@@ -636,6 +626,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 
 	def checkProblems(self):
 		from auth import mailFilteredUsers
+
 		problems = self.problems()
 		if problems and not self.problemAge:
 			# a brand new problem, wait until it is stable
@@ -662,6 +653,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					self.problemMailTime = time.time()
 					from django.template.defaultfilters import timesince
+
 					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 												   or user.hasFlag(
@@ -713,18 +705,19 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 
 	def __repr__(self):
 		return "Host(%s)" % self.name
-	
-	def dump_fetch_list(self,after): #TODO: return None if unreachable
-		return self.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
 
-	def dump_fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
-		dump = self.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
+	def dump_fetch_list(self, after):  # TODO: return None if unreachable
+		return self.getProxy().dump_list(after=after, list_only=False, include_data=False, compress_data=True)
+
+	def dump_fetch_with_data(self, dump_id, keep_compressed=True):
+		# TODO: return None if unreachable, return dummy if it does not exist
+		dump = self.getProxy().dump_info(dump_id, include_data=True, compress_data=True)
 		if not keep_compressed:
 			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
 		return dump
 
 	def dump_clock_offset(self):
-		return max(0,-self.hostInfo['time_diff'])
+		return max(0, -self.hostInfo['time_diff'])
 
 	def dump_source_name(self):
 		return "host:%s" % self.info()['name']
@@ -732,13 +725,12 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 	def dump_matches_host(self, host_obj):
 		return host_obj.dump_source_name() == self.dump_source_name()
 
-	def dump_set_last_fetch(self,last_fetch):
+	def dump_set_last_fetch(self, last_fetch):
 		self.dump_last_fetch = last_fetch
 		self.save()
-		
+
 	def dump_get_last_fetch(self):
 		return self.dump_last_fetch
-
 
 
 class HostElement(attributes.Mixin, models.Model):
@@ -755,10 +747,12 @@ class HostElement(attributes.Mixin, models.Model):
 	class Meta:
 		unique_together = (("host", "num"),)
 
-	def createChild(self, type_, attrs={}, ownerConnection=None, ownerElement=None):
+	def createChild(self, type_, attrs=None, ownerConnection=None, ownerElement=None):
+		if not attrs: attrs = {}
 		return self.host.createElement(type_, self, attrs, ownerConnection=ownerConnection, ownerElement=ownerElement)
 
-	def connectWith(self, hel, type_=None, attrs={}, ownerConnection=None, ownerElement=None):
+	def connectWith(self, hel, type_=None, attrs=None, ownerConnection=None, ownerElement=None):
+		if not attrs: attrs = {}
 		return self.host.createConnection(self, hel, type_, attrs, ownerConnection=ownerConnection,
 										  ownerElement=ownerElement)
 
@@ -779,7 +773,8 @@ class HostElement(attributes.Mixin, models.Model):
 		logging.logMessage("element_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
 		self.save()
 
-	def action(self, action, params={}):
+	def action(self, action, params=None):
+		if not params: params = {}
 		logging.logMessage("element_action begin", category="host", host=self.host.name, id=self.num, action=action,
 						   params=params)
 		try:
@@ -900,7 +895,8 @@ class HostConnection(attributes.Mixin, models.Model):
 		logging.logMessage("connection_info", category="host", host=self.host.name, id=self.num, info=self.attrs)
 		self.save()
 
-	def action(self, action, params={}):
+	def action(self, action, params=None):
+		if not params: params = {}
 		logging.logMessage("connection_action begin", category="host", host=self.host.name, id=self.num, action=action,
 						   params=params)
 		try:
@@ -993,7 +989,8 @@ def getAll(**kwargs):
 	return list(Host.objects.filter(**kwargs))
 
 
-def create(name, site, attrs={}):
+def create(name, site, attrs=None):
+	if not attrs: attrs = {}
 	user = currentUser()
 	fault.check(user.hasFlag(Flags.GlobalHostManager)
 				or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
@@ -1005,8 +1002,13 @@ def create(name, site, attrs={}):
 	return host
 
 
-def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], hostPrefs={}, sitePrefs={}):
+def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None, hostPrefs=None, sitePrefs=None):
 	# STEP 1: limit host choices to what is possible
+	if not sitePrefs: sitePrefs = {}
+	if not hostPrefs: hostPrefs = {}
+	if not networkKinds: networkKinds = []
+	if not connectionTypes: connectionTypes = []
+	if not elementTypes: elementTypes = []
 	all_ = getAll(site=site) if site else getAll()
 	hosts = []
 	for host in all_:
@@ -1022,23 +1024,23 @@ def select(site=None, elementTypes=[], connectionTypes=[], networkKinds=[], host
 	fault.check(hosts, "No hosts found for requirements")
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])
-	#STEP 2: calculate preferences based on host load
+	# STEP 2: calculate preferences based on host load
 	els = 0.0
 	cons = 0.0
 	for h in hosts:
-		prefs[h] -= h.componentErrors * 25  #discourage hosts with previous errors
-		prefs[h] -= h.getLoad() * 100  #up to -100 points for load
+		prefs[h] -= h.componentErrors * 25  # discourage hosts with previous errors
+		prefs[h] -= h.getLoad() * 100  # up to -100 points for load
 		els += h.elements.count()
 		cons += h.connections.count()
 	avgEls = els / len(hosts)
 	avgCons = cons / len(hosts)
 	for h in hosts:
-		#between -30 and +30 points for element/connection over-/under-population
+		# between -30 and +30 points for element/connection over-/under-population
 		if avgEls:
 			prefs[h] -= max(-20.0, min(10.0 * (h.elements.count() - avgEls) / avgEls, 20.0))
 		if avgCons:
 			prefs[h] -= max(-10.0, min(10.0 * (h.connections.count() - avgCons) / avgCons, 10.0))
-	#STEP 3: calculate preferences based on host location
+		# STEP 3: calculate preferences based on host location
 	for h in hosts:
 		if h in hostPrefs:
 			prefs[h] += hostPrefs[h]
@@ -1111,6 +1113,7 @@ def synchronizeHost(host):
 			host.updateAccountingData()
 		except:
 			import traceback
+
 			traceback.print_exc()
 			logging.logException(host=host.name)
 			print "Error updating information from %s" % host

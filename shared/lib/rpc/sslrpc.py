@@ -1,22 +1,26 @@
-import ssl, socket, SocketServer, inspect, threading, thread
+import ssl, socket, SocketServer, inspect, threading, thread, sys
+from ..error import TransportError
 
 JSON = False
 try:
 	if not JSON:
 		import simplejson as json
+
 		JSON = json.__name__
 except ImportError:
 	pass
 try:
 	if not JSON:
 		import ujson as json
+
 		JSON = json.__name__
 except ImportError:
 	pass
 if not JSON:
 	import json
+
 	JSON = json.__name__
-#print "Using %s" % JSON
+# print "Using %s" % JSON
 
 
 class SSLServer(SocketServer.TCPServer):
@@ -44,6 +48,7 @@ class SSLServer(SocketServer.TCPServer):
 
 	def on_ssl_error(self, error):
 		import traceback
+
 		traceback.print_exc(error)
 
 	def shutdown(self):
@@ -178,7 +183,9 @@ class RPCError(Exception):
 
 
 class RPCRequest:
-	def __init__(self, id, method, args=[], kwargs={}):
+	def __init__(self, id, method, args=None, kwargs=None):
+		if not kwargs: kwargs = {}
+		if not args: args = []
 		self.id = id
 		self.method = method
 		self.args = args
@@ -276,9 +283,6 @@ class RPCResponse:
 		if data["type"] != "response":
 			raise RPCError(id, RPCError.Category.FORMAT, "invalid_type",
 						   "Field 'type' of responses must be set to 'response'")
-		if not "error" in data and not "result" in data:
-			raise RPCError(id, RPCError.Category.FORMAT, "missing_result_or_error",
-						   "Missing field in response: result or error")
 		if "error" in data and "result" in data:
 			raise RPCError(id, RPCError.Category.FORMAT, "result_and_error",
 						   "Response must either specify result or error, not both")
@@ -286,10 +290,13 @@ class RPCResponse:
 			result = None
 			hasResult = False
 			error = RPCError.decode(data["error"], id)
-		if "result" in data:
+		elif "result" in data:
 			error = None
 			result = data["result"]
 			hasResult = True
+		else:
+			raise RPCError(id, RPCError.Category.FORMAT, "missing_result_or_error",
+						   "Missing field in response: result or error")
 		return cls(id, result=result, hasResult=hasResult, error=error)
 
 	def encode(self):
@@ -414,10 +421,11 @@ class RPCServer(SocketServer.ThreadingMixIn, SSLServer):
 class RPCHandler(SocketServer.StreamRequestHandler):
 	def __init__(self, *args, **kwargs):
 		self._wlock = threading.RLock()
+		self.failed = False
 		SocketServer.StreamRequestHandler.__init__(self, *args, **kwargs)
 
 	def handle(self):
-		while self.server.running:
+		while self.server.running and not self.failed:
 			request_line = self.readLine()
 			if not request_line:
 				break
@@ -444,16 +452,16 @@ class RPCHandler(SocketServer.StreamRequestHandler):
 		except RPCError, err:
 			self.writeLine(RPCResponse(error=err).encode())
 		except Exception, exc:
-			import traceback
-
-			traceback.print_exc()
 			err = RPCError(
 				id=request.id if request else request_line,
 				category=RPCError.Category.UNKNOWN,
 				type=type(exc).__name__,
 				message=str(exc)
 			)
-			self.writeLine(RPCResponse(error=err).encode())
+			try:
+				self.writeLine(RPCResponse(error=err).encode())
+			except:
+				self.failed = True
 
 	def readLine(self):
 		line = self.rfile.readline()
@@ -475,7 +483,8 @@ class RPCProxy:
 		try:
 			self._con = SSLConnection(address, **args)
 		except socket.error, err:
-			raise self._onError(RPCError(category=RPCError.Category.NETWORK, type="connect", message=repr(err), data={"address": address}))
+			raise self._onError(RPCError(id=None, category=RPCError.Category.NETWORK, type="connect", message=repr(err),
+										 data={"address": address}))
 		self._id = 0
 		self._rlock = threading.RLock()
 		self._wlock = threading.RLock()
@@ -499,7 +508,9 @@ class RPCProxy:
 		# print "IN: %s" % line.strip()
 		return line
 
-	def _callInternal(self, name, args=[], kwargs={}):
+	def _callInternal(self, name, args=None, kwargs=None):
+		if not kwargs: kwargs = {}
+		if not args: args = []
 		with self._wlock:
 			request_id = self._nextId()
 			request_line = RPCRequest(id=request_id, method=name, args=args, kwargs=kwargs).encode()
@@ -509,14 +520,14 @@ class RPCProxy:
 				# Check if our response is there
 				if request_id in self._results:
 					result = self._results[request_id]
-					self._results[request_id]
+					del self._results[request_id]
 					return result
 				if request_id in self._errors:
 					error = self._errors[request_id]
-					self._errors[request_id]
+					del self._errors[request_id]
 					# if error.category == RPCError.Category.CALL:
 					# if error.type.endswith("Error") and error.type in __builtins__:
-					#		raise __builtins__[error.type](error.message)
+					# raise __builtins__[error.type](error.message)
 					raise error
 				if request_line in self._errors:
 					error = self._errors[request_line]
@@ -542,13 +553,21 @@ class RPCProxy:
 					# Wait for a message to come in
 					self._resCond.wait()
 
-	def _call(self, name, args=[], kwargs={}):
+	def _call(self, name, args=None, kwargs=None):
+		if not kwargs: kwargs = {}
+		if not args: args = []
 		try:
 			return self._callInternal(name, args, kwargs)
 		except ssl.SSLError, err:
-			raise self._onError(RPCError(category=RPCError.Category.NETWORK, type="ssl", message=err.message))
+			raise self._onError(
+				RPCError(id=None, category=RPCError.Category.NETWORK, type="ssl", message=str(err))), None, \
+			sys.exc_info()[2]
+		except socket.error, err:
+			raise self._onError(
+				RPCError(id=None, category=RPCError.Category.NETWORK, type="connection", message=str(err))), None, \
+			sys.exc_info()[2]
 		except RPCError, err:
-			raise self._onError(err)
+			raise self._onError(err), None, sys.exc_info()[2]
 
 	def multicall(self, *callargs):
 		return MultiCallProxy(self, callargs)
@@ -585,7 +604,8 @@ class MethodProxy:
 			return
 		callback(res)
 
-	def async(self, callback, args, kwargs={}, error=None):
+	def async(self, callback, args, kwargs=None, error=None):
+		if not kwargs: kwargs = {}
 		if not callable(callback):
 			raise TypeError("Callback not callable")
 		if error and not callable(error):
