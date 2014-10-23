@@ -73,6 +73,9 @@ scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.
 
 stopped = threading.Event()
 
+import dump
+import dumpmanager
+
 def start():
 	logging.openDefault(config.LOG_FILE)
 	db_migrate()
@@ -84,6 +87,8 @@ def start():
 	rpcserver.start()
 	starttime = time.time()
 	scheduler.start()
+	dump.init()
+	dumpmanager.init()# important: must be called after dump.init()
 	
 def reload_(*args):
 	print >>sys.stderr, "Reloading..."

@@ -24,7 +24,7 @@ from django import forms
 import math, socket
 
 from lib import wrap_rpc
-from admin_common import organization_name_list, BootstrapForm, RemoveConfirmForm, Buttons
+from admin_common import organization_name_list, BootstrapForm, RemoveConfirmForm, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -38,7 +38,7 @@ class SiteForm(BootstrapForm):
 	geolocation_latitude = forms.FloatField(help_text="Float Number. >0 if North, <0 if South",label="Geolocation: Latitude")
 	def __init__(self, api, *args, **kwargs):
 		super(SiteForm, self).__init__(*args, **kwargs)
-		self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
+		self.fields["organization"].widget = forms.widgets.Select(choices=append_empty_choice(organization_name_list(api)))
 		self.helper.layout = Layout(
 			'name',
 			'description',

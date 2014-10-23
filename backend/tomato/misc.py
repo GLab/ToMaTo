@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from . import config, currentUser
-from auth import Flags, mailFlaggedUsers, getUser
 from lib.cmd import getDpkgVersionStr #@UnresolvedImport
 
 def getVersion():
 	return getDpkgVersionStr("tomato-backend") or "devel"
+
+from . import config
 
 def getPublicKey():
 	lines = []
@@ -36,30 +36,5 @@ def getPublicKey():
 def getExternalURLs():
 	return config.EXTERNAL_URLS
 
-def mailAdmins(subject, text, global_contact = True, issue="admin"):
-	user = currentUser()
-	flag = None
+
 	
-	if global_contact:
-		if issue=="admin":
-			flag = Flags.GlobalAdminContact
-		if issue=="host":
-			flag = Flags.GlobalHostContact
-	else:
-		if issue=="admin":
-			flag = Flags.OrgaAdminContact
-		if issue=="host":
-			flag = Flags.OrgaHostContact
-	
-	if flag is None:
-		fault.raise_("issue '%s' does not exist" % issue)
-	
-	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
-	
-def mailUser(user, subject, text):
-	from_ = currentUser()
-	to = getUser(user)
-	fault.check(to, "User not found")
-	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
-	
-from . import fault

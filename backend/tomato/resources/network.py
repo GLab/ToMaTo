@@ -17,10 +17,12 @@
 
 from django.db import models
 from .. import resources, fault, host
+from ..lib import attributes #@UnresolvedImport
 
 class Network(resources.Resource):
 	kind = models.CharField(max_length=50, unique=True)
 	preference = models.IntegerField(default=0)
+	restricted = attributes.attribute("restricted", bool,False)
 	
 	TYPE = "network"
 
@@ -50,6 +52,7 @@ class Network(resources.Resource):
 		info = resources.Resource.info(self)
 		info["attrs"]["kind"] = self.kind
 		info["attrs"]["preference"] = self.preference
+		info["attrs"]["restricted"] = self.restricted
 		return info
 
 

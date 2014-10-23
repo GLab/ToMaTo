@@ -42,12 +42,12 @@ def link_statistics(siteA, siteB, type=None, after=None, before=None): #@Reserve
 def mailAdmins(subject, text, global_contact = True, issue="admin"):
 	if not currentUser():
 		raise ErrorUnauthorized()
-	misc.mailAdmins(subject, text, global_contact, issue)
+	auth.mailAdmins(subject, text, global_contact, issue)
 	
 def mailUser(user, subject, text):
 	if not currentUser():
 		raise ErrorUnauthorized()
-	misc.mailUser(user, subject, text)
+	auth.mailUser(user, subject, text)
 
 @cached(timeout=3600)
 def statistics():

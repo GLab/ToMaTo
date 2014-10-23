@@ -3,6 +3,10 @@
 {% load url from future %}
 {% load tomato %}
 
+{% block title %}
+<title>External Network list - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 <h1>External Network list</h1>
 
@@ -48,6 +52,16 @@
 	    <td>{{netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
+	<tr>
+		<th>Restricted:</th>
+		<td>
+		{% if netw.attrs.restricted %}
+			<img src="/img/lock.png" /> yes
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
 </table>
 
 

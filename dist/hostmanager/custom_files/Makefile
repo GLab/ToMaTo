@@ -17,3 +17,5 @@ install:
 	install -m 644 logrotate.conf $(DESTDIR)/etc/logrotate.d/tomato-hostmanager
 	install -d $(DESTDIR)/usr/bin
 	install -m 755 update-tomato-client-certs.sh $(DESTDIR)/usr/bin/update-tomato-client-certs
+	install -d $(DESTDIR)/usr/sbin
+	install -m 755 vznetaddbr-tomato $(DESTDIR)/usr/sbin/vznetaddbr

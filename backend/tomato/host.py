@@ -22,7 +22,8 @@ from lib import attributes, db, rpc, util, logging, error  # @UnresolvedImport
 from lib.cache import cached  # @UnresolvedImport
 from lib.error import TransportError, InternalError, UserError, Error
 from auth import Flags
-import time, hashlib, threading
+from dumpmanager import DumpSource
+import xmlrpclib, time, hashlib, threading, datetime, json, zlib, base64
 
 class RemoteWrapper:
 	def __init__(self, url, host, *args, **kwargs):
@@ -94,16 +95,16 @@ class Organization(attributes.Mixin, models.Model):
 	homepage_url = attributes.attribute("homepage_url", unicode, "")
 	image_url = attributes.attribute("image_url", unicode, "")
 	description_text = attributes.attribute("description_text", unicode, "")
-	# sites: [Site]
+	#sites: [Site]
 	#users: [User]
 
 	class Meta:
 		pass
-
+	
 	def init(self, attrs):
 		self.totalUsage = UsageStatistics.objects.create()
 		self.modify(attrs)
-
+		
 	def checkPermissions(self):
 		user = currentUser()
 		if user.hasFlag(Flags.GlobalAdmin):
@@ -127,7 +128,7 @@ class Organization(attributes.Mixin, models.Model):
 			else:
 				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
 		self.save()
-
+		
 	def remove(self):
 		fault.check(self.checkPermissions(), "Not enough permissions")
 		fault.check(not self.sites.all(), "Organization still has sites")
@@ -135,7 +136,7 @@ class Organization(attributes.Mixin, models.Model):
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.totalUsage.remove()
 		self.delete()
-
+		
 	def updateUsage(self):
 		self.totalUsage.updateFrom([user.totalUsage for user in self.users.all()])
 
@@ -270,7 +271,8 @@ def createSite(name, organization, description=""):
 	return site
 
 
-class Host(attributes.Mixin, models.Model):
+
+class Host(attributes.Mixin, DumpSource, models.Model):
 	name = models.CharField(max_length=255, unique=True)
 	address = models.CharField(max_length=255, unique=False)
 	rpcurl = models.CharField(max_length=255, unique=True)
@@ -291,6 +293,7 @@ class Host(attributes.Mixin, models.Model):
 	problemMailTime = attributes.attribute("problem_mail_time", float, 0)
 	availability = attributes.attribute("availability", float, 1.0)
 	description_text = attributes.attribute("description_text", unicode, "")
+	dump_last_fetch = attributes.attribute("dump_last_fetch", float, 0)
 	# connections: [HostConnection]
 	# elements: [HostElement]
 	# templates: [TemplateOnHost]
@@ -659,7 +662,6 @@ class Host(attributes.Mixin, models.Model):
 				if 2 * (time.time() - self.problemMailTime) >= time.time() - self.problemAge:
 					self.problemMailTime = time.time()
 					from django.template.defaultfilters import timesince
-					import datetime
 					duration = timesince(datetime.datetime.fromtimestamp(self.problemAge))
 					mailFilteredUsers(lambda user: user.hasFlag(Flags.GlobalHostContact)
 												   or user.hasFlag(
@@ -711,6 +713,32 @@ class Host(attributes.Mixin, models.Model):
 
 	def __repr__(self):
 		return "Host(%s)" % self.name
+	
+	def dump_fetch_list(self,after): #TODO: return None if unreachable
+		return self.getProxy().dump_list(after=after,list_only=False,include_data=False,compress_data=True)
+
+	def dump_fetch_with_data(self,dump_id,keep_compressed=True): #TODO: return None if unreachable, return dummy if it does not exist
+		dump = self.getProxy().dump_info(dump_id,include_data=True,compress_data=True)
+		if not keep_compressed:
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(dump['data'])))
+		return dump
+
+	def dump_clock_offset(self):
+		return max(0,-self.hostInfo['time_diff'])
+
+	def dump_source_name(self):
+		return "host:%s" % self.info()['name']
+
+	def dump_matches_host(self, host_obj):
+		return host_obj.dump_source_name() == self.dump_source_name()
+
+	def dump_set_last_fetch(self,last_fetch):
+		self.dump_last_fetch = last_fetch
+		self.save()
+		
+	def dump_get_last_fetch(self):
+		return self.dump_last_fetch
+
 
 
 class HostElement(attributes.Mixin, models.Model):

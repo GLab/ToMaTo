@@ -2,6 +2,14 @@
 
 {% load url from future %}
 
+{% block header %}
+<script language="JavaScript" type="text/javascript" src="/js/dynimg.js"></script>
+{% endblock %}
+
+{% block title %}
+<title>Template {{template.attrs.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 
 <form>
@@ -74,7 +82,11 @@
 		{% if template.attrs.icon %}
 			<img src="{{template.attrs.icon}}" />
 		{% else %}
-			<img src="/dynimg/{{template.attrs.tech}}/32/{{template.attrs.subtype}}/{{template.attrs.name}}.png" />
+			<img id="template_icon" src="/img/{{template.attrs.tech}}32.png" />
+			<script language="JavaScript">
+				var template_iconurl = dynimg(32,"{{template.attrs.tech}}","{{template.attrs.subtype}}","{{template.attrs.name}}");
+				$("#template_icon").attr("src",template_iconurl);
+			</script>
 		{% endif %}
 		</td>
 	</tr>	

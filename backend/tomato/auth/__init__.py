@@ -18,15 +18,17 @@
 import time, datetime, crypt, string, random, sys, threading
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, currentUser, setCurrentUser, scheduler, accounting
 
 class Flags:
 	Debug = "debug"
+	ErrorNotify = "error_notify"
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
 	RestrictedTemplates ="restricted_templates"
+	RestrictedNetworks ="restricted_networks"
 	NoMails = "nomails"
 	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
 	GlobalHostManager = "global_host_manager"
@@ -45,11 +47,13 @@ class Flags:
 
 flags = {
 	Flags.Debug: "Debug: See everything",
+	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
 	Flags.RestrictedTemplates:"RestrictedTemplates: Can use restricted templates",
+	Flags.RestrictedNetworks:"RestrictedNetworks: Can use restricted Networks",
 	Flags.NoMails: "NoMails: Can not receive mails at all",
 	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
 	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
@@ -95,16 +99,18 @@ categories = {
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
 						Flags.RestrictedTemplates,
-						Flags.NewAccount
-						],
-	'other': [
-						Flags.Debug,
+						Flags.RestrictedNetworks,
+						Flags.NewAccount,
 						Flags.NoMails
+						],
+	'error_management': [
+						Flags.Debug,
+						Flags.ErrorNotify
 						]
 	}
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
-						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.RestrictedNetworks, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
@@ -124,7 +130,7 @@ class User(attributes.Mixin, models.Model):
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
 	totalUsage = models.OneToOneField(accounting.UsageStatistics, related_name='+', on_delete=models.PROTECT)
-	quota = models.OneToOneField(accounting.Quota, null=True, related_name='+', on_delete=models.PROTECT)
+	quota = models.OneToOneField(accounting.Quota, related_name='+', on_delete=models.PROTECT)
 	
 	realname = attributes.attribute("realname", unicode)
 	email = attributes.attribute("email", unicode)
@@ -143,12 +149,18 @@ class User(attributes.Mixin, models.Model):
 		fault.check(orga, "No organization with name %s" % organization)
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
-		user.totalUsage = accounting.UsageStatistics.objects.create()
-		user.quota = accounting.Quota()
-		user.quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
 		user.last_login = time.time()
 		return user
-	
+
+	def save(self, *args, **kwargs):
+		if not hasattr(self, "totalUsage"):
+			self.totalUsage = accounting.UsageStatistics.objects.create()
+		if not hasattr(self, "quota"):
+			quota = accounting.Quota()
+			quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
+			self.quota = quota
+		models.Model.save(self, *args, **kwargs)
+
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving
 	
@@ -364,6 +376,32 @@ def mailFilteredUsers(filterfn, subject, message, organization = None):
 
 def mailFlaggedUsers(flag, subject, message, organization=None):
 	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
+	
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
+	user = currentUser()
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	
+	if flag is None:
+		fault.raise_("issue '%s' does not exist" % issue)
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
+	
+def mailUser(user, subject, text):
+	from_ = currentUser()
+	to = getUser(user)
+	fault.check(to, "User not found")
+	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
 
 def getAllUsers(organization = None):
 	if organization is None:
@@ -433,3 +471,5 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
+		
+from .. import fault

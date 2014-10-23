@@ -56,7 +56,7 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 	
 	def modify(self, attrs):
 		if not _initPhase:
-			fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")		
+			fault.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin), "Method only allowed for admin users")		
 		for key, value in attrs.iteritems():
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
@@ -65,7 +65,7 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 		self.save()
 	
 	def remove(self):
-		fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")
+		fault.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin), "Method only allowed for admin users")
 		self.delete()	
 	
 	def info(self):
@@ -94,7 +94,7 @@ def getAll(**kwargs):
 
 def create(type_, attrs={}):
 	if not _initPhase:
-		fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")	
+		fault.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin), "Method only allowed for admin users")	
 	if type_ in TYPES:
 		res = TYPES[type_]()
 	else:

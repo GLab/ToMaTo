@@ -244,8 +244,8 @@ class Quota(models.Model):
 	continous_factor = models.FloatField()
 	
 	def init(self, cputime, memory, diskspace, traffic, continous_factor):
-		self.monthly = Usage(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
-		self.used = Usage()
+		self.monthly = Usage.objects.create(cputime=cputime, memory=memory, diskspace=diskspace, traffic=traffic)
+		self.used = Usage.objects.create()
 		self.used_time = time.time()
 		self.continous_factor = continous_factor
 		self.save()

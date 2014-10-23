@@ -7,6 +7,7 @@ encoding//tomato/api/api_helpers.py=utf-8
 encoding//tomato/api/capabilities.py=utf-8
 encoding//tomato/api/connections.py=utf-8
 encoding//tomato/api/docs.py=utf-8
+encoding//tomato/api/dumpmanager.py=utf-8
 encoding//tomato/api/elements.py=utf-8
 encoding//tomato/api/host.py=utf-8
 encoding//tomato/api/misc.py=utf-8

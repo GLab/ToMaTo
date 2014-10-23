@@ -500,6 +500,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
 	def action_rextfv_upload_use(self):
+		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		if self.state == ST_STARTED:
 			try:
