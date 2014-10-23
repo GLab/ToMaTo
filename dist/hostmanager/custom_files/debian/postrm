@@ -11,6 +11,10 @@ if [ -f /usr/share/debconf/confmodule ] && [ -f /usr/share/dbconfig-common/dpkg/
   dbc_go tomato $@
 fi
 
+if [ remove = "$1" ]; then 
+   dpkg-divert --package tomato-hostmanager --remove --rename --divert /usr/sbin/vznetaddbr.orig /usr/sbin/vznetaddbr
+fi 
+
 if [ "$1" = "purge" ]; then
   rm -rf /var/tmp/tomato
   rm -rf /var/log/tomato

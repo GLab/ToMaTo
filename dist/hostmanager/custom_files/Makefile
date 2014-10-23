@@ -15,3 +15,5 @@ install:
 	install -d $(DESTDIR)/var/log/tomato
 	install -d $(DESTDIR)/etc/logrotate.d
 	install -m 644 logrotate.conf $(DESTDIR)/etc/logrotate.d/tomato-hostmanager
+	install -d $(DESTDIR)/usr/sbin
+	install -m 755 vznetaddbr-tomato $(DESTDIR)/usr/sbin/vznetaddbr
