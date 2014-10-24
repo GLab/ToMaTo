@@ -20,7 +20,7 @@ from ..auth import permissions
 def _getTopology(id_):
 	id_ = int(id_)
 	top = topology.get(id_)
-	fault.check(top, "Topology with id #%d does not exist", id_)
+	UserError.check(top, code=UserError.ENTITY_DOES_NOT_EXIST, message="Topology with that id does not exist", data={"id": id_})
 	return top
 
 def topology_create():
@@ -32,8 +32,7 @@ def topology_create():
 	  returned by :py:func:`topology_info`. This info dict also contains the
 	  topology id that is needed for further manipulation of that object.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	return topology.create().info()
 
 def topology_permissions():
@@ -50,8 +49,7 @@ def topology_remove(id): #@ReservedAssignment
 	  The topology must not contain elements or connections, otherwise the call
 	  will fail.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	top.remove()
 
@@ -77,8 +75,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	  returned by :py:func:`topology_info`. This info dict will reflect all
 	  attribute changes.	
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	top.modify(attrs)
 	return top.info()
@@ -128,8 +125,7 @@ def topology_action(id, action, params={}): #@ReservedAssignment
 	  of the action to the topology can be checked using 
 	  :py:func:`~topology_info`.	
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	return top.action(action, params)
 
@@ -179,8 +175,7 @@ def topology_info(id, full=False): #@ReservedAssignment
 	``permissions``
 	  A dict with usernames as the keys and permission levels as values.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	return top.info(full)
 
@@ -196,8 +191,7 @@ def topology_list(full=False, showAll=False, organization=None): #@ReservedAssig
 	  contains exactly the same information as returned by 
 	  :py:func:`topology_info`. If no topologies exist, the list is empty. 
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
 		organization = _getOrganization(organization)
 		tops = topology.getAll(permissions__entries__user__organization=organization, permissions__entries__role="owner")		
@@ -222,8 +216,7 @@ def topology_permission(id, user, role): #@ReservedAssignment
 	  The name of the role for this user. If the user already has a role,
 	  if will be changed.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	user = _getAccount(user)
 	top.setRole(user, role)
@@ -239,28 +232,25 @@ def topology_usage(id): #@ReservedAssignment
 	  Usage statistics for the given topology according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	return top.totalUsage.info()	
 	
 def topology_import(data):
-	if not currentUser():
-		raise ErrorUnauthorized()
-	fault.check('file_information' in data, "Data lacks field file_information")
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check('file_information' in data, code=UserError.INVALID_VALUE, message="Data lacks field file_information")
 	info = data['file_information']
-	fault.check('version' in info, "File information lacks field version")
+	UserError.check('version' in info, code=UserError.INVALID_VALUE, message="File information lacks field version")
 	version = info['version']
 	
 	if version == 3:
-		fault.check('topology' in data, "Data lacks field topology")
+		UserError.check('topology' in data, code=UserError.INVALID_VALUE, message="Data lacks field topology")
 		return topology_import_v3(data["topology"])
 	else:
-		fault.raise_("Unsuported topology version %s" % version, fault.USER_ERROR)
+		raise UserError(code=UserError.INVALID_VALUE, message="Unsuported topology version", data={"version": version})
 		
 def topology_import_v3(top):
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top_id = None
 	elementIds = {}   
 	connectionIds = {}
@@ -336,15 +326,14 @@ def topology_export(id): #@ReservedAssignment
 		data['attrs'] = reduceData_rec(data['attrs'], blacklist_attrs)
 		return data
 	
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top_full = topology_info(id, True)
 	top = reduceData(top_full)
 	return {'file_information': {'version': 3}, 'topology': top}
 		
 from host import _getOrganization
 from account import _getAccount
-from .. import fault, topology, currentUser
+from .. import topology, currentUser
 from elements import element_create, element_modify 
 from connections import connection_create, connection_modify
-from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.error import UserError

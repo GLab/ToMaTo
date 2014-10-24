@@ -17,28 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, sys, traceback
+import sys
 
 import config
-from . import fault, currentUser, api, login
-from lib import db, util, rpc, logging #@UnresolvedImport
+from . import currentUser, api, login, dump
+from .lib import db, util, rpc, logging #@UnresolvedImport
+from .lib.error import Error, UserError, InternalError
 
 def logCall(function, args, kwargs):
 	logging.log(category="api", method=function.__name__, args=args, kwargs=kwargs, user=currentUser().name if currentUser() else None)
 
 @db.commit_after
 def handleError(error, function, args, kwargs):
-	if isinstance(error, xmlrpclib.Fault):
-		if error.faultCode != fault.USER_ERROR:
-			fault.errors_add(error, traceback.format_exc())
-	elif isinstance(error, rpc.xmlrpc.ErrorUnauthorized):
-		fault.errors_add(error, traceback.format_exc())
-	else:
-		if not (isinstance(error, TypeError) and function.__name__ in str(error)):
-			# not a wrong API call
-			fault.errors_add(error, traceback.format_exc())
-		logging.logException()
-		return fault.wrap(error)
+	if not isinstance(error, Error):
+		if isinstance(error, TypeError) and function.__name__ in str(error):
+			error = UserError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
+		else:
+			error = InternalError.wrap(error, data={"function": function.__name__, "args": args, "kwargs": kwargs})
+	logging.logException()
+	if isinstance(error, InternalError):
+		dump.dumpException()
+	return error
 
 @db.commit_after
 def afterCall(*args, **kwargs):

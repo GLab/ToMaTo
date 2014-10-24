@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import fault, connections, currentUser #@UnusedImport
+from .. import connections, currentUser #@UnusedImport
 from elements import _getElement
 
 def _getConnection(id_):
 	id_ = int(id_)
 	con = connections.get(id_)
-	fault.check(con, "Connection with id #%d does not exist", id_)
+	UserError.check(con, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"id": id_})
 	return con
 
 def connection_create(el1, el2, attrs={}): #@ReservedAssignment
@@ -62,8 +62,7 @@ def connection_create(el1, el2, attrs={}): #@ReservedAssignment
 	  * one of the elements is already connected
 	  * both elements are the same
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el1 = _getElement(el1)
 	el2 = _getElement(el2)
 	con = connections.create(el1, el2, attrs)
@@ -98,8 +97,7 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection 
 	  state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	con.modify(attrs)
 	return con.info()
@@ -133,8 +131,7 @@ def connection_action(id, action, params={}): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	return con.action(action, params)
 
@@ -157,8 +154,7 @@ def connection_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	con.remove()
 
@@ -202,8 +198,7 @@ def connection_info(id, fetch=False): #@ReservedAssignment
 	  If the given connection does not exist or belongs to another owner
 	  an exception *connection does not exist* is raised.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	if fetch:
 		con.fetchInfo()
@@ -220,9 +215,8 @@ def connection_usage(id): #@ReservedAssignment
 	  Usage statistics for the given connection according to 
 	  :doc:`/docs/accountingdata`.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	return con.totalUsage.info()
 
-from ..lib.rpc.xmlrpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.error import UserError

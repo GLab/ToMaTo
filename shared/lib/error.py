@@ -56,6 +56,7 @@ class InternalError(Error):
 	INVALID_PARAMETER = "invalid_parameter"
 	CONFIGURATION_ERROR = "configuration_error"
 	RESOURCE_ERROR = "resource_error"
+	ASSERTION = "assertion"
 
 
 @ErrorType
@@ -64,16 +65,23 @@ class UserError(Error):
 	ENTITY_DOES_NOT_EXIST = "entity_does_not_exist"
 	UNSUPPORTED_ACTION = "unsupported_action"
 	UNSUPPORTED_ATTRIBUTE = "unsupported_attribute"
-	INVALID_STATE = "invalid_state"
+	INVALID_STATE = "invalid_state" # The request is valid but the subject is in a wrong state
 	ENTITY_BUSY = "entity_busy"
 	UNABLE_TO_CONNECT = "unable_to_connect"
 	ALREADY_CONNECTED = "already_connected"
-	DIFFERENT_USER = "different_user"
-	UNSUPPORTED_TYPE = "usupported_type"
-	INVALID_CONFIGURATION = "invalid_configuration"
-	INVALID_VALUE = "invalid_value"
+	DIFFERENT_USER = "different_user" # The entity belongs to a different user
+	UNSUPPORTED_TYPE = "unsupported_type"
+	INVALID_CONFIGURATION = "invalid_configuration" # All of the values are valid in general but the combination is invalid
+	INVALID_VALUE = "invalid_value" # One of the values is invalid
 	NO_DATA_AVAILABLE = "no_data_available"
-	COMMAND_FAILED = "command_failed"
+	COMMAND_FAILED = "command_failed" # A command executed by the user failed (OpenVZ)
+	DENIED = "denied" # This action is denied because of permissions or by policy
+	NOT_LOGGED_IN = "not_logged_in" # Request to log in to continue
+	NOT_EMPTY = "not_empty" # Container can not be deleted because it is not empty
+	TIMED_OUT = "timed_out" # The subject timed out
+	AMBIGUOUS = "ambiguous" # The request was ambiguous
+	ALREADY_EXISTS = "already_exists" # The object can not be created because it already exists
+	NO_RESOURCES = "no_resources" # No resources to satisfy this request
 
 
 @ErrorType
@@ -84,3 +92,8 @@ class TransportError(Error):
 	SSL = "ssl"
 	CONNECT = "connect"
 	RPC = "rpc"
+
+
+def assert_(condition, message, code=InternalError.ASSERTION, *args, **kwargs):
+	if condition: return
+	raise InternalError(message=message, code=code, *args, **kwargs)

@@ -16,11 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..auth import User, Provider as AuthProvider, mailFilteredUsers, Flags
-from .. import fault, setCurrentUser 
+from .. import setCurrentUser
+from ..lib.error import UserError
 from ..config import NEW_USER_WELCOME_MESSAGE, NEW_USER_ADMIN_INFORM_MESSAGE
 
 class Provider(AuthProvider):
-	def parseOptions(self, allow_registration=True, default_flags=["over_quota"], **kwargs):
+	def parseOptions(self, allow_registration=True, default_flags=None, **kwargs):
+		if not default_flags: default_flags = ["over_quota"]
 		self.allow_registration = allow_registration
 		self.default_flags = default_flags
 	def login(self, username, password): #@UnusedVariable, pylint: disable-msg=W0613
@@ -41,7 +43,7 @@ class Provider(AuthProvider):
 	def changePassword(self, username, password):
 		pass # password in user record will be changed by auth
 	def register(self, username, password, organization, attrs):
-		fault.check(self.getUsers(name=username).count()==0, "Username already exists")
+		UserError.check(self.getUsers(name=username).count()==0, code=UserError.ALREADY_EXISTS, message="Username already exists")
 		user = User.create(name=username, organization=organization, flags=self.default_flags)
 		user.save()
 		setCurrentUser(user)

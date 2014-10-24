@@ -17,9 +17,10 @@
 
 import random, math
 from django.db import models
-from .. import elements, host, fault
+from .. import elements, host
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
+from ..lib.error import UserError, assert_
 
 class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name", type="str")
@@ -135,7 +136,7 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 					cons.append((r2, r1))
 			return cons
 		def _check(nodes, connections):
-			fault.check(len(cons)/2 <= len(nodes) * len(nodes), "Tinc clustering resulted in too many connections", code=fault.INTERNAL_ERROR)
+			assert_(len(cons)/2 <= len(nodes) * len(nodes), "Tinc clustering resulted in too many connections")
 			if not nodes:
 				return
 			connected = set()
@@ -149,8 +150,8 @@ class Tinc_VPN(elements.generic.ConnectingElement, elements.Element):
 						connected.add(dst.id)
 						changed = True
 				iterations += 1
-			fault.check(len(connected) == len(nodes), "Tinc clustering resulted in disconnected nodes", code=fault.INTERNAL_ERROR)
-			fault.check(iterations <= math.ceil(math.log(len(nodes), 5)), "Tinc clustering resulted in too many hops", code=fault.INTERNAL_ERROR)					
+			assert_(len(connected) == len(nodes), "Tinc clustering resulted in disconnected nodes")
+			assert_(iterations <= math.ceil(math.log(len(nodes), 5)), "Tinc clustering resulted in too many hops")
 		assert self.state == ST_PREPARED
 		children = self.getChildren()
 		peerInfo = {}
@@ -280,8 +281,8 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 		if self.element:
 			try:
 				self.element.updateInfo()
-			except fault.XMLRPCError, exc:
-				if exc.faultCode == fault.UNKNOWN_OBJECT:
+			except UserError, err:
+				if err.code == UserError.ENTITY_DOES_NOT_EXIST:
 					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
@@ -295,7 +296,7 @@ class Tinc_Endpoint(elements.generic.ConnectingElement, elements.Element):
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(elementTypes=["tinc"], hostPrefs=hPref, sitePrefs=sPref)
-		fault.check(_host, "No matching host found for element %s", self.TYPE)
+		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
 		attrs = self._remoteAttrs()
 		attrs.update({
 			"mode": self.mode,

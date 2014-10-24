@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import elements, host, fault
+from .. import elements, host
 import generic
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
+from ..lib.error import UserError
 
 class Repy(generic.VMElement):
 	TYPE = "repy"
@@ -38,7 +39,7 @@ class Repy(generic.VMElement):
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
-		fault.check(_host, "No matching host found for element %s", self.TYPE)
+		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
 		attrs = self._remoteAttrs()
 		attrs.update({
 			"template": self._template().name,

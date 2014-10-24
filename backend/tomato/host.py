@@ -99,7 +99,7 @@ class Organization(attributes.Mixin, models.Model):
 		return False
 
 	def modify(self, attrs):
-		fault.check(self.checkPermissions(), "Not enough permissions")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("modify", category="organization", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "description":
@@ -111,13 +111,14 @@ class Organization(attributes.Mixin, models.Model):
 			elif key == "description_text":
 				self.description_text = value
 			else:
-				fault.raise_("Unknown organization attribute: %s" % key, fault.USER_ERROR)
+				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown organization attribute",
+					data={"attribute": key})
 		self.save()
 
 	def remove(self):
-		fault.check(self.checkPermissions(), "Not enough permissions")
-		fault.check(not self.sites.all(), "Organization still has sites")
-		fault.check(not self.users.all(), "Organization still has users")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
+		UserError.check(not self.sites.all(), code=UserError.NOT_EMPTY, message="Organization still has sites")
+		UserError.check(not self.users.all(), code=UserError.NOT_EMPTY, message="Organization still has users")
 		logging.logMessage("remove", category="organization", name=self.name)
 		self.totalUsage.remove()
 		self.delete()
@@ -153,7 +154,7 @@ def getAllOrganizations(**kwargs):
 
 
 def createOrganization(name, description=""):
-	fault.check(currentUser().hasFlag(Flags.GlobalAdmin), "Not enough permissions")
+	UserError.check(currentUser().hasFlag(Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
 	logging.logMessage("create", category="site", name=name, description=description)
 	organization = Organization(name=name)
 	organization.save()
@@ -186,7 +187,7 @@ class Site(attributes.Mixin, models.Model):
 		return False
 
 	def modify(self, attrs):
-		fault.check(self.checkPermissions(), "Not enough permissions")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("modify", category="site", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "description":
@@ -199,15 +200,17 @@ class Site(attributes.Mixin, models.Model):
 				self.description_text = value
 			elif key == "organization":
 				orga = getOrganization(value)
-				fault.check(orga, "No organization with name %s" % value)
+				UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
+					data={"name": value})
 				self.organization = orga
 			else:
-				fault.raise_("Unknown site attribute: %s" % key, fault.USER_ERROR)
+				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown site attribute",
+					data={"attribute": key})
 		self.save()
 
 	def remove(self):
-		fault.check(self.checkPermissions(), "Not enough permissions")
-		fault.check(not self.hosts.all(), "Site still has hosts")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
+		UserError.check(not self.hosts.all(), code=UserError.NOT_EMPTY, message="Site still has hosts")
 		logging.logMessage("remove", category="site", name=self.name)
 		self.delete()
 
@@ -241,16 +244,14 @@ def getAllSites(**kwargs):
 
 def createSite(name, organization, description=""):
 	orga = getOrganization(organization)
-	fault.check(orga, "No organization with name %s" % organization)
+	UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="No organization with that name",
+		data={"name": organization})
 
 	user = currentUser()
-	fault.check(user.hasFlag(Flags.GlobalHostManager)
-				or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
-				"Not enough permissions")
+	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == orga,
+		code=UserError.DENIED, message="Not enough permissions")
 	logging.logMessage("create", category="site", name=name, description=description)
-
 	site = Site(name=name, organization=orga)
-
 	site.save()
 	site.init({"description": description})
 	return site
@@ -528,7 +529,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return (el.upcast() for el in Element.objects.filter(host_elements__host=self))
 
 	def getUsers(self):
-		fault.check(self.checkPermissions(), "Not enough permissions")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		res = []
 		for type_, obj in [("element", el) for el in self.elements.all()] + [("connection", con) for con in
 																			 self.connections.all()]:
@@ -549,9 +550,9 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		return self.site.checkPermissions()
 
 	def remove(self):
-		fault.check(self.checkPermissions(), "Not enough permissions")
-		fault.check(not self.elements.all(), "Host still has active elements")
-		fault.check(not self.connections.all(), "Host still has active connections")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
+		UserError.check(not self.elements.all(), code=UserError.NOT_EMPTY, message="Host still has active elements")
+		UserError.check(not self.connections.all(), "Host still has active connections")
 		logging.logMessage("remove", category="host", name=self.name)
 		try:
 			for res in self.getProxy().resource_list():
@@ -562,7 +563,7 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 		self.delete()
 
 	def modify(self, attrs):
-		fault.check(self.checkPermissions(), "Not enough permissions")
+		UserError.check(self.checkPermissions(), code=UserError.DENIED, message="Not enough permissions")
 		logging.logMessage("modify", category="host", name=self.name, attrs=attrs)
 		for key, value in attrs.iteritems():
 			if key == "site":
@@ -578,7 +579,8 @@ class Host(attributes.Mixin, DumpSource, models.Model):
 			elif key == "description_text":
 				self.description_text = value
 			else:
-				fault.raise_("Unknown host attribute: %s" % key, fault.USER_ERROR)
+				raise UserError(code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unknown host attribute",
+					data={"attribute": key})
 		self.save()
 
 	def problems(self):
@@ -992,9 +994,8 @@ def getAll(**kwargs):
 def create(name, site, attrs=None):
 	if not attrs: attrs = {}
 	user = currentUser()
-	fault.check(user.hasFlag(Flags.GlobalHostManager)
-				or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
-				"Not enough permissions")
+	UserError.check(user.hasFlag(Flags.GlobalHostManager) or user.hasFlag(Flags.OrgaHostManager) and user.organization == site.organization,
+		code=UserError.DENIED, message="Not enough permissions")
 	host = Host(name=name, site=site)
 	host.init(attrs)
 	host.save()
@@ -1021,7 +1022,7 @@ def select(site=None, elementTypes=None, connectionTypes=None, networkKinds=None
 		if set(networkKinds) - set(host.getNetworkKinds()):
 			continue
 		hosts.append(host)
-	fault.check(hosts, "No hosts found for requirements")
+	UserError.check(hosts, code=UserError.INVALID_CONFIGURATION, message="No hosts found for requirements")
 	# any host in hosts can handle the request
 	prefs = dict([(h, 0.0) for h in hosts])
 	# STEP 2: calculate preferences based on host load
@@ -1139,5 +1140,3 @@ def synchronizeComponents():
 
 scheduler.scheduleRepeated(config.HOST_UPDATE_INTERVAL, synchronize)  # @UndefinedVariable
 scheduler.scheduleRepeated(3600, synchronizeComponents)  # @UndefinedVariable
-
-from . import fault

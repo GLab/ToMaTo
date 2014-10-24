@@ -19,16 +19,16 @@ from ..lib.cache import cached #@UnresolvedImport
 
 def capabilities_element(type, host=None): #@ReservedAssignment
 	typeClass = elements.TYPES.get(type)
-	fault.check(typeClass, "No such element type: %s", type)
+	UserError.check(typeClass, code=UserError.UNSUPPORTED_TYPE, message="No such element type", data={"type": type})
 	if host:
 		host = modhost.get(name=host)
-		fault.check(host, "No such host: %s", host)
+		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
 	return typeClass.getCapabilities(host)
 	
 def capabilities_connection(type, host=None): #@ReservedAssignment
 	if host:
 		host = modhost.get(name=host)
-		fault.check(host, "No such host: %s", host)
+		UserError.check(host, code=UserError.ENTITY_DOES_NOT_EXIST, message="No such host", data={"host": host})
 	return connections.Connection.getCapabilities(type, host)
 
 @cached(timeout=24*3600)
@@ -38,5 +38,6 @@ def capabilities():
 		"connection": dict((t, capabilities_connection(t)) for t in ["bridge", "fixed_bridge"])
 	}
 
-from .. import fault, elements, connections
+from .. import elements, connections
 from .. import host as modhost
+from ..lib.error import UserError

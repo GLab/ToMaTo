@@ -16,8 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import resources, fault, host
+from .. import resources, host
 from ..lib import attributes #@UnresolvedImport
+from ..lib.error import UserError
 
 class Network(resources.Resource):
 	kind = models.CharField(max_length=50, unique=True)
@@ -33,7 +34,7 @@ class Network(resources.Resource):
 	def init(self, *args, **kwargs):
 		self.type = self.TYPE
 		attrs = args[0]
-		fault.check("kind" in attrs, "Network needs attribute kind") 
+		UserError.check("kind" in attrs, code=UserError.INVALID_CONFIGURATION, message="Network needs attribute kind")
 		resources.Resource.init(self, *args, **kwargs)
 				
 	def upcast(self):
@@ -73,11 +74,14 @@ class NetworkInstance(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["network", "host", "bridge"]:
-			fault.check(attr in attrs, "Network_Instance needs attribute %s", attr)
+			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Network_Instance needs attribute",
+				data={"attribute": attr})
 		self.network = get(attrs["network"])
-		fault.check(self.network, "Network %s does not exist", attrs["kind"])
+		UserError.check(self.network, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist",
+			data={"network": attrs["kind"]})
 		self.host = host.get(name=attrs["host"])
-		fault.check(self.network, "Host %s does not exist", attrs["host"])
+		UserError.check(self.host, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host does not exist",
+			data={"network": attrs["host"]})
 		self.bridge = attrs["bridge"]
 		resources.Resource.init(self, *args, **kwargs)
 				
@@ -95,12 +99,12 @@ class NetworkInstance(resources.Resource):
 	
 	def modify_network(self, val):
 		net = get(val)
-		fault.check(net, "No such network: %s", val)
+		UserError.check(net, code=UserError.ENTITY_DOES_NOT_EXIST, message="Network does not exist", data={"network": val})
 		self.network = net
 	
 	def modify_host(self, val):
 		h = host.get(name=val)
-		fault.check(h, "No such host: %s", val)
+		UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host does not exist", data={"host": val})
 		self.host = h
 	
 	def info(self):
@@ -117,7 +121,8 @@ def getInstance(host, kind):
 	instances = NetworkInstance.objects
 	if kind:
 		instances = instances.filter(models.Q(host=host)&(models.Q(network__kind=kind)|models.Q(network__kind__startswith=kind+"/")))
-	fault.check(instances, "No network instances found for %s on %s", (kind, host))
+	UserError.check(instances, code=UserError.NO_RESOURCES, message="No network instances found",
+		data={"network": kind, "host": host})
 	return instances.order_by("network__preference")[0]
 
 resources.TYPES[Network.TYPE] = Network

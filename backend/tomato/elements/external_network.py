@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import elements, resources, host, fault
+from .. import elements, resources, host
 from ..resources import network as r_network
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_STARTED
 from .. import currentUser
 from ..auth import Flags
+from ..lib.error import UserError
 
 class External_Network(elements.generic.ConnectingElement, elements.Element):
 	name_attr = Attr("name", desc="Name")
@@ -77,7 +78,7 @@ class External_Network(elements.generic.ConnectingElement, elements.Element):
 	def modify_kind(self, val):
 		network = resources.network.get(val)
 		if network.restricted and not self.kind == val:
-			fault.check(currentUser().hasFlag(Flags.RestrictedNetworks), "Network is restricted")
+			UserError.check(currentUser().hasFlag(Flags.RestrictedNetworks), code=UserError.DENIED, message="Network is restricted")
 		self.kind = val
 		for ch in self.getChildren():
 			ch.modify({"kind": val})
@@ -158,8 +159,8 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		if self.element:
 			try:
 				self.element.updateInfo()
-			except fault.XMLRPCError, exc:
-				if exc.faultCode == fault.UNKNOWN_OBJECT:
+			except UserError, err:
+				if err.code == UserError.ENTITY_DOES_NOT_EXIST:
 					self.element.state = ST_CREATED
 			if self.state == ST_CREATED:
 				if self.element:
@@ -173,7 +174,8 @@ class External_Network_Endpoint(elements.generic.ConnectingElement, elements.Ele
 		hPref, sPref = self.getLocationPrefs()
 		kind = self.getParent().network.kind if self.parent and self.getParent().samenet else self.kind
 		_host = host.select(elementTypes=["external_network"], networkKinds=[kind], hostPrefs=hPref, sitePrefs=sPref)
-		fault.check(_host, "No matching host found for element %s", self.TYPE)
+		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
+			data={"type": self.TYPE})
 		if self.parent and self.getParent().samenet:
 			self.network = r_network.getInstance(_host, self.getParent().network.kind)
 		else:

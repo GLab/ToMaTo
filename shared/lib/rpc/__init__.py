@@ -79,6 +79,8 @@ SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate", "clie
 def runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError):
 	def wrapError(error, func, args, kwargs):
 		error = onError(error, func, args, kwargs)
+		if isinstance(error, Fault):
+			return error
 		assert isinstance(error, Error)
 		return Fault(999, error.raw)
 	server = xmlrpc.XMLRPCServerIntrospection(address, sslOpts=sslOpts,
@@ -104,7 +106,6 @@ def runJsonRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecu
 	return server
 
 def runServer(type, address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError):
-	#TODO: wrap errors properly before sending them
 	if type == "https+xmlrpc":
 		return runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecute, onError)
 	elif type == "ssl+jsonrpc":

@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, datetime, crypt, string, random, sys, threading
+import time, crypt, string, random, sys
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
 from .. import config, currentUser, setCurrentUser, scheduler, accounting
+from ..lib.error import UserError
 
 class Flags:
 	Debug = "debug"
@@ -145,8 +146,8 @@ class User(attributes.Mixin, models.Model):
 	@classmethod	
 	def create(cls, name, organization, **kwargs):
 		from ..host import getOrganization
-		orga = getOrganization(organization);
-		fault.check(orga, "No organization with name %s" % organization)
+		orga = getOrganization(organization)
+		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
 		user.last_login = time.time()
@@ -213,14 +214,14 @@ class User(attributes.Mixin, models.Model):
 		for prov in providers:
 			if not prov.getName() == self.origin:
 				continue
-			fault.check(prov.canChangePassword(), "Provider can not change password")
+			UserError.check(prov.canChangePassword(), code=UserError.INVALID_CONFIGURATION, message="Provider can not change password")
 			prov.changePassword(self.name, password)
 			self.storePassword(password)
 
 	def modify_organization(self, value):
 		from ..host import getOrganization
-		orga = getOrganization(value);
-		fault.check(orga, "No organization with name %s" % value)
+		orga = getOrganization(value)
+		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
 		self.organization=orga
 		
 	def modify_quota(self, value):
@@ -256,7 +257,8 @@ class User(attributes.Mixin, models.Model):
 	def modify(self, attrs):
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.iteritems():
-			fault.check(self.can_modify(key, value), "No permission to change attribute %s", key)
+			UserError.check(self.can_modify(key, value), code=UserError.DENIED,
+				message="No permission to change attribute", data={"attribute": key})
 			if key.startswith("_"):
 				self.attrs[key] = value
 				continue
@@ -362,7 +364,7 @@ def getUser(name):
 	except User.DoesNotExist:
 		return None
 	except User.MultipleObjectsReturned:
-		fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
+		raise UserError(code=UserError.AMBIGUOUS, message="Multiple users with that name exist, specify origin")
 
 def getFilteredUsers(filterfn, organization = None):
 	return filter(filterfn, getAllUsers(organization))
@@ -391,16 +393,14 @@ def mailAdmins(subject, text, global_contact = True, issue="admin"):
 			flag = Flags.OrgaAdminContact
 		if issue=="host":
 			flag = Flags.OrgaHostContact
-	
-	if flag is None:
-		fault.raise_("issue '%s' does not exist" % issue)
+	UserError.check(flag, code=UserError.INVALID_VALUE, message="Issue does not exist", data={"issue": issue})
 	
 	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
 	
 def mailUser(user, subject, text):
 	from_ = currentUser()
 	to = getUser(user)
-	fault.check(to, "User not found")
+	UserError.check(to, code=UserError.ENTITY_DOES_NOT_EXIST, message="User not found")
 	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
 
 def getAllUsers(organization = None):
@@ -447,15 +447,16 @@ def remove(user):
 	usage.remove()
 	quota.remove()
 
-def register(username, password, organization, attrs={}, provider=""):
+def register(username, password, organization, attrs=None, provider=""):
+	if not attrs: attrs = {}
 	for prov in providers:
 		if not prov.getName() == provider:
 			continue
-		fault.check(prov.canRegister(), "Provider can not register users")
+		UserError.check(prov.canRegister(), code=UserError.INVALID_CONFIGURATION, message="Provider can not register users")
 		user = prov.register(username, password, organization, attrs)
 		setCurrentUser(user)
 		return user
-	fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
+	raise UserError(code=UserError.INVALID_VALUE, message="No such provider", data={"provider": provider})
 
 providers = []
 
@@ -471,5 +472,3 @@ def init():
 		print >>sys.stderr, " - %s (%s)" % (conf["name"], conf["provider"])
 	if not providers:
 		print >>sys.stderr, "Warning: No authentication modules configured."
-		
-from .. import fault
