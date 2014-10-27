@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import elements, resources, host, fault
+from .. import elements, resources, host
 from ..resources import profile as r_profile, template as r_template
 from ..lib.attributes import Attr, attribute #@UnresolvedImport
-from ..lib import util, attributes #@UnresolvedImport
+from ..lib import attributes #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 import time
 
 ST_CREATED = "created"
@@ -112,14 +113,16 @@ class VMElement(elements.Element):
 		if self.profile:
 			return self.profile
 		pref = resources.profile.getPreferred(self.TYPE)
-		fault.check(pref, "Failed to find profile for %s", self.TYPE, fault.INTERNAL_ERROR)
+		InternalError.check(pref, code=InternalError.CONFIGURATION_ERROR, message="Failed to find profile",
+			data={"type": self.TYPE})
 		return pref
 
 	def _template(self):
 		if self.template:
 			return self.template
 		pref = resources.template.getPreferred(self.TYPE)
-		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
+		InternalError.check(pref, code=InternalError.CONFIGURATION_ERROR, message="Failed to find template",
+			data={"type": self.TYPE})
 		return pref
 
 	def modify_name(self, val):
@@ -130,18 +133,20 @@ class VMElement(elements.Element):
 
 	def modify_profile(self, val):
 		profile = resources.profile.get(self.TYPE, val)
-		fault.check(profile, "No such profile: %s", val)
+		UserError.check(profile, code=UserError.INVALID_VALUE, message="No such profile", data={"value": val})
 		if profile.restricted and not self.profile == profile:
-			fault.check(currentUser().hasFlag(Flags.RestrictedProfiles), "Profile is restricted")
+			UserError.check(currentUser().hasFlag(Flags.RestrictedProfiles), code=UserError.DENIED,
+				message="Profile is restricted")
 		self.profile = profile
 		if self.element:
 			self.element.modify(self._profileAttrs())
 
 	def modify_template(self, tmplName):
 		template = resources.template.get(self.TYPE, tmplName)
-		fault.check(template, "No such template: %s", tmplName)
+		UserError.check(template, code=UserError.INVALID_VALUE, message="No such template", data={"value": tmplName})
 		if template.restricted and not self.template == template:
-			fault.check(currentUser().hasFlag(Flags.RestrictedTemplates), "Template is restricted")
+			UserError.check(currentUser().hasFlag(Flags.RestrictedTemplates), code=UserError.DENIED,
+				message="Template is restricted")
 		self.template = template
 		if self.element:
 			self.element.modify({"template": self._template().name})
@@ -168,8 +173,8 @@ class VMElement(elements.Element):
 		if self.element:
 			try:
 				self.element.updateInfo()
-			except fault.XMLRPCError, exc:
-				if exc.faultCode == fault.UNKNOWN_OBJECT:
+			except UserError, err:
+				if err.code == UserError.ENTITY_DOES_NOT_EXIST:
 					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
@@ -186,7 +191,8 @@ class VMElement(elements.Element):
 	def action_prepare(self):
 		hPref, sPref = self.getLocationPrefs()
 		_host = host.select(site=self.site, elementTypes=[self.TYPE]+self.CAP_CHILDREN.keys(), hostPrefs=hPref, sitePrefs=sPref)
-		fault.check(_host, "No matching host found for element %s", self.TYPE)
+		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element",
+			data={"type": self.TYPE})
 		attrs = self._remoteAttrs()
 		attrs.update({
 			"template": self._template().name,

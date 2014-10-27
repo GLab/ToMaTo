@@ -15,6 +15,7 @@ def jsonify(o, pretty=False):
 	return mark_safe(json.dumps(o, indent=bool(pretty)))
 
 @register.simple_tag
+@register.filter
 def externalurl(name):
 	return serverInfo()['external_urls'].get(name, "")
 	

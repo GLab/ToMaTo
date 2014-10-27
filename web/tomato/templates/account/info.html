@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block title %}
+<title>Account {{account.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 
 {% load url from future %}
@@ -85,15 +89,15 @@ While waiting for the account activation you can create and design topologies bu
 
 <form>
 {% if "new_account" in account.flags and request.session.user|args:account.organization|call:"isAdmin" %}
-  <button type="submit" formaction="{%url "account.accept" id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-check"></span> accept account</button>
+  <button type="submit" formaction="{%url "account.accept" id=account.id%}" class="btn btn-success"><span class="glyphicon glyphicon-check"></span> Accept Account</button>
 {% endif %}  
-{% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags or account.id == request.session.user.id %}
+{% if request.session.user|args:account.organization|call:"isAdmin" or account.id == request.session.user.id %}
   <a class="btn btn-info" href="javascript:window.open('{%url "account.usage" account.id%}', '_blank', 'innerHeight=450,innerWidth=600,status=no,toolbar=no,menubar=no,location=no,hotkeys=no,scrollbars=no');"><span class="glyphicon glyphicon glyphicon-stats"></span> Resource Usage</a>
-  <button type="submit" formaction="{%url "account.edit" id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit account</button>
+  <button type="submit" formaction="{%url "account.edit" id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> Edit Account</button>
 {% endif %}
-{% if "orga_admin" in request.session.user.flags or "global_admin" in request.session.user.flags %}
+{% if request.session.user|args:account.organization|call:"isAdmin" %}
   <button type="submit" formaction="{%url "account.reset_password" id=account.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-wrench"></span> reset password</button>
-  <button type="submit" formaction="{%url "account.remove" id=account.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove account</button>
+  <button type="submit" formaction="{%url "account.remove" id=account.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> Remove Account</button>
 {% endif %}
 </form>
 

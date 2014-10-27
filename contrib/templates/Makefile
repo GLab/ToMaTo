@@ -1,4 +1,4 @@
-NLXTP_VERSION=0.3
+NLXTP_VERSION=0.3.1
 
 .PHONY: default
 default: files/prepare_vm.sh

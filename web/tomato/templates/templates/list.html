@@ -4,6 +4,10 @@
 
 {% load tomato %}
 
+{% block title %}
+<title>Template list - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 <h1>Template list</h1>
 
@@ -28,7 +32,7 @@
 
 <div class="skip-sm"></div>
 
-{% if templ_list|length > 10 and request.session.user.isHostManager %}
+{% if templ_list|length > 10 and request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
   {% if tech %}
@@ -142,7 +146,7 @@
 	<p>No templates</p>
 {% endif %}
 
-{% if request.session.user.isHostManager %}
+{% if request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
   {% if tech %}

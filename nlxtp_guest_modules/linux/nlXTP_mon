@@ -33,7 +33,7 @@ echo "starting monitor..."
 # start the script, pipe output into the out file
 cd $nlxtp_dir
 chmod +x $nlxtp_dir/auto_exec.sh
-nlxtp_dir=$nlxtp_dir archive_dir=$nlxtp_dir archive_version=$nlXTP_guest_modules_version archive_setstatus="() { echo -n \"\$@\" > $nlxtp_dir/exec_status/custom; }" $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
+env nlxtp_dir=$nlxtp_dir archive_dir=$nlxtp_dir archive_version=$nlXTP_guest_modules_version archive_setstatus="() { echo -n \"\$@\" > $nlxtp_dir/exec_status/custom; }" "BASH_FUNC_archive_setstatus()"="() { echo -n \"\$@\" > $nlxtp_dir/exec_status/custom; }" $nlxtp_dir/auto_exec.sh > $nlxtp_dir/exec_status/out 2>&1 &
 auto_exec_pid=$!
 
 # start the "running monitor".

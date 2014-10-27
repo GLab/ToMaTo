@@ -3,11 +3,17 @@
 {% load url from future %}
 {% load tomato %}
 
+
+{% block title %}
+<title>Account list - G-Lab ToMaTo</title> 
+{% endblock %}
+
+
 {% block content %}
 {% ifequal with_flag 'new_account' %}
 <h1>Pending Account Registrations</h1>
 {% else %}
-<h1>Account List</h1>
+<h1>Account list</h1>
 {% endifequal %}
 
 {% if 'global_admin' in request.session.user.flags %}

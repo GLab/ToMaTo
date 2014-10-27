@@ -25,7 +25,7 @@ from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.response import TemplateResponse
 
-from admin_common import BootstrapForm
+from admin_common import BootstrapForm, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from tomato.crispy_forms.bootstrap import FormActions, StrictButton
 from django.core.urlresolvers import reverse
@@ -50,8 +50,8 @@ def help(request, page=""):
         return TemplateResponse(request,"help/page_not_exist.html", status=404)
 
 class HelpForm(BootstrapForm):
-    admin_class = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=available_admin_classes), initial="organization", label="Who to Contact")
-    issue = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=available_issues), initial="admin")
+    admin_class = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_admin_classes)), label="Who to Contact")
+    issue = forms.CharField(max_length=50, required=True, widget = forms.widgets.Select(choices=append_empty_choice(available_issues)))
     subject = forms.CharField(max_length=255, required=True)
     message = forms.CharField(widget = forms.Textarea, label="Description", required=True)
     def __init__(self, *args, **kwargs):

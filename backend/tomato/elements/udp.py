@@ -16,9 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import elements, host, fault
+from .. import elements, host
 from ..lib.attributes import Attr #@UnresolvedImport
 from generic import ST_CREATED, ST_PREPARED, ST_STARTED
+from ..lib.error import UserError
 
 class UDP_Endpoint(elements.Element):
 	element = models.ForeignKey(host.HostElement, null=True, on_delete=models.SET_NULL)
@@ -76,8 +77,8 @@ class UDP_Endpoint(elements.Element):
 		if self.element:
 			try:
 				self.element.updateInfo()
-			except fault.XMLRPCError, exc:
-				if exc.faultCode == fault.UNKNOWN_OBJECT:
+			except UserError, err:
+				if err.code == UserError.ENTITY_DOES_NOT_EXIST:
 					self.element.state = ST_CREATED
 			self.setState(self.element.state, True)
 			if self.state == ST_CREATED:
@@ -90,7 +91,7 @@ class UDP_Endpoint(elements.Element):
 
 	def action_prepare(self):
 		_host = host.select(elementTypes=[self.remoteType()])
-		fault.check(_host, "No matching host found for element %s", self.TYPE)
+		UserError.check(_host, code=UserError.NO_RESOURCES, message="No matching host found for element", data={"type": self.TYPE})
 		attrs = self._remoteAttrs()
 		attrs.update({
 			"connect": self.connect,

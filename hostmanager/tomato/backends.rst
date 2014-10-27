@@ -33,10 +33,7 @@ Indexing the backend keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 After modifying the SSL keys, the certificate index must be rebuilt. ::
 
-  c_rehash /etc/tomato/client_certs
-
-If a different directory has been set in the configuration file, it must be 
-used here instead.
+  update-tomato-client-certs
 
 Note that the hostmanager does not have to be restarted after rebuilding the
 index.

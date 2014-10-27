@@ -17,7 +17,7 @@ Running ToMaTo
 In the backend folder:
 # ./server.py
 
-In the web/tomato folder:
+In the web folder:
 # ./manage.py runserver $PORT
 
 

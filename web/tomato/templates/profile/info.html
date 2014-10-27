@@ -2,6 +2,10 @@
 
 {% load url from future %}
 
+{% block title %}
+<title>Device profile {{profile.attrs.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 
 <form>
@@ -63,9 +67,11 @@
 
 {% load tomato %}
 
+{% if request.session.user.isGlobalHostManager or request.session.user.isGlobalAdmin %}
 <form>
   <button type="submit" formaction="{%url "profile.edit" profile.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit device profile</button>
   <button type="submit" formaction="{%url "profile.remove" profile.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove device profile</button>
 </form>
+{%endif%}
 
 {% endblock %}

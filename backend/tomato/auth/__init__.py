@@ -15,18 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import time, datetime, crypt, string, random, sys, threading
+import time, crypt, string, random, sys
 from django.db import models
 from ..lib import attributes, db, logging, util, mail #@UnresolvedImport
-from .. import config, fault, currentUser, setCurrentUser, scheduler, accounting
+from .. import config, currentUser, setCurrentUser, scheduler, accounting
+from ..lib.error import UserError
 
 class Flags:
 	Debug = "debug"
+	ErrorNotify = "error_notify"
 	NoTopologyCreate = "no_topology_create"
 	OverQuota = "over_quota"
 	NewAccount = "new_account"
 	RestrictedProfiles = "restricted_profiles"
 	RestrictedTemplates ="restricted_templates"
+	RestrictedNetworks ="restricted_networks"
 	NoMails = "nomails"
 	GlobalAdmin = "global_admin" #alle rechte für alle vergeben
 	GlobalHostManager = "global_host_manager"
@@ -45,11 +48,13 @@ class Flags:
 
 flags = {
 	Flags.Debug: "Debug: See everything",
+	Flags.ErrorNotify: "ErrorNotify: receive emails for new kinds of errors",
 	Flags.NoTopologyCreate: "NoTopologyCreate: Restriction on topology_create",
 	Flags.OverQuota: "OverQuota: Restriction on actions start, prepare and upload_grant",
 	Flags.NewAccount: "NewAccount: Account is new, just a tag",
 	Flags.RestrictedProfiles: "RestrictedProfiles: Can use restricted profiles",
 	Flags.RestrictedTemplates:"RestrictedTemplates: Can use restricted templates",
+	Flags.RestrictedNetworks:"RestrictedNetworks: Can use restricted Networks",
 	Flags.NoMails: "NoMails: Can not receive mails at all",
 	Flags.GlobalAdmin: "GlobalAdmin: Modify all accounts",
 	Flags.GlobalHostManager: "GlobalHostsManager: Can manage all hosts and sites",
@@ -95,16 +100,18 @@ categories = {
 						Flags.OverQuota,
 						Flags.RestrictedProfiles,
 						Flags.RestrictedTemplates,
-						Flags.NewAccount
-						],
-	'other': [
-						Flags.Debug,
+						Flags.RestrictedNetworks,
+						Flags.NewAccount,
 						Flags.NoMails
+						],
+	'error_management': [
+						Flags.Debug,
+						Flags.ErrorNotify
 						]
 	}
 
 orga_admin_changeable = [Flags.NoTopologyCreate, Flags.OverQuota, Flags.NewAccount, 
-						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
+						Flags.RestrictedProfiles, Flags.RestrictedTemplates, Flags.RestrictedNetworks, Flags.NoMails, Flags.OrgaAdmin, Flags.OrgaHostManager,
 						Flags.OrgaToplOwner, Flags.OrgaToplManager, Flags.OrgaToplUser, 
 						Flags.OrgaHostContact, Flags.OrgaAdminContact]
 global_pi_flags = [Flags.GlobalAdmin, Flags.GlobalToplOwner, Flags.GlobalAdminContact]
@@ -124,7 +131,7 @@ class User(attributes.Mixin, models.Model):
 	password_time = models.FloatField(null=True)
 	last_login = models.FloatField(default=time.time())
 	totalUsage = models.OneToOneField(accounting.UsageStatistics, related_name='+', on_delete=models.PROTECT)
-	quota = models.OneToOneField(accounting.Quota, null=True, related_name='+', on_delete=models.PROTECT)
+	quota = models.OneToOneField(accounting.Quota, related_name='+', on_delete=models.PROTECT)
 	
 	realname = attributes.attribute("realname", unicode)
 	email = attributes.attribute("email", unicode)
@@ -139,16 +146,22 @@ class User(attributes.Mixin, models.Model):
 	@classmethod	
 	def create(cls, name, organization, **kwargs):
 		from ..host import getOrganization
-		orga = getOrganization(organization);
-		fault.check(orga, "No organization with name %s" % organization)
+		orga = getOrganization(organization)
+		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": organization})
 		user = User(name=name,organization=orga)
 		user.attrs = kwargs
-		user.totalUsage = accounting.UsageStatistics.objects.create()
-		user.quota = accounting.Quota()
-		user.quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
 		user.last_login = time.time()
 		return user
-	
+
+	def save(self, *args, **kwargs):
+		if not hasattr(self, "totalUsage"):
+			self.totalUsage = accounting.UsageStatistics.objects.create()
+		if not hasattr(self, "quota"):
+			quota = accounting.Quota()
+			quota.init(config.DEFAULT_QUOTA["cputime"], config.DEFAULT_QUOTA["memory"], config.DEFAULT_QUOTA["diskspace"], config.DEFAULT_QUOTA["traffic"], config.DEFAULT_QUOTA["continous_factor"])
+			self.quota = quota
+		models.Model.save(self, *args, **kwargs)
+
 	def _saveAttributes(self):
 		pass #disable automatic attribute saving
 	
@@ -201,14 +214,14 @@ class User(attributes.Mixin, models.Model):
 		for prov in providers:
 			if not prov.getName() == self.origin:
 				continue
-			fault.check(prov.canChangePassword(), "Provider can not change password")
+			UserError.check(prov.canChangePassword(), code=UserError.INVALID_CONFIGURATION, message="Provider can not change password")
 			prov.changePassword(self.name, password)
 			self.storePassword(password)
 
 	def modify_organization(self, value):
 		from ..host import getOrganization
-		orga = getOrganization(value);
-		fault.check(orga, "No organization with name %s" % value)
+		orga = getOrganization(value)
+		UserError.check(orga, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": value})
 		self.organization=orga
 		
 	def modify_quota(self, value):
@@ -244,7 +257,8 @@ class User(attributes.Mixin, models.Model):
 	def modify(self, attrs):
 		logging.logMessage("modify", category="user", name=self.name, origin=self.origin, attrs=attrs)
 		for key, value in attrs.iteritems():
-			fault.check(self.can_modify(key, value), "No permission to change attribute %s", key)
+			UserError.check(self.can_modify(key, value), code=UserError.DENIED,
+				message="No permission to change attribute", data={"attribute": key})
 			if key.startswith("_"):
 				self.attrs[key] = value
 				continue
@@ -350,7 +364,7 @@ def getUser(name):
 	except User.DoesNotExist:
 		return None
 	except User.MultipleObjectsReturned:
-		fault.raise_("Multiple users with that name exist, specify origin", code=fault.USER_ERROR)
+		raise UserError(code=UserError.AMBIGUOUS, message="Multiple users with that name exist, specify origin")
 
 def getFilteredUsers(filterfn, organization = None):
 	return filter(filterfn, getAllUsers(organization))
@@ -364,6 +378,30 @@ def mailFilteredUsers(filterfn, subject, message, organization = None):
 
 def mailFlaggedUsers(flag, subject, message, organization=None):
 	mailFilteredUsers(lambda user: user.hasFlag(flag), subject, message, organization)
+	
+def mailAdmins(subject, text, global_contact = True, issue="admin"):
+	user = currentUser()
+	flag = None
+	
+	if global_contact:
+		if issue=="admin":
+			flag = Flags.GlobalAdminContact
+		if issue=="host":
+			flag = Flags.GlobalHostContact
+	else:
+		if issue=="admin":
+			flag = Flags.OrgaAdminContact
+		if issue=="host":
+			flag = Flags.OrgaHostContact
+	UserError.check(flag, code=UserError.INVALID_VALUE, message="Issue does not exist", data={"issue": issue})
+	
+	mailFlaggedUsers(flag, "Message from %s: %s" % (user.name, subject), "The user %s <%s> has sent a message to all administrators.\n\nSubject:%s\n%s" % (user.name, user.email, subject, text), organization=user.organization)
+	
+def mailUser(user, subject, text):
+	from_ = currentUser()
+	to = getUser(user)
+	UserError.check(to, code=UserError.ENTITY_DOES_NOT_EXIST, message="User not found")
+	to.sendMail("Message from %s: %s" % (from_.name, subject), "The user %s has sent a message to you.\n\nSubject:%s\n%s" % (from_.name, subject, text))
 
 def getAllUsers(organization = None):
 	if organization is None:
@@ -409,15 +447,16 @@ def remove(user):
 	usage.remove()
 	quota.remove()
 
-def register(username, password, organization, attrs={}, provider=""):
+def register(username, password, organization, attrs=None, provider=""):
+	if not attrs: attrs = {}
 	for prov in providers:
 		if not prov.getName() == provider:
 			continue
-		fault.check(prov.canRegister(), "Provider can not register users")
+		UserError.check(prov.canRegister(), code=UserError.INVALID_CONFIGURATION, message="Provider can not register users")
 		user = prov.register(username, password, organization, attrs)
 		setCurrentUser(user)
 		return user
-	fault.raise_("No provider named %s" % provider, fault.USER_ERROR)
+	raise UserError(code=UserError.INVALID_VALUE, message="No such provider", data={"provider": provider})
 
 providers = []
 

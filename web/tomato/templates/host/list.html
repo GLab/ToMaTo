@@ -3,6 +3,10 @@
 {% load url from future %}
 {% load tomato %}
 
+{% block title %}
+<title>Host list - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 <h1>Host list</h1>
 
@@ -104,9 +108,17 @@
 		{% for host in host_list %}
 	  	<tr>
 			{% if host.problems %}
-	    		<td title="{{host.problems|join:', '}}" enhancetable_customkey="1"><img src="/img/error.png"></td>
+				{%if host.enabled %}
+					<td title="{{host.problems|join:', '}}" enhancetable_customkey="1"><img src="/img/error.png"></td>
+				{% else %}
+	    			<td title="Disabled\n{{host.problems|join:', '}}" enhancetable_customkey="2"><img src="/img/cross.png"><img src="/img/error.png"></td>
+	    		{% endif %}
 			{% else %}
-	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
+				{%if host.enabled %}
+	    			<td title="Enabled" enhancetable_customkey="0"><img src="/img/tick.png"></td>	
+	    		{% else %}
+	    			<td title="Disabled" enhancetable_customkey="2"><img src="/img/cross.png"></td>
+	    		{% endif %}
 			{% endif %}
 			
 	    	<td><a href="{%url "host.info" host.name %}">{{host.name}}</a></td>
@@ -218,7 +230,7 @@
 	<p>No hosts</p>
 {% endif %}
 
-{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
+{% if request.session.user.isHostManager %}
 <form>
   <button type="submit" 
   {%if site%}

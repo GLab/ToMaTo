@@ -3,6 +3,10 @@
 {% load url from future %}
 {% load tomato %}
 
+{% block title %}
+<title>Device Profile list - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 <h1>Device Profile list</h1>
 
@@ -27,7 +31,7 @@
 
 <div class="skip-sm"></div>
 
-{% if profile_list|length > 10 and request.session.user.isHostManager %}
+{% if profile_list|length > 10 and request.session.user.isGlobalHostManager %}
 <form>
   <button type="submit" 
   {% if tech %}
@@ -101,7 +105,7 @@
 	<p>No profiles</p>
 {% endif %}
 
-{% if request.session.user.isHostManager %}
+{% if request.session.user.isGlobalHostManager or request.session.user.isGlobalAdmin  %}
 <form>
   <button type="submit" 
   {% if tech %}
