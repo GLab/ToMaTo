@@ -44,3 +44,11 @@ function loadbusy(evt) {
 			');
 	$('body').append(busyloader);
 }
+
+
+//preload the loading gif image
+$(document).ready(
+		function() {
+			$('body').append($('<img src="/img/loading_big.gif" class="preload"/>'));
+		}
+	);

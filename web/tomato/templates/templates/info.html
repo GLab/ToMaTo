@@ -1,9 +1,19 @@
 {% extends "base.html" %}
 
+{% load url from future %}
+
+{% block header %}
+<script language="JavaScript" type="text/javascript" src="/js/dynimg.js"></script>
+{% endblock %}
+
+{% block title %}
+<title>Template {{template.attrs.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 
 <form>
-  <button type="submit" formaction="{%url template_list%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
+  <button type="submit" formaction="{%url "template_list"%}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Templates</button>
 </form>
 
 <h1>Template {{template.attrs.name}}</h1>
@@ -67,6 +77,20 @@
 		</td>
 	</tr>	
 	<tr>
+		<th>Icon:</th>
+		<td>
+		{% if template.attrs.icon %}
+			<img src="{{template.attrs.icon}}" />
+		{% else %}
+			<img id="template_icon" src="/img/{{template.attrs.tech}}32.png" />
+			<script language="JavaScript">
+				var template_iconurl = dynimg(32,"{{template.attrs.tech}}","{{template.attrs.subtype}}","{{template.attrs.name}}");
+				$("#template_icon").attr("src",template_iconurl);
+			</script>
+		{% endif %}
+		</td>
+	</tr>	
+	<tr>
 		<th>Availability:</th>
 		<td>
 			<dl class="dl-horizontal">
@@ -98,10 +122,12 @@
 
 {% load tomato %}
 
+{% if request.session.user.isGlobalHostManager %}
 <form>
-  <button type="submit" formaction="{%url template.edit_torrent template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
-  <button type="submit" formaction="{%url template.edit template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
-  <button type="submit" formaction="{%url template.remove template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
+  <button type="submit" formaction="{%url "template.edit_torrent" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-open"></span> upload torrent</button>
+  <button type="submit" formaction="{%url "template.edit" template.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit template</button>
+  <button type="submit" formaction="{%url "template.remove" template.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove template</button>
 </form>
+{%endif%}
 
 {% endblock %}

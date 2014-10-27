@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys
+import os, sys, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
+os.environ['TOMATO_MODULE'] = "hostmanager"
 
 def db_migrate():
 	"""
@@ -45,13 +46,17 @@ def currentUser():
 def setCurrentUser(user):
 	_currentUser.user = user
 
-def login(credentials, sslCert):
-	if not sslCert:
+def login(commonName):
+	if not commonName:
 		return False
-	username = sslCert.get_subject().commonName
-	user, _ = User.objects.get_or_create(name=username)
+	user, _ = User.objects.get_or_create(name=commonName)
 	setCurrentUser(user)
-	return bool(sslCert)
+	return bool(commonName)
+
+from lib import logging, error
+def handleError():
+	dump.dumpException()
+	logging.logException()
 
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
@@ -60,9 +65,9 @@ from models import *
 	
 import api
 
-from . import dump, lib, resources, accounting, rpcserver, elements #@UnresolvedImport
+from . import lib, resources, accounting, rpcserver, elements, firewall, dump #@UnresolvedImport
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
-from lib import logging, util #@UnresolvedImport
+from lib import util #@UnresolvedImport
 
 scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
@@ -72,6 +77,7 @@ def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
+	firewall.add_all_networks(resources.network.getAll())
 	bittorrent.startClient(config.TEMPLATE_DIR)
 	fileserver.start()
 	rpcserver.start()
@@ -83,9 +89,37 @@ def reload_(*args):
 	reload(config)
 	logging.openDefault(config.LOG_FILE)
 
+def _printStackTraces():
+	import traceback
+	for threadId, stack in sys._current_frames().items():
+		print >>sys.stderr, "ThreadID: %s" % threadId
+		for filename, lineno, name, line in traceback.extract_stack(stack):
+			print >>sys.stderr, '\tFile: "%s", line %d, in %s' % (filename, lineno, name)
+			if line:
+				print >>sys.stderr, "\t\t%s" % (line.strip())
+	
+def _stopHelper():
+	stopped.wait(10)
+	if stopped.isSet() and threading.activeCount() == 1:
+		return
+	print >>sys.stderr, "Stopping takes long, waiting some more time..."
+	stopped.wait(10)
+	if stopped.isSet() and threading.activeCount() == 1:
+		return
+	print >>sys.stderr, "Ok last chance, killing process in 10 seconds..."
+	stopped.wait(10)
+	if stopped.isSet() and threading.activeCount() == 1:
+		return
+	print >>sys.stderr, "Some threads are still running:"
+	_printStackTraces()
+	print >>sys.stderr, "Killing process..."
+	process.kill(os.getpid(), force=True)
+	
 def stop(*args):
 	try:
 		print >>sys.stderr, "Shutting down..."
+		thread.start_new_thread(_stopHelper, ())
+		firewall.remove_all_networks(resources.network.getAll())
 		rpcserver.stop()
 		scheduler.stop()
 		fileserver.stop()

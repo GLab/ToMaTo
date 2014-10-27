@@ -25,7 +25,7 @@ from django.core.urlresolvers import reverse
 
 from lib import wrap_rpc
 from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
-from template import techs_dict
+from template import techs_dict,techs_choices
 
 from tomato.crispy_forms.layout import Layout
 
@@ -34,7 +34,7 @@ class ProfileForm(BootstrapForm):
 	ram = forms.IntegerField(label="RAM (MB)")
 	preference = forms.IntegerField(label="Preference", help_text="Sort profiles in the editor (higher preference first). The profile with highest preference will be the default. Must be an integer number.")
 	restricted = forms.BooleanField(label="Restricted", help_text="Restrict usage of this template to administrators", required=False)
-	tech = forms.ChoiceField(label="Tech",choices=[('kvmqm','kvmqm'), ('openvz','openvz'), ('repy','repy')])
+	tech = forms.ChoiceField(label="Tech",choices=techs_choices())
 	description = forms.CharField(widget = forms.Textarea, required=False)
 	def __init__(self, *args, **kwargs):
 		super(ProfileForm, self).__init__(*args, **kwargs)
@@ -143,7 +143,7 @@ def info(api, request, res_id):
 	return render(request, "profile/info.html", {"profile": profile, "techs_dict": techs_dict})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, tech=None):
 	if request.method == 'POST':
 		form = AddProfileForm(request.POST)
 		if form.is_valid():
@@ -167,7 +167,9 @@ def add(api, request):
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 	else:
-		form = AddProfileForm
+		form = AddProfileForm()
+		if tech:
+			form.fields['tech'].initial = tech
 		return render(request, "form.html", {'form': form, "heading":"Add Device Profile"})
 
 @wrap_rpc

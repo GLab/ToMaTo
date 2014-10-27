@@ -35,14 +35,37 @@
 						All devices connected to a switch which is connected to to the internet will have a direct connection to the internet (no NAT router or similar).<br />\
 						For this to work, the device must use DHCP. Instead of setting this in the editor, you could also have run "dhclient eth0" on your device.</p>\
 					<p class="tutorialCommand">\
-						Please start your topology. Changes to link emulation settings can be done while the topology is running.'
+						Please start your topology. Changes to link emulation settings can be done while the topology is running.',
+			help_page: 'NetworkTypes'
 			},
 			{
 			trigger:function(obj) { 
-				console.log("TODO: check if this is a connection between the switch and a device or the internet");
 				mask = {
 					component: "connection",
-					operation: "attribute-dialog"
+					operation: "attribute-dialog",
+					object: {
+						elements: { 
+							0: {
+								parent: {
+									data: {
+										type: "tinc_endpoint",
+									}
+								}
+							}
+						},
+						elements: { 
+							1: {
+								parent: {
+									data: {
+										type: "openvz",
+									}
+								}	
+							}
+						},
+					},
+
+
+							
 				};
 				return compareToMask(obj,mask);
 				

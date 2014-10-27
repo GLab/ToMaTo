@@ -22,8 +22,8 @@ from topology import Topology
 from auth import Flags
 from auth.permissions import Permissions, PermissionMixin, Role
 from lib import db, attributes, logging #@UnresolvedImport
+from lib.error import UserError, InternalError
 from accounting import UsageStatistics
-from lib.decorators import *
 from lib.cache import cached #@UnresolvedImport
 from host import HostConnection, HostElement, getConnectionCapabilities, getAll as getAllHosts
 
@@ -46,11 +46,16 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
-class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
+starting_list = set()
+starting_list_lock = threading.RLock()
+stopping_list = set()
+stopping_list_lock = threading.RLock()
+
+class Connection(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="connections")
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	#elements: [elements.Element]
 	connection1 = models.ForeignKey(HostConnection, null=True, on_delete=models.SET_NULL, related_name="+")
@@ -75,7 +80,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 	class Meta:
 		pass
 
-	def init(self, topology, el1, el2, attrs={}):
+	def init(self, topology, el1, el2, attrs=None):
+		if not attrs: attrs = {}
 		self.topology = topology
 		self.permissions = topology.permissions
 		self.attrs = dict(self.DEFAULT_ATTRS)
@@ -95,7 +101,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		return el1.CAP_CONNECTABLE and el2.CAP_CONNECTABLE
 		
 	def upcast(self):
-		return self
+		return self.reload()
 	
 	def mainConnection(self):
 		return self.connection1
@@ -150,7 +156,8 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 				continue
 			if key.startswith("_"):
 				continue
-			fault.check(key in self.CUSTOM_ATTRS, "Unsuported attribute for: %s", key)
+			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
+				message="Unsuported connection attribute: %s" % key, data={"attribute": key})
 			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
@@ -208,8 +215,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			mcon = self.mainConnection()
 			if mcon and action in mcon.getAllowedActions():
 				return
-		fault.check(action in self.CUSTOM_ACTIONS, "Unsuported action: %s", action)
-		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s can not be executed in state %s", (action, self.state))
+		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION,
+			message="Unsuported connection action: %s" % action, data={"action": action})
+		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
+			message="Action %s can not be executed in state %s" % (action, self.state),
+			data={"action": action, "state": self.state})
 	
 	def action(self, action, params):
 		"""
@@ -261,6 +271,10 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		removeLock(self)
 			
 	def _removeLocked(self):
+		try:
+			self.reload()
+		except Connection.DoesNotExist:
+			return
 		self.checkRemove()
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)		
@@ -269,7 +283,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			el.connection = None
 			el.save()
 		self.elements.clear() #Important, otherwise elements will be deleted
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
@@ -291,13 +305,15 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		Find out whether the directions are correct
 		"""
 		el1 = self.getElements()[0].mainElement()
-		fault.check(el1, "Can not check directions on unprepared element")
+		InternalError.check(el1, code=InternalError.INVALID_STATE,
+			message="Can not check directions on unprepared element", data={"element": self.getElements()[0].id})
 		id1 = el1.num
 		if self.connectionElement1:
 			id2 = self.connectionElement1.num
 		else:
 			el2 = self.getElements()[1].mainElement()
-			fault.check(el2, "Can not check directions on unprepared element")
+			InternalError.check(el2, code=InternalError.INVALID_STATE,
+				message="Can not check directions on unprepared element", data={"element": self.getElements()[1].id})
 			id2 = el2.num
 		return id1 < id2
 		
@@ -305,10 +321,11 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		if self.state == ST_STARTED:
 			return
 		els = self.getElements()
-		assert len(els) == 2, "Connection %s has %d connections" % (self, len(els))
+		InternalError.check(len(els) == 2, code=InternalError.UNKNOWN,
+			message="Connection has to many elements", data={"connection": self.id, "element_count": len(els)})
 		el1, el2 = els
 		el1, el2 = el1.mainElement(), el2.mainElement()
-		fault.check(el1 and el2, "Can not connect unprepared element")
+		InternalError.check(el1 and el2, code=InternalError.INVALID_STATE, message="Can not connect unprepared element")
 		# First create connection, then set attributes
 		if el1.host == el2.host:
 			# simple case: both elements are on same host
@@ -324,7 +341,7 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			self.connection1 = el1.connectWith(self.connectionElement1, attrs={}, ownerConnection=self)
 			self.connection2 = el2.connectWith(self.connectionElement2, attrs={}, ownerConnection=self)
 			if "emulation" in self.connection2.getAllowedAttributes():
-				self.connection2.modify({"emulation": False});
+				self.connection2.modify({"emulation": False})
 			self.save()
 			self.connectionElement1.action("start")
 			self.connectionElement2.action("start")
@@ -378,26 +395,43 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 		# the connection start at the same time, a lock is used to guarantee that only one instance
 		# of _start runs at the same time.
 		# To avoid the case that the second element uses old connection data and runs _start again,
-		# the object is fetched freshly from the database. 
-		with getLock(self):
-			obj = Connection.objects.get(id=self.id)
-			obj._start()
+		# the object is fetched freshly from the database.
+		with starting_list_lock:
+			if self in starting_list:
+				return
+			starting_list.add(self)
+		try: 
+			with getLock(self):
+				obj = Connection.objects.get(id=self.id)
+				obj._start()
+		finally:
+			with starting_list_lock:
+				starting_list.remove(self)
 		
 	def triggerStop(self):
 		# This is very important, see the comment on triggerStart 
-		with getLock(self):
-			try:
-				obj = Connection.objects.get(id=self.id)
-				obj._stop()
-			except Connection.DoesNotExist:
-				# Other end of connection deleted the connection, no need to stop it
-				pass
+		with stopping_list_lock:
+			if self in stopping_list:
+				return
+			stopping_list.add(self)
+		try: 
+			with getLock(self):
+				try:
+					obj = Connection.objects.get(id=self.id)
+					obj._stop()
+				except Connection.DoesNotExist:
+					# Other end of connection deleted the connection, no need to stop it
+					pass
+		finally:
+			with stopping_list_lock:
+				stopping_list.remove(self)
 		
 	@classmethod
 	@cached(timeout=3600)
 	def getCapabilities(cls, type_, host_):
 		if not host_:
 			host_ = getAllHosts()[0]
+		host_cap = None
 		if cls.DIRECT_ATTRS or cls.DIRECT_ACTIONS:
 			host_cap = host_.getConnectionCapabilities(type_)
 		cap_actions = dict(cls.CUSTOM_ACTIONS)
@@ -452,14 +486,18 @@ class Connection(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Mo
 			'site': h.site.name if h else None,
 			'fileserver_port': h.hostInfo.get('fileserver_port', None) if h else None
 		}
-		mcon = self.mainConnection()
-		if mcon:
-			info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
+		try:
+			mcon = self.mainConnection()
+			if mcon:
+				info["attrs"].update(self._adaptAttrs(mcon.attrs["attrs"]))
+		except:
+			import traceback
+			traceback.print_exc()
 		return info
 
 		
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])
 		
 		
@@ -473,13 +511,19 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
-def create(el1, el2, attrs={}):
-	fault.check(el1 != el2, "Cannot connect element with itself")
-	fault.check(not el1.connection, "Element #%d is already connected", el1.id)
-	fault.check(not el2.connection, "Element #%d is already connected", el2.id)
-	fault.check(el1.CAP_CONNECTABLE, "Element #%d can not be connected", el1.id)
-	fault.check(el2.CAP_CONNECTABLE, "Element #%d can not be connected", el2.id)
-	fault.check(el1.topology == el2.topology, "Can only connect elements from same topology")
+def create(el1, el2, attrs=None):
+	if not attrs: attrs = {}
+	UserError.check(el1 != el2, code=UserError.INVALID_CONFIGURATION, message="Cannot connect element with itself")
+	UserError.check(not el1.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
+		data={"element": el1.id})
+	UserError.check(not el2.connection, code=UserError.ALREADY_CONNECTED, message="Element is already connected",
+		data={"element": el2.id})
+	UserError.check(el1.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
+		data={"element": el1.id})
+	UserError.check(el2.CAP_CONNECTABLE, code=UserError.INVALID_VALUE, message="Element can not be connected",
+		data={"element": el2.id})
+	UserError.check(el1.topology == el2.topology, code=UserError.INVALID_VALUE,
+		message="Can only connect elements from same topology")
 	el1.topology.checkRole(Role.manager)	
 	con = Connection()
 	con.init(el1.topology, el1, el2, attrs)
@@ -489,4 +533,4 @@ def create(el1, el2, attrs={}):
 	logging.logMessage("info", category="connection", id=con.id, info=con.info())
 	return con
 
-from . import fault, currentUser
+from . import currentUser

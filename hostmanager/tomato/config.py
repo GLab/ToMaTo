@@ -47,9 +47,17 @@ already include configuration entries for logrotate that have to be adapted
 if this setting is changed.  
 """
 
-DUMP_DIR = "/var/log/tomato/dumps"
+DUMP_DIR = "/var/log/tomato/dumps_hostmanager"
 """
 The location of the dump files that are created when unexpected errors occur.
+"""
+
+DUMP_LIFETIME = 60*60*24*7
+"""
+Time in seconds until a dump file may be deleted.
+If it has been collected by the dumpmanager until then, it will still be saved
+in the dumpmanager's database.
+dumps will only be deleted daily, and only one day after the program has started.
 """
 
 DATA_DIR = "/var/lib/tomato"
@@ -68,32 +76,40 @@ field is set to ``None`` (the default), the template directory will be a
 subdirectory of the data directory.
 """
 
-SERVER = {
+SERVER = [{
+    "TYPE": "https+xmlrpc",
 	"PORT": 8000,
-	"SSL": True,
 	"SSL_OPTS": {
-		"cert_file" : "/etc/tomato/server.cert",
-		"key_file": "/etc/tomato/server.cert",
+		"cert_file" : "/etc/tomato/server.pem",
+		"key_file": "/etc/tomato/server.pem",
 		"client_certs": "/etc/tomato/client_certs",
 	}
-}
+}, {
+    "TYPE": "ssl+jsonrpc",
+	"PORT": 8003,
+	"SSL_OPTS": {
+		"cert_file" : "/etc/tomato/server.pem",
+		"key_file": "/etc/tomato/server.pem",
+		"client_certs": "/etc/tomato/client_certs.pem",
+	}
+}]
 """
 This field defines where and how to start the API server. It is a list of 
 server entries where each server entry is a dict containing the following
 values:
 
+   ``TYPE`` (default: ``https+xmlrpc``)
+      The type/protocol of the server. Available protocols are ``https+xmlrpc``
+      and ``ssl+jsonrpc``.
+
    ``PORT`` (default: ``8000``)
       The port number of the API server. This defaults to 8000. If several
       server entries are configured, each one needs its own free port number.
    
-   ``SSL`` (default: ``True``)
-      Whether SSL should be used or not. Since the authentication uses SSL
-      client certificates, this setting must be ``True``.
-   
    ``SSL_OPTS``
       This dict contains the following options for the SSL usage:
       
-      ``key_file``, ``cert_file`` (default: ``'/etc/tomato/server.cert'``)
+      ``key_file``, ``cert_file`` (default: ``'/etc/tomato/server.pem'``)
          The paths of the files containing the private key and the SSL 
          certificate for the server in PEM format.
          If one file contains both information, these fields can point to the
@@ -163,6 +179,8 @@ This dictionary defines the resources that the hostmanager can use. The default
 will work for most systems. If the hostmanager shares the host with other 
 systems that also need those resources, these entries might need to be adapted.
 """
+
+WEBSOCKIFY_PORT_BLACKLIST = [6000, 6666]
 
 import socket
 _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

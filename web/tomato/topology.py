@@ -128,6 +128,7 @@ def import_(api, request):
 			f = request.FILES['topologyfile']			
 			topology_structure = json.load(f)
 			id_, _, _, errors = api.topology_import(topology_structure)
+			api.topology_modify(id_, {'_initialized': True})
 			if errors != []:
 				errors = ["%s %s: failed to set %s=%r, %s" % (type_, cid, key, val, err) for type_, cid, key, val, err in errors]
 				note = "Errors occured during import:\n" + "\n".join(errors);
@@ -137,10 +138,10 @@ def import_(api, request):
 				api.topology_modify(id_,{'_notes':note,'_notes_autodisplay':True})				
 			return redirect("tomato.topology.info", id=id_)
 		else:
-			return render(request, "form.html", {'form': form, "heading":"Import Topology"})
+			return render(request, "form.html", {'form': form, "heading":"Import Topology", 'message_before': "Here you can import a topology file which you have previously exported from the Editor."})
 	else:
 		form = ImportTopologyForm()
-		return render(request, "form.html", {'form': form, "heading":"Import Topology"})
+		return render(request, "form.html", {'form': form, "heading":"Import Topology", 'message_before': "Here you can import a topology file which you have previously exported from the Editor."})
 		
 @wrap_rpc
 def export(api, request, id):

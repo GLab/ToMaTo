@@ -108,6 +108,7 @@ def commit_after(fn):
 		finally:
 			if transaction.is_dirty():
 				transaction.commit()
+	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
@@ -139,6 +140,12 @@ def changeset(fn):
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
+	
+class ReloadMixin:
+	def reload(self):
+		obj = self.__class__.objects.get(pk=self.pk)
+		self.__dict__ = obj.__dict__
+		return self
 						
 nameValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_-]{2,}$")
 templateValidator = validators.RegexValidator(regex="^[a-zA-Z0-9_.]+-[a-zA-Z0-9_.]+$")

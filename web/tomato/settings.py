@@ -74,6 +74,7 @@ CACHES = {
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SESSION_SERIALIZER='django.contrib.sessions.serializers.PickleSerializer'
 
 TEMPLATE_CONTEXT_PROCESSORS = ('django.core.context_processors.request',)
 

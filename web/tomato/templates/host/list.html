@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
+
+{% block title %}
+<title>Host list - G-Lab ToMaTo</title> 
+{% endblock %}
 
 {% block content %}
 <h1>Host list</h1>
@@ -18,16 +23,16 @@
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" role="menu">
-    <li><a href="{% url host_list %}">Show all hosts</a></li>
+    <li><a href="{% url "host_list" %}">Show all hosts</a></li>
     <li class="divider"></li>
     <li class="dropdown-header">Organizations</li>
     {% for orga in organizations %}
-      <li><a href="{% url organization_hosts organization=orga.name %}">Show all hosts of '{{orga.description}}'</a></li>    
+      <li><a href="{% url "organization_hosts" organization=orga.name %}">Show all hosts of '{{orga.description}}'</a></li>    
     {% endfor %}
     <li class="divider"></li>
     <li class="dropdown-header">Sites</li>
     {% for s in sites %}
-      <li><a href="{% url site_hosts site=s.name %}">Show all hosts on '{{s.description}}'</a></li>    
+      <li><a href="{% url "site_hosts" site=s.name %}">Show all hosts on '{{s.description}}'</a></li>    
     {% endfor %}
   </ul>
 </div>
@@ -54,7 +59,13 @@
 	{% if host_list|length > 10 %}
 	{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
 <form>
-  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+  <button type="submit" 
+  {%if site%}
+    formaction="{%url "host.add" site%}"
+  {%else%}
+    formaction="{%url "host.add"%}" 
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>
 	{% endif %}
 	{% endif %}
@@ -97,16 +108,24 @@
 		{% for host in host_list %}
 	  	<tr>
 			{% if host.problems %}
-	    		<td title="{{host.problems|join:', '}}" enhancetable_customkey="1"><img src="/img/error.png"></td>
+				{%if host.enabled %}
+					<td title="{{host.problems|join:', '}}" enhancetable_customkey="1"><img src="/img/error.png"></td>
+				{% else %}
+	    			<td title="Disabled\n{{host.problems|join:', '}}" enhancetable_customkey="2"><img src="/img/cross.png"><img src="/img/error.png"></td>
+	    		{% endif %}
 			{% else %}
-	    		<td title="No problems" enhancetable_customkey="0"><img src="/img/tick.png"></td>
+				{%if host.enabled %}
+	    			<td title="Enabled" enhancetable_customkey="0"><img src="/img/tick.png"></td>	
+	    		{% else %}
+	    			<td title="Disabled" enhancetable_customkey="2"><img src="/img/cross.png"></td>
+	    		{% endif %}
 			{% endif %}
 			
-	    	<td><a href="{%url host.info host.name %}">{{host.name}}</a></td>
+	    	<td><a href="{%url "host.info" host.name %}">{{host.name}}</a></td>
 
 	    	<td>{{host.address}}</td>
 	    	
-	    	<td title="{{site_map|get:host.site}}"><a href="{%url organization.info host.organization %}#{{host.site}}">{{host.site}}</a></td>
+	    	<td title="{{site_map|get:host.site}}"><a href="{%url "organization.info" host.organization %}#{{host.site}}">{{host.site}}</a></td>
 	    	<td enhancetable_customkey="{{host.load}}"><nobr>{{host.load|mult:100|floatformat}} %</nobr></td>
 	
 			{% if host.host_info %}
@@ -211,9 +230,15 @@
 	<p>No hosts</p>
 {% endif %}
 
-{% if "global_host_manager" in request.session.user.flags or "orga_host_manager" in request.session.user.flags %}
+{% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url host.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
+  <button type="submit" 
+  {%if site%}
+    formaction="{%url "host.add" site%}"
+  {%else%}
+    formaction="{%url "host.add"%}" 
+  {%endif%}
+  class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add host</button>
 </form>
 {% endif %}
 

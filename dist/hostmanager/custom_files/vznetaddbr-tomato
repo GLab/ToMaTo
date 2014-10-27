@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Add virtual network interfaces (veth's) in a container to a bridge on CT0
+
+CONFIGFILE=/etc/pve/openvz/$VEID.conf
+. $CONFIGFILE
+
+NETIFLIST=$(printf %s "$NETIF" |tr ';' '\n')
+
+if [ -z "$NETIFLIST" ]; then
+   echo >&2 "According to $CONFIGFILE, CT$VEID has no veth interface configured."
+   exit 1
+fi
+
+for iface in $NETIFLIST; do
+    bridge=
+    host_ifname=
+
+    for str in $(printf %s "$iface" |tr ',' '\n'); do
+        case "$str" in
+            bridge=*|host_ifname=*)
+                eval "${str%%=*}=\${str#*=}" ;;
+        esac
+    done
+
+    [ "$host_ifname" = "$3" ] ||
+        continue
+
+    echo "Adding interface $host_ifname to bridge $bridge on CT0 for CT$VEID"
+    ip link set dev "$host_ifname" up
+    ip addr add 0.0.0.0/0 dev "$host_ifname"
+    echo 1 >"/proc/sys/net/ipv4/conf/$host_ifname/proxy_arp"
+    echo 1 >"/proc/sys/net/ipv4/conf/$host_ifname/forwarding"
+    [ -n "$bridge" ] &&
+        brctl addif "$bridge" "$host_ifname"
+
+    break
+done
+
+exit 0
+

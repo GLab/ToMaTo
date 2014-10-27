@@ -23,7 +23,7 @@ from django.shortcuts import render
 from django import forms
 import base64
 from lib import wrap_rpc, serverInfo
-from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons
+from admin_common import RemoveConfirmForm, help_url, BootstrapForm, Buttons, append_empty_choice
 import datetime
 
 from tomato.crispy_forms.layout import Layout
@@ -35,6 +35,9 @@ techs=[
 		{"name": "repy", "label": "Repy"}
 	  ]
 techs_dict=dict([(t["name"], t["label"]) for t in techs])
+def techs_choices():
+	tdict = [(t["name"], t["label"]) for t in techs]
+	return append_empty_choice(tdict)
 
 class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
@@ -45,14 +48,15 @@ class TemplateForm(BootstrapForm):
 	nlXTP_installed = forms.BooleanField(label="nlXTP Guest Modules installed", help_text="Ignore this for Repy devices.", required=False)
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
+	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
 	
 class AddTemplateForm(TemplateForm):
-	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="'+help_url()+'/admin/torrents" target="_blank">Help</a>')
+	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="http://tomato.readthedocs.org/en/latest/docs/templates" target="_blank">Help</a>')
 	name = forms.CharField(max_length=50,label="Internal Name", help_text="Must be unique for all profiles. Cannot be changed. Not displayed.")
-	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=[(t["name"], t["label"]) for t in techs]))
+	tech = forms.CharField(max_length=255,widget = forms.widgets.Select(choices=techs_choices()))
 	def __init__(self, *args, **kwargs):
 		super(AddTemplateForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(add)
@@ -66,6 +70,7 @@ class AddTemplateForm(TemplateForm):
             'show_as_common',
             'restricted',
             'nlXTP_installed',
+            'icon',
             'creation_date',
             'torrentfile',
             Buttons.cancel_add
@@ -85,6 +90,7 @@ class EditTemplateForm(TemplateForm):
             'show_as_common',
             'restricted',
             'nlXTP_installed',
+			'icon',
             'creation_date',
             Buttons.cancel_save
         )
@@ -128,7 +134,7 @@ def info(api, request, res_id):
 	return render(request, "templates/info.html", {"template": template, "techs_dict": techs_dict})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, tech=None):
 	message_after = '<h2>Tracker URL</h2>	The torrent tracker of this backend is:	<pre><tt>'+serverInfo()["TEMPLATE_TRACKER_URL"]+'</tt></pre>'
 	if request.method == 'POST':
 		form = AddTemplateForm(request.POST, request.FILES)
@@ -147,12 +153,15 @@ def add(api, request):
 											'description':formData['description'],
 											'nlXTP_installed':formData['nlXTP_installed'],
 											'creation_date':creation_date,
+											'icon':formData['icon'],
 											'show_as_common':formData['show_as_common']})
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
 	else:
 		form = AddTemplateForm()
+		if tech:
+			form.fields['tech'].initial = tech
 		return render(request, "form.html", {'form': form, "heading":"Add Template", 'hide_errors':True, 'message_after':message_after})
 
 @wrap_rpc
@@ -212,6 +221,7 @@ def edit(api, request, res_id=None):
 														'description':formData['description'],
 														'creation_date':creation_date,
 														'nlXTP_installed':formData['nlXTP_installed'],
+														'icon':formData['icon'],
 														'show_as_common':formData['show_as_common']})
 				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:

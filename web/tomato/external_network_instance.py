@@ -20,7 +20,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django import forms
 from lib import wrap_rpc
-from admin_common import RemoveConfirmForm, BootstrapForm, Buttons
+from admin_common import RemoveConfirmForm, BootstrapForm, Buttons, append_empty_choice
 
 from tomato.crispy_forms.layout import Layout
 
@@ -32,8 +32,8 @@ class NetworkInstanceForm(BootstrapForm):
 	network = forms.CharField(label="Network")
 	def __init__(self, api, *args, **kwargs):
 		super(NetworkInstanceForm, self).__init__(*args, **kwargs)
-		self.fields["network"].widget = forms.widgets.Select(choices=external_network_list(api))
-		self.fields["host"].widget = forms.widgets.Select(choices=host_list(api))
+		self.fields["network"].widget = forms.widgets.Select(choices=append_empty_choice(external_network_list(api)))
+		self.fields["host"].widget = forms.widgets.Select(choices=append_empty_choice(host_list(api)))
 		self.helper.form_action = reverse(add)
 		self.helper.layout = Layout(
 			'host',
@@ -100,8 +100,6 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 			if net["id"] == network:
 				network_kind = net["attrs"]["kind"]
 				network_label = net["attrs"]["label"]
-	print networks
-	print network_kind
 	nis = filter(lambda ni: (not network or ni["attrs"]["network"] == network_kind) and (not host or ni["attrs"]["host"] == host), nis)
 	
 	if organization or site:
@@ -117,7 +115,7 @@ def list(api, request, network=None, host=None, organization=None, site=None):
 	return render(request, "external_network_instances/list.html", {'nis': nis, "networks": networks, "hosts": hosts, "host": host, 'sites':sites, 'site':site, 'site_description':site_description, 'organization_description': organization_description, 'organizations':organizations, 'organization':organization, "network": network, "network_kind": network_kind, "network_label": network_label})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, network=None, host=None):
 	if request.method == 'POST':
 		form = NetworkInstanceForm(api, request.POST)
 		if form.is_valid():
@@ -131,6 +129,11 @@ def add(api, request):
 			return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
 	else:
 		form = NetworkInstanceForm(api)
+		if network:
+			network = api.resource_info(network)['attrs']['kind']
+			form.fields["network"].initial=network
+		if host:
+			form.fields['host'].initial=host
 		return render(request, "form.html", {'form': form, "heading":"Add External Network Instance"})
 	
 @wrap_rpc
@@ -140,7 +143,7 @@ def remove(api, request, res_id=None):
 		if form.is_valid():
 			res = api.resource_info(res_id)
 			api.resource_remove(res_id)
-			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": res['network']}))
+			return HttpResponseRedirect(reverse("external_network_instances", kwargs={"network": network_id(api, res["attrs"]['network'])}))
 	form = RemoveConfirmForm.build(reverse("tomato.external_network_instance.remove", kwargs={"res_id": res_id}))
 	res = api.resource_info(res_id)
 	return render(request, "form.html", {"heading": "Remove External Network Instance", "message_before": "Are you sure you want to remove the external network instance?", 'form': form})	

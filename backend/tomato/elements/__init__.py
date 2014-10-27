@@ -15,18 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, shutil, threading, time
+import threading
 from django.db import models
 
 from ..connections import Connection
 from ..auth import Flags
 from ..auth.permissions import Permissions, PermissionMixin, Role
 from ..topology import Topology
-from ..lib import db, attributes, util, logging #@UnresolvedImport
+from ..lib import db, attributes, logging #@UnresolvedImport
 from ..accounting import UsageStatistics
 from ..lib.decorators import *
 from ..lib.cache import cached #@UnresolvedImport
-from .. import config
+from ..lib.error import UserError, InternalError
 
 TYPES = {}
 REMOVE_ACTION = "(remove)"
@@ -45,14 +45,14 @@ def removeLock(obj):
 		with getLock(obj):
 			del LOCKS[obj.id]
 
-class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model):
+class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mixin, models.Model):
 	topology = models.ForeignKey(Topology, null=False, related_name="elements")
 	type = models.CharField(max_length=30, validators=[db.nameValidator], choices=[(t, t) for t in TYPES.keys()]) #@ReservedAssignment
 	state = models.CharField(max_length=20, validators=[db.nameValidator])
 	parent = models.ForeignKey('self', null=True, related_name='children')
 	connection = models.ForeignKey(Connection, null=True, on_delete=models.SET_NULL, related_name='elements')
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	attrs = db.JSONField()
 	#host_elements: [host.HostElement]
 	#host_connections: [host.HostConnections]
@@ -80,14 +80,20 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 	class Meta:
 		pass
 
-	def init(self, topology, parent=None, attrs={}):
+	def init(self, topology, parent=None, attrs=None):
+		if not attrs: attrs = {}
 		topology.checkRole(Role.manager)
 		if parent:
-			fault.check(parent.type in self.CAP_PARENT, "Parent type %s not allowed for type %s", (parent.type, self.type))
-			fault.check(self.type in parent.CAP_CHILDREN, "Parent type %s does not allow children of type %s", (parent.type, self.type))
-			fault.check(parent.state in parent.CAP_CHILDREN[self.type], "Parent type %s does not allow children of type %s in state %s", (parent.type, self.type, parent.state))
+			UserError.check(parent.type in self.CAP_PARENT, code=UserError.INVALID_VALUE,
+				message="Parent type not allowed for this type", data={"parent_type": parent.type, "type": self.type})
+			UserError.check(self.type in parent.CAP_CHILDREN, code=UserError.INVALID_VALUE,
+				message="Parent does not allow children of this type", data={"parent_type": parent.type, "type": self.type})
+			UserError.check(parent.state in parent.CAP_CHILDREN[self.type], code=UserError.INVALID_STATE,
+				message="Parent does not allow children of this type in its current state",
+				data={"parent_type": parent.type, "type": self.type, "parent_state": parent.state})
 		else:
-			fault.check(None in self.CAP_PARENT, "Type %s needs parent", self.type)
+			UserError.check(None in self.CAP_PARENT, code=UserError.INVALID_CONFIGURATION, message="Type needs parent",
+				data={"type": self.type})
 		self.topology = topology
 		self.permissions = topology.permissions
 		self.parent = parent
@@ -110,10 +116,10 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		return self.
 		"""
 		try:
-			return getattr(self, self.type)
-		except:
-			pass
-		fault.raise_("Failed to cast element #%d to type %s" % (self.id, self.type), code=fault.INTERNAL_ERROR)
+			return getattr(self, self.type).reload()
+		except Exception, exc:
+			raise InternalError(code=InternalError.UPCAST, message="Failed to cast element to type %s" % self.type,
+				data={"id": self.id, "exception": repr(exc)})
 
 	def hasParent(self):
 		return not self.parent is None
@@ -162,7 +168,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 				continue
 			if key.startswith("_"):
 				continue
-			fault.check(key in self.CUSTOM_ATTRS, "Unsupported attribute for %s: %s", (self.type, key))
+			UserError.check(key in self.CUSTOM_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE,
+				message="Unsupported attribute", data={"type": self.type, "attribute": key})
 			self.CUSTOM_ATTRS[key].check(self, attrs[key])
 		
 	def modify(self, attrs):
@@ -217,8 +224,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		"""
 		self.checkRole(Role.manager)
 		if action in ["prepare", "start", "upload_grant"]:
-			fault.check(not currentUser().hasFlag(Flags.OverQuota), "Over quota")
-			fault.check(self.topology.timeout > time.time(), "Topology has timed out")
+			UserError.check(not currentUser().hasFlag(Flags.OverQuota), code=UserError.DENIED, message="Over quota")
+			UserError.check(self.topology.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
 		if self.DIRECT_ACTIONS and not action in self.DIRECT_ACTIONS_EXCLUDE:
 			mel = self.mainElement()
 			if mel and action in mel.getAllowedActions():
@@ -228,8 +235,11 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 				self.checkState()
 			if mel and action in mel.getAllowedActions():
 				return
-		fault.check(action in self.CUSTOM_ACTIONS, "Unsupported action for %s: %s", (self.type, action))
-		fault.check(self.state in self.CUSTOM_ACTIONS[action], "Action %s of %s can not be executed in state %s", (action, self.type, self.state))
+		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action",
+			data={"type": self.type, "action": action})
+		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
+			message="Action can not be executed in the current state",
+			data={"action": action, "type": self.type, "state": self.state})
 	
 	def action(self, action, params={}):
 		"""
@@ -247,6 +257,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		@type params: dict
 		"""
 		with getLock(self):
+			self.reload()
 			return self._action(action, params)
 		
 	def _action(self, action, params):
@@ -274,8 +285,10 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 
 	def checkRemove(self, recurse=True):
 		self.checkRole(Role.manager)
-		fault.check(recurse or self.children.empty(), "Cannot remove element with children")
-		fault.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION], "Element type %s can not be removed in its state %s", (self.type, self.state))
+		UserError.check(recurse or self.children.empty(), code=UserError.NOT_EMPTY, message="Cannot remove element with children")
+		UserError.check(not REMOVE_ACTION in self.CUSTOM_ACTIONS or self.state in self.CUSTOM_ACTIONS[REMOVE_ACTION],
+			code=UserError.INVALID_STATE, message="Element can not be removed in its current state",
+			data={"type": self.type, "state": self.state})
 		for ch in self.getChildren():
 			ch.checkRemove(recurse=recurse)
 		if self.connection:
@@ -303,7 +316,7 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 			ch.remove(recurse=True)
 		if self.connection:
 			self.getConnection().remove()
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		#not deleting permissions, the object belongs to the topology
 		self.delete()
 			
@@ -453,8 +466,8 @@ class Element(PermissionMixin, db.ChangesetMixin, attributes.Mixin, models.Model
 		if mel:
 			mel.updateInfo()
 
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.usageStatistics for el in self.getHostElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.usageStatistics for el in self.getHostElements()]
 								 + [con.usageStatistics for con in self.getHostConnections()])
 
 	def __str__(self):
@@ -473,9 +486,10 @@ def getAll(**kwargs):
 
 def create(top, type_, parent=None, attrs={}):
 	if parent:
-		fault.check(parent.topology == top, "Parent must be from same topology")
+		UserError.check(parent.topology == top, code=UserError.INVALID_CONFIGURATION,
+			message="Parent must be from same topology")
 	top.checkRole(Role.manager)	
-	fault.check(type_ in TYPES, "Unsupported type: %s", type_)
+	UserError.check(type_ in TYPES, code=UserError.UNSUPPORTED_TYPE, message="Unsupported type", data={"type": type_})
 	el = TYPES[type_]()
 	try:
 		el.init(top, parent, attrs)
@@ -489,5 +503,5 @@ def create(top, type_, parent=None, attrs={}):
 	logging.logMessage("info", category="element", id=el.id, info=el.info())		
 	return el
 
-from .. import fault, currentUser, resources, host
+from .. import currentUser, resources, host
 		

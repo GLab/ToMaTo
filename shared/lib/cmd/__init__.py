@@ -39,8 +39,9 @@ def spawn(cmd, stdout=DEVNULL, daemon=True, cwd=None):
     proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, close_fds=True, preexec_fn=os.setsid if daemon else None)
     return proc.pid
 
-def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None):
-    cmd = "exec " + cmd #important, so proc.pid matches the process and not only the shell
+def spawnShell(cmd, stdout=DEVNULL, daemon=True, cwd=None, useExec=True):
+    if useExec:
+        cmd = "exec " + cmd #important, so proc.pid matches the process and not only the shell
     proc=subprocess.Popen(cmd, cwd=cwd, stdout=stdout, stderr=subprocess.STDOUT, shell=True, close_fds=True, preexec_fn=os.setsid if daemon else None)
     return proc.pid
 

@@ -22,6 +22,7 @@ from accounting import UsageStatistics
 from auth import Flags
 from auth.permissions import Permissions, PermissionMixin, Role
 from . import scheduler
+from .lib.error import UserError
 
 class TimeoutStep:
 	INITIAL = 0
@@ -31,7 +32,7 @@ class TimeoutStep:
 
 class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	permissions = models.ForeignKey(Permissions, null=False)
-	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+')
+	totalUsage = models.OneToOneField(UsageStatistics, null=True, related_name='+', on_delete=models.SET_NULL)
 	timeout = models.FloatField()
 	timeout_step = models.IntegerField(default=TimeoutStep.INITIAL)
 	attrs = db.JSONField()
@@ -43,7 +44,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	class Meta:
 		ordering = ['-id']
 	
-	def init(self, owner, attrs={}):
+	def init(self, owner, attrs=None):
+		if not attrs: attrs = {}
 		self.attrs = {}
 		self.permissions = Permissions.objects.create()
 		self.permissions.set(owner, "owner")
@@ -77,11 +79,12 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		@type attrs: dict
 		"""
 		self.checkRole(Role.manager)
-		fault.check(not self.isBusy(), "Object is busy")
+		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
 		for key in attrs.keys():
 			if key.startswith("_"):
 				continue
-			fault.check(key in self.CAP_ATTRS, "Unsupported attribute for topology: %s", key)
+			UserError.check(key in self.CAP_ATTRS, code=UserError.UNSUPPORTED_ATTRIBUTE, message="Unsupported attribute for topology",
+				data={"attribute": key})
 		
 	def modify(self, attrs):
 		"""
@@ -123,9 +126,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		"""
 		self.checkRole(Role.manager)
 		if action in ["start", "prepare"]:
-			fault.check(self.timeout > time.time(), "Topology has timed out")
-		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(action in self.CAP_ACTIONS, "Unsupported action for topology: %s", action)
+			UserError.check(self.timeout > time.time(), code=UserError.TIMED_OUT, message="Topology has timed out")
+		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
+		UserError.check(action in self.CAP_ACTIONS, code=UserError.UNSUPPORTED_ACTION,
+			message="Unsupported action for topology", data={"action": action})
 	
 	def action(self, action, params):
 		"""
@@ -179,7 +183,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
 	def action_renew(self, timeout):
 		timeout = float(timeout)
-		fault.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin), "Timeout is greater than the maximum")
+		UserError.check(timeout <= config.TOPOLOGY_TIMEOUT_MAX or currentUser().hasFlag(Flags.GlobalAdmin),
+			code=UserError.INVALID_VALUE, message="Timeout is greater than the maximum")
 		self.timeout = time.time() + timeout
 		self.timeout_step = TimeoutStep.INITIAL if timeout > config.TOPOLOGY_TIMEOUT_WARNING else TimeoutStep.WARNED
 		
@@ -198,9 +203,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
 	def checkRemove(self, recurse=True):
 		self.checkRole(Role.owner)
-		fault.check(not self.isBusy(), "Object is busy")
-		fault.check(recurse or self.elements.exists(), "Cannot remove topology with elements")
-		fault.check(recurse or self.connections.exists(), "Cannot remove topology with connections")
+		UserError.check(not self.isBusy(), code=UserError.ENTITY_BUSY, message="Object is busy")
+		UserError.check(recurse or self.elements.exists(), code=UserError.NOT_EMPTY,
+			message="Cannot remove topology with elements")
+		UserError.check(recurse or self.connections.exists(), code=UserError.NOT_EMPTY,
+			message="Cannot remove topology with connections")
 		for el in self.getElements():
 			el.checkRemove(recurse=recurse)
 		for con in self.getConnections():
@@ -211,7 +218,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		logging.logMessage("info", category="topology", id=self.id, info=self.info())
 		logging.logMessage("remove", category="topology", id=self.id)
 		self.permissions.delete()
-		#self.totalUsage will be deleted automatically
+		self.totalUsage.remove()
 		self.delete()
 
 	def getElements(self):
@@ -224,9 +231,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		self.name = val
 			
 	def setRole(self, user, role):
-		fault.check(role in Role.RANKING or not role, "Role must be one of %s", Role.RANKING)
+		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
+			data={"roles": Role.RANKING})
 		self.checkRole(Role.owner)
-		fault.check(user != currentUser(), "Must not set permissions for yourself")
+		UserError.check(user != currentUser(), code=UserError.INVALID_VALUE, message="Must not set permissions for yourself")
 		logging.logMessage("permission", category="topology", id=self.id, user=user.name, role=role)
 		self.permissions.set(user, role)
 			
@@ -255,8 +263,8 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			"timeout": self.timeout
 		}
 		
-	def updateUsage(self, now):
-		self.totalUsage.updateFrom(now, [el.totalUsage for el in self.getElements()]
+	def updateUsage(self):
+		self.totalUsage.updateFrom([el.totalUsage for el in self.getElements()]
 								 + [con.totalUsage for con in self.getConnections()])
 
 	def __str__(self):
@@ -271,10 +279,12 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return list(Topology.objects.filter(**kwargs))
 
-def create(attrs={}):
-	fault.check(not currentUser().hasFlag(Flags.NoTopologyCreate), "User can not create new topologies")
+def create(attrs=None):
+	if not attrs: attrs = {}
+	UserError.check(not currentUser().hasFlag(Flags.NoTopologyCreate), code=UserError.DENIED,
+		message="User can not create new topologies")
 	top = Topology()
-	top.init(owner=currentUser())
+	top.init(owner=currentUser(), attrs=attrs)
 	logging.logMessage("create", category="topology", id=top.id)	
 	logging.logMessage("info", category="topology", id=top.id, info=top.info())	
 	return top
@@ -301,4 +311,4 @@ def timeout_task():
 
 scheduler.scheduleRepeated(600, timeout_task)
 
-from . import fault, currentUser, config, setCurrentUser
+from . import currentUser, config, setCurrentUser

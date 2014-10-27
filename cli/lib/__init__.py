@@ -1,5 +1,21 @@
 
+import xmlrpclib, ssl, urllib
+
 def tcpPortOpen(host, port):
+    """
+
+    Opens a connection to a remote socket at address (host, port) and closes it to open the TCP port.
+
+    Parameter *host*:
+        Host address of the socket 
+    Parameter *port*:
+        TCP port that will be opened
+    
+    Return value:
+      This method returns a boolean which is true, if the TCP Port is open and false otherwise. 
+
+    
+    """
     from socket import socket, AF_INET, SOCK_STREAM
     s = socket(AF_INET, SOCK_STREAM)
     result = s.connect_ex((host, port))
@@ -7,10 +23,35 @@ def tcpPortOpen(host, port):
     return not result
 
 def download(url, file):
+    """
+    Downloads a network object from an URL to a local file.
+
+    Parameter *url*:
+        Url to the network object
+  
+    Parameter *file*:
+        File to copy the network object to.
+    
+    """
     import urllib
     urllib.urlretrieve(url, file)
     
+    
 def upload(url, file, name="upload"):
+    """
+    
+    Uploads a file to the target URL via the HTTP post command using name as content key.
+
+    Parameter *url*:
+        Target URL for the upload
+  
+    Parameter *file*:
+        Path to the file to be uploaded
+    
+    Parameter *name*:
+        Should always stay "upload". Content key for transmitted file.
+    
+    """
     import httplib, urlparse, os
     parts = urlparse.urlparse(url)
     conn = httplib.HTTPConnection(parts.netloc)
@@ -38,32 +79,74 @@ def upload(url, file, name="upload"):
     resps = conn.getresponse()
     data = resps.read()
     
-def link_info(id, ip, samples=10, maxWait=5, oneWayAdapt=False):
-    res = element_action(id, "execute", {"cmd": "ping -A -c %d -n -q -w %d %s; true" % (samples, maxWait, ip)})
-    if not res:
-        return
-    import re
-    spattern = re.compile("(\d+) packets transmitted, (\d+) received(, \+(\d+) errors)?, (\d+)% packet loss, time (\d+)(m?s)")
-    dpattern = re.compile("rtt min/avg/max/mdev = (\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+) (m?s)(, pipe \d+)?, ipg/ewma (\d+\.\d+)/(\d+\.\d+) (m?s)")
-    summary = False
-    details = False
-    for line in res.splitlines():
-        if spattern.match(line):
-            (transmitted, received, dummy, errors, loss, total, unit) = spattern.match(line).groups()
-            (transmitted, received, errors, loss, total) = (int(transmitted), int(received), int(errors) if errors else None, float(loss)/100.0, float(total))
-            summary = True
-        if dpattern.match(line):
-            (rttmin, rttavg, rttmax, rttstddev, rttunit, dummy, ipg, ewma, ipg_ewma_unit) = dpattern.match(line).groups()
-            (rttmin, avg, rttmax, stddev, ipg, ewma) = (float(rttmin), float(rttavg), float(rttmax), float(rttstddev), float(ipg), float(ewma))
-            details = True
-    if not summary or not details or errors:
-        return
-    if oneWayAdapt:
-        import math
-        loss = 1.0 - math.sqrt(1.0 - loss)
-        avg = avg / 2.0
-        stddev = stddev / 2.0
-    if rttunit == "s":
-        avg = avg * 1000.0
-        stddev = stddev * 1000.0
-    return {"lossratio": loss, "delay": avg, "delay_stddev": stddev}
+    
+class SafeTransportWithCerts(xmlrpclib.SafeTransport):
+    """
+    A class containing a SSL connection to a host using the xmlrpclib.
+    
+    Parameter *xmlrpclib.SafeTransport*:
+        A internal transport factory instance for the connection
+
+    """
+    def __init__(self, keyFile, certFile, *args, **kwargs):
+        xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
+        self.certFile = certFile
+        self.keyFile = keyFile
+    def make_connection(self,host):
+        host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
+        return xmlrpclib.SafeTransport.make_connection(self,host_with_cert)
+    
+class ServerProxy(object):
+    """
+    A server proxy class with a connection to a remote XML-RPC server.
+
+    Parameter *object*:
+        Dictionary which contains the host url and different optional arguments for the proxy connection.
+        See the xmlrpclib documentation for details.
+
+    """
+    def __init__(self, url, **kwargs):
+        self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+    def __getattr__(self, name):
+        call_proxy = getattr(self._xmlrpc_server_proxy, name)
+        def _call(*args, **kwargs):
+            return call_proxy(args, kwargs)
+        return _call
+
+def getConnection(hostname, port, ssl, username=None, password=None, sslCert=None):
+    """
+    Creates a server proxy to a host using ssl transport optional.
+    
+    Parameter *hostname*:
+        Address of the host of the server
+    Parameter *port*:
+        Port of the host server
+    Parameter *ssl*:
+        Boolean whether ssl should be used or not
+    Parameter *username*:
+        The username to use for login
+    Parameter *password*:
+        The password to user for login
+    Parameter *sslCert*:
+        SSL certificate to use for a ssl connection
+    
+    Return value:
+        This method returns a server proxy object.
+    
+    """
+    proto = 'https' if ssl else 'http'
+    auth = ""
+    if username:
+        username = urllib.quote_plus(username)
+        auth = username
+        if password:
+            password = urllib.quote_plus(password)
+            auth += ":" + password
+    if auth:
+        auth += "@"
+    transport = None
+    if ssl and sslCert:
+        transport = SafeTransportWithCerts(sslCert, sslCert)
+    #print '%s://%s%s:%s' % (proto, auth, hostname, port)
+    return ServerProxy('%s://%s%s:%s' % (proto, auth, hostname, port), allow_none=True, transport=transport)
+    

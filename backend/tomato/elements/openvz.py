@@ -17,7 +17,8 @@
 
 from .. import elements, scheduler
 import generic, time
-from ..lib import util #@UnresolvedImport
+from ..lib import util,attributes #@UnresolvedImport
+from . import getLock
 
 class OpenVZ(generic.VMElement):
 	TYPE = "openvz"
@@ -43,6 +44,32 @@ class OpenVZ_Interface(generic.VMInterface):
 	TYPE = "openvz_interface"
 	CAP_PARENT = [OpenVZ.TYPE]
 	
+	
+	ip4address_attr = attributes.Attr("ip4address", desc="IPv4 address", type="str")
+	ip4address = ip4address_attr.attribute()
+	ip6address_attr = attributes.Attr("ip6address", desc="IPv6 address", type="str")
+	ip6address = ip6address_attr.attribute()
+	
+	CUSTOM_ATTRS = {
+				"ip4address":ip4address_attr,"ip6address":ip6address_attr
+				}
+	
+	
+	def modify_ip4address(self,val):
+		if not '/' in val:
+			val+='/24'		
+		self.ip4address = val
+		if self.element:
+			self.element.modify({"ip4address": val})
+	
+	def modify_ip6address(self,val):
+		if not '/' in val:
+			val+='/64'		
+		self.ip6address = val
+		if self.element:
+			self.element.modify({"ip6address": val})
+			
+			
 	class Meta:
 		db_table = "tomato_openvz_interface"
 		app_label = 'tomato'
@@ -50,7 +77,8 @@ class OpenVZ_Interface(generic.VMInterface):
 @util.wrap_task
 def syncRexTFV():
 	for e in OpenVZ.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
-		e.updateInfo()
+		with getLock(e):
+			e.updateInfo()
 
 scheduler.scheduleRepeated(1, syncRexTFV)
 	

@@ -224,16 +224,15 @@ var TextElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
 		this.pattern = options.pattern || /^.*$/;
-		this.element = $('<div />');
-		this.textfieldbox = $('<div class="col-sm-12" />');
+		this.element = $('<div class="col-sm-12" />');
 		this.textfield = $('<input class="form-control" type="'+(options.password ? "password" : "text")+'" name="'+this.name+'"/>');
-		
-		this.element.append(this.textfieldbox);
-		this.textfieldbox.append(this.textfield);
+
+		this.element.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
 		if (options.onChangeFct) {
 			this.textfield.change(options.onChangeFct);
+			this.textfield.keypress(options.onChangeFct);
 		}
 		var t = this;
 		this.textfield.change(function() {
@@ -256,12 +255,10 @@ var TextElement = FormElement.extend({
 var TextAreaElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		this.element = $('<div class="row" />');
-		this.textfieldbox = $('<div class="col-md-9">');
+		this.element = $('<div class="col-sm-12">');
 		this.textfield = $('<textarea class="form-control" name="'+this.name+'"></textarea>');
 		
-		this.element.append(this.textfieldbox);
-		this.textfieldbox.append(this.textfield);
+		this.element.append(this.textfield);
 		
 		if (options.disabled) this.textfield.attr({disabled: true});
 		var t = this;
@@ -281,7 +278,8 @@ var TextAreaElement = FormElement.extend({
 var CheckboxElement = FormElement.extend({
 	init: function(options) {
 		this._super(options);
-		this.element = $('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
+		
+		this.element = $('<div class="col-sm-12">').append('<input class="form-element" type="checkbox" name="'+this.name+'"/>');
 		if (options.disabled) this.element.attr({disabled: true});
 		var t = this;
 		this.element.change(function() {
@@ -375,7 +373,14 @@ var TemplateElement = FormElement.extend({
 		this.disabled = options.disabled;
 		this.call_element = options.call_element;
 		
-		//this.element.before($('<div>'+this.template.label+'</div>'));
+		this.element = $('<div style="display:none;"></div>');
+		this.labelarea = $('<div class="col-sm-6"/>');
+		this.changebuttonarea = $('<div class="col-sm-3"/>');
+		this.infoarea = $('<div class="col-sm-3"/>');
+		
+		this.element.after(this.labelarea);
+		this.element.after(this.changebuttonarea);
+		this.element.after(this.infoarea);
 		
 		template = editor.templates.get(options.type,options.value);
 		if (options.custom_template) {
@@ -389,23 +394,51 @@ var TemplateElement = FormElement.extend({
 		return this.value;
 	},
 	
-	change_value: function(template) {
+	change_value: function(template,loading) {
 		this.value = template.name;
 		this.template = template;
 		var t = this;
 		
 		var changebutton = $('&nbsp;<button type="button" class="btn btn-primary"><span class="ui-button-text">Change</span></button>');
 		changebutton.click(function() {
-			t.call_element.showTemplateWindow(function(value) {t.change_value( editor.templates.get(t.options.type,value) ); });
+			t.call_element.showTemplateWindow(
+				
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						true
+					);
+				},
+					
+				function(value) {
+					t.change_value(
+						editor.templates.get(
+							t.options.type,value
+						),
+						false
+					);
+				}
+				
+			);
 		})
 		
-		if (this.disabled) {
+		if (this.disabled || loading) {
 			changebutton.prop("disabled",true);
 		}
 		
-		this.element = $('<div class="col-sm-6"/>').append(this.template.label);
-		this.element.after($('<div class="col-sm-3"/>').append(changebutton));
-		this.element.after($('<div class="col-sm-3"/>').append($(this.template.infobox())));
+		this.labelarea.empty();
+		this.changebuttonarea.empty();
+		this.infoarea.empty();
+		
+		this.labelarea.append(this.template.label);
+		this.changebuttonarea.append(changebutton);
+		this.infoarea.append($(this.template.infobox()));
+		
+		if (loading) {
+			this.labelarea.append($(' <img src="/img/loading.gif" />'));
+		}
 	}
 });
 
@@ -673,10 +706,17 @@ var AttributeWindow = Window.extend({
 		tr.append($('<label for="'+element.getElement().name+'" class="col-sm-4 control-label" />').append(element.getLabel()));
 		elem = $('<div class="col-sm-8" />')
 		elem.append($('<p style="padding:0px; margin:0px;"></p>').append($(element.getElement())));
-		if (element.options.help_text)
-			elem.append($('<p style="padding:0px; margin:0px; color:#888888;"></p>').append(element.options.help_text));
 		tr.append(elem);
 		this.table.append(tr);
+		if (element.options.help_text) {
+			var helptr = $('<div class="form-group" />');
+			helptr.append($('<div class="col-sm-4 control-label" />'));
+			helptr.append($('<p style="padding:0px; margin:0px;"></p>')
+					.append($('<div class="col-sm-8" style="color:#888888;"></div>')
+					.append($('<div class="col-sm-12" style="color:#888888;"></div>')
+					.append(element.options.help_text))));
+			this.table.append(helptr);
+		}
 		return element;
 	},
 	autoElement: function(info, value, enabled) {
@@ -760,9 +800,9 @@ var TemplateWindow = Window.extend({
 		                    {
 		                    	text: "Save",
 		                    	click: function() {
-		                			t.save();
 		                			t.hide();
-		                			t.callback(t.getValue());
+		                    		t.callback_before_finish(t.getValue());
+		                			t.save();
 		                		}
 		         
 		                    },
@@ -770,13 +810,14 @@ var TemplateWindow = Window.extend({
 		                    	text: "Cancel",
 		                    	click: function() {
 		                			t.hide();
-		                			t.callback(t.getValue());
 		                		}
 		                    }];
 		
 		this._super(options);
 		this.element = options.element;
-		this.setTitle("Change Template for "+this.element.data.attrs.name+' (#'+this.element.data.id+')');
+		var windowTitle = "Change Template for "+this.element.data.attrs.name;
+		if (editor.options.show_ids) windowTitle = windowTitle + ' (#'+this.element.data.id+')'
+		this.setTitle(windowTitle);
 		if (options.disabled == undefined || options.disabled == null) {
 			this.disabled = false;
 		} else {
@@ -784,8 +825,16 @@ var TemplateWindow = Window.extend({
 		}
 		
 		this.callback = function(value) {};
-		if (options.callback != undefined && options.callback != null) {
-			this.callback = options.callback;
+		if (options.callback_after_finish != undefined && options.callback_after_finish != null) {
+			this.callback_after_finish = options.callback_after_finish;
+		} else {
+			this.callback_after_finish = function(value) {};
+		}
+		
+		if (options.callback_before_finish != undefined && options.callback_before_finish != null) {
+			this.callback_before_finish = options.callback_before_finish;
+		} else {
+			this.callback_before_finish = function(value) {};
 		}
 		
 		this.disable_restricted = !(editor.allowRestrictedTemplates);
@@ -798,14 +847,20 @@ var TemplateWindow = Window.extend({
 		var table = this.getList();
 		
 		
-		
+		this.div.append($('<div style="margin-bottom:0.5cm; margin-top:0.5cm;"><table style="vertical-align:top;"><tr><th style="vertical-align:top;">Warning:</th><td style="vertical-align:top; font-size: 10pt; white-space:normal; font-style:italic;">You will lose all data on this device if you change the template.</td></tr></table></div>'));
 		this.div.append(table);
 	},
 	getValue: function() {
 		return this.value;
 	},
 	save: function() {
-		this.element.changeTemplate(this.getValue());
+		var t = this;
+		this.element.changeTemplate(
+			this.getValue(),
+			function(){
+				t.callback_after_finish(t.getValue());
+			}
+		);
 	},
 	getList: function() {
 		var form = $('<form class="form-horizontal"></form>');
@@ -865,7 +920,6 @@ var PermissionsWindow = Window.extend({
 		this.options = options;
 		this.topology = options.topology;
 		this.permissions = options.permissions;
-		console.log(this.topology);
 		
 		this.options.allowChange = this.options.isGlobalOwner;
 		
@@ -1257,6 +1311,13 @@ var Workspace = Class.extend({
 	onModeChanged: function(mode) {
 		for (var name in Mode) this.container.removeClass("mode_" + Mode[name]);
 		this.container.addClass("mode_" + mode);
+	},
+	
+	updateTopologyTitle: function() {
+		var t = editor.topology;
+		var new_name="Topology '"+t.data.attrs.name+"'"+(editor.options.show_ids ? " [#"+t.id+"]" : "");
+		$('#topology_name').text(new_name);
+		document.title = new_name+" - G-Lab ToMaTo";
 	}
 });
 
@@ -1342,7 +1403,7 @@ var Topology = Class.extend({
 		for (var i=0; i<data.connections.length; i++) this.loadConnection(data.connections[i]);
 		
 		this.settingOptions = true;
-		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode"];
+		var opts = ["safe_mode", "snap_to_grid", "fixed_pos", "colorify_segments", "debug_mode", "show_ids", "show_sites_on_elements"];
 		for (var i = 0; i < opts.length; i++) {
 			if (this.data.attrs["_"+opts[i]] != null) this.editor.setOption(opts[i], this.data.attrs["_"+opts[i]]);
 		}
@@ -1428,8 +1489,13 @@ var Topology = Class.extend({
 				base = "tinc";
 				break;		
 			default:
-				base = data.type;
+				if (data.attrs && data.attrs.template) {
+					base = editor.templates.get(data.type, data.attrs.template).label;
+				} else {
+					base = data.type;
+				}
 		}
+		base = base+" #";
 		var num = 1;
 		while (names.indexOf(base+num) != -1 || this.pendingNames.indexOf(base+num) != -1) num++;
 		return base+num;
@@ -1691,7 +1757,7 @@ var Topology = Class.extend({
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
 							t.modify_value("name", t.rename.element.getValue());
-							$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+							editor.workspace.updateTopologyTitle();
 						}
 						t.rename = null;
 					}
@@ -1767,7 +1833,7 @@ var Topology = Class.extend({
 										"_notes": description.getValue(),
 										"_initialized": true
 									});
-									$('#topology_name').text("Topology '"+t.data.attrs.name+"' [#"+t.id+"]");
+									editor.workspace.updateTopologyTitle();
 									t.action("renew", {params:{
 										"timeout": timeout.getValue()
 									}});
@@ -1868,7 +1934,7 @@ var createTopologyMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+'<br />Topology #'+obj.id+'</span>',
+				html:"<span>"+obj.name()+"<small><br />Topology "+(editor.options.show_ids ? ' #'+obj.id : "")+'</small></span>',
 				type:"html"
 			},
 			"actions": {
@@ -2027,7 +2093,10 @@ var Component = Class.extend({
 			special: {}
 		} 
 	},
-	showConfigWindow: function() {
+	showConfigWindow: function(showTemplate,callback) {
+		
+		if(showTemplate == null) showTemplate=true;
+		
 		var absPos = this.getAbsPos();
 		var wsPos = this.editor.workspace.container.position();
 		var t = this;
@@ -2056,6 +2125,11 @@ var Component = Class.extend({
 					t.modify(values);	
 					t.configWindow.remove();
 					t.configWindow = null;
+					
+					
+					if(callback != null) {
+						callback(t);
+					}
 				},
 				Cancel: function() {
 					t.configWindow.remove();
@@ -2065,8 +2139,10 @@ var Component = Class.extend({
 		});
 		for (var i=0; i<settings.order.length; i++) {
 			var name = settings.order[i];
-			if (settings.special[name]) this.configWindow.add(settings.special[name]);
-			else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			if(showTemplate || !(name == 'template')) {
+				if (settings.special[name]) this.configWindow.add(settings.special[name]);
+				else if (this.caps.attrs[name]) this.configWindow.autoAdd(this.caps.attrs[name], this.data.attrs[name], this.attrEnabled(name));
+			}
 		}
 		if (settings.unknown) {
 			for (var name in this.caps.attrs) {
@@ -2183,7 +2259,8 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			var link_emulation = $('<div class="tab-pane active" id="Link_Emulation" />');
 			var link_emulation_elements = $('<div class="form-group" />')
 						.append($('<label class="col-sm-4 control-label">Enabled</label>'))
-						.append($('<div class="col-sm-8">').append(el.getElement()));
+						.append($('<div class="col-sm-8" style="padding: 0px" />')
+						.append(el.getElement()));
 			
 			//direction arrows
 			var size = 30;
@@ -2254,10 +2331,9 @@ var ConnectionAttributeWindow = AttributeWindow.extend({
 			});
 			this.elements.push(el);
 			var packet_capturing_elements = $('<div class="form-group" />')
-					.append($('<label class="col-sm-6 control-label">Enabled</div>')
-					.after($('<div class="col-sm-6" />')
-					.append($('<div class="col-sm-12" />')
-					.append(el.getElement()))));
+			.append($('<label class="col-sm-6 control-label">Enabled</label>'))
+			.append($('<div class="col-sm-6" />')
+			.append(el.getElement()));
 		
 			
 			var order = ["capture_mode", "capture_filter"];
@@ -2486,6 +2562,9 @@ var Connection = Component.extend({
 	},
 	name: function() {
 		return this.fromElement().name() + " &#x21C4; " + this.toElement().name();
+	},
+	name_vertical: function() {
+		return this.fromElement().name() + "<br/>&#x21C5;<br/>" + this.toElement().name();
 	}
 });
 
@@ -2494,7 +2573,7 @@ var createConnectionMenu = function(obj) {
 		callback: function(key, options) {},
 		items: {
 			"header": {
-				html:'<span>'+obj.name()+"<br />Connection #"+obj.id+'</span>', type:"html"
+				html:'<span>'+obj.name_vertical()+"<small><br>Connection"+(editor.options.show_ids ? " #"+obj.id : "")+'</small></span>', type:"html"
 			},
 			"usage": {
 				name:"Resource usage",
@@ -2616,6 +2695,7 @@ var Element = Component.extend({
 		var usedMajors = {};
 		for (var i=0; i < seg.elements.length; i++) {
 			var el = this.topology.elements[seg.elements[i]];
+			if (!el || !el.data) continue; //Element is being created
 			if (el.data.type == "external_network_endpoint") return "dhcp";
 			var addr = el.getUsedAddress();
 			if (! addr) continue;
@@ -2639,6 +2719,7 @@ var Element = Component.extend({
 				var seg = segs[i];
 				for (var j=0; j < seg.elements.length; j++) {
 					var el = this.topology.elements[seg.elements[j]];
+					if (!el || !el.data) continue; //Element is being created
 					var addr = el.getUsedAddress();
 					if (! addr || addr == "dhcp") continue;
 					usedMajors[addr[0]] = (usedMajors[addr[0]] || 0) + 1; 
@@ -2653,6 +2734,7 @@ var Element = Component.extend({
 			var usedMinors = {};
 			for (var j=0; j < seg.elements.length; j++) {
 				var el = this.topology.elements[seg.elements[j]];
+				if (!el || !el.data) continue; //Element is being created
 				var addr = el.getUsedAddress();
 				if (! addr || addr == "dhcp") continue;
 				if (addr[0] == major) usedMinors[addr[1]] = (usedMinors[addr[1]] || 0) + 1; 
@@ -2794,11 +2876,12 @@ var Element = Component.extend({
 			window.location.href = url;
 		}})
 	},
-	changeTemplate: function(tmplName) {
+	changeTemplate: function(tmplName,action_callback) {
 		this.action("change_template", {
 			params:{
 				tmplName: tmplName
-				}
+				},
+			callback: action_callback
 			}
 		);
 	},
@@ -2933,173 +3016,203 @@ var Element = Component.extend({
 });
 
 var createElementMenu = function(obj) {
-	var menu = {
-		callback: function(key, options) {},
-		items: {
-			"header": {html:'<span>'+obj.name()+"<br />Element #"+obj.id+'</span>', type:"html"},
-			"connect": obj.isConnectable() ? {
-				name:'Connect',
-				icon:'connect',
-				callback: function(){
-					obj.editor.onElementConnectTo(obj);
+	var header= {
+		html:'<span>'+obj.name()+'<small><br />Element'+
+		(editor.options.show_ids ? 
+				" #"+obj.id : 
+				"")+
+		(editor.options.show_sites_on_elements && obj.component_type=="element" && obj.data.attrs && "site" in obj.data.attrs ? "<br />"+
+				(obj.data.attrs.host_info && obj.data.attrs.host_info.site ? 
+						"at "+editor.sites_dict[obj.data.attrs.host_info.site].description : 
+						(obj.data.attrs.site ? 
+								"will be at " + editor.sites_dict[obj.data.attrs.site].description : 
+								"no site selected")  ) : 
+				"")+
+		'</small></span>', 
+		type:"html"
+	}
+	var menu;
+	
+	if (obj.busy) {
+		menu={
+			callback: function(key, options) {},
+			items: {
+				"header": header,
+				"busy_indicator": {
+					name:'Please wait for the current action to finish and re-open this menu.',
+					icon:'loading'
 				}
-			} : null,
-			"start": obj.actionEnabled("start") ? {
-				name:'Start',
-				icon:'start',
-				callback: function(){
-					obj.action_start();
-				}
-			} : null,
-			"stop": obj.actionEnabled("stop") ? {
-				name:"Stop",
-				icon:"stop",
-				callback: function(){
-					obj.action_stop();
-				}
-			} : null,
-			"prepare": obj.actionEnabled("prepare") ? {
-				name:"Prepare",
-				icon:"prepare",
-				callback: function(){
-					obj.action_prepare();
-				}
-			} : null,
-			"destroy": obj.actionEnabled("destroy") ? {
-				name:"Destroy",
-				icon:"destroy",
-				callback: function(){
-					obj.action_destroy();
-				}
-			} : null,
-			"sep2": "---",
-			"console": obj.consoleAvailable() ? {
-				name:"Console",
-				icon:"console",
-				items: {
-					"console_novnc": obj.data.attrs.websocket_pid ? {
-						name:"NoVNC (HTML5+JS)",
-						icon:"novnc",
-						callback: function(){
-							obj.openConsoleNoVNC();
-						}
-					} : null,
-					"console_java": {
-						name: "Java applet",
-						icon: "java-applet",
-						callback: function(){
-							obj.openConsole();
-						}
-					}, 
-					"console_link": {
-						name:"vnc:// link",
-						icon:"console",
-						callback: function(){
-							obj.openVNCurl();
-						}
-					},
-					"console_info": {
-						name:"VNC Information",
-						icon:"info",
-						callback: function(){
-							obj.showVNCinfo();
-						}
-					},
-				}
-			} : null,
-			"used_addresses": obj.data.attrs.used_addresses ? {
-				name:"Used addresses",
-				icon:"info",
-				callback: function(){
-					obj.showUsedAddresses();
-				}
-			} : null,
-			"usage": {
-				name:"Resource usage",
-				icon:"usage",
-				callback: function(){
-					obj.showUsage();
-				}
-			},
-			"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) || obj.actionEnabled("change_template") ? { 
-				name: "Disk image",
-				icon: "drive",
-				items: {
-					"change_template": obj.actionEnabled("change_template") ? {
-						name:"Change Template",
-						icon:"edit",
-						callback: function() {
-							obj.showTemplateWindow();
-						}
-					} : null,
-					"download_image": obj.actionEnabled("download_grant") ? {
-						name:"Download image",
-						icon:"download",
-						callback: function(){
-							obj.downloadImage();
-						}
-					} : null,
-					"upload_image": obj.actionEnabled("upload_grant") ? {
-						name:"Upload custom image",
-						icon:"upload",
-						callback: function(){
-							obj.uploadImage();
-						}
-					} : null,
-				}
-			} : null,
-			"rextfv": obj.actionEnabled("rextfv_download_grant") || obj.actionEnabled("rextfv_upload_grant") || obj.rextfvStatusSupport() ? {
-				name:"Executable archive",
-				icon:"rextfv",
-				items: {
-					"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
-						name:"Download Archive",
-						icon:"download",
-						callback: function(){
-							obj.downloadRexTFV();
-						}
-					} : null,
-					"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
-						name:"Upload Archive",
-						icon:"upload",
-						callback: function(){
-							obj.uploadRexTFV();
-						}
-					} : null,
-					"rextfv_status": obj.rextfvStatusSupport() ? {
-						name:"Status",
-						icon:"info",
-						callback: function(){
-							obj.openRexTFVStatusWindow();
-						}
-					} : null,
-				},
-			} : null,
-			"sep3": "---",
-			"configure": {
-				name:'Configure',
-				icon:'configure',
-				callback:function(){
-					obj.showConfigWindow();
-				}
-			},
-			"debug": obj.editor.options.debug_mode ? {
-				name:'Debug',
-				icon:'debug',
-				callback: function(){
-					obj.showDebugInfo();
-				}
-			} : null,
-			"sep4": "---",
-			"remove": obj.isRemovable() ? {
-				name:'Delete',
-				icon:'remove',
-				callback: function(){
-					obj.remove(null, true);
-				}
-			} : null
+			}
 		}
-	};
+	} else {
+		menu= {
+			callback: function(key, options) {},
+			items: {
+				"header": header,
+				"connect": obj.isConnectable() ? {
+					name:'Connect',
+					icon:'connect',
+					callback: function(){
+						obj.editor.onElementConnectTo(obj);
+					}
+				} : null,
+				"start": obj.actionEnabled("start") ? {
+					name:'Start',
+					icon:'start',
+					callback: function(){
+						obj.action_start();
+					}
+				} : null,
+				"stop": obj.actionEnabled("stop") ? {
+					name:"Stop",
+					icon:"stop",
+					callback: function(){
+						obj.action_stop();
+					}
+				} : null,
+				"prepare": obj.actionEnabled("prepare") ? {
+					name:"Prepare",
+					icon:"prepare",
+					callback: function(){
+						obj.action_prepare();
+					}
+				} : null,
+				"destroy": obj.actionEnabled("destroy") ? {
+					name:"Destroy",
+					icon:"destroy",
+					callback: function(){
+						obj.action_destroy();
+					}
+				} : null,
+				"sep2": "---",
+				"console": obj.consoleAvailable() ? {
+					name:"Console",
+					icon:"console",
+					items: {
+						"console_novnc": obj.data.attrs.websocket_pid ? {
+							name:"NoVNC (HTML5+JS)",
+							icon:"novnc",
+							callback: function(){
+								obj.openConsoleNoVNC();
+							}
+						} : null,
+						"console_java": {
+							name: "Java applet",
+							icon: "java-applet",
+							callback: function(){
+								obj.openConsole();
+							}
+						}, 
+						"console_link": {
+							name:"vnc:// link",
+							icon:"console",
+							callback: function(){
+								obj.openVNCurl();
+							}
+						},
+						"console_info": {
+							name:"VNC Information",
+							icon:"info",
+							callback: function(){
+								obj.showVNCinfo();
+							}
+						},
+					}
+				} : null,
+				"used_addresses": obj.data.attrs.used_addresses ? {
+					name:"Used addresses",
+					icon:"info",
+					callback: function(){
+						obj.showUsedAddresses();
+					}
+				} : null,
+				"usage": {
+					name:"Resource usage",
+					icon:"usage",
+					callback: function(){
+						obj.showUsage();
+					}
+				},
+				"disk_image": (obj.actionEnabled("download_grant") || obj.actionEnabled("upload_grant")) || obj.actionEnabled("change_template") ? { 
+					name: "Disk image",
+					icon: "drive",
+					items: {
+						"change_template": obj.actionEnabled("change_template") ? {
+							name:"Change Template",
+							icon:"edit",
+							callback: function() {
+								obj.showTemplateWindow();
+							}
+						} : null,
+						"download_image": obj.actionEnabled("download_grant") ? {
+							name:"Download image",
+							icon:"download",
+							callback: function(){
+								obj.downloadImage();
+							}
+						} : null,
+						"upload_image": obj.actionEnabled("upload_grant") ? {
+							name:"Upload custom image",
+							icon:"upload",
+							callback: function(){
+								obj.uploadImage();
+							}
+						} : null,
+					}
+				} : null,
+				"rextfv": obj.actionEnabled("rextfv_download_grant") || obj.actionEnabled("rextfv_upload_grant") || obj.rextfvStatusSupport() ? {
+					name:"Executable archive",
+					icon:"rextfv",
+					items: {
+						"download_rextfv": obj.actionEnabled("rextfv_download_grant") ? {
+							name:"Download Archive",
+							icon:"download",
+							callback: function(){
+								obj.downloadRexTFV();
+							}
+						} : null,
+						"upload_rextfv": obj.actionEnabled("rextfv_upload_grant") ? {
+							name:"Upload Archive",
+							icon:"upload",
+							callback: function(){
+								obj.uploadRexTFV();
+							}
+						} : null,
+						"rextfv_status": obj.rextfvStatusSupport() ? {
+							name:"Status",
+							icon:"info",
+							callback: function(){
+								obj.openRexTFVStatusWindow();
+							}
+						} : null,
+					},
+				} : null,
+				"sep3": "---",
+				"configure": {
+					name:'Configure',
+					icon:'configure',
+					callback:function(){
+					obj.showConfigWindow(true);
+					}
+				},
+				"debug": obj.editor.options.debug_mode ? {
+					name:'Debug',
+					icon:'debug',
+					callback: function(){
+						obj.showDebugInfo();
+					}
+				} : null,
+				"sep4": "---",
+				"remove": obj.isRemovable() ? {
+					name:'Delete',
+					icon:'remove',
+					callback: function(){
+						obj.remove(null, true);
+					}
+				} : null
+			}
+		};
+	}
 	for (var name in menu.items) {
 		if (! menu.items[name]) {
 			delete menu.items[name];
@@ -3160,9 +3273,11 @@ var UnknownElement = Element.extend({
 var IconElement = Element.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.type + "32.png";
 		this.iconSize = {x: 32, y:32};
 		this.busy = false;
+	},
+	iconUrl: function() {
+		return "img/" + this.data.type + "32.png";
 	},
 	isMovable: function() {
 		return this._super() && !this.busy;
@@ -3205,7 +3320,7 @@ var IconElement = Element.extend({
 	},
 	paint: function() {
 		var pos = this.canvas.absPos(this.getPos());
-		this.icon = this.canvas.image(this.iconUrl, pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
+		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
 		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
 		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
@@ -3229,8 +3344,9 @@ var IconElement = Element.extend({
 		this.rect.remove();
 	},
 	paintUpdate: function() {
+		if (! this.icon) return;
 		var pos = this.getAbsPos();
-		this.icon.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
+		this.icon.attr({src: this.iconUrl(), x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
 		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
@@ -3245,8 +3361,10 @@ var IconElement = Element.extend({
 var VPNElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.mode + "32.png";
 		this.iconSize = {x: 32, y:16};
+	},
+	iconUrl: function() {
+		return dynimg(32,"vpn",this.data.attrs.mode,null);
 	},
 	isConnectable: function() {
 		return this._super() && !this.busy;
@@ -3265,15 +3383,18 @@ var VPNElement = IconElement.extend({
 var ExternalNetworkElement = IconElement.extend({
 	init: function(topology, data, canvas) {
 		this._super(topology, data, canvas);
-		this.iconUrl = "img/" + this.data.attrs.kind.split("/")[0] + "32.png";
 		this.iconSize = {x: 32, y:32};
+
+	},
+	iconUrl: function() {
+		return editor.networks.getNetworkIcon(this.data.attrs.kind);
 	},
 	configWindowSettings: function() {
 		var config = this._super();
 		config.order = ["name", "kind"];
 		
 		var networkInfo = {};
-		var networks = this.editor.networks.all();
+		var networks = this.editor.networks.getAllowed();
 		
 		for (var i=0; i<networks.length; i++) {
 			var info = $('<div class="hoverdescription" style="display: inline;"></div>');
@@ -3300,7 +3421,7 @@ var ExternalNetworkElement = IconElement.extend({
 			label: "Network kind",
 			name: "kind",
 			info: networkInfo,
-			choices: createMap(this.editor.networks.all(), "kind", "label"),
+			choices: createMap(this.editor.networks.getAll(), "kind", "label"),
 			value: this.data.attrs.kind || this.caps.attrs.kind["default"],
 			disabled: !this.attrEnabled("kind")
 		});
@@ -3331,6 +3452,9 @@ var VMElement = IconElement.extend({
 	isConnectable: function() {
 		return this._super() && !this.busy;
 	},
+	iconUrl: function() {
+		return this.getTemplate() ? this.getTemplate().iconUrl() : this._super(); 
+	},
 	isRemovable: function() {
 		return this._super() && !this.busy;
 	},
@@ -3346,11 +3470,12 @@ var VMElement = IconElement.extend({
 	getTemplate: function() {
 		return this.editor.templates.get(this.data.type, this.data.attrs.template);
 	},
-	showTemplateWindow: function(callback) {
+	showTemplateWindow: function(callback_before_finish,callback_after_finish) {
 		var window = new TemplateWindow({
 			element: this,
 			width: 400,
-			callback: callback
+			callback_after_finish: callback_after_finish,
+			callback_before_finish: callback_before_finish
 		});
 		window.show();
 	},
@@ -3359,7 +3484,7 @@ var VMElement = IconElement.extend({
 		config.order = ["name", "site", "profile", "template", "_endpoint"];
 		
 		var profileInfo = {};
-		var profiles = this.editor.profiles.getAll(this.data.type);
+		var profiles = this.editor.profiles.getAllowed(this.data.type);
 		var profile_helptext = null;
 		if (!editor.allowRestrictedProfiles)
 			profile_helptext = 'If you need more performance, contact your administrator.';
@@ -3466,7 +3591,7 @@ var VMElement = IconElement.extend({
 			label: "Performance Profile",
 			name: "profile",
 			info: profileInfo,
-			choices: createMap(this.editor.profiles.getAllowed(this.data.type), "name", "label"),
+			choices: createMap(this.editor.profiles.getAll(this.data.type), "name", "label"),
 			value: this.data.attrs.profile || this.caps.attrs.profile["default"],
 			disabled: !this.attrEnabled("profile"),
 			help_text: profile_helptext
@@ -3575,6 +3700,10 @@ var Template = Class.extend({
 		this.restricted = options.restricted;
 		this.preference = options.preference;
 		this.showAsCommon = options.show_as_common;
+		this.icon = options.icon;
+	},
+	iconUrl: function() {
+		return this.icon || dynimg(32,this.type,(this.subtype?this.subtype:null),(this.name?this.name:null));
 	},
 	menuButton: function(options) {
 		var hb = '<p style="margin:4px; border:0px; padding:0px; color:black;"><table><tbody>'+
@@ -3588,7 +3717,7 @@ var Template = Class.extend({
 		return Menu.button({
 			name: options.name || (this.type + "-" + this.name),
 			label: options.label || this.label || (this.type + "-" + this.name),
-			icon: "img/"+this.type+((this.subtype&&!options.small)?("_"+this.subtype):"")+(options.small?16:32)+".png",
+			icon: this.iconUrl(),
 			toggle: true,
 			toggleGroup: options.toggleGroup,
 			small: options.small,
@@ -3676,7 +3805,7 @@ var DummyForCustomTemplate = Template.extend({
 
 var TemplateStore = Class.extend({
 	init: function(data,editor) {
-		this.editor = editor
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3699,6 +3828,18 @@ var TemplateStore = Class.extend({
 		for (var name in this.types[type])
 			tmpls.push(this.types[type][name]);
 		return tmpls;
+	},
+	getAllowed: function(type) {
+		var templates = this.getAll(type);
+		if (!this.editor.allowRestrictedTemplates) {
+			var templates_filtered = [];
+			for (var i = 0; i<templates.length;i++) {
+				if (!(templates[i].restricted))
+					templates_filtered.push(templates[i]);
+			}
+			templates = templates_filtered;
+		}
+		return templates;
 	},
 	get: function(type, name) {
 		if (! this.types[type]) return null;
@@ -3728,7 +3869,8 @@ var Profile = Class.extend({
 });
 
 var ProfileStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3752,17 +3894,15 @@ var ProfileStore = Class.extend({
 		return tmpls;
 	},
 	getAllowed: function(type) {
-		var profs = this.getAll(type)
-		console.log(profs);
-		if (!editor.allowRestrictedProfiles) {
+		var profs = this.getAll(type);
+		if (!this.editor.allowRestrictedProfiles) {
 			var profs_filtered = [];
 			for (var i = 0; i<profs.length;i++) {
 				if (!(profs[i].restricted))
 					profs_filtered.push(profs[i]);
-			profs = profs_filtered;
 			}
+			profs = profs_filtered;
 		}
-		console.log(profs);
 		return profs;
 	},
 	get: function(type, name) {
@@ -3772,7 +3912,9 @@ var ProfileStore = Class.extend({
 });
 
 var NetworkStore = Class.extend({
-	init: function(data) {
+	init: function(data,editor) {
+
+		this.editor = editor;
 		data.sort(function(t1, t2){
 			var t = t2.attrs.preference - t1.attrs.preference;
 			if (t) return t;
@@ -3781,19 +3923,42 @@ var NetworkStore = Class.extend({
 			return 0;
 		});
 		this.nets = [];
-		for (var i=0; i<data.length; i++)
-		 if (data[i].type == "network")
-		  this.nets.push(data[i].attrs);
+		for (var i=0; i<data.length; i++) {
+		 if (data[i].type == "network") {
+			 net = data[i].attrs;
+			 if (!net.icon) {
+				 net.icon = this.getNetworkIcon(net.kind);
+			 }
+			 this.nets.push(net);
+		 }
+		}
 	},
-	all: function() {
+	getAll: function() {
 		return this.nets;
+	},
+	getAllowed: function() {
+		var allowedNets = this.getAll()
+		if (!this.editor.allowRestrictedNetworks) {
+			var nets_filtered = [];
+			
+			for (var i = 0; i<allowedNets.length;i++) {
+				if (!(allowedNets[i].restricted)) {
+					nets_filtered.push(allowedNets[i]);
+				}
+			}
+			allowedNets = nets_filtered;
+		}
+		return allowedNets;
 	},
 	getCommon: function() {
 		var common = [];
 		for (var i = 0; i < this.nets.length; i++)
-		 if (this.nets[i].show_as_common)
+		 if (this.nets[i].show_as_common && (!this.nets[i].restricted || this.editor.allowRestrictedNetworks))
 		   common.push(this.nets[i]);
 		return common;
+	},
+	getNetworkIcon: function(kind) {
+		return dynimg(32,"network",kind.split("/")[0],(kind.split("/")[1]?kind.split("/")[1]:null));
 	}
 });
 
@@ -3811,9 +3976,11 @@ var Editor = Class.extend({
 		
 		this.allowRestrictedTemplates= false;
 		this.allowRestrictedProfiles = false;
+		this.allowRestrictedNetworks = false;
 		for (var i=0; i<this.options.user.flags.length; i++) {
 			if (this.options.user.flags[i] == "restricted_profiles") this.allowRestrictedProfiles = true;
 			if (this.options.user.flags[i] == "restricted_templates") this.allowRestrictedTemplates= true;
+			if (this.options.user.flags[i] == "restricted_networks") this.allowRestrictedNetworks= true;
 		}
 		
 		this.options.grid_size = this.options.grid_size || 25;
@@ -3824,11 +3991,16 @@ var Editor = Class.extend({
 		this.topology = new Topology(this);
 		this.workspace = new Workspace(this.options.workspace_container, this);
 		this.sites = this.options.sites;
-		this.profiles = new ProfileStore(this.options.resources);
+		this.profiles = new ProfileStore(this.options.resources,this);
 		this.templates = new TemplateStore(this.options.resources,this);
-		this.networks = new NetworkStore(this.options.resources);
+		this.networks = new NetworkStore(this.options.resources,this);
 		this.buildMenu(this);
 		this.setMode(Mode.select);
+		
+		this.sites_dict = {};
+		for (s in this.sites) {
+			this.sites_dict[this.sites[s].name] = this.sites[s];
+		}
 				
 		var t = this;
 		this.workspace.setBusy(true);
@@ -3850,6 +4022,7 @@ var Editor = Class.extend({
 						}});
 					} else
 						t.topology.initialDialog();
+				t.workspace.updateTopologyTitle();
 			}
 		});
 	},
@@ -3866,6 +4039,7 @@ var Editor = Class.extend({
 	onOptionChanged: function(name) {
 		this.topology.onOptionChanged(name);
 		this.workspace.onOptionChanged(name);
+		this.workspace.updateTopologyTitle();
 	},
 	optionMenuItem: function(options) {
 		var t = this;
@@ -3949,13 +4123,15 @@ var Editor = Class.extend({
 		var t = this;
 		return function(pos) {
 			var data = {type: type, attrs: {_pos: pos}};
-			t.topology.createElement(data, function(el) {
-				el.action("prepare", {callback: function(el){
-					el.uploadImage();
-				}});
-			});
+			t.topology.createElement(data, function(el1) {
+					el1.showConfigWindow(false, function (el2) { 
+							el2.action("prepare", { callback: function(el3) {el3.uploadImage();} });	
+						}
+				);
+				}
+			);
 			t.selectBtn.click();
-		}
+		};
 	},
 	createTemplateFunc: function(tmpl) {
 		return this.createElementFunc({type: tmpl.type, attrs: {template: tmpl.name}});
@@ -4083,10 +4259,9 @@ var Editor = Class.extend({
 		var tab = this.menu.addTab("Devices");
 
 		var group = tab.addGroup("Linux (OpenVZ)");
-		var tmpls = t.templates.getAll("openvz");
+		var tmpls = t.templates.getAllowed("openvz");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			 btns.push(tmpls[i].menuButton({
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4095,11 +4270,10 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Linux (KVM)");
-		var tmpls = t.templates.getAll("kvmqm", "linux");
+		var tmpls = t.templates.getAllowed("kvmqm", "linux");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "linux")
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			  btns.push(tmpls[i].menuButton({
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4108,11 +4282,10 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Other (KVM)");
-		var tmpls = t.templates.getAll("kvmqm");
+		var tmpls = t.templates.getAllowed("kvmqm");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "linux")
-			if (!tmpls[i].restricted || editor.allowRestrictedTemplates)
 			  btns.push(tmpls[i].menuButton({
 			  	toggleGroup: toggleGroup,
 				small: true,
@@ -4121,7 +4294,7 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Scripts (Repy)");
-		var tmpls = t.templates.getAll("repy");
+		var tmpls = t.templates.getAllowed("repy");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype == "device")
@@ -4137,7 +4310,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "KVM image",
 				name: "kvm-custom",
-				icon: "img/kvm16.png",
+				icon: "img/kvm32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4146,7 +4319,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "OpenVZ image",
 				name: "openvz-custom",
-				icon: "img/openvz16.png",
+				icon: "img/openvz32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4155,7 +4328,7 @@ var Editor = Class.extend({
 			Menu.button({
 				label: "Repy script",
 				name: "repy-custom",
-				icon: "img/repy16.png",
+				icon: "img/repy32.png",
 				toggle: true,
 				toggleGroup: toggleGroup,
 				small: true,
@@ -4202,7 +4375,7 @@ var Editor = Class.extend({
 			small: false,
 			func: this.createPositionElementFunc(this.createUploadFunc("repy"))
 		}));
-		var tmpls = t.templates.getAll("repy");
+		var tmpls = t.templates.getAllowed("repy");
 		var btns = [];
 		for (var i=0; i<tmpls.length; i++)
 		 if(tmpls[i].subtype != "device")
@@ -4214,29 +4387,23 @@ var Editor = Class.extend({
 		group.addStackedElements(btns);
 
 		var group = tab.addGroup("Networks");
-		var common = t.networks.all();
+		var common = t.networks.getAllowed();
 		var buttonstack = [];
 		for (var i=0; i < common.length; i++) {
 			var net = common[i];
-			var inet_icon = 'img/internet16.png';
-			var is_big_button = (net.big_icon);
-			if (is_big_button) {
-				inet_icon = 'img/internet32.png';
-			}
-				
 			var inet_button = Menu.button({
 				label: net.label,
 				name: net.name,
-				icon: inet_icon,
+				icon: net.icon,
 				toggle: true,
 				toggleGroup: toggleGroup,
-				small: !is_big_button,
+				small: !net.big_icon,
 				func: this.createPositionElementFunc(this.createElementFunc({
 					type: "external_network",
 					attrs: {kind: net.kind}					
 				}))
 			});
-			if (is_big_button) {
+			if (net.big_icon) {
 				if(buttonstack.length>0) {
 					group.addStackedElements(buttonstack);
 					buttonstack=[];
@@ -4349,6 +4516,18 @@ var Editor = Class.extend({
 		        tooltip:"Paint different network segments with different colors"
 		    }),
 		    
+		    show_ids: this.optionMenuItem({
+		        name:"show_ids",
+		        label:"Show IDs",
+		        tooltip:"Show IDs in right-click menus"
+		    }),
+		    
+		    show_sites_on_elements: this.optionMenuItem({
+		        name:"show_sites_on_elements",
+		        label:"Show Element Sites",
+		        tooltip:"Show the site an element is located at in its right-click menu"
+		    }),
+		    
 		    debug_mode: this.optionMenuItem({
 		        name:"debug_mode",
 		        label:"Debug mode",
@@ -4360,6 +4539,8 @@ var Editor = Class.extend({
 									this.optionCheckboxes.snap_to_grid,
 									this.optionCheckboxes.colorify_segments,
 									this.optionCheckboxes.fixed_pos,
+									this.optionCheckboxes.show_ids,
+									this.optionCheckboxes.show_sites_on_elements,
 									this.optionCheckboxes.debug_mode
 								]);
 

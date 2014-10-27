@@ -1,5 +1,11 @@
 {% extends "help/base.html" %}
 
+{% load url from future %}
+
+{% block title %}
+<title>Help - G-Lab ToMaTo</title> 
+{% endblock %}
+
 {% block content %}
 <h1>Help</h1>
 
@@ -7,6 +13,6 @@
 <a href="//tomato-lab.org/">Project Homepage</a>
 
 <h2>Contact</h2>
-<a href="{%url help.contact_form%}">Contact Us</a>
+<a href="{%url "help.contact_form"%}">Contact Us</a>
 
 {% endblock %}

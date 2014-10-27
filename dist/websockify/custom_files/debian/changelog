@@ -1,0 +1,11 @@
+websockify (0.6.0) stable; urgency=low
+
+  * Using upstream version 0.6.0
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Fri, 04 Apr 2014 14:42:30 +0200
+
+websockify (0.2) stable; urgency=low
+
+  * Packaged
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Mon, 30 Jan 2012 09:40:41 +0100

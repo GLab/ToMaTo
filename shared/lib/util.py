@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import threading, thread, traceback, time, xmlrpclib, datetime, string
+import threading, thread, traceback, time, datetime, string
 from decorators import xmlRpcSafe
 from django.db import transaction, DatabaseError
 
@@ -26,29 +26,16 @@ def wrap_task(fn):
 		except Exception, exc:
 			if isinstance(exc, DatabaseError):
 				transaction.rollback()
-			from .. import fault
-			fault.errors_add(exc, traceback.format_exc())
+			from .. import handleError
+			handleError()
+	call.__module__ = fn.__module__
 	call.__name__ = fn.__name__
 	call.__doc__ = fn.__doc__
 	call.__dict__.update(fn.__dict__)
 	return call
 
-def print_except_helper(func, args, kwargs):
-	try:
-		return func(*args, **kwargs) #pylint: disable-msg=W0142
-	except Exception, exc: #pylint: disable-msg=W0703
-		from .. import fault
-		try:
-			fault.errors_add(exc, traceback.format_exc())
-		except:
-			pass
-		raise
-
-def print_except(func, *args, **kwargs):
-	return print_except_helper(func, args, kwargs)
-
 def start_thread(func, *args, **kwargs):
-	return thread.start_new_thread(print_except_helper, (func, args, kwargs))
+	return thread.start_new_thread(wrap_task(func), args, kwargs)
 
 def parse_bool(x):
 	"""
@@ -220,3 +207,17 @@ def filterStr(s, allowedChars=string.ascii_letters+string.digits+"_", substitute
 			if substitute:
 				res += substitute
 	return res
+
+def getYearMonth(ts):
+	import datetime
+	d = datetime.datetime.utcfromtimestamp(time.time())
+	return (d.year, d.month)
+
+def startOfMonth(year, month):
+	return time.mktime((year, month, 1, 1, 0, 0, 0, 0, 0))
+
+def secondsInMonth(year, month):
+	start = startOfMonth(year, month)
+	end = startOfMonth(year, month+1) if month < 12 else startOfMonth(year+1, 1)
+	return end-start
+

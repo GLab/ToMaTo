@@ -83,10 +83,18 @@ EMAIL_SUBJECT_TEMPLATE = "[ToMaTo] %(subject)s"
 EMAIL_MESSAGE_TEMPLATE = "Dear %(realname)s,\n\n%(message)s\n\n\nSincerely,\n  your ToMaTo backend"
 
 TOPOLOGY_TIMEOUT_INITIAL = 3600.0
-TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 6 # 6 hours
-TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 14 # 14 days
+TOPOLOGY_TIMEOUT_DEFAULT = 3600.0 * 24 * 3 # 1 day
+TOPOLOGY_TIMEOUT_MAX = 3600.0 * 24 * 30 # 14 days
 TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
-TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 6, 3600.0 * 24 * 5, 3600.0 * 24 * 14]
+TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 24, 3600.0 * 24 * 3, 3600.0 * 24 * 14, 3600.0 * 24 * 30]
+
+DEFAULT_QUOTA = {
+	"cputime": 10000000.0,
+	"memory": 2500000000.0,
+	"diskspace": 25000000000.0,
+	"traffic": 25000000000.0,
+	"continous_factor": 1.0
+}
 
 # Django mail config
 #EMAIL_HOST = ""
@@ -105,6 +113,24 @@ DISABLE_TRANSACTION_MANAGEMENT = True
 
 MAINTENANCE = os.environ.has_key('TOMATO_MAINTENANCE')
 
+DUMP_DIR = "/var/log/tomato/dumps_backend"
+"""
+The location of the dump files that are created when unexpected errors occur.
+"""
+
+DUMP_LIFETIME = 60*60*24*7
+"""
+Time in seconds until a dump file may be deleted.
+If it has been collected by the dumpmanager until then, it will still be saved
+in the dumpmanager's database.
+dumps will only be deleted daily, and only one day after the program has started.
+"""
+
+DUMP_COLLECTION_INTERVAL = 30*60
+"""
+Interval in which the dump manager will collect error dumps from hosts and backend.
+"""
+
 ERROR_NOTIFY = []
 
 import socket
@@ -112,6 +138,8 @@ _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _socket.connect(("8.8.8.8",80))
 PUBLIC_ADDRESS = _socket.getsockname()[0]
 _socket.close()
+
+socket.setdefaulttimeout(1800)
 
 try:
 	import sys
@@ -130,3 +158,22 @@ if not isinstance(SERVER, list):
 	
 import math
 HOST_AVAILABILITY_FACTOR = math.pow(0.5, HOST_UPDATE_INTERVAL/HOST_AVAILABILITY_HALFTIME)
+
+
+# E-Mail sent to new users after registering
+NEW_USER_WELCOME_MESSAGE = {
+'subject': "Registration at ToMaTo-Lab",
+'body': "Dear %s,\n\n\
+Welcome to the ToMaTo-Lab testbed. Your registration will be reviewed by our administrators shortly. Until then, you can create a topology (but not start it).\n\
+You should also subscribe to our mailing list at https://lists.uni-kl.de/tomato-lab.\n\n\
+Best Wishes,\nThe ToMaTo Testbed"
+}
+
+# E-Mail sent to administrators when a new user registers
+NEW_USER_ADMIN_INFORM_MESSAGE = {
+'subject': "User Registration",
+'body': "Dear ToMaTo administrator,\n\n\
+A new user, %s, has just registered at the ToMaTo testbed.\n\
+You can review all pending user registrations at https://master.tomato-lab.org/account/registrations\n\n\
+Best Wishes,\nThe ToMaTo Testbed"								
+}

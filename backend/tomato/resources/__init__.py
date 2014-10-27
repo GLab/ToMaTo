@@ -16,49 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import random, sys
+import sys
 
-from .. import fault
-from ..lib import db, attributes, util #@UnresolvedImport
+from ..lib import db, attributes #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 TYPES = {}
-
-def give(type_, num, owner):
-	if isinstance(owner, Element):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerElement=owner)
-	elif isinstance(owner, Connection):
-		instance = ResourceInstance.objects.get(type=type_, num=num, ownerConnection=owner)
-	else:
-		fault.raise_("Owner must either be Element or Connection, was %s" % owner.__class__.__name__, fault.INTERNAL_ERROR)
-	instance.delete()
-
-def take(type_, owner):
-	res = getByType(type_)
-	fault.check(res, "Multiple or none resources of type %s found", type_, fault.INTERNAL_ERROR)
-	range_ = res.getInstanceRange()
-	for try_ in xrange(0, 100): 
-		num = random.choice(range_)
-		try:
-			ResourceInstance.objects.get(type=type_, num=num)
-			continue
-		except ResourceInstance.DoesNotExist:
-			pass
-		try:
-			instance = ResourceInstance()
-			instance.init(type_, num, owner)
-			return num
-		except:
-			pass
-	fault.raise_("Failed to obtain resource of type %s after %d tries" % (type_, try_), code=fault.INTERNAL_ERROR)
-
-from ..elements import Element
-from ..connections import Connection
 
 class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
 	attrs = db.JSONField()
-	numStart = attributes.attribute("num_start", int)
-	numCount = attributes.attribute("num_count", int)
 	
 	FIELD_NAME = None #take type as field name
 	
@@ -74,10 +41,6 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 			self.remove()
 			raise
 		
-	def getInstanceRange(self):
-		fault.check(self.numStart and self.numCount, "This resource can not have any instances", code=fault.INTERNAL_ERROR)
-		return xrange(self.numStart, self.numStart + self.numCount)
-		
 	def upcast(self):
 		if not self.type in TYPES:
 			return self
@@ -89,11 +52,13 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 			traceback.print_exc()
 		id, type = self.id, self.type
 		self.remove()
-		fault.raise_("Failed to cast resource #%d to type %s" % (id, type), code=fault.INTERNAL_ERROR)
+		raise InternalError(code=InternalError.UPCAST, message="Failed to cast resource to its type",
+			  data={"id": id, "type": type})
 	
 	def modify(self, attrs):
 		if not _initPhase:
-			fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")		
+			UserError.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin),
+				code=UserError.DENIED, message="Method only allowed for admin users")
 		for key, value in attrs.iteritems():
 			if hasattr(self, "modify_%s" % key):
 				getattr(self, "modify_%s" % key)(value)
@@ -101,15 +66,10 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 				self.attrs[key] = value
 		self.save()
 	
-	def modify_num_start(self, val):
-		self.numStart = val
-	
-	def modify_num_count(self, val):
-		self.numCount = val
-
 	def remove(self):
-		fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")
-		self.delete()	
+		UserError.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin),
+			code=UserError.DENIED, message="Method only allowed for admin users")
+		self.delete()
 	
 	def info(self):
 		return {
@@ -118,29 +78,6 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 			"attrs": self.attrs.copy(),
 		}
 	
-class ResourceInstance(db.ChangesetMixin, attributes.Mixin, models.Model):
-	type = models.CharField(max_length=20, validators=[db.nameValidator], choices=[(t, t) for t in TYPES]) #@ReservedAssignment
-	num = models.IntegerField()
-	ownerElement = models.ForeignKey(Element, null=True)
-	ownerConnection = models.ForeignKey(Connection, null=True)
-	attrs = db.JSONField()
-	
-	class Meta:
-		unique_together = (("num", "type"),)
-
-	def init(self, type, num, owner, attrs={}): #@ReservedAssignment
-		self.type = type
-		self.num = num
-		if isinstance(owner, Element):
-			self.ownerElement = owner
-		elif isinstance(owner, Connection):
-			self.ownerConnection = owner
-		else:
-			fault.raise_("Owner must either be Element or Connection, was %s" % owner.__class__.__name__, fault.INTERNAL_ERROR)
-		self.attrs = attrs
-		self.save()
-
-
 def get(id_, **kwargs):
 	try:
 		el = Resource.objects.get(id=id_, **kwargs)
@@ -158,12 +95,11 @@ def getByType(type_, **kwargs):
 def getAll(**kwargs):
 	return (res.upcast() for res in Resource.objects.filter(**kwargs))
 
-def _addResourceRange(type_, start, count):
-	return create(type_, {"num_start": start, "num_count": count})
-
-def create(type_, attrs={}):
+def create(type_, attrs=None):
+	if not attrs: attrs = {}
 	if not _initPhase:
-		fault.check(currentUser().hasFlag(Flags.GlobalHostManager), "Method only allowed for admin users")	
+		UserError.check(currentUser().hasFlag(Flags.GlobalHostManager) or currentUser().hasFlag(Flags.GlobalAdmin),
+			code=UserError.DENIED, message="Method only allowed for admin users")
 	if type_ in TYPES:
 		res = TYPES[type_]()
 	else:

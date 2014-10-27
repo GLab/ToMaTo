@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
+
+{% block title %}
+<title>External Network list - G-Lab ToMaTo</title> 
+{% endblock %}
 
 {% block content %}
 <h1>External Network list</h1>
 
 {% if netw_list|length > 10 and request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
+  <button type="submit" formaction="{%url "external_network.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
 </form>
 {% endif %}
 
@@ -47,14 +52,24 @@
 	    <td>{{netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
+	<tr>
+		<th>Restricted:</th>
+		<td>
+		{% if netw.attrs.restricted %}
+			<img src="/img/lock.png" /> yes
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
 </table>
 
 
 <form>
-	<button type="submit" formaction="{%url external_network_instances netw.id%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> instances of {{netw.attrs.kind}}</button>
+	<button type="submit" formaction="{%url "external_network_instances" netw.id%}" class="btn btn-info"><span class="glyphicon glyphicon-list"></span> instances of {{netw.attrs.kind}}</button>
 	{% if request.session.user.isHostManager %}
-  	<button type="submit" formaction="{%url external_network.edit netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
-  	<button type="submit" formaction="{%url external_network.remove netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
+  	<button type="submit" formaction="{%url "external_network.edit" netw.id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit</button>
+  	<button type="submit" formaction="{%url "external_network.remove" netw.id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove</button>
   	
 <div class="skip-xs"></div>
   {% endif %}
@@ -66,7 +81,7 @@
 	    
 {% if request.session.user.isHostManager %}
 <form>
-  <button type="submit" formaction="{%url external_network.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
+  <button type="submit" formaction="{%url "external_network.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add external network</button>
 </form>
 {% endif %}
 

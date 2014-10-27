@@ -4,7 +4,7 @@ from django.template.defaultfilters import timesince
 from django import template
 from ..lib import getVersion, serverInfo, security_token
 from django.utils.safestring import mark_safe
-from django.utils import simplejson
+import json
 
 
 
@@ -12,9 +12,10 @@ register = template.Library()
 
 @register.filter
 def jsonify(o, pretty=False):
-	return mark_safe(simplejson.dumps(o, indent=bool(pretty)))
+	return mark_safe(json.dumps(o, indent=bool(pretty)))
 
 @register.simple_tag
+@register.filter
 def externalurl(name):
 	return serverInfo()['external_urls'].get(name, "")
 	

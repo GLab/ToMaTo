@@ -20,7 +20,7 @@ def _getAccount(name):
 	acc = currentUser()
 	if name and (not acc or name != acc.name):
 		acc = getUser(name)
-	fault.check(acc, "No such user")
+	UserError.check(acc, code=UserError.DENIED, message="No such user")
 	return acc
 
 def account_info(name=None):
@@ -61,8 +61,7 @@ def account_info(name=None):
 	Exceptions:
 	  If the given account does not exist an exception is raised.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	return acc.info(currentUser() == acc or currentUser().isAdminOf(acc))
 
@@ -74,19 +73,18 @@ def account_list(organization=None):
 	  A list with information entries of all accounts. Each list entry contains
 	  exactly the same information as returned by :py:func:`account_info`.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	if organization:
 		organization = _getOrganization(organization)
 	if currentUser().hasFlag(Flags.GlobalAdmin):
 		accounts = getAllUsers(organization=organization) if organization else getAllUsers()
 		return [acc.info(True) for acc in accounts]
 	elif currentUser().hasFlag(Flags.OrgaAdmin):
-		if organization != currentUser().organization:
-			fault.raise_("Not enough permissions")
+		UserError.check(organization == currentUser().organization, code=UserError.DENIED,
+			message="Not enough permissions")
 		return [acc.info(True) for acc in getAllUsers(organization=currentUser().organization)]
 	else:
-		fault.raise_("Not enough permissions")
+		raise UserError(code=UserError.DENIED, message="Not enough permissions")
 
 def account_modify(name=None, attrs={}):
 	"""
@@ -108,11 +106,10 @@ def account_modify(name=None, attrs={}):
 	  This method returns the info dict of the account. All changes will be 
 	  reflected in this dict.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	if acc != currentUser():
-		fault.check(currentUser().isAdminOf(acc), "No permissions")
+		UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
 	acc.modify(attrs)
 	return acc.info(True)
 		
@@ -157,12 +154,11 @@ def account_remove(name=None):
 	Return value:
 	  This method returns nothing if the account has been deleted.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
-	fault.check(currentUser().isAdminOf(acc), "No permissions")
+	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
 	if acc == currentUser() and acc.hasFlag(Flags.GlobalAdmin):
-		fault.raise_("Admins must not delete themselves", fault.USER_ERROR)	
+		raise UserError(code=UserError.DENIED, message="Admins must not delete themselves")
 	remove(acc)
 		
 def account_flags():
@@ -184,13 +180,17 @@ def account_mail(name, subject, message, from_support=False):
 	"""
 	Sends an email to the account
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
-	fault.check(currentUser().isAdminOf(acc), "No permissions")
+	UserError.check(currentUser().isAdminOf(acc), code=UserError.DENIED, message="No permissions")
 	acc.sendMail(subject, message, None if from_support else currentUser())
 	
+def account_usage(name): #@ReservedAssignment
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	acc = _getAccount(name)
+	return acc.totalUsage.info()	
+	
 from host import _getOrganization
-from .. import fault, currentUser
+from .. import currentUser
+from ..lib.error import UserError
 from ..auth import getUser, getAllUsers, flags, categories, register, remove, Flags
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport

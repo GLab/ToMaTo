@@ -2,8 +2,35 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib, code, argparse, getpass, readline, rlcompleter, sys, os, imp, ssl, urllib
-
+from lib import getConnection, SafeTransportWithCerts, ServerProxy
 def parseArgs():
+	"""
+	Defines required and optional arguments for the cli and parses them out of sys.argv.
+	
+	Available Arguments are:
+		Argument *--help*:
+			Prints a help text for the available arguments
+		Argument *--hostname*:
+			Address of the host of the server
+		Argument *--port*:
+			Port of the host server
+		Argument *--ssl*:
+			Whether to use ssl or not
+		Argument *--client_cert*:
+			Path to the ssl certificate of the client
+		Argument *--username*:
+			The username to use for login
+		Argument *--password*:
+			The password to user for login
+		Argument *--file*:
+			Path to a file to execute
+		Argument *arguments*
+			Python code to execute directly
+		
+	Return value:
+		Parsed command-line arguments
+	
+	"""
 	parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
 	parser.add_argument('--help', action='help')
 	parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
@@ -21,42 +48,14 @@ def parseArgs():
 		options.password=getpass.getpass("Password: ")
 	return options
 
-class SafeTransportWithCerts(xmlrpclib.SafeTransport):
-	def __init__(self, keyFile, certFile, *args, **kwargs):
-		xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
-		self.certFile = certFile
-		self.keyFile = keyFile
-	def make_connection(self,host):
-		host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
-		return xmlrpclib.SafeTransport.make_connection(self,host_with_cert)
-	
-class ServerProxy(object):
-	def __init__(self, url, **kwargs):
-		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
-	def __getattr__(self, name):
-		call_proxy = getattr(self._xmlrpc_server_proxy, name)
-		def _call(*args, **kwargs):
-			return call_proxy(args, kwargs)
-		return _call
 
-def getConnection(hostname, port, ssl, username=None, password=None, sslCert=None):
-	proto = 'https' if ssl else 'http'
-	auth = ""
-	if username:
-		username = urllib.quote_plus(username)
-		auth = username
-		if password:
-			password = urllib.quote_plus(password)
-			auth += ":" + password
-	if auth:
-		auth += "@"
-	transport = None
-	if ssl and sslCert:
-		transport = SafeTransportWithCerts(sslCert, sslCert)
-	#print '%s://%s%s:%s' % (proto, auth, hostname, port)
-	return ServerProxy('%s://%s%s:%s' % (proto, auth, hostname, port), allow_none=True, transport=transport)
-	
 def runInteractive(locals):
+	"""
+	Creates a interactive console based on the local available methods.
+
+	Parameter *locals*:
+		Dict containing a connection to an API, a help function and a file load function.
+	"""
 	prompt = "ToMaTo"
 	readline.parse_and_bind("tab: complete")
 	readline.set_completer(rlcompleter.Completer(locals).complete)
@@ -64,10 +63,31 @@ def runInteractive(locals):
 	console.interact('Type "help()" or "help(method)" for more information.')
 	
 def runSource(locals, source):
+	"""
+	Executes a python code using an interpreter based on the methods provided by the API found in locals.
+
+	Parameter *locals*:
+		Dict containing a connection to an API, a help function and a file load function.
+	Parameter *source*:
+		Source code to execute
+
+	
+	"""
 	interpreter = code.InteractiveInterpreter(locals)
 	interpreter.runsource(source)
 
 def runFile(locals, file, options):
+	"""
+	Opens a connection to a remote socket at address (host, port) and closes it to open the TCP port.
+
+	Parameter *locals*:
+		Dict containing a connection to an API, a help function and a file load function.
+	Parameter *file*:
+		Path to the file which should be executed
+	Parameter *options*:
+		Command-line arguments which will be used to create an interactive console which executes the file.
+
+	"""
 	sys.path.insert(0, os.path.dirname(file))
 	def shell():
 		runInteractive(locals)
@@ -80,6 +100,17 @@ def runFile(locals, file, options):
 	sys.path.pop(0)
 
 def getLocals(api):
+	"""
+	Combines the api with additional functionalities in one dictionary. It adds a list of all commands, a help method and
+	a method to load and initialize python modules from a file.
+
+	Parameter *api*:
+		Connection to a host api
+
+	Return value:
+		This method returns a dictionary with a connection to a API, an help method and a method to load and initialize python modules from a file.
+
+	"""
 	locals = {}
 	def help(method=None):
 		if method is None:
@@ -112,6 +143,11 @@ def getLocals(api):
 	return locals
 
 def run():
+	"""
+	Parses the command-line arguments, opens an API connection and creates access to the available commands of the host.
+	It decides based on the options whether to directly execute python code or to execute a file or to grant access to the interactive cli.
+
+	"""
 	options = parseArgs()
 	api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
 	locals = getLocals(api)

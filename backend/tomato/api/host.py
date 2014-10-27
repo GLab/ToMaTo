@@ -20,17 +20,17 @@ from ..lib.cache import cached #@UnresolvedImport
 
 def _getOrganization(name):
 	o = host.getOrganization(name)
-	fault.check(o, "Organization with name %s does not exist", name)
+	UserError.check(o, code=UserError.ENTITY_DOES_NOT_EXIST, message="Organization with that name does not exist", data={"name": name})
 	return o
 
 def _getSite(name):
 	s = host.getSite(name)
-	fault.check(s, "Site with name %s does not exist", name)
+	UserError.check(s, code=UserError.ENTITY_DOES_NOT_EXIST, message="Site with that name does not exist", data={"name": name})
 	return s
 
 def _getHost(name):
 	h = host.get(name=name)
-	fault.check(h, "Host with name %s does not exist", name)
+	UserError.check(h, code=UserError.ENTITY_DOES_NOT_EXIST, message="Host with that name does not exist", data={"name": name})
 	return h
 
 @cached(timeout=6*3600)
@@ -74,6 +74,11 @@ def organization_remove(name):
 	orga = _getOrganization(name)
 	orga.remove()
 	organization_list.invalidate()
+
+@checkauth
+def organization_usage(name): #@ReservedAssignment
+	orga = _getOrganization(name)
+	return orga.totalUsage.info()	
 
 @cached(timeout=6*3600)
 def site_list(organization=None):
@@ -180,4 +185,10 @@ def host_users(name):
 	h = _getHost(name)
 	return h.getUsers()
 
-from .. import host, fault
+@checkauth
+def host_usage(name): #@ReservedAssignment
+	h = _getHost(name)
+	return h.totalUsage.info()	
+
+from .. import host
+from ..lib.error import UserError

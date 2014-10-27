@@ -18,7 +18,7 @@
 def _getElement(id_):
 	id_ = int(id_)
 	el = elements.get(id_)
-	fault.check(el, "Element with id #%d does not exist", id_)
+	UserError.check(el, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"id": id_})
 	return el
 
 def element_create(top, type, parent=None, attrs={}): #@ReservedAssignment
@@ -60,8 +60,7 @@ def element_create(top, type, parent=None, attrs={}): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(top)
 	if parent:
 		parent = _getElement(parent)
@@ -97,8 +96,7 @@ def element_modify(id, attrs): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el = _getElement(id)
 	el.modify(attrs)
 	return el.info()
@@ -134,8 +132,7 @@ def element_action(id, action, params={}): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el = _getElement(id)
 	return el.action(action, params)
 
@@ -174,8 +171,7 @@ def element_remove(id): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el = _getElement(id)
 	el.remove()
 
@@ -281,8 +277,7 @@ def element_info(id, fetch=False): #@ReservedAssignment
 	  If the given element does not exist or belongs to another owner
 	  an exception *element does not exist* is raised.
 	"""
-	if not currentUser():
-		raise ErrorUnauthorized()
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el = _getElement(id)
 	if fetch:
 		el.fetchInfo()
@@ -302,6 +297,6 @@ def element_usage(id): #@ReservedAssignment
 	el = _getElement(id)
 	return el.totalUsage.info()	
 
-from .. import fault, elements, currentUser
+from .. import elements, currentUser
 from topology import _getTopology
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from ..lib.error import UserError

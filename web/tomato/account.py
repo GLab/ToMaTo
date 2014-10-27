@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import random, string
+import random, string, json
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -30,7 +30,7 @@ from django.utils.html import conditional_escape
 
 from lib import wrap_rpc, getapi, AuthError, serverInfo
 
-from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons
+from admin_common import BootstrapForm, ConfirmForm, RemoveConfirmForm, FixedList, FixedText, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -42,6 +42,7 @@ CategoryTranslationDict = {
 		   'manager_host_global':'Global Host Management',
 		   'manager_host_orga':'Organization-Internal Host Management',
 		   'user':'User',
+		   'error_management':"Error Management",
 		   'other':'Other'
 		}
 
@@ -50,6 +51,7 @@ category_order = [
 		'manager_user_orga',
 		'manager_host_global',
 		'manager_host_orga',
+		'error_management',
 		'user'
 	]
 
@@ -66,18 +68,19 @@ def render_account_flag_fixedlist(api, value, flags=None, flag_categories=None):
 	isFirst = True
 	
 	for cat in catlist:
-		foundOne = False
-		for v in categories[cat]:
-			if v in value:
-				if not foundOne:
-					if not isFirst:
-						output.append('</ul>')
-					else:
-						isFirst = False
-					output.append('<ul>')
-					output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-					foundOne = True
-				output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
+		if cat in categories: #categories come from the backend, cat from the frontend. ignore categories which are not used by the backend.
+			foundOne = False
+			for v in categories[cat]:
+				if v in value:
+					if not foundOne:
+						if not isFirst:
+							output.append('</ul>')
+						else:
+							isFirst = False
+						output.append('<ul>')
+						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
+						foundOne = True
+					output.append('<li style="margin-left:20px;">' + FlagTranslationDict.get(v,v) + '</li>')
 		
 	return output
 			
@@ -114,29 +117,30 @@ class AccountFlagCheckboxList(forms.widgets.CheckboxSelectMultiple):
 				catlist.append(cat)
 		
 		for cat in catlist:
-			foundOne = False
-			for v in categories[cat]:
-				if not foundOne:
-					if not isFirst:
-						output.append('<br />')
+			if cat in categories: #categories come from the backend, cat from the frontend. ignore categories which are not used by the backend.
+				foundOne = False
+				for v in categories[cat]:
+					if not foundOne:
+						if not isFirst:
+							output.append('<br />')
+						else:
+							isFirst = False
+						output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
+						foundOne = True
+						
+					if has_id:
+						final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
+						label_for = u' for="%s"' % final_attrs['id']
 					else:
-						isFirst = False
-					output.append('<b>' + CategoryTranslationDict.get(cat,cat) + '</b>')
-					foundOne = True
-					
-				if has_id:
-					final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], self.choices.index((v,FlagTranslationDict.get(v,v)))))
-					label_for = u' for="%s"' % final_attrs['id']
-				else:
-					label_for = ''
-					
-				cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
-				option_value = force_unicode(v)
-				rendered_cb = cb.render(name, option_value)
-				option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
-				output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
-				output.append(rendered_cb.replace("form-control", "") + option_label)
-				output.append('</label>')
+						label_for = ''
+						
+					cb = forms.widgets.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
+					option_value = force_unicode(v)
+					rendered_cb = cb.render(name, option_value)
+					option_label = conditional_escape(force_unicode(FlagTranslationDict.get(v,v)))
+					output.append(u'<label style="font-weight:normal;" class="checkbox%s">' % (self.inline_class))
+					output.append(rendered_cb.replace("form-control", "") + option_label)
+					output.append('</label>')
 		output.append('</ul>')
 		return mark_safe(u'\n'.join(output))
 	
@@ -158,7 +162,7 @@ class AccountForm(BootstrapForm):
 	send_mail = forms.BooleanField(label="Inform user", required=False, initial=True)
 	def __init__(self, api, *args, **kwargs):
 		super(AccountForm, self).__init__(*args, **kwargs)
-		self.fields["organization"].widget = forms.widgets.Select(choices=organization_name_list(api))
+		self.fields["organization"].widget = forms.widgets.Select(choices=append_empty_choice(organization_name_list(api)))
 		
 	def clean_password(self):
 		if self.data.get('password') != self.data.get('password2'):
@@ -380,3 +384,10 @@ def remove(api, request, id=None):
 			return HttpResponseRedirect(reverse("account_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.account.remove", kwargs={"id": id}))
 	return render(request, "form.html", {"heading": "Remove Account", "message_before": "Are you sure you want to remove the account '"+id+"'?", 'form': form})
+
+@wrap_rpc
+def usage(api, request, id): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
+	usage=api.account_usage(id)
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Account %s' % id})

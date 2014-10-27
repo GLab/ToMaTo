@@ -1,15 +1,20 @@
 {% extends "base.html" %}
 
+{% load url from future %}
 {% load tomato %}
+
+{% block title %}
+<title>Organization list - G-Lab ToMaTo</title> 
+{% endblock %}
 
 {% block content %}
 <h1>Organization list</h1>
 
 {% if organizations %}
 
-	{% if organizations|length > 10 and request.session.user and request.session.user.isAdmin %}
+	{% if organizations|length > 10 and request.session.user and request.session.user.isGlobalHostManager %}
       <form>
-    	<button type="submit" formaction="{%url organization.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+    	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
       </form>
 	{% endif %}
 
@@ -17,15 +22,25 @@
 	<div class="row">		
 	{% for orga in organizations %}
 		<div class="col-md-4 col-sm-6 col-xs-12">
-			<h3>{{orga.description}} <a href="{%url organization.info orga.name %}" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-share-alt"></span> Details</a></h3>
-			{% if orga.image_url %}<p><a href="{%url organization.info orga.name %}"><img src="{{orga.image_url}}" class="site"/></a></p>{% endif %}
-			<p><b>
-				{{orga.hosts.count}} hosts
-				{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
-			</b></p>
-			{% if orga.description_text %}
-				<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
-			{% endif %}
+			<div class="organization">
+				<a href="{%url "organization.info" orga.name%}" style="color:black; text-decoration:none;">
+					<div class="page-header"><h3>{{orga.description}}</h3></div>
+					
+					{% if orga.image_url %}
+						<p style="margin-top:0.7cm; margin-bottom:0.7cm; min-height:5em;"><img src="{{orga.image_url}}" class="site" /></p>
+					{% endif %}
+					
+					<p><b>
+						{{orga.hosts.count}} hosts
+						{% if orga.hosts.count %}(availability: {{orga.hosts.avg_availability|percentage}}, load: {{orga.hosts.avg_load|percentage}}){% endif %}
+					</b></p>
+					
+					{% if orga.description_text %}
+						<p>{{orga.description_text|linebreaks|escape|simpletags:"b i em strong"|safe}}</p>
+					{% endif %}
+					
+				</a>
+			</div>
 		</div>
 		<div class="visible-xs skip-sm"></div>
 		{% cycle "" '<div class="clearfix visible-sm"></div><div class="visible-sm skip-sm"></div>' %}
@@ -36,9 +51,9 @@
 	No organizations
 {% endif %}
 
-{% if request.session.user and request.session.user.isAdmin %}
+{% if request.session.user and request.session.user.isGlobalHostManager %}
 	<form>
-	<button type="submit" formaction="{%url organization.add%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
+	<button type="submit" formaction="{%url "organization.add"%}" class="btn btn-success"><span class="glyphicon glyphicon-plus"></span> Add organization</button>
 	</form>
 {% endif %}
 

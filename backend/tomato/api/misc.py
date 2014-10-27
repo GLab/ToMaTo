@@ -40,14 +40,12 @@ def link_statistics(siteA, siteB, type=None, after=None, before=None): #@Reserve
 	return link.getStatistics(siteA, siteB, type, after, before)
 
 def mailAdmins(subject, text, global_contact = True, issue="admin"):
-	if not currentUser():
-		raise ErrorUnauthorized()
-	misc.mailAdmins(subject, text, global_contact, issue)
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	auth.mailAdmins(subject, text, global_contact, issue)
 	
 def mailUser(user, subject, text):
-	if not currentUser():
-		raise ErrorUnauthorized()
-	misc.mailUser(user, subject, text)
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	auth.mailUser(user, subject, text)
 
 @cached(timeout=3600)
 def statistics():
@@ -86,6 +84,15 @@ def statistics():
 	usage['users'] = auth.User.objects.count()
 	return stats
 
+def task_list():
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	return scheduler.info()
+
+def task_execute(id):
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
+	UserError.check(currentUser().hasFlag(auth.Flags.GlobalAdmin), code=UserError.DENIED, message="Not enough permissions")
+	return scheduler.executeTask(id, force=True)
+
 from django.db import models
-from .. import misc, config, link, currentUser, host, topology, auth, elements, connections
-from ..lib.rpc import ErrorUnauthorized  #@UnresolvedImport
+from .. import misc, config, link, currentUser, host, topology, auth, elements, connections, scheduler
+from ..lib.error import UserError

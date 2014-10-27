@@ -1,4 +1,6 @@
 {% extends "topology/base.html" %}
+
+{% load url from future %}
 {% load tomato %}
 
 {% block header %}
@@ -13,6 +15,7 @@
 <script language="JavaScript" type="text/javascript" src="js/raphael.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/util.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/browser_issues.js"></script>
+<script language="JavaScript" type="text/javascript" src="js/dynimg.js"></script>
 <script language="JavaScript" type="text/javascript" src="js/editor.js"></script>
 
 
@@ -38,7 +41,7 @@
 
 <div id="editor" style="width: 800px; padding: 0px; border:0px; margin-left: auto; margin-right:auto;">
 	<div id="browser_issues"></div>
-	<h1 id="topology_name">Topology '{{top.attrs.name}}' [#{{top.id}}]</h1>
+	<h1 id="topology_name">Topology '{{top.attrs.name}}'</h1>
 	<div id="menu" style="width:800px;"></div>
 	<div id="workspace" style="width:800px; height:600px;"></div>
 </div>

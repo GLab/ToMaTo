@@ -16,29 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import json
+
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, serverInfo
+from lib import wrap_rpc, serverInfo, AuthError
 from django.http import HttpResponseRedirect
 
-from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
+from admin_common import BootstrapForm, RemoveConfirmForm, Buttons, append_empty_choice
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
 class HostForm(BootstrapForm):
 	name = forms.CharField(max_length=255,help_text="The host's name. This is also its unique id.")
 	address = forms.CharField(max_length=255,help_text="The host's IP address.")
+	rpcurl = forms.CharField(max_length=255,help_text="The host's RPC url.")
 	site = forms.CharField(max_length=50,help_text="The site this host belongs to.")
 	enabled = forms.BooleanField(initial=True, required=False,help_text="Whether this host is enabled.")
 	description_text = forms.CharField(widget = forms.Textarea, label="Description", required=False)
 	buttons = Buttons.cancel_add
 	def __init__(self, api, *args, **kwargs):
 		super(HostForm, self).__init__(*args, **kwargs)
-		self.fields["site"].widget = forms.widgets.Select(choices=site_name_list(api))
+		self.fields["site"].widget = forms.widgets.Select(choices=append_empty_choice(site_name_list(api)))
 		self.helper.form_action = reverse(add)
 		self.helper.layout = Layout(
 			'name',
 			'address',
+			'rpcurl',
 			'site',
 			'enabled',
 			'description_text',
@@ -81,19 +85,21 @@ def info(api, request, name):
 	return render(request, "host/info.html", {'host': host, 'organization': organization, 'site': site})
 
 @wrap_rpc
-def add(api, request):
+def add(api, request, site=None):
 	message_after = '<h2>Public key</h2>	The public key of this backend is:	<pre><tt>'+serverInfo()['public_key']+'</tt></pre>'
 	if request.method == 'POST':
 		form = HostForm(api, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.host_create(formData["name"], formData["site"], {"address": formData["address"], "enabled": formData["enabled"],'description_text':formData['description_text']})
+			api.host_create(formData["name"], formData["site"], {"address": formData["address"], "rpcurl": formData["rpcurl"], "enabled": formData["enabled"],'description_text':formData['description_text']})
 			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"name": formData["name"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
 	else:
 		form = HostForm(api)
 		if api.site_list():
+			if site:
+				form.fields['site'].initial=site
 			return render(request, "form.html", {'form': form, "heading":"Add Host", 'message_after':message_after})
 		else:
 			return render(request, "main/error.html",{'type':'No site available','text':'You need a site first before you can add hosts.'})
@@ -114,7 +120,7 @@ def edit(api, request, name=None):
 		form = EditHostForm(api, name, request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
-			api.host_modify(name,{"name": formData["name"], "address": formData["address"], 'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
+			api.host_modify(name,{"name": formData["name"], "address": formData["address"], "rpcurl": formData["rpcurl"], 'site':formData["site"], "enabled": formData["enabled"],'description_text':formData['description_text']})
 			return HttpResponseRedirect(reverse("tomato.host.info", kwargs={"name": formData["name"]}))
 		else:
 			if not name:
@@ -132,3 +138,10 @@ def edit(api, request, name=None):
 			return render(request, "form.html", {"heading": "Editing Host '"+name+"'", 'form': form})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+
+@wrap_rpc
+def usage(api, request, name): #@ReservedAssignment
+	if not api.user:
+		raise AuthError()
+	usage=api.host_usage(name)
+	return render(request, "main/usage.html", {'usage': json.dumps(usage), 'name': 'Organization %s' % name})

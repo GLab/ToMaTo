@@ -17,23 +17,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from tomato import run
-
 if __name__ == "__main__":
 	import sys
 	if len(sys.argv) == 1:
+		from tomato import run
 		run()
 	elif sys.argv[1] == "--coverage":
-		import coverage
-		if hasattr(coverage, "the_coverage"):
-			cov = coverage #2.x
-		else:
-			cov = coverage.coverage() #3.x
-		coverage.start()
+		import coverage #@UnresolvedImport
+		cov = coverage.coverage(source=["tomato", "tomato.lib"], omit=["tomato/migrations/*", "../shared/lib/*"])
+		cov.start()
+		from tomato import run
 		run()
-		coverage.stop()
+		cov.stop()
+		cov.save()
+		cov.html_report()
 	elif sys.argv[1] == "--profile":
 		import cProfile as profile
+		from tomato import run
 		profile.run("run()", "profile")
 		import pstats
 		stat = pstats.Stats("profile")
