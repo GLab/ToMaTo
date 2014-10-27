@@ -82,6 +82,8 @@ def runXmlRpcServer(address, api, sslOpts, certCheck, beforeExecute, afterExecut
 		if isinstance(error, Fault):
 			return error
 		assert isinstance(error, Error)
+		if error.code == UserError.NOT_LOGGED_IN:
+			return xmlrpc.ErrorUnauthorized()
 		return Fault(999, error.raw)
 	server = xmlrpc.XMLRPCServerIntrospection(address, sslOpts=sslOpts,
 											  loginFunc=lambda _, cert: certCheck(cert.get_subject().commonName),
