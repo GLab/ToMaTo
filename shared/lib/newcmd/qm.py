@@ -36,33 +36,25 @@ _parameterTypes = {
 }
 
 class QMError(Error):
-	CATEGORY="cmd_qm"
-	TYPE_UNKNOWN="unknown"
-	TYPE_UNKNOWN_STATUS="unknown_status"
-	TYPE_INVALID_STATUS="invalid_status"
-	TYPE_INVALID_PARAMETER="invalid_parameter"
-	TYPE_PARAMETER_NOT_SET="parameter_not_set"
-	TYPE_PARAMETER_STILL_SET="parameter_still_set"
-	TYPE_UNSUPPORTED="unsupported"
-	TYPE_NOT_INITIALIZED="not_initialized"
-	TYPE_CONTROL="control_socket"
-	TYPE_NO_SUCH_NIC="no_such_nic"
-	def __init__(self, type, message, data=None):
-		Error.__init__(self, category=QMError.CATEGORY, type=type, message=message, data=data)
-		
-class QMCommandError(QMError):
-	def __init__(self, err):
-		QMError.__init__(self, QMError.TYPE_UNKNOWN, "Command failed: %s" % err, {"code": err.code, "message": err.message})
-	@property
-	def code(self):
-		return self.data.get("code")
-		
-def _qm(vmid, cmd, params=[]):
+	CODE_UNKNOWN="qm.unknown"
+	CODE_UNKNOWN_STATUS="qm.unknown_status"
+	CODE_INVALID_STATUS="qm.invalid_status"
+	CODE_INVALID_PARAMETER="qm.invalid_parameter"
+	CODE_PARAMETER_NOT_SET="qm.parameter_not_set"
+	CODE_PARAMETER_STILL_SET="qm.parameter_still_set"
+	CODE_UNSUPPORTED="qm.unsupported"
+	CODE_NOT_INITIALIZED="qm.not_initialized"
+	CODE_CONTROL="qm.control_socket"
+	CODE_NO_SUCH_NIC="qm.no_such_nic"
+	CODE_COMMAND="qm.command"
+
+def _qm(vmid, cmd, params=None):
+	if not params: params = []
 	try:
 		with locks[vmid]:
 			return run(["qm", cmd, "%d" % vmid] + map(unicode, params))
 	except CommandError, err:
-		raise QMCommandError(err)
+		raise QMError(QMError.CODE_COMMAND, "Failed to execute command", err.data)
 
 class Status:
 	NoSuchVm = "no_such_vm"
@@ -77,9 +69,9 @@ def _status(vmid):
 				return Status.Stopped
 			if res == "status: running":
 				return Status.Running
-			raise QMError(QMError.TYPE_UNKNOWN_STATUS, "Unknown status: %s" % res, {"status": res})
-		except QMCommandError, err:
-			if err.code == 2: # No such VM
+			raise QMError(QMError.CODE_UNKNOWN_STATUS, "Unknown status: %s" % res, {"status": res})
+		except QMError, err:
+			if err.code == QMError.CODE_COMMAND and err.data.get('code') == 2: # No such VM
 				return Status.NoSuchVm
 			raise
 
@@ -87,7 +79,7 @@ def _checkStatus(vmid, statuses):
 	if not isinstance(statuses, collections.Iterable):
 		statuses = [statuses]
 	status = _status(vmid)
-	QMError.check(status in statuses, QMError.TYPE_INVALID_STATUS, "VM %d is in invalid status %r, expected %r" % (vmid, status, statuses))
+	QMError.check(status in statuses, QMError.CODE_INVALID_STATUS, "VM is in invalid status", {"vmid": vmid, "status": status, "expected": statuses})
 		
 def _getConfig(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
@@ -109,7 +101,7 @@ def _set(vmid, **values):
 		_qm(vmid, "set", sum([["-%s" % key, unicode(value)] for key, value in values.iteritems()], []))
 		config = _getConfig(vmid)
 		for key in values:
-			QMError.check(key in config, QMError.TYPE_PARAMETER_NOT_SET, "Parameter %r has not been set" % key, {"key": key, "value": values[key]})
+			QMError.check(key in config, QMError.CODE_PARAMETER_NOT_SET, "Parameter %r has not been set" % key, {"key": key, "value": values[key]})
 		
 		
 def _unset(vmid, keys, force=False):
@@ -119,7 +111,7 @@ def _unset(vmid, keys, force=False):
 		_qm(vmid, "set", ["-delete", " ".join(keys), "-force", str(bool(force))])
 		config = _getConfig(vmid)
 		for key in keys:
-			QMError.check(not key in config, QMError.TYPE_PARAMETER_STILL_SET, "Parameter %r has not been removed" % key, {"key": key, "value": config.get(key)})
+			QMError.check(not key in config, QMError.CODE_PARAMETER_STILL_SET, "Parameter %r has not been removed" % key, {"key": key, "value": config.get(key)})
 	
 def _imageFolder(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
@@ -168,7 +160,7 @@ def _control(vmid, execute, timeout=10, more_args={}, **arguments):
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Running)
 		controlPath = _controlPath(vmid)
-		QMError.check(os.path.exists(controlPath), QMError.TYPE_CONTROL, "Control socket does not exist", {"socket": controlPath})
+		QMError.check(os.path.exists(controlPath), QMError.CODE_CONTROL, "Control socket does not exist", {"socket": controlPath})
 		try:
 			sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 			sock.settimeout(timeout)
@@ -177,14 +169,14 @@ def _control(vmid, execute, timeout=10, more_args={}, **arguments):
 			try:
 				header = json.loads(header)
 			except Exception, exc:
-				raise QMError(QMError.TYPE_CONTROL, "Received invalid header", {"socket": controlPath, "header": header})
+				raise QMError(QMError.CODE_CONTROL, "Received invalid header", {"socket": controlPath, "header": header})
 			cmd = json.dumps({'execute': 'qmp_capabilities'})
 			sock.send(cmd+"\n")
 			res = sock.recv(4096)
 			try:
 				res = json.loads(res)
 			except Exception, exc:
-				raise QMError(QMError.TYPE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
+				raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
 			cmd = json.dumps({'execute': execute, 'arguments': arguments})
 			sock.send(cmd+"\n")
 			res = sock.recv(4096)
@@ -192,12 +184,12 @@ def _control(vmid, execute, timeout=10, more_args={}, **arguments):
 				res = json.loads(res)
 				res = res["return"]
 			except Exception, exc:
-				raise QMError(QMError.TYPE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
+				raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
 			return res
 		except QMError:
 			raise
 		except Exception, exc:
-			raise QMError(QMError.TYPE_CONTROL, "Failed to connect to control socket", {"socket": controlPath})
+			raise QMError(QMError.CODE_CONTROL, "Failed to connect to control socket", {"socket": controlPath})
 		finally:
 			sock.close()
 		
@@ -210,15 +202,15 @@ def _getNicNames(vmid):
 	return dict((int(num), name) for num, name in names)
 		
 def _checkSupport():
-	QMError.check(os.path.exists("/dev/kvm"), QMError.TYPE_UNSUPPORTED, "No KVM support on host")
-	QMError.check(os.access("/dev/kvm", os.W_OK), QMError.TYPE_UNSUPPORTED, "No permission to use KVM")
-	QMError.check(os.geteuid() == 0, QMError.TYPE_UNSUPPORTED, "Not running as root")
-	QMError.check(cmd.exists("qm"), QMError.TYPE_UNSUPPORTED, "Binary qm does not exist")
+	QMError.check(os.path.exists("/dev/kvm"), QMError.CODE_UNSUPPORTED, "No KVM support on host")
+	QMError.check(os.access("/dev/kvm", os.W_OK), QMError.CODE_UNSUPPORTED, "No permission to use KVM")
+	QMError.check(os.geteuid() == 0, QMError.CODE_UNSUPPORTED, "Not running as root")
+	QMError.check(cmd.exists("qm"), QMError.CODE_UNSUPPORTED, "Binary qm does not exist")
 	dpkg.checkSupport()
-	QMError.check(dpkg.isInstalled("pve-qemu-kvm"), QMError.TYPE_UNSUPPORTED, "Package pve-qemu-kvm not installed")
+	QMError.check(dpkg.isInstalled("pve-qemu-kvm"), QMError.CODE_UNSUPPORTED, "Package pve-qemu-kvm not installed")
 	global qmVersion
 	qmVersion = dpkg.getVersion("pve-qemu-kvm")
-	QMError.check(([0, 15, 0] <= qmVersion < [1, 8]), QMError.TYPE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
+	QMError.check(([0, 15, 0] <= qmVersion < [1, 8]), QMError.CODE_UNSUPPORTED, "Unsupported version of pve-qemu-kvm", {"version": qmVersion})
 	brctl.checkSupport()
 	tcpserver.checkSupport()
 	return True
@@ -234,7 +226,7 @@ def _check():
 			supported = False
 			initialized = True
 			raise
-	QMError.check(supported, QMError.TYPE_UNSUPPORTED, "QM is not supported")
+	QMError.check(supported, QMError.CODE_UNSUPPORTED, "QM is not supported")
 
 def _public(method):
 	def call(*args, **kwargs):
@@ -347,7 +339,7 @@ def getNicList(vmid):
 @_public
 def getNicName(vmid, num):
 	names = _getNicNames(vmid)
-	QMError.check(num in names, QMError.TYPE_NO_SUCH_NIC, "No such nic: %d" % num, {"vmid": vmid, "num": num})
+	QMError.check(num in names, QMError.CODE_NO_SUCH_NIC, "No such nic: %d" % num, {"vmid": vmid, "num": num})
 	return names[num]
 
 @_public

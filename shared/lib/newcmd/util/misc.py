@@ -1,4 +1,4 @@
-import hashlib
+import hashlib, os
 
 def removeControlChars(s):
     #allow TAB=9, LF=10, CR=13

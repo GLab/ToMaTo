@@ -3,14 +3,11 @@ from util import run, CommandError, cmd
 import collections
 
 class NetstatError(Error):
-	CATEGORY="cmd_netstat"
-	TYPE_UNKNOWN="unknown"
-	TYPE_UNSUPPORTED="unsupported"
-	TYPE_EXECUTE="execute"
-	TYPE_PARSE="parse"
-	TYPE_PORT_USED="port_used"
-	def __init__(self, type, message, data=None):
-		Error.__init__(self, category=NetstatError.CATEGORY, type=type, message=message, data=data)
+	CODE_UNKNOWN="netstat.unknown"
+	CODE_UNSUPPORTED="netstat.unsupported"
+	CODE_EXECUTE="netstat.execute"
+	CODE_PARSE="netstat.parse"
+	CODE_PORT_USED="netstat.port_used"
 
 Entry = collections.namedtuple("Entry", ["protocol", "local_ip", "local_port", "remote_ip", "remote_port", "state", "prog_pid", "prog_name"])
 
@@ -29,7 +26,7 @@ def _netstat(tcp, udp, ipv4, ipv6, listen):
 	try:
 		res = run(cmd)
 	except CommandError, exc:
-		raise NetstatError(NetstatError.TYPE_EXECUTE, "Failed to execute netstat: %s" % exc, {"cmd": cmd, "error": exc})
+		raise NetstatError(NetstatError.CODE_EXECUTE, "Failed to execute netstat: %s" % exc, {"cmd": cmd, "error": exc})
 	try:
 		entries = []
 		for line in res.splitlines():
@@ -46,11 +43,11 @@ def _netstat(tcp, udp, ipv4, ipv6, listen):
 				prog_pid = int(prog_pid)
 			entries.append(Entry(fields[0], local_ip, local_port, remote_ip, remote_port, fields[5], prog_pid, prog_name))
 	except Exception, exc:
-		raise NetstatError(NetstatError.TYPE_PARSE, "Unable to parse netstat output: %s" % exc, {"cmd": cmd, "error": exc, "output": res})
+		raise NetstatError(NetstatError.CODE_PARSE, "Unable to parse netstat output: %s" % exc, {"cmd": cmd, "error": exc, "output": res})
 	return entries
 
 def _check():
-	NetstatError.check(cmd.exists("netstat"), NetstatError.TYPE_UNSUPPORTED, "Binary netstat does not exist")
+	NetstatError.check(cmd.exists("netstat"), NetstatError.CODE_UNSUPPORTED, "Binary netstat does not exist")
 	return True
 
 def _public(method):
@@ -86,4 +83,4 @@ def isPortUsedBy(port, pid, *args, **kwargs):
 
 def checkPortFree(port, *args, **kwargs):
 	users = getPortUsers(port, *args, **kwargs)
-	NetstatError.check(not users, NetstatError.TYPE_PORT_USED, "Port is in use: %d" % port, {"port": port, "users": users}) 
+	NetstatError.check(not users, NetstatError.CODE_PORT_USED, "Port is in use", {"port": port, "users": users})

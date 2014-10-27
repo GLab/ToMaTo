@@ -2,16 +2,13 @@ from . import Error, netstat
 from util import spawnDaemon, CommandError, params, proc, wait, cmd
 
 class TcpserverError(Error):
-	CATEGORY="cmd_tcpserver"
-	TYPE_UNKNOWN="unknown"
-	TYPE_UNSUPPORTED="unsupported"
-	TYPE_PORT_USED="port_used"
-	TYPE_STILL_RUNNING="still_running"
-	def __init__(self, type, message, data=None):
-		Error.__init__(self, category=TcpserverError.CATEGORY, type=type, message=message, data=data)
+	CODE_UNKNOWN="tcpserver.unknown"
+	CODE_UNSUPPORTED="tcpserver.unsupported"
+	CODE_PORT_USED="tcpserver.port_used"
+	CODE_STILL_RUNNING="tcpserver.still_running"
 
 def _check():
-	TcpserverError.check(cmd.exists("tcpserver"), TcpserverError.TYPE_UNSUPPORTED, "Binary tcpserver does not exist")
+	TcpserverError.check(cmd.exists("tcpserver"), TcpserverError.CODE_UNSUPPORTED, "Binary tcpserver does not exist")
 	return True
 
 def _public(method):
@@ -39,10 +36,10 @@ def start(port, command):
 		wait.waitFor(lambda :netstat.isPortUsedBy(port, pid), failCond=lambda :not proc.isAlive(pid))
 		return pid
 	except wait.WaitError:
-		proc.autoKill(pid, group=True, force=True)
+		proc.autoKill(pid, group=True)
 		raise
 
 @_public
 def stop(pid):
 	proc.autoKill(pid, group=True)
-	TcpserverError.check(not proc.isAlive(pid), TcpserverError.TYPE_STILL_RUNNING, "Failed to stop tcpserver")
+	TcpserverError.check(not proc.isAlive(pid), TcpserverError.CODE_STILL_RUNNING, "Failed to stop tcpserver")
