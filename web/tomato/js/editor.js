@@ -4021,7 +4021,8 @@ var Editor = Class.extend({
 							"timeout": t.options.timeout_settings["default"]
 						}});
 					} else
-						t.topology.initialDialog();
+						if (t.topology.data.attrs._initialized!=undefined)
+							t.topology.initialDialog();
 				t.workspace.updateTopologyTitle();
 			}
 		});
