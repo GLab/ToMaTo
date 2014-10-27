@@ -239,7 +239,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		return "tap%di%d" % (self.vmid, num)
 
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
-	def _qm(self, cmd_, params=[]):
+	def _qm(self, cmd_, params=None):
+		if not params: params = []
 		return cmd.run(["qm", cmd_, "%d" % self.vmid] + map(str, params))
 		#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
 
@@ -266,13 +267,13 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True)
-		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _control(self, cmds, timeout=60):
-		InternalError.check(self.state == ST_STARTED, "VM must be running", code=InternalError.INVALID_STATE)
+		InternalError.check(self.state == ST_STARTED, InternalError.INVALID_STATE, "VM must be running")
 		controlPath = self._controlPath()
-		InternalError.check(os.path.exists(controlPath), "Control path does not exist")
+		InternalError.check(os.path.exists(controlPath), InternalError.UNKNOWN, "Control path does not exist")
 		cmd_ = "".join([cmd.escape(json.dumps(cmd_))+"'\n'" for cmd_ in cmds])
 		return cmd.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd_, "monitor": controlPath, "timeout": timeout})
 			
@@ -280,7 +281,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if self.template:
 			return self.template.upcast()
 		pref = resources.template.getPreferred(self.TYPE)
-		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
+		InternalError.check(pref, InternalError.UNKNOWN, "Failed to find template", data={"type": self.TYPE})
 		return pref
 				
 	def _nextIfaceNum(self):
@@ -320,7 +321,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _checkImage(self, path):
 		err, _ = cmd.runUnchecked(["qemu-img", "info", "-f", "qcow2", path])
-		UserError.check(err==0, "File is not a valid qcow2 image", code=UserError.INVALID_VALUE)
+		UserError.check(err==0, UserError.INVALID_VALUE, "File is not a valid qcow2 image")
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -400,22 +401,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.num)
-			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.UNKNOWN, "Interface did not start properly", data={"interface": ifName})
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
 			interface._start()
-		InternalError.check(util.waitFor(lambda :os.path.exists(self._controlPath())), "Control path does not exist")
+		InternalError.check(util.waitFor(lambda :os.path.exists(self._controlPath())), InternalError.UNKNOWN, "Control path does not exist")
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
 		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
-		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.UNKNOWN, "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), InternalError.UNKNOWN, "Websocket VNC wrapper did not start")
 
 	def action_stop(self):
 		self._checkState()
@@ -440,13 +441,12 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		UserError.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded",
-			code=UserError.NO_DATA_AVAILABLE)
+		UserError.check(os.path.exists(self._imagePath("uploaded.qcow2")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._checkImage(self._imagePath("uploaded.qcow2"))
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
 	def action_rextfv_upload_use(self):
-		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+		UserError.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		
 	def action_download_grant(self):

@@ -33,7 +33,8 @@ class Provider(AuthProvider):
 		organization: The organization that the users belong to
 		flags: The flags to assign to all users
 	"""
-	def parseOptions(self, file, organization=None, flags=[], **kwargs): #@ReservedAssignment
+	def parseOptions(self, file, organization=None, flags=None, **kwargs): #@ReservedAssignment
+		if not flags: flags = []
 		self.file = file
 		self.flags = flags
 		self.organization = getOrganization(organization)

@@ -39,7 +39,7 @@ except ImportError:
 	import StringIO
 
 
-class ErrorUnauthorized():
+class ErrorUnauthorized(Exception):
 	pass
 
 

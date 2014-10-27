@@ -17,7 +17,7 @@
 
 from django.db import models
 
-from lib import db, attributes, util #@UnresolvedImport
+from lib import db, attributes #@UnresolvedImport
 from lib.decorators import *
 from datetime import datetime, timedelta
 import time
@@ -110,7 +110,7 @@ class UsageStatistics(attributes.Mixin, models.Model):
 	class Meta:
 		pass
 
-	def init(self, attrs={}):
+	def init(self):
 		self.attrs = {}
 		self.begin = time.time()
 		self.save()
@@ -152,8 +152,8 @@ class UsageStatistics(attributes.Mixin, models.Model):
 			for rec in records.exclude(pk__in=keep):
 				rec.remove()
 		
-	def update(self, now):
-		self.combine(now)
+	def update(self):
+		self.combine()
 		self.removeOld()
 		
 	def combine(self):
@@ -340,8 +340,8 @@ def aggregate():
 		user.updateUsage()
 	for orga in host.getAllOrganizations():
 		orga.updateUsage()
-	for host in host.getAll():
-		host.updateUsage()
+	for h in host.getAll():
+		h.updateUsage()
 
 @util.wrap_task
 @db.commit_after

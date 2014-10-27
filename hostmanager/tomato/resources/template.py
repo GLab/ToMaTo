@@ -47,7 +47,7 @@ class Template(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["name", "tech", "torrent_data"]:
-			UserError.check(attr in attrs, "Attribute missing", code=UserError.INVALID_CONFIGURATION, data={"attribute": attr})
+			UserError.check(attr in attrs, UserError.INVALID_CONFIGURATION, "Attribute missing", data={"attribute": attr})
 		self.modify_tech(attrs["tech"])
 		self.modify_name(attrs["name"])
 		resources.Resource.init(self, *args, **kwargs)
@@ -63,7 +63,7 @@ class Template(resources.Resource):
 		return self.getPath() + ".torrent"
 
 	def modify_tech(self, val):
-		UserError.check(val in PATTERNS.keys(), "Unsupported template tech", code=UserError.UNSUPPORTED_TYPE, data={"tech": val})
+		UserError.check(val in PATTERNS.keys(), UserError.UNSUPPORTED_TYPE, "Unsupported template tech", data={"tech": val})
 		self.tech = val
 	
 	def modify_name(self, val):
@@ -121,7 +121,7 @@ def get(tech, name):
 	
 def getPreferred(tech):
 	tmpls = Template.objects.filter(tech=tech, owner=currentUser()).order_by("-preference")
-	InternalError.check(tmpls, "No template registered", code=InternalError.CONFIGURATION_ERROR, data={"tech": tech})
+	InternalError.check(tmpls, InternalError.CONFIGURATION_ERROR, "No template registered", data={"tech": tech})
 	return tmpls[0]
 
 resources.TYPES[Template.TYPE] = Template

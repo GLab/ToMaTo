@@ -150,9 +150,9 @@ class Tinc(elements.Element):
 
 	def modify_peers(self, val):
 		for peer in val:
-			UserError.check("host" in peer, "Peer does not contain host", code=UserError.INVALID_VALUE)
-			UserError.check("port" in peer, "Peer does not contain port", code=UserError.INVALID_VALUE)
-			UserError.check("pubkey" in peer, "Peer does not contain pubkey", code=UserError.INVALID_VALUE)
+			UserError.check("host" in peer, UserError.INVALID_VALUE, "Peer does not contain host")
+			UserError.check("port" in peer, UserError.INVALID_VALUE, "Peer does not contain port")
+			UserError.check("pubkey" in peer, UserError.INVALID_VALUE, "Peer does not contain pubkey")
 		self.peers = val
 
 	def action_start(self):
@@ -193,7 +193,8 @@ class Tinc(elements.Element):
 		cmd.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
-		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
+		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
+			"Interface did not start properly", data={"interface": ifName})
 		net.ifUp(ifName)
 		con = self.getConnection()
 		if con:

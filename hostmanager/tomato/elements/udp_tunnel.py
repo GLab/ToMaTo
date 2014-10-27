@@ -19,7 +19,7 @@ from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import net, process #@UnresolvedImport
-from ..lib.error import UserError, InternalError
+from ..lib.error import InternalError
 
 DOC="""
 Element type: ``udp_tunnel``
@@ -115,7 +115,7 @@ class UDP_Tunnel(elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True)
-		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
@@ -136,7 +136,8 @@ class UDP_Tunnel(elements.Element):
 		self.pid = cmd.spawn(cmd_)
 		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
-		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
+		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
+			"Interface did not start properly", data={"interface": ifName})
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())

@@ -80,7 +80,7 @@ def topology_modify(id, attrs): #@ReservedAssignment
 	top.modify(attrs)
 	return top.info()
 
-def topology_action(id, action, params={}): #@ReservedAssignment
+def topology_action(id, action, params=None): #@ReservedAssignment
 	"""
 	Performs an action on the whole topology (i.e. on all elements) in a smart
 	way.
@@ -125,6 +125,7 @@ def topology_action(id, action, params={}): #@ReservedAssignment
 	  of the action to the topology can be checked using 
 	  :py:func:`~topology_info`.	
 	"""
+	if not params: params = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(id)
 	return top.action(action, params)

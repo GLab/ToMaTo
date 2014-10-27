@@ -38,7 +38,8 @@ class Provider(AuthProvider):
 	    hash: The hash method use for passwords, defaults to "sha1"
 		organization: The organization that the users belong to
 	"""
-	def parseOptions(self, secret, organization=None, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, secret, organization=None, flags=None, hash="sha1", **kwargs): #@ReservedAssignment
+		if not flags: flags = []
 		self.hash = hash
 		self.secret = secret
 		self.flags = flags

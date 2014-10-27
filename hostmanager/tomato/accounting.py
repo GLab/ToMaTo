@@ -18,10 +18,9 @@
 from django.db import models
 from django.core import exceptions
 import traceback
-import time
 from datetime import datetime, timedelta
 
-from lib import db, attributes, util, logging #@UnresolvedImport
+from lib import db, attributes, logging #@UnresolvedImport
 from lib.decorators import *
 from . import scheduler
 
@@ -103,7 +102,7 @@ class UsageStatistics(attributes.Mixin, models.Model):
     class Meta:
         pass
 
-    def init(self, attrs={}):
+    def init(self):
         self.attrs = {}
         self.begin = time.time()
         self.save()

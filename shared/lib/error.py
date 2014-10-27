@@ -23,9 +23,9 @@ class Error(Exception):
 		return TYPES.get(raw["type"], Error)(**raw)
 
 	@classmethod
-	def check(cls, condition, *args, **kwargs):
+	def check(cls, condition, code, message, *args, **kwargs):
 		if condition: return
-		raise cls(*args, **kwargs)
+		raise cls(code, message, *args, **kwargs)
 
 	@classmethod
 	def wrap(cls, error, message=None, *args, **kwargs):

@@ -61,11 +61,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
 starttime = time.time()
 
-from models import *
-	
-import api
-
-from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImport
+from . import resources, host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util #@UnresolvedImport
 
