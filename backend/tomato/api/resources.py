@@ -20,7 +20,7 @@ from ..lib.cache import cached #@UnresolvedImport
 
 def _getResource(id_):
 	res = resources.get(id_)
-	fault.check(res, "No such resource: id=%d", id_, code=fault.UNKNOWN_OBJECT)
+	UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="Resource with that id does not exist", data={"id": id_})
 	return res
 
 @cached(timeout=6*3600)
@@ -154,4 +154,5 @@ def resource_info(id): #@ReservedAssignment
 	res = _getResource(int(id))
 	return res.info()
 	
-from .. import fault, resources
+from .. import resources
+from ..lib.error import UserError

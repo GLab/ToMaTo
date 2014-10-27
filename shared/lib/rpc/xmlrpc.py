@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.	If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections, gzip
+import xmlrpclib, socket, SocketServer, BaseHTTPServer, collections, gzip, sys
 from OpenSSL import SSL
 
 """
@@ -38,12 +38,14 @@ try:
 except ImportError:
 	import StringIO
 
+
 class ErrorUnauthorized():
 	pass
 
-def gzip_encode(data): #from xmlrpclib
+
+def gzip_encode(data):  # from xmlrpclib
 	"""data -> gzip encoded data
-	
+
 	Encode data using the gzip content encoding as described in RFC 1952
 	"""
 	if not gzip:
@@ -56,7 +58,7 @@ def gzip_encode(data): #from xmlrpclib
 	f.close()
 	return encoded
 
-#Bugfix: Python 2.6 will not call the needed shutdown_request function
+# Bugfix: Python 2.6 will not call the needed shutdown_request function
 if not hasattr(SocketServer.BaseServer, "shutdown_request"):
 	def _handle_request_noblock(self):
 		try:
@@ -69,27 +71,35 @@ if not hasattr(SocketServer.BaseServer, "shutdown_request"):
 			except:
 				self.handle_error(request, client_address)
 				self.shutdown_request(request)
+
 	SocketServer.BaseServer._handle_request_noblock = _handle_request_noblock
+
 	def process_request(self, request, client_address):
 		self.finish_request(request, client_address)
 		self.shutdown_request(request)
+
 	SocketServer.BaseServer.process_request = process_request
 
-#Bugfix: _fileobject does not handle OpenSSL WantReadErrors well
+# Bugfix: _fileobject does not handle OpenSSL WantReadErrors well
 class WrappedSSLConnection:
 	def __init__(self, con):
 		self._con = con
+
 	def recv(self, *args, **kwargs):
 		try:
 			return self._con.recv(*args, **kwargs)
 		except SSL.WantReadError, err:
 			raise socket.error(socket.EINTR)
+
 	def fileno(self, *args, **kwargs):
 		return self._con.fileno(*args, **kwargs)
+
 	def sendall(self, *args, **kwargs):
 		return self._con.sendall(*args, **kwargs)
+
 	def close(self, *args, **kwargs):
 		return self._con.close(*args, **kwargs)
+
 
 class SecureRequestHandler:
 	def setup(self):
@@ -99,15 +109,13 @@ class SecureRequestHandler:
 			self.wfile = socket._fileobject(WrappedSSLConnection(self.request), "wb", self.wbufsize)
 		else:
 			self.rfile = self.connection.makefile('rb', self.rbufsize)
-			self.wfile = self.connection.makefile('wb', self.wbufsize)	
-
-
-SSLOpts = collections.namedtuple("SSLOpts", ["private_key", "certificate", "client_certs"])
+			self.wfile = self.connection.makefile('wb', self.wbufsize)
 
 
 class SecureServer():
 	def _verifyClientCert(self, connection, x509, errnum, errdepth, ok):
 		return ok
+
 	def __init__(self, sslOpts):
 		self.sslOpts = sslOpts
 		if sslOpts:
@@ -115,13 +123,15 @@ class SecureServer():
 			ctx.use_privatekey_file(sslOpts.private_key)
 			ctx.use_certificate_file(sslOpts.certificate)
 			if sslOpts.client_certs:
-				ctx.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT | SSL.VERIFY_CLIENT_ONCE, self._verifyClientCert)
+				ctx.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT | SSL.VERIFY_CLIENT_ONCE,
+							   self._verifyClientCert)
 				ctx.load_verify_locations(None, sslOpts.client_certs)
 				ctx.set_verify_depth(0)
 			self.plainSocket = self.socket
 			self.socket = SSL.Connection(ctx, self.plainSocket)
 			self.server_bind()
 			self.server_activate()
+
 	def shutdown_request(self, request):
 		"""Called to shutdown and close an individual request."""
 		try:
@@ -132,7 +142,7 @@ class SecureServer():
 			else:
 				request.shutdown(socket.SHUT_WR)
 		except socket.error:
-			pass #some platforms may raise ENOTCONN here
+			pass  #some platforms may raise ENOTCONN here
 		self.close_request(request)
 
 
@@ -158,8 +168,10 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 			if not isinstance(err, xmlrpclib.Fault):
 				err = xmlrpclib.Fault(-1, str(err))
 			self.send(err)
-	def log_message(self, format, *args): #@ReservedAssignment
+
+	def log_message(self, format, *args):  #@ReservedAssignment
 		pass
+
 	def send(self, response):
 		res = xmlrpclib.dumps(response, methodresponse=True, allow_none=True)
 		length = len(res)
@@ -167,35 +179,39 @@ class XMLRPCHandler(SecureRequestHandler, BaseHTTPServer.BaseHTTPRequestHandler)
 		if length > 1024 and "gzip" in [s.strip() for s in self.headers.get("accept-encoding", "").split(",")]:
 			self.send_header("Content-Encoding", "gzip")
 			res = gzip_encode(res)
-			length = len(res) #TODO: find out if length should be compressed or uncompressed length
+			length = len(res)  #TODO: find out if length should be compressed or uncompressed length
 		self.send_header("Content-Length", length)
 		self.send_header("Content-Type", "text/xml")
 		self.end_headers()
 		self.wfile.write(res)
 		self.finish()
+
 	def getRpcRequest(self):
 		length = int(self.headers.get("Content-Length", None))
 		args, method = xmlrpclib.loads(self.rfile.read(length))
 		args, kwargs = self.server.getParameters(args)
 		return (method, args, kwargs)
+
 	def getSSLCertificate(self):
 		if not isinstance(self.connection, SSL.Connection):
 			return None
 		return self.connection.get_peer_certificate()
+
 	def getCredentials(self):
 		authstr = self.headers.get("Authorization", None)
 		if not authstr:
 			return None
-		(authmeth, auth) = authstr.split(' ',1)
+		(authmeth, auth) = authstr.split(' ', 1)
 		if 'basic' != authmeth.lower():
 			return None
 		auth = auth.strip().decode('base64')
-		username, password = auth.split(':',1)
+		username, password = auth.split(':', 1)
 		return (username, password)
 
 
 class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-	def __init__(self, address, loginFunc=lambda u, p: True, sslOpts=False, beforeExecute=None, afterExecute=None, onError=None):
+	def __init__(self, address, loginFunc=lambda u, p: True, sslOpts=False, beforeExecute=None, afterExecute=None,
+				 onError=None):
 		BaseHTTPServer.HTTPServer.__init__(self, address, XMLRPCHandler, bind_and_activate=not bool(sslOpts))
 		SecureServer.__init__(self, sslOpts)
 		self.functions = {}
@@ -203,6 +219,7 @@ class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTT
 		self.beforeExecute = beforeExecute
 		self.afterExecute = afterExecute
 		self.onError = onError
+
 	def register(self, func, name=None):
 		if not callable(func):
 			for n in dir(func):
@@ -213,11 +230,13 @@ class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTT
 			if not name:
 				name = func.__name__
 			self.functions[name] = func
+
 	def getParameters(self, args):
 		kwargs = {}
 		if len(args) == 2 and isinstance(args[0], list) and isinstance(args[1], dict):
 			(args, kwargs) = (args[0], args[1])
 		return (args, kwargs)
+
 	def execute(self, func, args, kwargs):
 		try:
 			if callable(self.beforeExecute):
@@ -232,8 +251,10 @@ class XMLRPCServer(SecureServer, SocketServer.ThreadingMixIn, BaseHTTPServer.HTT
 				if res:
 					exc = res
 			raise exc
+
 	def findMethod(self, method):
 		return self.functions.get(method, None)
+
 	def checkAuth(self, credentials, sslCert):
 		return self.loginFunc(credentials, sslCert)
 
@@ -258,21 +279,22 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 			try:
 				res = [self.execute(func, args, kwargs)]
 			except xmlrpclib.Fault, fault:
-				res = {'faultCode' : fault.faultCode, 'faultString' : fault.faultString}
+				res = {'faultCode': fault.faultCode, 'faultString': fault.faultString}
 			except Exception, exc:
-				res = {'faultCode' : 1, 'faultString' : "%s:%s" % (exc.__class__,__name__, exc)}
+				res = {'faultCode': 1, 'faultString': "%s:%s" % (exc.__class__, __name__, exc)}
 			results.append(res)
 		return results
-		
 
-	def listMethods(self, user=None): #@UnusedVariable, pylint: disable-msg=W0613
+
+	def listMethods(self, user=None):  #@UnusedVariable, pylint: disable-msg=W0613
 		return filter(lambda name: not name.startswith("_"), self.functions.keys())
-	
-	def methodSignature(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
+
+	def methodSignature(self, method, user=None):  #@UnusedVariable, pylint: disable-msg=W0613
 		func = self.findMethod(method)
 		if not func:
 			return "Unknown method: %s" % method
 		import inspect
+
 		argspec = inspect.getargspec(func)
 		if argspec.args:
 			argstr = inspect.formatargspec(argspec.args[:-1], defaults=argspec.defaults[:-1])
@@ -280,7 +302,7 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 			argstr = "()"
 		return method + argstr
 
-	def methodHelp(self, method, user=None): #@UnusedVariable, pylint: disable-msg=W0613
+	def methodHelp(self, method, user=None):  #@UnusedVariable, pylint: disable-msg=W0613
 		func = self.findMethod(method)
 		if not func:
 			return "Unknown method: %s" % method
@@ -291,29 +313,40 @@ class XMLRPCServerIntrospection(XMLRPCServer):
 
 
 class ServerProxy(object):
-	def __init__(self, url, **kwargs):
+	def __init__(self, url, onError=(lambda x: x), **kwargs):
+		self._onError = onError
 		self._xmlrpc_server_proxy = xmlrpclib.ServerProxy(url, **kwargs)
+
 	def __getattr__(self, name):
 		call_proxy = getattr(self._xmlrpc_server_proxy, name)
+
 		def _call(*args, **kwargs):
-			return call_proxy(args, kwargs)
+			try:
+				return call_proxy(args, kwargs)
+			except Exception, exc:
+				raise self._onError(exc), None, sys.exc_info()[2]
+
 		return _call
-	
+
+
 class TimeoutTransport(xmlrpclib.SafeTransport):
 	def __init__(self, timeout=None, *args, **kwargs):
 		self.timeout = timeout
 		xmlrpclib.SafeTransport.__init__(self, *args, **kwargs)
+
 	def make_connection(self, *args, **kwargs):
 		con = xmlrpclib.SafeTransport.make_connection(self, *args, **kwargs)
 		if self.timeout:
 			con.timeout = self.timeout
 		return con
-	
+
+
 class SafeTransportWithCerts(TimeoutTransport):
 	def __init__(self, keyFile, certFile, *args, **kwargs):
 		TimeoutTransport.__init__(self, *args, **kwargs)
 		self.certFile = certFile
 		self.keyFile = keyFile
-	def make_connection(self,host):
-		host_with_cert = (host, {'key_file' : self.keyFile, 'cert_file' : self.certFile})
-		return TimeoutTransport.make_connection(self,host_with_cert)
+
+	def make_connection(self, host):
+		host_with_cert = (host, {'key_file': self.keyFile, 'cert_file': self.certFile})
+		return TimeoutTransport.make_connection(self, host_with_cert)

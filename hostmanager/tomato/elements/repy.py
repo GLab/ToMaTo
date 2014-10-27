@@ -17,11 +17,12 @@
 
 import os, sys
 from django.db import models
-from .. import connections, elements, fault, config
+from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 DOC="""
 Element type: ``repy``
@@ -128,11 +129,11 @@ class Repy(elements.Element):
 	vncpassword = vncpassword_attr.attribute()
 	args_attr = Attr("args", desc="Arguments", states=[ST_PREPARED], default=[])
 	args = args_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, faultType=fault.new_user, default=0.25)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_PREPARED], type="float", minValue=0.01, maxValue=4.0, default=0.25)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, faultType=fault.new_user, default=25)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_PREPARED], type="int", minValue=10, maxValue=4096, default=25)
 	ram = ram_attr.attribute()
-	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, faultType=fault.new_user, default=1000000)
+	bandwidth_attr = Attr("bandwidth", desc="Bandwidth", unit="bytes/s", states=[ST_PREPARED], type="int", minValue=1024, maxValue=10000000000, default=1000000)
 	bandwidth = bandwidth_attr.attribute()
 	#TODO: use template ref instead of attr
 	template_attr = Attr("template", desc="Template", states=[ST_PREPARED], type="str", null=True)
@@ -193,7 +194,8 @@ class Repy(elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
-		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+		InternalError.check(savedState == realState, "Saved state of element was wrong", code=InternalError.WRONG_DATA,
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_State": realState})
 
 	def _interfaceName(self, name):
 		return "repy%d%s" % (self.id, name)
@@ -202,7 +204,7 @@ class Repy(elements.Element):
 		if self.template:
 			return self.template.upcast()
 		pref = template.getPreferred(self.TYPE)
-		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
+		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
 		return pref
 				
 	def _nextIfaceName(self):
@@ -229,7 +231,7 @@ class Repy(elements.Element):
 		if res != "None":
 			import re
 			res = re.match("<(type|class) '([^']*)'> (.*)", res)
-			fault.check(False, "Repy script error: %s %s", (res.group(2), res.group(3)))
+			raise UserError(message="Repy script error", code=UserError.INVALID_CONFIGURATION, data={"error_type": res.group(2), "error_message": res.group(3)})
 
 	def modify_cpus(self, val):
 		self.cpus = val
@@ -259,7 +261,7 @@ class Repy(elements.Element):
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR)
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
 			net.ifUp(ifName)
 			con = interface.getConnection()
 			if con:
@@ -267,13 +269,13 @@ class Repy(elements.Element):
 			interface._start()
 		net.freeTcpPort(self.vncport)				
 		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.dataPath("program.log")), useExec=False)				
-		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			fault.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
 
 	def action_stop(self):
 		for interface in self.getChildren():
@@ -296,7 +298,7 @@ class Repy(elements.Element):
 		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		fault.check(os.path.exists(self.dataPath("uploaded.repy")), "No file has been uploaded")
+		UserError.check(os.path.exists(self.dataPath("uploaded.repy")), "No file has been uploaded", code=UserError.NO_DATA_AVAILABLE)
 		self._checkImage(self.dataPath("uploaded.repy"))
 		os.rename(self.dataPath("uploaded.repy"), self.dataPath("program.repy"))
 		

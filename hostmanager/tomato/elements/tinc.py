@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import os, shutil, hashlib, base64
-from .. import connections, elements, fault, config
+from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import process, net, path #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 DOC="""
 Element type: ``tinc``
@@ -89,7 +90,7 @@ class Tinc(elements.Element):
 	port = port_attr.attribute()
 	path_attr = Attr("path")
 	path = path_attr.attribute()
-	mode_attr = Attr("mode", desc="Mode", states=[ST_CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, faultType=fault.new_user, default="switch")
+	mode_attr = Attr("mode", desc="Mode", states=[ST_CREATED], options={"hub": "Hub (broadcast)", "switch": "Switch (learning)"}, default="switch")
 	mode = mode_attr.attribute()
 	privkey_attr = Attr("privkey", desc="Private key")
 	privkey = privkey_attr.attribute()
@@ -149,9 +150,9 @@ class Tinc(elements.Element):
 
 	def modify_peers(self, val):
 		for peer in val:
-			fault.check("host" in peer, "Peer does not contain host")
-			fault.check("port" in peer, "Peer does not contain port")
-			fault.check("pubkey" in peer, "Peer does not contain pubkey")
+			UserError.check("host" in peer, "Peer does not contain host", code=UserError.INVALID_VALUE)
+			UserError.check("port" in peer, "Peer does not contain port", code=UserError.INVALID_VALUE)
+			UserError.check("pubkey" in peer, "Peer does not contain pubkey", code=UserError.INVALID_VALUE)
 		self.peers = val
 
 	def action_start(self):
@@ -192,7 +193,7 @@ class Tinc(elements.Element):
 		cmd.run(["tincd", "-c", self.path, "--pidfile=%s" % os.path.join(self.path, "tinc.pid")])
 		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
-		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
 		net.ifUp(ifName)
 		con = self.getConnection()
 		if con:

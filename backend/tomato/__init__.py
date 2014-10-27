@@ -19,13 +19,8 @@ import os, sys, signal, time, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
+os.environ['TOMATO_MODULE'] = "hostmanager"
 
-#TODO: debian package
-#TODO: tinc clustering
-#TODO: external network management
-#TODO: interface auto-config
-#TODO: topology timeout
-#TODO: link measurement
 
 def db_migrate():
 	"""
@@ -57,6 +52,10 @@ def login(credentials, sslCert):
 	setCurrentUser(user)
 	return user or not credentials
 
+from lib import logging
+def handleError():
+	logging.logException()
+
 from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
@@ -68,7 +67,7 @@ import api
 
 from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
-from lib import logging, util #@UnresolvedImport
+from lib import util #@UnresolvedImport
 
 scheduler.scheduleRepeated(config.BITTORRENT_RESTART, util.wrap_task(bittorrent.restartClient))
 
@@ -130,6 +129,7 @@ def stop(*args):
 	print >>sys.stderr, "Shutting down..."
 	thread.start_new_thread(_stopHelper, ())
 	rpcserver.stop()
+	host.stopCaching()
 	scheduler.stop()
 	bittorrent.stopTracker()
 	bittorrent.stopClient()

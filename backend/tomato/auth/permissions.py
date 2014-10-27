@@ -18,7 +18,8 @@
 from django.db import models
 
 from ..auth import User, Flags
-from .. import currentUser, fault
+from .. import currentUser
+from ..lib.error import UserError
 
 class Role:
 	owner = "owner" # full topology control, permission changes, topology removal 
@@ -122,4 +123,4 @@ class PermissionMixin:
 		return Role.RANKING.index(r) >= Role.RANKING.index(role)		
 	
 	def checkRole(self, *args, **kwargs):
-		fault.check(self.hasRole(*args, **kwargs), "Not enough permissions")
+		UserError.check(self.hasRole(*args, **kwargs), code=UserError.DENIED, message="Not enough permissions")

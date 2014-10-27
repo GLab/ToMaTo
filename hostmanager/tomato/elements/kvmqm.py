@@ -17,12 +17,13 @@
 
 import os, sys, json, shutil, re
 from django.db import models
-from .. import connections, elements, resources, fault, config
+from .. import connections, elements, resources, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 DOC="""
 Element type: ``kvmqm``
@@ -154,11 +155,11 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, faultType=fault.new_user, default=1)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", states=[ST_CREATED, ST_PREPARED], type="int", minValue=1, maxValue=4, default=1)
 	cpus = cpus_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, default=256)
 	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options={"en-us": "English (US)", "en-gb": "English (GB)", "de": "German", "fr": "French", "ja": "Japanese"}, faultType=fault.new_user, default="en-us")
+	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options={"en-us": "English (US)", "en-gb": "English (GB)", "de": "German", "fr": "French", "ja": "Japanese"}, default="en-us")
 	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
 	kblang = kblang_attr.attribute()
 	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
@@ -253,7 +254,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 				return ST_PREPARED
 			if "unknown" in res:
 				return ST_CREATED
-			fault.raise_("Unable to determine kvm state", fault.INTERNAL_ERROR)
+			raise InternalError(message="Unable to determine kvm state", code=InternalError.INVALID_STATE,
+				data={"state": res})
 		except cmd.CommandError, err:
 			if err.errorCode == 2:
 				return ST_CREATED
@@ -264,12 +266,13 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True)
-		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _control(self, cmds, timeout=60):
-		assert self.state == ST_STARTED, "VM must be running"
+		InternalError.check(self.state == ST_STARTED, "VM must be running", code=InternalError.INVALID_STATE)
 		controlPath = self._controlPath()
-		fault.check(os.path.exists(controlPath), "Control path does not exist")
+		InternalError.check(os.path.exists(controlPath), "Control path does not exist")
 		cmd_ = "".join([cmd.escape(json.dumps(cmd_))+"'\n'" for cmd_ in cmds])
 		return cmd.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd_, "monitor": controlPath, "timeout": timeout})
 			
@@ -277,7 +280,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if self.template:
 			return self.template.upcast()
 		pref = resources.template.getPreferred(self.TYPE)
-		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
+		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
 		return pref
 				
 	def _nextIfaceNum(self):
@@ -317,7 +320,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _checkImage(self, path):
 		err, _ = cmd.runUnchecked(["qemu-img", "info", "-f", "qcow2", path])
-		fault.check(err==0, "File is not a valid qcow2 image")
+		UserError.check(err==0, "File is not a valid qcow2 image", code=UserError.INVALID_VALUE)
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -397,22 +400,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.num)
-			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.num))
 			interface._start()
-		fault.check(util.waitFor(lambda :os.path.exists(self._controlPath())), "Control path does not exist")
+		InternalError.check(util.waitFor(lambda :os.path.exists(self._controlPath())), "Control path does not exist")
 		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
 		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
-		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			fault.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
 
 	def action_stop(self):
 		self._checkState()
@@ -437,7 +440,8 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		fault.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded")
+		UserError.check(os.path.exists(self._imagePath("uploaded.qcow2")), "No file has been uploaded",
+			code=UserError.NO_DATA_AVAILABLE)
 		self._checkImage(self._imagePath("uploaded.qcow2"))
 		os.rename(self._imagePath("uploaded.qcow2"), self._imagePath())
 		
