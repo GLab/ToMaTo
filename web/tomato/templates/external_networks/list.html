@@ -52,6 +52,16 @@
 	    <td>{{netw.attrs.description|linebreaks|escape|simpletags:"b i em strong"|safe}}</td>
 	</tr>
 	{% endif %}
+	<tr>
+		<th>Restricted:</th>
+		<td>
+		{% if netw.attrs.restricted %}
+			<img src="/img/lock.png" /> yes
+		{% else %}
+			no
+		{% endif %}
+		</td>
+	</tr>	
 </table>
 
 

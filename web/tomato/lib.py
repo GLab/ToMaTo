@@ -145,7 +145,7 @@ class wrap_json:
 			except Exception, exc:
 				return HttpResponse(json.dumps({"success": False, "error": '%s:%s' % (exc.__class__.__name__, exc)}))				
 		except xmlrpclib.ProtocolError, e:
-			return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}), status=e.faultCode if e.faultCode in [401, 403] else 200)				
+			return HttpResponse(json.dumps({"success": False, "error": 'Error %s: %s' % (e.errcode, e.errmsg)}), status=e.errcode if e.errcode in [401, 403] else 200)
 		except xmlrpclib.Fault, f:
 			return HttpResponse(json.dumps({"success": False, "error": 'Error %s' % f}))
 

@@ -1,3 +1,9 @@
+nlxtp-guest-modules (0.3.1) stable; urgency=medium
+
+  * Fixed function exporting that got destroyed by shellshock fixes
+
+ -- Dennis Schwerdel <schwerdel@informatik.uni-kl.de>  Tue, 21 Oct 2014 16:55:15 +0200
+
 nlxtp-guest-modules (0.3) unstable; urgency=low
 
   * changed exported names prefix to "archive_"

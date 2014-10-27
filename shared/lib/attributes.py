@@ -19,9 +19,10 @@ from south.modelsinspector import add_introspection_rules
 add_introspection_rules([], ["^tomato\.lib\.db\.JSONField"])
 
 import re
+from .error import UserError
 
 class Attr:
-	def __init__(self, name, desc="", unit=None, states=None, default=None, null=False, type=None, options=None, regExp=None, minValue=None, maxValue=None, faultType=Exception):
+	def __init__(self, name, desc="", unit=None, states=None, default=None, null=False, type=None, options=None, regExp=None, minValue=None, maxValue=None):
 		self.name = name
 		self.desc = desc
 		self.states = states
@@ -33,15 +34,16 @@ class Attr:
 		self.regExp = regExp
 		self.minValue = minValue
 		self.maxValue = maxValue
-		self.faultType = faultType
 	def check(self, obj, value):
 		if self.states and not obj.state in self.states:
-			raise self.faultType("Invalid state for %s: %s, must be one of %r" % (self.name, obj.state, self.states))
+			raise UserError(code=UserError.INVALID_STATE, message="Invalid state for attribute",
+				data={"attribute": self.name, "state": obj.state, "allowed_states": self.states})
 		self.conv(value)
 	def conv(self, value):
 		if value is None:
 			if not self.null:
-				raise self.faultType("Invalid value for %s: %r, must not be null" % (self.name, value))
+				raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, must not be null",
+					data={"attribute": self.name, "value": value})
 			return None
 		try:
 			if self.type == "int":
@@ -53,20 +55,26 @@ class Attr:
 			if self.type == "bool":
 				value = bool(value)
 		except:
-			raise self.faultType("Invalid value for %s: %r, failed to convert to %s" % (self.name, value, self.type))
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, failed to convert",
+				data={"attribute": self.name, "value": value, "type": self.type})
 		if self.options and not value in self.options.keys():
-			raise self.faultType("Invalid value for %s: %r, must be one of %r" % (self.name, value, self.options.keys()))
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, must choose from list",
+				data={"attribute": self.name, "value": value, "options": self.options.keys()})
 		if not self.minValue is None and value < self.minValue:
-			raise self.faultType("Invalid value for %s: %r, must be greater than %r" % (self.name, value, self.minValue))
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, below minimum",
+				data={"attribute": self.name, "value": value, "minimum": self.minValue})
 		if not self.maxValue is None and value > self.maxValue:
-			raise self.faultType("Invalid value for %s: %r, must be less than %r" % (self.name, value, self.maxValue))
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, above maximum",
+				data={"attribute": self.name, "value": value, "maximum": self.maxValue})
 		if self.regExp and not re.match(self.regExp, value):
-			raise self.faultType("Invalid value for %s: %r, must match %r" % (self.name, value, self.regExp))
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid value, must match pattern",
+				data={"attribute": self.name, "value": value, "pattern": self.regExp})
 		return value
 	def set(self, obj, value):
 		value = self.conv(value)
 		if self.states and not obj.state in self.states:
-			raise self.faultType("Invalid state for %s: %s, must be one of %r" % (self.name, obj.state, self.states))
+			raise UserError(code=UserError.INVALID_STATE, message="Invalid state for attribute",
+				data={"attribute": self.name, "state": obj.state, "allowed_states": self.states})
 		obj.setAttribute(self.name, value)
 	def get(self, obj):
 		return obj.getAttribute(self.name, self.default)
