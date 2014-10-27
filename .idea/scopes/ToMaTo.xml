@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="ToMaTo" pattern="file:backend/__init__.py||file:backend/backend.conf.example||file:backend/manage.py||file:backend/server.py||file:backend/index.rst||file:backend/.gitignore||file:backend/tomato//*||file:web/tomato//*||file:web/tomato/*||file:index.rst||file:web/__init__.py||file:web/index.rst||file:web/manage.py||file:web/web.conf.example||file:hostmanager/__init__.py||file:hostmanager/.gitignore||file:hostmanager/index.rst||file:hostmanager/manage.py||file:hostmanager/server.py||file:hostmanager/hostmanager.conf.example||file:hostmanager/tomato//*" />
+</component>

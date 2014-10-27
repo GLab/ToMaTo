@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from .. import connections, elements, fault, config
+from .. import connections, elements, config
 from ..lib import util, cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import net, process #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 DOC="""
 Element type: ``udp_tunnel``
@@ -114,7 +115,8 @@ class UDP_Tunnel(elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True)
-		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _interfaceName(self):
 		return "stap%d" % self.id
@@ -134,7 +136,7 @@ class UDP_Tunnel(elements.Element):
 		self.pid = cmd.spawn(cmd_)
 		self.setState(ST_STARTED)
 		ifName = self._interfaceName()
-		fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+		InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
 		con = self.getConnection()
 		if con:
 			con.connectInterface(self._interfaceName())

@@ -14,7 +14,12 @@ docs_build
 *.pem
 *.torrent
 *.qcow2
+.idea
 
 web-old
 backend-old
 web/tomato/static/newui
+backend/htmlcov
+backend/templates
+docs/presentations
+backend/dumps

@@ -16,9 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-from .. import resources, fault, config
+from .. import resources, config
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import path, bittorrent #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 import os.path, base64, hashlib
 
 PATTERNS = {
@@ -47,7 +48,8 @@ class Template(resources.Resource):
 		self.type = self.TYPE
 		attrs = args[0]
 		for attr in ["name", "tech", "torrent_data"]:
-			fault.check(attr in attrs, "Template needs attribute %s", attr) 
+			UserError.check(attr in attrs, code=UserError.INVALID_CONFIGURATION, message="Template needs attribute",
+				data={"attribute": attr})
 		resources.Resource.init(self, *args, **kwargs)
 		self.modify_torrent_data(self.torrent_data) #might have been set before name or tech 
 				
@@ -64,7 +66,7 @@ class Template(resources.Resource):
 		self.name = val
 
 	def modify_tech(self, val):
-		fault.check(val in PATTERNS.keys(), "Unsupported template tech: %s", val)
+		UserError.check(val in PATTERNS.keys(), code=UserError.INVALID_VALUE, message="Unsupported template tech", data={"value": val})
 		self.tech = val
 	
 	def modify_preference(self, val):
@@ -75,12 +77,14 @@ class Template(resources.Resource):
 		try:
 			info = bittorrent.torrentInfo(raw)
 		except:
-			fault.raise_("Invalid torrent file", fault.USER_ERROR)
-		fault.check(not "files" in info or len(info["files"]) == 1, "Torrent must contain exactly one file")
+			raise UserError(code=UserError.INVALID_VALUE, message="Invalid torrent file")
+		UserError.check(not "files" in info or len(info["files"]) == 1, code=UserError.INVALID_VALUE,
+			message="Torrent must contain exactly one file")
 		self.torrent_data = val
 		if self.name and self.tech:
 			shouldName = PATTERNS[self.tech] % self.name
-			fault.check(info["name"] == shouldName, "Torrent content must be named %s" % shouldName)
+			UserError.check(info["name"] == shouldName, code=UserError.INVALID_VALUE,
+				message="Torrent content must be named like the template", data={"expected_name": shouldName})
 			with open(self.getTorrentPath(), "w") as fp:
 				fp.write(raw)
 
@@ -124,7 +128,7 @@ def get(tech, name):
 	
 def getPreferred(tech):
 	tmpls = Template.objects.filter(tech=tech).order_by("-preference")
-	fault.check(tmpls, "No template of type %s registered", tech) 
+	InternalError.check(tmpls, code=InternalError.CONFIGURATION_ERROR, message="No template for this type registered", data={"tech": tech})
 	return tmpls[0]
 
 resources.TYPES[Template.TYPE] = Template

@@ -17,12 +17,13 @@
 
 import os.path, sys
 from django.db import models
-from .. import connections, elements, fault, config
+from .. import connections, elements, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib import decorators, util, cmd #@UnresolvedImport
 from ..lib.cmd import fileserver, process, net, path, CommandError #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
+from ..lib.error import UserError, InternalError
 
 DHCP_CMDS = ["[ -e /sbin/dhclient ] && /sbin/dhclient -nw %s",
 			 "[ -e /sbin/dhcpcd ] && /sbin/dhcpcd %s"]
@@ -158,11 +159,11 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	vncpid = vncpid_attr.attribute()
 	vncpassword_attr = Attr("vncpassword", type="str")
 	vncpassword = vncpassword_attr.attribute()
-	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, faultType=fault.new_user, default=256)
+	ram_attr = Attr("ram", desc="RAM", unit="MB", type="int", minValue=64, maxValue=4096, default=256)
 	ram = ram_attr.attribute()
-	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, faultType=fault.new_user, default=1.0)
+	cpus_attr = Attr("cpus", desc="Number of CPUs", type="float", minValue=0.1, maxValue=4.0, default=1.0)
 	cpus = cpus_attr.attribute()
-	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, faultType=fault.new_user, default=10240)
+	diskspace_attr = Attr("diskspace", desc="Disk space", unit="MB", type="int", minValue=512, maxValue=102400, default=10240)
 	diskspace = diskspace_attr.attribute()
 	rootpassword_attr = Attr("rootpassword", desc="Root password", type="str")
 	rootpassword = rootpassword_attr.attribute()
@@ -257,20 +258,22 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 			return ST_PREPARED
 		if "deleted" in res:
 			return ST_CREATED
-		fault.raise_("Unable to determine openvz state", fault.INTERNAL_ERROR) #pragma: no cover
+		raise InternalError(message="Unable to determine openvz state", code=InternalError.INVALID_STATE,
+			data={"state": res})
 
 	def _checkState(self):
 		savedState = self.state
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
-		fault.check(savedState == realState, "Saved state of %s element #%d was wrong, saved: %s, was: %s", (self.type, self.id, savedState, realState), fault.INTERNAL_ERROR)
+		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:
 			return self.template.upcast()
 		pref = template.getPreferred(self.TYPE)
-		fault.check(pref, "Failed to find template for %s", self.TYPE, fault.INTERNAL_ERROR)
+		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
 		return pref
 
 	def _nextIfaceName(self):
@@ -342,7 +345,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
-		fault.check("0/0" in res, "Image contents not owned by root")
+		UserError.check("0/0" in res, "Image contents not owned by root", code=UserError.INVALID_VALUE)
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
@@ -453,7 +456,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			fault.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly: %s", ifName, fault.INTERNAL_ERROR) 
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
@@ -461,13 +464,13 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
-		fault.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start", code=fault.INTERNAL_ERROR)
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			fault.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
 				
 	def action_stop(self):
 		self._checkState()
@@ -492,7 +495,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		fault.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded")
+		UserError.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded", code=UserError.NO_DATA_AVAILABLE)
 		self._checkImage(self.dataPath("uploaded.tar.gz"))
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
@@ -519,7 +522,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		try:
 			return self._execute(cmd)
 		except CommandError, err:
-			fault.raise_("Command failed with error code %d: %s" % (err.errorCode, err.errorMessage), code=fault.USER_ERROR)
+			raise UserError(code=UserError.COMMAND_FAILED, message="Command failed", data={"code": err.errorCode, "message": err.errorMessage})
 
 	def upcast(self):
 		return self
