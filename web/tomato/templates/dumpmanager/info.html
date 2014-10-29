@@ -42,7 +42,7 @@
 		{% endif %}
 		<td>{{errordump.timestamp|todate}}</td>
 		<td>
-			<form style="margin:0px;padding:0px;"> 
+			<form style="margin:0px;padding:0px;" method="post">
 			<div class="btn-group">
 				<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
 	    			<span class="glyphicon glyphicon-download-alt"></span>
@@ -66,9 +66,9 @@
 
 {% if request.session.user.isGlobalHostManager %}
 <form>
-  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
-  <button type="submit" formaction="{%url "dumpmanager.group_clear" errorgroup.group_id%}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
-  <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id %}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_clear" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
 </form>
 {%endif%}
 {% endblock %}

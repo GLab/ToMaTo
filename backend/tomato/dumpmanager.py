@@ -374,6 +374,8 @@ def init():
 def checkPermissions():
 	from auth import Flags
 	user = currentUser()
+	if not user:
+		return False
 	UserError.check(user.hasFlag(Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
 	return True
 
@@ -417,11 +419,11 @@ def api_errordump_list(group_id=None, source=None, data_available=None):
 				di = d.info(include_data=False)
 
 				append_to_res = True
-				if not group_id is None and di['group_id'] == group_id:
+				if not group_id is None and di['group_id'] != group_id:
 					append_to_res = False
-				if not source is None and di['source'] == source:
+				if not source is None and di['source'] != source:
 					append_to_res = False
-				if not data_available is None and di['data_available'] == data_available:
+				if not data_available is None and di['data_available'] != data_available:
 					append_to_res = False
 
 				if append_to_res:

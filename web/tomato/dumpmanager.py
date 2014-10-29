@@ -27,6 +27,18 @@ from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
+class ErrorDumpForm(BootstrapForm):
+	source = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
+	dump_id = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.", widget=forms.HiddenInput())
+	buttons = Buttons.cancel_add
+	def __init__(self, api, *args, **kwargs):
+		super(ErrorDumpForm, self).__init__(*args, **kwargs)
+		self.helper.layout = Layout(
+			'source',
+			'dump_id',
+			self.buttons
+		)
+	
 class ErrorGroupForm(BootstrapForm):
 	description = forms.CharField(max_length=255,help_text="The description for the errorgroup. This is also its name in the errogroup list.")
 	buttons = Buttons.cancel_add
@@ -78,7 +90,7 @@ def group_remove(api, request, group_id):
 			api.errorgroup_remove(group_id)
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_remove", kwargs={"group_id": group_id}))
-	return render(request, "form.html", {"heading": "Remove Errogroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_id+"'?", 'form': form})
+	return render(request, "form.html", {"heading": "Remove Errorgroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_id+"'?", 'form': form})
 
 @wrap_rpc
 def group_edit(api, request, group_id):
@@ -112,11 +124,14 @@ def dump_info(api, request, source, dump_id,data=False):
 @wrap_rpc
 def dump_remove(api, request, source, dump_id):
 	if request.method=='POST':
-		form = ErrorGroupForm(api, request.POST)
+		form = RemoveConfirmForm(api, request.POST)
 		if form.is_valid():
-			dump = api.errordump_info(dump_id,False)
+			dump = api.errordump_info(source,dump_id,False)
 			api.errordump_remove(source,dump_id)
-	return render(request, "dumpmanager/info.html", {'errorgroup': dump['group_id']})
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",kwargs={'group_id':dump['group_id']}))
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.dump_remove", kwargs={"source": source, "dump_id":dump_id}))
+	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from source '"+source+"'?", 'form': form})
+
 
 @wrap_rpc
 def dump_export(api, request, source, dump_id,data=False):
