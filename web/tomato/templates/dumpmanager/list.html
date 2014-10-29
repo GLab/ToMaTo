@@ -11,17 +11,34 @@
 <h1>Error Group list</h1>
 
 
-{% if errorgroup_list %}
+{% if errorgroup_list  %}
 	<script src="/js/enhancetable.js"></script>	
 	<table id="table" class="sortable,filterable,stddevcolor, table table-striped" stddev_threshold="1.5" stddev_threshold_high="2.5">
 	<tr>
 	<th>Description</th>
+	<th>&#35; Dumps</th>
+	<th></th>
 	</tr>
 	{% for errorgroup in errorgroup_list %}
 	  	<tr>
 	    	<td><a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a></td>  
-	  	</tr>
+			<td>{{errorgroup.count}}</td>
+			{% if request.session.user.isGlobalHostManager %}
+	  			<td align="right">
+	  				<form style="padding: 0px;margin:0px;">
+	  				  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span></button>
+					  <button type="submit" formaction="{%url "dumpmanager.group_clear" errorgroup.group_id%}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span></button>
+					  <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id%}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span></button>
+					</form>
+				</td>
+	  		{% endif %}
+ 		 </tr>  	
+	{% empty %}
+		<tr>
+			<td>No Dumps</td>
+		</tr>
 	{% endfor %}
+	
 	</table>
 
 {% else %}

@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import json
+import json, re
 
 from django.shortcuts import render
 from django import forms
-from lib import wrap_rpc, serverInfo, AuthError
-from django.http import HttpResponseRedirect
+from lib import wrap_rpc, AuthError
+from django.http import HttpResponseRedirect, HttpResponse
 
-from admin_common import BootstrapForm, RemoveConfirmForm, Buttons, append_empty_choice
+from admin_common import BootstrapForm, RemoveConfirmForm, Buttons
 from tomato.crispy_forms.layout import Layout
 from django.core.urlresolvers import reverse
 
@@ -55,12 +55,20 @@ def group_info(api, request, group_id):
 	return render(request, "dumpmanager/info.html", {'errorgroup': errorgroup})
 
 @wrap_rpc
-def dump_info(api, request, id):
-	errordump = api.errordump_info(id,False)
-	return render(request, "dumpmanager/info.html", {'errordump': errordump})
+def group_clear(api,request,group_id):	
+	if request.method == 'POST':
+		form = RemoveConfirmForm(request.POST)
+		if form.is_valid():
+			errordumps = api.errordump_list(group_id)
+			for dump in errordumps:
+				api.errordump_remove(dump['source'],dump['dump_id'])
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
+	return render(request, "form.html", {"heading": "Clear Errogroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_id+"' from all dumps?", 'form': form})
+
 
 @wrap_rpc
-def remove(api, request, group_id):
+def group_remove(api, request, group_id):
 	if request.method == 'POST':
 		form = RemoveConfirmForm(request.POST)
 		if form.is_valid():
@@ -68,8 +76,8 @@ def remove(api, request, group_id):
 			for dump in errordumps:
 				api.errordump_remove(dump['source'],dump['dump_id'])
 			api.errorgroup_remove(group_id)
-			return HttpResponseRedirect(reverse("host_list"))
-	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.remove", kwargs={"group_id": group_id}))
+			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
+	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_remove", kwargs={"group_id": group_id}))
 	return render(request, "form.html", {"heading": "Remove Errogroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_id+"'?", 'form': form})
 
 @wrap_rpc
@@ -94,3 +102,31 @@ def group_edit(api, request, group_id):
 			return render(request, "form.html", {"heading": "Editing errorgroup '"+group_id+"'", 'form': form})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
+
+
+@wrap_rpc
+def dump_info(api, request, source, dump_id,data=False):
+	errordump = api.errordump_info(source, dump_id,data)
+	return render(request, "dumpmanager/info.html", {'errordump': errordump})
+
+@wrap_rpc
+def dump_remove(api, request, source, dump_id):
+	if request.method=='POST':
+		form = ErrorGroupForm(api, request.POST)
+		if form.is_valid():
+			dump = api.errordump_info(dump_id,False)
+			api.errordump_remove(source,dump_id)
+	return render(request, "dumpmanager/info.html", {'errorgroup': dump['group_id']})
+
+@wrap_rpc
+def dump_export(api, request, source, dump_id,data=False):
+	if not api.user:
+		raise AuthError()
+	dump = api.errordump_info(source,dump_id,data)
+	filename = re.sub('[^\w\-_\. ]', '_', source.lower() + "__" + dump_id ) + ".tomato3.json"
+	response = HttpResponse(json.dumps(dump, indent = 2), content_type="application/json")
+	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+	return response
+
+def dump_export_with_data(request, source, dump_id):
+	return dump_export(request, source, dump_id, True)
