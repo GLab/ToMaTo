@@ -21,8 +21,7 @@ from django.db import models
 from .. import dump
 from ..user import User
 from ..accounting import UsageStatistics
-from ..lib import db, attributes, util, logging #@UnresolvedImport
-from ..lib.decorators import *
+from ..lib import db, attributes, logging #@UnresolvedImport
 
 ST_CREATED = "created"
 ST_STARTED = "started"
@@ -92,10 +91,11 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 	class Meta:
 		pass
 
-	def init(self, el1, el2, attrs={}):
+	def init(self, el1, el2, attrs=None):
+		if not attrs: attrs = {}
 		concept_ = self.determineConcept(el1, el2)
-		UserError.check(concept_, "Not able to connect the two elements with this connection type",
-			code=UserError.UNABLE_TO_CONNECT, data={"element_types": (el1.type, el2.type), "connection_type": self.type})
+		UserError.check(concept_, UserError.UNABLE_TO_CONNECT, "Not able to connect the two elements with this connection type",
+			data={"element_types": (el1.type, el2.type), "connection_type": self.type})
 		self.owner = currentUser()
 		self.attrs = dict(self.DEFAULT_ATTRS)
 		self.save()
@@ -107,13 +107,6 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			os.makedirs(self.dataPath())
 		self.modify(attrs)
 
-	def dump(self, **kwargs):
-		try:
-			data = self.info()
-		except Exception, ex:
-			data = {"info_exception": str(ex), "type": self.type, "id": self.id, "state": self.state, "attrs": self.attrs}
-		dump.dump(connection=data, **kwargs)
-		
 	def dumpException(self, **kwargs):
 		try:
 			data = self.info()
@@ -190,9 +183,9 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param attrs: Attributes to change
 		@type attrs: dict
 		"""
-		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
+		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
 		for key in attrs.keys():
-			UserError.check(key in self.CAP_ATTRS, "Unsupported attribute", code=UserError.UNSUPPORTED_ATTRIBUTE,
+			UserError.check(key in self.CAP_ATTRS, UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute",
 				data={"connection_type": self.type, "attribute": key})
 			self.CAP_ATTRS[key].check(self, attrs[key])
 		
@@ -233,11 +226,12 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 		@param action: Action to check
 		@type action: str
 		"""
-		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
-		UserError.check(action in self.CAP_ACTIONS, "Unsuported action", code=UserError.UNSUPPORTED_ACTION,
+		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
+		UserError.check(action in self.CAP_ACTIONS, UserError.UNSUPPORTED_ACTION, "Unsuported action",
 			data={"connection_type": self.type, "action": action})
-		UserError.check(self.state in self.CAP_ACTIONS[action], "Action can not be executed in this state",
-			code=UserError.INVALID_STATE, data={"action": action, "connection_type": self.type, "state": self.state})
+		UserError.check(self.state in self.CAP_ACTIONS[action], UserError.INVALID_STATE,
+			"Action can not be executed in this state",
+			data={"action": action, "connection_type": self.type, "state": self.state})
 
 	def action(self, action, params):
 		"""
@@ -266,8 +260,8 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			self.setBusy(False)
 		self.save()
 		if action in self.CAP_NEXT_STATE:
-			InternalError.check(self.state == self.CAP_NEXT_STATE[action], "Action lead to wrong state",
-				code=InternalError.INVALID_NEXT_STATE, data={"action": action, "element_type": self.type,
+			InternalError.check(self.state == self.CAP_NEXT_STATE[action], InternalError.INVALID_NEXT_STATE,
+				"Action lead to wrong state", data={"action": action, "element_type": self.type,
 				"expected_state": self.CAP_NEXT_STATE[action], "reached_state": self.state})
 		logging.logMessage("action end", category="connection", id=self.id, action=action, params=params, res=res)
 		logging.logMessage("info", category="connection", id=self.id, info=self.info())			
@@ -278,9 +272,9 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 		self.save()
 
 	def checkRemove(self):
-		UserError.check(not self.isBusy(), "Object is busy", code=UserError.ENTITY_BUSY)
+		UserError.check(not self.isBusy(), UserError.ENTITY_BUSY, "Object is busy")
 		UserError.check(not REMOVE_ACTION in self.CAP_ACTIONS or self.state in self.CAP_ACTIONS[REMOVE_ACTION],
-			"Connector can not be removed in its current state", code=UserError.INVALID_STATE,
+			UserError.INVALID_STATE, "Connector can not be removed in its current state",
 			data={"connection_type": self.type, "state": self.state})
 
 	def remove(self):
@@ -309,7 +303,8 @@ class Connection(db.ChangesetMixin, attributes.Mixin, models.Model):
 			"elements": sorted(els), #sort elements so that first one is from and second one is to
 		}
 		
-	def getResource(self, type_, blacklist=[]):
+	def getResource(self, type_, blacklist=None):
+		if not blacklist: blacklist = []
 		from .. import resources #needed to break import cycle
 		return resources.take(type_, self, blacklist=blacklist)
 			
@@ -336,15 +331,16 @@ def get(id_, **kwargs):
 def getAll(**kwargs):
 	return (con.upcast() for con in Connection.objects.filter(**kwargs))
 
-def create(el1, el2, type_=None, attrs={}):
-	UserError.check(not el1.connection, "Element is already connected", code=UserError.ALREADY_CONNECTED,
+def create(el1, el2, type_=None, attrs=None):
+	if not attrs: attrs = {}
+	UserError.check(not el1.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
 		data={"element_id": el1.id})
-	UserError.check(not el2.connection, "Element is already connected", code=UserError.ALREADY_CONNECTED,
+	UserError.check(not el2.connection, UserError.ALREADY_CONNECTED, "Element is already connected",
 		data={"element_id": el2.id})
-	UserError.check(el1.owner == el2.owner == currentUser(), "Element belongs to different user",
-		code=UserError.DIFFERENT_USER)
+	UserError.check(el1.owner == el2.owner == currentUser(), UserError.DIFFERENT_USER,
+		"Element belongs to different user")
 	if type_:
-		UserError.check(type_ in TYPES, "Unsupported type", code=UserError.UNSUPPORTED_TYPE, data={"type": type_})
+		UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unsupported type", data={"type": type_})
 		con = TYPES[type_]()
 		try:
 			con.init(el1, el2, attrs)
@@ -359,7 +355,7 @@ def create(el1, el2, type_=None, attrs={}):
 		for type_ in TYPES:
 			if TYPES[type_].determineConcept(el1, el2):
 				return create(el1, el2, type_, attrs)
-		UserError.check(False, "Failed to find matching connection type", code=UserError.UNABLE_TO_CONNECT,
+		UserError.check(False, UserError.UNABLE_TO_CONNECT, "Failed to find matching connection type",
 			data={"element_types": (el1.type, el2.type)})
 
 from .. import currentUser, config

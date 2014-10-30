@@ -53,8 +53,10 @@ def login(commonName):
 	setCurrentUser(user)
 	return bool(commonName)
 
-from lib import logging, error
+from lib import logging
 def handleError():
+	import traceback
+	traceback.print_exc()
 	dump.dumpException()
 	logging.logException()
 
@@ -62,10 +64,9 @@ from lib import tasks #@UnresolvedImport
 scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=2)
 
 from models import *
-	
-import api
 
-from . import lib, resources, accounting, rpcserver, elements, firewall, dump #@UnresolvedImport
+from . import resources, rpcserver, firewall, dump #@UnresolvedImport
+from .resources import network
 from lib.cmd import bittorrent, fileserver, process #@UnresolvedImport
 from lib import util #@UnresolvedImport
 
@@ -77,7 +78,7 @@ def start():
 	logging.openDefault(config.LOG_FILE)
 	dump.init()
 	db_migrate()
-	firewall.add_all_networks(resources.network.getAll())
+	firewall.add_all_networks(network.getAll())
 	bittorrent.startClient(config.TEMPLATE_DIR)
 	fileserver.start()
 	rpcserver.start()

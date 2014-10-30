@@ -36,7 +36,8 @@ class Provider(AuthProvider):
 		organization: The organization that the users belong to
 		roles: ...
 	"""
-	def parseOptions(self, api_uri, organization=None, site_filter=None, roles={"user": []}, **kwargs):
+	def parseOptions(self, api_uri, organization=None, site_filter=None, roles=None, **kwargs):
+		if not roles: roles = {"user": []}
 		self.api_uri = api_uri
 		self.site_filter = site_filter
 		if isinstance(self.site_filter, str):

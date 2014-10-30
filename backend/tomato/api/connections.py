@@ -24,7 +24,7 @@ def _getConnection(id_):
 	UserError.check(con, code=UserError.ENTITY_DOES_NOT_EXIST, message="Connection with that id does not exist", data={"id": id_})
 	return con
 
-def connection_create(el1, el2, attrs={}): #@ReservedAssignment
+def connection_create(el1, el2, attrs=None): #@ReservedAssignment
 	"""
 	Connects the given elements using the given type of connection, configuring
 	it with the given attributes by the way. The order of the elements does not
@@ -62,6 +62,7 @@ def connection_create(el1, el2, attrs={}): #@ReservedAssignment
 	  * one of the elements is already connected
 	  * both elements are the same
 	"""
+	if not attrs: attrs = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el1 = _getElement(el1)
 	el2 = _getElement(el2)
@@ -102,7 +103,7 @@ def connection_modify(id, attrs): #@ReservedAssignment
 	con.modify(attrs)
 	return con.info()
 
-def connection_action(id, action, params={}): #@ReservedAssignment
+def connection_action(id, action, params=None): #@ReservedAssignment
 	"""
 	Performs an action on the connection.
 	
@@ -131,6 +132,7 @@ def connection_action(id, action, params={}): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the connection type 
 	  and state.
 	"""
+	if not params: params = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	con = _getConnection(id)
 	return con.action(action, params)

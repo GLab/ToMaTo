@@ -17,11 +17,11 @@
 
 def _getResource(id_):
 	res = resources.get(id_)
-	UserError.check(res, "No such resource", code=UserError.ENTITY_DOES_NOT_EXIST, data={"id": id_})
+	UserError.check(res, UserError.ENTITY_DOES_NOT_EXIST, "No such resource", data={"id": id_})
 	return res
 
 
-def resource_create(type, attrs={}):  # @ReservedAssignment
+def resource_create(type, attrs=None):  # @ReservedAssignment
 	"""
 	Creates a resource of given type, configuring it with the given attributes
 	by the way.
@@ -50,6 +50,7 @@ def resource_create(type, attrs={}):  # @ReservedAssignment
 	Exceptions:
 	  Various other exceptions can be raised, depending on the given type.
 	"""
+	if not attrs: attrs = {}
 	attrs = dict(attrs)
 	res = resources.create(type, attrs)
 	return res.info()
@@ -151,5 +152,5 @@ def resource_list(type_filter=None):
 	return [r.info() for r in res]
 
 
-from .. import resources, currentUser, config
+from .. import resources
 from ..lib.error import UserError

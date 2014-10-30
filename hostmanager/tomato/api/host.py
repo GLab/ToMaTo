@@ -274,6 +274,6 @@ def host_networks():
 		res.append(data)
 	return res
 
-from .. import dump, elements, connections, resources, config, currentUser
+from .. import dump, elements, connections, resources, config
 from ..lib.cmd import hostinfo, net, dhcp #@UnresolvedImport
 import time

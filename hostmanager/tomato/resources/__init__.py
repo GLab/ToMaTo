@@ -16,12 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from django.db import models
-import random, sys
+import random
 
 from .. import config
-from ..user import User
-from ..lib import db, attributes, util, logging #@UnresolvedImport
-from ..lib.decorators import *
+from ..lib import db, attributes, logging #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 
 TYPES = {}
@@ -37,9 +35,10 @@ def give(type_, num, owner):
 			message="Owner must either be Element or Connection", data={"owner_type": owner.__class__.__name__})
 	instance.delete()
 
-def take(type_, owner, blacklist=[]):
+def take(type_, owner, blacklist=None):
+	if not blacklist: blacklist = []
 	range_ = config.RESOURCES.get(type_)
-	InternalError.check(range_, "No resource entry found", code=InternalError.CONFIGURATION_ERROR,
+	InternalError.check(range_, InternalError.CONFIGURATION_ERROR, "No resource entry found",
 		data={"resource_type": type_})
 	for try_ in xrange(0, 100): 
 		num = random.choice(range_)
@@ -69,7 +68,8 @@ class Resource(db.ChangesetMixin, attributes.Mixin, models.Model):
 	class Meta:
 		pass
 
-	def init(self, attrs={}):
+	def init(self, attrs=None):
+		if not attrs: attrs = {}
 		self.attrs = {}
 		self.save()
 		self.modify(attrs)
@@ -116,7 +116,8 @@ class ResourceInstance(db.ChangesetMixin, attributes.Mixin, models.Model):
 	class Meta:
 		unique_together = (("num", "type"),)
 
-	def init(self, type, num, owner, attrs={}): #@ReservedAssignment
+	def init(self, type, num, owner, attrs=None): #@ReservedAssignment
+		if not attrs: attrs = {}
 		self.type = type
 		self.num = num
 		if isinstance(owner, Element):
@@ -144,8 +145,9 @@ def getAll(**kwargs):
 	allRes = (res.upcast() for res in Resource.objects.filter(**kwargs))
 	return (res for res in allRes if not hasattr(res, "owner") or res.owner == currentUser())
 
-def create(type_, attrs={}):
-	UserError.check(type_ in TYPES, "Unknown resource type", code=UserError.UNSUPPORTED_TYPE, data={"type": type_})
+def create(type_, attrs=None):
+	if not attrs: attrs = {}
+	UserError.check(type_ in TYPES, UserError.UNSUPPORTED_TYPE, "Unknown resource type", data={"type": type_})
 	res = TYPES[type_](owner=currentUser())
 	res.init(attrs)
 	res.save()

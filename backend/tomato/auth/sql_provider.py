@@ -45,7 +45,8 @@ class Provider(AuthProvider):
 		organization: The organization that the users belong to
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def parseOptions(self, query, organization=None, database="default", flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, query, organization=None, database="default", flags=None, hash="sha1", **kwargs): #@ReservedAssignment
+		if not flags: flags = []
 		self.hash = hash
 		self.database = database
 		self.query = query

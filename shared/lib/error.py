@@ -7,11 +7,11 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, type=None, data=None, module=MODULE):
+	def __init__(self, code=None, message=None, data=None, type=None, module=MODULE):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
-		self.data = data
+		self.data = data or {}
 		self.module = module
 
 	@property
@@ -23,16 +23,16 @@ class Error(Exception):
 		return TYPES.get(raw["type"], Error)(**raw)
 
 	@classmethod
-	def check(cls, condition, message, *args, **kwargs):
+	def check(cls, condition, code, message, *args, **kwargs):
 		if condition: return
-		raise cls(message=message, *args, **kwargs)
+		raise cls(code, message, *args, **kwargs)
 
 	@classmethod
-	def wrap(cls, error, message=None, *args, **kwargs):
-		return cls(message=message or str(error), *args, **kwargs)
+	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
+		return cls(code=code, message=message or str(error), *args, **kwargs)
 
 	def __str__(self):
-		return "%s %s error [%s]: %s" % (self.module, self.type, self.code, self.message or "")
+		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
 
 	def __repr__(self):
 		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r)" % (self.module, self.type, self.code, self.message, self.data)

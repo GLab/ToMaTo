@@ -17,7 +17,7 @@
 
 def _getConnection(id_):
 	con = connections.get(id_, owner=currentUser())
-	UserError.check(con, "No such connection", code=UserError.ENTITY_DOES_NOT_EXIST, data={"id": id_})
+	UserError.check(con, UserError.ENTITY_DOES_NOT_EXIST, "No such connection", data={"id": id_})
 	return con
 
 

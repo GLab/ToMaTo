@@ -21,7 +21,7 @@ def _getElement(id_):
 	UserError.check(el, code=UserError.ENTITY_DOES_NOT_EXIST, message="Element with that id does not exist", data={"id": id_})
 	return el
 
-def element_create(top, type, parent=None, attrs={}): #@ReservedAssignment
+def element_create(top, type, parent=None, attrs=None): #@ReservedAssignment
 	"""
 	Creates an element of given type and with the given parent element, 
 	in the given topology, configuring it with the given attributes by the way.
@@ -60,6 +60,7 @@ def element_create(top, type, parent=None, attrs={}): #@ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
+	if not attrs: attrs = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	top = _getTopology(top)
 	if parent:
@@ -101,7 +102,7 @@ def element_modify(id, attrs): #@ReservedAssignment
 	el.modify(attrs)
 	return el.info()
 
-def element_action(id, action, params={}): #@ReservedAssignment
+def element_action(id, action, params=None): #@ReservedAssignment
 	"""
 	Performs an action on the element and possibly on its children too.
 	
@@ -132,6 +133,7 @@ def element_action(id, action, params={}): #@ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type 
 	  and state.
 	"""
+	if not params: params = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	el = _getElement(id)
 	return el.action(action, params)
