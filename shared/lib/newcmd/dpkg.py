@@ -18,7 +18,7 @@ def _packageInfo(package):
 			raise DpkgError(DpkgError.CODE_UNKNOWN_PACKAGE, "Package is unknown (not installed)",
 				{"package": package, "error": err})
 		else:
-			raise DpkgError(DpkgError.CODE_UNKNOWN, "Failed to execute dpkg-query: %s" % err,
+			raise DpkgError(DpkgError.CODE_UNKNOWN, "Failed to execute dpkg-query",
 				{"package": package, "error": err})
 	for line in output.splitlines():
 		if ": " in line:

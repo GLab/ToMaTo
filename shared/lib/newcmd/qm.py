@@ -1,5 +1,5 @@
-from . import Error, dpkg, tcpserver, brctl
-from util import run, CommandError, LockMatrix, params, wait, net, cmd
+from . import Error, dpkg, tcpserver, brctl, websockify, qemu_img
+from util import run, CommandError, LockMatrix, params, wait, net, cmd, proc
 import collections, os, socket, json, re
 
 locks = LockMatrix()
@@ -46,13 +46,13 @@ class QMError(Error):
 	CODE_NOT_INITIALIZED="qm.not_initialized"
 	CODE_CONTROL="qm.control_socket"
 	CODE_NO_SUCH_NIC="qm.no_such_nic"
+	CODE_NIC_ALREADY_EXISTS="qm.nix_already_exists"
 	CODE_COMMAND="qm.command"
 
 def _qm(vmid, cmd, params=None):
 	if not params: params = []
 	try:
-		with locks[vmid]:
-			return run(["qm", cmd, "%d" % vmid] + map(unicode, params))
+		return run(["qm", cmd, "%d" % vmid] + map(unicode, params))
 	except CommandError, err:
 		raise QMError(QMError.CODE_COMMAND, "Failed to execute command", err.data)
 
@@ -71,7 +71,7 @@ def _status(vmid):
 				return Status.Running
 			raise QMError(QMError.CODE_UNKNOWN_STATUS, "Unknown status: %s" % res, {"status": res})
 		except QMError, err:
-			if err.code == QMError.CODE_COMMAND and err.data.get('code') == 2: # No such VM
+			if err.code == QMError.CODE_COMMAND and err.data.get('error') == 2: # No such VM
 				return Status.NoSuchVm
 			raise
 
@@ -80,7 +80,8 @@ def _checkStatus(vmid, statuses):
 		statuses = [statuses]
 	status = _status(vmid)
 	QMError.check(status in statuses, QMError.CODE_INVALID_STATUS, "VM is in invalid status", {"vmid": vmid, "status": status, "expected": statuses})
-		
+
+
 def _getConfig(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	config = {}
@@ -93,25 +94,29 @@ def _getKvmCmd(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	return _qm(vmid, "showcmd")
 
+def _getPid(vmid):
+	try:
+		with open("/var/run/qemu-server/%d.pid" % vmid) as fp:
+			pid = int(fp.readline().strip())
+		return pid
+	except IOError:
+		raise QMError(QMError.INVALID_STATE, "Pid file does not exist", {"vmid": vmid})
+
 def _set(vmid, **values):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	values = params.convertMulti(values, _parameterTypes)
-	with locks[vmid]:
-		_checkStatus(vmid, [Status.Stopped])
-		_qm(vmid, "set", sum([["-%s" % key, unicode(value)] for key, value in values.iteritems()], []))
-		config = _getConfig(vmid)
-		for key in values:
-			QMError.check(key in config, QMError.CODE_PARAMETER_NOT_SET, "Parameter %r has not been set" % key, {"key": key, "value": values[key]})
+	_qm(vmid, "set", sum([["-%s" % key, unicode(value)] for key, value in values.iteritems()], []))
+	config = _getConfig(vmid)
+	for key in values:
+		QMError.check(key in config, QMError.CODE_PARAMETER_NOT_SET, "Parameter %r has not been set" % key, {"key": key, "value": values[key]})
 		
 		
 def _unset(vmid, keys, force=False):
 	vmid = params.convert(vmid, convert=int, gte=1)
-	with locks[vmid]:
-		_checkStatus(vmid, [Status.Stopped])
-		_qm(vmid, "set", ["-delete", " ".join(keys), "-force", str(bool(force))])
-		config = _getConfig(vmid)
-		for key in keys:
-			QMError.check(not key in config, QMError.CODE_PARAMETER_STILL_SET, "Parameter %r has not been removed" % key, {"key": key, "value": config.get(key)})
+	_qm(vmid, "set", ["-delete", " ".join(keys), "-force", str(bool(force))])
+	config = _getConfig(vmid)
+	for key in keys:
+		QMError.check(not key in config, QMError.CODE_PARAMETER_STILL_SET, "Parameter %r has not been removed" % key, {"key": key, "value": config.get(key)})
 	
 def _imageFolder(vmid):
 	vmid = params.convert(vmid, convert=int, gte=1)
@@ -128,69 +133,70 @@ def _checkImageFolder(vmid):
 
 def _configure(vmid, hda=None, fda=None, keyboard="en-us", localtime=False, tablet=True, highres=False, cores=1, memory=512):
 	vmid = params.convert(vmid, convert=int, gte=1)
-	hda = params.convert(hda, convert=str, null=True, check=os.path.exists)
-	fda = params.convert(fda, convert=str, null=True, check=os.path.exists)
+	hda = params.convert(hda, convert=str, null=True, check=qemu_img.check)
+	fda = params.convert(fda, convert=str, null=True, check=qemu_img.check)
 	# other parameters will be checked by _set
-	with locks[vmid]:
-		_checkStatus(vmid, Status.Stopped)
-		# Set defaults
-		_set(vmid, acpi=True, boot="cd", hotplug=True, name="vm%d" % vmid, ostype="other", sockets=1)
-		# Set standard parameters
-		_set(vmid, keyboard=keyboard, localtime=localtime, tablet=tablet, cores=cores, memory=memory, vga="std" if highres else "cirrus")
-		# Setting KVM arguments not available in QM
-		args = {}
-		args["vnc"] = "unix:/var/run/qemu-server/%d.vnc,password" % vmid
-		if fda:
-			args["fda"] = fda
-		if hda:
-			args["hda"] = hda 
-		if qmVersion < [1, 1]:
-			args["chardev"] = "socket,id=qmp,path=%s,server,nowait" % _controlPath(vmid)
-			args["mon"] = "chardev=qmp,mode=control"
-		if args:
-			argstr = " ".join(["-%s %s" % (key, value) for key, value in args.iteritems()])
-			_set(vmid, args=argstr)
+	options = {}
+	# Set defaults
+	options.update(acpi=True, boot="cd", hotplug=True, name="vm%d" % vmid, ostype="other", sockets=1)
+	# Set standard parameters
+	options.update(keyboard=keyboard, localtime=localtime, tablet=tablet, cores=cores, memory=memory, vga="std" if highres else "cirrus")
+	# Setting KVM arguments not available in QM
+	args = {}
+	args["vnc"] = "unix:/var/run/qemu-server/%d.vnc,password" % vmid
+	if fda:
+		args["fda"] = fda
+	if hda:
+		args["hda"] = hda
+	if qmVersion < [1, 1]:
+		args["chardev"] = "socket,id=qmp,path=%s,server,nowait" % _controlPath(vmid)
+		args["mon"] = "chardev=qmp,mode=control"
+	if args:
+		argstr = " ".join(["-%s %s" % (key, value) for key, value in args.iteritems()])
+		options.update(args=argstr)
+	_set(vmid, **options)
 		
-def _control(vmid, execute, timeout=10, more_args={}, **arguments):
+def _control(vmid, execute, timeout=10, more_args=None, **arguments):
+	if not more_args: more_args = {}
 	vmid = params.convert(vmid, convert=int, gte=1)
 	timeout = params.convert(timeout, convert=float, gt=0.0)
 	execute = params.convert(execute, convert=str)
 	if more_args:
 		arguments.update(more_args)
-	with locks[vmid]:
-		_checkStatus(vmid, Status.Running)
-		controlPath = _controlPath(vmid)
-		QMError.check(os.path.exists(controlPath), QMError.CODE_CONTROL, "Control socket does not exist", {"socket": controlPath})
+	controlPath = _controlPath(vmid)
+	QMError.check(os.path.exists(controlPath), QMError.CODE_CONTROL, "Control socket does not exist", {"socket": controlPath})
+	sock = None
+	try:
+		sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		sock.settimeout(timeout)
+		sock.connect(controlPath)
+		header = sock.recv(4096)
 		try:
-			sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-			sock.settimeout(timeout)
-			sock.connect(controlPath)
-			header = sock.recv(4096)
-			try:
-				header = json.loads(header)
-			except Exception, exc:
-				raise QMError(QMError.CODE_CONTROL, "Received invalid header", {"socket": controlPath, "header": header})
-			cmd = json.dumps({'execute': 'qmp_capabilities'})
-			sock.send(cmd+"\n")
-			res = sock.recv(4096)
-			try:
-				res = json.loads(res)
-			except Exception, exc:
-				raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
-			cmd = json.dumps({'execute': execute, 'arguments': arguments})
-			sock.send(cmd+"\n")
-			res = sock.recv(4096)
-			try:
-				res = json.loads(res)
-				res = res["return"]
-			except Exception, exc:
-				raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
-			return res
-		except QMError:
-			raise
+			header = json.loads(header)
 		except Exception, exc:
-			raise QMError(QMError.CODE_CONTROL, "Failed to connect to control socket", {"socket": controlPath})
-		finally:
+			raise QMError(QMError.CODE_CONTROL, "Received invalid header", {"socket": controlPath, "header": header})
+		cmd = json.dumps({'execute': 'qmp_capabilities'})
+		sock.send(cmd+"\n")
+		res = sock.recv(4096)
+		try:
+			res = json.loads(res)
+		except Exception, exc:
+			raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
+		cmd = json.dumps({'execute': execute, 'arguments': arguments})
+		sock.send(cmd+"\n")
+		res = sock.recv(4096)
+		try:
+			res = json.loads(res)
+			res = res["return"]
+		except Exception, exc:
+			raise QMError(QMError.CODE_CONTROL, "Received invalid response", {"socket": controlPath, "response": res, "command": cmd})
+		return res
+	except QMError:
+		raise
+	except Exception, exc:
+		raise QMError(QMError.CODE_CONTROL, "Failed to connect to control socket", {"socket": controlPath})
+	finally:
+		if sock:
 			sock.close()
 		
 def _setVncPassword(vmid, vncpassword):
@@ -260,7 +266,9 @@ def create(vmid, **config):
 @_public
 def configure(vmid, **config):
 	vmid = params.convert(vmid, convert=int, gte=1)
-	_configure(vmid, **config)
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Stopped)
+		_configure(vmid, **config)
 	
 @_public	
 def destroy(vmid):
@@ -289,63 +297,100 @@ def stop(vmid, force=True, timeout=30):
 		_checkStatus(vmid, Status.Stopped)
 
 @_public	
-def start(vmid):
+def start(vmid, detachInterfaces=True):
 	vmid = params.convert(vmid, convert=int, gte=1)
+	if not net.bridgeExists("dummy"):
+		brctl.create("dummy")
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Stopped)
 		_qm(vmid, "start")
 		_checkStatus(vmid, Status.Running)
 		try:
 			for ifname in _getNicNames(vmid).values():
-				wait.waitFor(lambda :net.ifaceExists(ifname), failCond=lambda :_status() != Status.Running)
+				wait.waitFor(lambda :net.ifaceExists(ifname), failCond=lambda :_status(vmid) != Status.Running)
 				bridge = net.ifaceBridge(ifname)
-				if bridge:
+				if bridge and detachInterfaces:
 					brctl.detach(bridge, ifname)
 		except:
 			stop(vmid)
 			raise
 		
 @_public
-def startVnc(vmid, vncpassword, vncport):
+def startVnc(vmid, vncpassword, vncport, websockifyPort=None, websockifyCert=None):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	vncpassword = params.convert(vncpassword, convert=unicode)
 	vncport = params.convert(vncport, convert=int, gte=1, lt=2**16)
 	with locks[vmid]:
 		_checkStatus(vmid, Status.Running)
 		_setVncPassword(vmid, vncpassword)
-		return tcpserver.start(vncport, ["qm", "vncproxy", str(vmid)])
-	
+		vncPid = tcpserver.start(vncport, ["qm", "vncproxy", str(vmid)])
+		websockifyPid = None
+		try:
+			if websockifyPort:
+				websockifyPid = websockify.start(websockifyPort, vncport, websockifyCert)
+		except:
+			stopVnc(vncPid)
+			raise
+		return vncPid, websockifyPid
+
 @_public
-def stopVnc(pid):
+def stopVnc(pid, websockifyPid=None):
 	tcpserver.stop(pid)
+	if websockifyPid:
+		websockify.stop(websockifyPid)
 	
 @_public
-def addNic(vmid, num, bridge, model="e1000", mac=None):
+def addNic(vmid, num, bridge="dummy", model="e1000", mac=None):
 	vmid = params.convert(vmid, convert=int, gte=1)
 	num = params.convert(num, convert=int, gte=0, lte=31)
 	bridge = params.convert(bridge, convert=str)
 	model = params.convert(model, convert=str, oneOf=["e1000", "i82551", "rtl8139"])
 	mac = params.convert(mac, convert=str, regExp="^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$", null=True)
-	_set(vmid, **{("net%d" % num): "%s%s,bridge=%s" % (model, ("=%s" % mac) if mac else "", bridge)})
-	
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Stopped)
+		if num in getNicList(vmid):
+			raise QMError(QMError.CODE_NIC_ALREADY_EXISTS, "Nic already exists", {"vmid": vmid, "num": num})
+		_set(vmid, **{("net%d" % num): "%s%s%s" % (model, ("=%s" % mac) if mac else "", (",bridge=%s" % bridge) if bridge else "")})
+
 @_public
 def delNic(vmid, num):
-	_unset(vmid, ["net%d" % num])
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Stopped)
+		if not num in getNicList(vmid):
+			raise QMError(QMError.CODE_NO_SUCH_NIC, "No such nic", {"vmid": vmid, "num": num})
+		_unset(vmid, ["net%d" % num])
 	
 @_public
 def getNicList(vmid):
-	return _getNicNames(vmid).keys()
+	with locks[vmid]:
+		_checkStatus(vmid, [Status.Stopped, Status.Running])
+		return _getNicNames(vmid).keys()
 
 @_public
 def getNicName(vmid, num):
-	names = _getNicNames(vmid)
-	QMError.check(num in names, QMError.CODE_NO_SUCH_NIC, "No such nic: %d" % num, {"vmid": vmid, "num": num})
+	with locks[vmid]:
+		_checkStatus(vmid, [Status.Stopped, Status.Running])
+		names = _getNicNames(vmid)
+	QMError.check(num in names, QMError.CODE_NO_SUCH_NIC, "No such nic", {"vmid": vmid, "num": num})
 	return names[num]
 
 @_public
 def sendKey(vmid, key, hold=10):
-	_control(vmid, "send-key", keys=[{"type": "qcode", "data": k} for k in key.split("-")], more_args={"hold-time": hold})
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Running)
+		_control(vmid, "send-key", keys=[{"type": "qcode", "data": k} for k in key.split("-")], more_args={"hold-time": hold})
 
 @_public
 def createScreenshot(vmid, filename):
-	_control(vmid, "screendump", filename=filename)
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Running)
+		_control(vmid, "screendump", filename=filename)
+
+Statistics = proc.Statistics
+
+@_public
+def getStatistics(vmid):
+	with locks[vmid]:
+		_checkStatus(vmid, Status.Running)
+		pid = _getPid(vmid)
+		return proc.getStatistics(pid)

@@ -28,11 +28,11 @@ class Error(Exception):
 		raise cls(code, message, *args, **kwargs)
 
 	@classmethod
-	def wrap(cls, error, message=None, *args, **kwargs):
-		return cls(message=message or str(error), *args, **kwargs)
+	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
+		return cls(code=code, message=message or str(error), *args, **kwargs)
 
 	def __str__(self):
-		return "%s %s error [%s]: %s" % (self.module, self.type, self.code, self.message or "")
+		return "%s %s error [%s]: %s (%r)" % (self.module, self.type, self.code, self.message or "", self.data)
 
 	def __repr__(self):
 		return "Error(module=%r, type=%r, code=%r, message=%r, data=%r)" % (self.module, self.type, self.code, self.message, self.data)

@@ -46,7 +46,7 @@ class Daemon:
 			for fd in [child_w, child_r, father_w, father_r, pid_w, pid_r]:
 				os.close(fd)
 			# Exit this process so we dont execute the caller code
-			sys.exit(0)
+			os._exit(0)
 
 		# We now close all the inherited file descripters and open our own.
 		# The easiest way to get a list of all used file descriptors is using /proc/self/fd (this only works on Linux).
@@ -78,7 +78,7 @@ class Daemon:
 		os.close(self._w_pipe)
 		os.close(self._r_pipe)
 		# Exit this process so we dont execute the caller code
-		sys.exit(0)
+		os._exit(0)
 
 	def run(self):
 		pass

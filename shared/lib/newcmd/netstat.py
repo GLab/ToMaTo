@@ -1,5 +1,5 @@
 from . import Error
-from util import run, CommandError, cmd
+from util import run, CommandError, cmd, proc
 import collections
 
 class NetstatError(Error):
@@ -26,7 +26,7 @@ def _netstat(tcp, udp, ipv4, ipv6, listen):
 	try:
 		res = run(cmd)
 	except CommandError, exc:
-		raise NetstatError(NetstatError.CODE_EXECUTE, "Failed to execute netstat: %s" % exc, {"cmd": cmd, "error": exc})
+		raise NetstatError(NetstatError.CODE_EXECUTE, "Failed to execute netstat", {"cmd": cmd, "error": exc})
 	try:
 		entries = []
 		for line in res.splitlines():
@@ -43,7 +43,7 @@ def _netstat(tcp, udp, ipv4, ipv6, listen):
 				prog_pid = int(prog_pid)
 			entries.append(Entry(fields[0], local_ip, local_port, remote_ip, remote_port, fields[5], prog_pid, prog_name))
 	except Exception, exc:
-		raise NetstatError(NetstatError.CODE_PARSE, "Unable to parse netstat output: %s" % exc, {"cmd": cmd, "error": exc, "output": res})
+		raise NetstatError(NetstatError.CODE_PARSE, "Unable to parse netstat output", {"cmd": cmd, "error": exc, "output": res})
 	return entries
 
 def _check():
@@ -76,9 +76,10 @@ def getPortUsers(port, tcp=True, udp=False, ipv4=True, ipv6=True):
 def isPortFree(port, *args, **kwargs):
 	return not bool(getPortUsers(port, *args, **kwargs))
 
-def isPortUsedBy(port, pid, *args, **kwargs):
+def isPortUsedBy(port, pid=None, group=True, pname=None, *args, **kwargs):
 	for user in getPortUsers(port, *args, **kwargs):
-		return user[0] == pid
+		if user[0] == pid or user[1] == pname or (group and proc.isSameGroup(pid, user[0])):
+			return True
 	return False
 
 def checkPortFree(port, *args, **kwargs):

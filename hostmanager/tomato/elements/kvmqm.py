@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, json, shutil, re
+import os, sys, re
 from django.db import models
 from .. import connections, elements, resources, config
 from ..resources import template
 from ..lib.attributes import Attr #@UnresolvedImport
-from ..lib import decorators, util, cmd #@UnresolvedImport
-from ..lib.cmd import fileserver, process, net, path #@UnresolvedImport
+from ..lib import cmd #@UnresolvedImport
+from ..lib.cmd import fileserver #@UnresolvedImport
 from ..lib.util import joinDicts #@UnresolvedImport
 from ..lib.error import UserError, InternalError
+from ..lib.newcmd import qm, vfat, qemu_img, ipspy
+from ..lib.newcmd.util import net, proc, io
 
 DOC="""
 Element type: ``kvmqm``
@@ -219,48 +221,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self.vncpassword = cmd.randomPassword()
 		#template: None, default template
 				
-	def _controlPath(self):
-		return "/var/run/qemu-server/%d.qmp" % self.vmid
-				
-	def _vncPath(self):
-		return "/var/run/qemu-server/%d.vnc" % self.vmid
-
 	def _imagePathDir(self):
 		return "/var/lib/vz/images/%d" % self.vmid
 
 	def _imagePath(self, file="disk.qcow2"): #@ReservedAssignment
 		return os.path.join(self._imagePathDir(), file)
 
-	def _interfaceName(self, num):
-		if qmVersion == [1, 1, 22]:
-			return "vmtab%di%d" % (self.vmid, num)
-		if qmVersion == [1, 1, 25]:
-			return "vmtab%di%dd0" % (self.vmid, num)
-		return "tap%di%d" % (self.vmid, num)
-
-	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode==4 and "lock" in x.errorMessage and "timeout" in x.errorMessage)
-	def _qm(self, cmd_, params=None):
-		if not params: params = []
-		return cmd.run(["qm", cmd_, "%d" % self.vmid] + map(str, params))
-		#fileutil.delete(host, "/var/lock/qemu-server/lock-%d.conf" % vmid)
-
 	def _getState(self):
 		if not self.vmid:
 			return ST_CREATED
-		try:
-			res = self._qm("status")
-			if "running" in res:
-				return ST_STARTED
-			if "stopped" in res:
-				return ST_PREPARED
-			if "unknown" in res:
-				return ST_CREATED
-			raise InternalError(message="Unable to determine kvm state", code=InternalError.INVALID_STATE,
-				data={"state": res})
-		except cmd.CommandError, err:
-			if err.errorCode == 2:
-				return ST_CREATED
-			raise
+		res = qm.getStatus(self.vmid)
+		if res == qm.Status.Running:
+			return ST_STARTED
+		if res == qm.Status.Stopped:
+			return ST_PREPARED
+		if res == qm.Status.NoSuchVm:
+			return ST_CREATED
 
 	def _checkState(self):
 		savedState = self.state
@@ -270,13 +246,6 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
-	def _control(self, cmds, timeout=60):
-		InternalError.check(self.state == ST_STARTED, InternalError.INVALID_STATE, "VM must be running")
-		controlPath = self._controlPath()
-		InternalError.check(os.path.exists(controlPath), InternalError.UNKNOWN, "Control path does not exist")
-		cmd_ = "".join([cmd.escape(json.dumps(cmd_))+"'\n'" for cmd_ in cmds])
-		return cmd.runShell("echo -e %(cmd)s'\n' | socat -T %(timeout)d - unix-connect:%(monitor)s; socat -T %(timeout)d -u unix-connect:%(monitor)s - 2>&1 | dd count=0 2>/dev/null; echo" % {"cmd": cmd_, "monitor": controlPath, "timeout": timeout})
-			
 	def _template(self):
 		if self.template:
 			return self.template.upcast()
@@ -293,35 +262,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _addInterface(self, interface):
 		assert self.state == ST_PREPARED
-		self._qm("set", ["-net%d" % interface.num, "e1000=%s,bridge=dummy" % interface.mac])
+		qm.addNic(self.vmid, interface.num)
 
 	def _removeInterface(self, interface):
 		assert self.state == ST_PREPARED
-		self._qm("set", ["-delete", "net%d" % interface.num])
+		qm.delNic(self.vmid, interface.num)
 
-	def _setCpus(self):
+	def _configure(self):
 		assert self.state == ST_PREPARED
-		self._qm("set", ["-cores", self.cpus])
-
-	def _setRam(self):
-		assert self.state == ST_PREPARED
-		self._qm("set", ["-memory", self.ram])
-
-	def _setKblang(self):
-		assert self.state == ST_PREPARED
-		self._qm("set", ["-keyboard", self.kblang])
-
-	def _setUsbtablet(self):
-		assert self.state == ST_PREPARED
-		self._qm("set", ["-tablet", int(self.usbtablet)])
-
-	def _useImage(self, path_):
-		assert self.state == ST_PREPARED
-		path.copy(path_, self._imagePath())
+		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=self.kblang, tablet=self.usbtablet,
+			hda=self._imagePath(), fda=self._nlxtp_device_filename())
 
 	def _checkImage(self, path):
-		err, _ = cmd.runUnchecked(["qemu-img", "info", "-f", "qcow2", path])
-		UserError.check(err==0, UserError.INVALID_VALUE, "File is not a valid qcow2 image")
+		try:
+			qemu_img.check(path, format='qcow2')
+		except qm.QMError:
+			raise UserError(UserError.INVALID_VALUE, "File is not a valid qcow2 image")
 
 	def onChildAdded(self, interface):
 		self._checkState()
@@ -339,99 +295,80 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self._checkState()
 		self.cpus = cpus
 		if self.state == ST_PREPARED:
-			self._setCpus()
+			self._configure()
 
 	def modify_ram(self, ram):
 		self._checkState()
 		self.ram = ram
 		if self.state == ST_PREPARED:
-			self._setRam()
+			self._configure()
 		
 	def modify_kblang(self, kblang):
 		self._checkState()
 		self.kblang = kblang
 		if self.state == ST_PREPARED:
-			self._setKblang()
+			self._configure()
 		
 	def modify_usbtablet(self, usbtablet):
 		self._checkState()
 		self.usbtablet = usbtablet
 		if self.state == ST_PREPARED:
-			self._setUsbtablet()
+			self._configure()
 		
 	def modify_template(self, tmplName):
 		self._checkState()
 		self.template = resources.template.get(self.TYPE, tmplName)
 		if self.state == ST_PREPARED:
-			self._useImage(self._template().getPath())
+			self._useImage(self._template().getPath(), backing=True)
+
+	def _useImage(self, path_, backing=False):
+		assert self.state == ST_PREPARED
+		if backing:
+			qemu_img.create(self._imagePath(), backingImage=path_)
+		else:
+			io.copy(path_, self._imagePath())
 
 	def action_prepare(self):
 		self._checkState()
-		self._qm("create")
-		self._qm("set", ["-boot", "cd"]) #boot priorities: disk, cdrom (no networking)
-		args = "-vnc unix:%s,password -fda %s" % (self._vncPath(),self._nlxtp_device_filename()) #disable vnc tls as most clients dont support that; add nlxtp device
-		if qmVersion < [1, 1]:
-			args += " -chardev socket,id=qmp,path=%s,server,nowait -mon chardev=qmp,mode=control" % self._controlPath()
-		self._qm("set", ["-args", args])  
+		qm.create(self.vmid)
 		self.setState(ST_PREPARED, True)
-		self._setCpus()
-		self._setRam()
-		self._setKblang()
-		self._setUsbtablet()
+		self._useImage(self._template().getPath(), backing=True)
+		self._nlxtp_create_device_and_mountpoint()
+		self._configure()
 		# add all interfaces
 		for interface in self.getChildren():
 			self._addInterface(interface)
-		# use template
-		if not os.path.exists(self._imagePathDir()):
-			os.mkdir(self._imagePathDir())
-		self._useImage(self._template().getPath())
-		self._qm("set", ["-ide0", "local:%d/disk.qcow2" % self.vmid])
-		
+
 	def action_destroy(self):
 		self._checkState()
-		self._qm("destroy")
+		qm.destroy(self.vmid)
 		self.setState(ST_CREATED, True)
 
 	def action_start(self):
 		self._checkState()
-		if not net.bridgeExists("dummy"):
-			net.bridgeCreate("dummy")
-		net.ifUp("dummy")
-		self._qm("start")
+		qm.start(self.vmid)
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
-			ifName = self._interfaceName(interface.num)
-			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.UNKNOWN, "Interface did not start properly", data={"interface": ifName})
 			con = interface.getConnection()
 			if con:
-				con.connectInterface(self._interfaceName(interface.num))
+				con.connectInterface(qm.getNicName(self.vmid, interface.num))
 			interface._start()
-		InternalError.check(util.waitFor(lambda :os.path.exists(self._controlPath())), InternalError.UNKNOWN, "Control path does not exist")
-		self._control([{'execute': 'qmp_capabilities'}, {'execute': 'set_password', 'arguments': {"protocol": "vnc", "password": self.vncpassword}}])
-		net.freeTcpPort(self.vncport)
-		self.vncpid = cmd.spawn(["tcpserver", "-qHRl", "0",  "0", str(self.vncport), "qm", "vncproxy", str(self.vmid)])
-		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.UNKNOWN, "VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
-		if websockifyVersion:
-			net.freeTcpPort(self.websocket_port)
-			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), InternalError.UNKNOWN, "Websocket VNC wrapper did not start")
+		self.vncpid, self.websocket_pid = qm.startVnc(self.vmid, self.vncpassword, self.vncport, self.websocket_port, '/etc/tomato/server.pem')
 
 	def action_stop(self):
 		self._checkState()
 		for interface in self.getChildren():
 			con = interface.getConnection()
 			if con:
-				con.disconnectInterface(self._interfaceName(interface.num))
+				con.disconnectInterface(qm.getNicName(self.vmid, interface.num))
 			interface._stop()
 		if self.vncpid:
-			process.kill(self.vncpid)
+			qm.stopVnc(self.vncpid, self.websocket_pid)
 			del self.vncpid
-		if self.websocket_pid:
-			process.killTree(self.websocket_pid)
 			del self.websocket_pid
-		self._qm("shutdown", ["-timeout", 10, "-forceStop"])
+		qm.stop(self.vmid)
 		self.setState(ST_PREPARED, True)
 		
 	def action_upload_grant(self):
@@ -450,7 +387,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		
 	def action_download_grant(self):
-		shutil.copyfile(self._imagePath(), self._imagePath("download.qcow2"))
+		qemu_img.export(self._imagePath(), self._imagePath("download.qcow2"))
 		return fileserver.addGrant(self._imagePath("download.qcow2"), fileserver.ACTION_DOWNLOAD, removeFn=fileserver.deleteGrantFile)
 	
 	def action_rextfv_download_grant(self):
@@ -471,20 +408,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		
 	def _nlxtp_make_readable(self): #mount device file readonly
 		self._nlxtp_create_device_and_mountpoint()
-		cmd.run(["mount", "-o", "loop,ro", self._nlxtp_device_filename(), self._nlxtp_path("")])
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), readOnly=True)
 	
 	def _nlxtp_make_writeable(self): #mount device file r/w
 		self._nlxtp_create_device_and_mountpoint()
-		cmd.run(["mount", "-o", "loop,sync", self._nlxtp_device_filename(), self._nlxtp_path("")])
+		vfat.unmount(self._nlxtp_path(""), ignoreUnmounted=True)
+		vfat.mount(self._nlxtp_device_filename(), self._nlxtp_path(""), sync=True)
 	
 	def _nlxtp_close(self): #unmount device file
-		cmd.run(["umount", self._nlxtp_path("")])
+		vfat.unmount(self._nlxtp_path(""))
 		
 	def _nlxtp_create_device_and_mountpoint(self): #if device file or mount point do not exist: create
 		if not os.path.exists(self._nlxtp_path("")):
 			os.makedirs(self._nlxtp_path(""))
 		if not os.path.exists(self._nlxtp_device_filename()):
-			cmd.run(["mkfs.vfat","-C", self._nlxtp_device_filename(), "524288" ]) # size (last argument) depends on nlxtp_max_size
+			vfat.create(self._nlxtp_device_filename(), 524288) # size (last argument) depends on nlxtp_max_size
 	
 	
 		
@@ -502,19 +441,22 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		if self.state == ST_CREATED:
 			return
 		if self.state == ST_STARTED:
-			with open("/var/run/qemu-server/%d.pid" % self.vmid) as fp:
-				qmPid = int(fp.readline().strip())
 			memory = 0
 			cputime = 0
-			if process.exists(qmPid):
-				memory += process.memory(qmPid)
-				cputime += process.cputime(qmPid)
-			if self.vncpid and process.exists(self.vncpid):
-				memory += process.memory(self.vncpid)
-				cputime += process.cputime(self.vncpid)
+			stats = qm.getStatistics(self.vmid)
+			memory += stats.memory_used
+			cputime += stats.cputime_total
+			if self.vncpid and proc.isAlive(self.vncpid):
+				stats = proc.getStatistics(self.vncpid)
+				memory += stats.memory_used
+				cputime += stats.cputime_total
+			if self.websocket_pid and proc.isAlive(self.websocket_pid):
+				stats = proc.getStatistics(self.websocket_pid)
+				memory += stats.memory_used
+				cputime += stats.cputime_total
 			usage.memory = memory
 			usage.updateContinuous("cputime", cputime, data)
-		usage.diskspace = path.diskspace(self._imagePathDir())
+		usage.diskspace = io.getSize(self._imagePathDir())
 		
 KVMQM.__doc__ = DOC
 
@@ -591,7 +533,7 @@ class KVMQM_Interface(elements.Element):
 			
 	def interfaceName(self):
 		if self.state != ST_CREATED:
-			return self.getParent()._interfaceName(self.num)
+			return qm.getNicName(self.getParent().vmid, self.num)
 		else:
 			return None
 		
@@ -599,18 +541,18 @@ class KVMQM_Interface(elements.Element):
 		return self
 
 	def _start(self):
-		self.ipspy_pid = net.ipspy_start(self.interfaceName(), self.dataPath("ipspy.json"))
+		self.ipspy_pid = ipspy.start(self.interfaceName(), self.dataPath("ipspy.json"))
 		self.save()
 	
 	def _stop(self):
 		if self.ipspy_pid:
-			process.kill(self.ipspy_pid)
+			ipspy.stop(self.ipspy_pid)
 			del self.ipspy_pid
 		self.save()
 
 	def info(self):
 		if self.state == ST_STARTED:
-			self.used_addresses = net.ipspy_read(self.dataPath("ipspy.json"))
+			self.used_addresses = ipspy.read(self.dataPath("ipspy.json"))
 		else:
 			self.used_addresses = []
 		info = elements.Element.info(self)

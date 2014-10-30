@@ -55,6 +55,8 @@ def login(commonName):
 
 from lib import logging
 def handleError():
+	import traceback
+	traceback.print_exc()
 	dump.dumpException()
 	logging.logException()
 

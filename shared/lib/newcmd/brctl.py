@@ -30,18 +30,18 @@ def create(brname):
 	
 @_public
 def remove(brname):
-	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge: %s" % brname, {"bridge": brname})
+	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge", {"bridge": brname})
 	run(["brctl", "delbr", brname])
 	
 @_public
 def attach(brname, ifname):
-	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge: %s" % brname, {"bridge": brname})
-	BrctlError.check(net.ifaceExists(ifname), BrctlError.CODE_NO_SUCH_IFACE, "No such interface: %s" % ifname, {"interface": ifname})
+	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge", {"bridge": brname})
+	BrctlError.check(net.ifaceExists(ifname), BrctlError.CODE_NO_SUCH_IFACE, "No such interface", {"interface": ifname})
 	run(["brctl", "addif", brname, ifname])
 	
 @_public
 def detach(brname, ifname):
-	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge: %s" % brname, {"bridge": brname})
-	BrctlError.check(net.ifaceExists(ifname), BrctlError.CODE_NO_SUCH_IFACE, "No such interface: %s" % ifname, {"interface": ifname})
+	BrctlError.check(net.bridgeExists(brname), BrctlError.CODE_NO_SUCH_BRIDGE, "No such bridge", {"bridge": brname})
+	BrctlError.check(net.ifaceExists(ifname), BrctlError.CODE_NO_SUCH_IFACE, "No such interface", {"interface": ifname})
 	if ifname in net.bridgeInterfaces(brname):
 		run(["brctl", "delif", brname, ifname])
