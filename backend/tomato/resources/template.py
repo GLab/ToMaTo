@@ -18,9 +18,9 @@
 from django.db import models
 from .. import resources, config
 from ..lib import attributes #@UnresolvedImport
-from ..lib.cmd import path, bittorrent #@UnresolvedImport
+from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError
-import os.path, base64, hashlib
+import os.path, base64, hashlib, shutil
 
 PATTERNS = {
 	"kvmqm": "%s.qcow2",
@@ -92,7 +92,7 @@ class Template(resources.Resource):
 		if self.tech and os.path.exists(self.getTorrentPath()):
 			os.remove(self.getTorrentPath())
 		if self.tech and os.path.exists(self.getPath()):
-			path.remove(self.getPath(), recursive=True)
+			shutil.rmtree(self.getPath())
 		resources.Resource.remove(self)
 
 	def isReady(self):
