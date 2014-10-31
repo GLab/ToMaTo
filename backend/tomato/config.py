@@ -89,10 +89,10 @@ TOPOLOGY_TIMEOUT_WARNING = 3600.0 * 24 # 24 hours
 TOPOLOGY_TIMEOUT_OPTIONS = [3600.0 * 24, 3600.0 * 24 * 3, 3600.0 * 24 * 14, 3600.0 * 24 * 30]
 
 DEFAULT_QUOTA = {
-	"cputime": 10000000.0,
-	"memory": 2500000000.0,
-	"diskspace": 25000000000.0,
-	"traffic": 25000000000.0,
+	"cputime": 5.0 *(60*60*24*30), # 5 cores all the time
+	"memory": 10e9, # 10 Gb all the time
+	"diskspace": 100e9, # 100 Gb all the time
+	"traffic": 5.0e6 /8.0*(60*60*24*30), # 5 Mbit/s all the time
 	"continous_factor": 1.0
 }
 
