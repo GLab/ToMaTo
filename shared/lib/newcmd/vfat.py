@@ -1,6 +1,6 @@
 import os
-from . import Error
-from util import params, cmd
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import params, cmd, cache
 
 class VFatError(Error):
 	CODE_UNKNOWN="vfat.unknown"
@@ -12,6 +12,7 @@ class VFatError(Error):
 	CODE_FAILED_TO_UNMOUNT="vfat.failed_to_unmount"
 	CODE_FAILED_TO_READ_MOUNTS="vfat.failed_to_read_mounts"
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	VFatError.check(cmd.exists("mkfs.vfat"), VFatError.CODE_UNSUPPORTED, "Binary mkfs.vfat does not exist")
 	return True

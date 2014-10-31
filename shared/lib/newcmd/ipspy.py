@@ -1,6 +1,6 @@
 import json
-from . import Error
-from util import spawnDaemon, params, proc, cmd, net
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import spawnDaemon, params, proc, cmd, net, cache
 
 class IpspyError(Error):
 	CODE_UNKNOWN="ipspy.unknown"
@@ -8,6 +8,7 @@ class IpspyError(Error):
 	CODE_STILL_RUNNING="ipspy.still_running"
 	CODE_PARSE_ERROR="ipspy.parse_error"
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	IpspyError.check(cmd.exists("ipspy"), IpspyError.CODE_UNSUPPORTED, "Binary ipspy does not exist")
 	return True

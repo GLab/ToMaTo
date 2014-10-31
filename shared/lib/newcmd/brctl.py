@@ -1,5 +1,5 @@
-from . import Error 
-from util import run, net, cmd
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import run, net, cmd, cache
 import os
 
 class BrctlError(Error):
@@ -8,6 +8,7 @@ class BrctlError(Error):
 	CODE_NO_SUCH_BRIDGE="brctl.no_such_bridge"
 	CODE_NO_SUCH_IFACE="brctl.no_such_iface"
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	BrctlError.check(os.geteuid() == 0, BrctlError.CODE_UNSUPPORTED, "Not running as root")
 	BrctlError.check(cmd.exists("brctl"), BrctlError.CODE_UNSUPPORTED, "Binary brctl does not exist")

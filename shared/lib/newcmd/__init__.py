@@ -1,6 +1,8 @@
 
 #no parent dependencies
 
+SUPPORT_CHECK_PERIOD = 3 * 60 * 60 # every 3 hours
+
 try:
 	from ..error import InternalError as Error
 except (ImportError, ValueError,):

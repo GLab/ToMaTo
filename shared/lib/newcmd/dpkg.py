@@ -1,5 +1,5 @@
-from . import Error
-from util import run, CommandError, cmd
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import run, CommandError, cmd, cache
 
 
 class DpkgError(Error):
@@ -30,7 +30,7 @@ def _packageInfo(package):
 def _isInstalled(info):
 	return "installed" in info["status"]
 
-
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	DpkgError.check(cmd.exists("dpkg-query"), DpkgError.CODE_UNSUPPORTED, "Binary dpkg-query does not exist")
 	return True

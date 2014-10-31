@@ -1,5 +1,5 @@
-from . import Error
-from util import run, CommandError, cmd, proc
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import run, CommandError, cmd, proc, cache
 import collections
 
 class NetstatError(Error):
@@ -46,6 +46,7 @@ def _netstat(tcp, udp, ipv4, ipv6, listen):
 		raise NetstatError(NetstatError.CODE_PARSE, "Unable to parse netstat output", {"cmd": cmd, "error": exc, "output": res})
 	return entries
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	NetstatError.check(cmd.exists("netstat"), NetstatError.CODE_UNSUPPORTED, "Binary netstat does not exist")
 	return True
