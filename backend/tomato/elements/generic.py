@@ -88,10 +88,12 @@ class VMElement(elements.Element):
 		self.next_sync = int(time.time()) + 1 #make sure sync process will be triggered.
 		self.save()
 	
-	def init(self, *args, **kwargs):
+	def init(self, topology, *args, **kwargs):
 		self.type = self.TYPE
 		self.state = ST_CREATED
-		elements.Element.init(self, *args, **kwargs) #no id and no attrs before this line
+		self.topology = topology
+		self.site = self.topology.site
+		elements.Element.init(self, topology, *args, **kwargs) #no id and no attrs before this line
 		if not self.name:
 			self.name = self.TYPE + str(self.id)
 		self.save()

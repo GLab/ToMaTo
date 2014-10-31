@@ -1414,6 +1414,61 @@ var Topology = Class.extend({
 	setBusy: function(busy) {
 		this.busy = busy;
 	},
+	configWindowSettings: function() {
+		return {
+			order: ["name"],
+			ignore: [],
+			unknown: true,
+			special: {}
+		}
+	},
+	showConfigWindow: function(callback) {
+		var t = this;
+		var settings = this.configWindowSettings();
+
+		this.configWindow = new AttributeWindow({
+			title: "Attributes",
+			width: "600",
+			buttons: {
+				Save: function() {
+					t.configWindow.hide();
+					var values = t.configWindow.getValues();
+					for (var name in values) {
+						if (values[name] === t.data.attrs[name]) delete values[name];
+						// Tread "" like null
+						if (values[name] === "" && t.data.attrs[name] === null) delete values[name];
+					}
+					t.modify(values);
+					t.configWindow.remove();
+					t.configWindow = null;
+
+					if(callback != null) {
+						callback(t);
+					}
+				},
+				Cancel: function() {
+					t.configWindow.remove();
+					t.configWindow = null;
+				}
+			}
+		});
+        this.configWindow.add(new TextElement({
+				label: "Name",
+				name: "name",
+				value: this.data.attrs.name,
+				disabled: false
+		}));
+		this.configWindow.add(new ChoiceElement({
+			label: "Site",
+			name: "site",
+			choices: createMap(this.editor.sites, "name", function(site) {
+				return (site.description || site.name) + (site.location ? (", " + site.location) : "");
+			}, {"": "Any site"}),
+			value: this.data.attrs.site,
+			disabled: false
+		}));
+		this.configWindow.show();
+	},
 	modify: function(attrs) {
 		this.setBusy(true);
 		this.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "begin", attrs: attrs});
@@ -1429,7 +1484,10 @@ var Topology = Class.extend({
 				t.editor.triggerEvent({component: "topology", object: this, operation: "modify", phase: "error", attrs: attrs});
 		 	}
 		});
-		for (var name in attrs) this.data.attrs[name] = attrs[name];
+		for (var name in attrs) {
+		    this.data.attrs[name] = attrs[name];
+    		if (name == "name") editor.workspace.updateTopologyTitle();
+		}
 	},
 	action: function(action, options) {
 		var options = options || {};
@@ -1455,6 +1513,7 @@ var Topology = Class.extend({
 		var attrs = {};
 		attrs[name] = value;
 		this.modify(attrs);
+		if (name == "name") editor.workspace.updateTopologyTitle();
 	},
 	isEmpty: function() {
 		for (var id in this.elements) if (this.elements[id] != this.elements[id].constructor.prototype[id]) return false;
@@ -1757,7 +1816,6 @@ var Topology = Class.extend({
 						t.rename.hide();
 						if(t.rename.element.getValue() != '') {
 							t.modify_value("name", t.rename.element.getValue());
-							editor.workspace.updateTopologyTitle();
 						}
 						t.rename = null;
 					}
@@ -1986,6 +2044,14 @@ var createTopologyMenu = function(obj) {
 					obj.showUsage();
 				}
 			},
+			"sep2": "---",
+			"configure": {
+				name:'Configure',
+				icon:'configure',
+				callback: function(){
+					obj.showConfigWindow();
+				}
+			},
 			"debug": obj.editor.options.debug_mode ? {
 				name:'Debug',
 				icon:'debug',
@@ -1993,7 +2059,7 @@ var createTopologyMenu = function(obj) {
 					obj.showDebugInfo();
 				}
 			} : null,
-			"sep2": "---",
+			"sep3": "---",
 			"remove": {
 				name:'Delete',
 				icon:'remove',
