@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.newcmd.util.cache import cached #@UnresolvedImport
 
 def host_info():
 	"""

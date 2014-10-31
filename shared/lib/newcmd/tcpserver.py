@@ -1,5 +1,5 @@
-from . import Error, netstat
-from util import spawnDaemon, CommandError, params, proc, wait, cmd
+from . import Error, netstat, SUPPORT_CHECK_PERIOD
+from util import spawnDaemon, params, proc, wait, cmd, cache
 
 class TcpserverError(Error):
 	CODE_UNKNOWN="tcpserver.unknown"
@@ -7,6 +7,7 @@ class TcpserverError(Error):
 	CODE_PORT_USED="tcpserver.port_used"
 	CODE_STILL_RUNNING="tcpserver.still_running"
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	TcpserverError.check(cmd.exists("tcpserver"), TcpserverError.CODE_UNSUPPORTED, "Binary tcpserver does not exist")
 	return True

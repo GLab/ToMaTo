@@ -1,9 +1,6 @@
-from . import Error
-from util import CommandError, params, cmd
+from . import Error, SUPPORT_CHECK_PERIOD
+from util import CommandError, params, cmd, cache
 import os, json
-
-supported = False
-initialized = False
 
 class QemuImgError(Error):
 	CODE_UNKNOWN="qemu_img.unknown"
@@ -30,22 +27,10 @@ def _imageInfo(path, format=None):
 
 _checkImage = _imageInfo
 
-def _checkSupport():
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
+def _check():
 	QemuImgError.check(cmd.exists("qemu-img"), QemuImgError.CODE_UNSUPPORTED, "Binary qemu-img does not exist")
 	return True
-
-def _check():
-	global supported, initialized
-	if not initialized:
-		try:
-			_checkSupport()
-			supported = True
-			initialized = True
-		except:
-			supported = False
-			initialized = True
-			raise
-	QemuImgError.check(supported, QemuImgError.CODE_UNSUPPORTED, "qemu-img is not supported")
 
 def _public(method):
 	def call(*args, **kwargs):
@@ -60,7 +45,7 @@ def _public(method):
 ######################
 
 def checkSupport():
-	return _checkSupport()
+	return _check()
 
 @_public
 def info(path, format=None):

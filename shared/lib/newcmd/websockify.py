@@ -1,6 +1,6 @@
 import os
-from . import Error, netstat
-from util import spawnDaemon, params, proc, wait, cmd
+from . import Error, netstat, SUPPORT_CHECK_PERIOD
+from util import spawnDaemon, params, proc, wait, cmd, cache
 
 BLOCKED_PORTS = [6000, 6666]
 
@@ -12,6 +12,7 @@ class WebsockifyError(Error):
 	CODE_DEST_PORT_FREE="websockify.dest_port_free"
 	CODE_STILL_RUNNING="websockify.still_running"
 
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
 def _check():
 	WebsockifyError.check(cmd.exists("websockify"), WebsockifyError.CODE_UNSUPPORTED, "Binary websockify does not exist")
 	return True

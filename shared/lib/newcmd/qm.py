@@ -1,10 +1,8 @@
-from . import Error, dpkg, tcpserver, brctl, websockify, qemu_img
-from util import run, CommandError, LockMatrix, params, wait, net, cmd, proc
+from . import Error, dpkg, tcpserver, brctl, websockify, qemu_img, SUPPORT_CHECK_PERIOD
+from util import run, CommandError, LockMatrix, params, wait, net, cmd, proc, cache
 import collections, os, socket, json, re
 
 locks = LockMatrix()
-supported = False
-initialized = False
 qmVersion = None
 
 _parameterTypes = {
@@ -206,8 +204,9 @@ def _getNicNames(vmid):
 	cmd = _getKvmCmd(vmid)
 	names = re.findall("type=tap,id=net(\d+),ifname=([^,]+),", cmd)
 	return dict((int(num), name) for num, name in names)
-		
-def _checkSupport():
+
+@cache.cached(timeout=SUPPORT_CHECK_PERIOD)
+def _check():
 	QMError.check(os.path.exists("/dev/kvm"), QMError.CODE_UNSUPPORTED, "No KVM support on host")
 	QMError.check(os.access("/dev/kvm", os.W_OK), QMError.CODE_UNSUPPORTED, "No permission to use KVM")
 	QMError.check(os.geteuid() == 0, QMError.CODE_UNSUPPORTED, "Not running as root")
@@ -220,19 +219,6 @@ def _checkSupport():
 	brctl.checkSupport()
 	tcpserver.checkSupport()
 	return True
-
-def _check():
-	global supported, initialized
-	if not initialized:
-		try:
-			_checkSupport()
-			supported = True
-			initialized = True
-		except:
-			supported = False
-			initialized = True
-			raise
-	QMError.check(supported, QMError.CODE_UNSUPPORTED, "QM is not supported")
 
 def _public(method):
 	def call(*args, **kwargs):
@@ -247,7 +233,7 @@ def _public(method):
 ######################
 
 def checkSupport():
-	return _checkSupport()
+	return _check()
 
 @_public	
 def getStatus(vmid):
