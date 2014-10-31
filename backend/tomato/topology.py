@@ -197,7 +197,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 				el.action(action)
 		# execute action on rest
 		for el in self.getElements():
-			if not stateFilter(el.state) or el.type in typesExclude:
+			if not stateFilter(el.state) or el.type in typesExclude or el.type in typeOrder:
 				continue
 			el.action(action)
 
