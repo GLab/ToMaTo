@@ -23,7 +23,7 @@ import socket
 from . import run, getDpkgVersionStr
 import net
 from ... import config
-from ..lib.newcmd.util.cache import cached
+from ..newcmd.util.cache import cached
 
 
 external_hostname = "tomato-lab.org" # should also be pingable.
