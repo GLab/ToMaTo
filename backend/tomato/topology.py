@@ -21,7 +21,7 @@ from lib import attributes, db, logging #@UnresolvedImport
 from accounting import UsageStatistics
 from auth import Flags
 from auth.permissions import Permissions, PermissionMixin, Role
-from . import scheduler
+from . import scheduler, host
 from .lib.error import UserError
 
 class TimeoutStep:
@@ -36,10 +36,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 	timeout = models.FloatField()
 	timeout_step = models.IntegerField(default=TimeoutStep.INITIAL)
 	attrs = db.JSONField()
+	site = models.ForeignKey(host.Site, null=True, on_delete=models.SET_NULL)
 	name = attributes.attribute("name", unicode)
 	DOC = ""
 	CAP_ACTIONS = ["prepare", "destroy", "start", "stop", "renew"]
-	CAP_ATTRS = ["name"]
+	CAP_ATTRS = ["name", "site"]
 	
 	class Meta:
 		ordering = ['-id']
@@ -229,7 +230,10 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 
 	def modify_name(self, val):
 		self.name = val
-			
+
+	def modify_site(self, val):
+		self.site = host.getSite(val)
+
 	def setRole(self, user, role):
 		UserError.check(role in Role.RANKING or not role, code=UserError.INVALID_VALUE, message="Invalid role",
 			data={"roles": Role.RANKING})
@@ -253,9 +257,11 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 			elements = [el.id for el in self.elements.all()]
 			connections = [con.id for con in self.connections.all()]
 		usage = self.totalUsage.getRecords(type="5minutes").order_by("end")
+		attrs = self.attrs.copy()
+		attrs['site'] = self.site.name if self.site else None
 		return {
 			"id": self.id,
-			"attrs": self.attrs.copy(),
+			"attrs": attrs,
 			"permissions": dict([(str(p.user), p.role) for p in self.permissions.entries.all()]),
 			"elements": elements,
 			"connections": connections,
