@@ -1,4 +1,4 @@
-import os, random, textwrap,threading, tarfile, shutil, re, urllib2
+import os, random, textwrap,threading, tarfile, shutil, re, urllib2, sys, json
 import argparse, getpass
 from time import sleep
 from lib import getConnection, upload
@@ -8,10 +8,51 @@ def progname_short():
 	return "rextfv-packetmanager"
 
 
-class Debugger:
-	def log(self,string):
-		print string
-debugger = Debugger()
+class VerboseDebugger:
+    def log(self,subStep=None,step=None,showStep=False,showSubStep=True,showProgress=False,indent=None,progress_step=None,progress_total=None):
+        i=0
+        while i < indent:
+            print "",
+        if showProgress:
+            print "["+str(progress_step)+"/"+str(progress_total)+"] ",
+        if showStep:
+            print step
+        if showSubStep:
+            print subStep
+        
+class DefaultDebugger:
+    step = ""
+    substep = ""
+    
+    progress_curr = 0
+    progress_total = 1
+    
+    def log(self,subStep=None,step=None,showStep=True,showSubStep=True,showProgress=False,indent=None,progress_step=None,progress_total=None):
+        
+        if step is not None:
+            if self.step != step:
+                print ""
+            self.step = step
+        print "\r",
+        if showStep:
+            print self.step+":",
+        if progress_step is not None:
+            self.progress_curr = progress_step
+            self.progress_total = progress_total
+        if showProgress:
+            print str(self.progress_curr)+"/"+str(self.progress_total),
+        if subStep is not None:
+            self.substep = subStep
+        if showSubStep:
+            print self.substep,
+        print "\033[K",
+        sys.stdout.flush()
+        
+            
+            
+        
+        
+debugger = DefaultDebugger()
 
 
 
@@ -274,7 +315,7 @@ class GetPacketArchive(object):
 						for i in $(cat $archive_dir/installorder_$os_id); do
 							dpkglist="${dpkglist} $archive_dir/packages/$i"
 						done
-						dpkg -i $dpkglist
+						DEBIAN_FRONTEND=noninteractive DEBCONF_DB_FALLBACK=File{${os_id}.config.dat} dpkg -i $dpkglist
 					}
 					
 					if [ -e $archive_dir/toinstall ]; then
@@ -326,25 +367,26 @@ class GetPacketArchive(object):
     def uploadAndRun(self,test_topology):
         if not self.archive_filename:
             return None
-        debugger.log("  creating topology")
+        debugger.log(subStep="creating topology",indent=1)
         test_topology.create()
         try:
-            debugger.log("  preparing topology")
+            debugger.log(subStep="preparing topology", indent=1)
             test_topology.prepare()
-            debugger.log("  uploading archive")
+            debugger.log(subStep="uploading archive", indent=1)
             test_topology.uploadAndUseArchive(self.archive_filename)
-            debugger.log("  starting topology")
+            debugger.log(subStep="starting topology", indent=1)
             test_topology.start()
-            debugger.log("  waiting for results")
+            debugger.log(subStep="waiting for results", indent=1)
             result_raw = test_topology.getArchiveResult()
         finally:
-            debugger.log("  cleaning up.")
-            debugger.log("   stopping topology.")
+            debugger.log(subStep="cleaning up.", indent=1)
+            debugger.log(subStep="stopping topology.", indent=2)
             test_topology.stop()
-            debugger.log("   destroying topology.")
+            debugger.log(subStep="destroying topology.", indent=2)
             test_topology.destroy()
-            debugger.log("   removing topology.")
+            debugger.log(subStep="removing topology.", indent=2)
             test_topology.delete()
+        debugger.log(subStep="done.")
         return result_raw
 	
 	
@@ -423,9 +465,10 @@ class PacketArchive(GetPacketArchive):
                 installorder = installorder + filename + "\n"
                 if not os.path.exists(absfilename):
                     with open(absfilename,'w+') as f:
-                        debugger.log('Fetching '+filename)
+                        debugger.log(subStep=filename,step="Downloading packet files",progress_step=i+1,progress_total=len(conf['order']),showProgress=True)
                         response = urllib2.urlopen(url)
                         f.write(response.read())
+            debugger.log(subStep="done.",step="Downloading packet files")
             self._addFileToArchive("installorder_"+conf['os_id'], installorder)
 
 
@@ -433,15 +476,11 @@ class PacketArchive(GetPacketArchive):
 #packetlist: list of packets: ['firefox','python-django']   - if empty, this will create an upgrade archive
 #template_configs: list of template configs: [{'tech','site','template','packets':[]}]
 def create_archive(api,template_configs, targetfilename):
-	#create query archive
-    debugger.log('Creating query archive')
     
-	
 	#get os configs for all templates
     parch = PacketArchive(targetfilename)
     for templ in template_configs:
-        debugger.log('querying '+templ['template'])
-        debugger.log('  creating query archive')
+        debugger.log(subStep='creating query archive',step='querying '+templ['template'],showStep=True,indent=1)
         qarch = QueryArchive()
         qarch.setUpgrade(True)
         for pac in templ['packets']:
@@ -529,21 +568,22 @@ def parseArgs():
     parser.add_argument("--username", "-U", help="the username to use for login")
     parser.add_argument("--password", "-P", help="the password to use for login")
     parser.add_argument("--target", "-t", help="the target filename", required=True)
+    parser.add_argument("--packetconfig", "-c", help="the config filename", required=True)
+    parser.add_argument("--verbose", "-v", help="verbose output", action="store_true", default=False)
     options = parser.parse_args()
     if not options.username and not options.client_cert:
         options.username=raw_input("Username: ")
     if not options.password and not options.client_cert:
         options.password=getpass.getpass("Password: ")
+    if options.verbose:
+        debugger = VerboseDebugger()
     return options
 
 options = parseArgs()
 api = getConnection(options.hostname, options.port, options.ssl, options.username, options.password, options.client_cert)
 
-
-template_configs = [{'tech':'openvz',
-                     'site':'ukl',
-                     'template':'debian-7.0_x86_64',
-                     'packets':['openjdk-6-jre']
-                     }]
+with open(options.packetconfig) as f:
+    template_configs = json.load(f)
+    
 res_filename = create_archive(api, template_configs, options.target)
-print "saved file as "+res_filename
+debugger.log(subStep="Saved file as "+res_filename, step="Finished.",showSubStep=True)
