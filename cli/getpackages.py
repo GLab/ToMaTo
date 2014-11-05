@@ -456,6 +456,9 @@ class PacketArchive(GetPacketArchive):
     def _writeAdditionalContents(self):
         packetdir = os.path.join(self.directory,"packages")
         os.makedirs(packetdir)
+        number_of_pacs = 0
+        for conf in self.configs:
+            number_of_pacs = number_of_pacs + len(conf['order'])
         for conf in self.configs:
             installorder=""
             for i in range(len(conf['order'])):
@@ -465,11 +468,11 @@ class PacketArchive(GetPacketArchive):
                 installorder = installorder + filename + "\n"
                 if not os.path.exists(absfilename):
                     with open(absfilename,'w+') as f:
-                        debugger.log(subStep=filename,step="Downloading packet files",progress_step=i+1,progress_total=len(conf['order']),showProgress=True)
+                        debugger.log(subStep=filename,step="Downloading package files",progress_step=i+1,progress_total=number_of_pacs,showProgress=True)
                         response = urllib2.urlopen(url)
                         f.write(response.read())
-            debugger.log(subStep="done.",step="Downloading packet files")
             self._addFileToArchive("installorder_"+conf['os_id'], installorder)
+        debugger.log(subStep="done.",step="Downloading package files")
 
 
 
@@ -559,7 +562,10 @@ def parseArgs():
         Parsed command-line arguments
     
     """
-    parser = argparse.ArgumentParser(description="ToMaTo XML-RPC Client", add_help=False)
+    parser = argparse.ArgumentParser(prog="ToMaTo Package Installer Creator for RexTFV", 
+                                     description="This program uses a package configuration and creates an archive which can install the given packages on a ToMaTo VM via Executable Archives.", 
+                                     epilog="This program uploads a probing archive to ToMaTo in order to determine package dependencies. You need a ToMaTo account to do this.",
+                                     add_help=False)
     parser.add_argument('--help', action='help')
     parser.add_argument("--hostname" , "-h", required=True, help="the host of the server")
     parser.add_argument("--port", "-p", default=8000, help="the port of the server")
@@ -567,8 +573,8 @@ def parseArgs():
     parser.add_argument("--client_cert", required=False, default=None, help="path of the ssl certificate")
     parser.add_argument("--username", "-U", help="the username to use for login")
     parser.add_argument("--password", "-P", help="the password to use for login")
-    parser.add_argument("--target", "-t", help="the target filename", required=True)
-    parser.add_argument("--packetconfig", "-c", help="the config filename", required=True)
+    parser.add_argument("--target", "-t", help="the output filename.", required=True)
+    parser.add_argument("--packetconfig", "-c", help='The archive configuration. This should point to a JSON file of the form [{tech:"string",site:"string",template:"string",packages:["string"]}]. Each entry must refer to a different operating system.', required=True)
     parser.add_argument("--verbose", "-v", help="verbose output", action="store_true", default=False)
     options = parser.parse_args()
     if not options.username and not options.client_cert:
@@ -586,4 +592,5 @@ with open(options.packetconfig) as f:
     template_configs = json.load(f)
     
 res_filename = create_archive(api, template_configs, options.target)
+debugger.log(subStep="",step="",showStep=False)
 debugger.log(subStep="Saved file as "+res_filename, step="Finished.",showSubStep=True)
