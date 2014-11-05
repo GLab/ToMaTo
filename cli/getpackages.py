@@ -599,4 +599,4 @@ with open(options.packetconfig) as f:
     
 res_filename = create_archive(api, template_configs, options.target)
 debugger.log(subStep="",step="",showStep=False)
-debugger.log(subStep="Saved file as "+res_filename, step="Finished.",showSubStep=True)
+debugger.log(subStep="Saved file as "+res_filename, step="Finished",showSubStep=True)
