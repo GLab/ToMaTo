@@ -6,19 +6,6 @@ from lib import getConnection, upload
 
 def progname_short():
 	return "rextfv-packetmanager"
-
-
-class VerboseDebugger:
-    def log(self,subStep=None,step=None,showStep=False,showSubStep=True,showProgress=False,indent=None,progress_step=None,progress_total=None):
-        i=0
-        while i < indent:
-            print "",
-        if showProgress:
-            print "["+str(progress_step)+"/"+str(progress_total)+"] ",
-        if showStep:
-            print step
-        if showSubStep:
-            print subStep
         
 class DefaultDebugger:
     step = ""
@@ -27,24 +14,43 @@ class DefaultDebugger:
     progress_curr = 0
     progress_total = 1
     
-    def log(self,subStep=None,step=None,showStep=True,showSubStep=True,showProgress=False,indent=None,progress_step=None,progress_total=None):
+    verbose=False
+    
+    def setVerbose(self):
+        self.verbose = True
+    
+    def log(self,subStep=None,step=None,showStep=True,showSubStep=True,showProgress=False,indent=0,progress_step=None,progress_total=None):
         
         if step is not None:
             if self.step != step:
                 print ""
             self.step = step
-        print "\r",
+            
+        if self.verbose:
+            print ""
+        else:
+            print "\r",
+            
         if showStep:
             print self.step+":",
+            
         if progress_step is not None:
             self.progress_curr = progress_step
             self.progress_total = progress_total
         if showProgress:
             print str(self.progress_curr)+"/"+str(self.progress_total),
+            
         if subStep is not None:
             self.substep = subStep
         if showSubStep:
-            print self.substep,
+            indentStr=""
+            if self.verbose:
+                i=0
+                while i<indent:
+                    i = i + 1
+                    indentStr=indentStr+" "
+            print indentStr+self.substep,
+            
         print "\033[K",
         sys.stdout.flush()
         
@@ -367,24 +373,24 @@ class GetPacketArchive(object):
     def uploadAndRun(self,test_topology):
         if not self.archive_filename:
             return None
-        debugger.log(subStep="creating topology",indent=1)
+        debugger.log(subStep="creating topology")
         test_topology.create()
         try:
-            debugger.log(subStep="preparing topology", indent=1)
+            debugger.log(subStep="preparing topology")
             test_topology.prepare()
-            debugger.log(subStep="uploading archive", indent=1)
+            debugger.log(subStep="uploading archive")
             test_topology.uploadAndUseArchive(self.archive_filename)
-            debugger.log(subStep="starting topology", indent=1)
+            debugger.log(subStep="starting topology")
             test_topology.start()
-            debugger.log(subStep="waiting for results", indent=1)
+            debugger.log(subStep="waiting for results")
             result_raw = test_topology.getArchiveResult()
         finally:
-            debugger.log(subStep="cleaning up.", indent=1)
-            debugger.log(subStep="stopping topology.", indent=2)
+            debugger.log(subStep="cleaning up.")
+            debugger.log(subStep="stopping topology.", indent=1)
             test_topology.stop()
-            debugger.log(subStep="destroying topology.", indent=2)
+            debugger.log(subStep="destroying topology.", indent=1)
             test_topology.destroy()
-            debugger.log(subStep="removing topology.", indent=2)
+            debugger.log(subStep="removing topology.", indent=1)
             test_topology.delete()
         debugger.log(subStep="done.")
         return result_raw
@@ -483,7 +489,7 @@ def create_archive(api,template_configs, targetfilename):
 	#get os configs for all templates
     parch = PacketArchive(targetfilename)
     for templ in template_configs:
-        debugger.log(subStep='creating query archive',step='querying '+templ['template'],showStep=True,indent=1)
+        debugger.log(subStep='creating query archive',step='querying '+templ['template'],showStep=True)
         qarch = QueryArchive()
         qarch.setUpgrade(True)
         for pac in templ['packets']:
@@ -582,7 +588,7 @@ def parseArgs():
     if not options.password and not options.client_cert:
         options.password=getpass.getpass("Password: ")
     if options.verbose:
-        debugger = VerboseDebugger()
+        debugger.setVerbose()
     return options
 
 options = parseArgs()
