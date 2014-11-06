@@ -76,7 +76,15 @@ def statistics():
 		resources[k] = str(resources[k])
 	usage = {}
 	stats['usage'] = usage
-	usage['topologies'] = topology.Topology.objects.count()
+	usage['topologies'] = 0
+	
+	usage['topologies_active'] = 0
+	for top in list(topology.Topology.objects.all()):
+		usage['topologies'] += 1
+		topUsage = top.totalUsage.info()
+		if topUsage['momory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0:
+			usage['topologies_active'] += 1
+	
 	usage['elements'] = elements.Element.objects.count()
 	usage['connections'] = connections.Connection.objects.count()
 	types = elements.Element.objects.values('type').order_by().annotate(models.Count('type'))
