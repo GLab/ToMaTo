@@ -82,7 +82,7 @@ def statistics():
 	for top in list(topology.Topology.objects.all()):
 		usage['topologies'] += 1
 		topUsage = top.info()['usage']['usage']
-		if topUsage['momory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0:
+		if topUsage['memory']>0 or topUsage['cputime']>0 or topUsage['traffic']>0:
 			usage['topologies_active'] += 1
 	
 	usage['elements'] = elements.Element.objects.count()
