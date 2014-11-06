@@ -1,0 +1,43 @@
+[
+	{"tech":"openvz",
+     "site":"ukl",
+     "template":"debian-7.0_x86_64",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"debian-7.0_x86",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"debian-6.0_x86_64",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"debian-6.0_x86",
+     "packets":["openjdk-6-jre"]
+    },
+    
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-10.04_x86_64",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-10.04_x86",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-12.04_x86_64",
+     "packets":["openjdk-6-jre"]
+    },
+    {"tech":"openvz",
+     "site":"ukl",
+     "template":"ubuntu-12.04_x86",
+     "packets":["openjdk-6-jre"]
+    }    
+]
