@@ -256,7 +256,7 @@ class Topology(PermissionMixin, attributes.Mixin, models.Model):
 		else:
 			elements = [el.id for el in self.elements.all()]
 			connections = [con.id for con in self.connections.all()]
-		usage = self.totalUsage.getRecords(type="5minutes").order_by("end")
+		usage = self.totalUsage.getRecords(type="5minutes").order_by("-end")
 		attrs = self.attrs.copy()
 		attrs['site'] = self.site.name if self.site else None
 		return {
