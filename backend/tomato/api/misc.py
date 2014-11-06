@@ -89,7 +89,11 @@ def statistics():
 	usage['connections'] = connections.Connection.objects.count()
 	types = elements.Element.objects.values('type').order_by().annotate(models.Count('type'))
 	usage['element_types'] = dict([(t['type'], t['type__count']) for t in types])
+	
 	usage['users'] = auth.User.objects.count()
+	usage['users_active_30days'] = auth.User.objects.filter(last_login__gte = time.time() - 30*24*60*60).count()
+	
+	
 	return stats
 
 def task_list():
