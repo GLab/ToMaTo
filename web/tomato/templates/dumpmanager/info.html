@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% load url from future %}
+
+{% block title %}
+<title>Host {{host.name}} - G-Lab ToMaTo</title> 
+{% endblock %}
+
+{% block content %}
+
+<form>
+  <button type="submit" formaction="{%url "errorgroup_list" %}" class="btn btn-primary" style="float:right;"><span class="glyphicon glyphicon-list"></span> All Errorgroups</button>
+</form>
+
+<h1>Errorgroup {{errorgroup.description}}</h1>
+
+<div class="skip-sm"></div>
+
+{% load tomato %}
+
+{% if errorgroup.dumps %}
+<table class="table">
+	<tr>
+		<th>Source</th>
+		<th>ID</th>
+		<th>Software version</th>
+		<th>Type</th>
+		<th>Description</th>	
+		<th>Timestamp</th>
+		<th></th>
+	</tr>
+{% for errordump in errorgroup.dumps %}
+	<tr>
+		<td>{{errordump.source}}</td>
+		<td>{{errordump.dump_id}}</td>
+		<td>{{errordump.software_version.version}}</td>
+		<td>{{errordump.type}}</td>
+		{% if errordump.type == "Exception" %}
+			<td>{{errordump.description.subject}}</td>	
+		{% else %}
+			<td>{{errordump.description}}</td>	
+		{% endif %}
+		<td>{{errordump.timestamp|todate}}</td>
+		<td>
+			<form style="margin:0px;padding:0px;" method="post">
+			<div class="btn-group">
+				<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
+	    			<span class="glyphicon glyphicon-download-alt"></span>
+				  <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+	    			<li><a href="{%url "dumpmanager.dump_export_with_data" errordump.source errordump.dump_id %}"><span class="glyphicon glyphicon-floppy-saved"></span> Download with data</a></li>
+	    			<li><a href="{%url "dumpmanager.dump_export" errordump.source errordump.dump_id %}"><span class="glyphicon glyphicon-floppy-remove"></span> Download without data</a></li>
+	   			</ul>	
+	   			
+	   		</div>
+	   		<button type="submit" formaction="{%url "dumpmanager.dump_remove" errordump.source errordump.dump_id %}" class="btn btn-danger">&nbsp;<span class="glyphicon glyphicon-trash"></span>&nbsp;</button>
+			</form>
+		</td>
+	</tr>
+{% endfor %}
+
+</table>
+{% endif %}
+<div class="skip-sm"></div>
+
+{% if request.session.user.isGlobalHostManager %}
+<form>
+  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id %}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span> edit errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_clear" errorgroup.group_id %}" class="btn btn-success"><span class="glyphicon glyphicon-ok"></span> clear errorgroup</button>
+  <button type="submit" formaction="{%url "dumpmanager.group_remove" errorgroup.group_id %}" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> remove errorgroup</button>
+</form>
+{%endif%}
+{% endblock %}

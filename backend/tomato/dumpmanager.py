@@ -23,12 +23,13 @@ class ErrorGroup(models.Model):
 			'group_id': self.group_id,
 			'description': self.description,
 			'count': 0,
-			'data_available': False
+		        'data_available':False,
+                        'dump_contents':{}
 		}
 
 		select_unique_values = ['software_version', 'source', 'type', 'description']
 		for val in select_unique_values:
-			res[val] = []
+			res['dump_contents'][val] = []
 
 		for dump in self.dumps.all():
 			res['count'] += 1
@@ -36,8 +37,8 @@ class ErrorGroup(models.Model):
 			if dmp['data_available']:
 				res['data_available'] = True
 			for val in select_unique_values:
-				if not dmp[val] in res[val]:
-					res[val].append(dmp[val])
+				if not dmp[val] in res['dump_contents'][val]:
+					res['dump_contents'][val].append(dmp[val])
 
 		return res
 
@@ -144,6 +145,59 @@ def create_dump(dump, source):
 	d.software_version = dump['software_version']
 	d.save()
 	return d
+	def modify_data(self,data,is_compressed=True):
+		if data is None:
+			self.data = None
+			self.data_available = False
+			self.save()
+			return
+		data_toinsert = None
+		if is_compressed:
+			data_toinsert = data
+		else:
+			data_toinsert = base64.b64encode(zlib.compress(json.dumps(data),9))
+		self.data = data_toinsert
+		self.data_available = True
+		self.save()
+
+	def fetch_data_from_source(self):
+		d = self.getSource().dump_fetch_with_data(self.dump_id,True)
+		self.modify_data(d['data'], True)
+
+	def info(self,include_data=False):
+		dump = {
+			'source':self.source,
+			'dump_id':self.dump_id,
+			'group_id':self.group.group_id,
+			'group_description':self.group.description,
+			'description':self.description,
+			'type':self.type,
+			'software_version':self.software_version,
+			'timestamp':self.timestamp
+			}
+		if include_data:
+			if not self.data_available:
+				self.fetch_data_from_source()
+			dump['data'] = json.loads(zlib.decompress(base64.b64decode(self.data)))
+		else:
+			dump['data_available'] = self.data_available
+		return dump
+
+	def remove(self):
+		self.delete()
+
+	def create_dump(dump,source):
+		d = ErrorDump.objects.create(
+			source=source.dump_source_name(),
+			dump_id=dump['dump_id'],
+			group_id=dump['group_id'],
+			description=dump['description'],
+			type=dump['type'],
+			software_version=dump['software_version'],
+			timestamp=dump['timestamp']
+			)
+		d.save()
+		return d
 
 
 def get_dump(source_name, dump_id):
@@ -160,6 +214,8 @@ def getAll_dumps():
 def remove_dump(source_name, dump_id):
 	dmp = get_dump(source_name, dump_id)
 	dmp.remove()
+
+
 
 
 #First part: fetching dumps from all the sources.
@@ -318,6 +374,8 @@ def init():
 def checkPermissions():
 	from auth import Flags
 	user = currentUser()
+	if not user:
+		return False
 	UserError.check(user.hasFlag(Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
 	return True
 
@@ -361,11 +419,11 @@ def api_errordump_list(group_id=None, source=None, data_available=None):
 				di = d.info(include_data=False)
 
 				append_to_res = True
-				if not group_id is None and di['group_id'] == group_id:
+				if not group_id is None and di['group_id'] != group_id:
 					append_to_res = False
-				if not source is None and di['source'] == source:
+				if not source is None and di['source'] != source:
 					append_to_res = False
-				if not data_available is None and di['data_available'] == data_available:
+				if not data_available is None and di['data_available'] != data_available:
 					append_to_res = False
 
 				if append_to_res:
