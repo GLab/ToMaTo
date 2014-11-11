@@ -380,12 +380,13 @@ def checkPermissions():
 	return True
 
 
-def api_errorgroup_list():
+def api_errorgroup_list(show_empty=False):
 	if checkPermissions():
 		with lock_db:
 			res = []
 			for grp in getAll_group():
-				res.append(grp.info())
+				if show_empty or (grp.dumps.count()>0):
+					res.append(grp.info())
 			return res
 
 

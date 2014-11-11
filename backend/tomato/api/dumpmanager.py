@@ -89,12 +89,12 @@ def errorgroup_info(group_id, include_dumps=False):
     from ..dumpmanager import api_errorgroup_info
     return api_errorgroup_info(group_id, include_dumps)
 
-def errorgroup_list():
+def errorgroup_list(show_empty=False):
     """
     Returns a list of all error groups.
     """
     from ..dumpmanager import api_errorgroup_list
-    return api_errorgroup_list()
+    return api_errorgroup_list(show_empty)
 
 def errorgroup_modify(group_id, attrs):
     """
