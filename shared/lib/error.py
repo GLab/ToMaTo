@@ -36,7 +36,7 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, dump=True, *args, **kwargs):
 		if condition: return
-		excexption = cls(code, message, dump, *args, **kwargs)
+		excexption = cls(code=code, message=message, dump=dump, *args, **kwargs)
 		dumpError(exception)
 		raise excexption
 
