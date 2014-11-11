@@ -36,9 +36,9 @@ class Error(Exception):
 	@classmethod
 	def check(cls, condition, code, message, dump=True, *args, **kwargs):
 		if condition: return
-		excexption = cls(code=code, message=message, dump=dump, *args, **kwargs)
+		exception = cls(code=code, message=message, dump=dump, *args, **kwargs)
 		dumpError(exception)
-		raise excexption
+		raise exception
 
 	@classmethod
 	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):
