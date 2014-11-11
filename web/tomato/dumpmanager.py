@@ -76,7 +76,8 @@ def group_clear(api,request,group_id):
 				api.errordump_remove(dump['source'],dump['dump_id'])
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",  kwargs={"group_id": group_id}))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_clear", kwargs={"group_id": group_id}))
-	return render(request, "form.html", {"heading": "Clear Errogroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_id+"' from all dumps?", 'form': form})
+	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
+	return render(request, "form.html", {"heading": "Clear Errogroup", "message_before": "Are you sure you want to clear the errorgroup '"+group_desc+"' from all dumps?", 'form': form})
 
 
 @wrap_rpc
@@ -90,7 +91,8 @@ def group_remove(api, request, group_id):
 			api.errorgroup_remove(group_id)
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_list"))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.group_remove", kwargs={"group_id": group_id}))
-	return render(request, "form.html", {"heading": "Remove Errorgroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_id+"'?", 'form': form})
+	group_desc = api.errorgroup_info(group_id, include_dumps=False)['description']
+	return render(request, "form.html", {"heading": "Remove Errorgroup", "message_before": "Are you sure you want to remove the errorgroup '"+group_desc+"'?", 'form': form})
 
 @wrap_rpc
 def group_edit(api, request, group_id):
@@ -130,7 +132,7 @@ def dump_remove(api, request, source, dump_id):
 			api.errordump_remove(source,dump_id)
 			return HttpResponseRedirect(reverse("tomato.dumpmanager.group_info",kwargs={'group_id':dump['group_id']}))
 	form = RemoveConfirmForm.build(reverse("tomato.dumpmanager.dump_remove", kwargs={"source": source, "dump_id":dump_id}))
-	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from source '"+source+"'?", 'form': form})
+	return render(request, "form.html", {"heading": "Remove dump", "message_before": "Are you sure you want to remove the dump '"+dump_id+"' from '"+source+"'?", 'form': form})
 
 
 @wrap_rpc
