@@ -194,7 +194,7 @@ class Repy(elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
-		InternalError.check(savedState == realState, "Saved state of element was wrong", code=InternalError.WRONG_DATA,
+		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state of element was wrong",
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_State": realState})
 
 	def _interfaceName(self, name):
@@ -204,7 +204,7 @@ class Repy(elements.Element):
 		if self.template:
 			return self.template.upcast()
 		pref = template.getPreferred(self.TYPE)
-		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
+		InternalError.check(pref, InternalError.CONFIGURATION_ERROR, "Failed to find template", data={"type": self.TYPE})
 		return pref
 				
 	def _nextIfaceName(self):
@@ -261,7 +261,8 @@ class Repy(elements.Element):
 		self.setState(ST_STARTED, True)
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), InternalError.ASSERTION,
+				"Interface did not start properly", data={"interface": ifName})
 			net.ifUp(ifName)
 			con = interface.getConnection()
 			if con:
@@ -269,13 +270,15 @@ class Repy(elements.Element):
 			interface._start()
 		net.freeTcpPort(self.vncport)				
 		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do tail -n +1 -f %s; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.dataPath("program.log")), useExec=False)				
-		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.ASSERTION,
+			"VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), InternalError.ASSERTION,
+				"Websocket VNC wrapper did not start")
 
 	def action_stop(self):
 		for interface in self.getChildren():
@@ -298,7 +301,8 @@ class Repy(elements.Element):
 		return fileserver.addGrant(self.dataPath("uploaded.repy"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		UserError.check(os.path.exists(self.dataPath("uploaded.repy")), "No file has been uploaded", code=UserError.NO_DATA_AVAILABLE)
+		UserError.check(os.path.exists(self.dataPath("uploaded.repy")), UserError.NO_DATA_AVAILABLE,
+			"No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.repy"))
 		os.rename(self.dataPath("uploaded.repy"), self.dataPath("program.repy"))
 		

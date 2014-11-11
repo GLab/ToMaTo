@@ -19,7 +19,7 @@ from .. import connections, config
 from ..lib import cmd #@UnresolvedImport
 from ..lib.attributes import Attr #@UnresolvedImport
 from ..lib.cmd import tc, net, process, path, fileserver #@UnresolvedImport
-from ..lib.error import InternalError, UserError
+from ..lib.error import UserError
 
 import os
 
@@ -335,9 +335,9 @@ class Bridge(connections.Connection):
 		net.bridgeRemoveInterface(self.bridge, ifname)
 
 	def action_download_grant(self, limitSize=None):
-		UserError.check(os.path.exists(self.dataPath("capture")), "Nothing captured so far", code=UserError.NO_DATA_AVAILABLE)
+		UserError.check(os.path.exists(self.dataPath("capture")), UserError.NO_DATA_AVAILABLE, "Nothing captured so far")
 		entries = [os.path.join(self.dataPath("capture"), f) for f in path.entries(self.dataPath("capture"))]
-		UserError.check(entries, "Nothing captured so far", code=UserError.NO_DATA_AVAILABLE)
+		UserError.check(entries, UserError.NO_DATA_AVAILABLE, "Nothing captured so far")
 		net.tcpslice(self.dataPath("capture.pcap"), entries, limitSize)
 		return fileserver.addGrant(self.dataPath("capture.pcap"), fileserver.ACTION_DOWNLOAD, repeated=True)
 		

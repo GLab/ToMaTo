@@ -51,7 +51,7 @@ class RemoteWrapper:
 						if not err.data:
 							err.data = {}
 						err.data["host"] = self._host
-					raise
+					raise err, None, sys.exc_info()[2]
 				except Exception, exc:
 					print "Warning: received unwrapped error:"
 					import traceback

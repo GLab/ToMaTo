@@ -15,11 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from . import run, CommandError, getDpkgVersionStr 
-import platform, os, time, socket, net
-from ... import config
-from ..cache import cached
+import platform
+import os
+import time
+import socket
 
+from . import run, getDpkgVersionStr
+import net
+from ... import config
+from ..newcmd.util.cache import cached
 
 
 external_hostname = "tomato-lab.org" # should also be pingable.

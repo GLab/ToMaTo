@@ -188,7 +188,8 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		"""
 		with getLock(self):
 			return self._modify(attrs)
-			
+
+	@db.commit_after
 	def _modify(self, attrs):
 		self.checkModify(attrs)
 		logging.logMessage("modify", category="element", id=self.id, attrs=attrs)
@@ -236,7 +237,7 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 			if mel and action in mel.getAllowedActions():
 				return
 		UserError.check(action in self.CUSTOM_ACTIONS, code=UserError.UNSUPPORTED_ACTION, message="Unsupported action",
-			data={"type": self.type, "action": action})
+			data={"type": self.type, "action": action, "state": self.state})
 		UserError.check(self.state in self.CUSTOM_ACTIONS[action], code=UserError.INVALID_STATE,
 			message="Action can not be executed in the current state",
 			data={"action": action, "type": self.type, "state": self.state})
@@ -259,7 +260,9 @@ class Element(PermissionMixin, db.ChangesetMixin, db.ReloadMixin, attributes.Mix
 		with getLock(self):
 			self.reload()
 			return self._action(action, params)
+
 		
+	@db.commit_after
 	def _action(self, action, params):
 		self.checkAction(action)
 		logging.logMessage("action start", category="element", id=self.id, action=action, params=params)

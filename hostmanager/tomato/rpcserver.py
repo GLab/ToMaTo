@@ -17,13 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import xmlrpclib, sys, traceback
+import sys
 
 from . import config, login, api, handleError as handleCurrentError
-from . import dump, currentUser
-from .lib import db, util, rpc, logging  # @UnresolvedImport
+from . import currentUser
+from .lib import db, rpc, logging  # @UnresolvedImport
 from .lib.error import Error, InternalError
-from .lib.rpc.sslrpc import RPCError
 
 
 def logCall(function, args, kwargs):

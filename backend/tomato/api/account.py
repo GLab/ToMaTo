@@ -86,7 +86,7 @@ def account_list(organization=None):
 	else:
 		raise UserError(code=UserError.DENIED, message="Not enough permissions")
 
-def account_modify(name=None, attrs={}):
+def account_modify(name=None, attrs=None):
 	"""
 	Modifies the given account, configuring it with the given attributes.
 	
@@ -106,6 +106,7 @@ def account_modify(name=None, attrs={}):
 	  This method returns the info dict of the account. All changes will be 
 	  reflected in this dict.
 	"""
+	if not attrs: attrs = {}
 	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	acc = _getAccount(name)
 	if acc != currentUser():
@@ -113,7 +114,7 @@ def account_modify(name=None, attrs={}):
 	acc.modify(attrs)
 	return acc.info(True)
 		
-def account_create(username, password, organization, attrs={}, provider=""):
+def account_create(username, password, organization, attrs=None, provider=""):
 	"""
 	This method will create a new account in a provider that supports this.
 	
@@ -139,6 +140,7 @@ def account_create(username, password, organization, attrs={}, provider=""):
 	Return value:
 	  This method returns the info dict of the new account.
 	"""
+	if not attrs: attrs = {}
 	user = register(username, password, organization, attrs, provider)
 	return user.info(True)
 		

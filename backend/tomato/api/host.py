@@ -141,10 +141,11 @@ def host_list(site=None, organization=None):
 	return [h.info() for h in hosts]
 
 @checkauth
-def host_create(name, site, attrs={}):
+def host_create(name, site, attrs=None):
 	"""
 	undocumented
 	"""
+	if not attrs: attrs = {}
 	site = _getSite(site)
 	h = host.create(name, site, attrs)
 	host_list.invalidate()

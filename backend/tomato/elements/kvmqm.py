@@ -44,7 +44,7 @@ class KVMQM_Interface(generic.VMInterface):
 def syncRexTFV():
 	for e in KVMQM.objects.filter(next_sync__gt=0.0, next_sync__lte=time.time()):
 		with getLock(e):
-			e.updateInfo()
+			e.reload().updateInfo()
 		
 scheduler.scheduleRepeated(1, syncRexTFV)
 	

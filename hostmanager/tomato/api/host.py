@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from ..lib.util import xml_rpc_sanitize #@UnresolvedImport
-from ..lib.cache import cached #@UnresolvedImport
+from ..lib.newcmd.util.cache import cached #@UnresolvedImport
 
 def host_info():
 	"""
@@ -274,6 +274,6 @@ def host_networks():
 		res.append(data)
 	return res
 
-from .. import dump, elements, connections, resources, config, currentUser
+from .. import dump, elements, connections, resources, config
 from ..lib.cmd import hostinfo, net, dhcp #@UnresolvedImport
 import time

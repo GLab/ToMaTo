@@ -36,7 +36,9 @@ class Provider(AuthProvider):
 		flags: A list of flags to assign to all users
 	    hash: The hash method use for passwords, defaults to "sha1"
 	"""
-	def parseOptions(self, users={}, organization=None, flags=[], hash="sha1", **kwargs): #@ReservedAssignment
+	def parseOptions(self, users=None, organization=None, flags=None, hash="sha1", **kwargs): #@ReservedAssignment
+		if not users: users = {}
+		if not flags: flags = []
 		self.users = users
 		self.flags = flags
 		self.hash = hash

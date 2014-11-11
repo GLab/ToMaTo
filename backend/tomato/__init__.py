@@ -19,7 +19,7 @@ import os, sys, signal, time, thread
 
 # tell django to read config from module tomato.config
 os.environ['DJANGO_SETTINGS_MODULE']=__name__+".config"
-os.environ['TOMATO_MODULE'] = "hostmanager"
+os.environ['TOMATO_MODULE'] = "backend"
 
 
 def db_migrate():
@@ -61,11 +61,7 @@ scheduler = tasks.TaskScheduler(maxLateTime=30.0, minWorkers=5, maxWorkers=10)
 
 starttime = time.time()
 
-from models import *
-	
-import api
-
-from . import lib, resources, host, accounting, auth, rpcserver #@UnresolvedImport
+from . import resources, host, auth, rpcserver #@UnresolvedImport
 from lib.cmd import bittorrent, process #@UnresolvedImport
 from lib import util #@UnresolvedImport
 

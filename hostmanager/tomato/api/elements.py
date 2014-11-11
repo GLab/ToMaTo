@@ -17,11 +17,11 @@
 
 def _getElement(id_):
 	el = elements.get(id_, owner=currentUser())
-	UserError.check(el, "No such element", code=UserError.ENTITY_DOES_NOT_EXIST, data={"id": id_})
+	UserError.check(el, UserError.ENTITY_DOES_NOT_EXIST, "No such element", data={"id": id_})
 	return el
 
 
-def element_create(type, parent=None, attrs={}):  # @ReservedAssignment
+def element_create(type, parent=None, attrs=None):  # @ReservedAssignment
 	"""
 	Creates an element of given type and with the given parent element,
 	configuring it with the given attributes by the way.
@@ -60,6 +60,7 @@ def element_create(type, parent=None, attrs={}):  # @ReservedAssignment
 	  an exception *element does not exist* is raised.
 	  Various other exceptions can be raised, depending on the given type.
 	"""
+	if not attrs: attrs = {}
 	parentEl = _getElement(int(parent)) if parent else None
 	attrs = dict(attrs)
 	el = elements.create(type, parentEl, attrs)
@@ -99,7 +100,7 @@ def element_modify(id, attrs):  # @ReservedAssignment
 	return el.info()
 
 
-def element_action(id, action, params={}):  # @ReservedAssignment
+def element_action(id, action, params=None):  # @ReservedAssignment
 	"""
 	Performs an action on the element and possibly on its children too.
 
@@ -133,6 +134,7 @@ def element_action(id, action, params={}):  # @ReservedAssignment
 	  Various other exceptions can be raised, depending on the element type
 	  and state.
 	"""
+	if not params: params = {}
 	el = _getElement(int(id))
 	res = el.action(action, params)
 	return res

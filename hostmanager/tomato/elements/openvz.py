@@ -236,7 +236,8 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 	# 9: locked
 	# [51] Can't umount /var/lib/vz/root/...: Device or resource busy
 	@decorators.retryOnError(errorFilter=lambda x: isinstance(x, cmd.CommandError) and x.errorCode in [9, 51])
-	def _vzctl(self, cmd_, args=[], timeout=None):
+	def _vzctl(self, cmd_, args=None, timeout=None):
+		if not args: args = []
 		cmd_ = ["vzctl", cmd_, str(self.vmid)] + args
 		if timeout:
 			cmd_ = ["perl", "-e", "alarm %d; exec @ARGV" % timeout] + cmd_
@@ -266,14 +267,14 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		realState = self._getState()
 		if savedState != realState:
 			self.setState(realState, True) #pragma: no cover
-		InternalError.check(savedState == realState, "Saved state is wrong", code=InternalError.WRONG_DATA,
+		InternalError.check(savedState == realState, InternalError.WRONG_DATA, "Saved state is wrong",
 			data={"type": self.type, "id": self.id, "saved_state": savedState, "real_state": realState})
 
 	def _template(self):
 		if self.template:
 			return self.template.upcast()
 		pref = template.getPreferred(self.TYPE)
-		InternalError.check(pref, "Failed to find template", data={"type": self.TYPE})
+		InternalError.check(pref, InternalError.CONFIGURATION_ERROR, "Failed to find template", data={"type": self.TYPE})
 		return pref
 
 	def _nextIfaceName(self):
@@ -345,7 +346,7 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 
 	def _checkImage(self, path_):
 		res = cmd.run(["tar", "-tzvf", path_, "./sbin/init"])
-		UserError.check("0/0" in res, "Image contents not owned by root", code=UserError.INVALID_VALUE)
+		UserError.check("0/0" in res, UserError.INVALID_VALUE, "Image contents not owned by root")
 
 	#The nlXTP directory
 	def _nlxtp_path(self,filename):
@@ -456,7 +457,8 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._execute("while fgrep -q boot /proc/1/cmdline; do sleep 1; done")
 		for interface in self.getChildren():
 			ifName = self._interfaceName(interface.name)
-			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly", data={"interface": ifName})
+			InternalError.check(util.waitFor(lambda :net.ifaceExists(ifName)), "Interface did not start properly",
+				InternalError.ASSERTION, data={"interface": ifName})
 			con = interface.getConnection()
 			if con:
 				con.connectInterface(self._interfaceName(interface.name))
@@ -464,13 +466,15 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		self._setGateways()
 		net.freeTcpPort(self.vncport)
 		self.vncpid = cmd.spawnShell("while true; do vncterm -timeout 0 -rfbport %d -passwd %s -c bash -c 'while true; do vzctl enter %d; sleep 1; done'; sleep 1; done" % (self.vncport, self.vncpassword, self.vmid), useExec=False)
-		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), "VNC server did not start")
+		InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.vncport)), InternalError.ASSERTION,
+			"VNC server did not start")
 		if not self.websocket_port:
 			self.websocket_port = self.getResource("port")
 		if websockifyVersion:
 			net.freeTcpPort(self.websocket_port)
 			self.websocket_pid = cmd.spawn(["websockify", "0.0.0.0:%d" % self.websocket_port, "localhost:%d" % self.vncport, '--cert=/etc/tomato/server.pem'])
-			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)), "Websocket VNC wrapper did not start")
+			InternalError.check(util.waitFor(lambda :net.tcpPortUsed(self.websocket_port)),
+				InternalError.ASSERTION, "Websocket VNC wrapper did not start")
 				
 	def action_stop(self):
 		self._checkState()
@@ -495,12 +499,12 @@ class OpenVZ(elements.RexTFVElement,elements.Element):
 		return fileserver.addGrant(self.dataPath("rextfv_up.tar.gz"), fileserver.ACTION_UPLOAD)
 		
 	def action_upload_use(self):
-		UserError.check(os.path.exists(self.dataPath("uploaded.tar.gz")), "No file has been uploaded", code=UserError.NO_DATA_AVAILABLE)
+		UserError.check(os.path.exists(self.dataPath("uploaded.tar.gz")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._checkImage(self.dataPath("uploaded.tar.gz"))
 		self._useImage(self.dataPath("uploaded.tar.gz"))
 		
 	def action_rextfv_upload_use(self):
-		fault.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), "No file has been uploaded")
+		UserError.check(os.path.exists(self.dataPath("rextfv_up.tar.gz")), UserError.NO_DATA_AVAILABLE, "No file has been uploaded")
 		self._use_rextfv_archive(self.dataPath("rextfv_up.tar.gz"))
 		if self.state == ST_STARTED:
 			try:
