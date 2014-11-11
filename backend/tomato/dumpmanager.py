@@ -43,7 +43,7 @@ class ErrorGroup(models.Model):
 		return res
 
 	def remove(self):
-		InternalError.check(self.dumps.all() == [], code=InternalError.INVALID_STATE, message="Group is not empty")
+		InternalError.check(list(self.dumps.all()) == [], code=InternalError.INVALID_STATE, message="Group is not empty")
 		self.delete()
 
 
@@ -408,6 +408,11 @@ def api_errorgroup_info(group_id, include_dumps=False):
 				for i in group.dumps.all():
 					res['dumps'].append(i.info())
 			return res
+		
+def api_errorgroup_remove(group_id):
+	if checkPermissions():
+		with lock_db:
+			remove_group(group_id)
 
 
 def api_errordump_list(group_id=None, source=None, data_available=None):
@@ -435,3 +440,8 @@ def api_errordump_info(source, dump_id, include_data=False):
 	if checkPermissions():
 		with lock_db:
 			return get_dump(source, dump_id).info(include_data=include_data)
+
+def api_errordump_remove(source, dump_id):
+	if checkPermissions():
+		with lock_db:
+			remove_dump(source, dump_id)

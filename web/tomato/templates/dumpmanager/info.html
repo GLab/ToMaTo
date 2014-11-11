@@ -36,7 +36,7 @@
 		<td>{{errordump.software_version.version}}</td>
 		<td>{{errordump.type}}</td>
 		{% if errordump.type == "Exception" %}
-			<td>{{errordump.description.subject}}</td>	
+			<td>{{errordump.description.type}}: {{errordump.description.subject}}</td>	
 		{% else %}
 			<td>{{errordump.description}}</td>	
 		{% endif %}
