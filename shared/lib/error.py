@@ -1,5 +1,5 @@
 import os
-from dump import dumpExeption
+from dump import dumpError
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
