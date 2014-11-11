@@ -1,4 +1,4 @@
-import os
+import os, hashlib, json
 from dump import dumpError
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
