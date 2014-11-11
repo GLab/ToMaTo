@@ -34,7 +34,7 @@ class Error(Exception):
 		return TYPES.get(raw["type"], Error)(**raw)
 
 	@classmethod
-	def check(cls, condition, code, message, dump=True *args, **kwargs):
+	def check(cls, condition, code, message, dump=True, *args, **kwargs):
 		if condition: return
 		excexption = cls(code, message, dump, *args, **kwargs)
 		dumpExeption(Exception)
