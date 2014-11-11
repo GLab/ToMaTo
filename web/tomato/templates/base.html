@@ -141,6 +141,10 @@ head.appendChild(style);
 						{% endif %}
 						<li class="divider"></li>
 						<li><a href="{%url "main.statistics"%}">Statistics</a></li>
+						{% if request.session.user.hasDebugFlag %}
+						<li class="divider"></li>
+						<li><a href="{%url "dumpmanager.group_list"%}">Dumpmanager</a></li>
+						{% endif %}
 					</ul>
 				</li>
 				<li class="dropdown">

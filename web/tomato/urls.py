@@ -143,4 +143,12 @@ urlpatterns = patterns('',
 	(r'^debug/topology/(?P<id>\d+)$', 'tomato.debug.topology'),
 	(r'^debug/element/(?P<id>\d+)$', 'tomato.debug.element'),
 	(r'^debug/connection/(?P<id>\d+)$', 'tomato.debug.connection'),
+    url(r'^dumpmanager/$',  'tomato.dumpmanager.group_list',name='errorgroup_list'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)$', 'tomato.dumpmanager.group_info'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/edit$', 'tomato.dumpmanager.group_edit'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/clear$', 'tomato.dumpmanager.group_clear'),
+    (r'^dumpmanager/group/(?P<group_id>\w+)/remove$', 'tomato.dumpmanager.group_remove'),
+    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/remove$', 'tomato.dumpmanager.dump_remove'),
+    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export$', 'tomato.dumpmanager.dump_export'),
+    (r'^dumpmanager/source/(?P<source>[^/]+)/dump/(?P<dump_id>[\d_.]+)/export_data$', 'tomato.dumpmanager.dump_export_with_data')
 )

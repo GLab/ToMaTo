@@ -244,3 +244,5 @@ class UserObj:
 		return False
 	def isGlobalHostManager(self):
 		return "global_host_manager" in self.flags
+	def hasDebugFlag(self):
+		return "debug" in self.flags
