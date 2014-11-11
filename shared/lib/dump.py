@@ -278,10 +278,8 @@ def dumpError(error):
 	error.dump=False
 	
 	description = error.__dict__
-	data = description['data']
-	del description['data']
 	del description['dump']
 	
 	exception_id = error.group_id()
 	
-	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
+	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data={})
