@@ -75,7 +75,6 @@ class Template(resources.Resource):
 		self.preference = val
 		
 	def modify_kblang(self, val):
-		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
 		UserError.check(val in kblang_options, UserError.UNSUPPORTED_TYPE, "Unsupported value for kblang: %s" % val, data={"kblang":val})
 		self.kblang = val
 
@@ -118,8 +117,7 @@ class Template(resources.Resource):
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["torrent_data_hash"] = hashlib.md5(str(self.torrent_data)).hexdigest() if self.torrent_data else None
-		if self.tech = "kvmqm":
-			info["attrs"]["kblang"] = self.kblang
+		info["attrs"]["kblang"] = self.kblang
 		return info
 
 def get(tech, name):
