@@ -138,7 +138,7 @@ def dump_export(api, request, source, dump_id,data=False):
 	if not api.user:
 		raise AuthError()
 	dump = api.errordump_info(source,dump_id,data)
-	filename = re.sub('[^\w\-_\. ]', '_', source.lower() + "__" + dump_id ) + ".tomato3.json"
+	filename = re.sub('[^\w\-_\. :]', '_', source.lower() + "__" + dump_id ) + ".errordump.json"
 	response = HttpResponse(json.dumps(dump, indent = 2), content_type="application/json")
 	response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
 	return response

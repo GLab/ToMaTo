@@ -70,8 +70,8 @@ def errordump_remove(source, dump_id):
     Parameter *dump_id*: 
       The unique identifier of the dump to be removed.
     """
-    from ..dumpmanager import remove_dump
-    remove_dump(source, dump_id)
+    from ..dumpmanager import api_errordump_remove
+    api_errordump_remove(source, dump_id)
 
 def errorgroup_info(group_id, include_dumps=False):
     """
@@ -120,5 +120,5 @@ def errorgroup_remove(group_id):
     Parameter *dump_id*: 
       The unique identifier of the group to be removed.
     """
-    from ..dumpmanager import remove_group
-    remove_group(group_id)
+    from ..dumpmanager import api_errorgroup_remove
+    api_errorgroup_remove(group_id)
