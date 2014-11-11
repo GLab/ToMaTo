@@ -43,7 +43,7 @@ class ErrorGroup(models.Model):
 		return res
 
 	def remove(self):
-		InternalError.check(self.dumps.all() == [], code=InternalError.INVALID_STATE, message="Group is not empty")
+		InternalError.check(list(self.dumps.all()) == [], code=InternalError.INVALID_STATE, message="Group is not empty")
 		self.delete()
 
 
