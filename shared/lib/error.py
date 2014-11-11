@@ -1,4 +1,5 @@
 import os
+from dump import dumpExeption
 
 MODULE = os.environ.get("TOMATO_MODULE", "unknown")
 TYPES = {}
@@ -7,12 +8,22 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, module=MODULE):
+	def __init__(self, code=None, message=None, data=None, type=None, dump=True, module=MODULE):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
 		self.data = data or {}
 		self.module = module
+		self.dump = dump
+		
+	def group_id(self):
+		return hashlib.md5(
+						json.dumps({
+									'code':self.code,
+									'type':self.type,
+									'message':self.message,
+									'module':self.module})
+						).hexdigest()
 
 	@property
 	def raw(self):
@@ -23,9 +34,11 @@ class Error(Exception):
 		return TYPES.get(raw["type"], Error)(**raw)
 
 	@classmethod
-	def check(cls, condition, code, message, *args, **kwargs):
+	def check(cls, condition, code, message, dump=True *args, **kwargs):
 		if condition: return
-		raise cls(code, message, *args, **kwargs)
+		excexption = cls(code, message, dump, *args, **kwargs)
+		dumpExeption(Exception)
+		raise excexption
 
 	@classmethod
 	def wrap(cls, error, code=UNKNOWN, message=None, *args, **kwargs):

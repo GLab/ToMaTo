@@ -257,6 +257,10 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 def dumpException(**kwargs):
 	(type_, value, trace) = sys.exc_info()
 	trace = traceback.extract_tb(trace) if trace else None
+	
+	from error import Error
+	if issubclass(type_, Error):
+		return dumpError(value)
 
 	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
 	exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
@@ -266,3 +270,18 @@ def dumpException(**kwargs):
 	data.update(**kwargs)
 
 	return save_dump(caller=False, description=description, type="Exception", group_id=exception_id, data=data)
+
+def dumpError(error):
+	if not error.dump:
+		return None
+	
+	error.dump=False
+	
+	description = error.__dict__
+	data = description['data']
+	del description['data']
+	del description['dump']
+	
+	exception_id = error.group_id()
+	
+	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
