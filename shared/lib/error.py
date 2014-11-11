@@ -8,13 +8,16 @@ class Error(Exception):
 	TYPE = "general"
 	UNKNOWN = None
 
-	def __init__(self, code=None, message=None, data=None, type=None, dump=True, module=MODULE):
+	def __init__(self, code=None, message=None, data=None, type=None, dump=None, module=MODULE):
 		self.type = type or self.TYPE
 		self.code = code
 		self.message = message
 		self.data = data or {}
 		self.module = module
-		self.dump = dump
+		if dump is not None:
+			self.dump = dump
+		else:
+			self.dump = not isinstance(self, UserError)
 		
 	def group_id(self):
 		return hashlib.md5(
