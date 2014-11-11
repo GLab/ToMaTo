@@ -274,12 +274,15 @@ def dumpException(**kwargs):
 def dumpError(error):
 	if not error.dump:
 		return None
-	
 	error.dump=False
+	
+	(type_, value, trace) = sys.exc_info()
+	trace = traceback.extract_tb(trace) if trace else None
+	data = {"exception":{"trace":trace}}
 	
 	description = error.__dict__
 	del description['dump']
 	
 	exception_id = error.group_id()
 	
-	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data={})
+	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
