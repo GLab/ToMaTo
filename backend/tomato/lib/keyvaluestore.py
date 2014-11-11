@@ -1,5 +1,5 @@
 from django.db import models
-from .lib import attributes, db  # @UnresolvedImport
+from . import attributes, db  # @UnresolvedImport
 from django.template.defaultfilters import default
 
 class KeyValuePair(attributes.Mixin, models.Model):
