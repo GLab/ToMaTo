@@ -3392,7 +3392,7 @@ var IconElement = Element.extend({
 		}
 		
 		//set RexTFV icon
-		if (this.rextfvStatusSupport()) {
+		if (this.rextfvStatusSupport() && this.data.state=="started") {
 			rextfv_stat = this.data.attrs.rextfv_run_status;
 			if (rextfv_stat.readable) {
 				if (rextfv_stat.isAlive) {
@@ -3425,7 +3425,7 @@ var IconElement = Element.extend({
 		this.icon = this.canvas.image(this.iconUrl(), pos.x-this.iconSize.x/2, pos.y-this.iconSize.y/2-5, this.iconSize.x, this.iconSize.y);
 		this.text = this.canvas.text(pos.x, pos.y+this.iconSize.y/2, this.data.attrs.name);
 		this.stateIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y+this.iconSize.y/2-15, 16, 16);
-		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2-10, pos.y-this.iconSize.y/2-10, 16, 16);
+		this.errIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2-10, 16, 16);
 		this.rextfvIcon = this.canvas.image("img/pixel.png", pos.x+this.iconSize.x/2, pos.y-this.iconSize.y/2+8, 16, 16);
 		this.stateIcon.attr({opacity: 0.0});
 		this.updateStateIcon();
@@ -3451,7 +3451,8 @@ var IconElement = Element.extend({
 		var pos = this.getAbsPos();
 		this.icon.attr({src: this.iconUrl(), x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.stateIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y+this.iconSize.y/2-15});
-		this.errIcon.attr({x: pos.x+this.iconSize.x/2-10, y: pos.y-this.iconSize.y/2-10});
+		this.errIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2-10});
+		this.rextfvIcon.attr({x: pos.x+this.iconSize.x/2, y: pos.y-this.iconSize.y/2+8});
 		this.rect.attr({x: pos.x-this.iconSize.x/2, y: pos.y-this.iconSize.y/2-5});
 		this.text.attr({x: pos.x, y: pos.y+this.iconSize.y/2, text: this.data.attrs.name});
 		this.updateStateIcon();
