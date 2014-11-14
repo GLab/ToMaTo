@@ -1,10 +1,11 @@
 from django.db import models
 from . import attributes, db  # @UnresolvedImport
-from django.template.defaultfilters import default
 
 class KeyValuePair(attributes.Mixin, models.Model):
     
     class Meta:
+        db_table = "tomato_keyvaluepair"
+        app_label = 'tomato'
         pass
 
     key = models.CharField(max_length=255, primary_key=True)
@@ -29,7 +30,7 @@ def set(key, value):
     if res:
         res.set(value)
     else:
-        KeyValuePair.create(key=key, value=value).save()
+        KeyValuePair.objects.create(key=key, value=value).save()
 
 def delete(key):
     res = get(key)
