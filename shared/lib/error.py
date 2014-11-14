@@ -31,6 +31,9 @@ class Error(Exception):
 	@property
 	def raw(self):
 		return self.__dict__
+	
+	def dump(self):
+		dumpError(self)
 
 	@staticmethod
 	def parse(raw):
@@ -40,7 +43,7 @@ class Error(Exception):
 	def check(cls, condition, code, message, dump=True, *args, **kwargs):
 		if condition: return
 		exception = cls(code=code, message=message, dump=dump, *args, **kwargs)
-		dumpError(exception)
+		exception.dump()
 		raise exception
 
 	@classmethod
