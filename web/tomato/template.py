@@ -39,6 +39,13 @@ def techs_choices():
 	tdict = [(t["name"], t["label"]) for t in techs]
 	return append_empty_choice(tdict)
 
+kblang_options = [("en-us", "English (US)"), 
+					("en-gb", "English (GB)"), 
+					("de", "German"), 
+					("fr", "French"), 
+					("ja", "Japanese")
+					]
+
 class TemplateForm(BootstrapForm):
 	label = forms.CharField(max_length=255, help_text="The displayed label for this profile")
 	subtype = forms.CharField(max_length=255, required=False)
@@ -49,9 +56,11 @@ class TemplateForm(BootstrapForm):
 	creation_date = forms.DateField(required=False,widget=forms.TextInput(attrs={'class': 'datepicker'}));
 	show_as_common = forms.BooleanField(label="Show in Common Elements", help_text="Show this template in the common elements section in the editor", required=False)
 	icon = forms.URLField(label="Icon", help_text="URL of a 32x32 icon to use for elements of this template, leave empty to use the default icon", required=False)
+	kblang = forms.CharField(max_length=50,label="Keyboard Layout",widget = forms.widgets.Select(choices=kblang_options))
 	def __init__(self, *args, **kwargs):
 		super(TemplateForm, self).__init__(*args, **kwargs)
 		self.fields['creation_date'].initial=datetime.date.today()
+		self.fields['kblang'].initial="en_US"
 	
 class AddTemplateForm(TemplateForm):
 	torrentfile  = forms.FileField(label="Torrent:", help_text='<a href="http://tomato.readthedocs.org/en/latest/docs/templates" target="_blank">Help</a>')
@@ -78,22 +87,39 @@ class AddTemplateForm(TemplateForm):
 	
 class EditTemplateForm(TemplateForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
-	def __init__(self, res_id, *args, **kwargs):
+	def __init__(self, res_id, showKblang=False, *args, **kwargs):
 		super(EditTemplateForm, self).__init__(*args, **kwargs)
 		self.helper.form_action = reverse(edit, kwargs={"res_id": res_id})
-		self.helper.layout = Layout(
-            'res_id',
-            'label',
-            'subtype',
-            'description',
-            'preference',
-            'show_as_common',
-            'restricted',
-            'nlXTP_installed',
-			'icon',
-            'creation_date',
-            Buttons.cancel_save
-        )
+		if showKblang:
+			self.helper.layout = Layout(
+	            'res_id',
+	            'label',
+	            'subtype',
+	            'description',
+	            'preference',
+	            'show_as_common',
+	            'restricted',
+	            'nlXTP_installed',
+				'icon',
+	            'creation_date',
+	            'kblang',
+	            Buttons.cancel_save
+	        )
+		else:
+			del self.fields['kblang']
+			self.helper.layout = Layout(
+	            'res_id',
+	            'label',
+	            'subtype',
+	            'description',
+	            'preference',
+	            'show_as_common',
+	            'restricted',
+	            'nlXTP_installed',
+				'icon',
+	            'creation_date',
+	            Buttons.cancel_save
+	        )
 	
 class ChangeTemplateTorrentForm(BootstrapForm):
 	res_id = forms.CharField(max_length=50, widget=forms.HiddenInput)
@@ -143,18 +169,21 @@ def add(api, request, tech=None):
 			creation_date = str(formData['creation_date'])
 			f = request.FILES['torrentfile']
 			torrent_data = base64.b64encode(f.read())
-			res = api.resource_create('template',{'name':formData['name'],
-											'label':formData['label'],
-											'subtype':formData['subtype'],
-											'preference':formData['preference'],
-											'tech': formData['tech'],
-											'restricted': formData['restricted'],
-											'torrent_data':torrent_data,
-											'description':formData['description'],
-											'nlXTP_installed':formData['nlXTP_installed'],
-											'creation_date':creation_date,
-											'icon':formData['icon'],
-											'show_as_common':formData['show_as_common']})
+			attrs = {'name':formData['name'],
+						'label':formData['label'],
+						'subtype':formData['subtype'],
+						'preference':formData['preference'],
+						'tech': formData['tech'],
+						'restricted': formData['restricted'],
+						'torrent_data':torrent_data,
+						'description':formData['description'],
+						'nlXTP_installed':formData['nlXTP_installed'],
+						'creation_date':creation_date,
+						'icon':formData['icon'],
+						'show_as_common':formData['show_as_common']}
+			if formData['tech'] == "kvmqm":
+				attrs['kblang'] = formData['kblang']
+			res = api.resource_create('template',attrs)
 			return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res["id"]}))
 		else:
 			return render(request, "form.html", {'form': form, "heading":"Add Template", 'message_after':message_after})
@@ -209,21 +238,25 @@ def edit_torrent(api, request, res_id=None):
 @wrap_rpc
 def edit(api, request, res_id=None):
 	if request.method=='POST':
-		form = EditTemplateForm(res_id, request.POST)
+		form = EditTemplateForm(res_id, (api.resource_info(res_id)['attrs']['tech']=="kvmqm"), request.POST)
 		if form.is_valid():
 			formData = form.cleaned_data
 			creation_date = str(formData['creation_date'])
-			if api.resource_info(res_id)['type'] == 'template':
-				api.resource_modify(res_id,{'label':formData['label'],
-														'restricted': formData['restricted'],
-														'subtype':formData['subtype'],
-														'preference':formData['preference'],
-														'description':formData['description'],
-														'creation_date':creation_date,
-														'nlXTP_installed':formData['nlXTP_installed'],
-														'icon':formData['icon'],
-														'show_as_common':formData['show_as_common']})
-				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
+			res_inf = api.resource_info(res_id)
+			if res_inf['type'] == 'template':
+				attr = {'label':formData['label'],
+							'restricted': formData['restricted'],
+							'subtype':formData['subtype'],
+							'preference':formData['preference'],
+							'description':formData['description'],
+							'creation_date':creation_date,
+							'nlXTP_installed':formData['nlXTP_installed'],
+							'icon':formData['icon'],
+							'show_as_common':formData['show_as_common']})
+				if res_inf['tech'] == "kvmqm":
+					attrs['kblang'] = formData['kblang']
+				api.resource_modify(res_id,attrs))
+				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
@@ -237,7 +270,7 @@ def edit(api, request, res_id=None):
 			res_info = api.resource_info(res_id)
 			origData = res_info['attrs']
 			origData['res_id'] = res_id
-			form = EditTemplateForm(res_id, origData)
+			form = EditTemplateForm(res_id, (origData['tech']=="kvmqm"), origData)
 			return render(request, "form.html", {'label': res_info['attrs']['label'], 'form': form, "heading":"Edit Template Data for '"+res_info['attrs']['label']+"' ("+res_info['attrs']['tech']+")"})
 		else:
 			return render(request, "main/error.html",{'type':'not enough parameters','text':'No address specified. Have you followed a valid link?'})
