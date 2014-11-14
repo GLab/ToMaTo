@@ -311,6 +311,7 @@ def update_all():
 			time.sleep(1)  #do not connect to all hosts at the same time. There is no need to rush.
 
 	thread.start_new_thread(cycle_all, ())
+	return len(getDumpSources())
 
 
 def init():
@@ -394,3 +395,8 @@ def api_errordump_remove(source, dump_id):
 	if checkPermissions():
 		with lock_db:
 			remove_dump(source, dump_id)
+			
+			
+def api_force_refresh():
+	if checkPermissions():
+		return update_all()
