@@ -18,14 +18,16 @@
 	<th>Description</th>
 	<th>&#35; Dumps</th>
 	<th>Last Dump</th>
-	<th></th>
+	{% if request.session.user.hasDebugFlag %}
+		<th></th>
+	{% endif %}
 	</tr>
 	{% for errorgroup in errorgroup_list %}
 	  	<tr>
 	    	<td><a href="{%url "dumpmanager.group_info" errorgroup.group_id %}">{{errorgroup.description}}</a></td>  
 			<td>{{errorgroup.count}}</td>
-			<td>{{errorgroup.last_timestamp}}</td>
-			{% if request.session.user.isGlobalHostManager %}
+			<td>{{errorgroup.last_timestamp | todate}}</td>
+			{% if request.session.user.hasDebugFlag %}
 	  			<td align="right">
 	  				<form style="padding: 0px;margin:0px;">
 	  				  <button type="submit" formaction="{%url "dumpmanager.group_edit" errorgroup.group_id%}" class="btn btn-warning"><span class="glyphicon glyphicon-pencil"></span></button>
