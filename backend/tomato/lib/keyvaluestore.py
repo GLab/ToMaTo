@@ -16,9 +16,9 @@ class KeyValuePair(attributes.Mixin, models.Model):
     
 def get(key, alt=None):
     res = KeyValuePair.objects.get(key=key)
-    if len(res) == 0:
-        return alt
-    return res[0]
+    if res:
+        return res
+    return alt
 
 def set(key, value):
     res = get(key)
