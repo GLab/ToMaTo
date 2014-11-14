@@ -16,23 +16,34 @@ class KeyValuePair(attributes.Mixin, models.Model):
         self.value = value
         self.save()
         
+    def get(self):
+        return self.value
+        
     def remove(self):
         self.delete()
+        
+def getObj(key):
+    try:
+        return KeyValuePair.objects.get(key=key)
+    except:
+        return None
+    
+    
     
 def get(key, alt=None):
-    res = KeyValuePair.objects.get(key=key)
-    if res:
-        return res
+    res = getObj(key)
+    if res is not None:
+        return res.get()
     return alt
 
 def set(key, value):
-    res = get(key)
+    res = getObj(key)
     if res:
         res.set(value)
     else:
         KeyValuePair.objects.create(key=key, value=value).save()
 
 def delete(key):
-    res = get(key)
+    res = getObj(key)
     if res:
         res.remove()

@@ -4,7 +4,7 @@ from django.db import models
 import host
 from .lib import attributes, db, keyvaluestore  # @UnresolvedImport
 from . import scheduler, config, currentUser
-from .lib.error import InternalError, UserError
+from .lib.error import InternalError, UserError # @UnresolvedImport
 
 
 # Zero-th part: database stuff
