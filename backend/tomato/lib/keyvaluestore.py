@@ -3,6 +3,10 @@ from . import attributes, db  # @UnresolvedImport
 from django.template.defaultfilters import default
 
 class KeyValuePair(attributes.Mixin, models.Model):
+    
+    class Meta:
+        pass
+
     key = models.CharField(max_length=255, primary_key=True)
     attrs = db.JSONField(default={})
     value = attributes.attribute("data", unicode, default="")
