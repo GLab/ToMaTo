@@ -136,12 +136,11 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 					dump = json.load(f)
 			except:
 				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
-		elif dump_id in dumps:
-			if not dump_id in dumps:
-				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, dump=True)
-			dump = dumps[dump_id].copy()
 		else:
-			return None
+			if dump_id in dumps:
+				dump = dumps[dump_id].copy()
+			else:
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, dump=True)
 
 		if push_to_dumps:
 			dumps[dump_id] = dump.copy()
