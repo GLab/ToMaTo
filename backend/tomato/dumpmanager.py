@@ -23,8 +23,9 @@ class ErrorGroup(models.Model):
 			'group_id': self.group_id,
 			'description': self.description,
 			'count': 0,
-		        'data_available':False,
-                        'dump_contents':{}
+			'last_timestamp': 0,
+		    'data_available':False,
+            'dump_contents':{}
 		}
 
 		select_unique_values = ['software_version', 'source', 'type', 'description']
@@ -36,6 +37,8 @@ class ErrorGroup(models.Model):
 			dmp = dump.info()
 			if dmp['data_available']:
 				res['data_available'] = True
+			if dmp.timestamp > res['last_timestamp']:
+				res['last_timestamp'] = dmp.timestamp
 			for val in select_unique_values:
 				if not dmp[val] in res['dump_contents'][val]:
 					res['dump_contents'][val].append(dmp[val])
