@@ -2,6 +2,7 @@ import sys, os, time, json, traceback, hashlib, zlib, threading, re, base64, gzi
 
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
+from .error import InternalError
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.
@@ -129,9 +130,15 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 	with dumps_lock:
 		dump = None
 		if load_from_file:
-			with open(get_absolute_path(dump_id, True), "r") as f:
-				dump = json.load(f)
+			filename = get_absolute_path(dump_id, True)
+			try:
+				with open(filename, "r") as f:
+					dump = json.load(f)
+			except:
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
 		elif dump_id in dumps:
+			if not dump_id in dumps:
+				raise InternalError(code=InternalError.INVALID_PARAMETER, message="dump not found", data={'dump_id':dump_id}, dump=True)
 			dump = dumps[dump_id].copy()
 		else:
 			return None
@@ -161,10 +168,14 @@ def load_dump(dump_id, load_data=False, compress_data=False, push_to_dumps=False
 					else:
 						dump['data'] = data
 			elif dump_file_version == 1:
-				with gzip.GzipFile(get_absolute_path(dump_id, False, 1), "r") as f:
-					dump['data'] = json.loads(f.read())
-					if compress_data:
-						dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
+				filename = get_absolute_path(dump_id, False, 1)
+				try:
+					with gzip.GzipFile(filename, "r") as f:
+						dump['data'] = json.loads(f.read())
+						if compress_data:
+							dump['data'] = base64.b64encode(zlib.compress(json.dumps(dump['data']), 9))
+				except:
+					raise InternalError(code=InternalError.INVALID_PARAMETER, message="error reading dump file", data={'filename':filename,'dump_id':dump_id}, dump=True)
 		return dump
 
 
