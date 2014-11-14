@@ -38,12 +38,12 @@ def get(key, alt=None):
 
 def set(key, value):
     res = getObj(key)
-    if res:
+    if res is not None:
         res.set(value)
     else:
         KeyValuePair.objects.create(key=key, value=value).save()
 
 def delete(key):
     res = getObj(key)
-    if res:
+    if res is not None:
         res.remove()
