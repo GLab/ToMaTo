@@ -89,7 +89,14 @@
 			</script>
 		{% endif %}
 		</td>
-	</tr>	
+	</tr>
+	{% if template.attrs.tech == 'kvmqm' %}
+	<tr>
+		<th>Default Keyboard Layout</th>
+		{{template.attrs.kblang}}
+		</th>
+	</tr>
+	{%endif%}
 	<tr>
 		<th>Availability:</th>
 		<td>

@@ -144,6 +144,13 @@ ST_CREATED = "created"
 ST_PREPARED = "prepared"
 ST_STARTED = "started"
 
+kblang_options = {"en-us": "English (US)", 
+					"en-gb": "English (GB)", 
+					"de": "German", 
+					"fr": "French", 
+					"ja": "Japanese"
+					}
+
 class KVMQM(elements.RexTFVElement,elements.Element):
 	vmid_attr = Attr("vmid", type="int")
 	vmid = vmid_attr.attribute()
@@ -161,7 +168,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 	cpus = cpus_attr.attribute()
 	ram_attr = Attr("ram", desc="RAM", unit="MB", states=[ST_CREATED, ST_PREPARED], type="int", minValue=64, maxValue=4096, default=256)
 	ram = ram_attr.attribute()
-	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options={"en-us": "English (US)", "en-gb": "English (GB)", "de": "German", "fr": "French", "ja": "Japanese"}, default="en-us")
+	kblang_attr = Attr("kblang", desc="Keyboard language", states=[ST_CREATED, ST_PREPARED], type="str", options=kblang_options, default=None, null=True)
 	#["pt", "tr", "ja", "es", "no", "is", "fr-ca", "fr", "pt-br", "da", "fr-ch", "sl", "de-ch", "en-gb", "it", "en-us", "fr-be", "hu", "pl", "nl", "mk", "fi", "lt", "sv", "de"]
 	kblang = kblang_attr.attribute()
 	usbtablet_attr = Attr("usbtablet", desc="USB tablet mouse mode", states=[ST_CREATED, ST_PREPARED], type="bool", default=True)
@@ -203,7 +210,7 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 		"kvmqm_interface": [ST_CREATED, ST_PREPARED],
 	}
 	CAP_PARENT = [None]
-	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": "de", "usbtablet": True}
+	DEFAULT_ATTRS = {"cpus": 1, "ram": 256, "kblang": None, "usbtablet": True}
 	__doc__ = DOC #@ReservedAssignment
 	DOC = DOC
 	
@@ -270,7 +277,10 @@ class KVMQM(elements.RexTFVElement,elements.Element):
 
 	def _configure(self):
 		assert self.state == ST_PREPARED
-		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=self.kblang, tablet=self.usbtablet,
+		kblang = self.kblang
+		if kblang is None:
+			kblang = self.template.kblang
+		qm.configure(self.vmid, cores=self.cpus, memory=self.ram, keyboard=kblang, tablet=self.usbtablet,
 			hda=self._imagePath(), fda=self._nlxtp_device_filename())
 
 	def _checkImage(self, path):

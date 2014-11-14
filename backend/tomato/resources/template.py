@@ -22,6 +22,17 @@ from ..lib.cmd import bittorrent #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 import os.path, base64, hashlib, shutil
 
+
+
+
+kblang_options = {"en-us": "English (US)", 
+					"en-gb": "English (GB)", 
+					"de": "German", 
+					"fr": "French", 
+					"ja": "Japanese"
+					}
+
+
 PATTERNS = {
 	"kvmqm": "%s.qcow2",
 	"openvz": "%s.tar.gz",
@@ -36,6 +47,7 @@ class Template(resources.Resource):
 	subtype = attributes.attribute("subtype", str)
 	torrent_data = attributes.attribute("torrent_data", str)
 	restricted = attributes.attribute("restricted", bool)
+	kblang = attributes.attribute("kblang",str,null=False,default="en-US")
 	# hosts: [TemplateOnHost]
 	
 	TYPE = "template"
@@ -64,6 +76,11 @@ class Template(resources.Resource):
 
 	def modify_name(self, val):
 		self.name = val
+		
+	def modify_kblang(self, val):
+		UserError.check(self.tech == "kvmqm", UserError.UNSUPPORTED_ATTRIBUTE, "Unsupported attribute for %s template: kblang" % (self.tech), data={"tech":self.tech,"attr_name":"kblang","attr_val":val})
+		UserError.check(val in kblang_options, UserError.UNSUPPORTED_TYPE, "Unsupported value for kblang: %s" % val, data={"kblang":val})
+		self.kblang = val
 
 	def modify_tech(self, val):
 		UserError.check(val in PATTERNS.keys(), code=UserError.INVALID_VALUE, message="Unsupported template tech", data={"value": val})
@@ -118,6 +135,8 @@ class Template(resources.Resource):
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["torrent_data_hash"] = hashlib.md5(self.torrent_data).hexdigest() if self.torrent_data else None
+		if self.tech == "kvmqm"
+			info["attrs"]["kblang"] = self.kblang
 		return info
 
 def get(tech, name):

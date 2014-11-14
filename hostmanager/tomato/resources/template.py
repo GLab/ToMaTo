@@ -22,6 +22,7 @@ from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent, path #@UnresolvedImport
 from ..lib.error import UserError, InternalError
 import os, base64, hashlib
+from ..elements.kvmqm import kblang_options
 
 PATTERNS = {
 	"kvmqm": "%s.qcow2",
@@ -35,6 +36,7 @@ class Template(resources.Resource):
 	name = models.CharField(max_length=50)
 	preference = models.IntegerField(default=0)
 	torrent_data = attributes.attribute("torrent_data", str)
+	kblang = attributes.attribute("kblang",str,null=False,default="en-US")
 	
 	TYPE = "template"
 
@@ -71,6 +73,10 @@ class Template(resources.Resource):
 
 	def modify_preference(self, val):
 		self.preference = val
+		
+	def modify_kblang(self, val):
+		UserError.check(val in kblang_options, UserError.UNSUPPORTED_TYPE, "Unsupported value for kblang: %s" % val, data={"kblang":val})
+		self.kblang = val
 
 	def modify_torrent_data(self, val):
 		if val != self.torrent_data:
@@ -111,6 +117,7 @@ class Template(resources.Resource):
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["torrent_data_hash"] = hashlib.md5(str(self.torrent_data)).hexdigest() if self.torrent_data else None
+		info["attrs"]["kblang"] = self.kblang
 		return info
 
 def get(tech, name):
