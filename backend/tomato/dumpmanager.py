@@ -37,8 +37,8 @@ class ErrorGroup(models.Model):
 			dmp = dump.info()
 			if dmp['data_available']:
 				res['data_available'] = True
-			if dmp.timestamp > res['last_timestamp']:
-				res['last_timestamp'] = dmp.timestamp
+			if dmp['timestamp'] > res['last_timestamp']:
+				res['last_timestamp'] = dmp['timestamp']
 			for val in select_unique_values:
 				if not dmp[val] in res['dump_contents'][val]:
 					res['dump_contents'][val].append(dmp[val])
