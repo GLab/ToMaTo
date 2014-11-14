@@ -70,7 +70,10 @@ def getAll_group():
 
 def remove_group(group_id):
 	grp = get_group(group_id)
-	grp.remove()
+	if grp is not None:
+		grp.remove()
+		return True
+	return False
 
 
 class ErrorDump(attributes.Mixin, models.Model):
@@ -213,7 +216,10 @@ def getAll_dumps():
 
 def remove_dump(source_name, dump_id):
 	dmp = get_dump(source_name, dump_id)
-	dmp.remove()
+	if dmp is not None:
+		dmp.remove()
+		return True
+	return False
 
 
 
@@ -396,13 +402,16 @@ def api_errorgroup_modify(group_id, attrs):
 			for i in attrs.keys():
 				UserError.check(i == "description", code=UserError.UNSUPPORTED_ATTRIBUTE,
 					message="Unsupported attribute for error group", data={"attribute": i})
-			get_group(group_id).update_description(attrs['description'])
+			grp = get_group(group_id)
+			UserError.check(grp is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
+			grp.update_description(attrs['description'])
 
 
 def api_errorgroup_info(group_id, include_dumps=False):
 	if checkPermissions():
 		with lock_db:
 			group = get_group(group_id)
+			UserError.check(group is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
 			res = group.info()
 			if include_dumps:
 				res['dumps'] = []
@@ -413,7 +422,8 @@ def api_errorgroup_info(group_id, include_dumps=False):
 def api_errorgroup_remove(group_id):
 	if checkPermissions():
 		with lock_db:
-			remove_group(group_id)
+			res = remove_group(group_id)
+			UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="error group does not exist", data={"group_id":group_id})
 
 
 def api_errordump_list(group_id=None, source=None, data_available=None):
@@ -440,9 +450,13 @@ def api_errordump_list(group_id=None, source=None, data_available=None):
 def api_errordump_info(source, dump_id, include_data=False):
 	if checkPermissions():
 		with lock_db:
-			return get_dump(source, dump_id).info(include_data=include_data)
+			res = get_dump(source, dump_id).info(include_data=include_data)
+			UserError.check(res is not None, code=UserError.ENTITY_DOES_NOT_EXIST, message="error dump does not exist", data={"dump_id":dump_id,"source":source})
+			return res
 
 def api_errordump_remove(source, dump_id):
 	if checkPermissions():
 		with lock_db:
-			remove_dump(source, dump_id)
+			res = remove_dump(source, dump_id)
+			UserError.check(res, code=UserError.ENTITY_DOES_NOT_EXIST, message="error dump does not exist", data={"dump_id":dump_id,"source":source})
+			
