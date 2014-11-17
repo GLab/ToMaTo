@@ -2,7 +2,6 @@ import sys, os, time, json, traceback, hashlib, zlib, threading, re, base64, gzi
 
 from .cmd import run, CommandError  # @UnresolvedImport
 from .. import config, scheduler
-from .error import InternalError
 
 # in the init function, this is set to a number of commands to be run in order to collect environment data, logs, etc.
 #these are different in hostmanager and backend, and thus not set in this file, which is shared between these both.

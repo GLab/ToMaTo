@@ -19,7 +19,7 @@ from django.db import models
 from .. import resources, config
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent #@UnresolvedImport
-from ..lib.error import UserError, InternalError
+from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os.path, base64, hashlib, shutil
 
 
@@ -135,7 +135,7 @@ class Template(resources.Resource):
 		info["attrs"]["tech"] = self.tech
 		info["attrs"]["preference"] = self.preference
 		info["attrs"]["torrent_data_hash"] = hashlib.md5(self.torrent_data).hexdigest() if self.torrent_data else None
-		if self.tech == "kvmqm"
+		if self.tech == "kvmqm":
 			info["attrs"]["kblang"] = self.kblang
 		return info
 
