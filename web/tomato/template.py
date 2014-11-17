@@ -244,7 +244,7 @@ def edit(api, request, res_id=None):
 			creation_date = str(formData['creation_date'])
 			res_inf = api.resource_info(res_id)
 			if res_inf['type'] == 'template':
-				attr = {'label':formData['label'],
+				attrs = {'label':formData['label'],
 							'restricted': formData['restricted'],
 							'subtype':formData['subtype'],
 							'preference':formData['preference'],
@@ -252,11 +252,11 @@ def edit(api, request, res_id=None):
 							'creation_date':creation_date,
 							'nlXTP_installed':formData['nlXTP_installed'],
 							'icon':formData['icon'],
-							'show_as_common':formData['show_as_common']})
+							'show_as_common':formData['show_as_common']}
 				if res_inf['tech'] == "kvmqm":
 					attrs['kblang'] = formData['kblang']
-				api.resource_modify(res_id,attrs))
-				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}
+				api.resource_modify(res_id,attrs)
+				return HttpResponseRedirect(reverse("tomato.template.info", kwargs={"res_id": res_id}))
 			else:
 				return render(request, "main/error.html",{'type':'invalid id','text':'The resource with id '+formData['res_id']+' is no template.'})
 		else:
