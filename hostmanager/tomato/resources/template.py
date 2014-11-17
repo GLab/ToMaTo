@@ -20,9 +20,8 @@ from .. import resources, config
 from ..user import User
 from ..lib import attributes #@UnresolvedImport
 from ..lib.cmd import bittorrent, path #@UnresolvedImport
-from ..lib.error import UserError, InternalError
+from ..lib.error import UserError, InternalError #@UnresolvedImport
 import os, base64, hashlib
-from ..elements.kvmqm import kblang_options
 
 PATTERNS = {
 	"kvmqm": "%s.qcow2",
@@ -75,6 +74,7 @@ class Template(resources.Resource):
 		self.preference = val
 		
 	def modify_kblang(self, val):
+		from ..elements.kvmqm import kblang_options
 		UserError.check(val in kblang_options, UserError.UNSUPPORTED_TYPE, "Unsupported value for kblang: %s" % val, data={"kblang":val})
 		self.kblang = val
 
