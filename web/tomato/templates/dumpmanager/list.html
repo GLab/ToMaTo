@@ -60,7 +60,7 @@
 
 <script>
 function refreshdumps() {
-	loadbusy(event,'Refreshing Dumps');
+	loadbusy(event,'Refreshing Dumps <small><p style="margin-top:0.3cm;" id="refreshdumps_remaining"></p></small>');
 	
 	var xmlhttp=new XMLHttpRequest();
 	xmlhttp.open("POST","{%url "dumpmanager.refresh"%}",false);
@@ -70,10 +70,14 @@ function refreshdumps() {
 		console.log(res);
 		location.reload();
 	} else {
-		timeToReload = 1000 * res.result;
-		console.log(res);
-		console.log(timeToReload);
-		setTimeout(function(){location.reload()},timeToReload+1500);
+		timeToReload = res.result + 2;
+		secCounter = timeToReload
+		update_ind = function(){
+			document.getElementById('refreshdumps_remaining').innerHTML=Math.max(0,secCounter--) + " seconds remaining"
+		};
+		update_ind();
+		setInterval(update_ind,1000);
+		setTimeout(function(){location.reload()},1000 * timeToReload);
 	}
 }
 </script>
