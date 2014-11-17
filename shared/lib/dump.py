@@ -263,16 +263,40 @@ def init(env_cmds, tomatoComponent, tomatoVersion):
 	scheduler.scheduleRepeated(60 * 60 * 24, auto_cleanup, immediate=True)
 
 
+
+
+# dispatcher to dump anything. Use this if you don't know one of the handlers below.
+
 def dumpException(**kwargs):
+	# first, get basic info
 	(type_, value, trace) = sys.exc_info()
 	trace = traceback.extract_tb(trace) if trace else None
 	
+	# check whether a handler for the given type of exception is known.
 	from error import Error
 	if issubclass(type_, Error):
 		return dumpError(value)
+	
+	# check whether this is a common exception that doesn't need to be dumped
+	from ..lib.rpc.xmlrpc import ErrorUnauthorized
+	if issubclass(type_, ErrorUnauthorized):
+		return True
+	return False
 
+	return dumpUnknownException(type_, value, trace)
+
+	
+	
+	
+	
+	
+	
+# function to handle an exception where no special handler is available.
+# Should only be called by dumpException	
+def dumpUnknownException(type_, value, trace):
 	exception = {"type": type_.__name__, "value": str(value), "trace": trace}
-	exception_id = hashlib.md5(json.dumps(exception)).hexdigest()
+	exception_forid = {"type": type_.__name__, "value": re.sub("[0-9]","",str(value)), "trace": trace}
+	exception_id = hashlib.md5(json.dumps(exception_forid)).hexdigest()
 	description = {"subject": exception['value'], "type": exception['type']}
 
 	data = {"exception": exception}
@@ -280,6 +304,8 @@ def dumpException(**kwargs):
 
 	return save_dump(caller=False, description=description, type="Exception", group_id=exception_id, data=data)
 
+
+# function to handle an Error from tomato.lib.error.py
 def dumpError(error):
 	if not error.dump:
 		return None
@@ -295,3 +321,4 @@ def dumpError(error):
 	exception_id = error.group_id()
 	
 	return save_dump(caller=False, description=description, type="Error", group_id=exception_id, data=data)
+
