@@ -43,6 +43,7 @@ function loadbusy(evt,message) {
 				</div>\
 			');
 	$('body').append(busyloader);
+	window.scrollTo(0,0);
 }
 
 
