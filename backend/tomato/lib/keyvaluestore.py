@@ -8,7 +8,7 @@ class KeyValuePair(attributes.Mixin, models.Model):
         app_label = 'tomato'
         pass
 
-    key = models.CharField(max_length=255, primary_key=True)
+    key = models.CharField(max_length=255, unique=True)
     attrs = db.JSONField(default={})
     value = attributes.attribute("data", unicode, default="")
     
