@@ -11,7 +11,7 @@ class Migration(SchemaMigration):
         # Adding model 'KeyValuePair'
         db.create_table('tomato_keyvaluepair', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('key', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('key', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255)),
             ('attrs', self.gf('tomato.lib.db.JSONField')(default={})),
         ))
         db.send_create_signal('tomato', ['KeyValuePair'])
@@ -107,7 +107,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'KeyValuePair'},
             'attrs': ('tomato.lib.db.JSONField', [], {'default': '{}'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'key': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+            'key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         },
         'tomato.kvmqm': {
             'Meta': {'object_name': 'KVMQM'},
@@ -292,7 +292,7 @@ class Migration(SchemaMigration):
             'Meta': {'ordering': "['name', 'origin']", 'unique_together': "(('name', 'origin'),)", 'object_name': 'User'},
             'attrs': ('tomato.lib.db.JSONField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_login': ('django.db.models.fields.FloatField', [], {'default': '1415973137.554907'}),
+            'last_login': ('django.db.models.fields.FloatField', [], {'default': '1416226913.831281'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'organization': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'users'", 'to': "orm['tomato.Organization']"}),
             'origin': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
