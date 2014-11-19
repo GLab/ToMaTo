@@ -58,7 +58,7 @@ def wrapError(error, func, args, kwargs):
 	assert isinstance(error, Error)
 	if error.code == UserError.NOT_LOGGED_IN:
 		return rpc.xmlrpc.ErrorUnauthorized()
-	return rpc.Fault(999, error.raw)
+	return rpc.Fault(999, error.rawstr)
 
 def start():
 	print >>sys.stderr, "Starting RPC servers"
