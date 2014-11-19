@@ -15,9 +15,9 @@ class Error(Exception):
 		self.data = data or {}
 		self.module = module
 		if dump is not None:
-			self.dump = dump
+			self.todump = dump
 		else:
-			self.dump = not isinstance(self, UserError)
+			self.todump = not isinstance(self, UserError)
 		
 	def group_id(self):
 		return hashlib.md5(
@@ -40,7 +40,7 @@ class Error(Exception):
 		return TYPES.get(raw["type"], Error)(**raw)
 
 	@classmethod
-	def check(cls, condition, code, message, dump=True, *args, **kwargs):
+	def check(cls, condition, code, message, dump=None, *args, **kwargs):
 		if condition: return
 		exception = cls(code=code, message=message, dump=dump, *args, **kwargs)
 		exception.dump()

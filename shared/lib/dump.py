@@ -307,9 +307,9 @@ def dumpUnknownException(type_, value, trace):
 
 # function to handle an Error from tomato.lib.error.py
 def dumpError(error):
-	if not error.dump:
+	if not error.todump:
 		return None
-	error.dump=False
+	error.todump=False
 	
 	(type_, value, trace) = sys.exc_info()
 	trace = traceback.extract_tb(trace) if trace else None
