@@ -51,6 +51,15 @@ def runServer(server):
 
 servers = []
 
+def wrapError(error, func, args, kwargs):
+	error = handleError(error, func, args, kwargs)
+	if isinstance(error, rpc.Fault):
+		return error
+	assert isinstance(error, Error)
+	if error.code == UserError.NOT_LOGGED_IN:
+		return rpc.xmlrpc.ErrorUnauthorized()
+	return rpc.Fault(999, error.raw)
+
 def start():
 	print >>sys.stderr, "Starting RPC servers"
 	global servers
@@ -60,7 +69,7 @@ def start():
 		sslOpts = None
 		if settings["SSL"]:
 			sslOpts = rpc.SSLOpts(private_key=settings["SSL_OPTS"]["key_file"], certificate=settings["SSL_OPTS"]["cert_file"], client_certs=None)
-		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=handleError)
+		server = rpc.xmlrpc.XMLRPCServerIntrospection(server_address, sslOpts=sslOpts, loginFunc=login, beforeExecute=logCall, afterExecute=afterCall, onError=wrapError)
 		server.register(api)
 		print >>sys.stderr, " - %s:%d, SSL: %s" % (server_address[0], server_address[1], bool(sslOpts))
 		util.start_thread(server.serve_forever)
