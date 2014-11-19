@@ -329,8 +329,7 @@ def init():
 def checkPermissions():
 	from auth import Flags
 	user = currentUser()
-	if not user:
-		return False
+	UserError.check(currentUser(), code=UserError.NOT_LOGGED_IN, message="Unauthorized")
 	UserError.check(user.hasFlag(Flags.Debug), code=UserError.DENIED, message="Not enough permissions")
 	return True
 
